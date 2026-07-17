@@ -31,6 +31,7 @@ function getExportTypeColumn(exportType, userTableData) {
     const columnsByExportType = {
         submissions: { name: "Submissions", key: "count", sortable: true },
         documents: { name: "Documents", key: "count", sortable: true },
+        studies: { name: "Studies", key: "count", sortable: true },
         grades: {
             name: "Assessment Configuration",
             key: "configurationName",
@@ -85,6 +86,9 @@ export default {
     },
     users() {
       return this.$store.getters["table/user/getAll"];
+    },
+    studies() {
+        return this.$store.getters["table/study/getAll"];
     },
     documents() {
       return this.$store.getters["table/document/getAll"];

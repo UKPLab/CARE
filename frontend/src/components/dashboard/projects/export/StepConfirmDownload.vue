@@ -81,11 +81,16 @@ export default {
         submissions: 'submissions',
         grades: 'grades',
         documents: 'documents',
+        studies: 'studies',
       };
       return labels[this.exportType] || 'documents';
     },
     userSelectionDisplay() {
-      const unit = this.exportType === 'submissions' ? 'submission(s)' : 'document(s)';
+      const unitByExportType = {
+        submissions: 'submission(s)',
+        studies: 'study(ies)',
+      };
+      const unit = unitByExportType[this.exportType] || 'document(s)';
       return this.userSelection.map(row => ({
         userId: row.userId,
         name: row.studentName || row.userName,

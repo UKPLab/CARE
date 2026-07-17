@@ -6,7 +6,9 @@ const path = require('path');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 const Papa = require('papaparse');
 
-const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents"]);
+const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents", "studies"]);
+const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
+const ASSESSMENT_RESULT_KEY = "assessment_result";
 
 
 /**
@@ -50,7 +52,7 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
         return { success: false, status: 400, message: "No authorized users to export." };
     }
 
-    return { success: true, users };
+    return { success: true, users, workflowIds };
 }
 
 /**
@@ -459,6 +461,120 @@ function parseUserIds(rawUserIds) {
     }
 }
 
+/**
+ * Builds flat grade records for the given users/project by resolving each
+ * assessment_result row's session/study/step/configuration context and score.
+ * Shared by processGradesExport (grouped by user for JSON/CSV output) and
+ * processStudyBasedExport (grouped by session for a per-session grades.json).
+ *
+ * @param {Object} server - The server instance providing database models and Sequelize operators.
+ * @param {number} projectId - The project whose grades should be resolved.
+ * @param {Array<number|string>} userIds - The selected document owners.
+ * @param {Array<Object>} users - Full user records for the selected users.
+ * @param {boolean} shouldGenerateAliases - Whether student names should be anonymized.
+ * @param {boolean} hasPrivateInfoRight - Whether the requester may export real names.
+ * @param {Object} userMapping - Map of user IDs to generated aliases.
+ * @returns {Promise<{records: Array<Object>, criteriaReferencesByConfigId: Map<number, Object>}>}
+ */
+async function buildGradeRecords(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
+    const { Op } = server.db.Sequelize;
+    const gradeRows = await server.db.models.document_data.findAll({
+        where: {
+            key: ASSESSMENT_RESULT_KEY,
+            deleted: false,
+            studySessionId: { [Op.ne]: null }
+        },
+        include: [{
+            model: server.db.models.document,
+            as: "document",
+            required: true,
+            where: {
+                projectId,
+                userId: { [Op.in]: userIds },
+                deleted: false
+            },
+            include: [{
+                model: server.db.models.submission,
+                as: "submission",
+                required: false
+            }]
+        }],
+        order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
+    });
+
+    const {
+        sessionsById,
+        studiesById,
+        studyStepsById,
+        configurationsById,
+        usersById
+    } = await loadGradeExportContext(server, gradeRows, users);
+
+    const records = [];
+    const criteriaReferencesByConfigId = new Map();
+    for (const row of gradeRows) {
+        const document = row.document;
+        const ownerUser = usersById.get(document.userId);
+        if (!ownerUser) {
+            console.warn("Skipping grade export row because the document owner could not be resolved.", {
+                documentId: document.id,
+                documentUserId: document.userId,
+                studySessionId: row.studySessionId,
+                studyStepId: row.studyStepId
+            });
+            continue;
+        }
+        const session = sessionsById.get(row.studySessionId);
+        const reviewerUser = session ? usersById.get(session.userId) : null;
+        const study = session ? studiesById.get(session.studyId) : null;
+        const graderUser = study ? usersById.get(study.userId) : null;
+        const studyStep = studyStepsById.get(row.studyStepId);
+        const submission = document.submission;
+        const studyStepConfiguration = studyStep?.configuration;
+        const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
+        const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
+
+        const scoreObject = row.value || {};
+        const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
+        const flatScores = buildScoresFromState(assessmentState);
+        const assessmentConfig = resolveAssessmentConfigurationContent(
+            studyStepConfiguration,
+            configurationsById
+        );
+        addCriteriaReferenceEntry(
+            criteriaReferencesByConfigId,
+            configurationId,
+            assessmentConfig
+        );
+        const assessmentScore = calculateAssessmentScore(assessmentConfig, flatScores);
+        const totalPoints = assessmentScore.achieved_points;
+
+        records.push({
+            projectId,
+            userId: ownerUser.id,
+            userExtId: ownerUser.extId ?? null,
+            userName: ownerUser.userName ?? "",
+            displayName: getDisplayName(ownerUser, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
+            submissionId: submission?.id ?? document.submissionId ?? null,
+            submissionExtId: submission?.extId ?? null,
+            studySessionId: row.studySessionId ?? null,
+            studyStepId: row.studyStepId ?? null,
+            configurationId,
+            studyName,
+            sessionHash: session?.hash ?? null,
+            studyOwner: getPrivateAwareName(graderUser, hasPrivateInfoRight),
+            sessionOwner: getPrivateAwareName(reviewerUser, hasPrivateInfoRight),
+            author: getPrivateAwareName(ownerUser, hasPrivateInfoRight),
+            scores: flatScores,
+            totalPoints,
+            createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
+            studyStepType: studyStep?.stepType ?? null
+        });
+    }
+
+    return { records, criteriaReferencesByConfigId };
+}
+
 module.exports = {
     replaceAuthorInZip,
     buildUserMapping,
@@ -479,4 +595,5 @@ module.exports = {
     parseUserIds,
     loadExportRequestContext,
     SUPPORTED_EXPORT_TYPES,
+    buildGradeRecords,
 };

@@ -149,6 +149,8 @@ export default {
       table: "study_step",
   }, {
       table: "configuration",
+  }, {
+      table: "workflow",
   }
   ],
   provide() {

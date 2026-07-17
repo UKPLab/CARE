@@ -3,7 +3,6 @@ const path = require('path');
 const fs = require('fs');
 const Papa = require('papaparse');
 const { dbToDelta, deltaToPlainText, deltaToHtml } = require('editor-delta-conversion');
-const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
 const {
     replaceAuthorInZip,
     buildUserMapping,
@@ -24,9 +23,9 @@ const {
     parseUserIds,
     loadExportRequestContext,
     SUPPORTED_EXPORT_TYPES,
+    buildGradeRecords,
 } = require('../../utils/helper/export.js');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
-const ASSESSMENT_RESULT_KEY = "assessment_result";
 
 module.exports = function (server) {
 
@@ -41,14 +40,14 @@ module.exports = function (server) {
 
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, includeNonConsentingEdits, includeNonConsentingAnnotations } = req.body;
-        let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4] } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies } = req.body;
+        let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
-        const shouldIncludeNonConsentingEdits = String(includeNonConsentingEdits) === 'true';
-        const shouldIncludeNonConsentingAnnotations = String(includeNonConsentingAnnotations) === 'true';
-        const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
+        const shouldExcludeNonConsentingEdits = String(excludeNonConsentingEdits) === 'true';
+        const shouldExcludeNonConsentingAnnotations = String(excludeNonConsentingAnnotations) === 'true';
         const shouldIncludeEmptyStudies = String(includeEmptyStudies) === 'true';
+        const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const parsedProjectId = Number(projectId);
         const userIds = parseUserIds(rawUserIds);
 
@@ -111,10 +110,11 @@ module.exports = function (server) {
                 case 'documents':
                     await processDocumentBasedExport(
                         server,
-                        projectId,
+                        parsedProjectId,
                         userIds,
                         documentTypes,
                         shouldExcludeNonConsentingEdits,
+                        shouldExcludeNonConsentingAnnotations,
                         baseFolderName,
                         archive
                     );
@@ -122,9 +122,13 @@ module.exports = function (server) {
                 case 'studies':
                     await processStudyBasedExport(
                         server,
-                        projectId,
+                        parsedProjectId,
                         userIds,
-                        workflowIds,
+                        users,
+                        shouldGenerateAliases,
+                        hasPrivateInfoRight,
+                        userMapping,
+                        parsedWorkflowIds,
                         shouldIncludeEmptyStudies,
                         shouldExcludeNonConsentingEdits,
                         shouldExcludeNonConsentingAnnotations,
@@ -269,107 +273,14 @@ module.exports = function (server) {
         mergeCsvFiles,
         archive
     ) {
-        const { Op } = server.db.Sequelize;
-        const gradeRows = await server.db.models.document_data.findAll({
-            where: {
-                key: ASSESSMENT_RESULT_KEY,
-                deleted: false,
-                studySessionId: { [Op.ne]: null }
-            },
-            include: [{
-                model: server.db.models.document,
-                as: "document",
-                // required: true turns this include into an inner join.
-                required: true,
-                where: {
-                    projectId,
-                    userId: { [Op.in]: userIds },
-                    deleted: false
-                },
-                include: [{
-                    model: server.db.models.submission,
-                    as: "submission",
-                    required: false
-                }]
-            }],
-            // Sort by session first, then step within the session, then creation time within the step.
-            order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
-        });
-
-        const {
-            sessionsById,
-            studiesById,
-            studyStepsById,
-            configurationsById,
-            usersById
-        } = await loadGradeExportContext(server, gradeRows, users);
+        const { records, criteriaReferencesByConfigId } = await buildGradeRecords(
+            server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping
+        );
 
         const recordsByUser = new Map();
-        // Each distinct assessment configuration used across the export gets its own criteria reference file.
-        const criteriaReferencesByConfigId = new Map();
-        for (const row of gradeRows) {
-            const document = row.document;
-            const ownerUser = usersById.get(document.userId);
-            if (!ownerUser) {
-                console.warn("Skipping grade export row because the document owner could not be resolved.", {
-                    documentId: document.id,
-                    documentUserId: document.userId,
-                    studySessionId: row.studySessionId,
-                    studyStepId: row.studyStepId
-                });
-                continue;
-            }
-            const session = sessionsById.get(row.studySessionId);
-            const reviewerUser = session ? usersById.get(session.userId) : null;
-            const study = session ? studiesById.get(session.studyId) : null;
-            const graderUser = study ? usersById.get(study.userId) : null;
-            const studyStep = studyStepsById.get(row.studyStepId);
-            const submission = document.submission;
-            const studyStepConfiguration = studyStep?.configuration;
-            // configurationId is exported as metadata; assessmentConfig is the rubric content
-            // needed for score calculation and criteria_reference.json.
-            const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
-            const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
-
-            const scoreObject = row.value || {};
-            const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
-            const flatScores = buildScoresFromState(assessmentState);
-            const assessmentConfig = resolveAssessmentConfigurationContent(
-                studyStepConfiguration,
-                configurationsById
-            );
-            addCriteriaReferenceEntry(
-                criteriaReferencesByConfigId,
-                configurationId,
-                assessmentConfig
-            );
-            const assessmentScore = calculateAssessmentScore(assessmentConfig, flatScores);
-            const totalPoints = assessmentScore.achieved_points;
-
-            const record = {
-                projectId,
-                userId: ownerUser.id,
-                userExtId: ownerUser.extId ?? null,
-                userName: ownerUser.userName ?? "",
-                displayName: getDisplayName(ownerUser, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
-                submissionId: submission?.id ?? document.submissionId ?? null,
-                submissionExtId: submission?.extId ?? null,
-                studySessionId: row.studySessionId ?? null,
-                studyStepId: row.studyStepId ?? null,
-                configurationId,
-                studyName,
-                sessionHash: session?.hash ?? null,
-                studyOwner: getPrivateAwareName(graderUser, hasPrivateInfoRight),
-                sessionOwner: getPrivateAwareName(reviewerUser, hasPrivateInfoRight),
-                author: getPrivateAwareName(ownerUser, hasPrivateInfoRight),
-                scores: flatScores,
-                totalPoints,
-                createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-                studyStepType: studyStep?.stepType ?? null
-            };
-
-            if (!recordsByUser.has(ownerUser.id)) recordsByUser.set(ownerUser.id, []);
-            recordsByUser.get(ownerUser.id).push(record);
+        for (const record of records) {
+            if (!recordsByUser.has(record.userId)) recordsByUser.set(record.userId, []);
+            recordsByUser.get(record.userId).push(record);
         }
 
         if (criteriaReferencesByConfigId.size > 0) {
@@ -424,10 +335,10 @@ module.exports = function (server) {
         }
 
         for (const user of users) {
-            const records = (recordsByUser.get(user.id) || []).sort(compareGradeRecords);
+            const userRecords = (recordsByUser.get(user.id) || []).sort(compareGradeRecords);
 
             const recordsByHash = new Map();
-            for (const record of records) {
+            for (const record of userRecords) {
                 const hashKey = record.sessionHash || null;
                 if (!recordsByHash.has(hashKey)) recordsByHash.set(hashKey, []);
                 recordsByHash.get(hashKey).push(record);
@@ -641,7 +552,7 @@ module.exports = function (server) {
         for (const doc of filteredDocs) {
             const docFolder = `${baseFolderName}/${doc.hash}`;
             const docUserRoles = rolesMap[doc.userId] || [];
-            await processDocumentForExport(server, doc, docFolder, includeNonConsentingEdits, includeNonConsentingAnnotations, docUserRoles, archive);
+            await processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive);
         }
     }
 
@@ -655,7 +566,7 @@ module.exports = function (server) {
         return sorted;
     }
 
-    async function processStudyBasedExport(server, projectId, userIds, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, baseFolderName, archive) {
+    async function processStudyBasedExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, baseFolderName, archive) {
         const studyWhere = { userId: userIds, projectId, deleted: false };
         if (workflowIds.length > 0) studyWhere.workflowId = workflowIds;
 
@@ -664,6 +575,24 @@ module.exports = function (server) {
         if (studies.length === 0) {
             console.warn(`[StudyExport] No studies found for selected users in project ${projectId}`);
             return;
+        }
+
+        const { records: gradeRecords, criteriaReferencesByConfigId } = await buildGradeRecords(
+            server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping
+        );
+        const gradeRecordsBySessionId = new Map();
+        for (const record of gradeRecords) {
+            if (!gradeRecordsBySessionId.has(record.studySessionId)) gradeRecordsBySessionId.set(record.studySessionId, []);
+            gradeRecordsBySessionId.get(record.studySessionId).push(record);
+        }
+
+        if (criteriaReferencesByConfigId.size > 0) {
+            for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
+                archive.append(
+                    JSON.stringify(reference, null, 2),
+                    { name: `${baseFolderName}/criteria_reference_${configurationId}.json` }
+                );
+            }
         }
 
         for (const study of studies) {
@@ -704,6 +633,13 @@ module.exports = function (server) {
 
             for (const session of sessions) {
                 const sessionFolder = `${studyFolder}/${session.hash}`;
+
+                const sessionGrades = (gradeRecordsBySessionId.get(session.id) || [])
+                    .map(({ sessionHash, ...rest }) => rest)
+                    .sort(compareGradeRecords);
+                if (sessionGrades.length > 0) {
+                    archive.append(JSON.stringify(sessionGrades, null, 2), { name: `${sessionFolder}/grades.json` });
+                }
 
                 for (let i = 0; i < sortedSteps.length; i++) {
                     const step = sortedSteps[i];

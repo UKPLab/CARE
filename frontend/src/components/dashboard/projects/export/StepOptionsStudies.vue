@@ -2,11 +2,8 @@
   <div>
     <div class="mt-2 mb-3 p-3 bg-light border rounded">
       <h6 class="mb-3 pb-2 border-bottom text-muted">
-        Filter by Workflow
+        Workflow Types to Include
       </h6>
-      <p class="text-muted small mb-3">
-        Select which workflows to include. Leave all unchecked to export sessions from all workflows.
-      </p>
       <div v-if="workflows.length === 0" class="text-muted fst-italic">
         No workflows found for this project.
       </div>
@@ -94,7 +91,7 @@ export default {
         default: false
     }
   },
-  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnoations'],
+  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations'],
   computed: {
     workflows() {
       const studies = this.$store.getters["table/study/getFiltered"](s => s.projectId === this.projectId);
@@ -102,7 +99,11 @@ export default {
       return this.$store.getters["table/workflow/getFiltered"](w => workflowIds.includes(w.id));
     },
     selected: {
-      get() { return this.selectedWorkflowIds; },
+      get() {
+        return this.selectedWorkflowIds.length > 0
+          ? this.selectedWorkflowIds
+          : this.workflows.map(wf => wf.id);
+      },
       set(value) { this.$emit('update:selectedWorkflowIds', value); }
     },
     includeEmptyStudiesModel: {
@@ -117,6 +118,6 @@ export default {
         get() { return this.excludeNonConsentingAnnotations; },
         set(value) { this.$emit('update:excludeNonConsentingAnnotations', value); }
     }
-  }
+  },
 }
 </script>
