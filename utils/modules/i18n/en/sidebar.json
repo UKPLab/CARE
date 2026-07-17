@@ -44,7 +44,8 @@
             "study": "Study",
             "manage": "Manage",
             "settings": "Settings",
-            "ai": "AI"
+            "ai": "AI",
+            "assignment": "Assignment"
         }
     },
     "textPlaceholderHelp": "Displays a single value from a previous editor step or NLP skill output. Use this when you want to show a specific piece of data (like a text field, number, or label) from an earlier step in your workflow.",

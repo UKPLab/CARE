@@ -44,7 +44,8 @@
             "study": "Studium",
             "manage": "Verwalten",
             "settings": "Einstellungen",
-            "ai": "KI"
+            "ai": "KI",
+            "assignment": "Assignment"
         }
     },
     "textPlaceholderHelp": "Zeigt einen einzelnen Wert aus einem vorherigen Editor-Schritt oder einer NLP-Skill-Ausgabe an. Verwenden Sie dies, wenn Sie ein bestimmtes Datenelement wie ein Textfeld, eine Zahl oder ein Label aus einem früheren Schritt Ihres Workflows anzeigen möchten.",
