@@ -22,15 +22,14 @@
       <div class="alert alert-info">
         <strong>Summary:</strong><br />
         You are about to download 
-        <span v-if="exportType === 'submissions'">submissions</span>
-        <span v-else>documents</span>
-        for <strong>{{ userSelection.length }}</strong> users(s).
+        <span>{{ exportTypeLabel }}</span>
+        for <strong>{{ userSelection.length }}</strong> user(s).
       </div>
 
       <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
         <ul class="mb-0 pl-3">
-          <li v-for="row in userSelection" :key="row.userId">
-            {{ row.studentName || row.userName }} ({{ row.count }} {{ exportType === 'submissions' ? 'submission(s)' : 'document(s)' }})
+          <li v-for="row in userSelectionDisplay" :key="row.userId">
+            {{ row.name }}<span v-if="row.suffix"> ({{ row.suffix }})</span>
           </li>
         </ul>
       </div>
@@ -76,7 +75,23 @@ export default {
   computed: {
     hasDeclinedSharingSelected() {
       return this.userSelection.some(row => row.acceptDataSharing === 'No');
-    }
+    },
+    exportTypeLabel() {
+      const labels = {
+        submissions: 'submissions',
+        grades: 'grades',
+        documents: 'documents',
+      };
+      return labels[this.exportType] || 'documents';
+    },
+    userSelectionDisplay() {
+      const unit = this.exportType === 'submissions' ? 'submission(s)' : 'document(s)';
+      return this.userSelection.map(row => ({
+        userId: row.userId,
+        name: row.studentName || row.userName,
+        suffix: this.exportType === 'grades' ? null : `${row.count} ${unit}`,
+      }));
+    },
   }
 }
 </script>
