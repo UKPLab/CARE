@@ -43,9 +43,7 @@
     :current-user-id="currentUserId"
     resource-label="AI Hook"
     resource-id-key="aiHookId"
-    share-options-command="getModelShareOptions"
-    share-config-command="getHookShareConfig"
-    save-share-command="shareHook"
+    share-table="ai_hook_share"
     owner-only-message="Only hook owners can manage sharing"
   />
 
@@ -86,8 +84,6 @@ export default {
   },
   data() {
     return {
-      ownerLabelsByUserId: {},
-      hookDisplaySummariesById: {},
       tableOptions: {
         striped: true,
         hover: true,
@@ -127,8 +123,15 @@ export default {
     hookModels() {
       return this.$store.getters["table/ai_hook_models/getAll"] || [];
     },
-    aiHookRefreshCount() {
-      return this.$store.getters["table/ai_hook/refreshCount"];
+    ownerLabelsByUserId() {
+      const users = this.$store.getters["table/user/getAll"] || [];
+      return users.reduce((acc, user) => {
+        const label = [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.userName;
+        if (label) {
+          acc[String(user.id)] = label;
+        }
+        return acc;
+      }, {});
     },
     hookRows() {
       const templatesById = this.templates.reduce((acc, template) => {
@@ -165,19 +168,15 @@ export default {
         });
         const primaryModel = models[0];
         const extraModelCount = Math.max(models.length - 1, 0);
-        const ownerModelSummary = primaryModel
+        const modelSummary = primaryModel
           ? `${primaryModel.name}${extraModelCount > 0 ? ` +${extraModelCount}` : ""}`
           : "Unknown model";
-        const sharedModelSummary = this.hookDisplaySummariesById[String(hook.id)] || {};
-        const modelSummary = isOwner
-          ? ownerModelSummary
-          : (sharedModelSummary.modelSummary || "Unknown model");
         const sharedBy = isOwner ? "—" : (this.ownerLabelsByUserId[String(ownerId)] || "—");
         return {
           ...hook,
           isOwner,
           templateName: templatesById[hook.templateId]?.name || "Unknown template",
-          models: isOwner ? models : (sharedModelSummary.models || []),
+          models,
           modelSummary,
           modelSortLabel: modelSummary,
           sharedBy,
@@ -249,38 +248,7 @@ export default {
       ];
     },
   },
-  watch: {
-    aiHookRefreshCount: {
-      handler() {
-        this.loadAiHookOwnerSummaries();
-        this.loadAiHookDisplaySummaries();
-      },
-      immediate: true,
-    },
-  },
   methods: {
-    loadAiHookOwnerSummaries() {
-      this.$socket.emit(
-        "serviceCommand",
-        { service: "AIService", command: "getAiHookOwnerSummaries", data: {} },
-        (response) => {
-          if (response?.success) {
-            this.ownerLabelsByUserId = response.data || {};
-          }
-        },
-      );
-    },
-    loadAiHookDisplaySummaries() {
-      this.$socket.emit(
-        "serviceCommand",
-        { service: "AIService", command: "getAiHookDisplaySummaries", data: {} },
-        (response) => {
-          if (response?.success) {
-            this.hookDisplaySummariesById = response.data || {};
-          }
-        },
-      );
-    },
     onAction(data) {
       switch (data.action) {
         case "view":

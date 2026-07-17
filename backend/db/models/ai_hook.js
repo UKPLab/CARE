@@ -11,7 +11,18 @@ const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiHook extends MetaModel {
-        static autoTable = true;
+        // Cascade ai_hook_share and ai_hook_models rows to anyone subscribing to
+        // ai_hook (ai_hook_models itself cascades on to the full ai_model rows —
+        // see ai_hook_models.js), and the owner's user row back to anyone the hook is shared with.
+        static autoTable = {
+            foreignTables: [
+                { table: "ai_hook_share", by: "aiHookId" },
+                { table: "ai_hook_models", by: "aiHookId" },
+            ],
+            parentTables: [
+                { table: "user", by: "userId" },
+            ],
+        };
 
         static associate(models) {
             AiHook.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
@@ -19,12 +30,22 @@ module.exports = (sequelize, DataTypes) => {
             AiHook.hasMany(models["ai_hook_models"], { foreignKey: "aiHookId", as: "hookModels" });
         }
 
+        /**
+         * Grants row visibility to anyone with an active ai_hook_share grant for this hook, in addition to the owner.
+         *
+         * @param {number} userId Viewer's id.
+         * @returns {Promise<object>}
+         */
         static async getUserFilter(userId) {
+            const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
             const shareRows = await sequelize.models.ai_hook_share.findAll({
                 where: {
-                    userId,
                     deleted: false,
                     expiryDate: {[Op.gt]: new Date()},
+                    [Op.or]: [
+                        {userId},
+                        ...(roleIds.length ? [{roleId: {[Op.in]: roleIds}}] : []),
+                    ],
                 },
                 attributes: ["aiHookId"],
                 raw: true,

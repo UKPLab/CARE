@@ -6,7 +6,6 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
-const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiHookShare extends MetaModel {
@@ -17,6 +16,34 @@ module.exports = (sequelize, DataTypes) => {
                 { table: "user", by: "userId" },
             ],
         };
+
+        // Row access: visible/writable by anyone who owns the referenced ai_hook.
+        static accessMap = [
+            {
+                table: "ai_hook",
+                by: "aiHookId",
+                columns: this.getAttributes(),
+            },
+        ];
+
+        // Requester may write a foreign userId (the share recipient) when they own the referenced ai_hook .
+        static foreignOwner = {column: "aiHookId", table: "ai_hook"};
+
+        /**
+         * Guards direct updateById calls 
+         */
+        static async validateOwnerUpdate(share, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            const allowed = await AiHookShare.validateForeignUserId(
+                {aiHookId: share.aiHookId}, currentUserId, options.transaction
+            );
+            if (!allowed) {
+                throw new Error("You are not allowed to update this share");
+            }
+        }
     }
 
     AiHookShare.init({
@@ -32,6 +59,11 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'ai_hook_share',
         tableName: 'ai_hook_share',
+        hooks: {
+            beforeUpdate: async (share, options) => {
+                await AiHookShare.validateOwnerUpdate(share, options);
+            },
+        },
     });
 
     return AiHookShare;

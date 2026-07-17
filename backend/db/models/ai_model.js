@@ -7,18 +7,47 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class AiModel extends MetaModel {
-        static autoTable = true;
-        static accessMap = [
-            {
-                table: "ai_model_share",
-                by: "aiModelId",
-                target: "id",
-                columns: this.getAttributes(),
-            },
-        ];
+        // Cascade ai_model_share rows to anyone subscribing to ai_model, and the
+        // owner's user row back to anyone the model is shared with.
+        static autoTable = {
+            foreignTables: [
+                { table: "ai_model_share", by: "aiModelId" },
+            ],
+            parentTables: [
+                { table: "user", by: "userId" },
+            ],
+        };
+
+        /**
+         * Grants row visibility to anyone with an active direct-user or role-based
+         * ai_model_share grant for this model, in addition to the owner (handled by
+         * the base autoTable userId rule).
+         *
+         * @param {number} userId Viewer's id.
+         * @returns {Promise<object>}
+         */
+        static async getUserFilter(userId) {
+            const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
+            const shareRows = await sequelize.models.ai_model_share.findAll({
+                where: {
+                    deleted: false,
+                    expiryDate: {[Op.gt]: new Date()},
+                    [Op.or]: [
+                        {userId},
+                        ...(roleIds.length ? [{roleId: {[Op.in]: roleIds}}] : []),
+                    ],
+                },
+                attributes: ["aiModelId"],
+                raw: true,
+            });
+            const modelIds = [...new Set(shareRows.map((row) => Number(row.aiModelId)))]
+                .filter((id) => Number.isInteger(id) && id > 0);
+            return modelIds.length > 0 ? {id: {[Op.in]: modelIds}} : {id: -1};
+        }
 
         /**
          * Ensures linked credentials exist, belong to this model owner, and allow enablement semantics.

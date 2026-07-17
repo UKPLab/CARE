@@ -4,16 +4,7 @@
       {{ config.title }}
     </template>
     <template #body>
-      <div v-if="isLoading" class="text-center py-4 text-muted" role="status">
-        <div class="spinner-border" />
-        <div class="small mt-2">
-          Loading...
-        </div>
-      </div>
-      <div v-else-if="loadError" class="alert alert-danger mb-0">
-        {{ loadError }}
-      </div>
-      <template v-else-if="meta && row">
+      <template v-if="meta && row">
         <dl class="row mb-3 small">
           <template v-for="item in detailRows" :key="item.key">
             <dt class="col-sm-3">
@@ -80,10 +71,9 @@ const RESOURCE_CONFIGS = {
   model: {
     title: "AI model overview",
     modalName: "aiModelOverviewModal",
-    command: "getModelOverview",
+    shareTable: "ai_model_share",
     idKey: "aiModelId",
     invalidMessage: "Invalid model",
-    loadErrorMessage: "Failed to load overview",
     details(row, meta, helpers) {
       return [
         { key: "name", label: "Name", value: row.name },
@@ -105,10 +95,9 @@ const RESOURCE_CONFIGS = {
   hook: {
     title: "AI hook overview",
     modalName: "aiHookOverviewModal",
-    command: "getHookOverview",
+    shareTable: "ai_hook_share",
     idKey: "aiHookId",
     invalidMessage: "Invalid AI hook",
-    loadErrorMessage: "Failed to load hook overview",
     details(row, _meta, helpers) {
       return [
         { key: "name", label: "Name", value: row.name },
@@ -126,6 +115,7 @@ const RESOURCE_CONFIGS = {
 
 export default {
   name: "AIOverview",
+  subscribeTable: ["ai_model_share", "ai_hook_share", "user", "user_role", "user_role_matching"],
   components: { BasicModal, BasicButton, BasicTable },
   props: {
     resourceType: {
@@ -136,10 +126,7 @@ export default {
   },
   data() {
     return {
-      isLoading: false,
       row: null,
-      meta: null,
-      loadError: null,
       shareTableOptions: {
         striped: true,
         hover: true,
@@ -157,6 +144,55 @@ export default {
     },
     modalName() {
       return this.config.modalName;
+    },
+    currentUserId() {
+      return Number(this.$store.getters["auth/getUserId"]);
+    },
+    meta() {
+      if (!this.row) return null;
+
+      const now = new Date();
+      const idKey = this.config.idKey;
+      const getter = this.$store.getters[`table/${this.config.shareTable}/getFiltered`];
+      const shares = getter
+        ? getter((share) => Number(share[idKey]) === Number(this.row.id) && !share.deleted)
+        : [];
+      const isOwner = Number(this.row.userId) === this.currentUserId;
+
+      if (isOwner) {
+        const users = this.$store.getters["table/user/getAll"] || [];
+        const userById = users.reduce((acc, user) => { acc[user.id] = user; return acc; }, {});
+        const roles = this.$store.getters["table/user_role/getAll"] || [];
+        const roleById = roles.reduce((acc, role) => { acc[role.id] = role; return acc; }, {});
+
+        const shareRecipients = shares
+          .filter((share) => new Date(share.expiryDate) > now)
+          .sort((a, b) => new Date(a.expiryDate) - new Date(b.expiryDate))
+          .map((share) => {
+            const isRole = !!share.roleId;
+            const user = userById[share.userId];
+            return {
+              recipientLabel: isRole ? null : ([user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || null),
+              accessVia: isRole ? "role" : "direct",
+              viaLabel: isRole ? (roleById[share.roleId]?.name || null) : null,
+              expiryDate: share.expiryDate,
+            };
+          });
+        return { isOwner: true, viewerShare: null, shareRecipients };
+      }
+
+      const myRoleIds = (this.$store.getters["table/user_role_matching/getAll"] || [])
+        .filter((match) => Number(match.userId) === this.currentUserId)
+        .map((match) => Number(match.userRoleId));
+      const viewerShareRow = shares.find((share) =>
+        new Date(share.expiryDate) > now
+        && (Number(share.userId) === this.currentUserId || (share.roleId && myRoleIds.includes(Number(share.roleId))))
+      );
+      return {
+        isOwner: false,
+        viewerShare: viewerShareRow ? { expiryDate: viewerShareRow.expiryDate } : null,
+        shareRecipients: [],
+      };
     },
     detailRows() {
       if (!this.row || !this.meta) return [];
@@ -203,32 +239,13 @@ export default {
       const date = new Date(value);
       return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
     },
-    emitAi(command, data = {}) {
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("serviceCommand", { service: "AIService", command, data }, (result) => {
-          if (result?.success) resolve(result.data);
-          else reject(new Error(result?.message || "Request failed"));
-        });
-      });
-    },
-    async open(row) {
+    open(row) {
       if (!row?.id) {
         this.eventBus.emit("toast", { title: "Error", message: this.config.invalidMessage, variant: "danger" });
         return;
       }
       this.row = row;
-      this.meta = null;
-      this.loadError = null;
-      this.isLoading = true;
       this.$refs.overviewModal.open();
-      try {
-        this.meta = await this.emitAi(this.config.command, { [this.config.idKey]: row.id });
-      } catch (error) {
-        this.loadError = error.message || this.config.loadErrorMessage;
-        this.eventBus.emit("toast", { title: "Error", message: this.loadError, variant: "danger" });
-      } finally {
-        this.isLoading = false;
-      }
     },
   },
 };

@@ -2,13 +2,12 @@
 
 const Service = require("../../Service.js");
 const chat = require("./chat");
-const share = require("./share");
 const hook = require("./hook");
 
 /**
- * AIService — AI / LLM and model-sharing RPC handlers.
+ * AIService — AI / LLM RPC handlers.
  *
- * Implementation is split under `./ai/` (`helpers`, `runtime`, `chat`, `share`).
+ * Implementation is split under `./ai/` (`helpers`, `runtime`, `chat`, `hook`).
  *
  * @extends Service
  * @author Akash Gundapuneni, Mohamed Rawhani
@@ -26,23 +25,13 @@ module.exports = class AIService extends Service {
                 "getStatus",
                 "testModel",
                 "getValidModels",
-                "getModelShareOptions",
-                "getModelShareConfig",
-                "getHookShareConfig",
-                "shareModel",
-                "shareHook",
-                "getModelOverview",
-                "getHookOverview",
-                "getAiModelOwnerSummaries",
-                "getAiHookOwnerSummaries",
-                "getAiHookDisplaySummaries",
             ],
             resTypes: [],
         });
     }
 
     /**
-     * Bridges declared `cmdTypes` into nested chat/share helpers mirroring liteLLMRPC capabilities.
+     * Bridges declared `cmdTypes` into nested chat/hook helpers mirroring liteLLMRPC capabilities.
      *
      * @param {*} client RPC client emitting commands.
      * @param {string} command Handler key enumerated in constructor `cmdTypes`.
@@ -57,16 +46,6 @@ module.exports = class AIService extends Service {
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
             getValidModels: () => chat.getValidModels(this, client, data),
-            getModelShareOptions: () => share.getModelShareOptions(this, client),
-            getModelShareConfig: () => share.getModelShareConfig(this, client, data),
-            getHookShareConfig: () => share.getHookShareConfig(this, client, data),
-            shareModel: () => share.shareModel(this, client, data),
-            shareHook: () => share.shareHook(this, client, data),
-            getModelOverview: () => share.getModelOverview(this, client, data),
-            getHookOverview: () => share.getHookOverview(this, client, data),
-            getAiModelOwnerSummaries: () => share.getAiModelOwnerSummaries(this, client),
-            getAiHookOwnerSummaries: () => share.getAiHookOwnerSummaries(this, client),
-            getAiHookDisplaySummaries: () => share.getAiHookDisplaySummaries(this, client),
         };
         if (handlers[command]) {
             return handlers[command]();

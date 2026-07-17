@@ -10,7 +10,13 @@ const MetaModel = require('../MetaModel.js');
 
 module.exports = (sequelize, DataTypes) => {
     class AiHookModels extends MetaModel {
-        static autoTable = true;
+        // Cascade the referenced ai_model row to anyone who can see this hook_models
+        // row (i.e. anyone who can see the parent ai_hook — owner or share recipient).
+        static autoTable = {
+            parentTables: [
+                { table: "ai_model", by: "aiModelId" },
+            ],
+        };
 
         static associate(models) {
             AiHookModels.belongsTo(models["ai_hook"], { foreignKey: "aiHookId", as: "hook" });
