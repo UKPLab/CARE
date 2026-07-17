@@ -50,6 +50,7 @@
   />
   <ImportFormatModal
     ref="importFormatModal"
+    title="Import Workflows"
   />
   <ConfirmModal ref="confirmModal" />
 </template>
@@ -64,8 +65,8 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import WorkflowCreateModal from "./workflows/WorkflowCreateModal.vue";
 import WorkflowRenameModal from "./workflows/WorkflowRenameModal.vue";
 import WorkflowEditModal from "./workflows/WorkflowEditModal.vue";
-import ExportFormatModal from "./workflows/ExportFormatModal.vue";
-import ImportFormatModal from "./workflows/ImportFormatModal.vue";
+import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 
 /**
  * Workflows dashboard component
@@ -249,7 +250,7 @@ export default {
           this.$refs.workflowCreateModal.copy(data.params.id);
           break;
         case "exportWorkflow":
-          this.$refs.exportFormatModal.open(data.params.id);
+          this.$refs.exportFormatModal.open(data.params.id, "workflow", "workflow_step");
           break;
         case "toggleHidden":
           this.toggleHidden(data.params);
@@ -257,10 +258,10 @@ export default {
       }
     },
     importWorkflows() {
-      this.$refs.importFormatModal.open();
+      this.$refs.importFormatModal.open("workflow", "workflow_step");
     },
     exportWorkflows() {
-      this.$refs.exportFormatModal.open();
+      this.$refs.exportFormatModal.open(null, "workflow", "workflow_step");
     },
     editWorkflow(params) {
       this.$refs.workflowEditModal.open(params.id);

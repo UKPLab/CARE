@@ -21,6 +21,29 @@
 import BasicTable from "@/basic/Table.vue";
 
 /**
+ * Resolves the "variable" column for the user-selection table based on export type
+ * (submissions count / documents count / assessment configuration).
+ * @param {string} exportType - The current export type.
+ * @param {Array<Object>} userTableData - Current table rows, used to build the grades filter options.
+ * @returns {Object} A column definition to slot into the table's columns array.
+ */
+function getExportTypeColumn(exportType, userTableData) {
+    const columnsByExportType = {
+        submissions: { name: "Submissions", key: "count", sortable: true },
+        documents: { name: "Documents", key: "count", sortable: true },
+        grades: {
+            name: "Assessment Configuration",
+            key: "configurationName",
+            sortable: true,
+            filter: [...new Set(userTableData.map(row => row.configurationName))]
+                .sort()
+                .map(name => ({ key: name, name })),
+        },
+    };
+    return columnsByExportType[exportType] || columnsByExportType.documents;
+}
+
+/**
  * StepSelectUsers
  *
  * This component renders an interactive data table allowing the user to select 
@@ -66,8 +89,16 @@ export default {
     documents() {
       return this.$store.getters["table/document/getAll"];
     },
-    studies() {
-      return this.$store.getters["table/study/getAll"];
+    documentData() {
+      return this.$store.getters["table/document_data/getFiltered"](
+        (d) => d.key === "assessment_result" && d.studySessionId !== null && !d.deleted
+      );
+    },
+    studySteps() {
+      return this.$store.getters["table/study_step/getAll"];
+    },
+    configurations() {
+      return this.$store.getters["table/configuration/getAll"];
     },
     userTableData() {
       const currentUser = this.$store.getters["auth/getUser"];
@@ -89,6 +120,8 @@ export default {
           countedSubmissions: new Set(),
           acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
           lastSubmissionDate: null,
+          configurationName: this.gradeConfigurations[uid]?.name ?? "No configuration",
+          configurationHasMultiple: this.gradeConfigurations[uid]?.hasMultipleConfigurations ?? false,
         };
         return submissionsByUser[uid];
       };
@@ -149,7 +182,7 @@ export default {
     userTable() {
       const cols = [
         { name: "Username", key: "userName", sortable: true },
-        { name: this.exportType === 'submissions' ? "Submissions" : this.exportType === 'documents' ? "Documents" : "Studies", key: "count", sortable: true },
+        getExportTypeColumn(this.exportType, this.userTableData),
         { 
           name: "Accepted Data Sharing", 
           key: "acceptDataSharing", 
@@ -177,7 +210,44 @@ export default {
         },
         columns: cols
       };
-    }
+    },
+    gradeConfigurations() {
+      if (this.exportType !== 'grades') return {};
+
+      const studyStepsById = new Map(this.studySteps.map(s => [s.id, s]));
+      const configurationsById = new Map(this.configurations.map(c => [c.id, c]));
+
+      const getConfigurationId = (stepConfiguration) => {
+        if (!stepConfiguration || typeof stepConfiguration !== "object") return null;
+        const rawId = stepConfiguration.settings?.configurationId ?? stepConfiguration.configurationId ?? null;
+        const parsedId = Number(rawId);
+        return Number.isInteger(parsedId) ? parsedId : null;
+      };
+
+      const configIdsByUser = new Map();
+      for (const row of this.documentData) {
+        const document = this.documents.find(d => d.id === row.documentId);
+        if (!document || document.projectId != this.projectId || document.deleted) continue;
+
+        const studyStep = studyStepsById.get(row.studyStepId);
+        const configurationId = getConfigurationId(studyStep?.configuration);
+        if (configurationId === null) continue;
+
+        if (!configIdsByUser.has(document.userId)) configIdsByUser.set(document.userId, new Set());
+        configIdsByUser.get(document.userId).add(configurationId);
+      }
+
+      const result = {};
+      for (const [userId, configIds] of configIdsByUser.entries()) {
+        const names = [...configIds].map(id => configurationsById.get(id)?.name ?? `Configuration ${id}`).sort();
+        result[userId] = {
+          ids: [...configIds],
+          name: names.length === 1 ? names[0] : `Multiple (${names.join(", ")})`,
+          hasMultipleConfigurations: names.length > 1,
+        };
+      }
+      return result;
+    },
   }
 }
 </script>
