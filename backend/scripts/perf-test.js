@@ -203,14 +203,10 @@ async function run(cfg) {
         process.exit(code);
     }
 
-    // ramp / soak: resolve recordings now; the driving loops come next.
-    const { resolveRecordings } = require('./perf-recordings');
-    const ids = await resolveRecordings(cfg, ctx);
-    console.log('  resolved recording IDs: ' + ids.join(', '));
-
-    console.log('\n[milestone] Resolved recordings. ' + cfg.mode + ' loop + metric sampling come next.');
-    socket.disconnect();
-    console.log('  socket disconnected. Done.');
+    // Every valid mode is dispatched and exits above; validateConfig rejects
+    // anything else, so this point is unreachable. Guard anyway rather than
+    // hang silently on an unhandled mode.
+    throw new Error(`No handler for mode "${cfg.mode}"`);
 }
 
 async function main() {
