@@ -254,9 +254,23 @@ export default {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
     // Tick once a second so the recording-elapsed display next to the
     // recording icon stays current. Cheap because it just updates a number.
-    this.tickHandle = setInterval(() => {
-      this.now = Date.now();
-    }, 1000);
+    // Only tick while this tab is actually being recorded — the topbar is on
+    // every page, so an unconditional 1Hz update would run for every user for
+    // the whole session to power a timer that is usually not rendered.
+    this.$watch(
+      () => this.isParticipant,
+      (recording) => {
+        if (recording && !this.tickHandle) {
+          this.tickHandle = setInterval(() => {
+            this.now = Date.now();
+          }, 1000);
+        } else if (!recording && this.tickHandle) {
+          clearInterval(this.tickHandle);
+          this.tickHandle = null;
+        }
+      },
+      { immediate: true }
+    );
   },
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
@@ -294,7 +308,7 @@ export default {
     },
     onRecordingIconClick() {
       // Admins jump to the Socket Profiler dashboard. Non-admin participants
-      // can't go there (ifpage is admin-gated), so the click is a no-op for them.
+      // can't go there (the page is admin-gated), so the click is a no-op for them.
       if (this.isAdmin) {
         this.$router.push('/dashboard/Socket_Profiler');
       }

@@ -183,6 +183,22 @@ export default {
       if (!Array.isArray(p.traces)) {
         throw new Error("Missing 'traces' array");
       }
+      // Validate every trace before import: the recording and its traces are
+      // inserted as separate calls with no shared transaction, so a bad trace
+      // caught mid-loop would leave a half-imported recording behind. Reject
+      // the whole file up front instead. action/direction/startTime are all
+      // non-null in the schema, so a missing one fails the insert.
+      for (const t of p.traces) {
+        if (!t || typeof t.action !== "string" || !t.action) {
+          throw new Error("A trace is missing a valid 'action'");
+        }
+        if (t.direction !== true && t.direction !== false) {
+          throw new Error("A trace is missing a valid 'direction'");
+        }
+        if (!t.startTime) {
+          throw new Error("A trace is missing 'startTime'");
+        }
+      }
     },
     async importRecording() {
       if (!this.parsed) return;
@@ -209,8 +225,8 @@ export default {
             data: {
               name: recording.name ? `${recording.name} (imported)` : `Imported recording ${Date.now()}`,
               status: recording.status || "finished",
-              startTime: recording.startTime,
-              endTime: recording.endTime,
+              startTime: recording.startTime || new Date().toISOString(),
+              endTime: recording.endTime || null,
               userId: this.userId,
               excludeEvents: recording.excludeEvents || null,
               participantSocketIds,
@@ -234,6 +250,11 @@ export default {
       let successCount = 0;
       let failCount = 0;
 
+      // TODO: recording + traces are inserted as independent appDataUpdate calls
+      // with no shared transaction, so a server-side failure mid-loop leaves a
+      // partially imported recording. A dedicated backend import handler wrapping
+      // both in one transaction would make this atomic. Pre-validation above
+      // covers the common bad-file cases in the meantime.
       // Re-create each trace under the new recording ID.
       for (const trace of traces) {
         const traceResult = await new Promise((resolve) => {
@@ -256,7 +277,7 @@ export default {
           );
         });
 
-        if (traceResult.success) {
+        if (traceResult && traceResult.success) {
           successCount++;
         } else {
           failCount++;

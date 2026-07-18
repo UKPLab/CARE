@@ -7,7 +7,6 @@
             text="Start Recording"
             title="Start Recording"
             icon="record-circle"
-            :disabled="isRecording"
             @click="openStartModal"
         />
         <BasicButton
@@ -149,10 +148,15 @@ export default {
         createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString() : "-",
       }));
     },
+    /**
+     * True while any recording is active. Recording is per-socket, so this is
+     * only a hint for the Stop button — the backend stops just the caller's own
+     * batch and rejects the call if they have none.
+     * @returns {boolean}
+     */
     isRecording() {
       return this.recordings.some(r => r.status === "recording");
     },
-    
   },
   methods: {
     action(data) {
@@ -240,7 +244,10 @@ export default {
         );
 
         const raw = res.data || [];
-        const traces = raw.map(strip);
+        // Keep each stripped trace paired with its source so the integrity
+        // check below doesn't depend on the two arrays staying index-aligned.
+        const stripped = raw.map(t => ({ original: t, stripped: strip(t) }));
+        const traces = stripped.map(p => p.stripped);
 
         // Integrity guard: a replayable trace (client->server, excluding
         // recorder bookkeeping) that had a payload must still have it after
@@ -250,15 +257,15 @@ export default {
         const hasContent = (p) =>
           p !== null && p !== undefined &&
           !(typeof p === "object" && Object.keys(p).length === 0);
-        const dropped = raw.filter((t, i) =>
-          t.direction === true &&
-          !recorderEvents.includes(t.action) &&
-          hasContent(t.payload) &&
-          !hasContent(traces[i] && traces[i].payload)
+        const dropped = stripped.filter(p =>
+          p.original.direction === true &&
+          !recorderEvents.includes(p.original.action) &&
+          hasContent(p.original.payload) &&
+          !hasContent(p.stripped.payload)
         );
 
         if (dropped.length > 0) {
-          const actions = [...new Set(dropped.map(t => t.action))].join(", ");
+          const actions = [...new Set(dropped.map(p => p.original.action))].join(", ");
           this.eventBus.emit("toast", {
             title: "Export aborted",
             message: `Export would drop payloads for ${dropped.length} trace(s) (${actions}). Cancelled to avoid a broken file.`,
@@ -337,6 +344,9 @@ export default {
      * full iteration results and the input configuration that produced them,
      * so a saved run can be reviewed later without having to remember which
      * settings were used.
+     * @param {Array<Object>} results - Iteration results from replayRun
+     * @param {Object} runConfig - The config that produced them
+     * @returns {void}
      */
     downloadReplayResults(results, runConfig) {
       const allRecordings = this.$store.getters["table/recording/getAll"] || [];
