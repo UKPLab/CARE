@@ -29,6 +29,7 @@
     <template #body>
       <BasicTable
           :columns="tableColumns"
+          :key="recordings.length"
           :data="recordings"
           :options="tableOptions"
           :buttons="tableButtons"
