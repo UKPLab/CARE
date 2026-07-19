@@ -116,7 +116,7 @@ export default {
       if (!this.$refs.form.validate()) return;
       this.$refs.modal.waiting = true;
 
-      this.$socket.emit("appDataUpdate", { table: "user", data: this.formData }, (response) => {
+      this.$socket.emit("userCreate", this.formData, (response) => {
         if (response.success) {
           this.eventBus.emit("toast", {
             title: "User Creation Completed",
