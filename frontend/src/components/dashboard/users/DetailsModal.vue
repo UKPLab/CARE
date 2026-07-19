@@ -141,7 +141,7 @@ export default {
         roles,
       };
       this.$refs.modal.waiting = true;
-      this.$socket.emit("appDataUpdate", { table: "user", data: { id: userId, ...userData } }, (response) => {
+      this.$socket.emit("userUpdateDetails", { userId, userData }, (response) => {
         if (response.success) {
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();

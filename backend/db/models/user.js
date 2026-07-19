@@ -399,6 +399,7 @@ module.exports = (sequelize, DataTypes) => {
                 {
                     where: {id: userId},
                     returning: true,
+                    individualHooks: true,
                     transaction: options.transaction,
                 }
             );
