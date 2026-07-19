@@ -57,7 +57,6 @@ export default {
   data() {
     return {
       userId: 0,
-      userInfo: {},
       formFields: [
         {
           key: "userName",
@@ -113,6 +112,23 @@ export default {
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"];
     },
+    userInfo(){
+      const user = this.$store.getters["table/user/get"](this.userId);
+      if (!user) {
+        return {};
+      }
+      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+      return {
+        ...user,
+        roles: (user.roles || [])
+            .map((roleId) => this.systemRoles.find((r) => r.id === roleId)?.name)
+            .filter(Boolean),
+        createdAt: formatDate(user.createdAt),
+        updatedAt: formatDate(user.updatedAt),
+        lastLoginAt: formatDate(user.lastLoginAt),
+        deletedAt: formatDate(user.deletedAt),
+      };
+    },
   },
   mounted() {
     const options = this.systemRoles.map((role) => ({
@@ -125,7 +141,6 @@ export default {
   methods: {
     open(userId) {
       this.userId = userId;
-      this.getUserDetails(userId);
       this.$refs.modal.open();
     },
     submit() {
@@ -157,21 +172,6 @@ export default {
             message: response.message,
             variant: "danger",
           });
-        }
-      });
-    },
-    getUserDetails(userId) {
-      this.$socket.emit("userGetDetails", userId, (res) => {
-        if (res.success) {
-          const userInfo = res["data"];
-          const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
-          this.userInfo = {
-            ...userInfo,
-            createdAt: formatDate(userInfo.createdAt),
-            updatedAt: formatDate(userInfo.updatedAt),
-            lastLoginAt: formatDate(userInfo.lastLoginAt),
-            deletedAt: formatDate(userInfo.deletedAt),
-          };
         }
       });
     },
