@@ -31,7 +31,8 @@ function parseNumericCost(value) {
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
- * @param {{ successStatus?: string, failedStatus?: string }} [logOptions] Optional log status overrides.
+ * @param {{ bypassChecks?: boolean, testLabel?: string }} [logOptions] `testLabel` is prepended to the
+ *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
 async function chatCompletion(service, client, data, logOptions = {}) {
@@ -86,7 +87,10 @@ async function chatCompletion(service, client, data, logOptions = {}) {
             __requestId: requestId,
         });
     } catch (error) {
-        await budget.failRequest(service, guard.logId, error?.message);
+        const failureOutput = logOptions.testLabel
+            ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
+            : error?.message;
+        await budget.failRequest(service, guard.logId, failureOutput);
         throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
@@ -99,8 +103,9 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         `finish=${finishReasons.join(",") || "N/A"}`
     );
 
+    const outputPayload = JSON.stringify(choices);
     await budget.completeRequest(service, guard.logId, {
-        output: JSON.stringify(choices),
+        output: logOptions.testLabel ? `${logOptions.testLabel}\n${outputPayload}` : outputPayload,
         reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
         outputTokens: usage?.completion_tokens ?? null,
@@ -229,14 +234,14 @@ async function testModel(service, client, data) {
         );
     }
 
+    const testLabel = `[TEST] model="${model}"${data?.aiModelId ? ` aiModelId=${data.aiModelId}` : ""}`;
     const result = await chatCompletion(service, client, {
         ...params,
         aiModelId: data?.aiModelId,
         aiCredentialId: credentialId,
     }, {
-        successStatus: "test_success",
-        failedStatus: "test_failed",
         bypassChecks: true,
+        testLabel,
     });
 
     const content = result.choices?.[0]?.message?.content;
