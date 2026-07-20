@@ -20,7 +20,7 @@ const {
     getUsedIndexes,
     hasPlaceholderForKey,
     tokenInnerText,
-} = require("./placeholderTokens");
+} = require("placeholder-tokens");
 const UPLOAD_PATH = `${__dirname}/../../files`;
 const TEXT_PLACEHOLDER_CHAR_CAP = 2000;
 
