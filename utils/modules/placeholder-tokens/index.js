@@ -1,11 +1,66 @@
 /**
- * Parse and format bracket-indexed template placeholder tokens (~key[N]~).
+ * Parse and format bracket-indexed template placeholder tokens (~key[N]{options}~).
  *
  * @author Mohammad Elwan
  */
 
-/** Matches ~placeholderKey~ and ~placeholderKey[N]~. */
-const PLACEHOLDER_TOKEN_REGEX = /~([A-Za-z0-9_]+)(?:\[(\d+)\])?~/g;
+/** Matches ~placeholderKey~, ~placeholderKey[N]~, and optional {name:value,...}. */
+const PLACEHOLDER_TOKEN_REGEX = /~([A-Za-z0-9_]+)(?:\[(\d+)\])?(?:\{([^}]*)\})?~/g;
+
+/**
+ * Parse comma-separated name:value pairs inside placeholder option braces.
+ *
+ * @param {string} optionsStr - Raw text inside `{...}`
+ * @returns {Object} Map of option name to string value
+ */
+function parseOptionsString(optionsStr) {
+    const options = {};
+    if (!optionsStr || typeof optionsStr !== "string") {
+        return options;
+    }
+    const trimmed = optionsStr.trim();
+    if (!trimmed) {
+        return options;
+    }
+    for (const part of trimmed.split(",")) {
+        const segment = part.trim();
+        if (!segment) {
+            continue;
+        }
+        const colonIndex = segment.indexOf(":");
+        if (colonIndex <= 0) {
+            continue;
+        }
+        const name = segment.slice(0, colonIndex).trim();
+        const value = segment.slice(colonIndex + 1).trim();
+        if (name) {
+            options[name] = value;
+        }
+    }
+    return options;
+}
+
+/**
+ * Format option map as `{name:value,...}` suffix, or empty string when none.
+ *
+ * @param {Object} [options] - Option name/value map
+ * @returns {string}
+ */
+function formatOptionsString(options) {
+    if (!options || typeof options !== "object") {
+        return "";
+    }
+    const parts = [];
+    for (const [name, value] of Object.entries(options)) {
+        if (name && value !== undefined && value !== null && String(value).trim() !== "") {
+            parts.push(`${name}:${String(value).trim()}`);
+        }
+    }
+    if (parts.length === 0) {
+        return "";
+    }
+    return `{${parts.join(",")}}`;
+}
 
 /**
  * Parse capture groups from PLACEHOLDER_TOKEN_REGEX exec result.
@@ -15,12 +70,27 @@ const PLACEHOLDER_TOKEN_REGEX = /~([A-Za-z0-9_]+)(?:\[(\d+)\])?~/g;
  */
 function parsePlaceholderMatch(match) {
     if (!match || !match[1]) {
-        return { baseKey: "", index: null };
+        return { baseKey: "", index: null, options: {} };
     }
     return {
         baseKey: match[1],
         index: match[2] ? parseInt(match[2], 10) : null,
+        options: parseOptionsString(match[3] || ""),
     };
+}
+
+/**
+ * Whether an option value is a positive integer string.
+ *
+ * @param {string} value - Raw option value
+ * @returns {boolean}
+ */
+function isPositiveIntegerOptionValue(value) {
+    if (value === undefined || value === null || String(value).trim() === "") {
+        return false;
+    }
+    const parsed = parseInt(String(value), 10);
+    return Number.isInteger(parsed) && parsed > 0 && String(parsed) === String(value).trim();
 }
 
 /**
@@ -28,10 +98,12 @@ function parsePlaceholderMatch(match) {
  *
  * @param {string} baseKey - Placeholder key without tildes
  * @param {number} index - Placeholder index
- * @returns {string} Token string e.g. ~link[3]~
+ * @param {Object} [options] - Optional name/value map written inside `{...}`
+ * @returns {string} Token string e.g. ~link[3]{characterLimit:5000}~
  */
-function formatPlaceholderToken(baseKey, index) {
-    return `~${baseKey}[${index}]~`;
+function formatPlaceholderToken(baseKey, index, options) {
+    const optionsPart = formatOptionsString(options);
+    return `~${baseKey}[${index}]${optionsPart}~`;
 }
 
 /**
@@ -190,7 +262,7 @@ function formatDuplicatePlaceholderToken(entry) {
  * Replace placeholder tokens using a resolver callback.
  *
  * @param {string} text - Input text
- * @param {Function} resolveValue - Resolver for each matched token
+ * @param {Function} resolveValue - Resolver `(baseKey, index, options) => value`
  * @returns {string} Text with placeholders replaced
  */
 function applyPlaceholderReplacements(text, resolveValue) {
@@ -198,9 +270,10 @@ function applyPlaceholderReplacements(text, resolveValue) {
         return text || "";
     }
     const regex = new RegExp(PLACEHOLDER_TOKEN_REGEX.source, "g");
-    return text.replace(regex, (match, baseKey, indexStr) => {
+    return text.replace(regex, (match, baseKey, indexStr, optionsStr) => {
         const index = indexStr ? parseInt(indexStr, 10) : null;
-        const value = resolveValue(baseKey, index);
+        const options = parseOptionsString(optionsStr || "");
+        const value = resolveValue(baseKey, index, options);
         if (value === undefined || value === null) {
             return match;
         }
@@ -210,7 +283,10 @@ function applyPlaceholderReplacements(text, resolveValue) {
 
 module.exports = {
     PLACEHOLDER_TOKEN_REGEX,
+    parseOptionsString,
+    formatOptionsString,
     parsePlaceholderMatch,
+    isPositiveIntegerOptionValue,
     formatPlaceholderToken,
     tokenInnerText,
     getUsedIndexes,
