@@ -67,6 +67,48 @@ function capText(text, cap = TEXT_PLACEHOLDER_CHAR_CAP) {
 }
 
 /**
+ * Apply optional characterLimit from a pdfText token instance.
+ *
+ * @param {string} text - Resolved pdfText value
+ * @param {Object} [tokenOptions] - Parsed token options
+ * @returns {string}
+ */
+function applyPdfTextCharacterLimit(text, tokenOptions = {}) {
+    if (typeof text !== "string" || !text) {
+        return "";
+    }
+    const limitRaw = tokenOptions.characterLimit;
+    if (limitRaw === undefined || limitRaw === null || String(limitRaw).trim() === "") {
+        return text;
+    }
+    const limit = parseInt(String(limitRaw), 10);
+    if (!Number.isInteger(limit) || limit <= 0) {
+        return text;
+    }
+    return capText(text, limit);
+}
+
+/**
+ * Resolve a placeholder token and apply per-instance options where supported.
+ *
+ * @param {string} baseKey - Placeholder key
+ * @param {number|null} index - Placeholder index
+ * @param {Object} tokenOptions - Parsed token options
+ * @param {Object} replacements - Replacement map
+ * @returns {string|undefined}
+ */
+function resolveTokenWithOptions(baseKey, index, tokenOptions, replacements) {
+    const value = resolveReplacementForToken(baseKey, index, replacements);
+    if (value === undefined) {
+        return undefined;
+    }
+    if (baseKey === "pdfText") {
+        return applyPdfTextCharacterLimit(value, tokenOptions);
+    }
+    return value;
+}
+
+/**
  * Convert a placeholder value to a string for template replacement.
  * Objects/arrays are serialized to JSON text.
  *
@@ -359,7 +401,7 @@ async function buildPromptPlaceholderValues(context, models, allow, options = {}
         if (!pdfText && context.documentId) {
             pdfText = await models["document"].loadPlainText(context.documentId);
         }
-        promptValues["~pdfText~"] = pdfText ? capText(pdfText) : "";
+        promptValues["~pdfText~"] = pdfText || "";
     }
 
     if (allow("editorText")) {
@@ -697,8 +739,8 @@ async function resolveTemplate(templateId, context, models, options = {}) {
     if (template.type === 8) {
         await addIndexedSubmissionFileReplacements(text, replacements, context, models, options);
     }
-    let resolvedText = applyPlaceholderReplacements(text, (baseKey, index) => {
-        return resolveReplacementForToken(baseKey, index, replacements);
+    let resolvedText = applyPlaceholderReplacements(text, (baseKey, index, tokenOptions) => {
+        return resolveTokenWithOptions(baseKey, index, tokenOptions, replacements);
     });
     
     // Make URLs clickable: split by URL pattern, escape non-URL parts, wrap URLs in <a>
@@ -771,7 +813,8 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
     if (template.type === 8) {
         await addIndexedSubmissionFileReplacements(text, replacements, context, models, options);
     }
-    const resolveToken = (baseKey, index) => resolveReplacementForToken(baseKey, index, replacements);
+    const resolveToken = (baseKey, index, tokenOptions) =>
+        resolveTokenWithOptions(baseKey, index, tokenOptions, replacements);
     
     const resolvedDelta = new Delta();
     
@@ -881,11 +924,15 @@ async function resolveTemplateWithValues(templateId, values, models, options = {
         return typeof value === "string" ? value : JSON.stringify(value);
     };
     const valueMap = values || {};
-    resolvedText = applyPlaceholderReplacements(resolvedText, (baseKey, index) => {
+    resolvedText = applyPlaceholderReplacements(resolvedText, (baseKey, index, tokenOptions) => {
         if (index != null) {
             const inner = tokenInnerText(baseKey, index);
             if (Object.prototype.hasOwnProperty.call(valueMap, inner)) {
-                return toText(valueMap[inner]);
+                let text = toText(valueMap[inner]);
+                if (baseKey === "pdfText") {
+                    text = applyPdfTextCharacterLimit(text, tokenOptions);
+                }
+                return text;
             }
             return undefined;
         }
