@@ -16,6 +16,14 @@
         </ul>
         Each ~key[N]~ id must be unique. Legacy ~key~ tokens without [N] are not checked here and can still repeat in older email templates. Saving is blocked until bracket duplicates are removed.
       </div>
+
+      <div v-if="optionApplyWarnings.length > 0" class="alert alert-warning mb-3">
+        <strong>Notice:</strong> The placeholder was added, but these options were not included:
+        <ul class="mb-0 mt-2">
+          <li v-for="warning in optionApplyWarnings" :key="warning">{{ warning }}</li>
+        </ul>
+        Fix the option row and insert another placeholder if you want that option in the template.
+      </div>
   
       <div class="card shadow mb-0 configurator">
         <div class="card-header bg-white">
@@ -29,11 +37,11 @@
               class="list-group-item"
             >
               <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center flex-grow-1">
                   <div class="icon-container p-2 text-primary me-2">
                     <i :class="placeholder.icon"></i>
                   </div>
-                  <div class="d-flex flex-column">
+                  <div class="d-flex flex-column flex-grow-1">
                     <div class="d-flex align-items-center">
                       <h5 class="mb-0 me-1">{{ placeholder.label }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
                       <FormHelp
@@ -47,9 +55,53 @@
                     >
                       {{ placeholder.description }}
                     </p>
+                    <div
+                      v-if="hasPlaceholderOptions(placeholder)"
+                      class="mt-2"
+                    >
+                      <div
+                        v-for="(row, rowIndex) in getPendingOptionRows(placeholder.id)"
+                        :key="`${placeholder.id}-option-${rowIndex}`"
+                        class="d-flex align-items-center gap-2 mb-2"
+                      >
+                        <select
+                          v-model="row.name"
+                          class="form-select form-select-sm option-select"
+                        >
+                          <option value="">Select option...</option>
+                          <option
+                            v-for="optionDef in placeholder.placeholderOptions"
+                            :key="optionDef.name"
+                            :value="optionDef.name"
+                          >
+                            {{ optionDef.label }}
+                          </option>
+                        </select>
+                        <input
+                          v-if="row.name"
+                          v-model="row.value"
+                          type="number"
+                          min="1"
+                          class="form-control form-control-sm option-input"
+                          :placeholder="getOptionLabel(placeholder, row.name)"
+                        >
+                        <BasicButton
+                          class="btn btn-outline-secondary btn-sm"
+                          icon="dash-lg"
+                          text=""
+                          @click="removeOptionRow(placeholder.id, rowIndex)"
+                        />
+                      </div>
+                      <BasicButton
+                        class="btn btn-outline-primary btn-sm"
+                        icon="plus-lg"
+                        text="Add option"
+                        @click="addOptionRow(placeholder.id)"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center ms-2">
                   <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] || 0 }}</span>
                   <BasicButton
                     class="btn btn-primary btn-sm d-flex align-items-center"
@@ -75,6 +127,7 @@
     formatPlaceholderToken,
     getDuplicatePlaceholderIndexes,
     getNextPlaceholderIndex,
+    isPositiveIntegerOptionValue,
     parsePlaceholderMatch,
     PLACEHOLDER_TOKEN_REGEX,
   } from "placeholder-tokens";
@@ -116,6 +169,8 @@
         placeholderCounts: {},
         invalidPlaceholders: [],
         duplicatePlaceholders: [],
+        optionApplyWarnings: [],
+        pendingOptionRowsByKey: {},
         lastEditorContent: "",
       };
     },
@@ -153,6 +208,11 @@
       placeholderCountOptions() {
         return { bracketOnly: this.templateType === 8 };
       },
+      placeholderDefsByKey() {
+        return Object.fromEntries(
+          this.availablePlaceholders.map((placeholder) => [placeholder.id, placeholder])
+        );
+      },
     },
     mounted() {
       // Initialize placeholder counts
@@ -178,6 +238,7 @@
               description: ph.placeholderDescription || ph.placeholderLabel,
               icon: this.getPlaceholderIcon(ph.placeholderType),
               required: ph.required === true,
+              placeholderOptions: Array.isArray(ph.placeholderOptions) ? ph.placeholderOptions : [],
             }));
             
             if (this.templateType && this.placeholderConfigs[this.templateType]) {
@@ -199,6 +260,91 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      hasPlaceholderOptions(placeholder) {
+        return Array.isArray(placeholder.placeholderOptions) && placeholder.placeholderOptions.length > 0;
+      },
+      getPendingOptionRows(placeholderKey) {
+        if (!this.pendingOptionRowsByKey[placeholderKey]) {
+          this.pendingOptionRowsByKey[placeholderKey] = [];
+        }
+        return this.pendingOptionRowsByKey[placeholderKey];
+      },
+      addOptionRow(placeholderKey) {
+        const rows = this.getPendingOptionRows(placeholderKey);
+        rows.push({ name: "", value: "" });
+      },
+      removeOptionRow(placeholderKey, rowIndex) {
+        const rows = this.getPendingOptionRows(placeholderKey);
+        rows.splice(rowIndex, 1);
+        this.optionApplyWarnings = [];
+      },
+      getOptionLabel(placeholder, optionName) {
+        const optionDef = (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
+        return optionDef ? optionDef.label : optionName;
+      },
+      getOptionDef(placeholder, optionName) {
+        return (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
+      },
+      isValidOptionValue(optionDef, value) {
+        if (!optionDef) {
+          return false;
+        }
+        if (optionDef.valueType === "positiveInteger") {
+          return isPositiveIntegerOptionValue(value);
+        }
+        return value !== undefined && value !== null && String(value).trim() !== "";
+      },
+      collectSelectedOptions(placeholder) {
+        const rows = this.getPendingOptionRows(placeholder.id);
+        const selectedOptions = {};
+        const applyWarnings = [];
+
+        rows.forEach((row) => {
+          if (!row.name) {
+            if (row.value !== "" && row.value != null) {
+              applyWarnings.push("A value was entered but no option was selected, so it was not included.");
+            }
+            return;
+          }
+          const optionDef = this.getOptionDef(placeholder, row.name);
+          if (!optionDef) {
+            applyWarnings.push(`Unknown option for ${placeholder.label}, so it was not included.`);
+            return;
+          }
+          if (!this.isValidOptionValue(optionDef, row.value)) {
+            if (row.value === "" || row.value == null) {
+              applyWarnings.push(`${optionDef.label} was not included (no value entered).`);
+            } else {
+              applyWarnings.push(`${optionDef.label} was not included (invalid value).`);
+            }
+            return;
+          }
+          selectedOptions[row.name] = String(row.value).trim();
+        });
+
+        return { selectedOptions, applyWarnings };
+      },
+      validateTokenOptions(parsed, tokenText) {
+        const placeholderDef = this.placeholderDefsByKey[parsed.baseKey];
+        const allowedOptions = placeholderDef?.placeholderOptions || [];
+        const allowedByName = Object.fromEntries(
+          allowedOptions.map((entry) => [entry.name, entry])
+        );
+        const errors = [];
+
+        for (const [name, value] of Object.entries(parsed.options || {})) {
+          const optionDef = allowedByName[name];
+          if (!optionDef) {
+            errors.push(`${tokenText} (unknown option "${name}")`);
+            continue;
+          }
+          if (!this.isValidOptionValue(optionDef, value)) {
+            errors.push(`${tokenText} (invalid ${optionDef.label.toLowerCase()})`);
+          }
+        }
+
+        return errors;
+      },
       getPlaceholderHelp(placeholder) {
         const type = this.templateType;
         const key = placeholder.id;
@@ -233,15 +379,40 @@
             timestamp: "When the submission was uploaded.",
           },
           8: { // Prompt
-            pdfText: "Text from the PDF in the current context.",
-            editorText: "Latest plain text from the study HTML/modal document. During step loading, callers should pass context.editorText explicitly if resolving in the same pass as NLP insertIntoEditor.",
-            assessmentResult: "The saved rubric from the Assessment sidebar for this document and step.",
-            inlineComments: "Structured comments and annotations for this document and step.",
-            nlpAssessmentSuggestion: "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",
-            previousAssessmentResult: "The saved rubric from the previous step when carry-over is configured.",
-            assessmentConfiguration: "The assessment rubric configuration used in this step.",
-            submissionFiles: "Each Add inserts ~submissionFiles[N]~ with the next available N (highest existing + 1). Gaps are kept after deletes. Map each index to a specific submission file in the AI hook step configuration.",
-            studyContext: "Basic metadata from the current study, step, and document context.",
+            pdfText:
+              "Add inserts ~pdfText[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Full text extracted from a PDF. Optional Character limit truncates retrieved text for that token only; leave it empty for the full extract.",
+            editorText:
+              "Add inserts ~editorText[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Latest plain text from an HTML/modal editor document (delta plus unsaved draft edits). " +
+              "When resolving during step load in the same pass as NLP insertIntoEditor, pass context.editorText explicitly so the value matches what the user sees.",
+            assessmentResult:
+              "Add inserts ~assessmentResult[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Rubric saved in the Assessment sidebar (JSON: criterion → score and comment). " +
+              "Empty when no assessment has been saved.",
+            inlineComments:
+              "Add inserts ~inlineComments[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Structured PDF annotator comments (page, quote, comment, tag). " +
+              "Empty when there are no comments.",
+            nlpAssessmentSuggestion:
+              "Add inserts ~nlpAssessmentSuggestion[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Draft rubric from the NLP service (document_data), not the saved assessment_result. " +
+              "Empty when NLP has not run or produced no draft.",
+            previousAssessmentResult:
+              "Add inserts ~previousAssessmentResult[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Saved assessment_result from a prior study step when carry-over is configured. Same JSON shape as Assessment result. " +
+              "Empty when there is no prior step or carry-over is disabled.",
+            assessmentConfiguration:
+              "Add inserts ~assessmentConfiguration[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Assessment configuration JSON (rubrics, criteria, max points) from linked configuration or inline settings. " +
+              "Use when the prompt needs the rubric definition, not filled scores.",
+            submissionFiles:
+              "Add inserts ~submissionFiles[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Text extracted from a mapped submission file (PDF, TeX, etc.).",
+            studyContext:
+              "Add inserts ~studyContext[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
+              "Study, step, and document metadata. " +
+              "Useful for grounding prompts without embedding full document text.",
           },
         };
 
@@ -289,7 +460,9 @@
           }
           if (!allowedKeys.has(parsed.baseKey)) {
             invalid.push(match[0]);
+            continue;
           }
+          invalid.push(...this.validateTokenOptions(parsed, match[0]));
         }
 
         this.invalidPlaceholders = [...new Set(invalid)];
@@ -298,11 +471,19 @@
           .map((entry) => formatDuplicatePlaceholderToken(entry));
       },
       handlePlaceholderClick(placeholder) {
+        const { selectedOptions, applyWarnings } = this.collectSelectedOptions(placeholder);
+        this.optionApplyWarnings = [...new Set(applyWarnings)];
+
         const nextIndex = getNextPlaceholderIndex(this.lastEditorContent || "", placeholder.id);
+        const optionsToInsert = Object.keys(selectedOptions).length > 0 ? selectedOptions : undefined;
         this.eventBus.emit("editorInsertText", {
           templateId: this.templateId,
-          text: formatPlaceholderToken(placeholder.id, nextIndex),
+          text: formatPlaceholderToken(placeholder.id, nextIndex, optionsToInsert),
         });
+
+        if (this.hasPlaceholderOptions(placeholder)) {
+          this.pendingOptionRowsByKey[placeholder.id] = [];
+        }
       },
       getPlaceholderIcon(placeholderType) {
         const iconMap = {
@@ -348,5 +529,13 @@
   
   .badge {
     background-color: var(--bg-color);
+  }
+
+  .option-select {
+    max-width: 11rem;
+  }
+
+  .option-input {
+    max-width: 8rem;
   }
   </style>
