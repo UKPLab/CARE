@@ -55,13 +55,11 @@
           <div class="mapping-col-target">Target metaKey</div>
           <div class="mapping-col-action">Action</div>
         </div>
-        <button
+        <BasicButton
           class="btn btn-outline-primary btn-sm"
-          type="button"
+          title="Add Mapping"
           @click="$emit('add-mapping')"
-        >
-          Add Mapping
-        </button>
+        />
       </div>
 
       <div
@@ -104,14 +102,12 @@
           >
         </div>
         <div class="mapping-col-action">
-          <button
+          <BasicButton
             class="btn btn-outline-danger btn-sm"
-            type="button"
+            title="Remove"
             :disabled="metadataMappings.length === 1"
             @click="$emit('remove-mapping', index)"
-          >
-            Remove
-          </button>
+          />
         </div>
       </div>
     </div>
@@ -125,6 +121,9 @@
 </template>
 
 <script>
+
+import BasicButton from "@/basic/Button.vue";
+
 /**
  * Third step of the metadata import flow: configure primary key and metadata field mappings.
  *
@@ -132,6 +131,7 @@
  */
 export default {
   name: "StepMapping",
+  components: { BasicButton },
   props: {
     primaryKeyMapping: {
       type: Object,
