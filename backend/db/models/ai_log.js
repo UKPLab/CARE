@@ -10,6 +10,10 @@ const MetaModel = require('../MetaModel.js');
 module.exports = (sequelize, DataTypes) => {
     class AiLog extends MetaModel {
         static autoTable = true;
+
+        static associate(models) {
+            AiLog.belongsTo(models["study_session"], { foreignKey: "studySessionId", as: "studySession" });
+        }
     }
 
     AiLog.init({

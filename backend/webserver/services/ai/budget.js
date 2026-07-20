@@ -268,6 +268,7 @@ async function _sumHookTotal(service, cap) {
 async function _sumStudyTotal(service, cap) {
     return _sumLogs(service, {}, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: cap.studyId },
         required: true,
         attributes: [],
@@ -282,6 +283,7 @@ async function _sumStudySession(service, cap, ctx) {
 async function _sumStudyUser(service, cap, ctx) {
     return _sumLogs(service, { userId: ctx.userId }, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: cap.studyId },
         required: true,
         attributes: [],
@@ -297,6 +299,7 @@ async function _sumStepHookTotal(service, cap) {
     if (!step) return 0;
     return _sumLogs(service, { aiHookId: cap.hookId }, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: step.studyId },
         required: true,
         attributes: [],
@@ -324,6 +327,7 @@ async function _sumStepHookUser(service, cap, ctx) {
         userId: ctx.userId,
     }, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: step.studyId },
         required: true,
         attributes: [],
@@ -373,6 +377,7 @@ async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt)
         where: { ...base, userId: { [Op.ne]: ownerId } },
         include: [{
             model: models["study_session"],
+            as: "studySession",
             required: true,
             attributes: [],
             include: [{
