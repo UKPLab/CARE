@@ -109,5 +109,6 @@ audit:
     - npm ci --prefix frontend --ignore-scripts
     - npm ci --prefix backend --ignore-scripts
     - npm ci --prefix utils/modules/editor-delta-conversion --ignore-scripts
+    - npm ci --prefix utils/modules/assessment-score --ignore-scripts
   script:
     - make audit
