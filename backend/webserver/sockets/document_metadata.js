@@ -5,7 +5,7 @@ const {
     normalizePrimaryKeyMapping,
     validatePrimaryKeyValues,
     resolveMetadataImportSubmission,
-} = require("../utils/documentMetadata.js");
+} = require("../utils/helper/documentMetadata.js");
 
 /**
  * Handle document metadata operations through websocket.
