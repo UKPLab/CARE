@@ -24,12 +24,12 @@ module.exports = (sequelize, DataTypes) => {
                 // Admins: own templates (all types) OR public templates from others
                 return {[Op.or]: [{userId: userId}, {public: true}]};
             } else {
-                // Non-admins: own templates (types 4, 5 only) OR public templates from others (types 4, 5 only)
+                // Non-admins: own templates (types 4, 5, 8 only) OR public templates from others (types 4, 5, 8 only)
                 // Email templates (types 1, 2, 3, 6, 7) are admin-only
                 return {
                     [Op.or]: [
-                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5]}}]},
-                        {[Op.and]: [{public: true}, {type: {[Op.in]: [4, 5]}}]}
+                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5, 8]}}]},
+                        {[Op.and]: [{public: true}, {type: {[Op.in]: [4, 5, 8]}}]}
                     ]
                 };
             }
@@ -161,6 +161,10 @@ module.exports = (sequelize, DataTypes) => {
                     {
                         name: "Document - Study", 
                         value: 5
+                    },
+                    {
+                        name: "Prompt",
+                        value: 8
                     }
                 ],
             },

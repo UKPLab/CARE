@@ -2,10 +2,23 @@
   <div
     v-for="field in fields"
     :key="field.key"
-    :class="'size' in field ? 'col-md-' + field.size : 'col-12'"
+    :class="[
+      'size' in field ? 'col-md-' + field.size : 'col-12',
+      field.wrapperClass,
+    ]"
   >
+    <BasicButton
+      v-if="field.type === 'button'"
+      :icon="field.icon"
+      :title="field.title"
+      :text="field.text"
+      :tooltip="field.tooltip"
+      :disabled="field.disabled || false"
+      :class="field.class"
+      @click="$emit('button-click', { key: field.key, action: field.action, field })"
+    />
     <FormSwitch
-      v-if="field.type === 'switch'"
+      v-else-if="field.type === 'switch'"
       :ref="'ref_' + field.key"
       :model-value="modelValue[field.key]"
       :options="field"
@@ -116,6 +129,7 @@ import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
 import FormChoice from "@/basic/form/Choice.vue";
 import FormFile from "@/basic/form/File.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Renders schema-driven form controls for a list of field definitions.
@@ -126,6 +140,7 @@ import FormFile from "@/basic/form/File.vue";
 export default {
   name: "FormFields",
   components: {
+    BasicButton,
     FormFile,
     DatetimePicker,
     FormSwitch,
@@ -150,7 +165,7 @@ export default {
       required: true,
     },
   },
-  emits: ["update:modelValue", "update:configStatus", "file-change"],
+  emits: ["update:modelValue", "update:configStatus", "file-change", "button-click"],
   methods: {
     onFieldUpdate(key, value) {
       this.$emit('update:modelValue', { ...this.modelValue, [key]: value });

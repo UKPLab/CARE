@@ -69,7 +69,7 @@ class AppSocket extends Socket {
 
 
         if (("id" in data.data && data.data.id !== 0) &&
-            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data)) {
+            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data || 'enabled' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
@@ -84,7 +84,14 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            throw new Error("You are not allowed to update the table " + data.table + " for another user!");
+            // Some tables use userId as a business field (e.g. share recipient) rather than ownership. 
+            // Such models expose a static validateForeignUserId that performs its own ownership check.
+            const model = this.models[data.table];
+            const bypassAllowed = typeof model.validateForeignUserId === "function"
+                && await model.validateForeignUserId(data.data, this.userId, transaction);
+            if (!bypassAllowed) {
+                throw new Error("You are not allowed to update the table " + data.table + " for another user!");
+            }
         }
 
         // check data exists for required fields

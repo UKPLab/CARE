@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const fs = require('fs')
+const JSZip = require("jszip");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -276,6 +277,49 @@ module.exports = (sequelize, DataTypes) => {
             } catch (err) {
                 throw new Error(`Error processing document ${documentId}: ${err.message}`)
             }
+        }
+
+        /**
+         * Reads a document's backing file from disk by hash and extension.
+         *
+         * @param {object} doc - The document record (must include `hash`).
+         * @param {string} extension - File extension including the dot (e.g. ".pdf").
+         * @returns {Promise<Buffer|null>} File buffer, or null if the file is missing.
+         */
+        static async readDocumentFile(doc, extension) {
+            const filePath = path.join(UPLOAD_PATH, `${doc.hash}${extension}`);
+            try {
+                return await fs.promises.readFile(filePath);
+            } catch {
+                return null;
+            }
+        }
+
+        /**
+         * Extracts specific files from a zip buffer by regex pattern.
+         * Each spec carries a logical `name` (used as the result key) and a `pattern`
+         * (the validation-config regex that matches the actual filename inside the zip,
+         * e.g. "Expose\\.tex$"). Falls back to exact/basename match when pattern is absent.
+         *
+         * @param {Buffer} buffer - Raw zip bytes.
+         * @param {{name: string, pattern: string|null}[]} fileSpecs - Files to extract.
+         * @returns {Promise<Object>} Map of spec.name → text content for each found file.
+         */
+        static async extractZipFiles(buffer, fileSpecs) {
+            const zip = await JSZip.loadAsync(buffer);
+            const result = {};
+            for (const {name, pattern} of fileSpecs) {
+                //If pattern exists, turn it into a regular expression.
+                const regex = pattern ? new RegExp(pattern) : null;
+                const entry = Object.values(zip.files).find(f =>
+                    !f.dir && (regex ? regex.test(f.name) : (f.name === name || f.name.split("/").pop() === name))
+                );
+                if (entry) {
+                    //entry is a JSZip file object. JSZip gives each file entry methods  (e.g. async)
+                    result[name] = await entry.async("string");
+                }
+            }
+            return result;
         }
 
         /**

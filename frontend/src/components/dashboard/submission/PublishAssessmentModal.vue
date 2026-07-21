@@ -241,6 +241,10 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
 import { downloadObjectsAs } from "@/assets/utils.js";
+import {
+  ASSESSMENT_RESULT_KEY,
+  getAssessmentResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys.js";
 
 /**
  * Modal for publishing assessment data with CSV export
@@ -765,22 +769,19 @@ export default {
       const cfg = studyStep.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Find any service with a skill (name and type can be anything)
-      const svc = cfg.services.find((s) => s.skill) || cfg.services[0];
+      // Find any configured NLP skill or AI hook.
+      const svc = cfg.services.find((s) => s.skill || s.hookId) || cfg.services[0];
 
       return svc || null;
     },
     /**
      * Get assessment data key for a study step.
-     * Returns AI key if AI workflow detected (format: ${svc.name}_${svc.skill}_assessment),
-     * otherwise "assessment_result".
+     * Returns canonical AI/NLP keys, otherwise "assessment_result".
      */
     getAssessmentDataKeys(studyStep) {
       const svc = this.getNlpServiceForStudyStep(studyStep);
-      if (svc && svc.skill && svc.name) {
-        return [`${svc.name}_${svc.skill}_assessment`];
-      }
-      return ["assessment_result"];
+      const keys = getAssessmentResultKeyCandidates(svc, svc?.hookName);
+      return keys.length ? keys : [ASSESSMENT_RESULT_KEY];
     },
     /**
      * @deprecated Since the user can select a specific step directly, 
@@ -890,8 +891,10 @@ export default {
       // fetch document_data for this session and study step
       // Try both AI workflow keys and non-AI key (assessment_result)
       const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
-      const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === "assessment_result");
-      const assessmentRaw = documentDataItem.value || {};
+      const documentDataItem = documentDataArray.find(
+        (dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === ASSESSMENT_RESULT_KEY
+      );
+      const assessmentRaw = documentDataItem?.value || {};
 
       const scoreState = assessmentRaw || {};
       const scores = buildScoresFromState(scoreState);

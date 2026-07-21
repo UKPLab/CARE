@@ -7,6 +7,8 @@ const {
   resolveTemplate,
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
+  getDuplicatePlaceholderIds,
+  getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/templateResolver");
 
@@ -18,6 +20,62 @@ const {
  * @class TemplateSocket
  */
 class TemplateSocket extends Socket {
+
+  /**
+   * Validate access to prompt-resolution context data for non-admin users.
+   *
+   * @param {Object} context                  Resolver context
+   * @param {number} [context.documentId]     Document ID
+   * @param {number} [context.studySessionId] Study session ID
+   * @param {number} [context.studyStepId]    Study step ID
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<void>}
+   */
+  async validateResolveContextAccess(context, options = {}) {
+    let studyStep = null;
+
+    if (context.documentId && !(await this.checkDocumentAccess(context.documentId))) {
+      throw new Error("Access denied");
+    }
+
+    if (context.studyStepId) {
+      studyStep = await this.models["study_step"].getById(context.studyStepId, options);
+      if (!studyStep) {
+        throw new Error("Study step not found");
+      }
+      if (studyStep.documentId && !(await this.checkDocumentAccess(studyStep.documentId))) {
+        throw new Error("Access denied");
+      }
+      if (context.documentId && studyStep.documentId && studyStep.documentId !== context.documentId) {
+        throw new Error("Study step does not match document");
+      }
+    }
+
+    if (context.studySessionId) {
+      const studySession = await this.models["study_session"].getById(context.studySessionId, options);
+      if (!studySession) {
+        throw new Error("Study session not found");
+      }
+
+      let hasSessionAccess =
+        studySession.userId === this.userId ||
+        (await this.hasAccess("frontend.dashboard.studies.fullAccess"));
+
+      if (!hasSessionAccess) {
+        const study = await this.models["study"].getById(studySession.studyId, options);
+        hasSessionAccess = !!study && (await this.checkUserAccess(study.userId));
+      }
+
+      if (!hasSessionAccess) {
+        throw new Error("Access denied");
+      }
+
+      if (studyStep?.studyId && studySession.studyId !== studyStep.studyId) {
+        throw new Error("Study session does not match study step");
+      }
+    }
+  }
 
   /**
    * Create a template
@@ -216,7 +274,7 @@ class TemplateSocket extends Socket {
    *
    * @socketEvent templatePlaceholderAdd
    * @param {Object} data                   The data object
-   * @param {number} data.templateType      Template type (required, 1-5)
+   * @param {number} data.templateType      Template type (required, 1-8)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
    * @param {string} data.placeholderLabel  Placeholder label (required, e.g., "Username")
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
@@ -227,8 +285,8 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new Error("Access denied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7].includes(data.templateType)) {
-      throw new Error("Template type is required and must be 1-7");
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7, 8].includes(data.templateType)) {
+      throw new Error("Template type is required and must be 1-8");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
       throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");
@@ -313,6 +371,36 @@ class TemplateSocket extends Socket {
       template.type,
       { transaction: options.transaction }
     );
+  }
+
+  /**
+   * Get the placeholders a specific template actually uses (tokens present in its content).
+   *
+   * Placeholders are defined per template type, not per template, so "used" is derived from the
+   * template's content. Returns the same row shape as {@link getAllPlaceholders}.
+   *
+   * @socketEvent templatePlaceholderGetUsed
+   * @param {Object} data            The data object
+   * @param {number} data.templateId Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Array>}
+   */
+  async getUsedPlaceholders(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+    }
+
+    return await getUsedPlaceholders(data.templateId, this.models, { transaction: options.transaction });
   }
 
 
@@ -414,6 +502,12 @@ class TemplateSocket extends Socket {
    * @param {number} [data.context.creatorId]        Study creator ID
    * @param {number} [data.context.studyId]          Study ID (for anonymization check)
    * @param {number} [data.context.studySessionId]   Study session ID
+   * @param {number} [data.context.studyStepId]     Study step ID (prompt placeholders, editor resolution)
+   * @param {number} [data.context.documentId]      Document ID (prompt placeholders)
+   * @param {string} [data.context.pdfText]         Extracted text for the current PDF (`~pdfText~`; caller-supplied)
+   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for submission PDF text extraction
+   * @param {Object} [data.context.placeholderMapping] Per-key index maps for bracket tokens (e.g. submissionFiles: { 1: documentId, 3: documentId })
+   * @param {string} [data.context.editorText]      Optional editor plain-text override (`~editorText~`)
    * @param {string} [data.context.studySessionHash] Study session hash (for link)
    * @param {string} [data.context.baseUrl]          Base URL for generating links
    * @param {string} [data.context.assignmentType]   Assignment type
@@ -425,10 +519,27 @@ class TemplateSocket extends Socket {
    * @returns {Promise<string|Object>} 
    */
   async resolveTemplatePlaceholders(data, options) {
-    if (!(await this.isAdmin())) throw new Error("Access denied");
     if (!data.templateId) throw new Error("Template ID is required");
     if (!data.context || typeof data.context !== 'object') {
       throw new Error("Context object is required");
+    }
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+    const isAdmin = await this.isAdmin();
+    const isEmailTemplate = [1, 2, 3, 6].includes(template.type);
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+
+    if (!isAdmin && isEmailTemplate) {
+      throw new Error("Access denied");
+    }
+    if (!isAdmin && !isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied");
+    }
+    if (!isAdmin) {
+      await this.validateResolveContextAccess(data.context, options);
     }
 
     // Get baseUrl from settings if not provided in context
@@ -452,6 +563,30 @@ class TemplateSocket extends Socket {
         data.context,
         this.models,
         options
+      );
+    }
+  }
+
+  /**
+   * Reject save when merged content contains duplicate placeholder ids.
+   *
+   * @param {Object} content - Delta content with ops
+   * @param {number} templateType - Template type
+   * @param {Object} options - Sequelize options
+   * @returns {Promise<void>}
+   * @throws {Error}
+   */
+  async assertNoDuplicatePlaceholders(content, templateType, options = {}) {
+    const duplicates = await getDuplicatePlaceholderIds(
+      content,
+      templateType,
+      this.models,
+      options
+    );
+    if (duplicates.length > 0) {
+      throw new Error(
+        `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
+        `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
       );
     }
   }
@@ -487,17 +622,17 @@ class TemplateSocket extends Socket {
     });
 
     if (edits.length === 0) {
+      const templateContentModel = this.models["template_content"];
+      const langRow = await templateContentModel.findOne({
+        where: { templateId, language, deleted: false },
+        raw: true,
+        ...options,
+      });
+      let baseContent = new Delta();
+      if (langRow && langRow.content && langRow.content.ops) {
+        baseContent = new Delta(langRow.content.ops);
+      }
       if ([1, 2, 3, 6, 7].includes(template.type)) {
-        const templateContentModel = this.models["template_content"];
-        const langRow = await templateContentModel.findOne({
-          where: { templateId, language, deleted: false },
-          raw: true,
-          ...options,
-        });
-        let baseContent = new Delta();
-        if (langRow && langRow.content && langRow.content.ops) {
-          baseContent = new Delta(langRow.content.ops);
-        }
         const missing = await getMissingRequiredPlaceholders(
           { ops: baseContent.ops },
           template.type,
@@ -508,6 +643,11 @@ class TemplateSocket extends Socket {
           throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
         }
       }
+      await this.assertNoDuplicatePlaceholders(
+        { ops: baseContent.ops },
+        template.type,
+        options
+      );
       return;
     }
 
@@ -537,6 +677,12 @@ class TemplateSocket extends Socket {
         throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
       }
     }
+
+    await this.assertNoDuplicatePlaceholders(
+      { ops: mergedDelta.ops },
+      template.type,
+      options
+    );
 
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {
@@ -773,6 +919,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
+    this.createSocket("templatePlaceholderGetUsed", this.getUsedPlaceholders, {}, false);
     this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
     this.createSocket("templateCopy", this.copyTemplate, {}, true);
     this.createSocket("templateDetach", this.detachTemplate, {}, true);

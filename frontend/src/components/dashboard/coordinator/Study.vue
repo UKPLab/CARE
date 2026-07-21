@@ -48,7 +48,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "CoordinatorStudy",
-  subscribeTable: ['document', 'tag_set'],
+  subscribeTable: ['document', 'tag_set', 'ai_budget'],
   components: {BasicCoordinator, BasicButton},
   data() {
     return {
@@ -89,7 +89,32 @@ export default {
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
-      this.$refs.coordinator.open(studyId, {documentId: this.documentId, isTemplateMode: templateMode}, copy);
+
+      // Pre-fill the three study-level cap virtual fields from ai_budget.
+      const aiOverrides = studyId !== 0 ? this.findExistingStudyCaps(studyId) : {};
+
+      this.$refs.coordinator.open(
+          studyId,
+          {documentId: this.documentId, isTemplateMode: templateMode},
+          copy,
+          aiOverrides
+      );
+    },
+    findExistingStudyCaps(studyId) {
+      const getter = this.$store.getters["table/ai_budget/getFiltered"];
+      if (!getter) return {};
+      const rows = getter(
+        (b) => !b.deleted && Number(b.studyId) === Number(studyId) && !b.studyStepId
+      );
+      const out = {};
+      for (const row of rows) {
+        const value = Number(row.costLimit);
+        if (!Number.isFinite(value)) continue;
+        if (Number(row.limitType) === 0) out.aiCostLimitTotal = value;
+        if (Number(row.limitType) === 1) out.aiCostLimitPerSession = value;
+        if (Number(row.limitType) === 2) out.aiCostLimitPerUser = value;
+      }
+      return out;
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
@@ -144,7 +169,7 @@ export default {
           variant: "danger"
         });
       }
-    }
+    },
   }
 }
 </script>

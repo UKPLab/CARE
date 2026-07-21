@@ -12,6 +12,7 @@ const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
 const {generateError} = require("../../utils/generic.js");
 const {getEmailContent} = require("../../utils/emailHelper.js");
+const {handleSubmissionUploaded} = require("../services/triggerHandlers.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -1215,6 +1216,20 @@ class DocumentSocket extends Socket {
                     } catch (emailError) {
                         this.server.logger.error("Failed to send submission upload email:", emailError);
                     }
+
+                    try {
+                        await handleSubmissionUploaded(this.server, {
+                            assignmentId,
+                            submissionId: submission.id,
+                            userId,
+                            projectId,
+                            timestamp: submission.createdAt,
+                        }, {
+                            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+                        });
+                    } catch (triggerError) {
+                        this.server.logger.error("Failed to run submission upload triggers:", triggerError);
+                    }
                 });
             }
         } catch (error) {
@@ -1349,6 +1364,20 @@ class DocumentSocket extends Socket {
                 });
             } catch (emailError) {
                 this.server.logger.error("Failed to send submission reupload email:", emailError);
+            }
+
+            try {
+                await handleSubmissionUploaded(this.server, {
+                    assignmentId: assignment.id,
+                    submissionId: newSubmission.id,
+                    userId,
+                    timestamp: newSubmission.createdAt,
+                    eventType: "reupload",
+                }, {
+                    broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+                });
+            } catch (triggerError) {
+                this.server.logger.error("Failed to run submission reupload triggers:", triggerError);
             }
         });
 
