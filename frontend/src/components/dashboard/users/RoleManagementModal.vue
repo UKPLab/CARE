@@ -41,7 +41,6 @@ export default {
   name: "RoleManagementModal",
   components: { BasicModal, BasicForm, BasicButton },
   subscribeTable: ["user_role"],
-  emits: ["update-user"],
   data() {
     return {
       formData: {
@@ -121,7 +120,6 @@ export default {
               message: "Role has been successfully created.",
               variant: "success",
             });
-            this.$emit("update-user");
             this.$refs.modal.close();
           } else {
             this.eventBus.emit("toast", {

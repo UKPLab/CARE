@@ -1,8 +1,8 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
-const {genSalt, genPwdHash, genPwd} = require("../../utils/auth.js");
-const {generateAnimalUsername} = require("../../utils/generator");
+const {genSalt, genPwdHash, genPwd} = require("../../webserver/auth/utils.js");
+const {generateAnimalUsername} = require("../../utils/helper/generator");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 
 module.exports = (sequelize, DataTypes) => {
@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
                 right: "frontend.dashboard.studies.view.userPrivateInfo",
                 columns: ["firstName", "lastName", "email", "extId"]
             },
+            {
+                right: "frontend.dashboard.studies.view.userPublicInfo",
+                columns:["id", "userName"]
+            }
         ];
 
         /**
@@ -395,6 +399,7 @@ module.exports = (sequelize, DataTypes) => {
                 {
                     where: {id: userId},
                     returning: true,
+                    individualHooks: true,
                     transaction: options.transaction,
                 }
             );

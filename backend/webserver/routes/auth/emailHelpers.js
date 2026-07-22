@@ -1,6 +1,6 @@
 'use strict';
 
-const { getEmailContent } = require('../../../utils/emailHelper');
+const { getEmailContent } = require('../../../utils/helper/email');
 
 /**
  * Build email-related helper functions shared by multiple auth route modules.
