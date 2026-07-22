@@ -7,72 +7,89 @@ const promptPlaceholders = [
     placeholderKey: "pdfText",
     placeholderLabel: "PDF text",
     placeholderType: "text",
-    placeholderDescription: "Text from the PDF in the current context.",
-    placeholderExample: "Document text content from the current PDF context. ... [truncated at 15000 chars if needed]",
+    placeholderDescription: "Plain text extracted from a PDF.",
+    placeholderExample:
+      "PDF Text: We compared three annotation tools in a graduate seminar (n=24). " +
+      "Reviewers highlighted claims on pages 2–4 and left margin notes about study design.",
   },
   {
     type: 8,
     placeholderKey: "editorText",
     placeholderLabel: "Editor text",
     placeholderType: "text",
-    placeholderDescription: "Text from the current editor document in the current context.",
-    placeholderExample: "Document text content from the current editor context. ... [truncated at 15000 chars if needed]",
+    placeholderDescription: "Plain text from an HTML or modal editor document.",
+    placeholderExample:
+      "Editor Text: The introduction should state the research question clearly. " +
+      "Draft paragraph: \"This study examines how peer feedback changes revision quality.\"",
   },
   {
     type: 8,
     placeholderKey: "assessmentResult",
     placeholderLabel: "Assessment result",
     placeholderType: "text",
-    placeholderDescription: "Saved rubric from the assessment sidebar for this document and step.",
-    placeholderExample: "{\"Clarity\":{\"currentScore\":3,\"assessment\":\"Good structure but weak conclusion\"},\"Sources\":{\"currentScore\":2,\"assessment\":\"Missing one reference\"}}",
+    placeholderDescription: "Saved assessment scores and comments from the Assessment sidebar.",
+    placeholderExample:
+      "Assessment Result: {\"Clarity\":{\"currentScore\":3,\"assessment\":\"Clear structure; conclusion could be stronger.\"}," +
+      "\"Sources\":{\"currentScore\":2,\"assessment\":\"Two claims need citations.\"}}",
   },
   {
     type: 8,
     placeholderKey: "inlineComments",
     placeholderLabel: "Inline comments",
     placeholderType: "text",
-    placeholderDescription: "Structured comments and annotations for this document and step.",
-    placeholderExample: "[{\"page\":2,\"quote\":\"Baseline is unclear\",\"comment\":\"Please define baseline.\",\"tag\":\"MajorIssue\"},{\"page\":4,\"quote\":\"Table 2\",\"comment\":\"Nice comparison.\",\"tag\":\"Strength\"}]",
+    placeholderDescription: "PDF inline comments and annotations.",
+    placeholderExample:
+      "Inline Comments: [{\"page\":2,\"quote\":\"The baseline is unclear\",\"comment\":\"Define the baseline in the methods section.\"," +
+      "\"tag\":\"MajorIssue\"},{\"page\":4,\"quote\":\"Table 2 summarizes the main findings\",\"comment\":\"Good comparison of conditions.\"," +
+      "\"tag\":\"Strength\"}]",
   },
   {
     type: 8,
     placeholderKey: "nlpAssessmentSuggestion",
     placeholderLabel: "NLP assessment suggestion",
     placeholderType: "text",
-    placeholderDescription: "Model draft assessment for this step if available.",
-    placeholderExample: "[{\"name\":\"Clarity\",\"score\":3,\"justification\":\"Clear flow with minor issues\"},{\"name\":\"Sources\",\"score\":2,\"justification\":\"Some claims lack citations\"}]",
+    placeholderDescription: "AI-generated draft assessment, when available.",
+    placeholderExample:
+      "NLP Assessment Suggestion: [{\"name\":\"Clarity\",\"score\":3,\"justification\":\"Logical flow with minor gaps in the conclusion.\"}," +
+      "{\"name\":\"Sources\",\"score\":2,\"justification\":\"Several statements lack supporting references.\"}]",
   },
   {
     type: 8,
     placeholderKey: "previousAssessmentResult",
     placeholderLabel: "Previous assessment result",
     placeholderType: "text",
-    placeholderDescription: "Saved rubric from the previous step when carry-over is configured.",
-    placeholderExample: "{\"Clarity\":{\"currentScore\":2,\"assessment\":\"Argumentation was fragmented\"},\"Sources\":{\"currentScore\":2,\"assessment\":\"References were incomplete\"}}",
+    placeholderDescription: "Saved assessment from a prior step when carry-over is enabled.",
+    placeholderExample:
+      "Previous Assessment Result: {\"Clarity\":{\"currentScore\":2,\"assessment\":\"Argumentation was fragmented in the prior draft.\"}," +
+      "\"Sources\":{\"currentScore\":2,\"assessment\":\"Reference list was incomplete last step.\"}}",
   },
   {
     type: 8,
     placeholderKey: "assessmentConfiguration",
     placeholderLabel: "Assessment configuration",
     placeholderType: "text",
-    placeholderDescription: "Assessment rubric configuration used in this step.",
-    placeholderExample: "{\"type\":\"assessment\",\"rubrics\":[{\"name\":\"Overall\",\"criteria\":[{\"name\":\"Clarity\",\"maxPoints\":5},{\"name\":\"Sources\",\"maxPoints\":5}]}]}",
+    placeholderDescription: "Rubric structure and criteria from the assessment configuration.",
+    placeholderExample:
+      "Assessment Configuration: {\"type\":\"assessment\",\"rubrics\":[{\"name\":\"Overall\",\"criteria\":[{\"name\":\"Clarity\",\"maxPoints\":5},{\"name\":\"Sources\",\"maxPoints\":5}]}]}",
   },
   {
     type: 8,
     placeholderKey: "submissionFiles",
     placeholderLabel: "Submission file",
     placeholderType: "text",
-    placeholderDescription: "Text from submission files mapped per slot in the hook step.",
-    placeholderExample: "Extracted text from the file mapped to this instance (e.g. main PDF body)…",
+    placeholderDescription: "Text extracted from a mapped submission file (PDF, TeX, etc.).",
+    placeholderExample:
+      "Submission File: Chapter 1 — Introduction\n\nThis thesis presents a user study on collaborative reading platforms. " +
+      "Participants annotated shared PDFs over three weekly sessions.",
   },
   {
     type: 8,
     placeholderKey: "studyContext",
     placeholderLabel: "Study context",
     placeholderType: "text",
-    placeholderDescription: "Basic metadata from current study, step, and document context.",
-    placeholderExample: "{\"studyName\":\"Current study name\",\"stepName\":\"Current step name\",\"documentTitle\":\"Current document title\"}",
+    placeholderDescription: "Study, step, and document metadata.",
+    placeholderExample:
+      "Study Context: {\"studyName\":\"Peer Review Pilot\",\"stepName\":\"Essay feedback\",\"documentTitle\":\"Draft essay v2.pdf\"}",
   },
 ];
 
