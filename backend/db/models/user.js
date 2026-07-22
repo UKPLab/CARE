@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
                 right: "frontend.dashboard.studies.view.userPrivateInfo",
                 columns: ["firstName", "lastName", "email", "extId"]
             },
+            {
+                right: "frontend.dashboard.studies.view.userPublicInfo",
+                columns:["id", "userName"]
+            }
         ];
 
         /**
@@ -395,6 +399,7 @@ module.exports = (sequelize, DataTypes) => {
                 {
                     where: {id: userId},
                     returning: true,
+                    individualHooks: true,
                     transaction: options.transaction,
                 }
             );

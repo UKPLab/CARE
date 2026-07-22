@@ -552,13 +552,14 @@ module.exports = class Socket {
             }
         }
 
-        // --- Column restrictions from access rights (applied regardless of row logic) ---
-        if (accessRights.length > 0) {
-            allAttributes['include'] = [...new Set(
-                accessRights
-                    .filter(a => a.columns)
-                    .flatMap(a => a.columns)
-            )];
+        // --- Column restrictions from access rights (admins bypass, everyone else is restricted) ---
+        if (!isAdmin && accessRights.length > 0) {
+            const columns = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+            if (columns.length > 0) {
+                // Pass a plain array so Sequelize restricts to only these columns.
+                // { exclude, include } is NOT the same — include there adds virtual attrs, not restricts.
+                allAttributes = columns;
+            }
         }
 
         // Apply row-visibility: baseFilter AND (condition1 OR condition2 OR ...)
@@ -883,7 +884,7 @@ module.exports = class Socket {
 
             let data = [];
             if (accessRights.length > 0 || await this.isAdmin(userId)) {
-                const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
+                const attributes = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
                 data = await this.models[table].getAutoTable(filter, userId, attributes);
             } else {
                 data = await this.models[table].getAutoTable(filter, userId);
