@@ -22,6 +22,15 @@ module.exports = (sequelize, DataTypes) => {
             ],
         };
 
+        static associate(models) {
+            AiModel.belongsTo(models["ai_credential"], { foreignKey: "aiCredentialId", as: "credential" });
+            AiModel.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
+            AiModel.hasMany(models["ai_model_share"], { foreignKey: "aiModelId", as: "shares" });
+            AiModel.hasMany(models["ai_budget"], { foreignKey: "modelId", as: "budgets" });
+            AiModel.hasMany(models["ai_hook_models"], { foreignKey: "aiModelId", as: "hookModels" });
+            AiModel.hasMany(models["ai_log"], { foreignKey: "aiModelId", as: "logs" });
+        }
+
         /**
          * Grants row visibility to anyone with an active direct-user or role-based
          * ai_model_share grant for this model, in addition to the owner (handled by
