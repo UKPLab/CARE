@@ -1,6 +1,6 @@
 'use strict';
 
-const { genSalt, genPwdHash } = require('../../utils/auth');
+const { genSalt, genPwdHash } = require('../../webserver/auth/utils');
 
 // True if any non-deleted user has logged in (already-set-up instance).
 async function hasAnyUserLoggedIn(queryInterface) {
