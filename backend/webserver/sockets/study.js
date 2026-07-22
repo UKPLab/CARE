@@ -11,6 +11,13 @@ const {getEmailContent} = require("../../utils/emailHelper");
  * @class StudySocket
  */
 class StudySocket extends Socket {
+    
+    async hasManageStudiesPermission() {
+        const hasPermission = await this.hasAccess("frontend.dashboard.studies.canManageStudies");
+        if (!hasPermission) {
+            throw new Error("No permission to manage studies");
+        }
+    }
 
     /**
      * Creates a new study template based on an existing study or directly from data.
@@ -151,6 +158,9 @@ class StudySocket extends Socket {
         if (!study) {
             throw new Error("Study not found");
         }
+        if (!(await this.checkUserAccess(study.userId))) {
+            throw new Error("No permission to close this study");
+        }
 
         if (study.closed) {
             throw new Error("Study is already closed");
@@ -179,64 +189,99 @@ class StudySocket extends Socket {
         return updatedStudy;
     }
 
+
     /**
-     * Closes all studies associated with a given project ID in a loop.
-     * Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.
-     * 
+     * Closes studies identified by studyIds.
+     *
      * @socketEvent studyCloseBulk
-     * @param data The data required for the bulk close operation.
-     * @param data.projectId the project ID of the studies to close
-     * @param data.ignoreClosedState if true, also close studies that are already closed
-     * @param data.progressId the ID of the progress bar to update
-     * @param options Additional configuration parameters (currently unused).
-     * @returns {Promise<void>} A promise that resolves (with no value) once all studies in the project have been processed.
+     * @param {object} data
+     * @param {number[]} data.studyIds IDs of the studies to close
+     * @param {number} [data.projectId] optional project scope for validation
+     * @param {boolean} [data.notifySessions] if true, send emails to participants with open sessions
+     * @param {string} [data.progressId] optional id for progressUpdate events
+     * @returns {Promise<{ closedCount: number }>}
      */
     async closeBulk(data, options) {
+        await this.hasManageStudiesPermission();
 
-        const studies = await this.models['study'].getAllByKey('projectId', data.projectId);
-        for (const study of studies) {
-            if (study.closed) {
-                if (!("ignoreClosedState" in data) || !data.ignoreClosedState) {
-                    continue;
-                }
-            }
-            const transaction = await this.server.db.sequelize.transaction();
+        const notifySessions = data.notifySessions === true;
 
-            try {
-
-                await this.models['study'].updateById(study.id, {closed: true, userIdClosed: this.userId}, {transaction: transaction});
-                const notifySessions = data.notifySessions === true;
-                transaction.afterCommit(async () => {
-                    this.broadcastTransactionChanges(transaction);
-                    // Send study closed emails after transaction commits (optional, based on notifySessions flag)
-                    if (notifySessions) {
-                        try {
-                            const updatedStudy = await this.models['study'].getById(study.id);
-                            await this.sendStudyClosedEmails(updatedStudy);
-                        } catch (error) {
-                            this.logger.error(`Failed to send study closed emails for study ${study.id}:`, error);
-                        }
+        const closedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.models["study"].updateById(
+                id,
+                { closed: true, userIdClosed: this.userId },
+                { transaction }
+            );
+            transaction.afterCommit(async () => {
+                this.broadcastTransactionChanges(transaction);
+                if (notifySessions) {
+                    try {
+                        const updated = await this.models["study"].getById(id);
+                        await this.sendStudyClosedEmails(updated);
+                    } catch (err) {
+                        this.logger.error(`Failed to send study closed emails for study ${id}:`, err);
                     }
-                });
-                await transaction.commit();
-            } catch (e) {
-                this.logger.error(e);
-                await transaction.rollback();
-            }
-
-            // update frontend progress
-            this.socket.emit("progressUpdate", {
-                id: data["progressId"], current: studies.indexOf(study) + 1, total: studies.length,
+                }
             });
+        });
 
-        }
+        return { closedCount };
+    }
 
+    /**
+     * Reopens studies identified by studyIds.
+     *
+     * @socketEvent studyOpenBulk
+     * @param {object} data
+     * @param {number[]} data.studyIds IDs of the studies to reopen
+     * @param {string} [data.progressId] optional id for progressUpdate events
+     * @returns {Promise<{ openedCount: number }>}
+     */
+    async openBulk(data, options) {
+        await this.hasManageStudiesPermission();
 
+        const openedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.models["study"].updateById(
+                id,
+                { closed: null, userIdClosed: null },
+                { transaction }
+            );
+            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
+        });
+
+        return { openedCount };
+    }
+
+    /**
+     * Soft-deletes studies identified by studyIds.
+     *
+     * @socketEvent studyDeleteBulk
+     * @param {object} data
+     * @param {number[]} data.studyIds IDs of the studies to delete
+     * @param {number} [data.projectId] optional project scope for validation
+     * @param {string} [data.progressId] optional id for progressUpdate events
+     * @returns {Promise<{ deletedCount: number }>}
+     */
+    async deleteBulk(data, options) {
+        await this.hasManageStudiesPermission();
+
+        const deletedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.models["study"].updateById(
+                id,
+                { deleted: true },
+                { transaction }
+            );
+            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
+        });
+
+        return { deletedCount };
     }
 
     async init() {
         this.createSocket("studySaveAsTemplate", this.saveStudyAsTemplate, {}, true);
         this.createSocket("studyCloseBulk", this.closeBulk, {}, false);
+        this.createSocket("studyOpenBulk", this.openBulk, {}, false);
+        this.createSocket("studyDeleteBulk", this.deleteBulk, {}, false);
         this.createSocket("studyClose", this.closeStudy, {}, true);
     }
 }
