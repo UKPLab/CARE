@@ -102,7 +102,7 @@ module.exports = (sequelize, DataTypes) => {
         templateId: DataTypes.INTEGER,
         outputMode: DataTypes.INTEGER,
         enabled: DataTypes.BOOLEAN,
-        deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+        deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
