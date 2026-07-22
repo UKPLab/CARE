@@ -3,7 +3,7 @@
 const { resolvePayload } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
 const { MetricSampler } = require('./perf-metrics');
-const { printTraceStats } = require('./perf-trace-stats');
+const { printTraceStats, printCulprit } = require('./perf-trace-stats');
 const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
 /**
@@ -13,7 +13,7 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-r
  * via replayRun's singleLevel mode.
  * @param {Object} cfg
  * @param {Object} ctx
- * @returns {Promise<number>}
+ * @returns {Promise<{code: number, maxConcurrency: number}>} Exit code (0 ok, 1 error) and the max concurrency the server sustained (lastGood)
  */
 async function runCeiling(cfg, ctx) {
     const capture = makeOutputCapture();
@@ -36,8 +36,13 @@ async function runCeiling(cfg, ctx) {
     // pool backing up is the original pool-exhaustion failure, measured directly.
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
     sampler.start();
-    let poolWaitingBaseline = 0;
+    // Capture the pool's idle waiting level before applying load, so saturation
+    // means "climbed above resting" rather than "above zero" — some deployments
+    // idle with non-zero pool waiting.
+    let poolWaitingBaseline = sampler.latestPoolWaiting();
+    let stopped = false;
 
+    try {
     while (true) {
         level++;
         const progressId = randomUUID();
@@ -48,23 +53,28 @@ async function runCeiling(cfg, ctx) {
         };
         ctx.socket.on('progressUpdate', onProgress);
 
-        const ack = await ctx.emitWithAck('replayRun', {
-            recordingIds,
-            sessions,
-            timingMode: 'fast',
-            ackTimeout: cfg.ackTimeout,
-            singleLevel: concurrency,
-            progressId,
-        }, 0);
+        let ack;
+        try {
+            ack = await ctx.emitWithAck('replayRun', {
+                recordingIds,
+                sessions,
+                timingMode: 'fast',
+                ackTimeout: cfg.ackTimeout,
+                singleLevel: concurrency,
+                progressId,
+            }, 0);
+        } finally {
+            ctx.socket.off('progressUpdate', onProgress);
+        }
 
-        ctx.socket.off('progressUpdate', onProgress);
         process.stdout.write('\r' + ' '.repeat(50) + '\r');  // clear the progress line
 
         if (!ack || !ack.success) {
             await sampler.stop();
+            stopped = true;
             console.error('\nCEILING ERROR — replayRun failed: ' + (ack && ack.message));
-            capture.stop();d
-            return 1;
+            capture.stop();
+            return { code: 1, maxConcurrency: lastGood };
         }
 
         const m = metrics(ack.data);
@@ -87,6 +97,7 @@ async function runCeiling(cfg, ctx) {
             else if (m.failed > allowedFailures) reason = `${m.failed} trace failure(s) (allowed: ${allowedFailures})`;
             else reason = `overall p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms threshold`;
             await sampler.stop();
+            stopped = true;
             console.log(`\nCEILING: server sustained ${lastGood} concurrent sessions; degraded at ${concurrency} (${reason}).`);
             {
                 const rssMb = (b) => Math.round(b / 1024 / 1024);
@@ -102,20 +113,12 @@ async function runCeiling(cfg, ctx) {
             }
             printTraceStats(ack.data.results, { title: `Trace breakdown at level ${concurrency} (each action's OWN stats):` });
 
-            // Name the likely culprit, scoped to WHY it stopped, with clear p95 labeling.
-            const culpritStats = require('./perf-trace-stats').traceStats(ack.data.results);
-            if (culpritStats.length) {
-                if (m.failed > allowedFailures) {
-                    const worst = culpritStats.filter(s => s.failed > 0).sort((a, b) => b.failed - a.failed)[0];
-                    if (worst) console.log(`\n  >> Likely culprit: ${worst.action} — ${worst.failed} failure(s). Start here.`);
-                } else if (poolSaturated) {
-                    const worst = [...culpritStats].sort((a, b) => b.dbWrites - a.dbWrites)[0];
-                    if (worst) console.log(`\n  >> Likely culprit: ${worst.action} — most DB writes (${worst.dbWrites}), likely saturating the pool. Start here.`);
-                } else {
-                    const worst = [...culpritStats].sort((a, b) => b.p95 - a.p95)[0];
-                    if (worst) console.log(`\n  >> Slowest action: ${worst.action} (its OWN p95: ${worst.p95}ms). Overall level p95 was ${m.p95}ms — this action is dragging it up. Start here.`);
-                }
-            }
+            // Name the likely culprit, scoped to why it stopped.
+            printCulprit(ack.data.results, {
+                failed: m.failed > allowedFailures,
+                poolSaturated,
+                overallP95: m.p95,
+            });
             const saved = saveResults('ceiling', cfg, {
                 results: allLevels.flatMap(l => l.results || []),
                 metrics: allLevels.map(({ results, ...rest }) => rest),
@@ -128,12 +131,13 @@ async function runCeiling(cfg, ctx) {
                 console.log(`\n  results saved: ${saved}`);
                 if (txt) console.log(`  readable report: ${txt}`);
             }
-            return 0;
+            return { code: 0, maxConcurrency: lastGood };
         }
 
         lastGood = concurrency;
         if (level >= hardCap) {
             await sampler.stop();
+            stopped = true;
             console.log(`\nCEILING: hit safety cap (${hardCap} levels) at ${concurrency} sessions, still healthy — raise --max-iterations or lower --latency-threshold to push further.`);
             {
                 const rssMb = (b) => Math.round(b / 1024 / 1024);
@@ -161,9 +165,12 @@ async function runCeiling(cfg, ctx) {
                 if (txt) console.log(`  readable report: ${txt}`);
             }
 
-            return 0;
+            return { code: 0, maxConcurrency: lastGood };
         }
         concurrency += step;
+    }
+    } finally {
+        if (!stopped) await sampler.stop();
     }
 }
 
