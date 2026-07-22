@@ -2,7 +2,7 @@
 
 const { resolvePayload } = require('./perf-recordings');
 const { randomUUID } = require('crypto');
-const { printTraceStats, printCulprit } = require('./perf-trace-stats');
+const { printTraceStats } = require('./perf-trace-stats');
 const { MetricSampler } = require('./perf-metrics');
 const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
 
@@ -34,30 +34,32 @@ async function runRamp(cfg, ctx) {
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
     sampler.start();
 
-    // The previously broken/duplicate emitWithAck call, now restored
-    const ack = await ctx.emitWithAck('replayRun', {
-        recordingIds,
-        sessions,
-        timingMode: 'fast',
-        continueOnFailure: false,
-        maxIterations: cfg.maxIterations,
-        ackTimeout: cfg.ackTimeout,
-        progressId,
-        latencyThreshold: cfg.latencyThreshold,
-    }, 0);
+    let ack;
+    try {
+        // The previously broken/duplicate emitWithAck call, now restored
+        ack = await ctx.emitWithAck('replayRun', {
+            recordingIds,
+            sessions,
+            timingMode: 'fast',
+            continueOnFailure: false,
+            maxIterations: cfg.maxIterations,
+            ackTimeout: cfg.ackTimeout,
+            progressId,
+            latencyThreshold: cfg.latencyThreshold,
+        }, 0);
+    } finally {
+        ctx.socket.off('progressUpdate', onProgress);
+        await sampler.stop();
+    }
 
-    ctx.socket.off('progressUpdate', onProgress);
     process.stdout.write('\n');
 
     if (!ack || !ack.success) {
-        await sampler.stop();
         console.error('RAMP ERROR — replayRun failed: ' + (ack && ack.message));
         capture.stop();
         return 1;
     }
 
-    await sampler.stop();
-    
     const levels = ack.data || [];
     reportRamp(levels, cfg, sampler);
 
