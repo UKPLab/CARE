@@ -11,7 +11,7 @@
  */
 
 const { io: SocketIOClient } = require('socket.io-client');
-const { loginAsAdmin, verifyAdmin } = require('./perf-auth');
+const { loginAsAdmin, verifyAuthenticatedSession } = require('./perf-auth');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const readline = require('readline');
 
@@ -93,7 +93,7 @@ function buildConfig(args) {
         maxIterations: parseInt(args['max-iterations'], 10) || 10,
         timingMode: args['timing-mode'] || 'fast',
         ackTimeout: parseInt(args['ack-timeout'], 10) || 2000,
-        latencyThreshold: parseInt(args['latency-threshold'], 10) || 1000,
+        latencyThreshold: args['latency-threshold'] !== undefined ? Number(args['latency-threshold']) : 1000,
         failThreshold: parseFloat(args['fail-threshold']) || 5,
         server: args.server || 'http://localhost:3001',
         continueOnFailure: Boolean(args['continue-on-failure']),
@@ -112,6 +112,7 @@ function validateConfig(cfg) {
     if (!['ramp', 'soak', 'regression', 'inspect', 'ceiling'].includes(cfg.mode)) errors.push(`--mode must be "ramp", "soak", "regression", "inspect", or "ceiling" (got "${cfg.mode}")`);
     if (cfg.recordings.length === 0 && cfg.files.length === 0) errors.push('need --recordings <ids> and/or --files <json,...>');
     if (cfg.mode === 'ramp' && (!Number.isInteger(cfg.maxIterations) || cfg.maxIterations < 1)) errors.push('--max-iterations must be a positive integer');
+    if (!Number.isFinite(cfg.latencyThreshold) || cfg.latencyThreshold <= 0) errors.push('--latency-threshold must be a positive number');
     if (cfg.timingMode !== 'fast' && cfg.timingMode !== 'realtime') errors.push('--timing-mode must be "fast" or "realtime"');
     if (!cfg.password) errors.push('admin password required: pass --password or set PERF_ADMIN_PASSWORD');
     return errors;
@@ -158,7 +159,7 @@ async function verifyAdminAccess(socket) {
 async function run(cfg) {
     console.log('\nLogging in as "' + cfg.user + '" at ' + cfg.server + ' ...');
     const cookie = await loginAsAdmin(cfg.server, cfg.user, cfg.password);
-    const user = await verifyAdmin(cfg.server, cookie);
+    const user = await verifyAuthenticatedSession(cfg.server, cookie);
     console.log('  logged in as: ' + (user.userName || user.id) + ' (' + user.email + ')');
     console.log('Connecting socket ...');
     const socket = await connectSocket(cfg.server, cookie);
@@ -192,7 +193,7 @@ async function run(cfg) {
     }
     if (cfg.mode === 'ceiling') {
         const { runCeiling } = require('./perf-ceiling');
-        const code = await runCeiling(cfg, ctx);
+        const { code } = await runCeiling(cfg, ctx);
         socket.disconnect();
         process.exit(code);
     }
