@@ -91,6 +91,19 @@ class ReplayerSocket extends Socket {
             throw new Error('No replayable sessions found in selected recordings');
         }
 
+        // The scaling path runs level * N concurrent sockets at its peak, so
+        // MAX_CONCURRENCY (enforced per-level in runOneLevel) can be blown past
+        // here even when maxIterations is within MAX_ITERATIONS. Reject up front
+        // rather than open thousands of sockets against the server.
+        if (singleLevel === null) {
+            const peakConcurrency = maxIterations * pool.sessions.length;
+            if (peakConcurrency > MAX_CONCURRENCY) {
+                throw new Error(
+                    `Peak concurrency ${peakConcurrency} (${maxIterations} iterations x ${pool.sessions.length} sessions) exceeds the limit of ${MAX_CONCURRENCY}. Reduce --max-iterations or use fewer recordings.`
+                );
+            }
+        }
+
         // Replay-target URL. Defaults to the local content server, but can be
         // overridden via REPLAY_TARGET_URL for deployments where the content
         // server isn't on localhost or uses a non-standard host/port.
