@@ -23,9 +23,18 @@ async function runInspect(cfg, ctx) {
         return 0;
     }
 
-    // DB path: fetch each recording's traces from the server by id.
+    // DB path: fetch each recording's traces from the server by id. Each fetch
+    // is isolated so one unreadable recording (or a transient error) doesn't
+    // abort the whole batch — the survey continues and reports what it could.
     for (const id of recordingIds) {
-        const ack = await ctx.emitWithAck('recordingGetTraces', { id });
+        let ack;
+        try {
+            ack = await ctx.emitWithAck('recordingGetTraces', { id });
+        } catch (err) {
+            console.log(`\n=== Recording ${id} ===`);
+            console.log(`  could not fetch traces: ${err.message}`);
+            continue;
+        }
         if (!ack || !ack.success) {
             console.log(`\n=== Recording ${id} ===`);
             console.log(`  could not fetch traces: ${ack && ack.message}`);
