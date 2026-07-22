@@ -2504,22 +2504,21 @@ This stops the client from receiving real-time events for that study.</p>
 <p>Loading the studies through websocket</p>
 <dl class="js function">
 <dt class="sig sig-object js" id="StudySocket.closeBulk">
-<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">closeBulk</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.closeBulk" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">closeBulk</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.closeBulk" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>studyCloseBulk</cite></p>
-<p>Closes all studies associated with a given project ID in a loop.
-Each study is updated in its own database transaction. Progress is reported to the client after each study is processed.</p>
+<p>Closes studies identified by studyIds.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – The data required for the bulk close operation.</p></li>
-<li><p><strong>data.projectId</strong> – the project ID of the studies to close</p></li>
-<li><p><strong>data.ignoreClosedState</strong> – if true, also close studies that are already closed</p></li>
-<li><p><strong>data.progressId</strong> – the ID of the progress bar to update</p></li>
-<li><p><strong>options</strong> – Additional configuration parameters (currently unused).</p></li>
+<li><p><strong>data</strong> (<strong>object</strong>)</p></li>
+<li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – IDs of the studies to close</p></li>
+<li><p><strong>data.projectId</strong> (<strong>number</strong>) – optional project scope for validation</p></li>
+<li><p><strong>data.notifySessions</strong> (<strong>boolean</strong>) – if true, send emails to participants with open sessions</p></li>
+<li><p><strong>data.progressId</strong> (<strong>string</strong>) – optional id for progressUpdate events</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong> – A promise that resolves (with no value) once all studies in the project have been processed.</p>
+<dd class="field-even"><p><strong>Promise.&lt;{closedCount: number}&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2542,6 +2541,45 @@ Sends study closed emails after the transaction commits (optional, based on noti
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong> – The updated study object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySocket.deleteBulk">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">deleteBulk</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.deleteBulk" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>studyDeleteBulk</cite></p>
+<p>Soft-deletes studies identified by studyIds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>)</p></li>
+<li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – IDs of the studies to delete</p></li>
+<li><p><strong>data.projectId</strong> (<strong>number</strong>) – optional project scope for validation</p></li>
+<li><p><strong>data.progressId</strong> (<strong>string</strong>) – optional id for progressUpdate events</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;{deletedCount: number}&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySocket.openBulk">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">openBulk</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.openBulk" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>studyOpenBulk</cite></p>
+<p>Reopens studies identified by studyIds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>object</strong>)</p></li>
+<li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – IDs of the studies to reopen</p></li>
+<li><p><strong>data.progressId</strong> (<strong>string</strong>) – optional id for progressUpdate events</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;{openedCount: number}&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
