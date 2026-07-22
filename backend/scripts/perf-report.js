@@ -88,6 +88,7 @@ function saveReadableReport(jsonPath, text) {
         fs.writeFileSync(txtPath, text, 'utf8');
         return txtPath;
     } catch (err) {
+        console.error('  (could not save readable report: ' + err.message + ')');
         return null;
     }
 }
