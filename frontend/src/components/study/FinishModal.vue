@@ -35,13 +35,11 @@
     </template>
     <template #footer>
       <div v-if="finished">
-        <button
+        <BasicButton
           class="btn btn-primary"
-          type="button"
+          text="Back to Dashboard"
           @click="toDashboard"
-        >
-          Back to Dashboard
-        </button>
+        />
       </div>
       <div
         v-else

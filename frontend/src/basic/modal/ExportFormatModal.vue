@@ -48,13 +48,13 @@ import {downloadObjectsAs, getSupportedExportFormats} from "@/assets/utils";
 export default {
   name: "ExportFormatModal",
   components: { BasicModal, BasicButton },
-  emits: ['formatSelected'],
   props: {
     title: {
       type: String,
       default: "Export",
     },
   },
+  emits: ['formatSelected'],
   data() {
     return {
       filterId: null,

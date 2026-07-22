@@ -8,7 +8,7 @@ const {
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
   formatMissingPlaceholderError,
-} = require("../../utils/templateResolver");
+} = require("../../utils/helper/templateResolver");
 
 /**
  * Handle templates through websocket

@@ -1,4 +1,3 @@
-
 # files dir
 files/*.pdf
 files/*.delta
@@ -9,7 +8,8 @@ files/*.zip
 # database dumps
 db_dumps/
 
-# backend
+# logs (root + backend)
+logs/
 backend/sessions
 backend/node_modules
 backend/logs
@@ -25,6 +25,8 @@ version.json
 #modules
 utils/modules/editor-delta-conversion/node_modules
 utils/modules/editor-delta-conversion/coverage
+utils/modules/assessment-score/node_modules
+utils/modules/assessment-score/coverage
 
 yarn-error.log
 .tox

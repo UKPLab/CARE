@@ -1,8 +1,8 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
-const {inject} = require("../../utils/generic");
+const {inject} = require("../../utils/helper/generic");
 const _ = require("lodash");
-const { genPwdHash, genSalt } = require("../../utils/auth.js");
+const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
 
@@ -78,6 +78,43 @@ class UserSocket extends Socket {
         // TODO: update frontend user data, don't overwrite it was is currently done (see also refreshState in store/utils.js)
         //this.socket.emit("userData", {success: true, users: [user]});
         return user;
+    }
+
+    /**
+     * Retrieves detailed information for a user.
+     * Restricted to admins.
+     *
+     * @socketEvent userGetDetails
+     * @param {number} data - The ID of the user to load
+     * @param {Object} options 
+     * @returns {Promise<Object>}
+     * @throws {Error}
+     */
+    async getUserDetails(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+        return await this.models["user"].getUserDetails(data);
+    }
+
+    /**
+     * Updates a user's profile and roles.
+     * Restricted to adminis.
+     *
+     * @socketEvent userUpdateDetails
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.userId - The ID of the user to update
+     * @param {Object} data.userData - firstName, lastName, email, roles
+     * @param {Object} options 
+     * @param {Object} options.transaction 
+     * @returns {Promise<void>}
+     * @throws {Error}
+     */
+    async updateUserDetails(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+        return await this.models["user"].updateUserDetails(data, options);
     }
 
     /**
@@ -456,9 +493,9 @@ class UserSocket extends Socket {
         this.broadcastStats();
         this.createSocket("userGetByRole", this.getUsersByRole, {}, false);
         this.createSocket("userGetRight", this.getUserRights, {}, false);
-        this.createSocket("userUpdateDetails", this.models["user"].updateUserDetails, {}, true);
+        this.createSocket("userUpdateDetails", this.updateUserDetails, {}, true);
         this.createSocket("userResetPwd", this.resetUserPwd, {}, false);
-        this.createSocket("userGetDetails", this.models["user"].getUserDetails, {}, false);
+        this.createSocket("userGetDetails", this.getUserDetails, {}, false);
         this.createSocket("userConsentUpdate", this.updateUserConsent, {}, true);
         this.createSocket("userBulkCreate", this.bulkCreateUsers, {}, false);
         this.createSocket("userMoodleUserGetAll", this.getUsersFromCourse, {}, false);
