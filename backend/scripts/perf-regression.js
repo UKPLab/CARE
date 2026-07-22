@@ -19,16 +19,24 @@ async function runRegression(cfg, ctx) {
     console.log('  regression input: ' + (sessions.length ? `${sessions.length} file session(s)` : recordingIds.join(', ')));
 
     console.log('Running regression (replay once, all traces must pass) ...');
-    const ack = await ctx.emitWithAck('replayRun', {
-        recordingIds,
-        sessions,
-        timingMode: 'fast',
-        continueOnFailure: true,   // run all stories so we report every failure, not just the first
-        maxIterations: 1,          // once — no scaling
-        ackTimeout: cfg.ackTimeout,
-    },0);
+    let ack;
+    try {
+        ack = await ctx.emitWithAck('replayRun', {
+            recordingIds,
+            sessions,
+            timingMode: 'fast',
+            continueOnFailure: true,   // run all stories so we report every failure, not just the first
+            maxIterations: 1,          // once — no scaling
+            ackTimeout: cfg.ackTimeout,
+        }, 0);
+    } catch (err) {
+        capture.stop();
+        console.error('REGRESSION ERROR — replayRun threw: ' + err.message);
+        return 1;
+    }
 
     if (!ack || !ack.success) {
+        capture.stop();
         console.error('REGRESSION ERROR — replayRun failed: ' + (ack && ack.message));
         return 1;
     }
@@ -38,11 +46,23 @@ async function runRegression(cfg, ctx) {
 
     // Group results per recording (per user story) so we can report which
     // stories pass and which fail — the "is this version stable?" verdict.
-    const stories = new Map();  // key: recording name/id -> { total, failed, errors[] }
+    // Group by a stable identity, not the display name: recordingName can repeat
+    // across recordings (and file replay defaults it to 'file'), which would merge
+    // distinct recordings. recordingId groups a recording's sessions together for
+    // DB replay; file replay has no id (null), so fall back to the unique
+    // sessionKey there. recordingName is kept only for display.
+    const stories = new Map();  // key: recordingId ?? sessionKey -> { name, total, failed, errors[] }
     for (const iter of iterations) {
         for (const session of (iter.results || [])) {
-            const key = session.recordingName || ('recording ' + session.recordingId);
-            if (!stories.has(key)) stories.set(key, { total: 0, failed: 0, errors: [] });
+            const key = session.recordingId != null ? `id:${session.recordingId}` : `key:${session.sessionKey}`;
+            if (!stories.has(key)) {
+                stories.set(key, {
+                    name: session.recordingName || ('recording ' + (session.recordingId ?? session.sessionKey)),
+                    total: 0,
+                    failed: 0,
+                    errors: [],
+                });
+            }
             const s = stories.get(key);
             s.total += session.total || 0;
             s.failed += session.failed || 0;
@@ -54,12 +74,12 @@ async function runRegression(cfg, ctx) {
 
     console.log('');
     let passedStories = 0, failedStories = 0;
-    for (const [name, s] of stories) {
+    for (const [, s] of stories) {
         if (s.failed === 0) {
-            console.log(`  [PASS] ${name}  (${s.total} traces)`);
+            console.log(`  [PASS] ${s.name}  (${s.total} traces)`);
             passedStories++;
         } else {
-            console.log(`  [FAIL] ${name}  (${s.failed} of ${s.total} traces failed)`);
+            console.log(`  [FAIL] ${s.name}  (${s.failed} of ${s.total} traces failed)`);
             failedStories++;
         }
     }
@@ -82,9 +102,9 @@ async function runRegression(cfg, ctx) {
         return 0;
     }
     console.log(`REGRESSION SUITE FAILED — ${passedStories} of ${totalStories} stories passed, ${failedStories} failed.`);
-    for (const [name, s] of stories) {
+    for (const [, s] of stories) {
         if (s.failed > 0) {
-            console.log(`  Failed: ${name}`);
+            console.log(`  Failed: ${s.name}`);
             for (const e of s.errors.slice(0, 3)) console.log(`    - ${e.action}: ${e.message}`);
             if (s.errors.length > 3) console.log(`    ... and ${s.errors.length - 3} more`);
         }
