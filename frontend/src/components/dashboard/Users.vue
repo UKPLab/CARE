@@ -26,8 +26,8 @@
         />
         <BasicButton
           class="btn btn-secondary btn-sm"
-          title="Role Management"
-          text="Role Management"
+          :title="$t('users.roleManagement.button')"
+          :text="$t('users.roleManagement.button')"
           icon="person-plus"
           @click="$refs.roleManagementModal.open()"
         />
@@ -75,32 +75,27 @@
   <DetailsModal
       v-if="modals.details"
       ref="detailsModal"
-      @update-user="fetchUsers"
       @hide="modals.details = false"
   />
   <RightsModal v-if="modals.rights" ref="rightsModal" @hide="modals.rights = false"/>
   <RightsManagementModal
     v-if="modals.rightsManagement"
     ref="rightsManagementModal"
-    @update-user="fetchUsers"
     @hide="modals.rightsManagement = false"
   />
   <RoleManagementModal
     ref="roleManagementModal"
-    @update-user="fetchUsers"
   />
   <PasswordModal ref="passwordModal" />
   <ImportModal
       v-if="modals.import"
       ref="importModal"
-      @update-user="fetchUsers"
       @hide="modals.import = false"
   />
   <UploadModal v-if="modals.upload" ref="uploadModal" @hide="modals.upload = false"/>
   <UserAddModal
       v-if="modals.userAdd"
       ref="userAddModal"
-      @update-user="fetchUsers"
       @hide="modals.userAdd = false"
   />
   <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
@@ -226,7 +221,7 @@ export default {
     },
     users() {
       const activeIds = new Set(this.monitorStats.connectedUsers.map(u => u.userId));
-      return this.$store.getters["admin/getUsersByRole"].map((user) => {
+      return this.$store.getters["table/user/getAll"].map((user) => {
         const isActive = activeIds.has(user.id);
         return {
           ...this.formatUserData(user),
@@ -338,7 +333,6 @@ export default {
   },
   
   mounted() {
-    this.fetchUsers();
     this.$socket.emit("userMonitorSubscribe", {}, (response) => {
         this.$store.commit("admin/SOCKET_monitorStatsUpdate", response);
     });
@@ -378,18 +372,6 @@ export default {
     openConfirmModal(name, message, warning, cb) {
       this.modals.confirm = true;
       this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
-    },
-    fetchUsers() {
-      this.$socket.emit("userGetByRole", {role: this.role}, (response) => {
-        if (!response.success) {
-          this.eventBus.emit("toast", {
-            title: this.$t('errors.users.errorFetchingUsers'),
-            // Use resolveApiMessage to handle both new (key/params) and legacy (message) error formats
-            message: resolveApiMessage(response),
-            variant: "danger",
-          });
-        }
-      });
     },
     formatUserData(user) {
       const formatDate = (date) => (date ? formatLocalizedDate(date) : "-");
@@ -449,7 +431,6 @@ export default {
                     message: this.$t('users.messages.userDeletedMessage'),
                     variant: "success",
                   });
-                  this.fetchUsers();
                 } else {
                   this.eventBus.emit("toast", {
                     title: this.$t('errors.users.userNotDeleted'),

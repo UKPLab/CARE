@@ -216,6 +216,8 @@
     "noPermissionSaveAsTemplate": "Keine Berechtigung, die Studie als Vorlage zu speichern",
     "studyIdRequired": "studyId ist erforderlich",
     "studyAlreadyClosed": "Studie ist bereits geschlossen",
+    "noPermissionManageStudies": "Keine Berechtigung, Studien zu verwalten",
+    "noPermissionCloseStudy": "Keine Berechtigung, diese Studie zu schließen",
     "notAllowedToSeeStudy": "Sie dürfen diese Studie nicht sehen",
     "errorTitle": "Fehler",
     "studySession": {

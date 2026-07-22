@@ -8,7 +8,7 @@ const {
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
   formatMissingPlaceholderError,
-} = require("../../utils/templateResolver");
+} = require("../../utils/helper/templateResolver");
 const TranslatableError = require("../../utils/TranslatableError");
 
 /**

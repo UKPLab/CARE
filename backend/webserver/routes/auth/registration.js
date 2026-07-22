@@ -1,6 +1,6 @@
 'use strict';
 
-const { generateToken } = require('../../../utils/auth');
+const { generateToken } = require('../../auth/utils');
 
 /**
  * Register self-registration routes.

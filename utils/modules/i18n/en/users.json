@@ -83,6 +83,7 @@
     }
   },
   "roleManagement": {
+    "button": "Role Management",
     "title": "Create Role",
     "fields": {
       "name": {

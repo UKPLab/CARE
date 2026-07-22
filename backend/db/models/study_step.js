@@ -2,7 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
-const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
+const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 

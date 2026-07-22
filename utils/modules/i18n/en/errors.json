@@ -216,6 +216,8 @@
         "noPermissionSaveAsTemplate": "No permission to save study as template",
         "studyIdRequired": "studyId is required",
         "studyAlreadyClosed": "Study is already closed",
+        "noPermissionManageStudies": "No permission to manage studies",
+        "noPermissionCloseStudy": "No permission to close this study",
         "notAllowedToSeeStudy": "You are not allowed to see this study",
         "errorTitle": "Error",
         "studySession": {

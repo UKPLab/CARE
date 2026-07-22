@@ -8,7 +8,7 @@
  */
 const Delta = require("quill-delta");
 const {deltaToPlainText} = require("editor-delta-conversion");
-const TranslatableError = require("./TranslatableError");
+const TranslatableError = require("../TranslatableError");
 
 /**
  * Extract plain text from Quill Delta operations

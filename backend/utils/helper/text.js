@@ -1,4 +1,4 @@
-const TranslatableError = require("./TranslatableError");
+const TranslatableError = require("../TranslatableError");
 
 /**
  * Get the start and end positions of exact text within whole text, along with prefix and suffix

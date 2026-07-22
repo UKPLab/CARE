@@ -42,7 +42,6 @@ import {resolveApiMessage} from "@/assets/utils";
 export default {
   name: "UserAddModal",
   components: {BasicModal, BasicButton, BasicForm},
-  emits: ["updateUser"],
   data() {
     return {
       formData: {
@@ -129,7 +128,6 @@ export default {
             message: this.$t('dashboard.users.userCreationCompletedMessage'),
           });
           this.$refs.modal.close();
-          this.$emit("updateUser");
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {

@@ -1,5 +1,5 @@
 const Socket = require("../Socket.js");
-const {getEmailContent} = require("../../utils/emailHelper");
+const {getEmailContent} = require("../../utils/helper/email");
 
 /**
  * Handle all study sessions through websocket

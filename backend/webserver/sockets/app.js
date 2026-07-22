@@ -1,10 +1,10 @@
 const Socket = require("../Socket.js");
-const {relevantFields} = require("../../utils/auth");
+const {relevantFields} = require("../auth/utils");
 const database = require("../../db");
 const {v4: uuidv4} = require("uuid");
-const {mergeFilter} = require("../../utils/data.js");
-const {mergeInjects} = require("../../utils/data");
-const {generateError} = require("../../utils/generic.js");
+const {mergeFilter} = require("../../utils/helper/data.js");
+const {mergeInjects} = require("../../utils/helper/data");
+const {generateError} = require("../../utils/helper/generic.js");
 const TranslatableError = require("../../utils/TranslatableError");
 
 /**

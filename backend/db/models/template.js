@@ -1,7 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const TranslatableError = require("../../utils/TranslatableError");
-const { assertStableEmailTemplateContent } = require("../../utils/templateResolver");
+const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
 module.exports = (sequelize, DataTypes) => {
     /**

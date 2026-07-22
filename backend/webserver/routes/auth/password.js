@@ -1,6 +1,6 @@
 'use strict';
 
-const { decodeToken, generateToken } = require('../../../utils/auth');
+const { decodeToken, generateToken } = require('../../auth/utils');
 
 /**
  * Register password reset routes.

@@ -181,7 +181,6 @@ import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 export default {
   name: "ImportModal",
   components: { MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
-  emits: ["updateUser"],
   data() {
     return {
       importType: "csv",
@@ -315,7 +314,6 @@ export default {
         this.updatedUserCount = null;
         this.createdUsers = [];
         this.createdErrors = [];
-        this.$emit("updateUser");
       }
       if (this.importType === "moodle") {
         this.eventBus.emit("resetFormField");

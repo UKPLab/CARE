@@ -49,7 +49,7 @@ exports.inject = async function inject(data, func, targetName, key = null) {
     );
 }
 
-const { hasKey } = require('./i18n');
+const { hasKey } = require('../i18n');
 
 /**
  * Create an Error with a machine-readable code and an i18n key (no interpolation params).

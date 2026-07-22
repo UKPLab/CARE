@@ -11,14 +11,16 @@
         class="form-check"
       >
         <input
-          v-model="currentData"
-          :value="option.value"
+          :checked="isChecked(option.value)"
           :name="options.key"
           :required="options.required"
           class="form-check-input"
           type="checkbox"
+          @change="onChange(option.value)"
         />
-        <label class="form-check-label">{{ option.label }}</label>
+        <label class="form-check-label">
+          {{ option.label }}
+        </label>
       </div>
     </template>
   </FormElement>
@@ -42,11 +44,14 @@ export default {
     },
   },
   emits: ["update:modelValue"],
-  data() {
-    return {
-      currentData: [],
-    };
-  },
+ data() {
+  return {
+    currentData:
+      this.options.selectionMode === "single"
+        ? null
+        : [],
+  };
+},
   watch: {
     currentData() {
       this.$emit("update:modelValue", this.currentData);
@@ -62,6 +67,35 @@ export default {
     this.currentData = this.modelValue;
   },
   methods: {
+    isChecked(value) {
+      if (this.options.selectionMode === "single") {
+        return this.currentData === value;
+      }
+
+      return this.currentData.includes(value);
+    },
+
+    onChange(value) {
+      if (this.options.selectionMode === "single") {
+        this.currentData =
+          this.currentData === value ? null : value;
+      } else {
+        const values = [...this.currentData];
+
+        const index = values.indexOf(value);
+
+        if (index > -1) {
+          values.splice(index, 1);
+        } else {
+          values.push(value);
+        }
+
+        this.currentData = values;
+      }
+
+      this.$emit("update:modelValue", this.currentData);
+    },
+
     validate() {
       return this.$refs.formElement.validate(this.currentData);
     },

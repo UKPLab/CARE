@@ -83,6 +83,7 @@
     }
   },
   "roleManagement": {
+    "button": "Rollenverwaltung",
     "title": "Rolle erstellen",
     "fields": {
       "name": {
