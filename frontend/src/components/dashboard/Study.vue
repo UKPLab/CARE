@@ -67,8 +67,7 @@
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
     <ManageStudiesModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
-    <AssignmentModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" :bulk="true" @hide="modals.bulkAssignments = false"/>
-    <AssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" :bulk="false" @hide="modals.singleAssignment = false"/>
+    <AssignmentModal v-if="modals.assignment" ref="assignmentModal" @hide="modals.assignment = false"/>
     <PublishAssessmentModal ref="publishAssessmentModal"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
     <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
@@ -134,8 +133,7 @@ export default {
         deleteConf: false,
         confirm: false,
         bulkConfirm: false,
-        bulkAssignments: false,
-        singleAssignment: false,
+        assignment: false,
         information: false,
         savedTemplates: false,
       },
@@ -470,12 +468,12 @@ export default {
       this.$nextTick(() => this.$refs.bulkConfirmModal?.open());
     },
     openBulkAssignmentsModal() {
-      this.modals.bulkAssignments = true;
-      this.$nextTick(() => this.$refs.bulkAssignmentsModal?.open());
+      this.modals.assignment = true;
+      this.$nextTick(() => this.$refs.assignmentModal?.open(true));
     },
     openSingleAssignmentModal() {
-      this.modals.singleAssignment = true;
-      this.$nextTick(() => this.$refs.singleAssignmentModal?.open());
+      this.modals.assignment = true;
+      this.$nextTick(() => this.$refs.assignmentModal?.open(false));
     },
     openInformationModal(params) {
       this.modals.information = true;

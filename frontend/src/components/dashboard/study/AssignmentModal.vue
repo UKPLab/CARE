@@ -166,12 +166,6 @@ export default {
     DistributionStep,
     ConfirmationStep,
   },
-  props: {
-    bulk: {
-      type: Boolean,
-      default: true,
-    },
-  },
   subscribeTable: [
     { table: "document", filter: [{ key: "readyForReview", value: true }] },
     { table: "user" },
@@ -202,6 +196,9 @@ export default {
   },
   data() {
     return {
+
+      // Whether the modal is creating a bulk or single assignment, set via open(bulk)
+      bulk: true,
 
       // Incremented on each reset to force step components to remount cleanly
       stepResetKey: 0,
@@ -371,7 +368,8 @@ export default {
       }
       return docs[0].id;
     },
-    open() {
+    open(bulk = true) {
+      this.bulk = bulk;
       this.reset();
       this.$refs.assignmentStepper.open();
     },
