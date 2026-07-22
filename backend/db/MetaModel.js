@@ -35,8 +35,11 @@ module.exports = class MetaModel extends Model {
         if (!this.foreignOwner) return false;
         const {column, table} = this.foreignOwner;
 
-        const fkValue = payload[column]
-            ?? (payload.id && (await this.findByPk(payload.id, {transaction}))?.[column]);
+        let fkValue = payload[column];
+        if (!fkValue && payload.id) {
+            const existing = await this.findByPk(payload.id, {transaction});
+            fkValue = existing?.[column];
+        }
         if (!fkValue) return false;
 
         const parent = await this.sequelize.models[table].findOne({
