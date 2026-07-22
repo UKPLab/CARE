@@ -108,7 +108,6 @@
 
 <script>
 import { resolveApiMessage } from "@/assets/utils";
-import StepTemplate from "@/basic/modal/StepTemplate.vue";
 import Quill from "quill";
 
 /**
@@ -119,9 +118,6 @@ import Quill from "quill";
  */
 export default {
   name: "PlaceholdersStep",
-  components: {
-    StepTemplate
-  },
   inject: {
     studyStepId: {
       type: Number,
@@ -179,7 +175,7 @@ export default {
   },
   watch: {
     modelValue: {
-      handler(_newVal) {
+      handler(newVal) {
         this.isUpdateMode = newVal && newVal.placeholders;
       },
       immediate: true,
@@ -192,7 +188,7 @@ export default {
       immediate: true
     },
     formData: {
-      handler(newVal) {
+      handler(_newVal) {
         const updated = {
           text: this.formatPlaceholder(this.placeholderType.text),
           chart: this.formatPlaceholder(this.placeholderType.chart),

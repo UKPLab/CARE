@@ -70,7 +70,6 @@
 </template>
 
 <script>
-import StepTemplate from "@/basic/modal/StepTemplate.vue";
 import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
 import FormDefault from "@/basic/form/Default.vue";
@@ -87,7 +86,6 @@ export default {
   name: "ServicesStep",
   subscribeTable: ["ai_budget", "ai_hook"],
   components: {
-    StepTemplate,
     SkillSelector,
     InputMap,
     FormDefault,

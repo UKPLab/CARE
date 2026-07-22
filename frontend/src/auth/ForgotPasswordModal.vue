@@ -185,7 +185,7 @@ export default {
             });
           }
         }
-      } catch (error) {
+      } catch (_error) {
         this.forgotPassword.error = true;
         this.forgotPassword.message = this.$t('errors.server.unexpectedError');
         

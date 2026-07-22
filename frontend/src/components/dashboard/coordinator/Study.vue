@@ -169,7 +169,7 @@ export default {
           message: this.$t('studies.messages.linkCopiedMessage'),
           variant: "success"
         });
-      } catch ($e) {
+      } catch (_error) {
         this.eventBus.emit('toast', {
           title: this.$t('errors.clipboard.linkNotCopied'),
           message: this.$t('errors.clipboard.copyFailed'),
