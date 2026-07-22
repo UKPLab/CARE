@@ -10,14 +10,36 @@
           <div
             id="viewerContainer"
             ref="viewer"
-            class="col border mh-100 justify-content-center p-3"
-            style="overflow-y: scroll;"
+            class="col border mh-100 justify-content-center p-3 template-viewer-column"
           >
             <div
-              :id="`editor-container-template-${templateId}`"
-              @paste="onPaste"
-              @copy="onCopy"
+              class="template-viewport"
+              :class="{ 'template-viewport--preview': previewMode && templateSupportsPlaceholderPreview }"
             >
+              <div class="template-editor-surface">
+                <div
+                  v-show="!previewMode"
+                  :id="`editor-container-template-${templateId}`"
+                  class="template-editor-container"
+                  @paste="onPaste"
+                  @copy="onCopy"
+                >
+                </div>
+              </div>
+            <div
+              v-show="previewMode && templateSupportsPlaceholderPreview"
+              class="template-example-preview-panel border rounded bg-light"
+            >
+              <div class="alert alert-info mb-0 rounded-0 py-2 small template-preview-banner">
+                Example values only — not live data. Layout matches the editor where placeholders appear as plain text in HTML.
+              </div>
+              <div class="ql-snow template-preview-scroll p-3">
+                <div
+                  class="ql-editor template-example-preview-inner"
+                  v-html="previewDisplayHtml"
+                ></div>
+              </div>
+            </div>
             </div>
           </div>
         </div>
@@ -70,6 +92,7 @@
   import BasicModal from "@/basic/Modal.vue";
   import { resolveApiMessage } from "@/assets/utils";
   import BasicButton from "@/basic/Button.vue";
+  import {buildExamplePreviewHtml, mapPlaceholderPreviewRows} from "@/components/editor/template/placeholderExamplePreview.js";
   
   const Delta = Quill.import('delta');
 
@@ -78,7 +101,12 @@
     { code: "de", labelKey: "common.languages.de" },
     { code: "fr", labelKey: "common.languages.fr" },
   ];
-  
+
+  const VIEW_MODE_LABELS = {
+    edit: "Edit",
+    preview: "Preview",
+  };
+
   export default {
     name: "TemplateEditor",
     components: { Loader, BasicModal, BasicButton },
@@ -94,7 +122,7 @@
         default: false,
       },
     },
-    emits: ["update:data"],
+    emits: ["update:data", "preview-mode-change"],
     data() {
       return {
         deltaBuffer: [],
@@ -108,6 +136,9 @@
         languageSelectorClickOutside: null,
         newLanguageModalMessage: "",
         beforeUnloadHandler: null,
+        previewMode: false,
+        lastEditorHtml: "",
+        placeholderPreviewList: [],
       };
     },
     computed: {
@@ -142,6 +173,21 @@
           }
         });
         return options;
+      },
+      templateSupportsPlaceholderPreview() {
+        const t = this.template;
+        if (!t || t.type == null) {
+          return false;
+        }
+        return [1, 2, 3, 6, 7, 8].includes(t.type);
+      },
+      previewDisplayHtml() {
+        if (!this.previewMode || !this.templateSupportsPlaceholderPreview) {
+          return "";
+        }
+        return buildExamplePreviewHtml(this.lastEditorHtml, this.placeholderPreviewList, {
+          bracketOnly: this.template?.type === 8,
+        });
       },
       editorOptions() {
         const toolsMap = {
@@ -201,20 +247,31 @@
       readOnly: {
         handler(newReadOnly) {
           if (this.editor) {
-            this.editor.getEditor().enable(!newReadOnly);
-            const toolbar = this.editor.getEditor().getModule("toolbar");
-            if (toolbar && toolbar.container) {
-              toolbar.container.style = "display:block";
-              toolbar.container.querySelectorAll('.ql-formats').forEach(el => {
-                if (newReadOnly && !el.querySelector('.ql-languageSelector')) {
-                  el.style.display = 'none';
-                } else {
-                  el.style.display = '';
-                }
+            this.editor.getEditor().enable(!newReadOnly && !this.previewMode);
+            this.syncToolbarFormatVisibility();
+          }
+        }
+      },
+      previewMode() {
+        if (this.editor) {
+          this.editor.getEditor().enable(!this.readOnly && !this.previewMode);
+          this.syncToolbarFormatVisibility();
+        }
+      },
+      templateSupportsPlaceholderPreview: {
+        handler(supported) {
+          if (supported) {
+            this.fetchPlaceholderExamples();
+            if (this.editor) {
+              this.$nextTick(() => {
+                const editorId = `editor-container-template-${this.templateId}`;
+                this.injectEditPreviewToggle(editorId);
+                this.syncEditPreviewPickerLabel();
               });
             }
           }
-        }
+        },
+        immediate: true,
       },
     },
     mounted() {
@@ -234,18 +291,9 @@
           });
         }
         this.injectLanguageSelector(editorId);
-
-        // In read-only mode, hide formatting buttons but keep language selector
-        if (this.readOnly) {
-          const toolbar = this.editor.getEditor().getModule("toolbar");
-          if (toolbar && toolbar.container) {
-            toolbar.container.querySelectorAll('.ql-formats').forEach(el => {
-              if (!el.querySelector('.ql-languageSelector')) {
-                el.style.display = 'none';
-              }
-            });
-          }
-        }
+        this.injectEditPreviewToggle(editorId);
+        this.syncEditPreviewPickerLabel();
+        this.syncToolbarFormatVisibility();
   
         this.editor.getEditor().enable(!this.readOnly);
         this.editor.getEditor().on('text-change', this.handleTextChange);
@@ -274,6 +322,7 @@
       this.fetchLanguagesAndLoadContent();
     },
     unmounted() {
+      this.$emit("preview-mode-change", false);
       this.eventBus.off("editorInsertText", this.insertTextHandler);
 
       if (this.beforeUnloadHandler) {
@@ -281,12 +330,19 @@
         this.beforeUnloadHandler = null;
       }
 
-      // Cleanup language selector
+      if (this.editPreviewClickOutside) {
+        document.removeEventListener("click", this.editPreviewClickOutside);
+        this.editPreviewClickOutside = null;
+      }
+
+      // Cleanup language selector (includes view-mode picker when present)
       if (this.languageSelectorClickOutside) {
         document.removeEventListener("click", this.languageSelectorClickOutside);
       }
       if (this.languageSelectorEl && this.languageSelectorEl.parentNode) {
         this.languageSelectorEl.parentNode.removeChild(this.languageSelectorEl);
+        this.languageSelectorEl = null;
+        this.editPreviewPickerEl = null;
       }
     },
     methods: {
@@ -520,6 +576,157 @@
         this.languageSelectorEl = formats;
       },
 
+      /**
+       * Inject Edit / Preview picker next to the language selector on the Quill toolbar.
+       *
+       * @param {string} editorId
+       */
+      injectEditPreviewToggle(editorId) {
+        if (!this.templateSupportsPlaceholderPreview) {
+          return;
+        }
+        const containerEl = document.getElementById(editorId);
+        const toolbar = containerEl?.parentElement?.querySelector(".ql-toolbar") || document.querySelector(`#${editorId} .ql-toolbar`);
+        if (!toolbar) {
+          return;
+        }
+
+        let formats = this.languageSelectorEl;
+        if (!formats) {
+          formats = document.createElement("span");
+          formats.className = "ql-formats";
+          toolbar.appendChild(formats);
+          this.languageSelectorEl = formats;
+        }
+
+        formats.setAttribute("data-template-preview-toggle", "true");
+
+        if (formats.querySelector(".ql-templateViewMode")) {
+          return;
+        }
+
+        const wrapper = document.createElement("span");
+        wrapper.className = "ql-templateViewMode ql-picker";
+
+        const currentMode = this.previewMode ? "preview" : "edit";
+        const currentLabel = VIEW_MODE_LABELS[currentMode];
+        wrapper.innerHTML = `
+          <span class="ql-picker-label" title="View mode">${currentLabel}
+            <svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>
+          </span>
+          <span class="ql-picker-options">
+            <span class="ql-picker-item" data-value="edit">${VIEW_MODE_LABELS.edit}</span>
+            <span class="ql-picker-item" data-value="preview">${VIEW_MODE_LABELS.preview}</span>
+          </span>
+        `;
+
+        wrapper.addEventListener("click", (e) => {
+          const labelEl = wrapper.querySelector(".ql-picker-label");
+          if (labelEl && e.target !== labelEl && !labelEl.contains(e.target)) {
+            return;
+          }
+          wrapper.classList.toggle("ql-expanded");
+        });
+
+        wrapper.querySelectorAll(".ql-picker-item").forEach(item => {
+          item.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const value = item.dataset.value;
+            wrapper.classList.remove("ql-expanded");
+            const labelEl = wrapper.querySelector(".ql-picker-label");
+            if (labelEl) {
+              const svg = labelEl.querySelector("svg");
+              labelEl.innerHTML = (VIEW_MODE_LABELS[value] || value) + (svg ? svg.outerHTML : "");
+            }
+            this.setPreviewMode(value === "preview");
+          });
+        });
+
+        if (this.editPreviewClickOutside) {
+          document.removeEventListener("click", this.editPreviewClickOutside);
+        }
+        this.editPreviewClickOutside = (e) => {
+          if (!wrapper.contains(e.target)) {
+            wrapper.classList.remove("ql-expanded");
+          }
+        };
+        document.addEventListener("click", this.editPreviewClickOutside);
+
+        formats.appendChild(wrapper);
+        this.editPreviewPickerEl = wrapper;
+        this.syncEditPreviewPickerLabel();
+      },
+
+      syncEditPreviewPickerLabel() {
+        const wrapper = this.editPreviewPickerEl;
+        if (!wrapper) {
+          return;
+        }
+        const label = wrapper.querySelector(".ql-picker-label");
+        if (label) {
+          const mode = this.previewMode ? "preview" : "edit";
+          const svg = label.querySelector("svg");
+          label.innerHTML = (VIEW_MODE_LABELS[mode] || mode) + (svg ? svg.outerHTML : '<svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>');
+        }
+      },
+
+      fetchPlaceholderExamples() {
+        if (!this.templateId || this.templateId <= 0) {
+          return;
+        }
+        this.$socket.emit("templatePlaceholderGetAll", { templateId: this.templateId }, (result) => {
+          if (result.success) {
+            this.placeholderPreviewList = mapPlaceholderPreviewRows(result.data);
+          } else {
+            this.eventBus.emit("toast", {
+              title: "Failed to load placeholders",
+              message: result.message || "Unknown error",
+              variant: "danger",
+            });
+          }
+        });
+      },
+
+      /**
+       * Toggle between Quill edit and example-value HTML preview.
+       *
+       * @param {boolean} on
+       */
+      setPreviewMode(on) {
+        this.previewMode = !!on;
+        if (this.previewMode && this.editor) {
+          this.lastEditorHtml = this.editor.getEditor().root.innerHTML;
+        }
+        if (this.editor) {
+          this.editor.getEditor().enable(!this.readOnly && !this.previewMode);
+        }
+        this.syncEditPreviewPickerLabel();
+        this.syncToolbarFormatVisibility();
+        this.$emit("preview-mode-change", this.previewMode);
+      },
+
+      /**
+       * In read-only or example preview, hide formatting controls; keep language + view mode pickers.
+       */
+      syncToolbarFormatVisibility() {
+        if (!this.editor) {
+          return;
+        }
+        const toolbar = this.editor.getEditor().getModule("toolbar");
+        if (!toolbar?.container) {
+          return;
+        }
+        const compactToolbar = this.readOnly || this.previewMode;
+        toolbar.container.style.display = "block";
+        toolbar.container.querySelectorAll(".ql-formats").forEach((el) => {
+          const keepVisible =
+            el.querySelector(".ql-languageSelector") ||
+            el.querySelector("[data-template-preview-toggle]") ||
+            el.getAttribute("data-template-preview-toggle") === "true";
+          el.style.display = compactToolbar && !keepVisible ? "none" : "";
+        });
+      },
+
       updateLanguageSelectorLabel() {
         const label = this.languageSelectorEl?.querySelector('.ql-picker-label');
         if (label) {
@@ -725,6 +932,7 @@
       emitContentForPlaceholders() {
         if (this.editor) {
           const content = this.editor.getEditor().root.innerHTML;
+          this.lastEditorHtml = content;
           this.eventBus.emit("editorContentUpdated", {
             templateId: this.templateId,
             content: content,
@@ -796,6 +1004,84 @@
     left: 50%;
     transform: translate(-50%, -50%)
   }
+
+  .template-viewer-column {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .template-viewport {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .template-editor-surface {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .template-viewport:not(.template-viewport--preview) .template-editor-surface {
+    flex: 1 1 auto;
+  }
+
+  .template-viewport--preview .template-editor-surface {
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  .template-example-preview-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  .template-viewport--preview .template-example-preview-panel {
+    flex: 1 1 auto;
+  }
+
+  .template-editor-surface .ql-toolbar {
+    position: relative;
+    z-index: 2;
+  }
+
+  .template-editor-container {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .template-editor-surface .ql-container {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .template-preview-banner {
+    flex-shrink: 0;
+  }
+
+  .template-preview-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .template-example-preview-inner {
+    white-space: pre-wrap;
+    min-height: 0;
+  }
   </style>
 
   <style>
@@ -810,5 +1096,28 @@
   .ql-toolbar .ql-languageSelector .ql-picker-label svg {
     width: 14px;
     height: 14px;
+  }
+
+  .ql-toolbar .ql-templateViewMode {
+    min-width: 90px;
+    background-color: #f5f5f5;
+    margin-left: 6px;
+  }
+  .ql-toolbar .ql-templateViewMode .ql-picker-label {
+    padding: 2px 8px;
+  }
+  .ql-toolbar .ql-templateViewMode .ql-picker-label svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .ql-toolbar .ql-languageSelector.ql-expanded,
+  .ql-toolbar .ql-templateViewMode.ql-expanded {
+    z-index: 10;
+  }
+
+  .ql-toolbar .ql-languageSelector .ql-picker-options,
+  .ql-toolbar .ql-templateViewMode .ql-picker-options {
+    z-index: 11;
   }
   </style>

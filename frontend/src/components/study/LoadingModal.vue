@@ -13,19 +13,19 @@
     </template>
     <template #body>
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
-        <div v-if="documentData && nlpRequestsFailed">
+        <div v-if="documentData && anyRequestsFailed">
           <div class="d-flex flex-column align-items-center">
             <p class="text-danger">{{ $t('studies.loading.nlpError') }}</p>
             <div class="d-flex gap-2">
               <BasicButton
                   :title="$t('studies.loading.buttons.tryAgain')"
                   class="btn btn-warning"
-                  @click="retryNlpRequests"
+                  @click="retryFailedRequests"
               />
               <BasicButton
                   :title="$t('studies.loading.buttons.skip')"
                   class="btn btn-secondary"
-                  @click="skipNlpSupport"
+                  @click="skipServiceSupport"
               />
             </div>
           </div>
@@ -71,6 +71,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
 import BasicButton from "@/basic/Button.vue";
+import {buildServiceResultKey} from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "StudyLoadingModal",
@@ -174,6 +175,16 @@ export default {
           req => req.status === 'timeout' || req.status === 'failed'
       );
     },
+    // Hooks are nlpRequest slots (distinguished by hookId), so they flow through nlpServices/nlpRequests.
+    servicesShouldWait() {
+      return this.nlpShouldWait;
+    },
+    anyRequestsInProgress() {
+      return this.nlpRequestsInProgress;
+    },
+    anyRequestsFailed() {
+      return this.nlpRequestsFailed;
+    },
     modalTitle() {
       if (this.error) {
         return this.$t('studies.loading.errorTitle');
@@ -181,10 +192,10 @@ export default {
       if (!this.documentData) {
         return this.$t('studies.loading.title');
       }
-      if (this.nlpRequestsInProgress) {
+      if (this.anyRequestsInProgress) {
         return this.$t('studies.loading.processingTitle');
       }
-      if (this.nlpRequestsFailed) {
+      if (this.anyRequestsFailed) {
         return this.$t('studies.loading.failedTitle');
       }
       return this.$t('studies.loading.readyTitle');
@@ -193,7 +204,7 @@ export default {
   watch: {
     show(val) {
       if (val && this.$refs.modal) {
-        if (this.documentData === null || (this.nlpServices.length > 0 && this.nlpRequestsInProgress)) {
+        if (this.documentData === null || this.anyRequestsInProgress) {
           this.$refs.modal.open();
         }
       }
@@ -207,13 +218,7 @@ export default {
     },
     nlpRequests: {
       handler() {
-        if (!this.nlpRequestsInProgress && !this.nlpRequestsFailed) {
-          this.$nextTick(() => {
-            if (this.$refs.modal) {
-              this.close();
-            }
-          });
-        }
+        this.closeWhenAllDone();
       },
       deep: true
     },
@@ -246,7 +251,7 @@ export default {
           (response) => {
             if (response.success) {
               this.documentDataRefresh(response.data);
-              if (!this.nlpShouldWait) {
+              if (!this.servicesShouldWait) {
                 this.$nextTick(() => {
                   this.close();
                 });
@@ -293,54 +298,63 @@ export default {
         updatedData[key] = value;
       }
 
-      // Check for outputs that should be inserted into editor
+      // Emit editor-insertions for any output marked insertIntoEditor. Skills key by
+      // `${name}_${skill}_${outputKey}`; hooks (single output) key by `${name}_${hookName}`.
       this.nlpServices.forEach(service => {
-        if (service.outputs && typeof service.outputs === 'object') {
-          Object.entries(service.outputs).forEach(([outputKey, outputConfig]) => {
-            const nlpResponseKey = `${service.name}_${service.skill}_${outputKey}`;
-            if (updatedData[nlpResponseKey] && outputConfig?.value === "insertIntoEditor") {
-              this.$emit("insert-nlp-response", {
-                response: updatedData[nlpResponseKey]
-              });
-            }
-          });
+        if (!service.outputs || typeof service.outputs !== 'object') {
+          return;
         }
+        Object.entries(service.outputs).forEach(([outputKey, outputConfig]) => {
+          const responseKey = buildServiceResultKey(service, outputKey);
+          if (updatedData[responseKey] && outputConfig?.value === "insertIntoEditor") {
+            this.$emit("insert-nlp-response", {response: updatedData[responseKey]});
+          }
+        });
       });
 
       this.documentData = updatedData;
     },
-    retryNlpRequests() {
+    /**
+     * Closes the modal once every NLP and AI-hook request has settled (none pending or failed).
+     *
+     * @returns {void}
+     */
+    closeWhenAllDone() {
+      if (!this.anyRequestsInProgress && !this.anyRequestsFailed) {
+        this.$nextTick(() => {
+          if (this.$refs.modal) {
+            this.close();
+          }
+        });
+      }
+    },
+    /**
+     * Invokes a method on the request components whose status is timeout/failed.
+     * Hooks render as NlpRequest too, so they're covered here.
+     *
+     * @param {string} action Component method name to call ("retryRequest" or "markSkipped").
+     * @returns {void}
+     */
+    forEachFailedRequest(action) {
       Object.entries(this.nlpRequests).forEach(([key, request]) => {
-        if (request.status === 'timeout') {
-          const refName = `nlpRequest[${key}]`;
-          const ref = this.$refs[refName];
-
+        if (request.status === 'timeout' || request.status === 'failed') {
+          const ref = this.$refs[`nlpRequest[${key}]`];
           const component = Array.isArray(ref) ? ref[0] : ref;
-
-          if (component && typeof component.retryRequest === 'function') {
-            component.retryRequest();
+          if (component && typeof component[action] === 'function') {
+            component[action]();
           }
         }
       });
+    },
+    retryFailedRequests() {
+      this.forEachFailedRequest('retryRequest');
     },
     close() {
       this.$emit("update:ready", true);
       this.$refs.modal.close();
     },
-    skipNlpSupport() {
-      Object.entries(this.nlpRequests).forEach(([key, request]) => {
-        if (request.status === 'timeout') {
-          const refName = `nlpRequest[${key}]`;
-          const ref = this.$refs[refName];
-
-          const component = Array.isArray(ref) ? ref[0] : ref;
-
-          if (component && typeof component.markSkipped === 'function') {
-            component.markSkipped();
-          }
-        }
-      });
-
+    skipServiceSupport() {
+      this.forEachFailedRequest('markSkipped');
       this.close();
     },
   }

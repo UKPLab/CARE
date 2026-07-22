@@ -349,18 +349,19 @@ export default {
   },
   methods: {
     open() {
-      this.$refs.modal.open();
+      this.$refs.modal?.open();
     },
     close() {
-      this.$refs.modal.close();
+      this.$refs.modal?.close();
     },
     startStudy(studyId = null, studySessionId) {
 
       this.$socket.emit("studySessionStart",
           {studyId: studyId, studySessionId: studySessionId}, (response) => {
             if (response.success) {
+              // Close before emitting: the parent may unmount this modal in response to "start".
+              this.$refs.modal?.close();
               this.$emit("start", {studySessionId: response.data.id});
-              this.$refs.modal.close();
               this.eventBus.emit('toast', {
                 title: this.$t('studies.messages.studyStarted'),
                 message: this.$t('studies.messages.enjoy'),

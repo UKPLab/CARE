@@ -287,6 +287,7 @@
           case 5: return this.$t("templates.types.documentStudy");
           case 6: return this.$t("templates.types.emailStudyClose");
           case 7: return this.$t("templates.types.emailSubmissionUpload");
+          case 8: return "Prompt";
           default: return this.$t("templates.dashboard.chooseType")
         }
       },
@@ -357,12 +358,17 @@
         this.$refs.detachModal.open(template, (t) => {
           this.$socket.emit("templateDetach", { templateId: t.id }, (result) => {
             if (result.success) {
-              this.eventBus.emit("toast", {
-                title: this.$t("templates.dashboard.toasts.templateDetached.title"),
-                message: this.$t("templates.dashboard.toasts.templateDetached.message"),
-                variant: "success",
+              this.$socket.emit("appData", {
+                table: "template",
+                filter: [{ key: "id", value: t.id }],
+              }, () => {
+                this.eventBus.emit("toast", {
+                  title: this.$t("templates.dashboard.toasts.templateDetached.title"),
+                  message: this.$t("templates.dashboard.toasts.templateDetached.message"),
+                  variant: "success",
+                });
+                this.$router.push(`/template/${t.id}`);
               });
-              this.$router.push(`/template/${t.id}`);
             } else {
               this.eventBus.emit("toast", {
                 title: this.$t("templates.dashboard.toasts.detachFailed"),
