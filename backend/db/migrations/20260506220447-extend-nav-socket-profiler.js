@@ -3,7 +3,7 @@
 const navElements = [
   {
     name: "Socket Profiler",
-    groupId: "Admin",
+    groupId: "Manage",
     icon: "record-circle",
     order: 16,
     admin: true,
