@@ -18,31 +18,24 @@ module.exports = (sequelize, DataTypes) => {
         };
 
         // Row access: visible/writable by anyone who owns the referenced ai_hook.
+        // by/target mirror study_step → study (owned parent ids → FK on this table).
         static accessMap = [
             {
                 table: "ai_hook",
-                by: "aiHookId",
+                by: "id",
+                target: "aiHookId",
                 columns: this.getAttributes(),
             },
         ];
 
-        // Requester may write a foreign userId (the share recipient) when they own the referenced ai_hook .
+        // Requester may write a foreign userId (the share recipient) when they own the referenced ai_hook.
+        // AppSocket#updateData calls MetaModel.validateForeignUserId for this.
         static foreignOwner = {column: "aiHookId", table: "ai_hook"};
 
-        /**
-         * Guards direct updateById calls 
-         */
-        static async validateOwnerUpdate(share, options = {}) {
-            const currentUserId = Number(options?.context?.currentUserId);
-            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
-                return;
-            }
-            const allowed = await AiHookShare.validateForeignUserId(
-                {aiHookId: share.aiHookId}, currentUserId, options.transaction
-            );
-            if (!allowed) {
-                throw new Error("You are not allowed to update this share");
-            }
+        static associate(models) {
+            AiHookShare.belongsTo(models["ai_hook"], { foreignKey: "aiHookId", as: "hook" });
+            AiHookShare.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
+            AiHookShare.belongsTo(models["user_role"], { foreignKey: "roleId", as: "role" });
         }
     }
 
@@ -51,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         roleId: DataTypes.INTEGER,
         expiryDate: DataTypes.DATE,
-        deleted: {type: DataTypes.BOOLEAN, defaultValue: false},
+        deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -59,11 +52,6 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'ai_hook_share',
         tableName: 'ai_hook_share',
-        hooks: {
-            beforeUpdate: async (share, options) => {
-                await AiHookShare.validateOwnerUpdate(share, options);
-            },
-        },
     });
 
     return AiHookShare;
