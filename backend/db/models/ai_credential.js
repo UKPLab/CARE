@@ -18,31 +18,6 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Loads an enabled, non-deleted credential owned by the given user, or throws.
-         * Used by AI service calls that need the API key outside the autoTable path.
-         *
-         * @param {number} id Target `ai_credential` primary key.
-         * @param {number} userId Caller's user id (ownership check).
-         * @returns {Promise<Object>} The credential row.
-         * @throws {Error} If missing, deleted, not owned by the caller, or disabled.
-         */
-        static async getOwnedById(id, userId) {
-            const credential = await AiCredential.getById(id, {
-                attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
-            });
-            if (!credential || credential.deleted) {
-                throw new Error("Credential not found");
-            }
-            if (!userId || credential.userId !== userId) {
-                throw new Error("You are not allowed to access this credential");
-            }
-            if (!credential.enabled) {
-                throw new Error("Credential is disabled");
-            }
-            return credential;
-        }
-
-        /**
          * Soft-delete linked models (and their shares / budgets / hook links).
          * Uses individualHooks so GlobalChangeTrackingPlugin fills transaction.changes.
          *
