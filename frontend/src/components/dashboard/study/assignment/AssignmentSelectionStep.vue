@@ -18,7 +18,7 @@ import BasicTable from "@/basic/Table.vue";
  * Renders a selectable table of documents, submissions, or study sessions depending
  * on the assignment type chosen in the template step. Supports both single-select
  * (for single assignment flow) and multi-select (for bulk flow).
- * @author karim ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "AssignmentSelectionStep",

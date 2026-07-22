@@ -27,7 +27,7 @@ import BasicForm from "@/basic/Form.vue";
  * (documents split manually between selected reviewers), and session-user-based
  * (each study session is assigned to its original user).
  * State is persisted via modalValue so navigating back restores the user's choices.
- * @author karim ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "DistributionStep",

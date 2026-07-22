@@ -122,7 +122,7 @@
  * Supports four variants: doc-sub-single, doc-sub-bulk, session-single, and session-bulk,
  * each rendering an appropriate summary layout. Also warns when reviewers lack matching
  * study sessions in session_user mode.
- * @author karim ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "ConfirmationStep",

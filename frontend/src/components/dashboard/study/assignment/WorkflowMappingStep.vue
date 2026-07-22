@@ -41,7 +41,7 @@ import FormSelect from "@/basic/form/Select.vue";
  * target workflow and then maps each annotator/editor step from the template to a
  * corresponding step in the target. Also allows choosing the new study owner (session
  * user vs. study owner) when creating bulk assignments.
- * @author karim ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "WorkflowMappingStep",

@@ -25,7 +25,7 @@ import BasicTable from "@/basic/Table.vue";
  * Displays a filterable, selectable table of all users with optional filters to
  * show only users who have documents or users from previously selected assignments.
  * State is persisted via modalValue so navigating back restores the selection.
- * @author karim ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "ReviewerSelectionStep",

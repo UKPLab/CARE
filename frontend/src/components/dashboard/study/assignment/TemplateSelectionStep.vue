@@ -40,7 +40,7 @@ import FormSelect from "@/basic/form/Select.vue";
  * choose whether assignments are based on documents, submissions, or study sessions,
  * and opt in to email notifications for reviewers. Emits template and workflow data
  * to the parent so downstream steps can filter and map workflow steps accordingly.
- * @author karim ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "TemplateSelectionStep",
