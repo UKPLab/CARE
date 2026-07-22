@@ -25,13 +25,38 @@ function parseNumericCost(value) {
 }
 
 /**
+ * Load an enabled credential owned by `userId` via MetaModel.getById.
+ *
+ * @param {Object} models DB models map.
+ * @param {number} credentialId
+ * @param {number} userId
+ * @returns {Promise<Object>}
+ */
+async function requireOwnedCredential(models, credentialId, userId) {
+    const credential = await models.ai_credential.getById(credentialId, {
+        attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled"],
+    });
+    if (!credential) {
+        throw new Error("Credential not found");
+    }
+    if (!userId || credential.userId !== userId) {
+        throw new Error("You are not allowed to access this credential");
+    }
+    if (!credential.enabled) {
+        throw new Error("Credential is disabled");
+    }
+    return credential;
+}
+
+/**
  * Runs an OpenAI-style chat completion for the authenticated client, resolves `ai_model` linkage,
  * persists success/failure to `ai_log`, and returns trimmed choice metadata.
  *
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
- * @param {{ successStatus?: string, failedStatus?: string }} [logOptions] Optional log status overrides.
+ * @param {{ bypassChecks?: boolean, testLabel?: string }} [logOptions] `testLabel` is prepended to the
+ *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
 async function chatCompletion(service, client, data, logOptions = {}) {
@@ -86,7 +111,10 @@ async function chatCompletion(service, client, data, logOptions = {}) {
             __requestId: requestId,
         });
     } catch (error) {
-        await budget.failRequest(service, guard.logId, error?.message);
+        const failureOutput = logOptions.testLabel
+            ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
+            : error?.message;
+        await budget.failRequest(service, guard.logId, failureOutput);
         throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
@@ -99,8 +127,9 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         `finish=${finishReasons.join(",") || "N/A"}`
     );
 
+    const outputPayload = JSON.stringify(choices);
     await budget.completeRequest(service, guard.logId, {
-        output: JSON.stringify(choices),
+        output: logOptions.testLabel ? `${logOptions.testLabel}\n${outputPayload}` : outputPayload,
         reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
         outputTokens: usage?.completion_tokens ?? null,
@@ -168,7 +197,11 @@ async function getValidModels(service, client, data) {
         throw new Error("Missing or invalid credentialId");
     }
 
-    const credential = await service.server.db.models.ai_credential.getOwnedById(credentialId, client?.userId);
+    const credential = await requireOwnedCredential(
+        service.server.db.models,
+        credentialId,
+        client?.userId,
+    );
     const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
     if (!provider) {
         throw new Error("Credential provider is required to load models");
@@ -201,7 +234,11 @@ async function testModel(service, client, data) {
         throw new Error("Missing model");
     }
 
-    const credential = await service.server.db.models.ai_credential.getOwnedById(credentialId, client?.userId);
+    const credential = await requireOwnedCredential(
+        service.server.db.models,
+        credentialId,
+        client?.userId,
+    );
 
     const params = {
         ...helpers.buildLiteLLMParams(credential, model),
@@ -229,14 +266,14 @@ async function testModel(service, client, data) {
         );
     }
 
+    const testLabel = `[TEST] model="${model}"${data?.aiModelId ? ` aiModelId=${data.aiModelId}` : ""}`;
     const result = await chatCompletion(service, client, {
         ...params,
         aiModelId: data?.aiModelId,
         aiCredentialId: credentialId,
     }, {
-        successStatus: "test_success",
-        failedStatus: "test_failed",
         bypassChecks: true,
+        testLabel,
     });
 
     const content = result.choices?.[0]?.message?.content;

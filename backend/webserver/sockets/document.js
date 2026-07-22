@@ -1205,31 +1205,35 @@ class DocumentSocket extends Socket {
             }
 
             if (assignmentId) {
-                transaction.afterCommit(async () => {
-                    try {
-                        await this.sendSubmissionUploadEmail({
-                            assignmentId,
-                            submissionId: submission.id,
-                            submitterUserId: userId,
-                            eventType: "first_upload",
-                        });
-                    } catch (emailError) {
-                        this.server.logger.error("Failed to send submission upload email:", emailError);
-                    }
+                // Schedule post-upload work after commit without blocking the socket ack,
+                // so the upload modal can close while email/triggers run in the background.
+                transaction.afterCommit(() => {
+                    setImmediate(async () => {
+                        try {
+                            await this.sendSubmissionUploadEmail({
+                                assignmentId,
+                                submissionId: submission.id,
+                                submitterUserId: userId,
+                                eventType: "first_upload",
+                            });
+                        } catch (emailError) {
+                            this.server.logger.error("Failed to send submission upload email:", emailError);
+                        }
 
-                    try {
-                        await handleSubmissionUploaded(this.server, {
-                            assignmentId,
-                            submissionId: submission.id,
-                            userId,
-                            projectId,
-                            timestamp: submission.createdAt,
-                        }, {
-                            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
-                        });
-                    } catch (triggerError) {
-                        this.server.logger.error("Failed to run submission upload triggers:", triggerError);
-                    }
+                        try {
+                            await handleSubmissionUploaded(this.server, {
+                                assignmentId,
+                                submissionId: submission.id,
+                                userId,
+                                projectId,
+                                timestamp: submission.createdAt,
+                            }, {
+                                broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+                            });
+                        } catch (triggerError) {
+                            this.server.logger.error("Failed to run submission upload triggers:", triggerError);
+                        }
+                    });
                 });
             }
         } catch (error) {
@@ -1354,31 +1358,35 @@ class DocumentSocket extends Socket {
             );
         }
 
-        transaction.afterCommit(async () => {
-            try {
-                await this.sendSubmissionUploadEmail({
-                    assignmentId: assignment.id,
-                    submissionId: newSubmission.id,
-                    submitterUserId: userId,
-                    eventType: "reupload",
-                });
-            } catch (emailError) {
-                this.server.logger.error("Failed to send submission reupload email:", emailError);
-            }
+        // Schedule post-reupload work after commit without blocking the socket ack,
+        // so the upload modal can close while email/triggers run in the background.
+        transaction.afterCommit(() => {
+            setImmediate(async () => {
+                try {
+                    await this.sendSubmissionUploadEmail({
+                        assignmentId: assignment.id,
+                        submissionId: newSubmission.id,
+                        submitterUserId: userId,
+                        eventType: "reupload",
+                    });
+                } catch (emailError) {
+                    this.server.logger.error("Failed to send submission reupload email:", emailError);
+                }
 
-            try {
-                await handleSubmissionUploaded(this.server, {
-                    assignmentId: assignment.id,
-                    submissionId: newSubmission.id,
-                    userId,
-                    timestamp: newSubmission.createdAt,
-                    eventType: "reupload",
-                }, {
-                    broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
-                });
-            } catch (triggerError) {
-                this.server.logger.error("Failed to run submission reupload triggers:", triggerError);
-            }
+                try {
+                    await handleSubmissionUploaded(this.server, {
+                        assignmentId: assignment.id,
+                        submissionId: newSubmission.id,
+                        userId,
+                        timestamp: newSubmission.createdAt,
+                        eventType: "reupload",
+                    }, {
+                        broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
+                    });
+                } catch (triggerError) {
+                    this.server.logger.error("Failed to run submission reupload triggers:", triggerError);
+                }
+            });
         });
 
         return {

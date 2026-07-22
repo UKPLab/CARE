@@ -320,10 +320,13 @@ export default {
           return;
         }
         const savedModelId = result.data?.id || result.data || this.modelForm.id;
-        const costLimitValue = Number(this.modelForm.costLimit);
+        const rawCostLimit = this.modelForm.costLimit;
+        const hasCostLimit = rawCostLimit !== "" && rawCostLimit !== null && rawCostLimit !== undefined;
+        const costLimitValue = Number(rawCostLimit);
         const wantsCap = !this.modelForm.freeModel
+          && hasCostLimit
           && Number.isFinite(costLimitValue)
-          && costLimitValue > 0;
+          && costLimitValue >= 0;
         // Standard appDataUpdate chain: save the model, then update or create the ai_budget row.
         if (wantsCap) {
           const existing = this.findExistingCapRow(savedModelId);

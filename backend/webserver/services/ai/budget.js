@@ -58,13 +58,29 @@ async function beginRequest(service, request, opts = {}) {
             };
         }
 
-        if (!model.freeModel) {
-            // We look up hookShare only to know if there is a hook-share budget to check.
-            //We are not checking whether the user is allowed to use the hook here.
-             const hookShare = aiHookId
-                ? await _findActiveShare(service, "ai_hook_share", "aiHookId", accessHolderId, aiHookId)
-                : null;
+        // Model access does not imply hook access, a hook must be owned by, or actively shared with
+        let hookShare = null;
+        if (aiHookId) {
+            const hook = await service.server.db.models["ai_hook"].findByPk(aiHookId, {
+                attributes: ["userId", "deleted"],
+                raw: true,
+            });
+            if (!hook || hook.deleted) {
+                return { allowed: false, reason: "AI hook is not available" };
+            }
+            const isHookOwner = hook.userId === accessHolderId;
+            hookShare = await _findActiveShare(service, "ai_hook_share", "aiHookId", accessHolderId, aiHookId);
+            if (!isHookOwner && !hookShare) {
+                return {
+                    allowed: false,
+                    reason: studyId
+                        ? "Study creator no longer has access to this AI hook"
+                        : "You do not have access to this AI hook",
+                };
+            }
+        }
 
+        if (!model.freeModel) {
             const caps = await _loadApplicableCaps(service, {
                 modelId: aiModelId,
                 shareId: modelShare?.id,
@@ -268,6 +284,7 @@ async function _sumHookTotal(service, cap) {
 async function _sumStudyTotal(service, cap) {
     return _sumLogs(service, {}, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: cap.studyId },
         required: true,
         attributes: [],
@@ -282,6 +299,7 @@ async function _sumStudySession(service, cap, ctx) {
 async function _sumStudyUser(service, cap, ctx) {
     return _sumLogs(service, { userId: ctx.userId }, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: cap.studyId },
         required: true,
         attributes: [],
@@ -297,6 +315,7 @@ async function _sumStepHookTotal(service, cap) {
     if (!step) return 0;
     return _sumLogs(service, { aiHookId: cap.hookId }, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: step.studyId },
         required: true,
         attributes: [],
@@ -324,6 +343,7 @@ async function _sumStepHookUser(service, cap, ctx) {
         userId: ctx.userId,
     }, cap.resetAt, [{
         model: service.server.db.models["study_session"],
+        as: "studySession",
         where: { studyId: step.studyId },
         required: true,
         attributes: [],
@@ -373,6 +393,7 @@ async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt)
         where: { ...base, userId: { [Op.ne]: ownerId } },
         include: [{
             model: models["study_session"],
+            as: "studySession",
             required: true,
             attributes: [],
             include: [{

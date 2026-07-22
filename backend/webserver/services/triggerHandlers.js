@@ -1,6 +1,5 @@
 "use strict";
 
-const { Op } = require("sequelize");
 const { resolveTemplate } = require("../../utils/templateResolver");
 const {buildStudyHookKey} = require("../../utils/studyNlpDocumentData");
 const aiHook = require("./ai/hook");
@@ -19,6 +18,7 @@ const HANDLERS = {
 };
 
 const QUEUE_TABLE = "trigger_queue";
+const executionQueues = new WeakMap();
 
 const EVENT_CONTEXT_BUILDERS = {
     "submission.uploaded": buildSubmissionUploadContext,
@@ -278,6 +278,57 @@ async function broadcastQueueItem(item, options = {}) {
 }
 
 /**
+ * Run queued work up to the trigger's configured parallel limit.
+ *
+ * @param {Object} server CARE server instance
+ * @param {Object} trigger Trigger row
+ * @param {Function} execute Work to run when a slot is available
+ * @returns {Promise<*>} The work result
+ */
+function enqueueExecution(server, trigger, execute) {
+    const limit = Number(trigger.parallelLimit ?? 1);
+    if (!Number.isFinite(limit) || limit < 1) {
+        return Promise.reject(new Error("Trigger parallel limit must be at least 1."));
+    }
+
+    let queues = executionQueues.get(server);
+    if (!queues) {
+        queues = new Map();
+        executionQueues.set(server, queues);
+    }
+
+    let queue = queues.get(trigger.id);
+    if (!queue) {
+        queue = { running: 0, pending: [], limit };
+        queues.set(trigger.id, queue);
+    }
+    queue.limit = limit;
+
+    const drain = () => {
+        while (queue.running < queue.limit && queue.pending.length) {
+            const task = queue.pending.shift();
+            queue.running += 1;
+            Promise.resolve()
+                .then(task.execute)
+                .then(task.resolve, task.reject)
+                .finally(() => {
+                    queue.running -= 1;
+                    if (!queue.running && !queue.pending.length) {
+                        queues.delete(trigger.id);
+                    } else {
+                        drain();
+                    }
+                });
+        }
+    };
+
+    return new Promise((resolve, reject) => {
+        queue.pending.push({ execute, resolve, reject });
+        drain();
+    });
+}
+
+/**
  * Enqueue and execute a trigger for the current event.
  *
  * @param {Object} server CARE server instance
@@ -288,36 +339,11 @@ async function broadcastQueueItem(item, options = {}) {
  */
 async function runTrigger(server, trigger, context, options = {}) {
     const queueItem = await createQueueItem(server, trigger, context, options);
-    return await runQueuedTrigger(server, trigger, queueItem, context, options);
-}
-
-/**
- * Enforce the configured per-trigger parallel execution limit.
- *
- * @param {Object} server CARE server instance
- * @param {Object} trigger Trigger row
- * @param {Object} queueItem Queue item for this run
- * @param {Object} options Trigger runtime options
- * @returns {Promise<void>}
- */
-async function enforceParallelLimit(server, trigger, queueItem, options = {}) {
-    const limit = Number(trigger.parallelLimit || 1);
-    if (!Number.isFinite(limit) || limit < 1) {
-        throw new Error("Trigger parallel limit must be at least 1.");
-    }
-
-    const runningCount = await server.db.models[QUEUE_TABLE].count({
-        where: {
-            triggerId: trigger.id,
-            status: QUEUE_STATUS.RUNNING,
-            id: { [Op.ne]: queueItem.id },
-        },
-        transaction: options.transaction,
-    });
-
-    if (runningCount >= limit) {
-        throw new Error(`Trigger parallel limit reached (${limit}).`);
-    }
+    return await enqueueExecution(
+        server,
+        trigger,
+        () => runQueuedTrigger(server, trigger, queueItem, context, options)
+    );
 }
 
 /**
@@ -363,8 +389,6 @@ async function runQueuedTrigger(server, trigger, queueItem, context, options = {
     }, options);
 
     try {
-        await enforceParallelLimit(server, trigger, queueItem, options);
-
         const result = await handler(server, executionTrigger, context, { ...options, queueItemId: queueItem.id });
         if (await isQueueItemCancelled(server, queueItem.id, options)) {
             return { cancelled: true };
@@ -427,7 +451,11 @@ async function retryQueueItem(server, queueItemId, options = {}) {
 
     const eventContext = asObject(pendingItem.configuration).event || {};
     setImmediate(() => {
-        runQueuedTrigger(server, trigger, pendingItem, eventContext, options).catch((err) => {
+        enqueueExecution(
+            server,
+            trigger,
+            () => runQueuedTrigger(server, trigger, pendingItem, eventContext, options)
+        ).catch((err) => {
             server.logger.error(`Retry for trigger queue item ${pendingItem.id} failed: ${err.message}`, err);
         });
     });
@@ -478,7 +506,11 @@ async function rerunQueueItem(server, queueItemId, options = {}) {
     await broadcastQueueItem(queueItem, options);
 
     setImmediate(() => {
-        runQueuedTrigger(server, trigger, queueItem, asObject(persistedConfig.event), options).catch((err) => {
+        enqueueExecution(
+            server,
+            trigger,
+            () => runQueuedTrigger(server, trigger, queueItem, asObject(persistedConfig.event), options)
+        ).catch((err) => {
             server.logger.error(`Re-run for trigger queue item ${queueItem.id} failed: ${err.message}`, err);
         });
     });
