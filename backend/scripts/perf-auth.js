@@ -40,12 +40,13 @@ async function loginAsAdmin(serverUrl, userName, password) {
 }
 
 /**
- * Verify a session cookie is a logged-in admin via /auth/check.
+ * Verify a session cookie is a log* Verify a session cookie belongs to an authenticated session via /auth/check.
+ * Does not check admin rights — admin is enforced at the socket in verifyAdminAccess().ged-in admin via /auth/check.
  * @param {string} serverUrl
  * @param {string} cookie - the "connect.sid=..." cookie
  * @returns {Promise<Object>} the user object
  */
-async function verifyAdmin(serverUrl, cookie) {
+async function verifyAuthenticatedSession(serverUrl, cookie) {
     const res = await fetch(serverUrl + '/auth/check', {
         headers: { cookie },
     });
@@ -53,7 +54,10 @@ async function verifyAdmin(serverUrl, cookie) {
         throw new Error('Session check failed — cookie not accepted as logged in.');
     }
     const data = await res.json();
+    if (!data.user) {
+        throw new Error('Session check failed — cookie not accepted as logged in.');
+    }
     return data.user;
 }
 
-module.exports = { loginAsAdmin, verifyAdmin };
+module.exports = { loginAsAdmin, verifyAuthenticatedSession };
