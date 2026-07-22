@@ -3,6 +3,7 @@
     ref="modal"
     name="startRecordingModal"
     size="lg"
+    @hide="onHide"
   >
     <template #title>
       Start Recording
@@ -200,6 +201,13 @@ export default {
     abort() {
       this.isOpen = false;
       this.$refs.modal.close();
+    },
+    onHide() {
+      // Fires on every close path (X, Esc, abort, confirm) since BasicModal
+      // emits 'hide' on hide.bs.modal. Reset the flag here so sessionsChanged
+      // stops refreshing once the modal is closed. Does NOT call close() ma
+      // the modal is already closing when this fires.
+      this.isOpen = false;
     },
     addCustomExclude() {
       const event = this.customExcludeEvent.trim();
