@@ -34,6 +34,7 @@ async function runSoak(cfg, ctx) {
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
     sampler.start();
 
+    try {
     while (Date.now() - start < durationMs) {
         sampleNum++;
         const progressId = randomUUID();
@@ -44,21 +45,25 @@ async function runSoak(cfg, ctx) {
         };
         ctx.socket.on('progressUpdate', onProgress);
 
-        const ack = await ctx.emitWithAck('replayRun', {
-            recordingIds,
-            sessions,
-            timingMode: 'fast',
-            ackTimeout: cfg.ackTimeout,
-            singleLevel: concurrency,
-            progressId,
-        }, 0);
+        let ack;
+        try {
+            ack = await ctx.emitWithAck('replayRun', {
+                recordingIds,
+                sessions,
+                timingMode: 'fast',
+                ackTimeout: cfg.ackTimeout,
+                singleLevel: concurrency,
+                progressId,
+            }, 0);
+        } finally {
+            ctx.socket.off('progressUpdate', onProgress);
+        }
 
-        ctx.socket.off('progressUpdate', onProgress);
         process.stdout.write('\r' + ' '.repeat(40) + '\r');
 
         if (!ack || !ack.success) {
             console.error('SOAK ERROR — replayRun failed: ' + (ack && ack.message));
-            await sampler.stop();
+            capture.stop();
             return 1;
         }
 
@@ -73,8 +78,10 @@ async function runSoak(cfg, ctx) {
             if (remaining > 0) await sleep(Math.min(cfg.sampleInterval, remaining));  
         }
     }
+    } finally {
+        await sampler.stop();
+    }
 
-    await sampler.stop();
     const code = reportSoak(samples, concurrency, durationMs, sampler, allResults);
     const saved = saveResults('soak', cfg, {
         results: allResults,
