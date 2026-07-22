@@ -67,6 +67,14 @@ async function createAuthenticatedClient(server, user, serverUrl) {
         },
     });
 
+    // Replay clients mint their own session cookies, so this must be the same
+    // secret express-session verifies with in Server.js (#initSessionManagement)
+    // — otherwise the middleware rejects them and replay can't authenticate.
+    const secret = process.env.SESSION_SECRET;
+    if (!secret) {
+        throw new Error('SESSION_SECRET is not set — replay cannot mint session cookies');
+    }
+
     const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await server.db.sequelize.query(
         `INSERT INTO "Sessions" ("sid", "expires", "data", "createdAt", "updatedAt")
@@ -81,13 +89,7 @@ async function createAuthenticatedClient(server, user, serverUrl) {
             type: server.db.sequelize.QueryTypes.INSERT,
         }
     );
-    // Replay clients mint their own session cookies, so this must be the same
-    // secret express-session verifies with in Server.js (#initSessionManagement)
-    // — otherwise the middleware rejects them and replay can't authenticate.
-    const secret = process.env.SESSION_SECRET;
-    if (!secret) {
-        throw new Error('SESSION_SECRET is not set — replay cannot mint session cookies');
-    }
+    
     const signedSid = signSessionId(sid, secret);
     const cookie = `connect.sid=${encodeURIComponent(signedSid)}`;
 
