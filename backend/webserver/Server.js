@@ -20,7 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/helper/generic");
-const { initializeEncryptionKey, syncEncryptionState, syncHashColumns } = require("../utils/encryption");
+const { initializeEncryptionKey, syncEncryptionState, syncHashColumns } = require("../utils/helper/encryption");
 
 /**
  * Defines Express Webserver of Content Server

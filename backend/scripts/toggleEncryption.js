@@ -9,7 +9,7 @@
  *   ENCRYPTION_MODE=encrypt node scripts/toggleEncryption.js
  */
 
-const { decryptAllModels, encryptAllModels } = require('../utils/encryption');
+const { decryptAllModels, encryptAllModels } = require('../utils/helper/encryption');
 const db = require('../db');
 
 async function main() {

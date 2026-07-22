@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const { encrypt, decrypt, hashForUnique } = require('../utils/encryption');
+const { encrypt, decrypt, hashForUnique } = require('../utils/helper/encryption.js');
 
 /**
  * Merge a new hook function into a model's hooks options object.

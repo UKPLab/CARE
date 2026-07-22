@@ -16,7 +16,7 @@
 const fs = require('fs');
 const path = require('path');
 const readline = require('readline');
-const { getKey, generateEncryptionKey, reEncryptAllModels } = require('../utils/encryption');
+const { getKey, generateEncryptionKey, reEncryptAllModels } = require('../utils/helper/encryption');
 const db = require('../db');
 
 const KEY_FILE = path.resolve(__dirname, '../encryption.key');

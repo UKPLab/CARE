@@ -8,7 +8,7 @@
  * Skips rows where the field already appears encrypted (safe to re-run).
  */
 
-const { encrypt, getKey, initializeEncryptionKey, decrypt } = require('../../utils/encryption');
+const { encrypt, getKey, initializeEncryptionKey, decrypt } = require('../../utils/helper/encryption');
 
 module.exports = {
     async up(queryInterface) {
