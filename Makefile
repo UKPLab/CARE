@@ -293,8 +293,10 @@ install-utils-modules:
 ifeq ($(OS),Windows_NT)
 	@powershell -NoProfile -Command "Get-ChildItem -Directory 'utils\modules' | ForEach-Object { if (Test-Path (Join-Path $$_.FullName 'package.json')) { Write-Host ('Installing ' + $$_.Name); npm.cmd install --prefix $$_.FullName --no-audit --no-fund --loglevel=error; New-Item -ItemType File -Force -Path (Join-Path $$_.FullName 'node_modules\.uptodate') | Out-Null } }"
 else
-	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
-		(cd $$d && npm install --no-audit --no-fund --loglevel=error && touch node_modules/.uptodate); \
+	@for d in $(shell find utils/modules -mindepth 1 -maxdepth 1 -type d); do \
+		if [ -f "$$d/package.json" ]; then \
+			(cd $$d && npm install --no-audit --no-fund --loglevel=error && mkdir -p node_modules && touch node_modules/.uptodate); \
+		fi; \
 	done
 endif
 
