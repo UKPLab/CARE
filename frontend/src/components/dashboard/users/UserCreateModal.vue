@@ -4,7 +4,7 @@
       name="UserCreateModal"
       @hide="reset">
     <template #title>
-      <span>Add User</span>
+      <span>{{$t('users.addUser')}}</span>
     </template>
     <template #body>
       <BasicForm
@@ -15,12 +15,12 @@
     </template>
     <template #footer>
       <BasicButton
-          title="Cancel"
+          :title="$t('common.cancel')"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
       />
       <BasicButton
-          title="Add"
+          :title="$t('common.add')"
           class="btn btn-primary"
           :disabled="isDisabled"
           @click="createUser"
@@ -33,6 +33,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
+import {resolveApiMessage} from "@/assets/utils";
 
 /**
  * Modal for creating a single new user
@@ -43,46 +44,6 @@ export default {
   components: {BasicModal, BasicButton, BasicForm},
   data() {
     return {
-      formFields: [
-        {
-          key: "firstName",
-          label: "First Name:",
-          type: "text",
-          required: true,
-          placeholder: "please provide the first name",
-        },
-        {
-          key: "lastName",
-          label: "Last Name:",
-          type: "text",
-          required: true,
-          placeholder: "please provide the last name",
-        },
-        {
-          key: "userName",
-          label: "Username:",
-          type: "text",
-          required: true,
-          pattern: "^[a-zA-Z0-9]+$",
-          placeholder: "please provide the username - no special characters",
-        },
-        {
-          key: "email",
-          label: "Email:",
-          type: "email",
-          required: true,
-          pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
-          placeholder: "email@example.com",
-        },
-        {
-          key: "password",
-          label: "Password:",
-          type: "password",
-          required: true,
-          pattern: ".{8,}",
-          placeholder: "password should be at least 8 characters long",
-        },
-      ],
       formData: {
         firstName: "",
         lastName: "",
@@ -94,10 +55,53 @@ export default {
     };
   },
   computed: {
-    isDisabled() {
-      return Object.values(this.formData).some((v) => v === "");
-    },
+  formFields() {
+    return [
+      {
+        key: "firstName",
+        label: this.$t("dashboard.users.firstNameLabel"),
+        type: "text",
+        required: true,
+        placeholder: this.$t("dashboard.users.placeholders.provideFirstName"),
+      },
+      {
+        key: "lastName",
+        label: this.$t("dashboard.users.lastNameLabel"),
+        type: "text",
+        required: true,
+        placeholder: this.$t("dashboard.users.placeholders.provideLastName"),
+      },
+      {
+        key: "userName",
+        label: this.$t("dashboard.users.userNameLabel"),
+        type: "text",
+        required: true,
+        pattern: "^[a-zA-Z0-9]+$",
+        placeholder: this.$t("dashboard.users.placeholders.provideUsername"),
+      },
+      {
+        key: "email",
+        label: this.$t("dashboard.users.emailLabel"),
+        type: "email",
+        required: true,
+        pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+        placeholder: this.$t("dashboard.users.placeholders.emailExample"),
+      },
+      {
+        key: "password",
+        label: this.$t("dashboard.users.passwordLabel"),
+        type: "password",
+        required: true,
+        pattern: ".{8,}",
+        placeholder: this.$t("dashboard.users.placeholders.passwordMinLength"),
+      },
+    ];
   },
+
+  isDisabled() {
+    return Object.values(this.formData).some((v) => v === "");
+  },
+},
   methods: {
     open() {
       this.$refs.modal.open();
@@ -119,17 +123,17 @@ export default {
       this.$socket.emit("userCreate", this.formData, (response) => {
         if (response.success) {
           this.eventBus.emit("toast", {
-            title: "User Creation Completed",
+            title: this.$t('dashboard.users.userCreationCompleted'),
             variant: "success",
-            message: "The user creation was successful",
+            message: this.$t('dashboard.users.userCreationCompletedMessage'),
           });
           this.$refs.modal.close();
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
-            title: "User Creation Failed",
+            title: this.$t('errors.users.userCreationFailed'),
             variant: "danger",
-            message: response.message,
+            message: resolveApiMessage(response, 'errors.users.userCreationFailed'),
           });
         }
       });

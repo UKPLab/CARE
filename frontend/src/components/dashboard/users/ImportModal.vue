@@ -3,12 +3,12 @@
     ref="importStepper"
     :steps="steps"
     :validation="stepValid"
-    submit-text="Close"
+    :submit-text="$t('common.close')"
     @submit="$refs.importStepper.close()"
     @step-change="handleStepChange"
   >
     <template #title>
-      <span>Bulk Import Users</span>
+      <span>{{$t('dashboard.users.bulkImportUsers')}}</span>
     </template>
     <!-- Step1: Upload -->
     <template #step-1>
@@ -31,18 +31,17 @@
               icon-name="cloud-arrow-up"
               size="64"
             />
-            <p>Drag and drop CSV file here<br />or click to upload</p>
+            <p>
+              {{ $t('dashboard.users.dragAndDropCSV') }}<br />
+              {{ $t('dashboard.users.orClickToUpload') }}
+            </p>
           </div>
-          <p>
-            Please check the format or
-            <a
-              class="template-link"
-              @click="downloadTemplateCSV"
-            >
-              download the template
-            </a>
-            here.
-          </p>
+
+            <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
+              <a class="template-link" @click="downloadTemplateCSV">
+              {{ $t('dashboard.users.downloadTemplate') }}
+              </a>
+            </i18n-t>
           <template v-if="file.state === 1">
             <div
               v-if="file.name !== '' && file.errors.length === 0"
@@ -58,7 +57,7 @@
               </div>
               <BasicButton
                 icon="x-circle-fill"
-                tooltip="Clear file"
+                :tooltip="$t('dashboard.users.clearFile')"
                 @click="clearFile"
               />
             </div>
@@ -66,7 +65,7 @@
               v-else
               class="scrollable-error-container"
             >
-              <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
+              <p>{{$t('dashboard.users.csvErrorHint')}}</p>
               <ul>
                 <li
                   v-for="(error, index) in file.errors"
@@ -105,27 +104,40 @@
           icon-name="person-fill-up"
           size="64"
         />
-        <p>
-          Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br />
-          and overwrite <strong>{{ userCount.duplicate }}</strong> users?
-        </p>
+        <i18n-t keypath="dashboard.users.bulkImportConfirm" tag="p">
+          <template #newCount>
+            <strong>{{ userCount.new }}</strong>
+          </template>
+
+          <template #br>
+            <br />
+          </template>
+
+          <template #dupCount>
+            <strong>{{ userCount.duplicate }}</strong>
+          </template>
+        </i18n-t>
       </div>
     </template>
     <!-- Step3: Result -->
     <template #step-4>
       <div class="result-container">
         <div v-if="updatedUserCount">
-          Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
-          <div
-            v-if="createdErrors.length > 0"
-            class="error-container"
-          >
-            Failed to create the following users:
-            <ul
-              v-for="(error, index) in createdErrors"
-              :key="index"
-            >
-              <li>User with external Id {{ error.extId }} cannot be added: {{ error.message }}</li>
+          <i18n-t keypath="dashboard.users.resultSummary" tag="div">
+            <template #newCount>
+              <strong>{{ updatedUserCount.new }}</strong>
+            </template>
+            <template #updatedCount>
+              <strong>{{ updatedUserCount.updated }}</strong>
+            </template>
+          </i18n-t>
+
+          <div v-if="createdErrors.length > 0" class="error-container">
+            {{ $t('dashboard.users.failedListTitle') }}
+            <ul v-for="(error, index) in createdErrors" :key="index">
+              <li>
+                {{ $t('dashboard.users.userCannotBeAdded', { extId: error.extId, message: resolveApiMessage(error) }) }}
+              </li>
             </ul>
           </div>
         </div>
@@ -139,12 +151,12 @@
           <BasicButton
             v-if="importType === 'moodle'"
             class="btn btn-outline-info"
-            title="Upload to Moodle"
+            :title="$t('dashboard.users.uploadToMoodle')"
             @click="uploadToMoodle"
           />
           <BasicButton
             class="btn btn-outline-primary"
-            title="Download Result CSV"
+            :title="$t('dashboard.users.downloadResultCsv')"
             @click="downloadFileAsCSV"
           />
         </div>
@@ -159,7 +171,7 @@ import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 
 /**
@@ -193,22 +205,24 @@ export default {
       },
       columns: [
         {
-          name: "Duplicate",
+          name: this.$t('common.duplicate'),
           key: "exists",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", default: "No" },
+            keyMapping: { true: this.$t('common.yes'), default: this.$t('common.no') },
           },
           filter: [
-            { key: false, name: "New" },
-            { key: true, name: "Duplicate" },
+            {
+              key: false, name: this.$t('common.new')
+             },
+            { key: true, name: this.$t('common.duplicate') },
           ],
         },
-        { name: "extId", key: "extId" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Email", key: "email" },
-        { name: "Roles", key: "roles" },
+        { name: this.$t('dashboard.projects.extId'), key: "extId" },
+        { name: this.$t('common.firstName'), key: "firstName" },
+        { name: this.$t('common.lastName'), key: "lastName" },
+        { name: this.$t('users.columns.email'), key: "email" },
+        { name: this.$t('dashboard.projects.roles'), key: "roles" },
       ],
       updatedUserCount: null,
       createdUsers: [],
@@ -223,7 +237,7 @@ export default {
       };
     },
     steps() {
-      return [this.importType === "csv" ? { title: "Upload" } : { title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }];
+      return [this.importType === "csv" ? { title: this.$t('common.upload') } : { title: this.$t('dashboard.users.moodle') }, { title: this.$t('dashboard.users.preview') }, { title: this.$t('common.confirm') }, { title: this.$t('dashboard.users.result') }];
     },
     stepValid() {
       let validStates = [];
@@ -269,14 +283,14 @@ export default {
       this.$socket.emit("userPublishMoodle", { options: this.moodleOptions, users }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Uploading completed",
-            message: "Please go to Moodle to check out your username and password!",
+            title: this.$t('dashboard.users.uploadingCompleted'),
+            message: this.$t('dashboard.users.uploadingCompletedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Uploading failed",
-            message: res.message,
+            title: this.$t('errors.documents.uploadingFailed'),
+            message: resolveApiMessage(res),
             type: "error",
           });
         }
@@ -328,8 +342,8 @@ export default {
             this.users = res["data"];
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to get users from Moodle",
-              message: res.message,
+              title: this.$t('errors.users.failedToGetUsersFromMoodle'),
+              message: resolveApiMessage(res),
               type: "error",
             });
             this.resetModal();
@@ -366,8 +380,8 @@ export default {
           this.downloadFileAsCSV();
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to bulk create users",
-            message: res.message,
+            title: this.$t('errors.users.failedToBulkCreateUsers'),
+            message: resolveApiMessage(res),
             type: "error",
           });
         }
@@ -385,7 +399,7 @@ export default {
       return new Promise((resolve, reject) => {
         Papa.parse(file, {
           header: true,
-          complete: function (results) {
+          complete: (results) => {
             const { data: rows, meta } = results;
             const { fields: fileHeaders } = meta;
             const requiredHeaders = ["extId", "firstName", "lastName", "email", "roles"];
@@ -396,37 +410,37 @@ export default {
             const errors = [];
             // Check headers
             if (!requiredHeaders.every((header) => fileHeaders.includes(header))) {
-              errors.push("CSV does not contain all required headers");
+              errors.push(this.$t('errors.csv.missingRequiredHeaders'));
             }
             rows.forEach((row, index) => {
               // Check if every cell has value
               for (const [key, value] of Object.entries(row)) {
                 if (value === null || value === "") {
-                  errors.push(`Empty value found for ${key} at index ${index + 1}`);
+                  errors.push(this.$t('errors.csv.emptyValue',{key, index: index + 1}));
                 }
               }
               // Check for duplicate id
               if (seenIds.has(row.extId)) {
-                errors.push(`Duplicate id found: ${row.extId} at index ${index + 1}`);
+                errors.push(this.$t('errors.csv.duplicateId', {extId: row.extId, index: index + 1}));
               } else {
                 seenIds.add(row.extId);
               }
 
               // Check for duplicate email
               if (seenEmails.has(row.email)) {
-                errors.push(`Duplicate email found: ${row.email} at index ${index + 1}`);
+                errors.push(this.$t('errors.csv.duplicateEmail', {email: row.email, index: index + 1}));
               } else {
                 seenEmails.add(row.email);
               }
 
               // Check if the values of the roles column are separated by comma
               if (row.roles && !row.roles.includes(",") && row.roles.includes(" ")) {
-                errors.push(`Roles not comma-separated for id ${row.id} at index ${index + 1}`);
+                errors.push(this.$t('errors.csv.rolesNotCommaSeparated', {id: row.id, index: index + 1}));
               }
 
               // Check if the email is in a valid format
               if (!emailRegex.test(row.email)) {
-                errors.push(`Invalid email format for id ${row.id} at index ${index + 1}: ${row.email}`);
+                errors.push(this.$t('errors.csv.invalidEmailFormat', {id: row.id, index: index + 1, email: row.email}));
               }
             });
 
@@ -436,8 +450,8 @@ export default {
               resolve(rows);
             }
           },
-          error: function (error) {
-            reject(["Error parsing file: " + error.message]);
+          error: (error) => {
+            reject([this.$t('errors.csv.parseError', { message: error.message })]);
           },
         });
       });
@@ -454,8 +468,8 @@ export default {
             errors: [],
           };
           this.eventBus.emit("toast", {
-            title: "Validation completed",
-            message: "CSV is valid!",
+            title: this.$t('dashboard.users.validationCompleted'),
+            message: this.$t('dashboard.users.validationCompletedMessage'),
             variant: "success",
           });
         } catch (errors) {
@@ -465,7 +479,7 @@ export default {
           };
         }
       } else {
-        alert("Please upload a CSV file");
+        alert(this.$t('dashboard.users.pleaseUploadCsv'));
       }
     },
     clearFile() {
@@ -483,8 +497,8 @@ export default {
           this.users = res.data;
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to check duplicate users",
-            message: "Please contact CARE staff to resolve the issue",
+            title: this.$t('errors.users.failedToCheckDuplicateUsers'),
+            message: this.$t('errors.users.failedToCheckDuplicateUsersMessage'),
             type: "error",
           });
         }

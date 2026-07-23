@@ -1,14 +1,14 @@
 <template>
   <BasicModal ref="modal" name="workflowEditModal" size="xl">
     <template #title>
-      Edit Workflow: {{ selectedWorkflow?.name }}
+      {{ $t("workflow.editModal.title", { name: displayWorkflowName }) }}
     </template>
     <template #body>
       <div v-if="selectedWorkflow" class="workflow-editor">
         <div class="alert alert-info mb-3" role="alert">
-          <strong>Workflow:</strong> {{ selectedWorkflow.name }}<br>
-          <strong>Description:</strong> {{ selectedWorkflow.description || 'No description' }}<br>
-          <strong>Copied Step:</strong> {{ copiedWorkflowStepData ? `${copiedWorkflowStepData.name || 'Unnamed step'} (${getStepTypeString(copiedWorkflowStepData.stepType)})` : 'None' }}
+          <strong>{{ $t("workflow.editModal.workflow") }}:</strong> {{ displayWorkflowName }}<br>
+          <strong>{{ $t("workflow.editModal.description") }}:</strong> {{ displayWorkflowDescription }}<br>
+          <strong>{{ $t("workflow.editModal.copiedStep") }}:</strong> {{ copiedWorkflowStepData ? $t("workflow.editModal.copiedStepValue", { name: copiedWorkflowStepData.name || $t("workflow.editModal.unnamedStep"), type: getStepTypeString(copiedWorkflowStepData.stepType) }) : $t("common.none") }}
         </div>
 
         <Graph
@@ -37,21 +37,21 @@
 
         <div v-else class="text-center py-4">
           <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading workflow...</span>
+            <span class="visually-hidden">{{ $t("workflow.editModal.loadingWorkflow") }}</span>
           </div>
-          <p class="mt-2">Loading workflow graph...</p>
+          <p class="mt-2">{{ $t("workflow.editModal.loadingWorkflowGraph") }}</p>
         </div>
       </div>
 
       <div v-if="isLoading" class="text-center py-3">
         <div class="spinner-border spinner-border-sm me-2" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ $t("common.loading") }}</span>
         </div>
-        Saving changes...
+        {{ $t("workflow.editModal.savingChanges") }}
       </div>
     </template>
     <template #footer>
-      <BasicButton text="Close" class="btn btn-secondary" @click="close" />
+      <BasicButton :text="$t('common.close')" class="btn btn-secondary" @click="close" />
     </template>
   </BasicModal>
 </template>
@@ -62,6 +62,7 @@ import BasicButton from "@/basic/Button.vue";
 import Graph from "@/basic/graph/Graph.vue";
 import WorkflowStepEditor from "@/basic/graph/WorkflowStepEditor.vue";
 import WorkflowStepInspectModal from "@/basic/graph/WorkflowStepInspectModal.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 function getColorForStepType(stepType) {
   switch (stepType) {
@@ -104,31 +105,40 @@ export default {
       workflowGraphData: null,
       originalGraphData: null,
       hasUnsavedChanges: false,
-      graphOptions: {
-        nodes: {
-          "Annotater": {
-            label: "Annotater Step",
-            target: "workflow_step",
-          },
-          "Editor": {
-            label: "Editor Step",
-            target: "workflow_step",
-          },
-          "Modal": {
-            label: "Modal Step",
-            target: "workflow_step",
-          },
-        }
-      },
     };
   },
   computed: {
+    graphOptions() {
+      return {
+        nodes: {
+          "Annotater": {
+            label: this.$t("workflow.editModal.stepTypes.annotaterStep"),
+            target: "workflow_step",
+          },
+          "Editor": {
+            label: this.$t("workflow.editModal.stepTypes.editorStep"),
+            target: "workflow_step",
+          },
+          "Modal": {
+            label: this.$t("workflow.editModal.stepTypes.modalStep"),
+            target: "workflow_step",
+          },
+        }
+      };
+    },
     isEditable() {
       if (!this.selectedWorkflow) return false;
       const isAdmin = this.$store.getters['auth/isAdmin'];
       const userId = this.$store.getters['auth/getUserId'];
       return isAdmin || this.selectedWorkflow.userId === userId;
-    }
+    },
+    displayWorkflowName() {
+      return translateMaybeKey(this.selectedWorkflow?.name) || "";
+    },
+    displayWorkflowDescription() {
+      const description = translateMaybeKey(this.selectedWorkflow?.description);
+      return description || this.$t("common.noDescription");
+    },
   },
   methods: {
     open(workflowId) {
@@ -228,13 +238,13 @@ export default {
     getStepTypeString(stepType) {
       switch (stepType) {
         case 1: // STEP_TYPE_ANNOTATOR
-          return "Annotater";
+          return this.$t("workflow.editModal.stepTypes.annotater");
         case 2: // STEP_TYPE_EDITOR
-          return "Editor";
+          return this.$t("workflow.editModal.stepTypes.editor");
         case 3: // STEP_TYPE_MODAL
-          return "Modal";
+          return this.$t("workflow.editModal.stepTypes.modal");
         default:
-          return "Annotater"; // Default to annotater
+          return this.$t("workflow.editModal.stepTypes.annotater"); // Default to annotater
       }
     },
     inspectWorkflowStep(id) {
@@ -354,8 +364,8 @@ export default {
       }, (result) => {
         if (!result.success) {
           this.eventBus.emit("toast", {
-            title: "Save Failed",
-            message: `Failed to save step`,
+            title: this.$t("workflow.editModal.errors.saveFailed"),
+            message: this.$t("workflow.editModal.errors.saveStepFailed"),
             variant: "danger",
           });
         }

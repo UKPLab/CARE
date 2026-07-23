@@ -1,0 +1,211 @@
+{
+  "fields": {
+    "name": {
+      "label": "Assignment Name:",
+      "placeholder": "Assignment 1"
+    },
+    "description": {
+      "label": "Description:",
+      "help": "Optional description shown for this assignment."
+    },
+    "maxRevisions": {
+      "label": "Maximum Revisions:",
+      "help": "Maximum number of allowed revision copies for this assignment. Move to the end for unlimited.",
+      "unit": "revision(s)",
+      "unlimitedLabel": "unlimited"
+    },
+    "start": {
+      "label": "Start Time:"
+    },
+    "end": {
+      "label": "End Time:"
+    },
+    "validationConfigurationId": {
+      "label": "Validation Configuration:",
+      "help": "Validation is applied before submission upload."
+    },
+    "allowReUpload": {
+      "label": "Allow Re-Upload:",
+      "help": "If enabled, users can replace or delete uploaded submissions."
+    },
+    "notifyOnSubmissionUpload": {
+      "label": "Notify on Submission Upload:",
+      "help": "If enabled, sends an email when a student uploads or re-uploads a submission."
+    }
+  },
+  "dashboard": {
+    "buttons": {
+      "addAssignment": "Add Assignment"
+    },
+    "columns": {
+      "submissionStatus": "Submission Status",
+      "assignedTo": "Assigned To",
+      "maxRevisions": "Max Revisions",
+      "disable": "Disable",
+      "allowReUpload": "Allow Re-Upload",
+      "parentAssignmentId": "Parent Assignment ID"
+    },
+    "status": {
+      "notStarted": "Not started",
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "actions": {
+      "editAssignment": "Edit assignment",
+      "deleteAssignment": "Delete assignment",
+      "inspectSubmissions": "Inspect submissions",
+      "toggleDisable": "Toggle Disable",
+      "copyAssignment": "Copy assignment",
+      "closeAssignment": "Close assignment"
+    },
+    "fallback": {
+      "userLabel": "User {id}"
+    },
+    "confirm": {
+      "close": {
+        "title": "Close Assignment",
+        "message": "Are you sure you want to close this assignment?"
+      },
+      "delete": {
+        "title": "Delete Assignment",
+        "message": "Are you sure you want to delete this assignment?"
+      }
+    },
+    "toasts": {
+      "noPermissionEdit": "You do not have permission to edit assignments.",
+      "noPermissionClose": "You do not have permission to close assignments.",
+      "noPermissionDisable": "You do not have permission to disable this assignment.",
+      "noPermissionDelete": "You do not have permission to delete assignments.",
+      "closeSuccess": {
+        "title": "Assignment closed",
+        "message": "The assignment has been closed."
+      },
+      "closeFailed": "Close failed",
+      "updateSuccess": {
+        "title": "Assignment updated",
+        "message": "Assignment is now {state}."
+      },
+      "updateFailed": "Update failed",
+      "deleteSuccess": {
+        "title": "Assignment deleted",
+        "message": "The assignment has been deleted"
+      },
+      "deleteFailed": "Assignment delete failed",
+      "copyFailed": {
+        "title": "Assignment copy failed",
+        "message": "Original assignment could not be found."
+      },
+      "revisionLimitReached": {
+        "title": "Revision limit reached",
+        "message": "You have reached the maximum number of revisions ({count})."
+      },
+      "uploadNotAllowed": {
+        "title": "Upload not allowed",
+        "message": "Submissions are closed for this assignment.",
+        "messageAdmin": "Submissions are closed for this assignment. Only admins can upload now."
+      }
+    },
+    "submissions": {
+      "activeTitle": "Active Assignments",
+      "noActive": "You have no active assignments.",
+      "closedTitle": "Closed Assignments",
+      "noClosed": "You have no closed assignments.",
+      "noDueDate": "no due date"
+    },
+    "modal": {
+      "submitText": "Save Assignment",
+      "assignMode": {
+        "roles": "Roles",
+        "users": "Users"
+      },
+      "step1": {
+        "rolesHint": "Select one or more roles allowed for this assignment.",
+        "usersHint": "Select one or more users allowed for this assignment."
+      },
+      "steps": {
+        "userRoles": "User Roles",
+        "assignment": "Assignment"
+      },
+      "columns": {
+        "role": "Role"
+      },
+      "titles": {
+        "copy": "Copy Assignment",
+        "edit": "Edit Assignment",
+        "new": "New Assignment"
+      },
+      "toasts": {
+        "saveFailed": "Could not save assignment",
+        "saveSuccess": {
+          "title": "Assignment saved",
+          "messageUpdated": "Assignment has been successfully updated.",
+          "messageCreated": "Assignment has been successfully created."
+        }
+      }
+    },
+    "uploadModal": {
+      "assignmentDescriptionHeading": "Assignment Description",
+      "noDescription": "No description provided.",
+      "steps": {
+        "assignment": "Assignment"
+      },
+      "fields": {
+        "name": {
+          "label": "Submission Name",
+          "placeholder": "Enter a submission name"
+        },
+        "description": {
+          "label": "Submission Description",
+          "placeholder": "Add a short description"
+        }
+      },
+      "toasts": {
+        "missingUser": {
+          "title": "Missing user",
+          "message": "No user selected for this submission."
+        }
+      }
+    },
+    "submissionsModal": {
+      "title": "Submissions for {title}",
+      "revisionLimitWarning": "Maximum number of revisions ({count}) reached.",
+      "fallbackAssignmentTitle": "Assignment #{id}"
+    },
+    "submissionsTable": {
+      "columns": {
+        "name": "Submission Name",
+        "studyUsageCount": "Studies Using"
+      },
+      "actions": {
+        "replace": "Replace submission",
+        "delete": "Delete submission"
+      },
+      "toasts": {
+        "documentFetchFailed": "Failed to get document",
+        "replaceNotAllowed": {
+          "title": "Replace not allowed",
+          "message": "This submission cannot be replaced because one or more documents are used in studies."
+        },
+        "replaceFailed": {
+          "title": "Replace failed",
+          "message": "Assignment id is missing for this submission."
+        },
+        "deleteNotAllowed": {
+          "title": "Delete not allowed",
+          "message": "This submission cannot be deleted because one or more documents are used in studies."
+        },
+        "deleteSuccess": {
+          "title": "Submission deleted",
+          "message": "The submission has been deleted"
+        },
+        "deleteFailed": "Failed to delete submission"
+      },
+      "confirm": {
+        "delete": {
+          "title": "Delete Submission",
+          "message": "Are you sure you want to delete this submission?"
+        }
+      }
+    }
+  }
+}

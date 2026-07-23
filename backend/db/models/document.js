@@ -2,7 +2,9 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const fs = require('fs')
+const JSZip = require("jszip");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 
@@ -30,15 +32,15 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name of the document:",
-                placeholder: "My document",
+                label: "documents.fields.name.label",
+                placeholder: "documents.fields.name.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "hash",
-                label: "Hash ID of the document",
+                label: "documents.fields.hash.label",
                 placeholder: "#",
                 type: "text",
                 required: false,
@@ -46,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "userId",
-                label: "User ID of the document",
+                label: "documents.fields.userId.label",
                 placeholder: "#",
                 type: "text",
                 required: false,
@@ -54,7 +56,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "public",
-                label: "Is the document published?",
+                label: "documents.fields.publicSwitch",
                 type: "switch",
                 required: false,
                 default: false
@@ -92,7 +94,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const originalDoc = await Document.findByPk(documentId, {transaction: options.transaction});
             if (!originalDoc) {
-                throw new Error(`Document with id ${documentId} not found`);
+                throw new TranslatableError("errors.documents.withIdNotFound", {documentId});
             }
 
             // Create base document data
@@ -275,13 +277,59 @@ module.exports = (sequelize, DataTypes) => {
                 const doc = await Document.findByPk(documentId, {raw: true});
 
                 if (!doc) {
-                    throw new Error(`Document ${documentId} not found`);
+                    throw new TranslatableError("errors.documents.byIdNotFound", {documentId});
                 }
 
                 return await Document.encodeDocumentFileToBase64(doc);
             } catch (err) {
-                throw new Error(`Error processing document ${documentId}: ${err.message}`)
+                if (err.key) {
+                    throw err;
+                }
+                throw new TranslatableError("errors.documents.processingError", {documentId, message: err.message})
             }
+        }
+
+        /**
+         * Reads a document's backing file from disk by hash and extension.
+         *
+         * @param {object} doc - The document record (must include `hash`).
+         * @param {string} extension - File extension including the dot (e.g. ".pdf").
+         * @returns {Promise<Buffer|null>} File buffer, or null if the file is missing.
+         */
+        static async readDocumentFile(doc, extension) {
+            const filePath = path.join(UPLOAD_PATH, `${doc.hash}${extension}`);
+            try {
+                return await fs.promises.readFile(filePath);
+            } catch {
+                return null;
+            }
+        }
+
+        /**
+         * Extracts specific files from a zip buffer by regex pattern.
+         * Each spec carries a logical `name` (used as the result key) and a `pattern`
+         * (the validation-config regex that matches the actual filename inside the zip,
+         * e.g. "Expose\\.tex$"). Falls back to exact/basename match when pattern is absent.
+         *
+         * @param {Buffer} buffer - Raw zip bytes.
+         * @param {{name: string, pattern: string|null}[]} fileSpecs - Files to extract.
+         * @returns {Promise<Object>} Map of spec.name → text content for each found file.
+         */
+        static async extractZipFiles(buffer, fileSpecs) {
+            const zip = await JSZip.loadAsync(buffer);
+            const result = {};
+            for (const {name, pattern} of fileSpecs) {
+                //If pattern exists, turn it into a regular expression.
+                const regex = pattern ? new RegExp(pattern) : null;
+                const entry = Object.values(zip.files).find(f =>
+                    !f.dir && (regex ? regex.test(f.name) : (f.name === name || f.name.split("/").pop() === name))
+                );
+                if (entry) {
+                    //entry is a JSZip file object. JSZip gives each file entry methods  (e.g. async)
+                    result[name] = await entry.async("string");
+                }
+            }
+            return result;
         }
 
         /**
@@ -306,14 +354,14 @@ module.exports = (sequelize, DataTypes) => {
             try {
                 await fs.promises.access(docFilePath, fs.constants.F_OK);
             } catch {
-                throw new Error(`File not found for document ${doc.id}: ${docFilePath}`);
+                throw new TranslatableError("errors.documents.fileNotFound", {documentId: doc.id, filePath: docFilePath});
             }
 
             try {
                 const fileBuffer = await fs.promises.readFile(docFilePath);
                 return fileBuffer.toString('base64');
             } catch (err) {
-                throw new Error(`Error reading document file ${doc.id}: ${err.message}`);
+                throw new TranslatableError("errors.documents.readError", {documentId: doc.id, message: err.message});
             }
         }
 

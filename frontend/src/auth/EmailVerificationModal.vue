@@ -2,12 +2,12 @@
   <!-- Email Verification Modal -->
   <BasicModal ref="emailVerificationModal" name="emailVerificationModal">
     <template #title>
-      Email Verification Required
+      {{ $t('auth.emailVerificationRequired') }}
     </template>
     <template #body>
       <div v-if="!emailVerification.showSuccess && !emailVerification.showError">
-        <p>Your email address has not been verified yet. Please check your email for a verification link.</p>
-        <p>Didn't receive the email? Click below to send a new verification email.</p>
+        <p>{{ $t('auth.messages.emailNotVerified') }}</p>
+        <p>{{ $t('auth.messages.resendVerificationPrompt') }}</p>
       </div>
       <div v-if="emailVerification.showSuccess" class="alert alert-success">
         {{ emailVerification.successMessage }}
@@ -20,20 +20,20 @@
       <BasicButton
         v-if="!emailVerification.showSuccess"
         class="btn btn-secondary"
-        text="Close"
+        :text="$t('common.close')"
         data-bs-dismiss="modal"
       />
       <BasicButton
         v-if="!emailVerification.showSuccess && !emailVerification.showError"
         :loading="emailVerification.isLoading"
         class="btn btn-primary"
-        :text="emailVerification.isLoading ? 'Sending...' : 'Resend Verification Email'"
+        :text="emailVerification.isLoading ? $t('modals.sending') : $t('auth.resendVerificationEmail')"
         @click="resendVerificationEmail"
       />
       <BasicButton
         v-if="emailVerification.showSuccess"
         class="btn btn-success"
-        text="OK"
+        :text="$t('common.ok')"
         data-bs-dismiss="modal"
       />
     </template>
@@ -52,6 +52,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "EmailVerificationModal",
@@ -108,14 +109,14 @@ export default {
         
         if (response.status === 200) {
           this.emailVerification.showSuccess = true;
-          this.emailVerification.successMessage = response.data.message || "Verification email has been sent successfully.";
+          this.emailVerification.successMessage = resolveApiMessage(response.data, 'auth.messages.verificationEmailSent');
         } else {
           this.emailVerification.showError = true;
-          this.emailVerification.errorMessage = response.data.message || "Failed to send verification email.";
+          this.emailVerification.errorMessage = resolveApiMessage(response.data, 'errors.auth.failedToSendVerificationEmail');
         }
       } catch (_error) {
         this.emailVerification.showError = true;
-        this.emailVerification.errorMessage = "An unexpected error occurred. Please try again.";
+        this.emailVerification.errorMessage = this.$t('errors.server.unexpectedError');
       } finally {
         this.emailVerification.isLoading = false;
       }

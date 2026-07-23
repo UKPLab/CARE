@@ -1,0 +1,14 @@
+{
+    "assignmentId": "Assignment ID:",
+    "courseId": "Course ID:",
+    "apiKey": "Moodle API Key:",
+    "apiUrl": "Moodle URL:",
+    "refresh": "Refresh",
+    "refreshTooltip": "Refresh assignments list",
+    "placeholders": {
+      "assignmentId": "Enter Assignment ID",
+      "courseId": "Enter Course ID",
+      "apiKey": "Enter API Key",
+      "apiUrl": "https://example.moodle.com"
+    }
+  }

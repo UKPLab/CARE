@@ -1,4 +1,5 @@
 const {inject} = require("../utils/helper/generic");
+const i18n = require("../utils/i18n");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
@@ -96,14 +97,56 @@ module.exports = class Socket {
                 }
 
                 console.log(err);
-                this.logger.error(err.message);
 
-                if (callback) {
-                    const response = {success: false, message: err.message};
-                    if (err.code) {
-                        response.code = err.code;
+                // i18n error hub: TranslatableError, generateError(code, key), Error("errors.*")
+                // Log the key; SQLTransport translates to English. Frontend gets key+params (resolveApiMessage).
+                let key;
+                let params = {};
+                if (err.isTranslatable || err.key) {
+                    // TranslatableError: err.key + optional err.params (+ optional err.code)
+                    key = err.key;
+                    if (err.params) {
+                        params = err.params;
                     }
-                    callback(response);
+                } else if (typeof err.message === "string" && i18n.hasKey(err.message)) {
+                    // throw new Error("errors.namespace.key") or generateError(code, "errors.*")
+                    key = err.message;
+                    if (err.params) {
+                        params = err.params;
+                    }
+                }
+
+                if (key) {
+                    this.logger.error(key, { i18nParams: params });
+                    if (callback) {
+                        // key/params → localized UI; message (EN) → legacy fallback
+                        const response = {
+                            success: false,
+                            key,
+                            params,
+                            message: i18n.translateMaybeKey(key, params),
+                        };
+                        if (err.code) {
+                            response.code = err.code;
+                        }
+                        callback(response);
+                    }
+                } else {
+                    // Not an i18n key (bug, DB failure, etc.): log full detail, generic message to user
+                    this.logger.error({
+                        message: err.message,
+                        stack: err.stack,
+                        name: err.name,
+                    });
+                    if (callback) {
+                        const unexpectedKey = "errors.server.unexpectedError";
+                        callback({
+                            success: false,
+                            key: unexpectedKey,
+                            params: {},
+                            message: i18n.translateMaybeKey(unexpectedKey),
+                        });
+                    }
                 }
             }
             finally {
@@ -716,7 +759,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt","apiKey"];
         let allAttributes = {
             exclude: defaultExcludes,
         };

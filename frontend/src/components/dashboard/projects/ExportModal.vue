@@ -3,12 +3,12 @@
       ref="exportStepper"
       :steps="steps"
       :validation="stepValid"
-      submit-text="Download"
+      :submit-text="$t('common.download')"
       size = "xl"
       @submit="downloadData"
       @hide="hide">
     <template #title>
-      <h5 class="modal-title">Export Data</h5>
+      <h5 class="modal-title">{{ $t('dashboard.projects.exportData') }}</h5>
     </template>
 
     <template #step-1>
@@ -20,10 +20,10 @@
     </template>
     <template #step-2>
       <div v-if="dataSelection.exportType === 'reviewerList'">
-        <p>Exporting a list of all study sessions with hash:</p>
+        <p>{{ $t('dashboard.projects.exportStudySessions') }}</p>
         <p>
-          Total Studies: {{ studies.length }}<br>
-          Total Study Sessions: {{ studySessions.length }}
+          {{ $t('dashboard.projects.totalStudies') }} {{ studies.length }}<br>
+          {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}
         </p>
       </div>
       <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
@@ -35,18 +35,18 @@
         <!-- We send the project ID and get the selected students back -->
       </div>
       <div v-else>
-        <p>Exporting all data</p>
+        <p>{{ $t('dashboard.projects.exportingAllData') }}</p>
         <p>
-          Total Studies: {{ studies.length }}<br>
-          Total Study Sessions: {{ studySessions.length }}<br>
-          Total Tags: {{ tags.length }}<br>
-          Total Tag Sets: {{ tagSets.length }}<br>
-          Total Projects: {{ projects.length }}<br>
-          Total Documents: {{ documents.length }}<br>
-          Total Annotations: {{ annotations.length }}<br>
-          Total Comments: {{ comments.length }}<br>
-          Total Comment Votes: {{ commentVotes.length }}<br>
-          Total Edits: {{ edits.length }}<br>
+          {{ $t('dashboard.projects.totalStudies') }} {{ studies.length }}<br>
+          {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}<br>
+          {{ $t('dashboard.projects.totalTags') }} {{ tags.length }}<br>
+          {{ $t('dashboard.projects.totalTagSets') }} {{ tagSets.length }}<br>
+          {{ $t('dashboard.projects.totalProjects') }} {{ projects.length }}<br>
+          {{ $t('dashboard.projects.totalDocuments') }} {{ documents.length }}<br>
+          {{ $t('dashboard.projects.totalAnnotations') }} {{ annotations.length }}<br>
+          {{ $t('dashboard.projects.totalComments') }} {{ comments.length }}<br>
+          {{ $t('dashboard.projects.totalCommentsVotes') }} {{ commentVotes.length }}<br>
+          {{ $t('dashboard.projects.totalEdits') }} {{ edits.length }}<br>
         </p>
       </div>
     </template>
@@ -119,6 +119,8 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
+  }, {
+    table: "document"
   }
   ],
   provide() {
@@ -160,22 +162,23 @@ export default {
     steps() {
       if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
-          { title: "Settings" },
-          { title: "Select Students" },
-          { title: "Options" },
-          { title: "Confirm Download" }
+          { title: this.$t('settings.title') },
+          { title: this.$t('dashboard.projects.exportModal.steps.selectStudent') },
+          { title: this.$t('dashboard.projects.exportModal.steps.options') },
+          { title: this.$t('dashboard.projects.exportModal.steps.confirmDownload') }
         ];
       }
+
       return [
-        {title: "Settings"},
-        {title: "Confirmation"}
+        {title: this.$t('settings.title')},
+        {title: this.$t('dashboard.projects.exportModal.steps.confirmation')}
       ];
     },
     dataSelectionFields() {
       return [
         {
           key: "projectId",
-          label: "Project",
+          label: this.$t('common.project'),
           type: "select",
           options: this.projects.map(project => ({
             name: project.name,
@@ -185,13 +188,13 @@ export default {
         },
         {
           key: "exportType",
-          label: "Export Type",
+          label: this.$t('dashboard.projects.exportType'),
           type: "select",
           options: [
-            {name: "Export a list of all reviewers", value: "reviewerList"},
-            {name: "Export submissions", value: "submissions"},
-            {name: "Export grades", value: "grades"},
-            {name: "All", value: "all"},
+            {name: this.$t('dashboard.projects.exportModal.exportReviewers'), value: "reviewerList"},
+            {name: this.$t('dashboard.projects.exportModal.exportSubmissions'), value: "submissions"},
+            {name: this.$t('dashboard.projects.exportModal.exportGrades'), value: "grades"},
+            {name: this.$t('common.all'), value: "all"},
           ],
           required: true,
         }
@@ -328,7 +331,6 @@ export default {
       try {
         // get the selected student's user ids
         const selectedUserIds = this.submissionSelection.map(row => row.userId);
-
         // call helper function to trigger the stream download
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
@@ -337,7 +339,6 @@ export default {
           generateAliases: this.generateAliases,
           fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
-
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);
@@ -477,7 +478,6 @@ export default {
       form.method = 'POST';
       form.action = `${serverUrl}/export/stream`;
       form.style.display = 'none';
-
       for (const [key, value] of Object.entries(payload)) {
         const input = document.createElement('input');
         input.type = 'hidden';
@@ -489,7 +489,6 @@ export default {
           
         form.appendChild(input);
       }
-
       document.body.appendChild(form);
       form.submit();
       document.body.removeChild(form);

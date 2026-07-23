@@ -12,7 +12,7 @@
         :maxlength="options.maxLength"
         :min="options.min"
         :name="options.key"
-        :placeholder="options.placeholder"
+        :placeholder="translatedPlaceholder"
         :required="options.required"
         :type="options.type"
         class="form-control"
@@ -38,6 +38,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "FormDefault",
@@ -63,6 +64,11 @@ export default {
     return {
       currentData: "",
     };
+  },
+  computed: {
+    translatedPlaceholder() {
+      return translateMaybeKey(this.options.placeholder);
+    },
   },
   watch: {
     currentData() {

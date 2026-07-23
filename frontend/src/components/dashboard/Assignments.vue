@@ -1,13 +1,13 @@
 <template>
   <Card
-    title="Assignments"
+    :title="$t('sidebar.nav.assignments')"
   >
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
           class="btn-primary btn-sm"
-          text="Add Assignment"
-          title="Add Assignment"
+          :text="$t('assignments.dashboard.buttons.addAssignment')"
+          :title="$t('assignments.dashboard.buttons.addAssignment')"
           icon="plus"
           @click="addAssignment"
         />
@@ -40,6 +40,7 @@ import AssignmentSubmissionsModal from "@/components/dashboard/assignments/Assig
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignmentMetadataModal from "./assignments/AssignmentMetadataModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "DashboardAssignments",
@@ -65,18 +66,22 @@ export default {
         pagination: 10,
         search: true,
       },
-      tableColumns: [
-        { name: "ID", key: "id" },
-        { name: "Name", key: "name" },
+    };
+  },
+  computed: {
+    tableColumns() {
+      return [
+        { name: this.$t("submission.dashboard.columns.id"), key: "id" },
+        { name: this.$t("common.name"), key: "name" },
         {
-          name: "Submission Status",
+          name: this.$t("assignments.dashboard.columns.submissionStatus"),
           key: "submissionStatus",
           type: "badge",
           typeOptions: {
             keyMapping: {
-              notStarted: "Not started",
-              open: "Open",
-              closed: "Closed",
+              notStarted: this.$t("assignments.dashboard.status.notStarted"),
+              open: this.$t("assignments.dashboard.status.open"),
+              closed: this.$t("assignments.dashboard.status.closed"),
             },
             classMapping: {
               notStarted: "bg-secondary",
@@ -85,16 +90,16 @@ export default {
             },
           },
         },
-        { name: "Assigned To", key: "assignedRoles" },
-        { name: "Max Revisions", key: "maxRevisions" },
+        { name: this.$t("assignments.dashboard.columns.assignedTo"), key: "assignedRoles" },
+        { name: this.$t("assignments.dashboard.columns.maxRevisions"), key: "maxRevisions" },
         {
-          name: "Disable",
+          name: this.$t("assignments.dashboard.columns.disable"),
           key: "disable",
           type: "badge",
           typeOptions: {
             keyMapping: {
-              true: "Yes",
-              false: "No",
+              true: this.$t("common.yes"),
+              false: this.$t("common.no"),
             },
             classMapping: {
               true: "bg-success",
@@ -103,20 +108,22 @@ export default {
           },
         },
         {
-          name: "Allow Re-Upload",
+          name: this.$t("assignments.dashboard.columns.allowReUpload"),
           key: "allowReUpload",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", false: "No" },
+            keyMapping: { true: this.$t("common.yes"), false: this.$t("common.no") },
             classMapping: { true: "bg-success", false: "bg-secondary" },
           },
         },
         {
-          name: "Parent Assignment ID",
+          name: this.$t("assignments.dashboard.columns.parentAssignmentId"),
           key: "parentAssignmentId",
         },
-      ],
-      tableButtons: [
+      ];
+    },
+    tableButtons() {
+      return [
         {
           icon: "pencil",
           filter: [{ key: "canEditAssignment", value: true }],
@@ -127,7 +134,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Edit assignment",
+          title: this.$t("assignments.dashboard.actions.editAssignment"),
           action: "editAssignment",
           stats: {
             assignmentId: "id",
@@ -143,7 +150,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Delete assignment",
+          title: this.$t("assignments.dashboard.actions.deleteAssignment"),
           action: "deleteAssignment",
           stats: {
             assignmentId: "id",
@@ -158,7 +165,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Inspect submissions",
+          title: this.$t("assignments.dashboard.actions.inspectSubmissions"),
           action: "inspectSubmissions",
           stats: {
             assignmentId: "id",
@@ -190,7 +197,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Toggle Disable",
+          title: this.$t("assignments.dashboard.actions.toggleDisable"),
           action: "toggleDisable",
           stats: {
             assignmentId: "id",
@@ -205,7 +212,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Copy assignment",
+          title: this.$t("assignments.dashboard.actions.copyAssignment"),
           action: "copyAssignment",
           stats: {
             assignmentId: "id",
@@ -221,7 +228,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Import via Moodle",
+          title: this.$t("submission.dashboard.buttons.importMoodle"),
           action: "importMoodle",
           stats: {
             assignmentId: "id",
@@ -239,16 +246,14 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Close assignment",
+          title: this.$t("assignments.dashboard.actions.closeAssignment"),
           action: "closeAssignment",
           stats: {
             assignmentId: "id",
           },
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     canViewAllAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.viewAll");
     },
@@ -276,7 +281,7 @@ export default {
         return acc;
       }, {});
       const usersById = (this.$store.getters["table/user/getAll"] || []).reduce((acc, user) => {
-        acc[user.id] = user.userName || `${user.firstName} ${user.lastName}`.trim() || `User ${user.id}`;
+        acc[user.id] = user.userName || `${user.firstName} ${user.lastName}`.trim() || this.$t("assignments.dashboard.fallback.userLabel", { id: user.id });
         return acc;
       }, {});
       return this.assignments.map((assignment) => {
@@ -332,8 +337,8 @@ export default {
         case "editAssignment":
           if (!data.params.isOwner && !this.canEditAssignments) {
             this.eventBus.emit("toast", {
-              title: "Access denied",
-              message: "You do not have permission to edit assignments.",
+              title: this.$t("errors.configuration.accessDenied"),
+              message: this.$t("assignments.dashboard.toasts.noPermissionEdit"),
               variant: "warning",
             });
             return;
@@ -369,16 +374,16 @@ export default {
     closeAssignment(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
-          title: "Access denied",
-          message: "You do not have permission to close assignments.",
+          title: this.$t("errors.configuration.accessDenied"),
+          message: this.$t("assignments.dashboard.toasts.noPermissionClose"),
           variant: "warning",
         });
         return;
       }
 
       this.$refs.deleteConf.open(
-        "Close Assignment",
-        "Are you sure you want to close this assignment?",
+        this.$t("assignments.dashboard.confirm.close.title"),
+        this.$t("assignments.dashboard.confirm.close.message"),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -395,14 +400,14 @@ export default {
             (result) => {
               if (result.success) {
                 this.eventBus.emit("toast", {
-                  title: "Assignment closed",
-                  message: "The assignment has been closed.",
+                  title: this.$t("assignments.dashboard.toasts.closeSuccess.title"),
+                  message: this.$t("assignments.dashboard.toasts.closeSuccess.message"),
                   variant: "success",
                 });
               } else {
                 this.eventBus.emit("toast", {
-                  title: "Close failed",
-                  message: result.message,
+                  title: this.$t("assignments.dashboard.toasts.closeFailed"),
+                  message: resolveApiMessage(result),
                   variant: "danger",
                 });
               }
@@ -414,8 +419,8 @@ export default {
     toggleDisable(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
-          title: "Access denied",
-          message: "You do not have permission to disable this assignment.",
+          title: this.$t("errors.configuration.accessDenied"),
+          message: this.$t("assignments.dashboard.toasts.noPermissionDisable"),
           variant: "warning",
         });
         return;
@@ -433,14 +438,16 @@ export default {
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Assignment updated",
-              message: `Assignment is now ${newDisableState ? "disabled" : "enabled"}.`,
+              title: this.$t("assignments.dashboard.toasts.updateSuccess.title"),
+              message: this.$t("assignments.dashboard.toasts.updateSuccess.message", {
+                state: newDisableState ? this.$t("common.disabled") : this.$t("common.enabled"),
+              }),
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Update failed",
-              message: result.message,
+              title: this.$t("assignments.dashboard.toasts.updateFailed"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -450,15 +457,15 @@ export default {
     deleteAssignment(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
-          title: "Access denied",
-          message: "You do not have permission to delete assignments.",
+          title: this.$t("errors.configuration.accessDenied"),
+          message: this.$t("assignments.dashboard.toasts.noPermissionDelete"),
           variant: "warning",
         });
         return;
       }
       this.$refs.deleteConf.open(
-        "Delete Assignment",
-        "Are you sure you want to delete this assignment?",
+        this.$t("assignments.dashboard.confirm.delete.title"),
+        this.$t("assignments.dashboard.confirm.delete.message"),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -475,14 +482,14 @@ export default {
             (result) => {
               if (result.success) {
                 this.eventBus.emit("toast", {
-                  title: "Assignment deleted",
-                  message: "The assignment has been deleted",
+                  title: this.$t("assignments.dashboard.toasts.deleteSuccess.title"),
+                  message: this.$t("assignments.dashboard.toasts.deleteSuccess.message"),
                   variant: "success",
                 });
               } else {
                 this.eventBus.emit("toast", {
-                  title: "Assignment delete failed",
-                  message: result.message,
+                  title: this.$t("assignments.dashboard.toasts.deleteFailed"),
+                  message: resolveApiMessage(result),
                   variant: "danger",
                 });
               }
@@ -496,8 +503,8 @@ export default {
 
       if (!originalAssignment) {
         this.eventBus.emit("toast", {
-          title: "Assignment copy failed",
-          message: "Original assignment could not be found.",
+          title: this.$t("assignments.dashboard.toasts.copyFailed.title"),
+          message: this.$t("assignments.dashboard.toasts.copyFailed.message"),
           variant: "danger",
         });
         return;

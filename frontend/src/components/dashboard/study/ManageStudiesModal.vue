@@ -7,14 +7,14 @@
     @submit="handleSubmit">
 
     <template #title>
-      <h5 class="modal-title">Bulk Manage Studies</h5>
+      <h5 class="modal-title">{{ $t('dashboard.study.manageTitle') }}</h5>
     </template>
 
     <template #step-1>
       <div class="mode-selection-container">
-        <h5 class="mb-3">Select Action</h5>
+        <h5 class="mb-3">{{ $t('dashboard.study.selectAction') }}</h5>
         <p class="text-muted mb-4">
-          Choose the action you want to perform on the selected studies:
+          {{ $t('dashboard.study.selectActionHint') }}
         </p>
         <BasicForm
           class="mb-3"
@@ -28,14 +28,14 @@
     <template #step-2>
       <div class="filters-container mb-3">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <label for="workflowSelect" class="mb-0 fw-bold">Filter Workflows:</label>
+          <label for="workflowSelect" class="mb-0 fw-bold">{{ $t('dashboard.study.filterWorkflows') }}</label>
           <select
             id="workflowSelect"
             v-model="workflowFilter"
             class="form-select form-select-sm"
             style="width: auto;"
           >
-            <option value="all">All Workflows</option>
+            <option value="all">{{ $t('dashboard.sessionOverview.allWorkflows') }}</option>
             <option
               v-for="workflow in workflowOptions"
               :key="workflow.value"
@@ -67,37 +67,49 @@
           class="mt-4"
         />
         <div v-if="selectedMode.mode === 'bulkClose'" class="confirmation-content">
-          <h6>Studies to Close</h6>
-          <p class="text-muted">You are about to close <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}:</p>
+          <h6>{{ $t('dashboard.study.studiesToClose') }}</h6>
+          <p class="text-muted">{{ $tc('dashboard.study.aboutToClose', selectedCount, { count: selectedCount }) }}</p>
           <ul class="selected-items-list">
             <li v-for="study in selectedStudies" :key="study.id">
-              {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
+              {{ $t('dashboard.study.studyListItem', {
+                name: study.name,
+                workflow: study.workflowName,
+                owner: study.ownerName,
+              }) }}
             </li>
           </ul>
           <div v-if="notificationSettings.notifySessions" class="alert alert-warning mt-3">
-            <i class="fas fa-envelope"></i> Email notifications will be sent to participants with open sessions.
+            <i class="fas fa-envelope"></i> {{ $t('dashboard.study.notifyOpenSessionsAlert') }}
           </div>
         </div>
 
         <div v-else-if="selectedMode.mode === 'bulkOpen'" class="confirmation-content">
-          <h6>Studies to Open</h6>
-          <p class="text-muted">You are about to open <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}:</p>
+          <h6>{{ $t('dashboard.study.studiesToOpen') }}</h6>
+          <p class="text-muted">{{ $tc('dashboard.study.aboutToOpen', selectedCount, { count: selectedCount }) }}</p>
           <ul class="selected-items-list">
             <li v-for="study in selectedStudies" :key="study.id">
-              {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
+              {{ $t('dashboard.study.studyListItem', {
+                name: study.name,
+                workflow: study.workflowName,
+                owner: study.ownerName,
+              }) }}
             </li>
           </ul>
           <div v-if="notificationSettings.notifySessions" class="alert alert-warning mt-3">
-            <i class="fas fa-envelope"></i> Email notifications will be sent to participants with active sessions.
+            <i class="fas fa-envelope"></i> {{ $t('dashboard.study.notifyActiveSessionsAlert') }}
           </div>
         </div>
 
         <div v-else-if="selectedMode.mode === 'bulkDelete'" class="confirmation-content delete-warning-container">
-          <h6>Studies to Delete</h6>
-          <p class="text-muted">You are about to <strong>permanently delete</strong> <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}:</p>
+          <h6>{{ $t('dashboard.study.studiesToDelete') }}</h6>
+          <p class="text-muted">{{ $tc('dashboard.study.aboutToDelete', selectedCount, { count: selectedCount }) }}</p>
           <ul class="selected-items-list">
             <li v-for="study in selectedStudies" :key="study.id">
-              {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
+              {{ $t('dashboard.study.studyListItem', {
+                name: study.name,
+                workflow: study.workflowName,
+                owner: study.ownerName,
+              }) }}
             </li>
           </ul>
         </div>
@@ -110,9 +122,9 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for bulk closing, opening, or deleting studies
@@ -123,7 +135,6 @@ export default {
   subscribeTable: ["user_role", "user_role_matching", "user", "workflow", "study"],
   components: {
     StepperModal,
-    BasicButton,
     BasicTable,
     BasicForm,
     ConfirmModal,
@@ -144,34 +155,46 @@ export default {
         search: true,
         selectableRows: true,
       },
-      modeSelectionFields: [
+    };
+  },
+  computed: {
+    modeSelectionFields() {
+      return [
         {
           key: "mode",
           type: "checkbox",
           selectionMode: "single",
           options: [
-            { value: "bulkClose", label: "Close Studies" },
-            { value: "bulkOpen", label: "Open Studies" },
-            { value: "bulkDelete", label: "Delete Studies" },
+            { value: "bulkClose", label: this.$t("dashboard.study.closeStudies") },
+            { value: "bulkOpen", label: this.$t("dashboard.study.openStudies") },
+            { value: "bulkDelete", label: this.$t("dashboard.study.deleteStudies") },
           ],
-        }
-      ],
-      notificationFields: [
+        },
+      ];
+    },
+    notificationFields() {
+      return [
         {
           key: "notifySessions",
-          label: "Send email notifications to participants with active sessions",
+          label: this.$t("dashboard.study.notifyActiveSessions"),
           type: "switch",
           required: false,
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     steps() {
         return [
-          { title: "Select Action" },
-          { title: "Select Studies" },
-          { title: "Confirm" + (this.selectedMode.mode === "bulkDelete" ? " Delete" : this.selectedMode.mode === "bulkClose" ? " Close" : this.selectedMode.mode === "bulkOpen" ? " Open" : "") },
+          { title: this.$t("dashboard.study.selectAction") },
+          { title: this.$t("dashboard.study.selectStudies") },
+          {
+            title: this.selectedMode.mode === "bulkDelete"
+              ? this.$t("dashboard.study.confirmDelete")
+              : this.selectedMode.mode === "bulkClose"
+                ? this.$t("dashboard.study.confirmClose")
+                : this.selectedMode.mode === "bulkOpen"
+                  ? this.$t("dashboard.study.confirmOpen")
+                  : this.$t("dashboard.study.confirm"),
+          },
         ];
     },
     stepValid() {
@@ -183,11 +206,11 @@ export default {
     },
     modeTitle() {
       const titles = {
-        bulkClose: "Close Studies",
-        bulkOpen: "Open Studies",
-        bulkDelete: "Delete Studies",
+        bulkClose: this.$t("dashboard.study.closeStudies"),
+        bulkOpen: this.$t("dashboard.study.openStudies"),
+        bulkDelete: this.$t("dashboard.study.deleteStudies"),
       };
-      return titles[this.selectedMode.mode] || "Action";
+      return titles[this.selectedMode.mode] || this.$t("dashboard.study.action");
     },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
@@ -232,23 +255,23 @@ export default {
           const user = this.$store.getters["table/user/get"](id);
           const parts = user ? [user.firstName, user.lastName].filter(Boolean) : [];
           const name = parts.length ? parts.join(" ")
-            : user?.userName || user?.email || `User ${id}`;
+            : user?.userName || user?.email || this.$t("dashboard.study.userFallback", { id });
           return { value: id, name };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
     },
     groupOptions() {
       return [
-        { key: "Guest", name: "Guest" },
-        { key: "Other", name: "Other" },
+        { key: "Guest", name: this.$t("users.guest") },
+        { key: "Other", name: this.$t("tags.other") },
       ];
     },
     columns() {
       return [
-        { name: "ID", key: "id", sortable: true, width: 1 },
-        { name: "Study", key: "name", sortable: true, multiline: true, width: 3 },
+        { name: this.$t("common.id"), key: "id", sortable: true, width: 1 },
+        { name: this.$t("studies.study"), key: "name", sortable: true, multiline: true, width: 3 },
         {
-          name: "Workflow",
+          name: this.$t("dashboard.study.workflowCol"),
           key: "workflowName",
           sortable: true,
           multiline: true,
@@ -256,14 +279,14 @@ export default {
           filter: this.workflowOptions.map((opt) => ({ key: opt.key, name: opt.name })),
         },
         {
-          name: "User",
+          name: this.$t("dashboard.study.userCol"),
           key: "ownerName",
           sortable: true,
           width: 2,
           filter: this.studyUserOptions.map((opt) => ({ key: opt.name, name: opt.name })),
         },     
         {
-          name: "Created",
+          name: this.$t("dashboard.study.createdCol"),
           key: "createdAt",
           sortable: true,
           width: 2,
@@ -285,12 +308,12 @@ export default {
           const ownerParts = user ? [user.firstName, user.lastName].filter(Boolean) : [];
           const ownerName = ownerParts.length
             ? ownerParts.join(" ")
-            : user?.userName || user?.email || `User ${study.userId}`;
+            : user?.userName || user?.email || this.$t("dashboard.study.userFallback", { id: study.userId });
 
           return {
             id: study.id,
-            name: study.name || `Study ${study.id}`,
-            workflowName: workflow?.name || `Workflow ${study.workflowId ?? "-"}`,
+            name: study.name || this.$t("dashboard.study.studyFallback", { id: study.id }),
+            workflowName: workflow?.name || this.$t("dashboard.study.workflowFallback", { id: study.workflowId ?? "-" }),
             ownerName,
             createdAt: new Date(study.createdAt).toLocaleString(),
           };
@@ -302,11 +325,11 @@ export default {
     },
     confirmButtonTitle() {
       const titles = {
-        bulkClose: "Close Studies",
-        bulkOpen: "Open Studies",
-        bulkDelete: "Delete Studies",
+        bulkClose: this.$t("dashboard.study.closeStudies"),
+        bulkOpen: this.$t("dashboard.study.openStudies"),
+        bulkDelete: this.$t("dashboard.study.deleteStudies"),
       };
-      return titles[this.selectedMode.mode] || "Execute Action";
+      return titles[this.selectedMode.mode] || this.$t("dashboard.study.executeAction");
     },
   },
   methods: {
@@ -325,9 +348,9 @@ export default {
       } else if (this.selectedMode.mode === 'bulkDelete') {
         this.$refs.manageStudiesModal.close();
          this.$refs.deleteConf.open(
-          "Delete Studies",
+          this.$t("dashboard.study.deleteStudies"),
           "",
-          "Are you sure you want to delete these studies?",
+          this.$t("dashboard.study.deleteConfirmPrompt"),
           (confirmed) => {
             if (confirmed) {
               this.deleteMatchingStudies();
@@ -343,8 +366,8 @@ export default {
       const matches = this.selectedStudies;
       if (matches.length === 0) {
         this.eventBus.emit("toast", {
-          title: "Nothing to close",
-          message: "Select at least one open study from the table.",
+          title: this.$t("dashboard.study.nothingToClose"),
+          message: this.$t("dashboard.study.selectOpenStudy"),
           variant: "warning",
         });
         return;
@@ -364,18 +387,20 @@ export default {
         if (res.success) {
           const closed = res.data?.closedCount ?? 0;
           this.eventBus.emit("toast", {
-            title: closed > 0 ? "Studies closed" : "Bulk close finished",
+            title: closed > 0
+              ? this.$t("dashboard.study.closedTitle")
+              : this.$t("dashboard.study.closeFinishedTitle"),
             message:
               closed > 0
-                ? `${closed} ${closed === 1 ? "study" : "studies"} closed.`
-                : "No studies were updated (they may already be closed).",
+                ? this.$tc("dashboard.study.closedMessage", closed, { count: closed })
+                : this.$t("dashboard.study.noneClosed"),
             variant: closed > 0 ? "success" : "info",
           });
           this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Bulk close failed",
-            message: res.message,
+            title: this.$t("dashboard.study.closeFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -385,8 +410,8 @@ export default {
       const matches = this.selectedStudies;
       if (matches.length === 0) {
         this.eventBus.emit("toast", {
-          title: "Nothing to open",
-          message: "Select at least one study from the table.",
+          title: this.$t("dashboard.study.nothingToOpen"),
+          message: this.$t("dashboard.study.selectStudy"),
           variant: "warning",
         });
         return;
@@ -405,18 +430,20 @@ export default {
         if (res.success) {
           const opened = res.data?.openedCount ?? 0;
           this.eventBus.emit("toast", {
-            title: opened > 0 ? "Studies opened" : "Bulk open finished",
+            title: opened > 0
+              ? this.$t("dashboard.study.openedTitle")
+              : this.$t("dashboard.study.openFinishedTitle"),
             message:
               opened > 0
-                ? `${opened} ${opened === 1 ? "study" : "studies"} opened.`
-                : "No studies were updated.",
+                ? this.$tc("dashboard.study.openedMessage", opened, { count: opened })
+                : this.$t("dashboard.study.noneOpened"),
             variant: opened > 0 ? "success" : "info",
           });
           this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Bulk open failed",
-            message: res.message,
+            title: this.$t("dashboard.study.openFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -426,8 +453,8 @@ export default {
       const matches = this.selectedStudies;
       if (matches.length === 0) {
         this.eventBus.emit("toast", {
-          title: "Nothing to delete",
-          message: "Select at least one study from the table.",
+          title: this.$t("dashboard.study.nothingToDelete"),
+          message: this.$t("dashboard.study.selectStudy"),
           variant: "warning",
         });
         return;
@@ -446,18 +473,20 @@ export default {
         if (res.success) {
           const deleted = res.data?.deletedCount ?? 0;
           this.eventBus.emit("toast", {
-            title: deleted > 0 ? "Studies deleted" : "Bulk delete finished",
+            title: deleted > 0
+              ? this.$t("dashboard.study.deletedTitle")
+              : this.$t("dashboard.study.deleteFinishedTitle"),
             message:
               deleted > 0
-                ? `${deleted} ${deleted === 1 ? "study" : "studies"} permanently deleted.`
-                : "No studies were deleted.",
+                ? this.$tc("dashboard.study.deletedMessage", deleted, { count: deleted })
+                : this.$t("dashboard.study.noneDeleted"),
             variant: deleted > 0 ? "success" : "info",
           });
           this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Bulk delete failed",
-            message: res.message,
+            title: this.$t("dashboard.study.deleteFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

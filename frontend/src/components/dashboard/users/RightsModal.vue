@@ -2,21 +2,21 @@
   <BasicModal ref="modal" name="RightsModal">
     <template #title>
       <slot name="title">
-        <span>View User Right</span>
+        <span>{{$t('dashboard.users.viewUserRight')}}</span>
       </slot>
     </template>
     <template #body>
       <div class="table-container">
         <!-- Check if it is an empty object. -->
         <template v-if="Object.keys(userRight).length === 0">
-          <p>This user has no assigned rights</p>
+          <p>{{$t('dashboard.users.userHasNoAssignedRights')}}</p>
         </template>
         <template v-else>
           <table>
             <thead>
               <tr>
-                <th>User Role</th>
-                <th>User Right</th>
+                <th>{{$t('dashboard.users.userRole')}}</th>
+                <th>{{$t('dashboard.users.userRight')}}</th>
               </tr>
             </thead>
             <tbody>
@@ -24,7 +24,7 @@
                 v-for="(rights, role) in userRight"
                 :key="role"
               >
-                <td>{{ role }}</td>
+                <td>{{ tSystemRoleName(role) }}</td>
                 <td>
                   <ul>
                     <li
@@ -44,7 +44,7 @@
     <template #footer>
       <span class="btn-group">
         <BasicButton
-          title="Okay"
+          :title="$t('dashboard.users.okay')"
           class="btn btn-primary"
           @click="$refs.modal.close()"
         />
@@ -56,6 +56,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for viewing the rights the user has on this platform
@@ -78,9 +79,9 @@ export default {
       for (const [roleId, rights] of Object.entries(rightObj)) {
         const { name: roleName } = this.systemRoles.find(({ id }) => id === +roleId);
         if (roleName === "admin") {
-          formattedRights[roleName] = ["admin has full rights"];
+          formattedRights[roleName] = [this.$t('dashboard.users.adminHasFullRights')];
         } else if (rights.length === 0) {
-          formattedRights[roleName] = ["this role does not have associated rights yet"];
+          formattedRights[roleName] = [this.$t('dashboard.users.roleNoAssociatedRights')];
         } else {
           formattedRights[roleName] = rights;
         }
@@ -89,6 +90,16 @@ export default {
     },
   },
   methods: {
+    tSystemRoleName(roleName) {
+      const key = `dashboard.systemRoles.${roleName}`;
+      const translated = this.$t(key);
+      return translated === key  ? roleName : translated;
+    },
+    tSystemRoleDescription(roleDescription) {
+      const key = `dashboard.systemRoles.descriptions.${roleDescription}`;
+      const translated = this.$t(key);
+      return translated === key ? roleDescription : translated;
+    },
     open(userId) {
       this.$refs.modal.open();
       this.$socket.emit("userGetRight", {
@@ -96,8 +107,8 @@ export default {
       }, (response) => {
         if (!response.success) {
           this.eventBus.emit("toast", {
-            title: "Error fetching user rights",
-            message: response.message,
+            title: this.$t('errors.users.errorFetchingUserRights'),
+            message: resolveApiMessage(response),
             variant: "danger",
           });
         }

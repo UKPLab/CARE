@@ -363,7 +363,7 @@ module.exports = (sequelize, DataTypes) => {
                 });
 
                 if (!user) {
-                    throw new Error("User not found");
+                    throw new Error("errors.users.userNotFound");
                 }
                 const userDetails = user.get({plain: true});
                 userDetails.roles = userDetails.roles.map((role) => {
@@ -454,16 +454,16 @@ module.exports = (sequelize, DataTypes) => {
          */
         static validatePasswordContent(pwd) {
             if (typeof pwd !== "string" || pwd.length < 8) {
-                throw new Error("Password must be at least 8 characters.");
+                throw new Error("errors.validation.auth.passwordMinLengthNoLong");
             }
             if (/^\s*$/.test(pwd)) {
-                throw new Error("Password cannot be only spaces or whitespace.");
+                throw new Error("errors.validation.auth.passwordWhitespaceOnly");
             }
             if (/[\x00-\x1F\x7F]/.test(pwd)) {
-                throw new Error("Password cannot contain control or non-printable characters.");
+                throw new Error("errors.validation.auth.passwordControlChars");
             }
             if ([...pwd].some((c) => (c.codePointAt(0) || 0) > 0xFFFF)) {
-                throw new Error("Password cannot contain emojis or special symbols. Use letters, numbers, and standard punctuation.");
+                throw new Error("errors.validation.auth.passwordUnsupportedCharacters");
             }
         }
 
@@ -487,7 +487,7 @@ module.exports = (sequelize, DataTypes) => {
                 );
 
                 if (updatedRowsCount === 0) {
-                    throw new Error("Failed to update user: User not found");
+                    throw new Error("errors.users.failedToUpdateUser");
                 }
                 // clear the user cache so the updated pwd is loaded immediately
                 if (User.cache){

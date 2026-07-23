@@ -7,7 +7,7 @@
     >
       <h6 class="fw-bold mb-3">{{ group.name }}</h6>
       <div class="mb-3">
-        <label class="form-label">Select base file type:</label>
+        <label class="form-label">{{ $t('common.baseFileType') }}</label>
         <FormSelect
             v-model="baseFileSelections[group.validationConfigurationId]"
             :options="group.fileTypeOptions"
@@ -44,6 +44,10 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    validationConfigurationIds: {
+      type: Array,
+      default: null,
+    },
   },
   emits: ["update:modelValue", "update:valid", "update:validationConfigurations"],
   data() {
@@ -59,6 +63,17 @@ export default {
       return this.$store.getters["table/submission/getAll"] || [];
     },
     groupedSubmissions() {
+      if (this.validationConfigurationIds?.length) {
+        return this.validationConfigurationIds
+            .filter((id) => id != null)
+            .map((validationConfigurationId) => ({
+              validationConfigurationId,
+              submissionEntries: [],
+              name: this.getValidationConfigurationName(validationConfigurationId),
+              fileTypeOptions: this.getFileTypeOptions(validationConfigurationId),
+            }));
+      }
+
       const rawData = this.selectedFiles[this.baseFileParameter];
 
       let submissionIds = [];
@@ -144,7 +159,7 @@ export default {
   methods: {
     getValidationConfigurationName(validationConfigurationId) {
       const config = this.configurations.find(c => c.id === validationConfigurationId);
-      return config?.name || `Validation Configuration ${validationConfigurationId}`;
+      return config?.name || this.$t('nlp.inputGroup.validationConfiguration', { id: validationConfigurationId });
     },
     getFileTypeOptions(validationConfigurationId) {
       const config = this.configurations.find(c => c.id === validationConfigurationId);

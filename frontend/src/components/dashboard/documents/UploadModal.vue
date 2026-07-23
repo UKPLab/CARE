@@ -5,7 +5,7 @@
     name="documentUpload"
   >
     <template #title>
-      Upload new document
+      {{ $t('documents.uploadNewDocument') }}
     </template>
     <template #body>
       <div class="modal-body justify-content-center flex-grow-1 d-flex">
@@ -14,7 +14,7 @@
           class="spinner-border m-5 "
           role="status"
         >
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ $t('common.loading') }}</span>
         </div>
         <div
           v-else
@@ -33,7 +33,7 @@
               type="checkbox"
             />
             <label class="form-check-label" for="importAnnotations">
-              Import annotations
+              {{ $t('documents.importAnnotations') }}
             </label>
           </div>
         </div>
@@ -43,12 +43,12 @@
       <div v-if="!uploading">
         <BasicButton
           class="btn btn-secondary"
-          text="Close"
+          :text="$t('common.close')"
           data-bs-dismiss="modal"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Upload"
+          :text="$t('common.upload')"
           @click="upload"
         />
       </div>
@@ -60,7 +60,7 @@
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
-import { extractTextFromPDF } from "@/assets/utils";
+import { extractTextFromPDF, resolveApiMessage } from "@/assets/utils";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
@@ -127,8 +127,8 @@ export default {
       // Default upload flow
       if (fileType !== ".pdf" && fileType !== ".delta") {
         this.eventBus.emit("toast", {
-          title: "Invalid file type",
-          message: "Only PDF and Delta files are allowed.",
+          title: this.$t('errors.file.invalidFileType'),
+          message: this.$t('errors.file.onlyPdfDeltaAllowed'),
           variant: "danger",
         });
         return;
@@ -163,21 +163,24 @@ export default {
           this.$refs.uploadModal.waiting = false;
 
           if (res.success) {
-            let message = `File successfully uploaded!`;
+            let message = this.$t('documents.messages.fileUploaded');
             if (this.importAnnotations && res.data.annotations) {
-              message += `\nAdded ${res.data.annotations.length} annotations.`;
+              message += `\n${this.$t('documents.messages.annotationsAdded', { count: res.data.annotations.length })}`;
             }
             // Show errors as warnings if present
             if (res.data.errors && res.data.errors.length > 0) {
-              message += `\nSome issues occurred:\n- ${res.data.errors.join('\n- ')}`;
+              const issueMessages = res.data.errors.map((error) =>
+                typeof error === "string" ? error : resolveApiMessage(error)
+              );
+              message += `\n${this.$t('documents.messages.issuesOccurred')}:\n- ${issueMessages.join('\n- ')}`;
               this.eventBus.emit("toast", {
-                title: "Uploaded with warnings",
+                title: this.$t('documents.messages.uploadedWithWarnings'),
                 message,
                 variant: "warning",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Uploaded file",
+                title: this.$t('documents.messages.uploadedFile'),
                 message,
                 variant: "success",
               });
@@ -185,8 +188,8 @@ export default {
             this.$refs.uploadModal.close();
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to upload the file",
-              message: res.message,
+              title: this.$t('errors.documents.failedToUpload'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -195,8 +198,8 @@ export default {
         this.uploading = false;
         this.$refs.uploadModal.waiting = false;
         this.eventBus.emit("toast", {
-          title: "Failed to process PDF",
-          message: "Error processing PDF: " + error.message,
+          title: this.$t('errors.documents.failedToProcessPdf'),
+          message: this.$t('errors.documents.errorProcessingPdf') + ": " + error.message,
           variant: "danger",
         });
       }

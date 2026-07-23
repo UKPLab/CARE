@@ -3,12 +3,12 @@
     ref="importStepper"
     :steps="steps"
     :validation="stepValid"
-    submit-text="Close"
+    :submit-text="$t('common.close')"
     @submit="$refs.importStepper.close()"
     @step-change="handleStepChange"
   >
     <template #title>
-      <span>Import Moodle Submissions</span>
+      <span>{{ $t('dashboard.importModal.title') }}</span>
     </template>
     <!-- Moodle Options Step -->
     <template #step-1>
@@ -31,44 +31,53 @@
     <!-- Confirm Step -->
     <template #step-3>
       <div class="confirm-container">
-        <h4 class="mb-3">Confirm Import Settings</h4>
+        <h4 class="mb-3">{{ $t('dashboard.importModal.confirmImport') }}</h4>
         <div class="card mb-3">
           <div class="card-body bg-light">
-            <h5 class="card-title">Import Summary</h5>
+            <h5 class="card-title">{{ $t('dashboard.importModal.importSummary') }}</h5>
             <ul class="list-unstyled mb-0">
-              <li>• Submissions to import: {{ selectedSubmissions.length }}</li>
+              <li>• {{ $t('dashboard.importModal.submissionsToImport') }} {{ selectedSubmissions.length }}</li>
             </ul>
           </div>
         </div>
-        <p>
-          Are you sure you want to import
-          <strong>{{ selectedSubmissions.length }}</strong> {{ message }}?
-        </p>
+        <i18n-t keypath="dashboard.importModal.areYouSure" tag="p">
+          <template #count>
+            <strong>{{ selectedSubmissions.length }}</strong>
+          </template>
+          <template #message>{{ message }}</template>
+        </i18n-t>
       </div>
     </template>
     <!-- Result Step -->
     <template #step-4>
       <div class="result-container">
         <div v-if="importResults && importResults.successCount != null">
-          Successfully imported <strong>{{ importResults.successCount }}</strong> submissions
+          <i18n-t keypath="dashboard.importModal.successfullyImported" tag="span">
+            <template #count>
+              <strong>{{ importResults.successCount }}</strong>
+            </template>
+          </i18n-t>
           <div
             v-if="importResults.errors && importResults.errors.length > 0"
             class="error-container"
           >
-            Failed to import the following submissions:
+            {{ $t('dashboard.importModal.failedToImport') }}
             <ul
               v-for="(error, index) in importResults.errors"
               :key="index"
             >
               <li>
-                User with the User ID <strong>{{ error.userId }}</strong> cannot be imported: {{ error.message }}
+                {{ $t('dashboard.importModal.userCannotBeImported', {
+                  userId: error.userId,
+                  message: formatImportError(error),
+                }) }}
               </li>
             </ul>
           </div>
           <div v-if="importResults?.errors?.length > 0" class="link-container">
             <BasicButton
               class="btn btn-outline-primary"
-              title="Download Error CSV"
+              :title="$t('dashboard.importModal.downloadErrorCSV')"
               @click="downloadFileAsCSV"
             />
           </div>
@@ -83,7 +92,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -95,7 +104,6 @@ export default {
   subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}, "assignment_share", "user_role_matching"],
   data() {
     return {
-      steps: [{ title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }],
       moodleOptions: {},
       tableOptions: {
         striped: true,
@@ -111,25 +119,6 @@ export default {
           aggregate: (rows) => rows[0],
         },
       },
-      tableColumns: [
-        {
-          name: "Duplicate",
-          key: "exists",
-          type: "badge",
-          typeOptions: {
-            keyMapping: { true: "Yes", default: "No" },
-          },
-          filter: [
-            { key: false, name: "New" },
-            { key: true, name: "Duplicate" },
-          ],
-        },
-        { name: "External ID", key: "submissionId" },
-        { name: "User ID", key: "userId" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "File Count", key: "fileCount" },
-      ],
       assignmentId: null,
       downloadedSubmissions: [],
       selectedSubmissions: [],
@@ -138,6 +127,35 @@ export default {
     };
   },
   computed: {
+    steps() {
+      return [
+        { title: this.$t('dashboard.importModal.stepMoodle') },
+        { title: this.$t('dashboard.importModal.stepPreview') },
+        { title: this.$t('dashboard.importModal.stepConfirm') },
+        { title: this.$t('dashboard.importModal.stepResult') },
+      ];
+    },
+    tableColumns() {
+      return [
+        {
+          name: this.$t('dashboard.importModal.columns.duplicate'),
+          key: "exists",
+          type: "badge",
+          typeOptions: {
+            keyMapping: { true: this.$t('common.yes'), default: this.$t('common.no') },
+          },
+          filter: [
+            { key: false, name: this.$t('dashboard.importModal.filters.new') },
+            { key: true, name: this.$t('dashboard.importModal.filters.duplicate') },
+          ],
+        },
+        { name: this.$t('dashboard.importModal.columns.externalId'), key: "submissionId" },
+        { name: this.$t('dashboard.importModal.columns.userId'), key: "userId" },
+        { name: this.$t('common.firstName'), key: "firstName" },
+        { name: this.$t('common.lastName'), key: "lastName" },
+        { name: this.$t('dashboard.importModal.columns.fileCount'), key: "fileCount" },
+      ];
+    },
     stepValid() {
       return [Object.values(this.moodleOptions).every((v) => v !== ""), this.selectedSubmissions.length > 0, true, true];
     },
@@ -145,7 +163,9 @@ export default {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     message() {
-      return this.selectedSubmissions.length > 1 ? "submissions" : "submission";
+      return this.selectedSubmissions.length > 1
+        ? this.$t('dashboard.importModal.submissionPlural')
+        : this.$t('dashboard.importModal.submissionSingular');
     },
     assignedUserIds() {
       if (!this.assignmentId) return new Set();
@@ -211,6 +231,9 @@ export default {
     },
   },
   methods: {
+    formatImportError(error) {
+      return resolveApiMessage(error);
+    },
     open(assignmentId = null) {
       this.assignmentId = assignmentId;
       this.reset();
@@ -225,8 +248,13 @@ export default {
     },
     downloadFileAsCSV() {
       const filename = `submissions_${Date.now()}`;
-      const {errors} = this.importResults;
-      downloadObjectsAs(errors, filename, "csv");
+      const rows = this.importResults.errors.map((err) => ({
+        userId: err.userId,
+        firstName: err.firstName,
+        lastName: err.lastName,
+        message: resolveApiMessage(err),
+      }));
+      downloadObjectsAs(rows, filename, "csv");
     },
     handleStepChange(step) {
       switch (step) {
@@ -248,8 +276,8 @@ export default {
         } else {
           this.$refs.importStepper.reset();
           this.eventBus.emit("toast", {
-            title: "Failed to get student submissions from Moodle",
-            message: res.message,
+            title: this.$t('dashboard.importModal.failedGetSubmissions'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -283,8 +311,8 @@ export default {
             };
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to import submission from Moodle",
-              message: res.message,
+              title: this.$t('dashboard.importModal.failedImportSubmissions'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }

@@ -1,29 +1,34 @@
 <template>
   <Teleport to="#topbarCenterPlaceholder">
-    <div
-      v-show="templateId && readOnlyOverwrite"
-      title="Read-only"
-    >
-      <span :style="{ color: '#800000', fontWeight: 'bold' }">
-        Read-only
-      </span>
-      <LoadIcon
-        :size="22"
-        :color="'#800000'"
-        icon-name="lock-fill"
-      />
-    </div>
-  </Teleport>
+  <div
+    v-show="templateId && readOnlyOverwrite"
+    :title="$t('common.readOnly')"
+  >
+    <span :style="{ color: '#800000', fontWeight: 'bold' }">
+      {{ $t('common.readOnly') }}
+    </span>
+    <LoadIcon
+      :size="22"
+      :color="'#800000'"
+      icon-name="lock-fill"
+    />
+  </div>
+</Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
         <Editor v-if="!templateId" ref="editor" @update:data="$emit('update:data', $event)"/>
-        <TemplateEditor v-else ref="templateEditor" @update:data="$emit('update:data', $event)"/>
+        <TemplateEditor
+          v-else
+          ref="templateEditor"
+          @update:data="$emit('update:data', $event)"
+          @preview-mode-change="onTemplatePreviewModeChange"
+        />
       </div>
       <BasicSidebar
           v-if="!sidebarDisabled"
           ref="sidebar"
-          :is-shown="isShown"
+          :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
@@ -33,21 +38,21 @@
           @sidebar-visibility-change="handleSidebarVisibilityChange"
           @sidebar-action="handleSidebarAction">
         <template v-if="showHistory && !withoutHistory" #history>
-          <SidebarTemplate icon="clock-history" title="History">
+          <SidebarTemplate icon="clock-history" :title="$t('editor.history')">
             <template #content>
               <SidebarHistory/>
             </template>
           </SidebarTemplate>
         </template>
         <template v-if="document && document.type === 2" #configurator>
-          <SidebarTemplate icon="gear-fill" title="Configurator">
+          <SidebarTemplate icon="gear-fill" :title="$t('editor.configurator')">
             <template #content>
               <SidebarConfigurator/>
             </template>
           </SidebarTemplate>
         </template>
-        <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
-          <SidebarTemplate icon="gear-fill" title="Placeholders">
+        <template v-if="showTemplateConfigurator" #templateConfigurator>
+          <SidebarTemplate icon="gear-fill" :title="$t('editor.placeholders')">
             <template #content>
               <TemplateConfigurator/>
             </template>
@@ -80,6 +85,7 @@ import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "EditorView",
@@ -108,15 +114,15 @@ export default {
       required: false,
       default: false,
     },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
     currentStudyStep: {
       type: Object,
       required: false,
       default: null
+    },
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null,
     },
   },
   props: {
@@ -157,6 +163,8 @@ export default {
       isSidebarVisible: false,
       hasHistory: false,
       sidebarContent: null,
+      templatePreviewMode: false,
+      sidebarOpenBeforePreview: false,
     };
   },
   computed: {
@@ -170,10 +178,25 @@ export default {
       }
       // Only show template configurator if template is loaded, not read-only, and has placeholders
       // Document templates (types 4, 5) have no placeholders, so no sidebar needed
-      if (this.templateId && this.template && !this.readOnlyOverwrite && this.hasPlaceholders) {
+      if (this.showTemplateConfigurator) {
         return 'templateConfigurator';
       }
       return null;
+    },
+    showTemplateConfigurator() {
+      return (
+        this.templateId &&
+        this.template &&
+        !this.readOnlyOverwrite &&
+        this.hasPlaceholders &&
+        !this.templatePreviewMode
+      );
+    },
+    sidebarToggleShown() {
+      if (this.templateId && this.templatePreviewMode) {
+        return false;
+      }
+      return this.isShown;
     },
     sidebarButtons() {
       // Don't show download button for templates
@@ -184,7 +207,7 @@ export default {
         {
           id: 'download-html',
           icon: 'download',
-          title: 'Download document',
+          title: this.$t('editor.downloadDocument'),
           action: 'downloadHTML',
           isGeneral: true,
           disabled: !this.showHTMLDownloadButton
@@ -201,10 +224,10 @@ export default {
       return null;
     },
     hasPlaceholders() {
-      // Only email templates (types 1, 2, 3, 6, 7) have placeholders
+      // Email templates (types 1, 2, 3, 6, 7) and prompt templates (type 8) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6, 7].includes(this.template.type);
+      return [1, 2, 3, 6, 7, 8].includes(this.template.type);
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {
@@ -281,7 +304,26 @@ export default {
     },
     handleSidebarVisibilityChange(visible) { 
       this.isSidebarVisible = visible;
-    },  
+    },
+    onTemplatePreviewModeChange(isPreview) {
+      if (!this.templateId) {
+        return;
+      }
+      this.templatePreviewMode = !!isPreview;
+      const sidebar = this.$refs.sidebar;
+      if (!sidebar) {
+        return;
+      }
+      if (this.templatePreviewMode) {
+        if (sidebar.isSidebarVisible) {
+          this.sidebarOpenBeforePreview = true;
+          sidebar.toggleSidebar();
+        }
+      } else if (this.sidebarOpenBeforePreview && this.showTemplateConfigurator) {
+        sidebar.toggleSidebar();
+        this.sidebarOpenBeforePreview = false;
+      }
+    },
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;
@@ -298,15 +340,15 @@ export default {
             (res) => {
               if (!res.success) {
                 this.eventBus.emit("toast", {
-                  title: "Failed retrieving edit history",
-                  message: res.message,
+                  title: this.$t('errors.editor.editHistoryRetrievalFailed'),
+                  message: resolveApiMessage(res),
                   variant: "danger",
                 });
               }
             }
         );
       }
-    }
+    },
   },
 };
 </script>
@@ -333,5 +375,7 @@ export default {
 
 .sidebar-container {
   margin-top: 60px;
+  min-height: 0;
+  align-self: stretch;
 }
 </style>
