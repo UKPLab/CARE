@@ -10,7 +10,7 @@
 const chat = require("./chat");
 const helpers = require("./helpers");
 const {PDFParse} = require("pdf-parse");
-const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
+const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
 async function loadDocumentText(service, documentId) {
     const document = await service.server.db.models["document"].findByPk(documentId, {raw: true});
