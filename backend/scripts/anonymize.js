@@ -23,7 +23,7 @@
 
 const db = require('../db');
 const { faker } = require('@faker-js/faker');
-const { generateAnimalUsername } = require('../utils/generator');
+const { generateAnimalUsername } = require('../utils/helper/generator');
 
 // Models where non-consenting user rows are DELETED outright.
 const DELETE_MODELS = [
