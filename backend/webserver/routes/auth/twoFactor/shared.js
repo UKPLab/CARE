@@ -103,13 +103,13 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
         const {
             userId = null,
             clearEmailOtp = false,
-            errorMessage = 'Invalid verification code.',
-            tooManyAttemptsErrorMessage = 'Too many invalid verification attempts. Please login again.',
+            errorMessage = 'auth.twoFactor.api.invalidCodeAttemptsRemaining',
+            tooManyAttemptsErrorMessage = 'auth.twoFactor.api.tooManyInvalidAttempts',
         } = options;
 
         const pending = req.session?.twoFactorPending;
         if (!pending) {
-            return res.status(400).json({ message: 'No pending 2FA verification found. Please login again.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.noPendingVerification' });
         }
 
         pending.failedAttempts = Number(pending.failedAttempts || 0) + 1;
@@ -128,7 +128,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
             return req.session.save((err) => {
                 if (err) {
                     server.logger.error('Failed to save session: ' + err);
-                    return res.status(500).json({ message: 'Session error during 2FA.' });
+                    return res.status(500).json({ message: 'auth.twoFactor.api.sessionErrorDuring2fa' });
                 }
 
                 return res.status(403).json({
@@ -144,11 +144,12 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
         return req.session.save((err) => {
             if (err) {
                 server.logger.error('Failed to save session: ' + err);
-                return res.status(500).json({ message: 'Session error during 2FA.' });
+                return res.status(500).json({ message: 'auth.twoFactor.api.sessionErrorDuring2fa' });
             }
 
             return res.status(401).json({
-                message: `${errorMessage} ${attemptsRemaining} attempt(s) remaining.`,
+                message: errorMessage,
+                params: { attemptsRemaining },
                 attemptsRemaining,
                 maxAttempts: MAX_2FA_VERIFY_ATTEMPTS,
             });
@@ -207,10 +208,10 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
      */
     async function resendEmailOtp(req, res) {
         if (!req.session || !req.session.twoFactorPending) {
-            return res.status(400).json({ message: 'No pending 2FA verification found. Please login again.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.noPendingVerification' });
         }
         if (req.session.twoFactorPending.method !== 'email') {
-            return res.status(400).json({ message: 'Email 2FA is not the selected method. Please select email first.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.emailNotSelectedSelectFirst' });
         }
 
         try {
@@ -220,7 +221,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
             if (!cooldownInfo.canResend) {
                 setRetryAfterHeader(res, cooldownInfo.retryAfterSeconds);
                 return res.status(429).json({
-                    message: 'Please wait before requesting another code.',
+                    message: 'auth.twoFactor.verifyEmail.errors.waitBeforeResend',
                     ...cooldownInfo,
                 });
             }
@@ -232,11 +233,11 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
 
             if (!user || !methods.includes('email')) {
                 delete req.session.twoFactorPending;
-                return res.status(400).json({ message: 'Email 2FA is not enabled for this user.' });
+                return res.status(400).json({ message: 'auth.twoFactor.api.emailNotEnabledForUser' });
             }
 
             if (!user.email) {
-                return res.status(400).json({ message: 'User email not found. Cannot send OTP.' });
+                return res.status(400).json({ message: 'auth.twoFactor.api.userEmailNotFound' });
             }
 
             await sendEmailOtp(user);
@@ -246,18 +247,18 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
             return req.session.save((err) => {
                 if (err) {
                     server.logger.error('Failed to save session: ' + err);
-                    return res.status(500).json({ message: 'Session error during 2FA.' });
+                    return res.status(500).json({ message: 'auth.twoFactor.api.sessionErrorDuring2fa' });
                 }
 
                 return res.status(200).json({
-                    message: 'OTP has been sent to your email address.',
+                    message: 'auth.twoFactor.verifyEmail.success.codeSent',
                     expiresIn: 10,
                     ...nextCooldownInfo,
                 });
             });
         } catch (error) {
             server.logger.error('Failed to request OTP: ' + error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.twoFactor.api.internalServerError' });
         }
     }
 
@@ -271,7 +272,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
     async function performTwoFactorAction(user, method) {
         if (method === 'email') {
             if (!user.email) {
-                throw { status: 400, message: 'Email not found for this user.' };
+                throw { status: 400, message: 'auth.twoFactor.api.emailNotFoundForUser' };
             }
             await sendEmailOtp(user);
             return;
@@ -279,12 +280,12 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
 
         if (method === 'totp') {
             if (!user.totpSecret) {
-                throw { status: 400, message: 'TOTP is not configured.' };
+                throw { status: 400, message: 'auth.twoFactor.api.totpNotConfigured' };
             }
             return;
         }
 
-        throw { status: 400, message: `Unsupported 2FA method: ${method}` };
+        throw { status: 400, message: 'auth.twoFactor.api.unsupportedMethod', params: { method } };
     }
 
     /**
@@ -355,7 +356,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
                 redirectPath = getTwoFactorRedirectPath(method);
             } catch (error) {
                 server.logger.error(`2FA Initialization failed: ${error.message}`);
-                return res.status(error.status || 500).json({ message: error.message });
+                return res.status(error.status || 500).json({ message: error.message, params: error.params });
             }
         } else {
             // Multiple methods available; requiring frontend to display selection page
@@ -368,7 +369,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
         req.session.save((err) => {
             if (err) {
                 server.logger.error('Failed to save session: ' + err);
-                return res.status(500).json({ message: 'Session error during 2FA.' });
+                return res.status(500).json({ message: 'auth.twoFactor.api.sessionErrorDuring2fa' });
             }
 
             if (mode === 'redirect') {

@@ -1,6 +1,6 @@
 'use strict';
 
-const { relevantFields } = require('../../../utils/auth');
+const { relevantFields } = require('../../auth/utils');
 const { createInitialAdmin } = require('../../utils/setupAdmin');
 
 /**

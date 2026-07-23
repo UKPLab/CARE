@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require('fs')
 const JSZip = require("jszip");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 
@@ -31,15 +32,15 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name of the document:",
-                placeholder: "My document",
+                label: "documents.fields.name.label",
+                placeholder: "documents.fields.name.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "hash",
-                label: "Hash ID of the document",
+                label: "documents.fields.hash.label",
                 placeholder: "#",
                 type: "text",
                 required: false,
@@ -47,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "userId",
-                label: "User ID of the document",
+                label: "documents.fields.userId.label",
                 placeholder: "#",
                 type: "text",
                 required: false,
@@ -55,7 +56,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "public",
-                label: "Is the document published?",
+                label: "documents.fields.publicSwitch",
                 type: "switch",
                 required: false,
                 default: false
@@ -93,7 +94,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const originalDoc = await Document.findByPk(documentId, {transaction: options.transaction});
             if (!originalDoc) {
-                throw new Error(`Document with id ${documentId} not found`);
+                throw new TranslatableError("errors.documents.withIdNotFound", {documentId});
             }
 
             // Create base document data
@@ -124,6 +125,12 @@ module.exports = (sequelize, DataTypes) => {
                 filters,
                 null,
                 null,
+                options
+            );
+
+            await sequelize.models.document_metadata.duplicateDocumentMetadata(
+                originalDoc.id,
+                duplicatedDoc.id,
                 options
             );
 
@@ -270,12 +277,15 @@ module.exports = (sequelize, DataTypes) => {
                 const doc = await Document.findByPk(documentId, {raw: true});
 
                 if (!doc) {
-                    throw new Error(`Document ${documentId} not found`);
+                    throw new TranslatableError("errors.documents.byIdNotFound", {documentId});
                 }
 
                 return await Document.encodeDocumentFileToBase64(doc);
             } catch (err) {
-                throw new Error(`Error processing document ${documentId}: ${err.message}`)
+                if (err.key) {
+                    throw err;
+                }
+                throw new TranslatableError("errors.documents.processingError", {documentId, message: err.message})
             }
         }
 
@@ -344,14 +354,14 @@ module.exports = (sequelize, DataTypes) => {
             try {
                 await fs.promises.access(docFilePath, fs.constants.F_OK);
             } catch {
-                throw new Error(`File not found for document ${doc.id}: ${docFilePath}`);
+                throw new TranslatableError("errors.documents.fileNotFound", {documentId: doc.id, filePath: docFilePath});
             }
 
             try {
                 const fileBuffer = await fs.promises.readFile(docFilePath);
                 return fileBuffer.toString('base64');
             } catch (err) {
-                throw new Error(`Error reading document file ${doc.id}: ${err.message}`);
+                throw new TranslatableError("errors.documents.readError", {documentId: doc.id, message: err.message});
             }
         }
 

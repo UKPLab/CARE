@@ -1,0 +1,98 @@
+{
+    "title": "Tag-Sets",
+    "tagSet": "Tag-Set",
+    "addNewTagSet": "Neues Tag-Set hinzufügen",
+    "copyTagSet": "Tag-Set kopieren",
+    "editTagSet": "Tag-Set bearbeiten",
+    "deleteTagSet": "Tag-Set löschen",
+    "shareTagSet": "Tag-Set freigeben",
+    "selectAsDefault": "Tag-Set als Standard auswählen",
+    "modalTitle": {
+        "newTagSet": "Neues Tag-Set",
+        "editTagSet": "Tag-Set bearbeiten"
+    },
+    "columns": {
+        "tags": "Tags",
+        "lastChange": "Letzte Änderung",
+        "user": "Benutzer"
+    },
+    "fields": {
+      "name": {
+        "label": "Name des Tagsets:",
+        "placeholder": "Mein Tagset"
+      },
+      "description": {
+        "label": "Beschreibung des Tagsets:",
+        "placeholder": "Tagset-Beschreibung"
+      },
+      "tags": {
+        "label": "Tags:"
+      },
+      "tag": {
+        "name": {
+          "placeholder": "Name des Tags"
+        },
+        "color": {
+          "label": "Farbe"
+        },
+        "description": {
+          "placeholder": "Tag-Beschreibung"
+        }
+      }
+    },
+    "messages": {
+        "deleteTitle": "Tag-Set löschen",
+        "deleteConfirm": "Möchten Sie das Tag-Set wirklich löschen?",
+        "tagSetDeleted": "Tag-Set gelöscht",
+        "tagSetDeletedMessage": "Das Tag-Set wurde erfolgreich gelöscht",
+        "publishTitle": "Tag-Set veröffentlichen",
+        "publishConfirm": "Möchten Sie das Tag-Set wirklich veröffentlichen? Hinweis: Nach der Veröffentlichung können Sie das Tag-Set nicht mehr rückgängig machen!",
+        "tagSetPublished": "Tag-Set veröffentlicht",
+        "tagSetPublishedMessage": "Das Tag-Set wurde erfolgreich veröffentlicht"
+    },
+    "form": {
+        "name": {
+            "label": "Name des Tag-Sets:",
+            "placeholder": "Mein Tag-Set"
+        },
+        "description": {
+            "label": "Beschreibung des Tag-Sets:",
+            "placeholder": "Tag-Set-Beschreibung"
+        },
+        "tags": {
+            "label": "Tags:"
+        }
+    },
+    "editMainTag": "Haupt-Tag bearbeiten",
+    "basicTags": {
+    "highlight": "Hervorheben",
+    "strength": "Stärke",
+    "weakness": "Schwäche",
+    "other": "Sonstiges"
+    },
+    "basicTagGroups": {
+    "peerReview": "Peer Review",
+    "standardSet": "Ein Standard-Tagset für den Peer-Review-Prozess"
+    },
+    "tag":{
+    "form": {
+      "name":{
+        "label": "Name",
+        "placeholder": "Name des Tags"
+      },
+      "description": {
+        "label": "Beschreibung",
+        "placeholder":"Beschreibung des Tags"
+      },
+      "colorCode": {
+        "label": "Farbe",
+        "options": {
+          "info": "Info",
+          "warning": "Warnung",
+          "success": "Erfolg",
+          "danger": "Gefahr"
+        }
+      }
+    }
+  }
+}

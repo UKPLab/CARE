@@ -7,35 +7,35 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name",
-                placeholder: "Name of the Tag",
+                label: "common.name",
+                placeholder: "tags.fields.tag.name.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "colorCode",
-                label: "Color",
+                label: "tags.fields.tag.color.label",
                 type: "select",
                 default: "info",
                 options: [
                     {
-                        name: "info",
+                        name: "tags.tag.form.colorCode.options.info",
                         value: "info",
                         class: "border border-info"
                     },
                     {
-                        name: "warning",
+                        name: "tags.tag.form.colorCode.options.warning",
                         value: "warning",
                         class: "border border-warning"
                     },
                     {
-                        name: "success",
+                        name: "tags.tag.form.colorCode.options.success",
                         value: "success",
                         class: "border-2 border-success"
                     },
                     {
-                        name: "danger",
+                        name: "tags.tag.form.colorCode.options.danger",
                         value: "danger",
                         class: "border-2 border-danger"
                     },
@@ -44,8 +44,8 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "description",
-                label: "Description",
-                placeholder: "Tag description",
+                label: "common.description",
+                placeholder: "tags.fields.tag.description.placeholder",
                 type: "text",
                 required: true,
                 default: "",

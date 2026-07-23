@@ -1,0 +1,86 @@
+{
+  "title": "Documents",
+  "preparingPdf": "Preparing your PDF...",
+  "templateOptional": "Template (optional):",
+  "noTemplateCreateEmpty": "None (create empty document)",
+  "templatePrefillHint": "Select a template to pre-fill the document content (Type 4: Document - General)",
+  "document": "Document",
+  "documentDefaultName": "document",
+  "addDocument": "Add document",
+  "uploadDocument": "Upload document",
+  "uploadNewDocument": "Upload new document",
+  "uploadConfiguration": "Upload new configuration file",
+  "createDocument": "Create document",
+  "createNewDocument": "Create new document",
+  "renameDocument": "Rename document...",
+  "deleteDocument": "Delete document...",
+  "accessDocument": "Access document...",
+  "publishDocument": "Publish document...",
+  "downloadPdfWithAnnotations": "Download PDF with annotations",
+  "exportDelta": "Export delta to a local file",
+  "exportHtml": "Export HTML to a local file",
+  "openStudyCoordinator": "Open study coordinator...",
+  "importAnnotations": "Import annotations",
+  "typeOfDocument": "Type of document",
+  "chooseDocumentType": "Choose document type...",
+  "nameOfDocument": "Name of the document",
+  "yesPublish": "Yes, publish it!",
+  "types": {
+    "pdf": "PDF",
+    "html": "HTML",
+    "modal": "MODAL",
+    "generalHtml": "General HTML Document",
+    "studyModal": "Study Modal Document (only usable in studies)"
+  },
+  "fields": {
+    "name": {
+      "label": "Name of the document:",
+      "placeholder": "My document"
+    },
+    "hash": {
+      "label": "Hash ID of the document"
+    },
+    "userId": {
+      "label": "User ID of the document"
+    },
+    "publicSwitch": "Is the document published?"
+  },
+  "messages": {
+    "deleteConfirm": "Are you sure you want to delete the document?",
+    "deleteTitle": "Delete Document",
+    "studyWarning": "There are currently {count} studies running on this document. Deleting it will delete the studies!",
+    "documentPublished": "Document successfully published!",
+    "documentAvailableAt": "The document is available under the following link:",
+    "publishConfirm": "Do you really want to publish the document?",
+    "cannotBeUndone": "This can not be undone!",
+    "documentPublishedTitle": "Document published",
+    "publishedSuccess": "Successfully published document!",
+    "linkCopiedMessage": "Link copied to clipboard!",
+    "documentEdited": "The document has been successfully edited.",
+    "documentEditedTitle": "Document edited",
+    "documentEditedMessage": "Successfully edited document!",
+    "configurationUploaded": "Configuration uploaded",
+    "fileUploaded": "File has been uploaded successfully.",
+    "annotationsAdded": "{count} annotations were added.",
+    "annotationImportPartialFailure": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but some annotations may be missing.",
+    "issuesOccurred": "Some issues occurred",
+    "uploadedWithWarnings": "Uploaded with warnings",
+    "uploadedFile": "Uploaded file",
+    "documentCreated": "Document created successfully.",
+    "documentNotFoundTitle": "Document not found",
+    "documentErrorTitle": "Document Error"
+  },
+  "downloadPdf": {
+    "title": "Download PDF",
+    "includeAnnotations": "Include annotations in PDF",
+    "preparing": "Preparing your PDF...",
+    "toasts": {
+      "successTitle": "PDF downloaded successfully",
+      "successMessage": "Your PDF has been downloaded.",
+      "successMessageWithAnnotations": "Your PDF with annotations has been downloaded.",
+      "failedTitle": "Failed to download the PDF",
+      "unknownError": "Unknown error"
+    }
+  }
+}
+

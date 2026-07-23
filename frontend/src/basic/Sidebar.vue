@@ -25,7 +25,7 @@
                 }"
                   :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                   :title="config.title || ''"
-                  :aria-label="config.title || 'Sidebar section'"
+                  :aria-label="config.title || $t('navigation.sidebar.sidebarSection')"
                   :tabindex="isSingleConfig ? '-1' : '0'"
                   :aria-disabled="isSingleConfig ? 'true' : 'false'"
                   :disabled="isSingleConfig"
@@ -68,7 +68,7 @@
                     class="btn btn-sm sidebar-action-button dropdown-toggle"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
-                    title="More actions"
+                    :title="$t('navigation.sidebar.moreActions')"
                 >
                   <LoadIcon
                       icon-name="three-dots-vertical"
@@ -115,7 +115,7 @@
       <li v-if="isShown" class="nav-item">
         <TopBarButton
             :show="isShown"
-            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+            :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
             class="btn rounded-circle"
             :class="{ 'sidebar-highlight': sidebarIconHighlight }"
             @click="toggleSidebar"

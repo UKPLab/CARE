@@ -16,6 +16,7 @@
 import BasicTable from "@/basic/Table.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 
@@ -56,16 +57,18 @@ export default {
         pagination: 10,
         search: true,
       },
-      columns: [
-        { name: "ID", key: "id" },
-        { name: "Submission Name", key: "name" },
-        { name: "Username", key: "userName" },
-        { name: "Studies Using", key: "studyUsageCount" },
-        { name: "Created At", key: "createdAt" },
-      ],
     };
   },
   computed: {
+    columns() {
+      return [
+        { name: this.$t("submission.dashboard.columns.id"), key: "id" },
+        { name: this.$t("assignments.dashboard.submissionsTable.columns.name"), key: "name" },
+        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName" },
+        { name: this.$t("assignments.dashboard.submissionsTable.columns.studyUsageCount"), key: "studyUsageCount" },
+        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt" },
+      ];
+    },
     hasAdminRights() {
       return this.$store.getters["auth/isAdmin"] || this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.viewAll");
     },
@@ -140,7 +143,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Download submission files",
+          title: this.$t("submission.dashboard.actions.download"),
           action: "downloadSubmission",
           stats: {
             submissionId: "id",
@@ -161,7 +164,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Replace submission",
+          title: this.$t("assignments.dashboard.submissionsTable.actions.replace"),
           action: "replaceSubmission",
           stats: {
             submissionId: "id",
@@ -182,7 +185,7 @@ export default {
               "btn-sm": true,
             },
           },
-          title: "Delete submission",
+          title: this.$t("assignments.dashboard.submissionsTable.actions.delete"),
           action: "deleteSubmission",
           stats: {
             submissionId: "id",
@@ -215,8 +218,8 @@ export default {
 
         if (docs.length === 0) {
           this.eventBus.emit("toast", {
-            title: "No documents found",
-            message: "This submission has no associated documents to download",
+            title: this.$t("submission.dashboard.toasts.noDocumentsTitle"),
+            message: this.$t("submission.dashboard.toasts.noDocumentsMessage"),
             variant: "warning",
           });
           return;
@@ -233,7 +236,7 @@ export default {
                 if (res.success) {
                   resolve(res.data);
                 } else {
-                  reject(new Error(res.message || "Failed to get document"));
+                  reject(new Error(resolveApiMessage(res) || this.$t("assignments.dashboard.submissionsTable.toasts.documentFetchFailed")));
                 }
               });
             });
@@ -261,8 +264,8 @@ export default {
             }
           } catch (error) {
             this.eventBus.emit("toast", {
-              title: "Download error",
-              message: `Failed to download ${doc.name}: ${error.message}`,
+              title: this.$t("submission.dashboard.toasts.downloadErrorTitle"),
+              message: this.$t("submission.dashboard.toasts.downloadErrorMessage", { name: doc.name, error: error.message }),
               variant: "danger",
             });
           }
@@ -272,13 +275,16 @@ export default {
         FileSaver.saveAs(content, `${folderName}.zip`);
 
         this.eventBus.emit("toast", {
-          title: "Download complete",
-          message: `Downloaded submission ${submission.id} with ${docs.length} documents`,
+          title: this.$t("submission.dashboard.toasts.downloadCompleteTitle"),
+          message: this.$t("submission.dashboard.toasts.downloadCompleteMessage", {
+            id: submission.id,
+            count: docs.length,
+          }),
           variant: "success",
         });
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Download failed",
+          title: this.$t("submission.dashboard.toasts.downloadFailedTitle"),
           message: error.message,
           variant: "danger",
         });
@@ -287,8 +293,8 @@ export default {
     replaceSubmission(row) {
       if (row.isStudyLocked) {
         this.eventBus.emit("toast", {
-          title: "Replace not allowed",
-          message: "This submission cannot be replaced because one or more documents are used in studies.",
+          title: this.$t("assignments.dashboard.submissionsTable.toasts.replaceNotAllowed.title"),
+          message: this.$t("assignments.dashboard.submissionsTable.toasts.replaceNotAllowed.message"),
           variant: "warning",
         });
         return;
@@ -297,8 +303,8 @@ export default {
       const assignmentId = row.assignmentId || this.assignmentId;
       if (!assignmentId) {
         this.eventBus.emit("toast", {
-          title: "Replace failed",
-          message: "Assignment id is missing for this submission.",
+          title: this.$t("assignments.dashboard.submissionsTable.toasts.replaceFailed.title"),
+          message: this.$t("assignments.dashboard.submissionsTable.toasts.replaceFailed.message"),
           variant: "danger",
         });
         return;
@@ -308,16 +314,16 @@ export default {
     deleteSubmission(row) {
       if (row.isStudyLocked) {
         this.eventBus.emit("toast", {
-          title: "Delete not allowed",
-          message: "This submission cannot be deleted because one or more documents are used in studies.",
+          title: this.$t("assignments.dashboard.submissionsTable.toasts.deleteNotAllowed.title"),
+          message: this.$t("assignments.dashboard.submissionsTable.toasts.deleteNotAllowed.message"),
           variant: "warning",
         });
         return;
       }
 
       this.$refs.deleteConf.open(
-        "Delete Submission",
-        "Are you sure you want to delete this submission?",
+        this.$t("assignments.dashboard.submissionsTable.confirm.delete.title"),
+        this.$t("assignments.dashboard.submissionsTable.confirm.delete.message"),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -331,14 +337,14 @@ export default {
             (res) => {
               if (res.success) {
                 this.eventBus.emit("toast", {
-                  title: "Submission deleted",
-                  message: "The submission has been deleted",
+                  title: this.$t("assignments.dashboard.submissionsTable.toasts.deleteSuccess.title"),
+                  message: this.$t("assignments.dashboard.submissionsTable.toasts.deleteSuccess.message"),
                   variant: "success",
                 });
               } else {
                 this.eventBus.emit("toast", {
-                  title: "Failed to delete submission",
-                  message: res.message,
+                  title: this.$t("assignments.dashboard.submissionsTable.toasts.deleteFailed"),
+                  message: resolveApiMessage(res),
                   variant: "danger",
                 });
               }

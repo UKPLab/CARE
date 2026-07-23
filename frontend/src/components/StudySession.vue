@@ -12,6 +12,7 @@
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils";
 import Study from "./Study.vue";
 import Loader from "@/basic/Loading.vue"
 
@@ -36,7 +37,7 @@ export default {
     studySessionError: function (data) {
       if (data.studySessionHash === this.studySessionHash) {
         this.eventBus.emit('toast', {
-          title: "Study Session Error",
+          title: this.$t("studies.messages.studySessionErrorTitle"),
           message: data.message,
           variant: "danger"
         });
@@ -76,8 +77,8 @@ export default {
       (response) => {
         if (!response.success) {
           this.eventBus.emit('toast', {
-            title: "Access Error!",
-            message: response.message,
+            title: this.$t("errors.permission.accessError"),
+            message: resolveApiMessage(response),
             variant: "danger"
           });
           this.$router.push("/");

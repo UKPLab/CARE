@@ -1,0 +1,44 @@
+{
+    "reqTitle": "Send a request",
+    "cmdTitle": "Send a command",
+    "cmdToSend": "the command to send",
+    "serviceToContact": "the service to contact",
+    "waitingForResponse": "Waiting for response",
+    "payload": "Payload",
+    "placeholders": "Placeholders",
+    "emptyMsgHistory": "No messages sent/received.",
+    "messages": {
+        "msgNotReceived": "Received no message from server within 5s."
+    },
+    "readOnlyMode": "Read-Only Mode",
+    "seePayload": "See Payload",
+    "request": "Request",
+    "copyJsonSuccess": {
+        "title": "JSON copied",
+        "message": "JSON copied to clipboard!"
+    },
+    "editJson": "Edit JSON",
+    "unsavedWarning": {
+        "unsavedChanges": "Unsaved Changes",
+        "unsavedChangesMessage": "Are you sure you want to leave? There are unsaved changes, which will be lost."
+    },
+    "history": "History",
+    "configurator": "Configurator",
+    "readOnly": "Read-only",
+    "downloadDocument": "Download document",
+    "annotator": {
+        "annotations": "Annotations",
+        "submitReview": "Submit Review",
+        "report": "Report",
+        "accept": "Accept",
+        "reject": "Reject",
+        "hideStudyComments": "Hide study comments",
+        "showStudyComments": "Show study comments",
+        "deactivateNlpSupport": "Deactivate NLP support",
+        "activateNlpSupport": "Activate NLP support",
+        "downloadAnnotations": "Download Annotations",
+        "documentSubscribeError": "Document subscribe error",
+        "searchTags": "Search tags",
+        "expandAdder": "Expand Adder"
+    }
+}

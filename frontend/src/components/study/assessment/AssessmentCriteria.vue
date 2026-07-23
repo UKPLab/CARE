@@ -13,7 +13,7 @@
           />
         </span>
         <span class="criterion-name">
-          {{ criterion.name || 'Unnamed criterion' }}
+          {{ criterion.name || $t('assessment.criteria.unnamedCriterion') }}
         </span>
       </div>
 
@@ -34,6 +34,7 @@
         <span
             class="badge"
             :class="(readOnly || isSaved) ? 'bg-success' : 'bg-secondary'"
+            :title="`isSaved: ${isSaved}`"
         >
           {{ displayScore }} P
         </span>
@@ -45,12 +46,12 @@
         class="criterion-assessment mt-2 px-3 pb-2"
     >
       <div class="assessment-text">
-        <strong>Justification:</strong>
+        <strong>{{ $t('assessment.criteria.justification') }}</strong>
 
         <!-- Read-only view -->
         <div v-if="!isEditing" class="assessment-content">
           <p class="mb-0 mt-1">
-            {{ state.assessment || 'No justification provided' }}
+            {{ state.assessment || $t('assessment.criteria.noJustification') }}
           </p>
         </div>
 
@@ -61,7 +62,7 @@
                 ref="assessmentTextarea"
                 v-model="localAssessment"
                 class="form-control assessment-textarea"
-                placeholder="Edit the justification..."
+                :placeholder="$t('assessment.criteria.editPlaceholder')"
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
                 @input="autoResizeTextarea"
@@ -81,7 +82,7 @@
             <BasicButton
                 v-if="!readOnly"
                 class="btn-outline-primary btn-sm"
-                title="Edit"
+                :title="$t('assessment.criteria.edit')"
                 text=""
                 icon="pen"
                 :props="{ criterionName: criterion.name }"
@@ -93,7 +94,7 @@
             <select
                 v-model.number="scoreProxy"
                 class="form-select form-select-sm score-dropdown"
-                title="Change score"
+                :title="$t('assessment.criteria.changeScore')"
             >
               <!-- Use scoring list if present -->
               <template v-if="hasScoringList">
@@ -120,7 +121,7 @@
 
             <BasicButton
                 :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
-                :title="isSaved ? 'Assessment saved' : 'Save assessment'"
+                :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
                 text=""
                 icon="floppy"
                 :props="{ criterionName: criterion.name }"
@@ -134,7 +135,7 @@
           <BasicButton
               v-if="!readOnly"
               class="btn-primary btn-sm"
-              title="Save"
+              :title="$t('assessment.criteria.saveEdit')"
               text=""
               icon="floppy"
               :props="{ criterionName: criterion.name }"
@@ -143,7 +144,7 @@
           <BasicButton
               v-if="!readOnly"
               class="btn-secondary btn-sm"
-              title="Cancel"
+              :title="$t('assessment.criteria.cancel')"
               text=""
               icon="x-lg"
               :props="{ criterionName: criterion.name }"
@@ -299,6 +300,7 @@ export default {
         isEditing: false,
         isSaved: false,
       };
+      this.$emit("saved-and-next");
     },
     cancelEdit() {
       if (this.readOnly) return;
@@ -314,7 +316,6 @@ export default {
         ...this.state,
         isSaved: true,
       };
-      this.$emit("saved-and-next");
     },
     getTextareaRows(text) {
       if (!text) return 3;

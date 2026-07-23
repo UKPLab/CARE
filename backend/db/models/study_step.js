@@ -2,7 +2,8 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const {promises: fs} = require("fs");
-const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
+const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
+const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
@@ -31,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "documentId",
-                label: "Select Document",
+                label: "dashboard.documents.fields.selectDoc",
                 type: "select",
                 options: {
                     table: "document",
@@ -53,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
                     additionalOptions: [
                         {
                             type: sequelize.models.document.docTypes.DOC_TYPE_HTML,
-                            name: "New Empty Document",
+                            name: "dashboard.documents.fields.newEmptyDoc",
                             value: null
                         }
                     ]
@@ -76,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
                 }, ...options,
             });
             if (!firstStep) {
-                throw new Error("No first step found for this study");
+                throw new Error("errors.studies.studyStep.notFound");
             } else {
                 return firstStep;
             }
@@ -136,7 +137,7 @@ module.exports = (sequelize, DataTypes) => {
                                 })
 
                                 if (!referencedStudyStep) {
-                                    throw new Error(`Referenced study step not found for workflow step ${originalEntry.id}`);
+                                    throw new TranslatableError("errors.studies.studyStep.referencedStepNotFound", {originalEntryId: originalEntry.id});
                                 }
 
                                 const referencedDocument = await sequelize.models.document.getById(
@@ -144,7 +145,7 @@ module.exports = (sequelize, DataTypes) => {
                                     {transaction: options.transaction});
 
                                 if (!referencedDocument) {
-                                    throw new Error(`Referenced document not found for study step ${referencedStudyStep.id}`);
+                                    throw new TranslatableError("errors.studies.studyStep.referencedDocumentNotFound", {referencedStudyStepId: referencedStudyStep.id});
                                 }
 
                                 // Copy the delta file from the referenced document to the new document
@@ -199,11 +200,17 @@ module.exports = (sequelize, DataTypes) => {
 
                     // Check if document exists!
                     if (!document) {
-                        throw new Error(`Document not found: documentId ${data.documentId} is missing for step ${data.workflowStepId}`);
+                        throw new TranslatableError("errors.studies.studyStep.documentNotFoundExact", {
+                            dataDocumentId: data.documentId,
+                            dataWorkflowStepId: data.workflowStepId,
+                        });
                     }
                     // Check document mismatch
                     if (document.type !== expectedDocType) {
-                        throw new Error(`Document type mismatch: step ${data.workflowStepId} expects an Editor document (type 1), but found type ${document.type}.`);
+                        throw new TranslatableError("errors.studies.studyStep.documentTypeMismatch", {
+                            dataWorkflowStepId: data.workflowStepId,
+                            documentType: document.type,
+                        });
                     }
 
                     const newDocument = await sequelize.models.document.add({

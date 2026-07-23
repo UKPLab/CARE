@@ -37,7 +37,7 @@ class SettingSocket extends Socket {
      */
     async sendSettings(data, options) {
          if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to access settings.");
+            throw new Error("errors.settings.noAccessPermission");
         }
 
         return await this.getDashboardSettingsPayload();
@@ -55,7 +55,7 @@ class SettingSocket extends Socket {
    */
     async saveSettings(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to save settings.");
+            throw new Error("errors.settings.noSavePermission");
         }
 
         const { touchesMailService } = await saveSettings(this.models["setting"], data, {
@@ -71,7 +71,7 @@ class SettingSocket extends Socket {
             this.emit("settingData", await this.getDashboardSettingsPayload()); // Refresh settings on this socket
         });
 
-        return "Settings saved successfully.";
+        return "settings.messages.settingsSavedSuccessfully";
     }
 
     /**
@@ -86,7 +86,7 @@ class SettingSocket extends Socket {
      */
     async mailSendTest(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to send test mail.");
+            throw new Error("errors.settings.noTestMailPermission");
         }
 
         const rows = await this.models["setting"].getMailServiceSettings();

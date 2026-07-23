@@ -1,7 +1,7 @@
 'use strict';
 
 const passport = require('passport');
-const { relevantFields } = require('../../../utils/auth');
+const { relevantFields } = require('../../auth/utils');
 
 /**
  * Register login/logout/session-check routes, including local and external provider entrypoints.
@@ -21,7 +21,7 @@ function registerLoginRoutes(server, helpers) {
         passport.authenticate('local-login', async (err, user, info) => {
             if (err) {
                 server.logger.error('Login failed: ' + err);
-                return res.status(500).send('Failed to login');
+                return res.status(500).json({ message: 'auth.api.failedToLogin' });
             }
             if (!user) {
                 server.logger.info('User not found: ' + JSON.stringify(info));
@@ -31,7 +31,7 @@ function registerLoginRoutes(server, helpers) {
             const emailVerificationEnabled = String(await server.db.models['setting'].get('app.register.emailVerification')) === 'true';
             if (emailVerificationEnabled && !user.emailVerified) {
                 return res.status(401).json({
-                    message: 'Please verify your email address before logging in.',
+                    message: 'auth.api.emailNotVerifiedBeforeLogin',
                     emailNotVerified: true,
                     email: user.email,
                 });
@@ -52,12 +52,12 @@ function registerLoginRoutes(server, helpers) {
         shared.setPostLoginRedirectPath(req, req.body?.redirectedFrom || req.query?.redirectedFrom);
 
         if (!(await shared.isLoginMethodEnabled('ldap'))) {
-            return res.status(403).json({ message: 'LDAP login is disabled by the administrator.' });
+            return res.status(403).json({ message: 'auth.api.ldapLoginDisabled' });
         }
         if (!server.isAuthProviderReady('ldap')) {
             const status = server.getAuthProviderStatus('ldap');
             return res.status(503).json({
-                message: 'LDAP login is enabled but not fully configured. Please contact an administrator.',
+                message: 'auth.api.ldapLoginNotReady',
                 reason: status.reason,
             });
         }
@@ -65,10 +65,10 @@ function registerLoginRoutes(server, helpers) {
         passport.authenticate('ldap-login', async (err, user, info) => {
             if (err) {
                 server.logger.error('LDAP login failed: ' + err);
-                return res.status(500).send('Failed to login');
+                return res.status(500).json({ message: 'auth.api.failedToLogin' });
             }
             if (!user) {
-                return res.status(401).send(info || { message: 'LDAP login failed.' });
+                return res.status(401).json(info || { message: 'auth.api.ldapLoginFailed' });
             }
 
             const handled = await twoFactor.startTwoFactorLogin(req, res, user.id, { mode: 'json', loginMethod: 'ldap' });
@@ -227,7 +227,7 @@ function registerLoginRoutes(server, helpers) {
             }
             req.session.destroy();
             res.clearCookie('connect.sid');
-            return res.status(200).send('Session destroyed!');
+            return res.status(200).json({ message: 'auth.api.sessionDestroyed' });
         });
     });
 
@@ -257,7 +257,7 @@ function registerLoginRoutes(server, helpers) {
             });
         } catch (err) {
             server.logger.error('auth/check error: ' + err);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.api.internalServerError' });
         }
     });
 }

@@ -1,0 +1,125 @@
+{
+    "confirm": "Bestätigen",
+    "confirmAction": "Bestätige {action}",
+    "pleaseConfirm": "Bitte bestätigen",
+    "sending": "Wird gesendet...",
+    "sendResetEmail": "E-Mail zum Zurücksetzen des Passworts senden",
+    "passwordReset": "Passwort zurückgesetzt",
+    "passwordUpdated": "Passwort aktualisiert",
+    "passwordResetSuccess": "Das Passwort wurde erfolgreich zurückgesetzt.",
+    "loading": "Wird geladen...",
+    "closeModal": "Schließen",
+    "placeholders": {
+        "documentPreview": "Dokumentvorschau",
+        "placeholderLegend": "Platzhalter Legende",
+        "configurePlaceholders": "Platzhalter konfigurieren",
+        "firstDataSource": "Erste Datenquelle:",
+        "secondDataSource": "Zweite Datenquelle:",
+        "dataSource": "Datenquelle:",
+        "selectFirstDataSource": "Erste Datenquelle auswählen...",
+        "selectSecondDataSource": "Zweite Datenquelle auswählen...",
+        "selectDataSource": "Datenquelle auswählen...",
+        "noPlaceholders": "Keine Platzhalter im Dokument gefunden.",
+        "documentError": "Dokumentenfehler",
+        "invalidDocumentContent": "Der Dokumentinhalt ist ungültig oder leer. Bitte versuchen Sie es erneut.",
+        "failedToFetchDocument": "Fehler beim Abrufen des Dokuments.",
+        "addInformation": "Fügen Sie hier die Informationen für den Platzhalter hinzu:",
+        "dataMissingOrInvalid": "~ Platzhalterdaten fehlen oder sind ungültig ~",
+        "dataMissing": "~ Platzhalterdaten fehlen ~",
+        "firstVersionStep": "Erste Version (Schritt {step})",
+        "currentVersionStep": "Aktuelle Version (Schritt {step})"
+    },
+    "modal": "Modal",
+    "noContentForThisStep": "Für diesen Schritt sind keine Inhalte verfügbar.",
+    "finishStudy": "Studie beenden",
+    "exportStudyData": "Studiendaten exportieren",
+    "returnToStudies": "'Rückkehr zu Studien'",
+    "revisions": {
+        "revision": "Überarbeitung",
+        "revisionOne": "Überarbeitung 1",
+        "revisionTwo": "Überarbeitung 2"
+    },
+    "chart": "Diagramm",
+    "comparisonChart": "Vergleichsdiagramm",
+    "importExport": {
+        "export": {
+            "defaultTitle": "Exportieren",
+            "success": {
+                "title": "Export erfolgreich",
+                "single": "{table} erfolgreich im {format}-Format exportiert",
+                "multiple": "{table} erfolgreich im {format}-Format exportiert"
+            }
+        },
+        "import": {
+            "defaultTitle": "Importieren",
+            "selectFile": "Datei auswählen ({extensions}):",
+            "selectedFile": "Ausgewählt: {file}",
+            "selectItemsPrefix": "Wählen Sie aus, welche Einträge importiert werden sollen aus",
+            "confirmQuestion": "Möchten Sie die folgenden {table} wirklich importieren?",
+            "genericItems": "Einträge",
+            "childRecords": "— {count} untergeordnete Datensätze",
+            "fallbackItemLabel": "Eintrag {index}",
+            "steps": {
+                "fileSelection": "Dateiauswahl",
+                "itemSelection": "{item}-Auswahl",
+                "confirmation": "Bestätigung",
+                "genericItem": "Eintrag"
+            },
+            "errors": {
+                "unsupportedFileType": "Nicht unterstützter Dateityp \"{ext}\"",
+                "parseFileFailed": "Datei konnte nicht gelesen werden: {message}",
+                "readFileFailed": "Datei konnte nicht gelesen werden",
+                "importError": "Importfehler",
+                "importChildFailed": "Untergeordneter Datensatz konnte nicht importiert werden: {message}",
+                "importItemFailed": "\"{name}\" konnte nicht importiert werden: {message}"
+            },
+            "success": {
+                "title": "Import erfolgreich",
+                "single": "{count} {table} erfolgreich importiert!",
+                "multiple": "{count} {table} erfolgreich importiert!"
+            }
+        },
+        "formats": {
+            "csv": {
+                "label": "CSV-Format",
+                "description": "Kommagetrennte Werte, kompatibel mit Tabellenkalkulationen"
+            },
+            "json": {
+                "label": "JSON-Format",
+                "description": "Standardmäßiges JSON-Format mit korrekter Formatierung"
+            },
+            "txt": {
+                "label": "TXT-Format",
+                "description": "Klartext mit eingerückten verschachtelten Objekten"
+            },
+            "yaml": {
+                "label": "YAML-Format",
+                "description": "Menschenlesbares YAML-Format"
+            }
+        },
+        "wiring": {
+            "configuration": {
+                "exportAllTooltip": "Alle Konfigurationen exportieren",
+                "importTitle": "Konfiguration importieren",
+                "exportTitle": "Konfiguration exportieren"
+            },
+            "tags": {
+                "exportAllTooltip": "Alle Tag-Sets exportieren",
+                "importTitle": "Tag-Sets importieren",
+                "exportTitle": "Tag-Set exportieren"
+            },
+            "templates": {
+                "importTooltip": "Vorlagen importieren",
+                "exportAllTooltip": "Alle Vorlagen exportieren",
+                "importTitle": "Vorlagen importieren",
+                "exportTitle": "Vorlage exportieren"
+            },
+            "studyTemplates": {
+                "importTooltip": "Vorlage importieren",
+                "exportAllTooltip": "Alle Vorlagen exportieren",
+                "importTitle": "Studienvorlagen importieren",
+                "exportTitle": "Studienvorlage exportieren"
+            }
+        }
+    }
+}

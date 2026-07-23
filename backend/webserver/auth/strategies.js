@@ -6,7 +6,7 @@ const LocalStrategy = require('passport-local');
 const OrcidStrategy = require('passport-orcid').Strategy;
 const LdapStrategy = require('passport-ldapauth');
 const { Strategy: SamlStrategy } = require('@node-saml/passport-saml');
-const { relevantFields } = require('../../utils/auth');
+const { relevantFields } = require('./utils');
 const {
     findOrProvisionExternalUser,
     getFirstPresentValue,
@@ -40,12 +40,12 @@ async function setupLocalStrategy(server) {
     passport.use('local-login', new LocalStrategy(async (username, password, cb) => {
         try {
             const user = await server.db.models['user'].find(username);
-            if (!user) return cb(null, false, { message: 'Incorrect username or password.' });
+            if (!user) return cb(null, false, { message: 'auth.api.incorrectUsernameOrPassword' });
 
             crypto.pbkdf2(password, user.salt, 310000, 32, 'sha256', (err, hashedPassword) => {
                 if (err) return cb(err);
                 if (!crypto.timingSafeEqual(Buffer.from(user.passwordHash, 'hex'), hashedPassword)) {
-                    return cb(null, false, { message: 'Incorrect username or password.' });
+                    return cb(null, false, { message: 'auth.api.incorrectUsernameOrPassword' });
                 }
                 // filter row object, because not everything is the right information for website
                 return cb(null, relevantFields(user));

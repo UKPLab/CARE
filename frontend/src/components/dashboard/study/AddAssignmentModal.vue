@@ -6,7 +6,7 @@
     @hide="resetModal"
   >
     <template #title>
-      <span>Add Single Assignment</span>
+      <span>{{$t('dashboard.study.addSingleAssignment')}}</span>
     </template>
     <template #body>
       <BasicTable
@@ -21,7 +21,7 @@
     <template #footer>
       <div>
         <BasicButton
-          :title="(selectedReviewer.length === 1) ? 'Add Reviewer' : 'Add Reviewers'"
+          :title="(selectedReviewer.length === 1) ? $t('dashboard.study.addReviewer') : $t('dashboard.study.addReviewers')"
           class="btn btn-primary"
           :disabled="selectedReviewer.length === 0"
           @click="addReviewers"
@@ -36,6 +36,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for adding a single assignment
@@ -74,13 +75,13 @@ export default {
   computed: {
     reviewerTableColumns() {
       const columns = [
-        {name: "ID", key: "id"},
-        {name: "Username", key: "userName"},
+        {name: this.$t('common.id'), key: "id"},
+        {name: this.$t('common.userName'), key: "userName"},
       ];
       if (this.canReadPrivateInformation) {
         columns.push(
-          {name: "First Name", key: "firstName"},
-          {name: "Last Name", key: "lastName"},
+          {name: this.$t('common.firstName'), key: "firstName"},
+          {name: this.$t('common.lastName'), key: "lastName"},
         );
       }
 
@@ -120,14 +121,14 @@ export default {
           this.$refs.assignmentModal.close();
           this.showMainModal();
           this.eventBus.emit("toast", {
-            title: "Reviewers added",
-            message: "The reviewers have been added successfully",
+            title: this.$t('dashboard.study.reviewersAdded'),
+            message: this.$t('dashboard.study.reviewersAddedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to add reviewers",
-            message: res.message,
+            title: this.$t('dashboard.study.failedToAddReviewers'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

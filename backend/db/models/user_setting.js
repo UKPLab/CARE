@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
+const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
     class UserSetting extends MetaModel {
@@ -14,6 +15,37 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "userId",
                 as: "user",
             });
+        }
+
+        /**
+         * Reject user_setting rows that would override a system setting without allowUserOverride.
+         * Admin bulk updates pass { bypassSystemSettingCheck: true } in Sequelize options.
+         *
+         * @param {string} key
+         * @param {Object} [options]
+         * @returns {Promise<void>}
+         */
+        static async assertKeyAllowedForUserSetting(key, options = {}) {
+            if (options.bypassSystemSettingCheck) {
+                return;
+            }
+
+            const Setting = sequelize.models["setting"];
+            if (!Setting) {
+                return;
+            }
+
+            const systemSetting = await Setting.findOne({
+                where: { key, deleted: false },
+                attributes: ["key", "allowUserOverride"],
+                raw: true,
+            });
+
+            if (!systemSetting || systemSetting.allowUserOverride) {
+                return;
+            }
+
+            throw new TranslatableError("errors.settings.cannotOverrideSystemSetting", { key });
         }
 
         /**
@@ -39,9 +71,10 @@ module.exports = (sequelize, DataTypes) => {
          * @param {string} key
          * @param {string} value
          * @param {number} userId
+         * @param {Object} [options] passed to create/update (e.g. bypassSystemSettingCheck for admin)
          * @returns {Promise<string>} value
          */
-        static async set(key, value, userId) {
+        static async set(key, value, userId, options = {}) {
             try {
                 const dbObj = {
                     userId: userId,
@@ -49,10 +82,10 @@ module.exports = (sequelize, DataTypes) => {
                     value: value
                 };
 
-                return await UserSetting.create(dbObj).then((msg) => {
+                return await UserSetting.create(dbObj, options).then((msg) => {
                     return msg;
                 }).catch(async (err) => {
-                    return await UserSetting.update({value: value}, {where: {[Op.and]: [{userId: userId}, {key: key}]}});
+                    return await UserSetting.update({value: value}, {where: {[Op.and]: [{userId: userId}, {key: key}]}, ...options});
                 });
             } catch (e) {
                 console.log(e);
@@ -68,7 +101,15 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'user_setting',
-        tableName: 'user_setting'
+        tableName: 'user_setting',
+        hooks: {
+            beforeCreate: async (instance, options) => {
+                await UserSetting.assertKeyAllowedForUserSetting(instance.key, options);
+            },
+            beforeUpdate: async (instance, options) => {
+                await UserSetting.assertKeyAllowedForUserSetting(instance.key, options);
+            },
+        },
     });
 
     UserSetting.removeAttribute('id');

@@ -174,7 +174,7 @@ module.exports = class RPC {
         this.logger.info("Emitting event to RPC service...");
 
         if (!this.socket) {
-            throw new Error("RPC service not connected");
+            throw new Error("errors.rpc.serviceNotConnected");
         }
 
         return new Promise((resolve, reject) => {

@@ -93,15 +93,15 @@ module.exports = class BackgroundTaskService extends Service {
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!documentSocket) {
             this.server.logger.error("No DocumentSocket found for client");
-            throw new Error("No DocumentSocket found for client");
+            throw new Error("errors.backgroundTask.noDocumentSocketForClient");
         }
 
         if (!preprocessingData || !preprocessingData.skillName || !preprocessingData.skillParameterMappings) {
-            throw new Error("Invalid request data: missing skillName or skillParameterMappings");
+            throw new Error("errors.backgroundTask.invalidPreprocessRequest");
         }
 
         if (!(await documentSocket.isAdmin())) {
-            throw new Error("You do not have permission to preprocess submissions");
+            throw new Error("errors.permission.noPreprocessSubmissionPermission");
         }
 
         const activePreprocess = this.backgroundTask.preprocess;
@@ -234,7 +234,7 @@ module.exports = class BackgroundTaskService extends Service {
         const {skillName, skillParameterMappings, baseFileParameter, baseFiles} = preprocessingData;
 
         if (!skillParameterMappings) {
-            throw new Error("No skill parameter mappings provided");
+            throw new Error("errors.submission.noSkillParameterMappings");
         }
 
         this.preprocessItems = [];
@@ -489,10 +489,10 @@ module.exports = class BackgroundTaskService extends Service {
     async cancelPreprocessing(client) {
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!documentSocket || !(await documentSocket.isAdmin())) {
-            throw new Error("Cannot cancel preprocessing: missing admin rights");
+            throw new Error("errors.submission.missingAdminRights");
         }
         if (!this.backgroundTask.preprocess) {
-            throw new Error("Cannot cancel preprocessing: no active preprocessing");
+            throw new Error("errors.submission.noActivePreprocessing");
         }
 
         this.backgroundTask.preprocess.cancelled = true;
@@ -512,12 +512,12 @@ module.exports = class BackgroundTaskService extends Service {
     async confirmCompletion(client) {
         const preprocess = this.backgroundTask.preprocess;
         if (!preprocess?.completed) {
-            throw new Error("Cannot confirm completion: no completed preprocessing to confirm");
+            throw new Error("errors.backgroundTask.noCompletedPreprocessing");
         }
 
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!(documentSocket && await Socket.prototype.isAdmin.call(documentSocket))) {
-            throw new Error("Cannot confirm completion: missing admin rights");
+            throw new Error("errors.backgroundTask.confirmCompletionMissingAdminRights");
         }
 
         delete this.backgroundTask.preprocess;
@@ -556,7 +556,8 @@ module.exports = class BackgroundTaskService extends Service {
                 const currentRequest = currentRequestId ? this.backgroundTask.preprocess.requests[currentRequestId] : null;
                 
                 this.backgroundTask.preprocess.errors.push({
-                    message: data.error?.message || 'Unknown error',
+                    message: data.error?.key || data.error?.message || "errors.server.unknownError",
+                    params: data.error?.params,
                     requestId: currentRequestId,
                     submissionId: currentRequest?.submissionId,
                     documentId: currentRequest?.documentId,

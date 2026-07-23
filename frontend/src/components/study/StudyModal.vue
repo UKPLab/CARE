@@ -9,10 +9,10 @@
   >
     <template #title>
       <span v-if="showSessions">
-        Open Sessions for study: {{ study.name }}
+        {{ $t('studies.openSessionsForStudy', { name: study.name }) }}
       </span>
       <span v-else-if="studyId !== 0">
-        <span>Study:</span> {{ study.name }}
+        <span>{{ $t('studies.study') }}:</span> {{ study.name }}
       </span>
     </template>
     <template #body>
@@ -34,24 +34,23 @@
         <div
             v-if="foreignUnstartedSession"
             class="text-xxl-center text-danger fs-5">
-          This study session has not been started yet and belongs to another user.
+          {{ $t('studies.foreignUnstartedSession') }}
           <br>
-          You cannot start or resume this session.
+          {{ $t('studies.cannotResumeSession') }}
         </div>
         <div
             v-else-if="!started"
             class="text-xxl-center text-secondary fs-5">
-          The study has not started yet! <br>
-          Start: {{ new Date(study.start).toLocaleString() }}</div>
+          {{ $t('studies.notStartedYet') }} <br>
+          {{ $t('studies.messages.studyStartDate', { date: new Date(study.start).toLocaleString() }) }}</div>
         <div
             v-else-if="studyClosed"
             class="text-xxl-center text-danger fs-5">
-          This study has finished on
-          {{ studyEnd }}</div>
+          {{ $t('studies.messages.studyFinished', { date: studyEnd }) }}</div>
         <div
             v-else-if="!sessionsAvailable && studySessionId === 0"
             class="text-xxl-center text-danger fs-5">
-          No more sessions available for this study.
+          {{ $t('studies.noMoreSessions') }}
         </div>
         <span v-else>
           <Editor
@@ -61,7 +60,7 @@
               class="ql-snow ql-container border"
           />
           <div v-else>
-            Click "Start User Study" to start the user study.
+            {{ $t('studies.clickToStart') }}
           </div>
           <div v-if="study.timeLimit > 0 || study.collab">
             <hr>
@@ -70,19 +69,19 @@
               v-if="study.timeLimit > 0"
               class="mt-1"
           >
-            Please note that there is a time limitation of {{ study.timeLimit }} min for this study!
+            {{ $t('studies.messages.timeLimitNote', { minutes: study.timeLimit }) }}
           </div>
           <div
               v-if="study.collab"
               class="mt-1"
           >
-            This is a <b>collaborative</b> user study, so everyone can join and proceed with this study simultaneously!
+            {{ $t('studies.collaborativeNote') }}
           </div>
           <div
               v-if="studySessionId === 0 && study.limitSessionsPerUser > 0"
               class="mt-1"
           >
-            You have <b> {{ study.limitSessionsPerUser - totalNumberOfOpenedSessions }} sessions </b> left for this study.
+            {{ $t('studies.messages.sessionsLeft', { count: study.limitSessionsPerUser - totalNumberOfOpenedSessions }) }}
           </div>
         </span>
       </span>
@@ -90,7 +89,7 @@
     <template #footer>
       <BasicButton
           class="btn btn-outline-secondary"
-          text="Return to dashboard"
+          :text="$t('studies.returnToDashboard')"
           @click="$router.push('/dashboard')"
       />
       <vr/>
@@ -100,7 +99,7 @@
       >
         <BasicButton
             class="btn btn-primary"
-            text="Back"
+            :text="$t('common.back')"
             @click="showSessions=!showSessions"
         />
       </div>
@@ -115,15 +114,15 @@
         >
           <span class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-dark">
             {{ studySessions.length }}
-            <span class="visually-hidden">open sessions</span>
+            <span class="visually-hidden">{{ $t('studies.openSessionsSmall') }}</span>
           </span>
-          Open Sessions
+          {{ $t('studies.openSessionsBig') }}
         </BasicButton>
         <BasicButton
             v-if="studyId !== 0 && !foreignUnstartedSession"
             :disabled="!available"
             class="btn btn-primary"
-            :text="study.collab ? 'Join Study' : 'Start Study'"
+            :text="study.collab ? $t('studies.joinStudy') : $t('studies.startStudy')"
             @click="start"
         />
       </div>
@@ -136,6 +135,7 @@ import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue";
 import BasicTable from "@/basic/Table.vue";
 import Editor from "@/basic/editor/Editor.vue";
+import { resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -181,31 +181,33 @@ export default {
         small: false,
         pagination: 10,
         search: true
-      },
-      sessionTableColumns: [
-        {name: "Started", key: "startParsed"},
+      }
+    }
+  },
+  computed: {
+    sessionTableColumns() {
+      return [
+        {name: this.$t('studies.columns.started'), key: "startParsed"},
         {
-          name: "Finished",
+          name: this.$t('studies.columns.finished'),
           key: "finished",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Resumable",
+          name: this.$t('studies.columns.resumable'),
           key: "resumable",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         }
-      ]
-    }
-  },
-  computed: {
+      ];
+    },
     study() {
       if (this.studyId !== 0) {
         return this.$store.getters['table/study/get'](this.studyId)
@@ -243,7 +245,7 @@ export default {
           filter: [
             {key: "showResumeButton", value: true},
           ],
-          title: "Resume session",
+          title: this.$t('studies.resumeSession'),
           action: "resumeStudySession",
         },
         {
@@ -258,7 +260,7 @@ export default {
           filter: [
             {key: "showStartButton", value: true}
           ],
-          title: "Start session",
+          title: this.$t('studies.startSession'),
           action: "startStudySession",
           stats: {
             studySessionId: "id",
@@ -276,7 +278,7 @@ export default {
           filter: [
             {key: "finished", value: false}
           ],
-          title: "Finish session",
+          title: this.$t('studies.finishSession'),
           action: "finishSession",
           stats: {
             studySessionId: "id",
@@ -291,7 +293,7 @@ export default {
             .map(s => {
               let session = {...s}
               session.resumable = this.study.resumable;
-              session.startParsed = session.start ? new Date(session.start).toLocaleString() : 'Session has not started yet';
+              session.startParsed = session.start ? new Date(session.start).toLocaleString() : this.$t('studies.sessionNotStarted');
               session.finished = session.end !== null
               session.showResumeButton = session.resumable && session.start && !this.studyClosed;
               session.showStartButton = !session.start && !this.studyClosed;
@@ -361,14 +363,14 @@ export default {
               this.$refs.modal?.close();
               this.$emit("start", {studySessionId: response.data.id});
               this.eventBus.emit('toast', {
-                title: "Study started",
-                message: "Enjoy!",
+                title: this.$t('studies.messages.studyStarted'),
+                message: this.$t('studies.messages.enjoy'),
                 variant: "success"
               });
             } else {
               this.eventBus.emit('toast', {
-                title: "Study cannot be started!",
-                message: response.message,
+                title: this.$t('errors.studies.studyCannotStart'),
+                message: resolveApiMessage(response),
                 variant: "danger"
               });
             }

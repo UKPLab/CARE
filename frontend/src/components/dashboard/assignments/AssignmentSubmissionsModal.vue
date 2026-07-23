@@ -6,7 +6,7 @@
     name="assignmentSubmissionsModal"
   >
     <template #title>
-      <span>Submissions for {{ assignmentTitle }}</span>
+      <span>{{ $t('assignments.dashboard.submissionsModal.title', { title: assignmentTitle }) }}</span>
     </template>
     <template #body>
       <AssignmentSubmissionsTable
@@ -18,19 +18,19 @@
         v-if="isRevisionLimitReached"
         class="text-warning me-3"
       >
-        Maximum number of revisions ({{ maxRevisions }}) reached.
+        {{ $t('assignments.dashboard.submissionsModal.revisionLimitWarning', { count: maxRevisions }) }}
       </span>
       <span class="btn-group">
         
         <BasicButton
           class="btn btn-secondary"
-          title="Close"
+          :title="$t('common.close')"
           @click="close"
         />
         <BasicButton
           class="btn btn-primary"
-          title="Upload Submission"
-          text="Upload Submission"
+          :title="$t('dashboard.uploadModal.title')"
+          :text="$t('dashboard.uploadModal.title')"
           icon="file-earmark-arrow-up"
           :disabled="!canUploadSubmission"
           @click="openUploadModal"
@@ -157,7 +157,7 @@ export default {
       return this.currentUserMaxRevisionDepth >= this.maxRevisions;
     },
     assignmentTitle() {
-      return this.assignment?.title || `Assignment #${this.assignmentId}`;
+      return this.assignment?.title || this.$t("assignments.dashboard.submissionsModal.fallbackAssignmentTitle", { id: this.assignmentId });
     },
     submissions() {
       return this.$store.getters["table/submission/getFiltered"](
@@ -173,16 +173,16 @@ export default {
     openUploadModal() {
       if (this.isRevisionLimitReached) {
         this.eventBus.emit("toast", {
-          title: "Revision limit reached",
-          message: `You have reached the maximum number of revisions (${this.maxRevisions}).`,
+          title: this.$t("assignments.dashboard.toasts.revisionLimitReached.title"),
+          message: this.$t("assignments.dashboard.toasts.revisionLimitReached.message", { count: this.maxRevisions }),
           variant: "warning",
         });
         return;
       }
       if (!this.canUploadSubmission) {
         this.eventBus.emit("toast", {
-          title: "Upload not allowed",
-          message: "Submissions are closed for this assignment. Only admins can upload now.",
+          title: this.$t("assignments.dashboard.toasts.uploadNotAllowed.title"),
+          message: this.$t("assignments.dashboard.toasts.uploadNotAllowed.messageAdmin"),
           variant: "warning",
         });
         return;
