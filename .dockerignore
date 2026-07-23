@@ -1,6 +1,7 @@
 # exclude generated folders
 dist
 node_modules
+**/node_modules
 
 # exclude files (except showcase doc)
 files
