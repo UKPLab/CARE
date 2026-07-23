@@ -30,7 +30,7 @@
       @update-visibility="updateVisibility"
     />
     <Adder v-if="!readOnly && !componentReadOnly"/>
-         </div>
+  </div>
 </template>
 
 <script>
@@ -172,15 +172,15 @@ export default {
             })
             .catch(_response => {
               this.eventBus.emit('toast', {
-                title: "PDF Loading Error",
-                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+                title: this.$t('errors.file.pdfLoadingError.title'),
+                message: this.$t('errors.file.pdfLoadingError.message'),
                 variant: "danger"
               });
               this.$router.push("/");
             });
         } else {
           this.eventBus.emit('toast', {
-            title: "PDF Loading Error",
+            title: this.$t('errors.file.pdfLoadingError.title'),
             message: res.message,
             variant: "danger"
           });

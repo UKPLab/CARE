@@ -13,7 +13,7 @@
       v-model="search"
       type="text"
       class="form-control"
-      placeholder="Type to filter table..."
+      :placeholder="$t('common.typeToFilter')"
       aria-label="table-search"
       aria-describedby="search-addon1"
     />
@@ -43,7 +43,7 @@
             </div>
           </th>
           <th
-            v-for="(c, index) in columns"
+            v-for="(c, index) in visibleColumns"
             :key="c.key"
             :ref="'header-' + c.key"
             :class="[
@@ -56,7 +56,7 @@
             {{ c.name }}
             <span
               v-if="c.sortable"
-              title="Sort By"
+              :title="$t('common.sortBy')"
             >
               <LoadIcon
                 v-if="c.sortable"
@@ -141,7 +141,7 @@
             :class="getManageColumnClass()"
             :style="manageColumnStyle"
           >
-            Manage
+            {{ $t('common.manage') }}
           </th>
         </tr>
       </thead>
@@ -151,7 +151,7 @@
             :colspan="columns.length"
             class="text-center"
           >
-            Loading data from server...
+            {{ $t('common.loadingFromServer') }}
           </td>
         </tr>
         <tr v-else-if="!data || data.length === 0">
@@ -159,7 +159,7 @@
             :colspan="emptyColspan"
             class="text-center"
           >
-            No data
+            {{ $t('common.noData') }}
           </td>
         </tr>
         <tr
@@ -186,7 +186,7 @@
             </div>
           </td>
           <td
-            v-for="(c, index) in columns"
+            v-for="(c, index) in visibleColumns"
             :key="c.key"
             :class="[
               'width' in c ? 'col-' + c.width : 'col-auto',
@@ -228,7 +228,7 @@
                 @action="actionEmitter"
               />
               <span v-else-if="c.type === 'datetime'">
-                {{ new Date(r[c.key]).toLocaleString() }}
+                {{ formatLocalizedDateTime(r[c.key]) }}
               </span>
 
               <span v-else-if="c.type === 'icon-selector'">
@@ -288,7 +288,7 @@
     v-if="selectableRows && !(options && options.singleSelect)"
     class="text-end text-muted small mb-2"
   >
-    {{ selectedCount }} of {{ totalSelectableCount }} selected
+    {{ $t('common.selectedCount', { selected: selectedCount, total: totalSelectableCount }) }}
   </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
@@ -314,6 +314,7 @@ import Pagination from "./table/Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import { tooltip } from "@/assets/tooltip.js";
+import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
 
 /**
@@ -460,7 +461,7 @@ export default {
       );
     },
     emptyColspan() {
-      let colspan = this.columns.length;
+      let colspan = this.visibleColumns.length;
       if (this.selectableRows) {
         colspan += 1;
       }
@@ -549,11 +550,17 @@ export default {
           .map(([k, v]) => ({ [k]: v }))
       );
     },
+    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
+    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
+    visibleColumns() {
+      if (!this.data || this.data.length === 0) return this.columns;
+      return this.columns.filter((c) => this.data.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
+    },
     hasFixedColumns() {
-      return this.columns.some((c) => ["left", "right"].includes(c.fixed));
+      return this.visibleColumns.some((c) => ["left", "right"].includes(c.fixed));
     },
     hasRightFixedColumns() {
-      return this.columns.some((c) => c.fixed === "right");
+      return this.visibleColumns.some((c) => c.fixed === "right");
     },
     // Determine if manage column should be sticky
     shouldFixManageColumn() {
@@ -562,8 +569,8 @@ export default {
     // Cache the indices to avoid repeated searches
     fixedColumnIndices() {
       return {
-        lastLeft: this.columns.findLastIndex((col) => col.fixed === "left"),
-        firstRight: this.columns.findIndex((col) => col.fixed === "right"),
+        lastLeft: this.visibleColumns.findLastIndex((col) => col.fixed === "left"),
+        firstRight: this.visibleColumns.findIndex((col) => col.fixed === "right"),
       };
     },
     selectedCount() {
@@ -661,6 +668,7 @@ export default {
     this.cleanupAllObserver();
   },
   methods: {
+    formatLocalizedDateTime,
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();
@@ -738,7 +746,7 @@ export default {
 
       // Compute left-fixed columns
       let leftOffset = 0;
-      this.columns.forEach((column) => {
+      this.visibleColumns.forEach((column) => {
         if (column.fixed === "left") {
           styles[column.key] = {
             ...baseStyle,
@@ -757,7 +765,7 @@ export default {
       }
 
       // Process right-fixed columns from right to left
-      [...this.columns]
+      [...this.visibleColumns]
         .reverse()
         .filter((c) => c.fixed === "right")
         .forEach((column) => {

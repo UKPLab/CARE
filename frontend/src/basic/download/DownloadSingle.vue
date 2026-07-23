@@ -68,15 +68,18 @@ export default {
 
       //notify user
        this.eventBus.emit('toast', {
-          title: "Export aborted",
-          message: "The server did not respond. Please try again later.",
+          title: this.$t('errors.download.exportAbortedTitle'),
+          message: this.$t('errors.download.serverTimeout'),
           variant: "danger"
         });
     },
     requestDownload(params) {
       // do not allow second downlaod while one is in progress
       if(this.waiting){
-        this.eventBus.emit('toast', {message: "Another download is in progress. Please wait.", variant: "warning", delay: 3000});
+        this.eventBus.emit('toast', {
+          message: this.$t('errors.download.inProgress'), 
+          variant: "warning", 
+          delay: 3000});
         return;
       }
 

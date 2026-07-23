@@ -25,8 +25,8 @@ module.exports = (sequelize, DataTypes) => {
 
         static fields = [{
             key: "name",
-            label: "Name of the study:",
-            placeholder: "My user study",
+            label: "studies.fields.name.label",
+            placeholder: "studies.fields.name.placeholder",
             type: "text",
             required: true, //pattern: "^(\\d+)",
             //invalidText: "Test invalid text",
@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
             maxlength: 5
         }, {
             key: "workflowId",
-            label: "Select Workflow for Study:",
+            label: "studies.fields.workflowId.label",
             type: "select",
             options: {
                 table: "workflow",
@@ -49,10 +49,10 @@ module.exports = (sequelize, DataTypes) => {
             },
             icon: "list",
             required: true,
-            help: "Choose a workflow template for the study steps."
+            help: "studies.fields.workflowId.help"
         }, {
             key: "tagSetId",
-            label: "Tag set for the study:",
+            label: "studies.fields.tagSetId.label",
             type: "select",
             options: {
                 table: "tag_set",
@@ -66,10 +66,10 @@ module.exports = (sequelize, DataTypes) => {
             },
             icon: "list",
             required: true,
-            help: "Select a tag set to use in the study."
+            help: "studies.fields.tagSetId.help"
         }, {
             key: "stepDocuments",
-            label: "Assign Documents to Workflow Steps:",
+            label: "studies.fields.stepDocuments.label",
             type: "choice",
             options: {
                 table: "study_step",
@@ -104,93 +104,93 @@ module.exports = (sequelize, DataTypes) => {
             required: true,
         }, {
             key: "description",
-            label: "Description of the study:",
-            help: "This text will be displayed at the beginning of the user study!",
+            label: "studies.fields.description.label",
+            help: "studies.fields.description.help",
             type: "editor",
             required: true
         }, {
             key: "enableEmailNotifications",
-            label: "Send email notification on session start/finish",
+            label: "studies.fields.enableEmailNotifications.label",
             type: "switch",
             default: false,
-            help: "When enabled, the study owner receives an email each time a participant starts or finishes a session."
+            help: "studies.fields.enableEmailNotifications.help"
         }, {
             key: "timeLimit",
             type: "slider",
-            label: "How much time does a participant have for the study?",
-            help: "0 = disable time limitation",
+            label: "studies.fields.timeLimit.label",
+            help: "studies.fields.timeLimit.help",
             size: 12,
-            unit: "min",
+            unit: "studies.units.minutes",
             min: 0,
             max: 180,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}],
+            textMapping: [{from: 0, to: "studies.values.unlimited"}],
             advanced: true
         }, {
             key: "limitSessions",
             type: "slider",
-            label: "Limit the number of sessions for the study:",
-            help: "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session. 0 = unlimited number of sessions.",
+            label: "studies.fields.limitSessions.label",
+            help: "studies.fields.limitSessions.help",
             size: 12,
-            unit: "Session(s)",
+            unit: "studies.units.sessions",
             min: 0,
             max: 200,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}],
+            textMapping: [{from: 0, to: "studies.values.unlimited"}],
             advanced: true
         }, {
             key: "limitSessionsPerUser",
             type: "slider",
-            label: "Limit the number of sessions per user for the study:",
-            help: "Set the maximum number of times each participant can start or resume the study. Each attempt to complete the study is called a session. 0 = unlimited number of sessions per user.",
+            label: "studies.fields.limitSessionsPerUser.label",
+            help: "studies.fields.limitSessionsPerUser.help",
             size: 12,
-            unit: "Session(s)",
+            unit: "studies.units.sessions",
             min: 0,
             max: 200,
             step: 1,
             default: 0,
-            textMapping: [{from: 0, to: "unlimited"}],
+            textMapping: [{from: 0, to: "studies.values.unlimited"}],
             advanced: true
         }, {
             key: "start",
-            label: "Study sessions can't start before",
+            label: "studies.fields.start.label",
             type: "datetime",
             size: 6,
             default: null,
             advanced: true
         }, {
             key: "end",
-            label: "Study sessions can't start after:",
+            label: "studies.fields.end.label",
             type: "datetime",
             size: 6,
             default: null,
             advanced: true
         }, {
             key: "collab",
-            label: "Should the study be collaborative?",
+            label: "studies.fields.collab.label",
             type: "switch",
             default: false,
             advanced: true
         }, {
             key: "anonymize",
-            label: "Should the comments be anonymized?",
+            label: "studies.fields.anonymize.label",
             type: "switch",
             default: false,
             advanced: true
         }, {
             key: "resumable",
-            label: "Should the study be resumable?",
+            label: "studies.fields.resumable.label",
             type: "switch",
             default: false,
             advanced: true
         }, {
             key: "multipleSubmit",
-            label: "Allow multiple submissions?",
+            label: "studies.fields.multipleSubmit.label",
             type: "switch",
             default: false,
-            help: "Specify whether participants can submit their study multiple times.",
+            help: "studies.fields.multipleSubmit.help",
             advanced: true
         }, {
             key: "aiCostLimitTotal",
@@ -231,13 +231,13 @@ module.exports = (sequelize, DataTypes) => {
             const study = await sequelize.models.study.getById(studyId);
             if (study) {
                 if (study.closed) {
-                    throw new Error('This study is closed');
+                    throw new Error('errors.studies.studyClosed');
                 }
                 if (!study.multipleSubmit && study.end && new Date(study.end) < new Date()) {
-                    throw new Error('This study has ended');
+                    throw new Error('errors.studies.studyEnded');
                 }
             } else {
-                throw new Error('Study not found');
+                throw new Error('errors.studies.studyNotFound');
             }
         }
 
@@ -575,7 +575,7 @@ module.exports = (sequelize, DataTypes) => {
             afterCreate: async (study, options) => {
 
                 if (!options.context || !options.context.stepDocuments) {
-                    throw new Error("Missing context or stepDocuments in options. Cancelling transaction.");
+                    throw new Error("errors.studies.missingContextOrStepDocuments");
                 }
 
                 const studyStepsMap = await Study.createStudySteps(study, options);

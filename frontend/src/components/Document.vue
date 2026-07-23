@@ -7,7 +7,7 @@
       <p class="text-muted mb-4">{{ documentError.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>Go to Dashboard
+          <i class="bi bi-house me-2"></i>{{ $t('components.errors.goToDashboard') }}
         </router-link>
       </div>
     </div>
@@ -38,6 +38,7 @@
 import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
 import Editor from "@/components/editor/Editor.vue"
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "DocumentRoute",
@@ -82,15 +83,15 @@ export default {
      */
     setDocumentError(message, errorCode) {
       const titleMap = {
-        'DOCUMENT_NOT_FOUND': 'Document Not Found',
-        'ACCESS_DENIED': 'Access Denied',
-        'FILE_MISSING': 'File Not Available',
+        'DOCUMENT_NOT_FOUND': this.$t('components.errors.documentNotFoundTitle'),
+        'ACCESS_DENIED': this.$t('components.errors.accessDeniedTitle'),
+        'FILE_MISSING': this.$t('components.errors.fileMissingTitle'),
       };
 
       // Use predefined message if error code exists
       this.documentError = {
-        title: titleMap[errorCode] || 'Document Error',
-        message: message || 'An unexpected error occurred.'
+        title: titleMap[errorCode] || this.$t('components.errors.documentErrorTitle'),
+        message: message ? resolveApiMessage({ success: false, message }) : this.$t('components.errors.unexpectedError')
       };
 
       // Also emit toast for immediate feedback

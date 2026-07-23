@@ -5,10 +5,10 @@
         <thead>
         <tr>
           <th v-for="f in fields" :key="f.name" scope="col">
-            {{ f.label }}
+            {{ $te(f.label) ? $t(f.label) : f.label }}
           </th>
           <th scope="col">
-            Actions
+            {{ $t('common.actions') }}
           </th>
         </tr>
         </thead>
@@ -61,7 +61,7 @@
               type="button"
               @click="add()"
             >
-              Add
+              {{ $t('common.add') }}
             </button>
           </td>
         </tr>

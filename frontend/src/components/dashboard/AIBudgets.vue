@@ -3,15 +3,14 @@
     <template #body>
       <ul class="nav nav-tabs mb-3">
         <li v-for="tab in tabs" :key="tab.key" class="nav-item">
-          <button
+          <BasicButton
             class="nav-link"
             :class="{ active: activeTab === tab.key }"
-            type="button"
             @click="activeTab = tab.key"
           >
             {{ tab.label }}
             <span v-if="tabRows(tab.key).length" class="badge bg-secondary ms-1">{{ tabRows(tab.key).length }}</span>
-          </button>
+          </BasicButton>
         </li>
       </ul>
       <BasicTable

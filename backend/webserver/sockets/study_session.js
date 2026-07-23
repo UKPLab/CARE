@@ -1,5 +1,5 @@
 const Socket = require("../Socket.js");
-const {getEmailContent} = require("../../utils/emailHelper");
+const {getEmailContent} = require("../../utils/helper/email");
 
 /**
  * Handle all study sessions through websocket
@@ -25,7 +25,7 @@ class StudySessionSocket extends Socket {
         if (await this.checkUserAccess(study.userId)) {
             this.emit("study_sessionRefresh", await this.models['study_session'].getAllByKey("studyId", studyId));
         } else {
-            this.sendToast("You are not allowed to see this study", "Error", "Danger");
+            this.sendToast("errors.studies.notAllowedToSeeStudy", "errors.studies.errorTitle", "Danger");
         }
     }
 
@@ -46,7 +46,7 @@ class StudySessionSocket extends Socket {
         if (data.studySessionId && data.studySessionId !== 0) {
             const existing = await this.models["study_session"].getById(data.studySessionId, {transaction: options.transaction});
             if (!existing) {
-                throw new Error("Study session not found");
+                throw new Error("errors.studies.studySession.notFound");
             }
             shouldSendSessionStartEmail = existing.start == null;
             session = await this.models["study_session"].updateById(data.studySessionId,
@@ -178,21 +178,21 @@ class StudySessionSocket extends Socket {
      */
     async finishStudySession(data, options) {
         if (!data.studySessionId) {
-            throw new Error("studySessionId is required");
+            throw new Error("errors.studies.studySession.idRequired");
         }
 
         const session = await this.models["study_session"].getById(data.studySessionId, {transaction: options.transaction});
         if (!session) {
-            throw new Error("Study session not found");
+            throw new Error("errors.studies.studySession.notFound");
         }
 
         if (session.end) {
-            throw new Error("Study session has already been finished");
+            throw new Error("errors.studies.studySession.alreadyFinished");
         }
 
         const study = await this.models["study"].getById(session.studyId, {transaction: options.transaction});
         if (study && study.closed) {
-            throw new Error("Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed.");
+            throw new Error("errors.studies.studySession.cannotFinishClosedStudy");
         }
 
         const updatedSession = await this.models["study_session"].updateById(

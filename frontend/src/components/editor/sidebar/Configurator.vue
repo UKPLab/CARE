@@ -1,7 +1,7 @@
 <template>
   <div class="card shadow mb-4 configurator">
     <div class="card-header bg-white">
-      <h3 class="card-title fw-bold mb-0">Placeholders</h3>
+      <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
     </div>
     <div class="card-body p-0">
       <ul class="list-group list-group-flush">
@@ -17,12 +17,12 @@
               </div>
               <div class="d-flex flex-column">
                 <div class="d-flex align-items-center">
-                  <h5 class="mb-0 me-1">{{ placeholder.label }}</h5>
+                  <h5 class="mb-0 me-1">{{ $t(placeholder.label) }}</h5>
                   <FormHelp
                     :help="getPlaceholderHelp(placeholder.id)"
                   />
                 </div>
-                <p class="text-muted small mb-0 mt-1">{{ placeholder.description }}</p>
+                <p class="text-muted small mb-0 mt-1">{{ $t(placeholder.description) }}</p>
               </div>
             </div>
             <div class="d-flex align-items-center">
@@ -30,7 +30,7 @@
               <BasicButton
                 class="btn btn-primary btn-sm d-flex align-items-center"
                 icon="plus-lg"
-                text="Add"
+                :text="$t('common.add')"
                 @click="handlePlaceholderClick(placeholder)"
               />
             </div>
@@ -67,9 +67,9 @@ export default {
     return {
       isSidebarVisible: true,
       placeholders: [
-        { id: "text", label: "Text placeholder", text: "~text~", description: "Add text content blocks", icon: "bi bi-type" },
-        { id: "chart", label: "Single chart", text: "~chart~", description: "Visualize data with a chart", icon: "bi bi-bar-chart" },
-        { id: "comparison", label: "Comparison chart", text: "~comparison~", description: "Compare multiple data sets", icon: "bi bi-bar-chart-steps" },
+        { id: "text", label: "sidebar.textPlaceholder", text: "~text~", description: "sidebar.textPlaceholderDescription", icon: "bi bi-type" },
+        { id: "chart", label: "sidebar.singleChart", text: "~chart~", description: "sidebar.singleChartDescription", icon: "bi bi-bar-chart" },
+        { id: "comparison", label: "sidebar.comparisonChart", text: "~comparison~", description: "sidebar.comparisonChartDescription", icon: "bi bi-bar-chart-steps" },
       ],
       placeholderCounts: {
         text: 0,
@@ -92,9 +92,9 @@ export default {
   methods: {
     getPlaceholderHelp(placeholderId) {
       const longDescriptions = {
-        text: "Displays a single value from a previous editor step or NLP skill output. Use this when you want to show a specific piece of data (like a text field, number, or label) from an earlier step in your workflow.",
-        chart: "Displays a chart built from labels and values provided by previous steps or NLP skills. The chart will automatically visualize the data structure you've configured, making it easy to present numerical or categorical data visually.",
-        comparison: "Compares two data sources (e.g. two document versions or NLP outputs) and visualizes the result. This is useful for showing differences between versions, comparing outputs from different steps, or highlighting changes over time.",
+        text: this.$t("sidebar.textPlaceholderHelp"),
+        chart: this.$t("sidebar.singleChartHelp"),
+        comparison: this.$t("sidebar.comparisonChartHelp"),
       };
       return longDescriptions[placeholderId] || "";
     },

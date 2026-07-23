@@ -2,11 +2,12 @@
     <div>
       <!-- Warning banner for invalid placeholders -->
       <div v-if="invalidPlaceholders.length > 0" class="alert alert-warning mb-3">
-        <strong>Warning:</strong> The following placeholders are not valid for {{ templateTypeName }} templates:
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.invalidPlaceholdersMessage", { templateType: templateTypeName }) }}
         <ul class="mb-0 mt-2">
           <li v-for="ph in invalidPlaceholders" :key="ph">{{ ph }}</li>
         </ul>
-        These placeholders will be ignored when the template is used.
+        {{ $t("templates.placeholders.invalidPlaceholdersIgnored") }}
       </div>
 
       <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
@@ -27,7 +28,7 @@
   
       <div class="card shadow mb-0 configurator">
         <div class="card-header bg-white">
-          <h3 class="card-title fw-bold mb-0">Placeholders</h3>
+          <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
@@ -43,7 +44,7 @@
                   </div>
                   <div class="d-flex flex-column flex-grow-1">
                     <div class="d-flex align-items-center">
-                      <h5 class="mb-0 me-1">{{ placeholder.label }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
+                      <h5 class="mb-0 me-1">{{ translateMaybeKey(placeholder.label) }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
                       <FormHelp
                         v-if="placeholder.description"
                         :help="getPlaceholderHelp(placeholder)"
@@ -53,7 +54,7 @@
                       v-if="placeholder.description"
                       class="mb-0 text-muted"
                     >
-                      {{ placeholder.description }}
+                      {{ translateMaybeKey(placeholder.description) }}
                     </p>
                     <div
                       v-if="hasPlaceholderOptions(placeholder)"
@@ -106,7 +107,7 @@
                   <BasicButton
                     class="btn btn-primary btn-sm d-flex align-items-center"
                     icon="plus-lg"
-                    text="Add"
+                    :text="$t('common.add')"
                     @click="handlePlaceholderClick(placeholder)"
                   />
                 </div>
@@ -120,6 +121,7 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
+  import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
   import BasicButton from "@/basic/Button.vue";
   import {
     countPlaceholdersByKey,
@@ -182,18 +184,18 @@
         return this.template?.type || null;
       },
       templateTypeName() {
-        if (!this.templateType) return "Unknown";
+        if (!this.templateType) return this.$t("common.unknown");
         const types = {
-          1: "Email - General",
-          2: "Email - Study Session",
-          3: "Email - Assignment",
-          4: "Document - General",
-          5: "Document - Study",
-          6: "Email - Study Close",
-          7: "Email - Submission upload",
+          1: this.$t("templates.types.emailGeneral"),
+          2: this.$t("templates.types.emailStudySession"),
+          3: this.$t("templates.types.emailAssignment"),
+          4: this.$t("templates.types.documentGeneral"),
+          5: this.$t("templates.types.documentStudy"),
+          6: this.$t("templates.types.emailStudyClose"),
+          7: this.$t("templates.types.emailSubmissionUpload"),
           8: "Prompt",
         };
-        return types[this.templateType] || "Unknown";
+        return types[this.templateType] || this.$t("common.unknown");
       },
       availablePlaceholders() {
         if (!this.templateType || !this.placeholderConfigs[this.templateType]) {
@@ -247,8 +249,8 @@
             }
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to load placeholders",
-              message: result.message || "Unknown error",
+              title: this.$t("templates.placeholders.failedToLoad"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -260,6 +262,7 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      translateMaybeKey,
       hasPlaceholderOptions(placeholder) {
         return Array.isArray(placeholder.placeholderOptions) && placeholder.placeholderOptions.length > 0;
       },
@@ -346,6 +349,14 @@
         return errors;
       },
       getPlaceholderHelp(placeholder) {
+        const descriptionKey = placeholder.description;
+        if (typeof descriptionKey === "string") {
+          const helpKey = descriptionKey.replace(".descriptions.", ".help.");
+          if (this.$te(helpKey)) {
+            return this.$t(helpKey);
+          }
+        }
+
         const type = this.templateType;
         const key = placeholder.id;
 
@@ -416,7 +427,7 @@
           },
         };
 
-        return (longDescriptions[type] && longDescriptions[type][key]) || placeholder.description;
+        return (longDescriptions[type] && longDescriptions[type][key]) || translateMaybeKey(descriptionKey);
       },
       initializePlaceholderCounts() {
         const counts = {};

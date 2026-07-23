@@ -1,31 +1,31 @@
 <template>
-    <Card title="Templates">
+    <Card :title="$t('templates.dashboard.title')">
       <template #headerElements>
         <BasicButton
           class="btn-outline-secondary btn-sm me-2"
-          title="Browse public templates"
-          text="Public Templates"
+          :title="$t('templates.dashboard.browsePublicTemplates')"
+          :text="$t('templates.dashboard.publicTemplates')"
           icon="globe"
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
           class="btn-outline-secondary btn-sm me-2"
-          title="Import Templates"
-          text="Import"
+          :title="$t('modals.importExport.wiring.templates.importTooltip')"
+          :text="$t('common.import')"
           icon="upload"
           @click="$refs.importFormatModal.open('template')"
         />
         <BasicButton
           class="btn-outline-secondary btn-sm me-2"
-          title="Export All Templates"
-          text="Export All"
+          :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
+          :text="$t('common.exportAll')"
           icon="download"
           @click="$refs.exportFormatModal.open(null, 'template')"
         />
         <BasicButton
           class="btn-primary btn-sm"
-          title="Add new template"
-          text="Add Template"
+          :title="$t('templates.dashboard.addNewTemplate')"
+          :text="$t('templates.dashboard.addTemplate')"
           icon="plus"
           @click="$refs.templateModal.open(0)"
         />
@@ -46,8 +46,8 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
-    <ExportFormatModal ref="exportFormatModal" title="Export Template" />
-    <ImportFormatModal ref="importFormatModal" title="Import Templates" />
+    <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.templates.exportTitle')" />
+    <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.templates.importTitle')" />
   </template>
   
   <script>
@@ -60,6 +60,7 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
+  import { resolveApiMessage } from "@/assets/utils";
   import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
   import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   /**
@@ -97,17 +98,19 @@
           small: false,
           pagination: 10,
         },
-        columns: [
-          { name: "ID", key: "id" },
-          { name: "Name", key: "name", sortable: true },
-          { name: "Created At", key: "createdAt", sortable: true, type: "datetime" },
-          { name: "Updated At", key: "updatedAt", sortable: true, type: "datetime" },
-          { name: "Type", key: "typeName", sortable: true },
-          { name: "Status", key: "statusBadge", type: "badge" },
-        ],
       };
     },
     computed: {
+      columns() {
+        return [
+          { name: this.$t("common.id"), key: "id" },
+          { name: this.$t("common.name"), key: "name", sortable: true },
+          { name: this.$t("common.createdAt"), key: "createdAt", sortable: true, type: "datetime" },
+          { name: this.$t("common.updatedAt"), key: "updatedAt", sortable: true, type: "datetime" },
+          { name: this.$t("common.type"), key: "typeName", sortable: true },
+          { name: this.$t("common.status"), key: "statusBadge", type: "badge" },
+        ];
+      },
       templates() {
         return this.$store.getters["table/template/getAll"]
           .filter(t => t.userId === this.userId)
@@ -143,7 +146,7 @@
               { key: "isCopy", value: false },
             ],
             filterMode: "and",
-            title: "Edit template",
+            title: this.$t("templates.dashboard.actions.editTemplate"),
             action: "edit",
           },
           // Edit content - own non-copy templates only
@@ -160,7 +163,7 @@
               { key: "isCopy", value: false },
             ],
             filterMode: "and",
-            title: "Edit content",
+            title: this.$t("templates.dashboard.actions.editContent"),
             action: "editContent",
           },
           // Edit content - for copies (detaches first)
@@ -173,7 +176,7 @@
               },
             },
             filter: [{ key: "isCopy", value: true }],
-            title: "Edit content",
+            title: this.$t("templates.dashboard.actions.editContent"),
             action: "editContentCopy",
           },
           // View content (read-only) - for copies
@@ -186,7 +189,7 @@
               },
             },
             filter: [{ key: "isCopy", value: true }],
-            title: "View content (read-only)",
+            title: this.$t("templates.dashboard.actions.viewContentReadOnly"),
             action: "viewContent",
           },
           // Publish - own non-copy non-public templates only
@@ -204,7 +207,7 @@
               { key: "isCopy", value: false },
             ],
             filterMode: "and",
-            title: "Publish template",
+            title: this.$t("templates.dashboard.actions.publishTemplate"),
             action: "togglePublished",
           },
           // Published badge - own non-copy public templates only
@@ -223,7 +226,7 @@
               { key: "isCopy", value: false },
             ],
             filterMode: "and",
-            title: "Published (cannot be unpublished)",
+            title: this.$t("templates.dashboard.actions.publishedCannotBeUnpublished"),
             action: null,
           },
           // Source updated - copies with updates available (opens modal with Update / Make new copy)
@@ -236,7 +239,7 @@
               },
             },
             filter: [{ key: "hasUpdate", value: true }],
-            title: "Source updated",
+            title: this.$t("templates.dashboard.actions.sourceUpdated"),
             action: "openUpdateModal",
           },
           // Export
@@ -265,7 +268,7 @@
               { key: "canDelete", value: true }
             ],
             filterMode: "and",
-            title: "Delete template",
+            title: this.$t("templates.dashboard.actions.deleteTemplate"),
             action: "delete",
           },
         ];
@@ -277,15 +280,15 @@
     methods: {
       typeName(type) {
         switch (type) {
-          case 1: return "Email - General";
-          case 2: return "Email - Study Session";
-          case 3: return "Email - Assignment";
-          case 4: return "Document - General";
-          case 5: return "Document - Study";
-          case 6: return "Email - Study Close";
-          case 7: return "Email - Submission upload";
+          case 1: return this.$t("templates.types.emailGeneral");
+          case 2: return this.$t("templates.types.emailStudySession");
+          case 3: return this.$t("templates.types.emailAssignment");
+          case 4: return this.$t("templates.types.documentGeneral");
+          case 5: return this.$t("templates.types.documentStudy");
+          case 6: return this.$t("templates.types.emailStudyClose");
+          case 7: return this.$t("templates.types.emailSubmissionUpload");
           case 8: return "Prompt";
-          default: return "Choose Type"
+          default: return this.$t("templates.dashboard.chooseType")
         }
       },
       /**
@@ -313,12 +316,12 @@
       getStatusBadge(isCopy, sourceStatus, isPublic) {
         // TBadge expects value with .text (and optional .class)
         if (!isCopy) {
-          const text = isPublic ? "Published" : "Draft";
+          const text = isPublic ? this.$t("templates.dashboard.status.published") : this.$t("templates.dashboard.status.draft");
           return { text, class: isPublic ? "bg-success" : "bg-secondary" };
         }
-        if (sourceStatus === "updated") return { text: "Update available", class: "bg-info" };
-        if (sourceStatus === "unavailable") return { text: "Source unavailable", class: "bg-warning text-dark" };
-        return { text: "Copy", class: "bg-secondary" };
+        if (sourceStatus === "updated") return { text: this.$t("templates.dashboard.status.updateAvailable"), class: "bg-info" };
+        if (sourceStatus === "unavailable") return { text: this.$t("templates.dashboard.status.sourceUnavailable"), class: "bg-warning text-dark" };
+        return { text: this.$t("common.copy"), class: "bg-secondary" };
       },
       action(data) {
         switch (data.action) {
@@ -360,16 +363,16 @@
                 filter: [{ key: "id", value: t.id }],
               }, () => {
                 this.eventBus.emit("toast", {
-                  title: "Template detached",
-                  message: "You can now edit this template",
+                  title: this.$t("templates.dashboard.toasts.templateDetached.title"),
+                  message: this.$t("templates.dashboard.toasts.templateDetached.message"),
                   variant: "success",
                 });
                 this.$router.push(`/template/${t.id}`);
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Detach failed",
-                message: result.message,
+                title: this.$t("templates.dashboard.toasts.detachFailed"),
+                message: resolveApiMessage(result),
                 variant: "danger",
               });
             }
@@ -378,8 +381,8 @@
       },
       deleteTemplate(template) {
         this.$refs.deleteConf.open(
-          "Delete Template",
-          `Are you sure you want to delete "${template.name}"?`,
+          this.$t("templates.dashboard.confirmDelete.title"),
+          this.$t("templates.dashboard.confirmDelete.message", { name: template.name }),
           null,
           (confirmed) => {
             if (confirmed) {
@@ -388,8 +391,8 @@
               }, (result) => {
                 if (!result.success) {
                   this.eventBus.emit("toast", {
-                    title: "Template delete failed",
-                    message: result.message,
+                    title: this.$t("templates.dashboard.toasts.templateDeleteFailed"),
+                    message: resolveApiMessage(result),
                     variant: "danger",
                   });
                 }

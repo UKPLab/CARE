@@ -1,0 +1,21 @@
+{
+    "goBack": "Go back...",
+    "project": "Project: {name}",
+    "documentation": "Documentation",
+    "feedback": "Feedback",
+    "projectPage": "Project Page",
+    "sidebar": {
+        "collapseSidebar": "Collapse sidebar",
+        "toggleSidebar": "Toggle sidebar",
+        "hideSidebar": "Hide sidebar",
+        "showSidebar": "Show sidebar",
+        "moreActions": "More actions",
+        "noContent": "No sidebar content selected.",
+        "sidebarSection": "Sidebar section"
+    },
+    "topbar": {
+        "goBack": "Go back...",
+        "projectTitle": "Project: {name}",
+        "signedInAs": "Signed in as {username}"
+    }
+}

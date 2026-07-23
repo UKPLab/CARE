@@ -20,8 +20,8 @@
       </small>
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="close">Cancel</button>
-      <button class="btn btn-primary" type="button" :disabled="!isValid" @click="save">Save</button>
+      <BasicButton class="btn btn-secondary" text="Cancel" @click="close" />
+      <BasicButton class="btn btn-primary" text="Save" :disabled="!isValid" @click="save" />
     </template>
   </BasicModal>
 </template>
@@ -33,10 +33,11 @@
  * @author Mohammed Rawhani
  */
 import BasicModal from "@/basic/Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AIBudgetEditModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicButton },
   data() {
     return {
       row: null,

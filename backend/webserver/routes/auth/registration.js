@@ -1,6 +1,6 @@
 'use strict';
 
-const { generateToken } = require('../../../utils/auth');
+const { generateToken } = require('../../auth/utils');
 
 /**
  * Register self-registration routes.
@@ -20,31 +20,31 @@ function registerRegistrationRoutes(server, helpers) {
         // Check if self-registration is enabled
         const isSelfRegistrationEnabled = await server.db.models['setting'].get('app.register.enabled');
         if (!isSelfRegistrationEnabled) {
-            return res.status(403).json({ message: 'Self-registration is currently disabled. Please contact an administrator to create an account.' });
+            return res.status(403).json({ message: 'auth.api.selfRegistrationDisabled' });
         }
 
         // Check if name fields are required by settings
         if ((await server.db.models['setting'].get('app.register.requestName')) === 'true') {
             if (!data.firstName) {
-                return res.status(400).json({ message: 'Please provide a first name.' });
+                return res.status(400).json({ message: 'auth.api.provideFirstName' });
             }
             if (!data.lastName) {
-                return res.status(400).json({ message: 'Please provide a last name.' });
+                return res.status(400).json({ message: 'auth.api.provideLastName' });
             }
         }
 
         // Check if email is present and not already taken
         if (!data.email) {
-            return res.status(400).json({ message: 'Please provide a email.' });
+            return res.status(400).json({ message: 'auth.api.provideAEmail' });
         }
         const emailUser = await server.db.models['user'].getUserIdByEmail(data.email);
         if (emailUser !== 0) {
-            return res.status(400).json({ message: 'E-Mail already taken.' });
+            return res.status(400).json({ message: 'auth.api.emailAlreadyTaken' });
         }
 
         // Validate password presence and policy
         if (!data.password) {
-            return res.status(400).json({ message: 'Please provide a password.' });
+            return res.status(400).json({ message: 'auth.api.providePassword' });
         }
         try {
             server.db.models['user'].validatePasswordContent(data.password);
@@ -53,17 +53,17 @@ function registerRegistrationRoutes(server, helpers) {
         }
 
         if (!data.acceptTerms && !data.isCreatedByAdmin) {
-            return res.status(400).json({ message: 'Please agree to the terms of use.' });
+            return res.status(400).json({ message: 'auth.api.agreeToTerms' });
         }
 
         // Check if username is present and not already taken
         if (!data.userName) {
-            return res.status(400).json({ message: 'Please provide a user name.' });
+            return res.status(400).json({ message: 'auth.api.provideUserName' });
         }
         const userNameUser = await server.db.models['user'].getUserIdByName(data.userName);
         if (userNameUser !== 0) {
             server.logger.info('Username already taken: ' + data.userName);
-            return res.status(400).json({ message: 'Username already taken.' });
+            return res.status(400).json({ message: 'auth.api.usernameTaken' });
         }
 
         let transaction;
@@ -116,19 +116,19 @@ function registerRegistrationRoutes(server, helpers) {
                 );
                 await transaction.commit();
                 return res.status(201).json({
-                    message: 'User was successfully created. Please check your email to verify your account.',
+                    message: 'auth.api.userCreatedVerifyEmail',
                     emailVerificationRequired: true,
                 });
             }
 
             await transaction.commit();
-            return res.status(201).send('User was successfully created');
+            return res.status(201).json({ message: 'auth.api.userCreated' });
         } catch (err) {
             if (transaction) {
                 await transaction.rollback();
             }
             server.logger.error('Cannot create user:', err);
-            return res.status(400).json({ message: 'Failed to create user', error: err.message });
+            return res.status(400).json({ message: 'auth.api.failedToCreateUser', error: err.message });
         }
     });
 }

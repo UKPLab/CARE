@@ -5,7 +5,7 @@
       @hide="resetForm">
     <template #title>
       <slot name="title">
-        <span>Edit User</span>
+        <span>{{ $t("users.editUser") }}</span>
       </slot>
     </template>
     <template #body>
@@ -27,12 +27,12 @@
       <span class="btn-group">
         <BasicButton
             class="btn btn-secondary"
-            title="Cancel"
+            :title="$t('common.cancel')"
             @click="$refs.modal.close()"
         />
         <BasicButton
             class="btn btn-primary"
-            title="Save"
+            :title="$t('common.save')"
             @click="submit"
         />
       </span>
@@ -45,6 +45,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for viewing and editing user data
@@ -54,40 +55,38 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "DetailsModal",
   components: {BasicModal, BasicForm, BasicTable, BasicButton},
-  emits: ["updateUser"],
   data() {
     return {
       userId: 0,
-      userInfo: {},
       formFields: [
         {
           key: "userName",
-          label: "Username:",
+          label: this.$t("dashboard.users.userNameLabel"),
           type: "text",
           required: true,
           readOnly: true,
         },
         {
           key: "firstName",
-          label: "First Name:",
+          label: this.$t("dashboard.users.firstNameLabel"),
           type: "text",
           required: true,
         },
         {
           key: "lastName",
-          label: "Last Name:",
+          label: this.$t("dashboard.users.lastNameLabel"),
           type: "text",
           required: true,
         },
         {
           key: "email",
-          label: "Email:",
+          label: this.$t("dashboard.users.emailLabel"),
           type: "text",
           required: true,
         },
         {
           key: "roles",
-          label: "Roles:",
+          label: this.$t("dashboard.study.roles"),
           type: "checkbox",
           required: true,
           readOnly: false,
@@ -101,12 +100,12 @@ export default {
         small: false,
       },
       columns: [
-        {name: "Accept Terms", key: "acceptTerms"},
-        {name: "Accept Stats", key: "acceptStats"},
-        {name: "Last Login", key: "lastLoginAt"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Updated At", key: "updatedAt"},
-        {name: "Deleted At", key: "deletedAt"},
+        {name: this.$t("users.columns.acceptTerms"), key: "acceptTerms"},
+        {name: this.$t("users.columns.acceptStats"), key: "acceptStats"},
+        {name: this.$t("users.columns.lastLogin"), key: "lastLoginAt"},
+        {name: this.$t("common.createdAt"), key: "createdAt"},
+        {name: this.$t("dashboard.users.updatedAt"), key: "updatedAt"},
+        {name: this.$t("dashboard.users.deletedAt"), key: "deletedAt"},
       ],
     };
   },
@@ -114,11 +113,30 @@ export default {
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"];
     },
+    userInfo(){
+      const user = this.$store.getters["table/user/get"](this.userId);
+      if (!user) {
+        return {};
+      }
+      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+      return {
+        ...user,
+        roles: (user.roles || [])
+            .map((roleId) => this.systemRoles.find((r) => r.id === roleId)?.name)
+            .filter(Boolean),
+        createdAt: formatDate(user.createdAt),
+        updatedAt: formatDate(user.updatedAt),
+        lastLoginAt: formatDate(user.lastLoginAt),
+        deletedAt: formatDate(user.deletedAt),
+      };
+    },
   },
   mounted() {
     const options = this.systemRoles.map((role) => ({
       value: role.name,
-      label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
+      label: this.$te(`users.roles.${role.name}`)
+        ? this.$t(`users.roles.${role.name}`)
+        : role.name.charAt(0).toUpperCase() + role.name.slice(1),
     }));
     const index = this.formFields.findIndex(({key}) => key === "roles");
     this.formFields[index].options = options;
@@ -126,7 +144,6 @@ export default {
   methods: {
     open(userId) {
       this.userId = userId;
-      this.getUserDetails(userId);
       this.$refs.modal.open();
     },
     submit() {
@@ -142,38 +159,22 @@ export default {
         roles,
       };
       this.$refs.modal.waiting = true;
-      this.$socket.emit("userUpdateDetails", {userId, userData}, (response) => {
+      this.$socket.emit("userUpdateDetails", { userId, userData }, (response) => {
         if (response.success) {
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();
-          this.$emit("updateUser");
           this.eventBus.emit("toast", {
-            title: "User updated",
-            message: "Successfully updated user!",
+            title: this.$t("dashboard.users.userUpdated"),
+            message: this.$t("dashboard.users.userUpdatedMessage"),
             variant: "success",
           });
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
-            title: "Fail to update",
-            message: response.message,
+            title: this.$t("errors.users.updateFailed"),
+            message: resolveApiMessage(response),
             variant: "danger",
           });
-        }
-      });
-    },
-    getUserDetails(userId) {
-      this.$socket.emit("userGetDetails", userId, (res) => {
-        if (res.success) {
-          const userInfo = res["data"];
-          const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
-          this.userInfo = {
-            ...userInfo,
-            createdAt: formatDate(userInfo.createdAt),
-            updatedAt: formatDate(userInfo.updatedAt),
-            lastLoginAt: formatDate(userInfo.lastLoginAt),
-            deletedAt: formatDate(userInfo.deletedAt),
-          };
         }
       });
     },

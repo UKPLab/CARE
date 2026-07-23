@@ -15,7 +15,7 @@
         <div class="input-group">
           <span
             class="input-group-text"
-            title="Items per page">
+            :title="$t('common.itemsPerPage')">
             <LoadIcon icon-name="list-ul"/>
           </span>
           <select
@@ -28,12 +28,12 @@
             >
               {{ item }}
             </option>
-            <option :value="0">All</option>
+            <option :value="0">{{ $t('common.all') }}</option>
           </select>
         </div>
       </div>
       <div class="col-md-auto">
-        <nav aria-label="Pagination">
+        <nav :aria-label="$t('common.pagination')">
           <ul class="pagination mb-0">
             <!-- First Page Link -->
             <li
@@ -45,7 +45,7 @@
                 :disabled="currentPage === 1"
                 @click="changePage(1)"
               >
-                First
+                {{ $t('common.first') }}
               </button>
             </li>
             <!-- Previous Page Link -->
@@ -111,7 +111,7 @@
                 :disabled="currentPage === pages"
                 @click="changePage(pages)"
               >
-                Last
+                {{ $t('common.last') }}
               </button>
             </li>
           </ul>
@@ -189,13 +189,21 @@ export default {
 
       // Handle "All" items case
       if (this.itemsPerPageSelect === 0) {
-        return `Showing 1-${this.totalItems} of ${this.totalItems}`;
+        return this.$t('common.paginationRange', {
+          start: 1,
+          end: this.totalItems,
+          total: this.totalItems,
+        });
       }
 
       const startItem = (this.currentPage - 1) * this.itemsPerPageSelect + 1;
       const endItem = Math.min(this.currentPage * this.itemsPerPageSelect, this.totalItems);
 
-      return `Showing ${startItem}-${endItem} of ${this.totalItems}`;
+      return this.$t('common.paginationRange', {
+        start: startItem,
+        end: endItem,
+        total: this.totalItems,
+      });
     },
   },
   watch: {

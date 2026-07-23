@@ -4,7 +4,7 @@
     :name="'confirm'+name"
   >
     <template #title>
-      Confirm {{ name }}
+      {{ $t('modals.confirm') }} {{ name }}
     </template>
     <template #body>
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -22,14 +22,14 @@
         type="button"
         @click="abort()"
       >
-        Abort
+        {{ $t('common.abort') }}
       </button>
       <button
         class="btn btn-primary"
         type="button"
         @click="confirm()"
       >
-        Confirm
+        {{ $t('common.confirm') }}
       </button>
     </template>
   </Modal>
@@ -62,7 +62,7 @@ export default {
     return {
       cb: null,
       name: "",
-      message: "Please confirm",
+      message: "",
       warning: null
     }
   },
@@ -84,7 +84,7 @@ export default {
     open(name, message, warning = null, cb) {
       this.cb = cb;
       this.name = name;
-      this.message = message;
+      this.message = message || this.$t('modals.pleaseConfirm');
       this.warning = warning;
 
       this.$refs.confirmation.openModal();

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h6>Select Submissions to Download:</h6>
+    <h6>{{ $t('dashboard.projects.exportSelectSubmissions') }}</h6>
 
     <BasicTable
       v-if="submissionTableData.length > 0"
@@ -11,7 +11,7 @@
     />
 
     <div v-else class="alert alert-warning">
-      <span>No submissions found for this project.</span>
+      <span>{{ $t('dashboard.projects.noSubmissionsFound') }}</span>
     </div>
 
   </div>
@@ -92,7 +92,7 @@ export default {
               userName: `${student.userName}`,
               studentName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
               fileCount: 0,
-              acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
+              acceptDataSharing: student.acceptDataSharing ? this.$t('common.yes') : this.$t('common.no'),
               lastSubmissionDate: currentDocDate
             };
           }
@@ -112,22 +112,22 @@ export default {
     },
     submissionTable() {
       const cols = [
-        { name: "Username", key: "userName", sortable: true },
-        { name: "Files", key: "fileCount", sortable: true },
+        { name: this.$t('dashboard.projects.columns.username'), key: "userName", sortable: true },
+        { name: this.$t('dashboard.projects.columns.files'), key: "fileCount", sortable: true },
         { 
-          name: "Accepted Data Sharing", 
+          name: this.$t('dashboard.projects.columns.acceptedDataSharing'), 
           key: "acceptDataSharing", 
           sortable: true,
           filter: [
-            { key: "Yes", name: "Yes" },
-            { key: "No", name: "No" },
+            { key: this.$t('common.yes'), name: this.$t('common.yes') },
+            { key: this.$t('common.no'), name: this.$t('common.no') },
           ],
         },
-        { name: "Last Submitted", key: "lastSubmissionDate", sortable: true }
+        { name: this.$t('dashboard.projects.columns.lastSubmitted'), key: "lastSubmissionDate", sortable: true }
       ];
 
       if (this.hasPrivateInfoRight) {
-        cols.splice(1, 0, { name: "Student Name", key: "studentName", sortable: true });
+        cols.splice(1, 0, { name: this.$t('dashboard.projects.columns.studentName'), key: "studentName", sortable: true });
       }
 
       return {

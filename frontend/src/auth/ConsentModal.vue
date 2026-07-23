@@ -8,7 +8,7 @@
     @show="handleModalShow"
     @hide="handleModalHide"
   >
-    <template #title> Terms</template>
+    <template #title>{{ $t('auth.termsOfService') }}</template>
     <template #body>
       <div class="terms-wrapper" :class="{ 'is-bottom': isAtBottom }">
         <div 
@@ -29,7 +29,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I agree to my data being made available for research purposes
+          {{ $t('auth.acceptDataSharing') }}
         </label>
       </div>
       <div
@@ -42,7 +42,7 @@
             class="consent-input"
             type="checkbox"
           />
-          I allow the collection of behaviour statistics for research purpose
+          {{ $t('auth.acceptStatsBehavior') }}
         </label>
       </div>
     </template>
@@ -50,12 +50,12 @@
       <div class="button-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Decline"
+          :title="$t('common.decline')"
           @click="handleDecline"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Accept & Continue"
+          :title="$t('auth.acceptAndContinue')"
           @click="handleAccept"
         />
       </div>
@@ -76,6 +76,7 @@ import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import BasicEditor from "@/basic/editor/Editor.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ConsentModal",
@@ -164,14 +165,14 @@ export default {
           this.close();
           this.$store.commit("auth/SET_USER", res.data);
           this.eventBus.emit("toast", {
-            title: "Terms successful updated",
-            message: "The terms are successfully updated",
+            title: this.$t('auth.messages.termsUpdated'),
+            message: this.$t('auth.messages.termsUpdatedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Error in updating terms",
-            message: res.message,
+            title: this.$t('errors.auth.termsUpdateError'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

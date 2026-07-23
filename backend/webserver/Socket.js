@@ -1,4 +1,5 @@
-const {inject} = require("../utils/generic");
+const {inject} = require("../utils/helper/generic");
+const i18n = require("../utils/i18n");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
@@ -96,14 +97,56 @@ module.exports = class Socket {
                 }
 
                 console.log(err);
-                this.logger.error(err.message);
 
-                if (callback) {
-                    const response = {success: false, message: err.message};
-                    if (err.code) {
-                        response.code = err.code;
+                // i18n error hub: TranslatableError, generateError(code, key), Error("errors.*")
+                // Log the key; SQLTransport translates to English. Frontend gets key+params (resolveApiMessage).
+                let key;
+                let params = {};
+                if (err.isTranslatable || err.key) {
+                    // TranslatableError: err.key + optional err.params (+ optional err.code)
+                    key = err.key;
+                    if (err.params) {
+                        params = err.params;
                     }
-                    callback(response);
+                } else if (typeof err.message === "string" && i18n.hasKey(err.message)) {
+                    // throw new Error("errors.namespace.key") or generateError(code, "errors.*")
+                    key = err.message;
+                    if (err.params) {
+                        params = err.params;
+                    }
+                }
+
+                if (key) {
+                    this.logger.error(key, { i18nParams: params });
+                    if (callback) {
+                        // key/params → localized UI; message (EN) → legacy fallback
+                        const response = {
+                            success: false,
+                            key,
+                            params,
+                            message: i18n.translateMaybeKey(key, params),
+                        };
+                        if (err.code) {
+                            response.code = err.code;
+                        }
+                        callback(response);
+                    }
+                } else {
+                    // Not an i18n key (bug, DB failure, etc.): log full detail, generic message to user
+                    this.logger.error({
+                        message: err.message,
+                        stack: err.stack,
+                        name: err.name,
+                    });
+                    if (callback) {
+                        const unexpectedKey = "errors.server.unexpectedError";
+                        callback({
+                            success: false,
+                            key: unexpectedKey,
+                            params: {},
+                            message: i18n.translateMaybeKey(unexpectedKey),
+                        });
+                    }
                 }
             }
             finally {
@@ -116,6 +159,51 @@ module.exports = class Socket {
                 }
             }
         });
+    }
+
+    /**
+     * Iterates over a list of items, executing an action for each one inside its own Sequelize
+     * transaction. After each item, emits a `progressUpdate` event to the client if a
+     * `progressId` was provided. Failures are caught per-item — a rollback is performed and
+     * the item is skipped, so a single failure never aborts the remaining work.
+     *
+     * The `action` callback receives the current item and its open transaction. It is
+     * responsible for all database work; committing and rolling back are handled by this
+     * method. `transaction.afterCommit` hooks may be registered inside `action` and will be
+     * called normally after a successful commit.
+     *
+     * @template T
+     * @param {T[]} items         The list of items to process.
+     * @param {string|null} progressId  Client-side progress token. When set, a `progressUpdate`
+     *                                  event `{ id, current, total }` is emitted to the socket
+     *                                  after every item (success or failure).
+     * @param {function(item: T, transaction: import("sequelize").Transaction): Promise<void>} action
+     *   Async callback invoked for each item. Receives the item and its transaction.
+     *   Must **not** commit or roll back the transaction itself.
+     * @returns {Promise<number>} The number of items that were processed successfully.
+     */
+    async runBulkWithProgress(items, progressId, action) {
+        let count = 0;
+        const total = items.length;
+
+        for (let i = 0; i < total; i++) {
+            const item = items[i];
+            const transaction = await this.server.db.sequelize.transaction();
+            try {
+                await action(item, transaction);
+                await transaction.commit();
+                count++;
+            } catch (e) {
+                this.logger.error(e);
+                await transaction.rollback();
+            }
+
+            if (progressId) {
+                this.socket.emit("progressUpdate", { id: progressId, current: i + 1, total });
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -507,13 +595,14 @@ module.exports = class Socket {
             }
         }
 
-        // --- Column restrictions from access rights (applied regardless of row logic) ---
-        if (accessRights.length > 0) {
-            allAttributes['include'] = [...new Set(
-                accessRights
-                    .filter(a => a.columns)
-                    .flatMap(a => a.columns)
-            )];
+        // --- Column restrictions from access rights (admins bypass, everyone else is restricted) ---
+        if (!isAdmin && accessRights.length > 0) {
+            const columns = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+            if (columns.length > 0) {
+                // Pass a plain array so Sequelize restricts to only these columns.
+                // { exclude, include } is NOT the same — include there adds virtual attrs, not restricts.
+                allAttributes = columns;
+            }
         }
 
         // Apply row-visibility: baseFilter AND (condition1 OR condition2 OR ...)
@@ -838,7 +927,7 @@ module.exports = class Socket {
 
             let data = [];
             if (accessRights.length > 0 || await this.isAdmin(userId)) {
-                const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
+                const attributes = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
                 data = await this.models[table].getAutoTable(filter, userId, attributes);
             } else {
                 data = await this.models[table].getAutoTable(filter, userId);

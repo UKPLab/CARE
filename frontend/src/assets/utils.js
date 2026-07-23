@@ -1,7 +1,141 @@
 import "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
 import yaml from "js-yaml";
+import { i18n } from '../main.js';
 
+// Detects key-like messages such as "errors.server.notFound".
+// This prevents missing translation keys from being shown as raw text,
+// while still allowing legacy plain text backend messages to pass through.
+const looksLikeI18nKey = (str) =>
+    typeof str === 'string' &&
+    /^[a-zA-Z][a-zA-Z0-9]*(\.[a-zA-Z][a-zA-Z0-9]*)+$/.test(str);
+
+/**
+ * Translates a value when it is a known i18n key; otherwise returns it unchanged.
+ * Use for DB seed strings and metadata that may be either an i18n key
+ * or user-entered plain text.
+ *
+ * @param {*} value String to translate, or any other value passed through as-is.
+ * @param {Object} [params={}] Values for placeholders in the translated text, e.g. { name: "Anna" } when the string is "Hello {name}".
+ * @returns {*} Translated string, the original string if no key exists, or the input unchanged when not a string.
+ */
+export function translateMaybeKey(value, params = {}) {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    if (i18n.global.te(value)) {
+        return i18n.global.t(value, params);
+    }
+    return value;
+}
+
+/**
+ * Resolves a user-facing message from an API/socket response.
+ * Prefers structured i18n payloads ({ key, params }) over legacy plain-text messages.
+ *
+ * @param {Object|null|undefined} response API response object.
+ * @param {string} [response.key] i18n key to translate.
+ * @param {Object} [response.params] Interpolation values for response.key or response.message.
+ * @param {string} [response.message] Legacy plain text or i18n key string.
+ * @param {string} [fallbackKey='errors.server.unknownError'] Key used when translation is missing or response is empty.
+ * @returns {string} Localized message for display (toast, modal, etc.).
+ */
+export function resolveApiMessage(response, fallbackKey = 'errors.server.unknownError') {
+    const fallbackMessage = i18n.global.t(fallbackKey);
+
+    if (response && response.key) {
+        if (i18n.global.te(response.key)) {
+            return i18n.global.t(response.key, response.params || {});
+        }
+
+        console.warn('[i18n] Missing API key:', response.key, response);
+        return fallbackMessage;
+    }
+
+    if (response && response.message) {
+        if (i18n.global.te(response.message)) {
+            return i18n.global.t(response.message, response.params || {});
+        }
+
+        if (looksLikeI18nKey(response.message)) {
+            console.warn('[i18n] Missing message key:', response.message, response);
+            return fallbackMessage;
+        }
+
+        console.warn('[i18n] Legacy plain API message:', response.message, response);
+        return response.message;
+    }
+
+    console.warn('[i18n] Empty API response message:', response);
+    return fallbackMessage;
+}
+
+/**
+ * Returns the active vue-i18n locale code (e.g. "en", "de").
+ *
+ * @returns {string|undefined}
+ */
+function getCurrentLocale() {
+    const locale = i18n?.global?.locale;
+    if (typeof locale === "string") {
+        return locale;
+    }
+    return locale?.value;
+}
+
+/**
+ * Turns a date from the API/UI into a real Date object.
+ * Returns null if the value is empty or not a valid date (e.g. null, "", "not-a-date").
+ *
+ * @param {*} value A Date, ISO string (e.g. "2026-05-29T12:00:00Z"), or timestamp number.
+ * @returns {Date|null} Usable Date, or null when there is nothing to format.
+ */
+function toValidDate(value) {
+    if (value === null || value === undefined || value === "") {
+        return null;
+    }
+    const date = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/**
+ * Formats a date using the current app locale (date only, no time).
+ *
+ * @param {*} value Date, ISO string, or timestamp.
+ * @param {Intl.DateTimeFormatOptions} [options={}] Options passed to Date.prototype.toLocaleDateString.
+ * @returns {string} Formatted date, or "" when value is invalid or empty.
+ */
+export function formatLocalizedDate(value, options = {}) {
+    const date = toValidDate(value);
+    if (!date) return "";
+    return date.toLocaleDateString(getCurrentLocale(), options);
+}
+
+/**
+ * Formats a time using the current app locale (time only, no date).
+ *
+ * @param {*} value Date, ISO string, or timestamp.
+ * @param {Intl.DateTimeFormatOptions} [options={}] Options passed to Date.prototype.toLocaleTimeString.
+ * @returns {string} Formatted time, or "" when value is invalid or empty.
+ */
+export function formatLocalizedTime(value, options = {}) {
+    const date = toValidDate(value);
+    if (!date) return "";
+    return date.toLocaleTimeString(getCurrentLocale(), options);
+}
+
+/**
+ * Formats a date and time using the current app locale.
+ *
+ * @param {*} value Date, ISO string, or timestamp.
+ * @param {Intl.DateTimeFormatOptions} [options={}] Options passed to Date.prototype.toLocaleString.
+ * @returns {string} Formatted date-time, or "" when value is invalid or empty.
+ */
+export function formatLocalizedDateTime(value, options = {}) {
+    const date = toValidDate(value);
+    if (!date) return "";
+    return date.toLocaleString(getCurrentLocale(), options);
+}
 
 /**
  * Returns a copy of the object, for which only the provided attributes by keys are included (whitelisting).
@@ -102,34 +236,34 @@ const EXPORT_FORMATS = {
     csv: {
         serialize:   objectsToCSV,
         mimeType:    "text/csv",
-        label:       "CSV Format",
+        label:       "modals.importExport.formats.csv.label",
         icon:        "filetype-csv",
-        description: "Comma-separated values, compatible with spreadsheets",
+        description: "modals.importExport.formats.csv.description",
         extensions:  [".csv"],
     },
     json: {
         serialize:   objectsToJSON,
         mimeType:    "application/json",
-        label:       "JSON Format",
+        label:       "modals.importExport.formats.json.label",
         icon:        "filetype-json",
-        description: "Standard JSON format with proper formatting",
+        description: "modals.importExport.formats.json.description",
         extensions:  [".json"],
         parse:       (content) => JSON.parse(content),
     },
     txt: {
         serialize:   objectsToTXT,
         mimeType:    "text/plain",
-        label:       "TXT Format",
+        label:       "modals.importExport.formats.txt.label",
         icon:        "filetype-txt",
-        description: "Plain text with indented nested objects",
+        description: "modals.importExport.formats.txt.description",
         extensions:  [".txt"],
     },
     yaml: {
         serialize:   objectsToYAML,
         mimeType:    "application/x-yaml",
-        label:       "YAML Format",
+        label:       "modals.importExport.formats.yaml.label",
         icon:        "filetype-yml",
-        description: "Human-readable YAML format",
+        description: "modals.importExport.formats.yaml.description",
         extensions:  [".yaml", ".yml"],
         parse:       (content) => yaml.load(content),
     },

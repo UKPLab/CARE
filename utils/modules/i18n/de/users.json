@@ -1,0 +1,113 @@
+{
+    "title": "Benutzer",
+    "downloadUsers": "Benutzer herunterladen",
+    "assignRoles": "Rollen zuweisen",
+    "uploadPassword": "Passwort hochladen",
+    "importCsv": "CSV importieren",
+    "importViaMoodle": "Import über Moodle",
+    "addUser": "Benutzer hinzufügen",
+    "editUser": "Benutzer bearbeiten",
+    "viewRights": "Rechte anzeigen",
+    "resetPassword": "Passwort zurücksetzen",
+    "deleteUser": "Benutzer löschen",
+    "columns": {
+        "firstName": "Vorname",
+        "lastName": "Nachname",
+        "userName": "Benutzer",
+        "email": "E-Mail",
+        "acceptTerms": "Bedingungen akzeptiert",
+        "acceptStats": "Statistiken akzeptiert",
+        "acceptDataSharing": "Datenaustausch akzeptiert",
+        "verified": "Verifiziert",
+        "lastLogin": "Letzte Anmeldung",
+        "roles": "Rollen"
+    },
+    "messages": {
+        "deleteConfirm": "Möchten Sie diesen Benutzer wirklich löschen?",
+        "deleteTitle": "Benutzer löschen",
+        "userDeleted": "Benutzer gelöscht",
+        "userDeletedMessage": "Der Benutzer wurde gelöscht"
+    },
+    "stats": {
+        "exportCsv": "Als CSV exportieren",
+        "exportJson": "Als JSON exportieren",
+        "userStatsTitle": "Statistiken für {count} Benutzer | Statistiken für {count} Benutzer",
+        "columns": {
+            "user": "Benutzer",
+            "id": "ID",
+            "lastLogin": "Letzte Anmeldung",
+            "time": "Zeit",
+            "action": "Aktion",
+            "data": "Daten"
+        },
+        "toasts": {
+            "exportFailedTitle": "Export fehlgeschlagen",
+            "exportFailedMessage": "Export fehlgeschlagen."
+        }
+    },
+    "roles": {
+        "teacher": "Lehrer",
+        "mentor": "Tutor",
+        "student": "Student",
+        "guest": "Gast",
+        "user": "Benutzer",
+        "admin": "Administrator"
+  },
+  "liveSessions": "Live-Sitzungen",
+  "viewSessions": "Sitzungen anzeigen",
+  "activeSessions": {
+    "title": "Aktive Sitzungen",
+    "filteredUser": "Gefilterter Benutzer:",
+    "activeUsers": "{count} aktive Benutzer",
+    "socketId": "Socket-ID",
+    "userId": "Benutzer-ID",
+    "connectedAt": "Verbunden seit",
+    "browser": "Browser"
+  },
+  "rights": {
+    "assignRights": "Rechte zuweisen",
+    "managementTitle": "Rechteverwaltung",
+    "manageRightsFor": "Rechte verwalten für",
+    "role": "Rolle",
+    "selectRightsNote": "Wählen Sie die Rechte für diese Rolle aus. Hinweis: Alle Benutzer haben standardmäßig grundlegende {userRole}-Rechte.",
+    "selectRole": "Rolle auswählen",
+    "manageRights": "Rechte verwalten",
+    "rightName": "Rechtename",
+    "chooseRoleDescription": "Wählen Sie eine Rolle aus, die dem Benutzer zugewiesen werden soll.",
+    "updatedTitle": "Rollenrechte aktualisiert",
+    "updatedMessage": "Die Rollenrechte wurden erfolgreich aktualisiert",
+    "errors": {
+      "loadAvailableRightsFailed": "Verfügbare Rechte konnten nicht geladen werden",
+      "loadRoleRightsFailed": "Rollenrechte konnten nicht geladen werden",
+      "assignRoleRightsFailed": "Rollenrechte konnten nicht zugewiesen werden"
+    }
+  },
+  "roleManagement": {
+    "button": "Rollenverwaltung",
+    "title": "Rolle erstellen",
+    "fields": {
+      "name": {
+        "label": "Rollenname",
+        "placeholder": "Rollennamen eingeben",
+        "description": "Neue Systemrolle erstellen."
+      },
+      "description": {
+        "placeholder": "Optionale Rollenbeschreibung"
+      }
+    },
+    "buttons": {
+      "create": "Rolle erstellen"
+    },
+    "toasts": {
+      "alreadyExists": {
+        "title": "Rolle existiert bereits",
+        "message": "Eine Rolle mit diesem Namen existiert bereits."
+      },
+      "createSuccess": {
+        "title": "Rolle erstellt",
+        "message": "Die Rolle wurde erfolgreich erstellt."
+      },
+      "createFailed": "Rolle konnte nicht erstellt werden"
+    }
+  }
+}

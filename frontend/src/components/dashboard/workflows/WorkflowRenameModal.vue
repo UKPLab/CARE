@@ -5,16 +5,16 @@
     size="lg"
   >
     <template #title>
-      Rename Workflow
+      {{ $t("workflow.renameModal.title") }}
     </template>
     <template #body>
       <div v-if="selectedWorkflow" class="mb-3">
         <p class="text-muted mb-3">
-          This will rename the existing workflow.
+          {{ $t("workflow.renameModal.description") }}
         </p>
         
         <div class="alert alert-info" role="alert">
-          <strong>Current Workflow:</strong> {{ selectedWorkflow.name }}
+          <strong>{{ $t("workflow.renameModal.currentWorkflow") }}:</strong> {{ translateMaybeKey(selectedWorkflow.name) }}
         </div>
         
         <BasicForm
@@ -26,20 +26,20 @@
       
       <div v-if="isLoading" class="text-center py-3">
         <div class="spinner-border spinner-border-sm me-2" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ $t("common.loading") }}</span>
         </div>
-        Renaming workflow...
+        {{ $t("workflow.renameModal.renamingWorkflow") }}
       </div>
     </template>
     <template #footer>
       <BasicButton
         class="btn btn-secondary me-2"
-        text="Cancel"
+        :text="$t('common.cancel')"
         @click="close"
       />
       <BasicButton
         class="btn btn-primary"
-        text="Rename Workflow"
+        :text="$t('workflow.renameModal.renameWorkflow')"
         :disabled="!canSubmit"
         @click="handleSubmit"
       />
@@ -51,6 +51,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
+import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
 
 /**
  * Workflow Rename Modal Component
@@ -82,40 +83,43 @@ export default {
       return [
         {
           key: "name",
-          label: "New Workflow Name",
+          label: this.$t("workflow.renameModal.form.newWorkflowName"),
           type: "text",
           required: true,
-          placeholder: "Enter new workflow name",
+          placeholder: this.$t("workflow.renameModal.form.enterNewWorkflowName"),
           maxlength: 255,
           size: 12,
         },
       ];
     },
     canSubmit() {
+      const currentName = this.selectedWorkflow
+        ? translateMaybeKey(this.selectedWorkflow.name)
+        : "";
       return (
         !this.isLoading &&
         this.formData.name &&
         this.formData.name.trim().length > 0 &&
         this.selectedWorkflow &&
-        this.formData.name.trim() !== this.selectedWorkflow.name
+        this.formData.name.trim() !== currentName
       );
     },
   },
   methods: {
+    translateMaybeKey,
     open(workflowId) {
       this.selectedWorkflow = this.$store.getters["table/workflow/get"](workflowId);
       if (!this.selectedWorkflow) {
         this.eventBus.emit("toast", {
-          title: "Error",
-          message: "Workflow not found",
+          title: this.$t("workflow.renameModal.errors.workflowNotFound.title"),
+          message: this.$t("workflow.renameModal.errors.workflowNotFound.message"),
           variant: "danger",
         });
         return;
       }
       
-      // Initialize form with current workflow data
       this.formData = {
-        name: this.selectedWorkflow.name,
+        name: translateMaybeKey(this.selectedWorkflow.name),
       };
       this.isLoading = false;
       
@@ -154,8 +158,8 @@ export default {
             }, (result) => {
             if (!result.success) {
                 this.eventBus.emit("toast", {
-                  title: "Creation Failed",
-                  message: result.message || "Failed to create new workflow",
+                  title: this.$t("workflow.renameModal.errors.creationFailed"),
+                  message: resolveApiMessage(result),
                   variant: "danger",
                 });
             }
@@ -170,16 +174,19 @@ export default {
           }, (result) => {
             if (!result.success) {
                 this.eventBus.emit("toast", {
-                    title: "Hide Original Failed",
-                    message: result.message || "Failed to hide original workflow",
-                    variant: "danger",
+                  title: this.$t("workflow.renameModal.errors.hideOriginalFailed"),
+                  message: resolveApiMessage(result),
+                  variant: "danger",
                 });
             }
           });
         
         this.eventBus.emit("toast", {
-          title: "Workflow Renamed",
-          message: `Workflow "${this.selectedWorkflow.name}" has been renamed to "${this.formData.name.trim()}"`,
+          title: this.$t("workflow.renameModal.success.title"),
+          message: this.$t("workflow.renameModal.success.message", {
+            oldName: translateMaybeKey(this.selectedWorkflow.name),
+            newName: this.formData.name.trim(),
+          }),
           variant: "success",
         });
         
@@ -188,8 +195,8 @@ export default {
       } catch (error) {
         console.error("Failed to rename workflow:", error);
         this.eventBus.emit("toast", {
-          title: "Rename Failed",
-          message: error.message || "Failed to rename workflow",
+          title: this.$t("workflow.renameModal.errors.renameFailed"),
+          message: error.message || this.$t("workflow.renameModal.errors.renameFailedMessage"),
           variant: "danger",
         });
       } finally {
