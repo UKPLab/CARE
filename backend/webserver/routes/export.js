@@ -40,13 +40,15 @@ module.exports = function (server) {
 
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies, includeDocumentFiles, includeGrades } = req.body;
         let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
         const shouldExcludeNonConsentingEdits = String(excludeNonConsentingEdits) === 'true';
         const shouldExcludeNonConsentingAnnotations = String(excludeNonConsentingAnnotations) === 'true';
         const shouldIncludeEmptyStudies = String(includeEmptyStudies) === 'true';
+        const shouldIncludeDocumentFiles = String(includeDocumentFiles) === 'true';
+        const shouldIncludeGrades = String(includeGrades) === 'true';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const parsedProjectId = Number(projectId);
         const userIds = parseUserIds(rawUserIds);
@@ -132,6 +134,8 @@ module.exports = function (server) {
                         shouldIncludeEmptyStudies,
                         shouldExcludeNonConsentingEdits,
                         shouldExcludeNonConsentingAnnotations,
+                        shouldIncludeDocumentFiles,
+                        shouldIncludeGrades,
                         baseFolderName,
                         archive
                     );
@@ -566,9 +570,8 @@ module.exports = function (server) {
         return sorted;
     }
 
-    async function processStudyBasedExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, baseFolderName, archive) {
-        const studyWhere = { userId: userIds, projectId, deleted: false };
-        if (workflowIds.length > 0) studyWhere.workflowId = workflowIds;
+    async function processStudyBasedExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, shouldIncludeDocumentFiles, shouldIncludeGrades, baseFolderName, archive) {
+        const studyWhere = { userId: userIds, projectId, deleted: false, workflowId: workflowIds };
 
         const studies = await server.db.models.study.findAll({ where: studyWhere });
 
@@ -577,23 +580,8 @@ module.exports = function (server) {
             return;
         }
 
-        const { records: gradeRecords, criteriaReferencesByConfigId } = await buildGradeRecords(
-            server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping
-        );
-        const gradeRecordsBySessionId = new Map();
-        for (const record of gradeRecords) {
-            if (!gradeRecordsBySessionId.has(record.studySessionId)) gradeRecordsBySessionId.set(record.studySessionId, []);
-            gradeRecordsBySessionId.get(record.studySessionId).push(record);
-        }
-
-        if (criteriaReferencesByConfigId.size > 0) {
-            for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
-                archive.append(
-                    JSON.stringify(reference, null, 2),
-                    { name: `${baseFolderName}/criteria_reference_${configurationId}.json` }
-                );
-            }
-        }
+        const gradeRecordsByOwnerId = new Map();
+        const writtenCriteriaReferenceIds = new Set();
 
         for (const study of studies) {
             const studyFolder = `${baseFolderName}/${study.hash}`;
@@ -603,47 +591,28 @@ module.exports = function (server) {
             });
             const sortedSteps = sortSteps(allSteps, 'studyStepPrevious');
 
+            const stepDocumentsById = new Map();
+            if (shouldIncludeDocumentFiles) {
+                const stepDocumentIds = [...new Set(sortedSteps.map(step => step.documentId).filter(Boolean))];
+                const stepDocuments = stepDocumentIds.length > 0
+                    ? await server.db.models.document.findAll({ where: { id: stepDocumentIds }, raw: true })
+                    : [];
+                for (const doc of stepDocuments) stepDocumentsById.set(doc.id, doc);
+            }
+
             const sessions = await server.db.models.study_session.findAll({
                 where: { studyId: study.id, deleted: false },
                 raw: true,
             });
 
-            if (!shouldIncludeEmptyStudies && sessions.length === 0) continue;
-
-            const studyMeta = {
-                id: study.id,
-                name: study.name,
-                userId: study.userId,
-                workflowId: study.workflowId,
-                sessions: sessions.map(session => ({
-                    hash: session.hash,
-                    id: session.id,
-                    userId: session.userId,
-                    numberSteps: session.numberSteps,
-                    steps: sortedSteps.map((step, i) => ({
-                        id: step.id,
-                        stepNumber: i + 1,
-                        stepType: step.stepType,
-                        configuration: step.configuration,
-                    }))
-                }))
-            };
-
-            archive.append(JSON.stringify(studyMeta, null, 2), { name: `${studyFolder}/meta.json` });
-
+            const sessionResults = [];
             for (const session of sessions) {
-                const sessionFolder = `${studyFolder}/${session.hash}`;
-
-                const sessionGrades = (gradeRecordsBySessionId.get(session.id) || [])
-                    .map(({ sessionHash, ...rest }) => rest)
-                    .sort(compareGradeRecords);
-                if (sessionGrades.length > 0) {
-                    archive.append(JSON.stringify(sessionGrades, null, 2), { name: `${sessionFolder}/grades.json` });
-                }
+                const stepResults = [];
+                let sessionHasContent = false;
 
                 for (let i = 0; i < sortedSteps.length; i++) {
                     const step = sortedSteps[i];
-                    const stepFolder = `${sessionFolder}/step_${i + 1}`;
+                    const files = [];
 
                     switch (step.stepType) {
                         case 1: { // Annotator
@@ -673,7 +642,8 @@ module.exports = function (server) {
                             }
 
                             if (annotations.length > 0) {
-                                archive.append(JSON.stringify(annotations, null, 2), { name: `${stepFolder}/annotations.json` });
+                                files.push({ name: 'annotations.json', content: JSON.stringify(annotations, null, 2) });
+                                sessionHasContent = true;
                             }
 
                             if (comments.length > 0) {
@@ -681,10 +651,14 @@ module.exports = function (server) {
                                     where: { commentId: comments.map(c => c.id), deleted: false },
                                     raw: true,
                                 });
-                                archive.append(JSON.stringify(
-                                    comments.map(c => ({ ...c, votes: commentVotes.filter(v => v.commentId === c.id) })),
-                                    null, 2
-                                ), { name: `${stepFolder}/comments.json` });
+                                files.push({
+                                    name: 'comments.json',
+                                    content: JSON.stringify(
+                                        comments.map(c => ({ ...c, votes: commentVotes.filter(v => v.commentId === c.id) })),
+                                        null, 2
+                                    )
+                                });
+                                sessionHasContent = true;
                             }
                             break;
                         }
@@ -721,9 +695,10 @@ module.exports = function (server) {
                                 const delta = dbToDelta(edits);
                                 const text = deltaToPlainText(delta);
                                 if (text.trim()) {
-                                    archive.append(JSON.stringify(edits, null, 2), { name: `${stepFolder}/edits.json` });
-                                    archive.append(text,                           { name: `${stepFolder}/text.txt` });
-                                    archive.append(deltaToHtml(delta),             { name: `${stepFolder}/html.html` });
+                                    files.push({ name: 'edits.json', content: JSON.stringify(edits, null, 2) });
+                                    files.push({ name: 'text.txt', content: text });
+                                    files.push({ name: 'html.html', content: deltaToHtml(delta) });
+                                    sessionHasContent = true;
                                 }
                             }
 
@@ -732,10 +707,98 @@ module.exports = function (server) {
                                 raw: true,
                             });
                             if (documentData.length > 0) {
-                                archive.append(JSON.stringify(documentData, null, 2), { name: `${stepFolder}/document_data.json` });
+                                files.push({ name: 'document_data.json', content: JSON.stringify(documentData, null, 2) });
                             }
                             break;
                         }
+                    }
+
+                    stepResults.push({ stepIndex: i, files });
+
+                }
+
+                sessionResults.push({ session, stepResults, hasContent: sessionHasContent });
+            }
+
+            const includedSessions = shouldIncludeEmptyStudies
+                ? sessionResults
+                : sessionResults.filter(s => s.hasContent);
+
+            if (!shouldIncludeEmptyStudies && includedSessions.length === 0) continue;
+
+            const studyMeta = {
+                id: study.id,
+                name: study.name,
+                userId: study.userId,
+                workflowId: study.workflowId,
+                sessions: includedSessions.map(({ session }) => ({
+                    hash: session.hash,
+                    id: session.id,
+                    userId: session.userId,
+                    numberSteps: session.numberSteps,
+                    steps: sortedSteps.map((step, i) => ({
+                        id: step.id,
+                        stepNumber: i + 1,
+                        stepType: step.stepType,
+                        configuration: step.configuration,
+                    }))
+                }))
+            };
+
+            archive.append(JSON.stringify(studyMeta, null, 2), { name: `${studyFolder}/meta.json` });
+
+            let gradeRecordsBySessionId = new Map();
+            if (shouldIncludeGrades) {
+                if (!gradeRecordsByOwnerId.has(study.userId)) {
+                    gradeRecordsByOwnerId.set(
+                        study.userId,
+                        await buildGradeRecords(server, projectId, [study.userId], users, shouldGenerateAliases, hasPrivateInfoRight, userMapping)
+                    );
+                }
+                const { records: ownerGradeRecords, criteriaReferencesByConfigId } = gradeRecordsByOwnerId.get(study.userId);
+
+                for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
+                    if (writtenCriteriaReferenceIds.has(configurationId)) continue;
+                    writtenCriteriaReferenceIds.add(configurationId);
+                    archive.append(
+                        JSON.stringify(reference, null, 2),
+                        { name: `${baseFolderName}/criteria_reference_${configurationId}.json` }
+                    );
+                }
+
+                for (const record of ownerGradeRecords) {
+                    if (!gradeRecordsBySessionId.has(record.studySessionId)) gradeRecordsBySessionId.set(record.studySessionId, []);
+                    gradeRecordsBySessionId.get(record.studySessionId).push(record);
+                }
+            }
+
+            for (const { session, stepResults } of includedSessions) {
+                const sessionFolder = `${studyFolder}/${session.hash}`;
+
+                if (shouldIncludeGrades) {
+                    const sessionGrades = (gradeRecordsBySessionId.get(session.id) || [])
+                        .map(({ sessionHash, ...rest }) => rest)
+                        .sort(compareGradeRecords);
+                    if (sessionGrades.length > 0) {
+                        archive.append(JSON.stringify(sessionGrades, null, 2), { name: `${sessionFolder}/grades.json` });
+                    }
+                }
+
+                for (const { stepIndex, files } of stepResults) {
+                    const stepFolder = `${sessionFolder}/step_${stepIndex + 1}`;
+
+                    if (shouldIncludeDocumentFiles) {
+                        const step = sortedSteps[stepIndex];
+                        const stepDocument = stepDocumentsById.get(step.documentId);
+                        if (stepDocument?.type === 0) {
+                            appendStoredFileIfExists(archive, stepDocument.hash, '.pdf', `${stepFolder}/document.pdf`, 'PDF');
+                        } else if (stepDocument?.type === 4) {
+                            appendStoredFileIfExists(archive, stepDocument.hash, '.zip', `${stepFolder}/document.zip`, 'ZIP');
+                        }
+                    }
+
+                    for (const file of files) {
+                        archive.append(file.content, { name: `${stepFolder}/${file.name}` });
                     }
                 }
             }

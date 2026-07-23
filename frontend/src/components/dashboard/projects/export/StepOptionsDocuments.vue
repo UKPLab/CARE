@@ -1,57 +1,29 @@
 <template>
-  <div>
-    <div class="mt-2 mb-3 p-3 bg-light border rounded">
-      <h6 class="mb-3 pb-2 border-bottom text-muted">
-        Document Types to Include
-      </h6>
-      <div v-for="option in typeOptions" :key="option.value" class="form-check mb-2">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          :id="'docType_' + option.value"
-          :value="option.value"
-          v-model="selected"
-        >
-        <label class="form-check-label" :for="'docType_' + option.value">
-          <strong>{{ option.label }}</strong>
-          <small class="text-muted ms-2">{{ option.description }}</small>
-        </label>
-      </div>
-    </div>
-
-    <div v-if="hasEditorTypes || hasPdfTypes" class="mt-2 mb-3 p-3 bg-light border rounded">
-      <h6 class="mb-3 pb-2 border-bottom text-muted">
-        Consent Options
-      </h6>
-      <div v-if="hasEditorTypes" class="form-check mb-2">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          id="excludeNonConsentingEdits"
-          v-model="excludeNonConsentingEditsModel"
-        >
-        <label class="form-check-label" for="excludeNonConsentingEdits">
-          <strong>Exclude edits from non-consenting users</strong>
-        </label>
-      </div>
-      <div v-if="hasPdfTypes" class="form-check">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          id="excludeNonConsentingAnnotations"
-          v-model="excludeNonConsentingAnnotationsModel"
-        >
-        <label class="form-check-label" for="excludeNonConsentingAnnotations">
-          <strong>Exclude annotations and comments from non-consenting users</strong>
-        </label>
-      </div>
-    </div>
+  <div class="mt-2 mb-3 p-3 bg-light border rounded">
+    <h6 class="mb-3 pb-2 border-bottom text-muted">
+      Document Options
+    </h6>
+    <BasicForm
+      v-model="optionsData"
+      :fields="fields"
+    />
   </div>
 </template>
 
 <script>
+import BasicForm from "@/basic/Form.vue";
+
+/**
+ * StepOptionsDocuments
+ *
+ * Provides configuration options for the documents export: which document
+ * types to include, and whether to exclude non-consenting users' edits/annotations.
+ *
+ * @author Mélissa Loew
+ */
 export default {
   name: "StepOptionsDocuments",
+  components: { BasicForm },
   props: {
     selectedTypes: {
       type: Array,
@@ -69,40 +41,76 @@ export default {
   emits: ['update:selectedTypes', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations'],
   data() {
     return {
-      typeOptions: [
-        { value: 0, label: "PDF",   description: "Includes annotations and comments" },
-        { value: 1, label: "HTML",  description: "Includes edits, plain text and HTML" },
-        { value: 2, label: "Modal", description: "Includes edits, plain text and HTML" },
-        { value: 4, label: "ZIP",   description: "Includes the zip file" },
-      ]
+      optionsData: {
+        selectedTypes: this.selectedTypes,
+        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+      }
     };
   },
   computed: {
-    selected: {
-      get() { return this.selectedTypes; },
-      set(value) { this.$emit('update:selectedTypes', value); }
-    },
-    excludeNonConsentingEditsModel: {
-      get() { return this.excludeNonConsentingEdits; },
-      set(value) { this.$emit('update:excludeNonConsentingEdits', value); }
-    },
-    excludeNonConsentingAnnotationsModel: {
-      get() { return this.excludeNonConsentingAnnotations; },
-      set(value) { this.$emit('update:excludeNonConsentingAnnotations', value); }
-    },
     hasEditorTypes() {
-      return this.selectedTypes.some(t => t === 1 || t === 2);
+      return this.optionsData.selectedTypes.some(t => t === 1 || t === 2);
     },
     hasPdfTypes() {
-      return this.selectedTypes.some(t => t === 0);
+      return this.optionsData.selectedTypes.some(t => t === 0);
+    },
+    fields() {
+      const formFields = [
+        {
+          key: "selectedTypes",
+          label: "Document Types to Include",
+          type: "checkbox",
+          options: [
+            { label: "PDF — Includes annotations and comments", value: 0 },
+            { label: "HTML — Includes edits, plain text and HTML", value: 1 },
+            { label: "Modal — Includes edits, plain text and HTML", value: 2 },
+            { label: "ZIP — Includes the zip file", value: 4 },
+          ],
+        },
+      ];
+
+      if (this.hasEditorTypes) {
+        formFields.push({
+          key: "excludeNonConsentingEdits",
+          label: "Exclude edits from non-consenting users",
+          type: "switch",
+        });
+      }
+      if (this.hasPdfTypes) {
+        formFields.push({
+          key: "excludeNonConsentingAnnotations",
+          label: "Exclude annotations and comments from non-consenting users",
+          type: "switch",
+        });
+      }
+
+      return formFields;
     }
   },
   watch: {
+    selectedTypes(value) {
+      this.optionsData.selectedTypes = value;
+    },
+    excludeNonConsentingEdits(value) {
+      this.optionsData.excludeNonConsentingEdits = value;
+    },
+    excludeNonConsentingAnnotations(value) {
+      this.optionsData.excludeNonConsentingAnnotations = value;
+    },
     hasEditorTypes(val) {
-      if (!val) this.$emit('update:excludeNonConsentingEdits', false);
+      if (!val) this.optionsData.excludeNonConsentingEdits = false;
     },
     hasPdfTypes(val) {
-      if (!val) this.$emit('update:excludeNonConsentingAnnotations', false);
+      if (!val) this.optionsData.excludeNonConsentingAnnotations = false;
+    },
+    optionsData: {
+      handler(value) {
+        this.$emit('update:selectedTypes', value.selectedTypes);
+        this.$emit('update:excludeNonConsentingEdits', value.excludeNonConsentingEdits);
+        this.$emit('update:excludeNonConsentingAnnotations', value.excludeNonConsentingAnnotations);
+      },
+      deep: true
     }
   }
 }

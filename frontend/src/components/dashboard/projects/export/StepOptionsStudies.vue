@@ -1,74 +1,34 @@
 <template>
-  <div>
-    <div class="mt-2 mb-3 p-3 bg-light border rounded">
-      <h6 class="mb-3 pb-2 border-bottom text-muted">
-        Workflow Types to Include
-      </h6>
-      <div v-if="workflows.length === 0" class="text-muted fst-italic">
-        No workflows found for this project.
-      </div>
-      <div v-for="wf in workflows" :key="wf.id" class="form-check mb-2">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          :id="'workflow_' + wf.id"
-          :value="wf.id"
-          v-model="selected"
-        >
-        <label class="form-check-label" :for="'workflow_' + wf.id">
-          <strong>{{ wf.name }}</strong>
-        </label>
-      </div>
+  <div class="mt-2 mb-3 p-3 bg-light border rounded">
+    <h6 class="mb-3 pb-2 border-bottom text-muted">
+      Study Options
+    </h6>
+    <div v-if="workflows.length === 0" class="text-muted fst-italic mb-3">
+      No workflows found for this project.
     </div>
-    <div class="mt-2 mb-3 p-3 bg-light border rounded">
-        <h6 class="mb-3 pb-2 border-bottom text-muted">
-            Empty Studies
-        </h6>
-        <div class="form-check">
-            <input
-                class="form-check-input"
-                type="checkbox"
-                id="includeEmptyStudies"
-                v-model="includeEmptyStudiesModel"
-            >
-            <label class="form-check-label" for="includeEmptyStudies">
-                <strong>Include studies with no sessions</strong>
-            </label>
-        </div>
-    </div>
-    <div class="mt-2 mb-3 p-3 bg-light border rounded">
-        <h6 class="mb-3 pb-2 border-bottom text-muted">
-            Consent
-        </h6>
-        <div class="form-check mb-2">
-            <input
-                class="form-check-input"
-                type="checkbox"
-                id="excludeNonConsentingEdits"
-                v-model="excludeNonConsentingEditsModel"
-            >
-            <label class="form-check-label" for="excludeNonConsentingEdits">
-                <strong>Exclude edits from non-consenting users</strong>
-            </label>
-        </div>
-        <div class="form-check">
-            <input
-                class="form-check-input"
-                type="checkbox"
-                id="excludeNonConsentingAnnotations"
-                v-model="excludeNonConsentingAnnotationsModel"
-            >
-            <label class="form-check-label" for="excludeNonConsentingAnnotations">
-                <strong>Exclude annotations & comments from non-consenting users</strong>
-            </label>
-        </div>
-    </div>
+    <BasicForm
+      v-model="optionsData"
+      :fields="fields"
+    />
   </div>
 </template>
 
 <script>
+import BasicForm from "@/basic/Form.vue";
+
+/**
+ * StepOptionsStudies
+ *
+ * Provides configuration options for the studies export: workflow filtering
+ * (at least one workflow must be selected), whether to include empty studies
+ * or the underlying PDF/ZIP files, and whether to exclude non-consenting
+ * users' edits/annotations.
+ *
+ * @author Mélissa Loew
+ */
 export default {
   name: "StepOptionsStudies",
+  components: { BasicForm },
   props: {
     projectId: {
       type: Number,
@@ -79,45 +39,119 @@ export default {
       default: () => []
     },
     includeEmptyStudies: {
+      type: Boolean,
+      default: false
+    },
+    includeDocumentFiles: {
+      type: Boolean,
+      default: false
+    },
+    includeGrades: {
         type: Boolean,
-        default: false
+        default: true
     },
     excludeNonConsentingEdits: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false
     },
     excludeNonConsentingAnnotations: {
-        type: Boolean,
-        default: false
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations'],
+  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:includeDocumentFiles', 'update:includeGrades', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations'],
+  data() {
+    return {
+      optionsData: {
+        selectedWorkflowIds: this.selectedWorkflowIds,
+        includeEmptyStudies: this.includeEmptyStudies,
+        includeDocumentFiles: this.includeDocumentFiles,
+        includeGrades: this.includeGrades,
+        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+      }
+    };
+  },
   computed: {
     workflows() {
       const studies = this.$store.getters["table/study/getFiltered"](s => s.projectId === this.projectId);
       const workflowIds = [...new Set(studies.map(s => s.workflowId).filter(Boolean))];
       return this.$store.getters["table/workflow/getFiltered"](w => workflowIds.includes(w.id));
     },
-    selected: {
-      get() {
-        return this.selectedWorkflowIds.length > 0
-          ? this.selectedWorkflowIds
-          : this.workflows.map(wf => wf.id);
-      },
-      set(value) { this.$emit('update:selectedWorkflowIds', value); }
-    },
-    includeEmptyStudiesModel: {
-        get() { return this.includeEmptyStudies; },
-        set(value) { this.$emit('update:includeEmptyStudies', value); }
-    },
-    excludeNonConsentingEditsModel: {
-        get() { return this.excludeNonConsentingEdits; },
-        set(value) { this.$emit('update:excludeNonConsentingEdits', value); }
-    },
-    excludeNonConsentingAnnotationsModel: {
-        get() { return this.excludeNonConsentingAnnotations; },
-        set(value) { this.$emit('update:excludeNonConsentingAnnotations', value); }
+    fields() {
+      const formFields = [];
+
+      if (this.workflows.length > 0) {
+        formFields.push({
+          key: "selectedWorkflowIds",
+          label: "Filter by Workflow",
+          type: "checkbox",
+          help: "Select at least one workflow to include.",
+          options: this.workflows.map(wf => ({ label: wf.name, value: wf.id })),
+        });
+      }
+
+      formFields.push(
+        {
+          key: "includeEmptyStudies",
+          label: "Include studies with no sessions",
+          type: "switch",
+        },
+        {
+          key: "includeDocumentFiles",
+          label: "Include PDFs and ZIP files",
+          type: "switch",
+        },
+        {
+          key: "includeGrades",
+          label: "Include grades",
+          type: "switch",
+        },
+        {
+          key: "excludeNonConsentingEdits",
+          label: "Exclude edits from non-consenting users",
+          type: "switch",
+        },
+        {
+          key: "excludeNonConsentingAnnotations",
+          label: "Exclude annotations & comments from non-consenting users",
+          type: "switch",
+        }
+      );
+
+      return formFields;
     }
   },
+  watch: {
+    selectedWorkflowIds(value) {
+      this.optionsData.selectedWorkflowIds = value;
+    },
+    includeEmptyStudies(value) {
+      this.optionsData.includeEmptyStudies = value;
+    },
+    includeDocumentFiles(value) {
+      this.optionsData.includeDocumentFiles = value;
+    },
+    includeGrades(value) {
+      this.optionsData.includeGrades = value;
+    },
+    excludeNonConsentingEdits(value) {
+      this.optionsData.excludeNonConsentingEdits = value;
+    },
+    excludeNonConsentingAnnotations(value) {
+      this.optionsData.excludeNonConsentingAnnotations = value;
+    },
+    optionsData: {
+      handler(value) {
+        this.$emit('update:selectedWorkflowIds', value.selectedWorkflowIds);
+        this.$emit('update:includeEmptyStudies', value.includeEmptyStudies);
+        this.$emit('update:includeDocumentFiles', value.includeDocumentFiles);
+        this.$emit('update:includeGrades', value.includeGrades);
+        this.$emit('update:excludeNonConsentingEdits', value.excludeNonConsentingEdits);
+        this.$emit('update:excludeNonConsentingAnnotations', value.excludeNonConsentingAnnotations);
+      },
+      deep: true
+    }
+  }
 }
 </script>

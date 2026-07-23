@@ -79,6 +79,8 @@
           :project-id="dataSelection.projectId"
           v-model:selectedWorkflowIds="selectedWorkflowIds"
           v-model:includeEmptyStudies="includeEmptyStudies"
+          v-model:includeDocumentFiles="includeStudyDocumentFiles"
+          v-model:includeGrades="includeStudyGrades"
           v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
           v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
         />
@@ -176,6 +178,7 @@ export default {
       excludeNonConsentingEdits: false,
       excludeNonConsentingAnnotations: false,
       selectedWorkflowIds: [],
+      includeStudyGrades: true,
       includeEmptyStudies: false
     };
   },
@@ -199,7 +202,7 @@ export default {
         return [
           !!this.dataSelection.projectId && !!this.dataSelection.exportType,
           this.userSelection.length > 0,
-          true,
+          this.selectedWorkflowIds.length > 0,
           true,
         ];
       }
@@ -316,6 +319,7 @@ export default {
       this.excludeNonConsentingEdits = false;
       this.excludeNonConsentingAnnotations = false;
       this.selectedWorkflowIds = [];
+      this.includeStudyGrades = true;
       this.includeEmptyStudies = false;
       this.wait = false;
     },
@@ -455,6 +459,8 @@ export default {
           userIds: selectedUserIds,
           workflowIds: this.selectedWorkflowIds,
           includeEmptyStudies: this.includeEmptyStudies,
+          includeDocumentFiles: this.includeStudyDocumentFiles,
+          includeGrades: this.includeStudyGrades,
           excludeNonConsentingEdits: this.excludeNonConsentingEdits,
           excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
         });

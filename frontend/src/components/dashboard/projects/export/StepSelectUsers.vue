@@ -173,6 +173,16 @@ export default {
           const d = new Date(study.createdAt);
           if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
         });
+      } else if (this.exportType === 'grades') {
+        this.documentData.forEach(d => {
+          const doc = this.documents.find(doc => doc.id === d.documentId);
+          if (!doc || doc.projectId != this.projectId || doc.deleted) return;
+          const row = getOrCreateRow(doc.userId);
+          if (!row) return;
+          row.count++;
+          const dDate = new Date(d.createdAt);
+          if (!row.lastSubmissionDate || dDate > row.lastSubmissionDate) row.lastSubmissionDate = dDate;
+        });
       }
 
       return Object.values(submissionsByUser).map(submission => ({
