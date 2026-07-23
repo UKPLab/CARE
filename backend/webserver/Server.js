@@ -19,7 +19,7 @@ const statsScheduler = require('../db/stats');
 const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
-const { parseUserAgent } = require("../utils/generic");
+const { parseUserAgent } = require("../utils/helper/generic");
 
 /**
  * Defines Express Webserver of Content Server

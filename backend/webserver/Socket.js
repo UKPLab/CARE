@@ -1,4 +1,4 @@
-const {inject} = require("../utils/generic");
+const {inject} = require("../utils/helper/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
@@ -116,6 +116,51 @@ module.exports = class Socket {
                 }
             }
         });
+    }
+
+    /**
+     * Iterates over a list of items, executing an action for each one inside its own Sequelize
+     * transaction. After each item, emits a `progressUpdate` event to the client if a
+     * `progressId` was provided. Failures are caught per-item — a rollback is performed and
+     * the item is skipped, so a single failure never aborts the remaining work.
+     *
+     * The `action` callback receives the current item and its open transaction. It is
+     * responsible for all database work; committing and rolling back are handled by this
+     * method. `transaction.afterCommit` hooks may be registered inside `action` and will be
+     * called normally after a successful commit.
+     *
+     * @template T
+     * @param {T[]} items         The list of items to process.
+     * @param {string|null} progressId  Client-side progress token. When set, a `progressUpdate`
+     *                                  event `{ id, current, total }` is emitted to the socket
+     *                                  after every item (success or failure).
+     * @param {function(item: T, transaction: import("sequelize").Transaction): Promise<void>} action
+     *   Async callback invoked for each item. Receives the item and its transaction.
+     *   Must **not** commit or roll back the transaction itself.
+     * @returns {Promise<number>} The number of items that were processed successfully.
+     */
+    async runBulkWithProgress(items, progressId, action) {
+        let count = 0;
+        const total = items.length;
+
+        for (let i = 0; i < total; i++) {
+            const item = items[i];
+            const transaction = await this.server.db.sequelize.transaction();
+            try {
+                await action(item, transaction);
+                await transaction.commit();
+                count++;
+            } catch (e) {
+                this.logger.error(e);
+                await transaction.rollback();
+            }
+
+            if (progressId) {
+                this.socket.emit("progressUpdate", { id: progressId, current: i + 1, total });
+            }
+        }
+
+        return count;
     }
 
     /**
@@ -484,6 +529,46 @@ module.exports = class Socket {
                 this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
                 return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
             }
+
+            // --- Access-map limitations (ORed with user filter conditions) ---
+            if (!fullRowAccess && accessRights.length > 0) {
+                const limitedAccessMap = relevantAccessMap.filter(item => item.limitation);
+                const hasUnlimitedRights = accessRights.length > limitedAccessMap.length;
+
+                if (hasUnlimitedRights) {
+                    // At least one right has no limitation → unlimited row access for that right
+                    fullRowAccess = true;
+                } else if (limitedAccessMap.length > 0) {
+                    // All rights carry limitations → add each as an additional OR condition
+                    limitedAccessMap.forEach(a => {
+                        const idField = a.access.target || 'id';
+                        rowVisibilityConditions.push({[idField]: {[Op.in]: [...new Set(a.limitation)]}});
+                    });
+                }
+            }
+        }
+
+        // --- Column restrictions from access rights (admins bypass, everyone else is restricted) ---
+        if (!isAdmin && accessRights.length > 0) {
+            const columns = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
+            if (columns.length > 0) {
+                // Pass a plain array so Sequelize restricts to only these columns.
+                // { exclude, include } is NOT the same — include there adds virtual attrs, not restricts.
+                allAttributes = columns;
+            }
+        }
+
+        // Apply row-visibility: baseFilter AND (condition1 OR condition2 OR ...)
+        // Skipped entirely when fullRowAccess is true (no row restriction needed).
+        if (!fullRowAccess && rowVisibilityConditions.length > 0) {
+            allFilter = {
+                [Op.and]: [
+                    allFilter,
+                    rowVisibilityConditions.length === 1
+                        ? rowVisibilityConditions[0]
+                        : {[Op.or]: rowVisibilityConditions},
+                ],
+            };
         }
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
     }
@@ -796,7 +881,7 @@ module.exports = class Socket {
 
             let data = [];
             if (accessRights.length > 0 || await this.isAdmin(userId)) {
-                const attributes = [...new Set(accessRights.flatMap(a => a.columns))];
+                const attributes = [...new Set(accessRights.filter(a => a.columns).flatMap(a => a.columns))];
                 data = await this.models[table].getAutoTable(filter, userId, attributes);
             } else {
                 data = await this.models[table].getAutoTable(filter, userId);
