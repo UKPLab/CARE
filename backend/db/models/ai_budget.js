@@ -121,7 +121,7 @@ module.exports = (sequelize, DataTypes) => {
         limitType: DataTypes.INTEGER,
         costLimit: DataTypes.DECIMAL(18, 6),
         resetAt: DataTypes.DATE,
-        deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+        deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
