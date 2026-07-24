@@ -27,6 +27,9 @@ const {
 } = require('../../utils/helper/export.js');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
+// Stored files the study export ships per step, by document type: PDF and LaTeX ZIP.
+const STUDY_DOCUMENT_EXTENSIONS = { 0: '.pdf', 4: '.zip' };
+
 module.exports = function (server) {
 
     server.app.post('/export/stream', async function (req, res) {
@@ -592,12 +595,29 @@ module.exports = function (server) {
             const sortedSteps = sortSteps(allSteps, 'studyStepPrevious');
 
             const stepDocumentsById = new Map();
+            // A step references one document, but PDF and LaTeX ZIP are separate documents
+            // of the same submission, each with its own hash.
+            const submissionDocumentsBySubmissionId = new Map();
             if (shouldIncludeDocumentFiles) {
                 const stepDocumentIds = [...new Set(sortedSteps.map(step => step.documentId).filter(Boolean))];
                 const stepDocuments = stepDocumentIds.length > 0
                     ? await server.db.models.document.findAll({ where: { id: stepDocumentIds }, raw: true })
                     : [];
                 for (const doc of stepDocuments) stepDocumentsById.set(doc.id, doc);
+
+                const submissionIds = [...new Set(stepDocuments.map(doc => doc.submissionId).filter(Boolean))];
+                const submissionDocuments = submissionIds.length > 0
+                    ? await server.db.models.document.findAll({
+                        where: { submissionId: submissionIds, deleted: false },
+                        raw: true,
+                    })
+                    : [];
+                for (const doc of submissionDocuments) {
+                    if (!submissionDocumentsBySubmissionId.has(doc.submissionId)) {
+                        submissionDocumentsBySubmissionId.set(doc.submissionId, []);
+                    }
+                    submissionDocumentsBySubmissionId.get(doc.submissionId).push(doc);
+                }
             }
 
             const sessions = await server.db.models.study_session.findAll({
@@ -790,10 +810,28 @@ module.exports = function (server) {
                     if (shouldIncludeDocumentFiles) {
                         const step = sortedSteps[stepIndex];
                         const stepDocument = stepDocumentsById.get(step.documentId);
-                        if (stepDocument?.type === 0) {
-                            appendStoredFileIfExists(archive, stepDocument.hash, '.pdf', `${stepFolder}/document.pdf`, 'PDF');
-                        } else if (stepDocument?.type === 4) {
-                            appendStoredFileIfExists(archive, stepDocument.hash, '.zip', `${stepFolder}/document.zip`, 'ZIP');
+                        if (stepDocument) {
+                            const submissionSiblings = stepDocument.submissionId
+                                ? (submissionDocumentsBySubmissionId.get(stepDocument.submissionId) || [])
+                                : [];
+                            const candidates = [
+                                stepDocument,
+                                ...submissionSiblings.filter(doc => doc.id !== stepDocument.id),
+                            ];
+
+                            const appendedExtensions = new Set();
+                            for (const doc of candidates) {
+                                const extension = STUDY_DOCUMENT_EXTENSIONS[doc.type];
+                                if (!extension || appendedExtensions.has(extension)) continue;
+                                appendedExtensions.add(extension);
+                                appendStoredFileIfExists(
+                                    archive,
+                                    doc.hash,
+                                    extension,
+                                    `${stepFolder}/document${extension}`,
+                                    extension.slice(1).toUpperCase(),
+                                );
+                            }
                         }
                     }
 
