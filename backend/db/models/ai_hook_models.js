@@ -115,7 +115,7 @@ module.exports = (sequelize, DataTypes) => {
         aiModelId: DataTypes.INTEGER,
         priority: DataTypes.INTEGER,
         additionalParameters: DataTypes.JSONB,
-        deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+        deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
