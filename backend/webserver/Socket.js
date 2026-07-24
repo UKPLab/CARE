@@ -486,29 +486,34 @@ module.exports = class Socket {
      * @returns {Object} modified filters and attributes + whether access is allowed
      */
     async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
-        const accessMap = this.server.db.models[tableName]['accessMap'];
+        const accessMap = this.server.db.models[tableName]['accessMap'] || [];
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
         const accessRights = relevantAccessMap.map(item => item.access);
         const model = this.models[tableName];
         const hasModelUserFilter = typeof model.getUserFilter === "function";
         const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
+        const isPublicOrAdmin = isAdmin || model.publicTable;
+        const hasAccessRules = accessMap.length > 0;
+        const hasUserIdAttribute = model.autoTable && 'userId' in model.getAttributes();
 
-        if ((isAdmin || model.publicTable) && !hasModelUserFilter) { // is allowed to see everything
-            // no adaption of the filter or attributes needed
-        } else if (hasModelUserFilter) {
-            const userFilter = model.getUserFilter(userId, isAdmin);
-            allFilter = {[Op.and]: [allFilter, userFilter]};
-        } else if (model.autoTable && 'userId' in model.getAttributes() && accessRights.length === 0) {
-            // is allowed to see only his data and possible if there is a public attribute
-            const userFilter = {};
-            if ("public" in model.getAttributes()) {
-                userFilter[Op.or] = [{userId: userId}, {public: true}];
-            } else {
-                userFilter['userId'] = userId;
+        // Early denial: not public/admin, has access rules, no matching rights, no user-filter, and no ownership fallback
+        if (!isPublicOrAdmin && hasAccessRules && accessRights.length === 0 && !hasModelUserFilter && !hasUserIdAttribute) {
+            this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
+            return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+        }
+
+        // Collect row-visibility conditions from user filter and access-map limitations.
+        // All conditions are combined with OR so the user sees the union of what each grants.
+        // fullRowAccess=true means no row restriction is applied (admin, public table, or unlimited right).
+        const rowVisibilityConditions = [];
+        let fullRowAccess = isPublicOrAdmin;
+
+        if (!fullRowAccess) {
+            // --- Ownership: user always sees their own rows when table has userId ---
+            if (hasUserIdAttribute) {
+                rowVisibilityConditions.push({userId});
             }
-            allFilter = {[Op.and]: [allFilter, userFilter]};
-        } else {
 
             // --- Public rows: always visible regardless of ownership or access rights ---
             if ('public' in model.getAttributes()) {
@@ -524,8 +529,7 @@ module.exports = class Socket {
                     // getUserFilter returns {} → grants full row access (e.g. for admins)
                     fullRowAccess = true;
                 }
-
-            } else {
+            } else if (!hasUserIdAttribute && accessRights.length === 0) {
                 this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
                 return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
             }
@@ -723,7 +727,6 @@ module.exports = class Socket {
 
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
-
         let data = await this.models[tableName].getAll({
             where: allFilter,
             attributes: allAttributes,
