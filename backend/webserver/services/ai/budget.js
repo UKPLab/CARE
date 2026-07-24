@@ -18,11 +18,11 @@ const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../db/models/ai_budget.js")
  *
  * @param {Object} service - AIService, used for DB access.
  * @param {Object} request - The request being made (user, model, hook, study, etc).
- * @param {Object} [opts]
- * @param {boolean} [opts.bypassChecks] - Skip the access + cap checks (used for admin test prompts).
+ * @param {Object} [options] - Optional flags.
+ * @param {boolean} [options.bypassChecks] - Skip the access + cap checks (used for admin test prompts).
  * @returns {Promise<{ allowed: boolean, logId?: number, reason?: string }>}
  */
-async function beginRequest(service, request, opts = {}) {
+async function beginRequest(service, request, options = {}) {
     const {
         userId, aiModelId, aiHookId, requestId, input,
         studyId, studySessionId, studyStepId, documentId,
@@ -32,7 +32,7 @@ async function beginRequest(service, request, opts = {}) {
         return { allowed: false, reason: "You already have a pending AI request in this session" };
     }
 
-    if (!opts.bypassChecks) {
+    if (!options.bypassChecks) {
         const model = await service.server.db.models["ai_model"].findByPk(aiModelId, { raw: true });
         if (!model || model.deleted || !model.enabled) {
             return { allowed: false, reason: "AI model is not available" };
