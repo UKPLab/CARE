@@ -67,7 +67,8 @@ module.exports = function (server) {
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
 
             // archiver stream setup
-            const exportFolderName = `${exportType}_${Date.now()}.zip`;
+            const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+            const exportFolderName = `${timestamp}_${exportType}.zip`;
             res.attachment(exportFolderName);
             const archive = archiver('zip', { zlib: { level: 5 } });
             archive.on('error', function(err) {
