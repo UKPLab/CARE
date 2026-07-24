@@ -295,8 +295,8 @@ export default {
         case 'configuration':
           return {type: "serviceReplacement", input: spec};
         case 'submission': {
-          // PDF is extracted in the browser; zip contents are resolved on the backend.
-          // Both travel together inside one serviceReplacement so the backend combines them.
+          // selectedFiles holds exactly one entry, "pdf" or one zip file name.
+          // PDF is extracted here in the browser; a zip file name is resolved on the backend.
           const selectedFiles = spec.selectedFiles || [];
           let pdfText = null;
           if (selectedFiles.includes("pdf") && spec.pdfDocumentId) {
