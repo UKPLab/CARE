@@ -32,7 +32,7 @@ import FormElement from "@/basic/form/Element.vue";
  * Radio button group — single-select from a list of options.
  * Each option has { value, label }. Returns the selected value (not array).
  *
- * @author Claude Code
+ * @author Mohammed Rawhani
  */
 export default {
   name: "FormRadio",
