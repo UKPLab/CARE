@@ -1,16 +1,6 @@
 'use strict';
 
-/**
- * Create the central ai_budget table.
- *
- * One row per cap. Six entity kinds (model / model_share / hook / hook_share /
- * study / step_hook) are encoded by which FK column is non-null — enforced by
- * a CHECK constraint mirroring chk_assignment_share_exclusive.
- *
- * limitType (0=TOTAL, 1=PER_SESSION, 2=PER_USER) is the only enum on the
- * table and is only meaningful for study/step_hook caps. For
- * model/share/hook/hook_share it must remain TOTAL — also enforced by CHECK.
- */
+
 module.exports = {
     async up(queryInterface, Sequelize) {
         await queryInterface.sequelize.transaction(async (transaction) => {
