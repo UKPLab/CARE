@@ -11,12 +11,12 @@
               @click="openSavedTemplates"
           />
           <BasicButton
-              v-if="canCloseStudies"
+              v-if="canManageStudies"
               class="btn-secondary btn-sm"
-              title="Close All Studies"
-              text="Close All Studies"
-              icon="x-octagon"
-              @click="closeStudies"
+              title="Manage studies"
+              text="Manage Studies"
+              icon="gear-fill"
+              @click="manageStudies"
           />
           <BasicButton
               v-if="canAddBulkAssignments"
@@ -58,10 +58,10 @@
     <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
     <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
-    <BulkCloseModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
+    <ManageStudiesModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
-    <BulkAssignmentsModal v-if="modals.bulkAssignments" ref="bulkAssignmentsModal" @hide="modals.bulkAssignments = false"/>
-    <SingleAssignmentModal v-if="modals.singleAssignment" ref="singleAssignmentModal" @hide="modals.singleAssignment = false"/>
+    <AssignmentModal v-if="modals.assignment" ref="assignmentModal" @hide="modals.assignment = false"/>
+    <PublishAssessmentModal ref="publishAssessmentModal"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
     <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>
@@ -74,10 +74,9 @@ import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import BulkAssignmentsModal from "./study/BulkAssignmentModal.vue";
-import SingleAssignmentModal from "./study/SingleAssignmentModal.vue";
+import AssignmentModal from "@/components/dashboard/study/AssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
-import BulkCloseModal from "@/components/dashboard/study/BulkCloseModal.vue";
+import ManageStudiesModal from "@/components/dashboard/study/ManageStudiesModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
@@ -90,7 +89,7 @@ import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 export default {
   name: "DashboardStudy",
   components: {
-    BulkCloseModal,
+    ManageStudiesModal,
     StudyCloseModal,
     Card,
     BasicTable,
@@ -98,8 +97,7 @@ export default {
     StudySessionModal,
     BasicButton,
     ConfirmModal,
-    BulkAssignmentsModal,
-    SingleAssignmentModal,
+    AssignmentModal,
     InformationModal,
     SavedTemplatesModal,
     PublishAssessmentModal
@@ -128,8 +126,7 @@ export default {
         deleteConf: false,
         confirm: false,
         bulkConfirm: false,
-        bulkAssignments: false,
-        singleAssignment: false,
+        assignment: false,
         information: false,
         savedTemplates: false,
       },
@@ -438,8 +435,8 @@ export default {
     canAddSingleAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");
     },
-    canCloseStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.closeAllStudies");
+    canManageStudies() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.canManageStudies");
     },
   },
   methods: {
@@ -459,17 +456,17 @@ export default {
       this.modals.confirm = true;
       this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
     },
-    openBulkConfirmModal() {
+    openManageStudiesModal() {
       this.modals.bulkConfirm = true;
       this.$nextTick(() => this.$refs.bulkConfirmModal?.open());
     },
     openBulkAssignmentsModal() {
-      this.modals.bulkAssignments = true;
-      this.$nextTick(() => this.$refs.bulkAssignmentsModal?.open());
+      this.modals.assignment = true;
+      this.$nextTick(() => this.$refs.assignmentModal?.open(true));
     },
     openSingleAssignmentModal() {
-      this.modals.singleAssignment = true;
-      this.$nextTick(() => this.$refs.singleAssignmentModal?.open());
+      this.modals.assignment = true;
+      this.$nextTick(() => this.$refs.assignmentModal?.open(false));
     },
     openInformationModal(params) {
       this.modals.information = true;
@@ -563,8 +560,8 @@ export default {
     studyCoordinator(row, linkOnly = false) {
       this.openStudyCoordinator(row.id, linkOnly);
     },
-    closeStudies() {
-      this.openBulkConfirmModal();
+    manageStudies() {
+      this.openManageStudiesModal();
     },
     saveAsTemplate(study) {
       this.openConfirmModal(

@@ -1,8 +1,8 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
-const {inject} = require("../../utils/generic");
+const {inject} = require("../../utils/helper/generic");
 const _ = require("lodash");
-const { genPwdHash, genSalt } = require("../../utils/auth.js");
+const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
 

@@ -1,4 +1,3 @@
-
 # files dir
 files/*.pdf
 files/*.delta
@@ -9,7 +8,8 @@ files/*.zip
 # database dumps
 db_dumps/
 
-# backend
+# logs (root + backend)
+logs/
 backend/sessions
 backend/node_modules
 backend/logs

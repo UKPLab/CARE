@@ -3,7 +3,7 @@ const path = require("path");
 const { promises: fs } = require("fs");
 const { resolveTemplate } = require("./templateResolver");
 
-const EMAIL_FALLBACKS_DIR = `${__dirname}/../../files/email-fallbacks`;
+const EMAIL_FALLBACKS_DIR = `${__dirname}/../../../files/email-fallbacks`;
 
 /**
  * Read fallback email content from disk and substitute {{placeholder}} with variables.

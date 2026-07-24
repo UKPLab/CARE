@@ -9,7 +9,7 @@
 
 'use strict';
 
-const { genSalt, genPwdHash } = require("../utils/auth");
+const { genSalt, genPwdHash } = require("../webserver/auth/utils");
 const db = require("../db");
 
 function readHidden(promptText) {
