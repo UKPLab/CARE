@@ -202,11 +202,11 @@ async function _findActiveShare(service, tableName, fkColumn, userId, entityId) 
 // hook share, study, step-hook) in one DB query.
 async function _loadApplicableCaps(service, ctx) {
     const orClauses = [];
-    if (ctx.modelId)      orClauses.push({ modelId: ctx.modelId });
-    if (ctx.shareId)      orClauses.push({ shareId: ctx.shareId });
-    if (ctx.hookShareId)  orClauses.push({ hookShareId: ctx.hookShareId });
-    if (ctx.studyId)      orClauses.push({ studyId: ctx.studyId });
-    if (ctx.hookId)       orClauses.push({ hookId: ctx.hookId, studyStepId: null });
+    if (ctx.modelId) orClauses.push({ modelId: ctx.modelId });
+    if (ctx.shareId) orClauses.push({ shareId: ctx.shareId });
+    if (ctx.hookShareId) orClauses.push({ hookShareId: ctx.hookShareId });
+    if (ctx.studyId) orClauses.push({ studyId: ctx.studyId });
+    if (ctx.hookId) orClauses.push({ hookId: ctx.hookId, studyStepId: null });
     if (ctx.studyStepId && ctx.hookId) {
         orClauses.push({ studyStepId: ctx.studyStepId, hookId: ctx.hookId });
     }
@@ -221,19 +221,18 @@ async function _loadApplicableCaps(service, ctx) {
 // Picks the right sum function for this cap row based on its FKs and limitType.
 // service: DB access. cap: an ai_budget row. ctx: { userId, studySessionId, accessHolderId }.
 async function _sumLogsFor(service, cap, ctx) {
-    if (cap.modelId)      return _sumModelTotal(service, cap);
-    if (cap.shareId)      return _sumShareAttributable(service, cap, ctx.accessHolderId);
-    if (cap.hookShareId)  return _sumHookShareAttributable(service, cap, ctx.accessHolderId);
-    // before hook id condition 
+    if (cap.modelId) return _sumModelTotal(service, cap);
+    if (cap.shareId) return _sumShareAttributable(service, cap, ctx.accessHolderId);
+    if (cap.hookShareId) return _sumHookShareAttributable(service, cap, ctx.accessHolderId);
     if (cap.studyStepId && cap.hookId) {
         if (cap.limitType === LT.PER_SESSION) return _sumStepHookSession(service, cap, ctx);
-        if (cap.limitType === LT.PER_USER)    return _sumStepHookUser(service, cap, ctx);
+        if (cap.limitType === LT.PER_USER) return _sumStepHookUser(service, cap, ctx);
         return _sumStepHookTotal(service, cap);
     }
     if (cap.hookId && !cap.studyStepId) return _sumHookTotal(service, cap);
     if (cap.studyId) {
         if (cap.limitType === LT.PER_SESSION) return _sumStudySession(service, cap, ctx);
-        if (cap.limitType === LT.PER_USER)    return _sumStudyUser(service, cap, ctx);
+        if (cap.limitType === LT.PER_USER) return _sumStudyUser(service, cap, ctx);
         return _sumStudyTotal(service, cap);
     }
     return 0;
@@ -243,12 +242,12 @@ async function _sumLogsFor(service, cap, ctx) {
 function _capDenyMessage(cap, used) {
     const limit = Number(cap.costLimit).toFixed(2);
     const spent = used.toFixed(2);
-    if (cap.modelId)      return `Model budget exhausted: $${spent} / $${limit}`;
-    if (cap.shareId)      return `Model share budget exhausted: $${spent} / $${limit}`;
-    if (cap.hookShareId)  return `Hook share budget exhausted: $${spent} / $${limit}`;
-    if (cap.studyStepId)  return `Step-hook budget exhausted: $${spent} / $${limit}`;
-    if (cap.hookId)       return `Hook budget exhausted: $${spent} / $${limit}`;
-    if (cap.studyId)      return `Study budget exhausted: $${spent} / $${limit}`;
+    if (cap.modelId) return `Model budget exhausted: $${spent} / $${limit}`;
+    if (cap.shareId) return `Model share budget exhausted: $${spent} / $${limit}`;
+    if (cap.hookShareId) return `Hook share budget exhausted: $${spent} / $${limit}`;
+    if (cap.studyStepId) return `Step-hook budget exhausted: $${spent} / $${limit}`;
+    if (cap.hookId) return `Hook budget exhausted: $${spent} / $${limit}`;
+    if (cap.studyId) return `Study budget exhausted: $${spent} / $${limit}`;
     return `Budget exhausted: $${spent} / $${limit}`;
 }
 

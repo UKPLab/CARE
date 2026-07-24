@@ -79,9 +79,13 @@ function uniquePositiveInts(values, pick = (x) => Number(x)) {
 /**
  * Builds the params object passed directly to LiteLLM's completion() call from a credential row and a model name.
  *
- * @param {{ provider?: string, apiKey?: string, apiBaseUrl?: string, apiVersion?: string }} credential
- * @param {string} modelName Raw model name as stored in ai_model.model.
- * @returns {{ model: string, api_key: string, custom_llm_provider?: string, api_base?: string, api_version?: string }}
+ * @param {Object} credential - Credential row supplying provider auth.
+ * @param {string} [credential.provider] - Provider key (e.g. "openai", "ollama").
+ * @param {string} [credential.apiKey] - Provider API key.
+ * @param {string} [credential.apiBaseUrl] - Optional provider base URL override.
+ * @param {string} [credential.apiVersion] - Optional provider API version override.
+ * @param {string} modelName - Raw model name as stored in ai_model.model.
+ * @returns {Object} Params object accepted by LiteLLM's completion() call.
  */
 function buildLiteLLMParams(credential, modelName) {
     const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
