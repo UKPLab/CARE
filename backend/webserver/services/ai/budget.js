@@ -10,7 +10,7 @@
  */
 
 const { Op } = require("sequelize");
-const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../utils/aiBudgetLimitTypes");
+const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../db/models/ai_budget.js");
 
 /**
  * Decides if an AI request can run. If yes, creates the ai_log row for it.
