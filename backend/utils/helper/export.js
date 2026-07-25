@@ -476,23 +476,34 @@ function parseUserIds(rawUserIds) {
  * @param {Object} userMapping - Map of user IDs to generated aliases.
  * @returns {Promise<{records: Array<Object>, criteriaReferencesByConfigId: Map<number, Object>}>}
  */
-async function buildGradeRecords(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
+/**
+ * Collect assessment results and translate them into grade records.
+ *
+ * Pass `options.sessionIds` to scope the lookup to a set of study sessions. Without it the lookup
+ * is scoped by the owner of the assessed document, which only works when that owner is also the
+ * person the grades are being collected for. That holds for exposé assessments, where the assessed
+ * document belongs to the study owner, but not for review assessments: there the study belongs to
+ * the reviewer being assessed while the assessed review document belongs to the reviewed author,
+ * so an owner-scoped lookup returns nothing and the review grades are silently dropped.
+ */
+async function buildGradeRecords(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, options = {}) {
     const { Op } = server.db.Sequelize;
+    const { sessionIds = null } = options;
+
+    const documentWhere = { projectId, deleted: false };
+    if (!sessionIds) documentWhere.userId = { [Op.in]: userIds };
+
     const gradeRows = await server.db.models.document_data.findAll({
         where: {
             key: ASSESSMENT_RESULT_KEY,
             deleted: false,
-            studySessionId: { [Op.ne]: null }
+            studySessionId: sessionIds ? { [Op.in]: sessionIds } : { [Op.ne]: null }
         },
         include: [{
             model: server.db.models.document,
             as: "document",
             required: true,
-            where: {
-                projectId,
-                userId: { [Op.in]: userIds },
-                deleted: false
-            },
+            where: documentWhere,
             include: [{
                 model: server.db.models.submission,
                 as: "submission",

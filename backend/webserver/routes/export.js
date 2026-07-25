@@ -584,7 +584,6 @@ module.exports = function (server) {
             return;
         }
 
-        const gradeRecordsByOwnerId = new Map();
         const writtenCriteriaReferenceIds = new Set();
 
         for (const study of studies) {
@@ -681,6 +680,17 @@ module.exports = function (server) {
                                 });
                                 sessionHasContent = true;
                             }
+
+                            // Assessments live on the annotator step, so without this the whole
+                            // document_data of an assessment workflow never leaves the database.
+                            const annotatorData = await server.db.models.document_data.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+                            if (annotatorData.length > 0) {
+                                files.push({ name: 'document_data.json', content: JSON.stringify(annotatorData, null, 2) });
+                                sessionHasContent = true;
+                            }
                             break;
                         }
 
@@ -770,13 +780,13 @@ module.exports = function (server) {
 
             let gradeRecordsBySessionId = new Map();
             if (shouldIncludeGrades) {
-                if (!gradeRecordsByOwnerId.has(study.userId)) {
-                    gradeRecordsByOwnerId.set(
-                        study.userId,
-                        await buildGradeRecords(server, projectId, [study.userId], users, shouldGenerateAliases, hasPrivateInfoRight, userMapping)
-                    );
-                }
-                const { records: ownerGradeRecords, criteriaReferencesByConfigId } = gradeRecordsByOwnerId.get(study.userId);
+                // Scope by this study's sessions, not by the study owner: review assessments are
+                // stored on a document owned by the reviewed author, so an owner-scoped lookup
+                // finds none of them. See buildGradeRecords().
+                const { records: ownerGradeRecords, criteriaReferencesByConfigId } = await buildGradeRecords(
+                    server, projectId, [study.userId], users, shouldGenerateAliases, hasPrivateInfoRight, userMapping,
+                    { sessionIds: sessions.map(s => s.id) }
+                );
 
                 for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
                     if (writtenCriteriaReferenceIds.has(configurationId)) continue;
