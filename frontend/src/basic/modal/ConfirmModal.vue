@@ -17,26 +17,23 @@
       </div>
     </template>
     <template #footer>
-      <button
+      <BasicButton
         class="btn btn-secondary"
-        type="button"
+        text="Abort"
         @click="abort()"
-      >
-        Abort
-      </button>
-      <button
+      />
+      <BasicButton
         class="btn btn-primary"
-        type="button"
+        text="Confirm"
         @click="confirm()"
-      >
-        Confirm
-      </button>
+      />
     </template>
   </Modal>
 </template>
 
 <script>
 import Modal from "../Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for confirming a critical action
@@ -56,7 +53,7 @@ import Modal from "../Modal.vue";
  */
 export default {
   name: "ConfirmModal",
-  components: {Modal},
+  components: {Modal, BasicButton},
   emits: ['response'],
   data() {
     return {

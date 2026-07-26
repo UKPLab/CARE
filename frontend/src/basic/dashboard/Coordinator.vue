@@ -36,12 +36,11 @@
       >
         <slot name="success-footer">
           <slot name="buttons" />
-          <button
+          <BasicButton
             class="btn btn-secondary"
+            text="Close"
             @click="$refs.coordinatorModal.close()"
-          >
-            Close
-          </button>
+          />
         </slot>
       </span>
       <span
@@ -50,20 +49,16 @@
       >
         <slot name="footer">
           <slot name="buttons" />
-          <button
+          <BasicButton
             class="btn btn-secondary"
-            type="button"
+            :text="textCancel"
             @click="$refs.coordinatorModal.close()"
-          >
-            {{ textCancel }}
-          </button>
-          <button
+          />
+          <BasicButton
             class="btn btn-primary me-2"
-            type="button"
+            :text="data.id ? textUpdate : textAdd"
             @click="submit"
-          >
-            {{ data.id ? textUpdate : textAdd }}
-          </button>
+          />
         </slot>
       </span>
     </template>
@@ -73,6 +68,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 import { sorter } from "@/assets/utils.js";
 
 /**
@@ -95,7 +91,7 @@ import { sorter } from "@/assets/utils.js";
  */
 export default {
   name: "BasicCoordinator",
-  components: { BasicModal, BasicForm },
+  components: { BasicModal, BasicForm, BasicButton },
   props: {
     title: {
       type: String,
