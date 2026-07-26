@@ -14,6 +14,8 @@
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 
 /**
  * Table of study session with management buttons
@@ -51,14 +53,7 @@ export default {
   data() {
     return {
       showFinished: true,
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      tableOptions: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
     };
   },
   computed: {
@@ -119,110 +114,84 @@ export default {
       return columns;
     },
     buttons() {
-      const buttons = [
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
-          filter: this.currentUserOnly ? [{ key: "showResumeButton", value: true }] : [],
-          title: this.currentUserOnly ? "Resume session" : "Open session",
+      const sm = { specifiers: { "btn-sm": true } };
+      const buttons = [];
+
+      if (this.currentUserOnly) {
+        buttons.push(dashboardRowAction("resume", {
+          options: sm,
+          filter: [{ key: "showResumeButton", value: true }],
+          title: "Resume session",
           action: "openSession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
           },
+        }));
+      } else {
+        buttons.push(dashboardRowAction("open", {
+          options: sm,
+          title: "Open session",
+          action: "openSession",
+          stats: {
+            studySessionId: "id",
+          },
+        }));
+      }
+
+      buttons.push(
+        dashboardRowAction("start", {
+          options: sm,
           filter: [{ key: "showStartButton", value: true }],
           title: "Start session",
           action: "startStudySession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
           },
+        }),
+        dashboardRowAction("inspect", {
+          options: sm,
           filter: [{ key: "showInspectButton", value: true }],
           title: "Inspect session",
           action: "reviewSession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          } 
-        }
-      ];
-      if (!this.currentUserOnly) {
-        buttons.push({
-          icon: "link-45deg",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
           },
+        }),
+      );
+      if (!this.currentUserOnly) {
+        buttons.push(dashboardRowAction("link", {
+          options: sm,
           title: "Copy session link",
           action: "copyStudySessionLink",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }
-        });
+          },
+        }));
       }
       buttons.push(
-        {
-          icon: "copy",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
+        dashboardRowAction("copy", {
+          options: sm,
           title: "Copy session",
           action: "copySession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }     
-        },
-        {
-        icon: "trash",
-        options: {
-          iconOnly: true,
-          specifiers: {
-            "btn-outline-danger": true,
-            "btn-sm": true,
           },
-        },
-        filter: [
-          {
-            key: "showDeleteButton",
-            value: true,
-          },
-        ],
-        title: "Delete session",
-        action: "deleteStudySession",
-        stats:{
+        }),
+        dashboardRowAction("delete", {
+          options: sm,
+          filter: [
+            {
+              key: "showDeleteButton",
+              value: true,
+            },
+          ],
+          title: "Delete session",
+          action: "deleteStudySession",
+          stats: {
             studySessionId: "id",
-          }
-      });
+          },
+        }),
+      );
 
       return buttons;
     },

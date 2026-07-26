@@ -87,6 +87,9 @@ import ManageStudiesModal from "@/components/dashboard/study/ManageStudiesModal.
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { withSearch } from "@/basic/dashboard/constants.js";
 
 /**
  * Dashboard component for handling studies
@@ -137,15 +140,7 @@ export default {
         information: false,
         savedTemplates: false,
       },
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true
-      },
+      options: withSearch(),
     }
   },
   computed: {
@@ -165,14 +160,7 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "pencil-square",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        dashboardRowAction("edit", {
           title: "Edit study",
           filter: [
             {key: "showEditButton", value: true},
@@ -180,16 +168,9 @@ export default {
           action: "editStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("delete", {
           filter: [
             {key: "showDeleteButton", value: true},
           ],
@@ -197,30 +178,16 @@ export default {
           action: "deleteStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("open", {
           title: "Open study",
           action: "openStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "arrow-repeat",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("restart", {
           title: "Restart study",
           filter: [
             {key: "showRestartButton", value: true},
@@ -229,43 +196,22 @@ export default {
           stats: {
             studyId: "id"
           },
-        },
-        {
-          icon: "link-45deg",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("link", {
           title: "Copy link to study",
           action: "copyStudyLink",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "card-list",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("sessions", {
           title: "Inspect sessions",
           action: "inspectStudySessions",
           stats: {
             studyId: "id"
           },
-        },
-        {
-          icon: "x-octagon",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("close", {
           filter: [
             {key: "showCloseButton", value: true},
           ],
@@ -273,16 +219,9 @@ export default {
           action: "closeStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "save",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowButton("save", {
           filter: [
             {key: "showTemplateButton", value: true},
           ],
@@ -290,25 +229,17 @@ export default {
           action: "saveAsTemplate",
           stats: {
             studyId: "id"
-          }
-        }
-
+          },
+        }),
       ];
       if (this.showInformationButton) {
-        buttons.push({
-          icon: "arrows-angle-expand",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowButton("arrows-angle-expand", {
           title: "Show information",
           action: "showInformation",
           stats: {
             studyId: "id"
-          }
-        });
+          },
+        }));
       }
       return buttons;
     },
@@ -612,36 +543,31 @@ export default {
         warning = "";
       }
 
-      this.openDeleteConfModal(
-          "Delete Study",
-          "Are you sure you want to delete the study?",
-          warning,
-          function (val) {
-            if (val) {
-              this.$socket.emit("appDataUpdate", {
-                table: "study",
-                data: {
-                  id: row.id,
-                  deleted: true
-                }
-              }, (result) => {
-                if (result.success) {
-                  this.eventBus.emit('toast', {
-                    title: "Study deleted",
-                    message: "The study has been deleted",
-                    variant: "success"
-                  });
-                } else {
-                  this.eventBus.emit('toast', {
-                    title: "Study delete failed",
-                    message: result.message,
-                    variant: "danger"
-                  });
-                }
+      this.modals.deleteConf = true;
+      this.$nextTick(() => {
+        confirmSoftDelete(
+          {
+            confirmRef: this.$refs.deleteConf,
+            socket: this.$socket,
+            eventBus: this.eventBus,
+          },
+          {
+            table: "study",
+            id: row.id,
+            title: "Delete Study",
+            message: "Are you sure you want to delete the study?",
+            warning,
+            failTitle: "Study delete failed",
+            onSuccess: () => {
+              this.eventBus.emit('toast', {
+                title: "Study deleted",
+                message: "The study has been deleted",
+                variant: "success"
               });
-            }
+            },
           }
-      );
+        );
+      });
     },
 
   }
