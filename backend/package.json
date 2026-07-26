@@ -23,6 +23,7 @@
     "@faker-js/faker": "^10.3.0",
     "@node-saml/passport-saml": "^5.1.0",
     "archiver": "^7.0.1",
+    "assessment-score": "file:../utils/modules/assessment-score",
     "argparse": "^2.0.1",
     "axios": "^1.13.6",
     "axios-oauth-client": "^2.2.0",

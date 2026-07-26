@@ -43,7 +43,7 @@ function runAllTestsInOne(data) {
 
 // Function to load data from a JSON file
 function loadDataAndRunTest(fileName, testName) {
-    const testDataPath = path.join(__dirname, 'testData', fileName);
+    const testDataPath = path.join(__dirname, 'data', fileName);
     const testData = JSON.parse(fs.readFileSync(testDataPath, 'utf8'));
     runAllTestsInOne(testData, testName);
 }
