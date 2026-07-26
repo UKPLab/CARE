@@ -1,7 +1,14 @@
 <template>
   <div>
-  <Card title="Users">
-    <template #headerElements>
+  <DashboardListPage
+      title="Users"
+      :columns="columns"
+      :data="users"
+      :buttons="buttons"
+      :table-options="options"
+      @action="chooseAction"
+  >
+    <template #headerActions>
       <div class="d-flex align-items-center flex-wrap gap-2">
         <BasicButton
             class="btn btn-secondary btn-sm"
@@ -61,17 +68,7 @@
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="users"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="chooseAction"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <DetailsModal
       v-if="modals.details"
       ref="detailsModal"
@@ -110,8 +107,6 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
@@ -124,6 +119,10 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import {downloadObjectsAs} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
 
 /**
  * Display user list by users' role
@@ -134,8 +133,7 @@ export default {
   name: "DashboardUsers",
   subscribeTable: ["user"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     DetailsModal,
     PasswordModal,
     RightsModal,
@@ -168,19 +166,12 @@ export default {
         confirm: false,
         activeSessions: false,
       },
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
+      options: withSearch({
         sort: {
           column: "id",
           order: "ASC",
         },
-      },
+      }),
       columns: [
         { name: '', key: 'activeIndicator', filterKey: 'isActive', type: 'icon', sortable: true, sortKey: 'isActive', width: 1, fixed: "left",
           style: { width: '1px', whiteSpace: "nowrap", textAlign: "center" },
@@ -246,77 +237,42 @@ export default {
     },
     buttons() {
       return [
-        {
+        dashboardRowAction("edit", {
           title: "Edit User",
           action: "editUser",
           stats: {
             userId: "id",
           },
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowAction("rights", {
           title: "View Rights",
           action: "viewRights",
           stats: {
             userId: "id",
           },
-          icon: "card-list",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowButton("person-lock", {
           title: "Reset Password",
           action: "resetPassword",
           stats: {
             userId: "id",
           },
-          icon: "person-lock",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowButton("display", {
           title: "View Sessions",
           action: "viewSessions",
           stats: {
             userId: "id",
           },
-          icon: "display",
           filter: [{ key: "isActive", value: true }],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowAction("delete", {
           title: "Delete User",
           action: "deleteUser",
           stats: {
             userId: "id",
           },
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
+        }),
       ];
     },
   },
@@ -402,34 +358,29 @@ export default {
       this.openPasswordModal(user.id);
     },
     deleteUser(user) {
-      this.openConfirmModal("Delete User", "Are you sure you want to delete this user?", null, (val) => {
-        if (val) {
-          this.$socket.emit(
-              "appDataUpdate",
-              {
-                table: "user",
-                data: {
-                  id: user.id,
-                  deleted: true,
-                },
-              },
-              (result) => {
-                if (result.success) {
-                  this.eventBus.emit("toast", {
-                    title: "User deleted",
-                    message: "User has been deleted",
-                    variant: "success",
-                  });
-                } else {
-                  this.eventBus.emit("toast", {
-                    title: "User not deleted",
-                    message: result.message,
-                    variant: "danger",
-                  });
-                }
-              }
-          );
-        }
+      this.modals.confirm = true;
+      this.$nextTick(() => {
+        confirmSoftDelete(
+          {
+            confirmRef: this.$refs.confirmModal,
+            socket: this.$socket,
+            eventBus: this.eventBus,
+          },
+          {
+            table: "user",
+            id: user.id,
+            title: "Delete User",
+            message: "Are you sure you want to delete this user?",
+            failTitle: "User not deleted",
+            onSuccess: () => {
+              this.eventBus.emit("toast", {
+                title: "User deleted",
+                message: "User has been deleted",
+                variant: "success",
+              });
+            },
+          }
+        );
       });
     },
     downloadUsers() {

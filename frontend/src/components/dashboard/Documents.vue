@@ -1,6 +1,13 @@
 <template>
-  <Card title="Documents">
-    <template #headerElements>
+  <DashboardListPage
+    title="Documents"
+    :columns="columns"
+    :data="docs"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
       <BasicButton
           class="btn-primary btn-sm"
@@ -19,18 +26,10 @@
       />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="docs"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
+    <template #afterTable>
       <EditorDownload ref="editorDownload"/>
     </template>
-  </Card>
+  </DashboardListPage>
   <PublishModal ref="publishModal"/>
   <StudyModal ref="studyCoordinator"/>
   <ConfirmModal ref="deleteConf"/>
@@ -42,8 +41,6 @@
 
 <script>
 import PublishModal from "./documents/PublishModal.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BasicButton from "@/basic/Button.vue";
@@ -52,6 +49,10 @@ import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
 import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
 
 /**
  * Document list component
@@ -68,8 +69,7 @@ export default {
   components: {
     StudyModal,
     UploadModal,
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     PublishModal,
     ConfirmModal,
@@ -80,14 +80,7 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
       columns: [
         {name: "ID", key: "id"},
         {
@@ -120,52 +113,16 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        dashboardRowAction("open", {
           title: "Access document...",
           action: "accessDoc",
           stats:{
             documentId: "id",
           }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          filter: [
-            {
-              key: "uploadedByUserId",
-              value: this.userId,
-            },
-            {
-              key: "uploadedByUserId",
-              value: null
-            }
-          ],
+        }),
+        dashboardRowAction("delete", {
           title: "Delete document...",
           action: "deleteDoc",
-          stats:{
-            documentId: "id",
-          }
-        },
-        {
-          icon: "cloud-arrow-up",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
           filter: [
             {
               key: "uploadedByUserId",
@@ -176,20 +133,13 @@ export default {
               value: null
             }
           ],
+          stats:{
+            documentId: "id",
+          }
+        }),
+        dashboardRowAction("publish", {
           title: "Publish document...",
           action: "publicDoc",
-          stats:{
-            documentId: "id",
-          }
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
           filter: [
             {
               key: "uploadedByUserId",
@@ -200,96 +150,83 @@ export default {
               value: null
             }
           ],
-          title: "Rename document...",
-          action: "renameDoc",
           stats:{
             documentId: "id",
           }
-        },
+        }),
+        dashboardRowAction("edit", {
+          title: "Rename document...",
+          action: "renameDoc",
+          filter: [
+            {
+              key: "uploadedByUserId",
+              value: this.userId,
+            },
+            {
+              key: "uploadedByUserId",
+              value: null
+            }
+          ],
+          stats:{
+            documentId: "id",
+          }
+        }),
       ];
       if (this.studiesEnabled) {
-        buttons.push({
-          icon: "person-workspace",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowButton("person-workspace", {
+          title: "Open study coordinator...",
+          action: "openStudyCoordinator",
           filter: [
             {
               key: "type",
               value: 0,
             },
           ],
-          title: "Open study coordinator...",
-          action: "openStudyCoordinator",
           stats: {
             documentId: "id",
           }
-        });
+        }));
       }
       if (this.showDeltaDownloadButton) {
-        buttons.push({
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowAction("exportDelta", {
+          title: "Export delta to a local file",
+          action: "exportDeltaDoc",
           filter: [
             {
               key: "type",
               value: 1,
             }],
-          title: "Export delta to a local file",
-          action: "exportDeltaDoc",
           stats: {
             documentId: "id",
           } 
-        });
+        }));
       }
       if (this.showHTMLDownloadButton) {
-        buttons.push({
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowAction("exportHtml", {
+          title: "Export HTML to a local file",
+          action: "exportHTMLDoc",
           filter: [
             {
               key: "type",
               value: 1,
             }],
-          title: "Export HTML to a local file",
-          action: "exportHTMLDoc",
           stats: {
             documentId: "id",
           }
-        });
+        }));
       }
       if (this.showPDFDownloadButton) {
-        buttons.push({
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowAction("exportPdf", {
+          title: "Download PDF with annotations",
+          action: "exportWithAnnotations",
           filter: [
             {
             key: "type",
             value: 0,
           }
         ],
-        title: "Download PDF with annotations",
-        action: "exportWithAnnotations",
-      });
-    }
+        }));
+      }
       return buttons;
     },
     docs() {
@@ -368,29 +305,20 @@ export default {
         warning = "";
       }
 
-      this.$refs.deleteConf.open(
-          "Delete Document",
-          "Are you sure you want to delete the document?",
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "document",
+          id: row.id,
+          title: "Delete Document",
+          message: "Are you sure you want to delete the document?",
           warning,
-          function (val) {
-            if (val) {
-              this.$socket.emit("appDataUpdate", {
-                table: "document",
-                data: {
-                  id: row.id,
-                  deleted: true
-                }
-              }, (result) => {
-                if (!result.success) {
-                  this.eventBus.emit('toast', {
-                    title: "Document delete failed",
-                    message: result.message,
-                    variant: "danger"
-                  });
-                }
-              });
-            }
-          }
+          failTitle: "Document delete failed",
+        }
       );
     },
     renameDoc(row) {

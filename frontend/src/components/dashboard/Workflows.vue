@@ -1,6 +1,13 @@
 <template>
-  <Card title="Workflows">
-    <template #headerElements>
+  <DashboardListPage
+    title="Workflows"
+    :columns="columns"
+    :data="workflows"
+    :buttons="buttons"
+    :table-options="options"
+    @action="chooseAction"
+  >
+    <template #headerActions>
       <BasicButton
         class="btn btn-primary btn-sm"
         title="Add Workflow"
@@ -22,16 +29,7 @@
         @click="importWorkflows"
       />
     </template>
-    <template #body>
-        <BasicTable
-          :columns="columns"
-          :data="workflows"
-          :options="options"
-          :buttons="buttons"
-          @action="chooseAction"
-        />      
-    </template>
-  </Card>
+  </DashboardListPage>
 
   <!-- Modals -->
   <WorkflowCreateModal
@@ -56,8 +54,6 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
@@ -67,6 +63,10 @@ import WorkflowRenameModal from "./workflows/WorkflowRenameModal.vue";
 import WorkflowEditModal from "./workflows/WorkflowEditModal.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
 
 /**
  * Workflows dashboard component
@@ -79,8 +79,7 @@ export default {
   name: "DashboardWorkflows",
   subscribeTable: ["workflow", "workflow_step"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ConfirmModal,
     WorkflowRenameModal,
@@ -93,19 +92,12 @@ export default {
     return {
       selectedWorkflowId: "",
       copiedData: null,
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
+      options: withSearch({
         sort: {
           column: "name",
           order: "ASC",
         },
-      },
+      }),
       columns: [
         { name: "ID", key: "id", sortable: true },
         { name: "Name", key: "name", sortable: true },
@@ -146,90 +138,60 @@ export default {
     },
     buttons() {
       return [
-        {
-          title: "copy Workflow",
+        dashboardRowAction("copy", {
+          title: "Copy Workflow",
           action: "copyWorkflow",
           stats: { workflowId: "id" },
-          icon: "files",
           filter: [
             {key: "isEditable", value: true},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowButton("diagram-3", {
           title: "Edit Workflow",
           action: "editWorkflow",
           stats: { workflowId: "id" },
-          icon: "diagram-3",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowButton("fonts", {
           title: "Rename Workflow",
           action: "renameWorkflow",
           stats: { workflowId: "id" },
-          icon: "fonts",
           filter: [
             {key: "isEditable", value: true},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-info": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowAction("download", {
           title: "Export Workflow",
           action: "exportWorkflow",
           stats: { workflowId: "id" },
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-primary": true,
-            },
-          },
-        },
-        {
-          title: "Toggle Hidden",
+        }),
+        dashboardRowAction("hide", {
+          title: "Hide workflow",
           action: "toggleHidden",
           stats: { workflowId: "id" },
-          icon: "eye-slash",
           filter: [
             {key: "isEditable", value: true},
+            {key: "hideInFrontend", value: false},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-warning": true,
-            },
-          },
-        },
-        {
+          filterMode: "and",
+        }),
+        dashboardRowAction("show", {
+          title: "Show workflow",
+          action: "toggleHidden",
+          stats: { workflowId: "id" },
+          filter: [
+            {key: "isEditable", value: true},
+            {key: "hideInFrontend", value: true},
+          ],
+          filterMode: "and",
+        }),
+        dashboardRowAction("delete", {
           title: "Delete Workflow",
           action: "deleteWorkflow",
           stats: { workflowId: "id" },
-          icon: "trash",
           filter: [
             {key: "isEditable", value: true},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-danger": true,
-            },
-          },
-        },
+        }),
       ];
     },
   },
@@ -309,38 +271,26 @@ export default {
     deleteWorkflow(params) {
       const workflow = this.workflows.find(w => w.id === params.id);
       
-      this.$refs.confirmModal.open(
-        "Delete Workflow",
-        `Are you sure you want to delete the workflow "${workflow.name}"?`,
-        "This action cannot be undone.",
-        (confirmed) => {
-          if (confirmed) {
-            this.$socket.emit(
-              "appDataUpdate",
-              {
-                table: "workflow",
-                data: {
-                  id: params.id,
-                  deleted: true,
-                },
-              },
-              (result) => {
-                if (result.success) {
-                  this.eventBus.emit("toast", {
-                    title: "Workflow Deleted",
-                    message: "Workflow has been deleted",
-                    variant: "success",
-                  });
-                } else {
-                  this.eventBus.emit("toast", {
-                    title: "Delete Failed",
-                    message: result.message,
-                    variant: "danger",
-                  });
-                }
-              }
-            );
-          }
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.confirmModal,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "workflow",
+          id: params.id,
+          title: "Delete Workflow",
+          message: `Are you sure you want to delete the workflow "${workflow.name}"?`,
+          warning: "This action cannot be undone.",
+          failTitle: "Delete Failed",
+          onSuccess: () => {
+            this.eventBus.emit("toast", {
+              title: "Workflow Deleted",
+              message: "Workflow has been deleted",
+              variant: "success",
+            });
+          },
         }
       );
     },

@@ -1,6 +1,13 @@
 <template>
-    <Card title="Templates">
-      <template #headerElements>
+    <DashboardListPage
+      title="Templates"
+      :columns="columns"
+      :data="templates"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+    >
+      <template #headerActions>
         <BasicButton
           class="btn-outline-secondary btn-sm me-2"
           title="Browse public templates"
@@ -30,16 +37,7 @@
           @click="$refs.templateModal.open(0)"
         />
       </template>
-      <template #body>
-        <BasicTable
-          :columns="columns"
-          :data="templates"
-          :options="options"
-          :buttons="buttons"
-          @action="action"
-        />
-      </template>
-    </Card>
+    </DashboardListPage>
     <TemplateModal ref="templateModal" />
     <PublishModal ref="publishModal" />
     <ConfirmModal ref="deleteConf" />
@@ -51,8 +49,6 @@
   </template>
   
   <script>
-  import Card from "@/basic/dashboard/card/Card.vue";
-  import BasicTable from "@/basic/Table.vue";
   import BasicButton from "@/basic/Button.vue";
   import TemplateModal from "./templates/TemplateModal.vue";
   import PublishModal from "./templates/PublishModal.vue";
@@ -62,6 +58,9 @@
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
   import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
   import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+  import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+  import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+  import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
   /**
    * Templates dashboard component
    *
@@ -75,8 +74,7 @@
     name: "DashboardTemplates",
     subscribeTable: ["template"],
     components: {
-      Card,
-      BasicTable,
+      DashboardListPage,
       BasicButton,
       TemplateModal,
       PublishModal,
@@ -89,14 +87,7 @@
     },
     data() {
       return {
-        options: {
-          striped: true,
-          hover: true,
-          bordered: false,
-          borderless: false,
-          small: false,
-          pagination: 10,
-        },
+        options: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
         columns: [
           { name: "ID", key: "id" },
           { name: "Name", key: "name", sortable: true },
@@ -130,14 +121,7 @@
       buttons() {
         return [
           // Edit metadata - own non-copy templates only
-          {
-            icon: "pencil",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("edit", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
@@ -145,16 +129,9 @@
             filterMode: "and",
             title: "Edit template",
             action: "edit",
-          },
+          }),
           // Edit content - own non-copy templates only
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("editContent", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
@@ -162,42 +139,21 @@
             filterMode: "and",
             title: "Edit content",
             action: "editContent",
-          },
+          }),
           // Edit content - for copies (detaches first)
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("editContent", {
             filter: [{ key: "isCopy", value: true }],
             title: "Edit content",
             action: "editContentCopy",
-          },
+          }),
           // View content (read-only) - for copies
-          {
-            icon: "eye",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("view", {
             filter: [{ key: "isCopy", value: true }],
             title: "View content (read-only)",
             action: "viewContent",
-          },
+          }),
           // Publish - own non-copy non-public templates only
-          {
-            icon: "cloud-arrow-up",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("publish", {
             filter: [
               { key: "public", value: false },
               { key: "userId", value: this.userId },
@@ -206,14 +162,11 @@
             filterMode: "and",
             title: "Publish template",
             action: "togglePublished",
-          },
+          }),
           // Published badge - own non-copy public templates only
-          {
-            icon: "check-circle",
+          dashboardRowButton("check-circle", {
             options: {
-              iconOnly: true,
               specifiers: {
-                "btn-outline-secondary": true,
                 disabled: true,
               },
             },
@@ -225,41 +178,20 @@
             filterMode: "and",
             title: "Published (cannot be unpublished)",
             action: null,
-          },
+          }),
           // Source updated - copies with updates available (opens modal with Update / Make new copy)
-          {
-            icon: "arrow-clockwise",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-primary": true,
-              },
-            },
+          dashboardRowAction("sync", {
             filter: [{ key: "hasUpdate", value: true }],
             title: "Source updated",
             action: "openUpdateModal",
-          },
+          }),
           // Export
-          {
-            icon: "download",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("download", {
             title: "Export template",
             action: "export",
-          },
+          }),
           // Delete - own templates that can be deleted (including copies)
-          {
-            icon: "trash",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("delete", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "canDelete", value: true }
@@ -267,7 +199,7 @@
             filterMode: "and",
             title: "Delete template",
             action: "delete",
-          },
+          }),
         ];
       },
       userId() {

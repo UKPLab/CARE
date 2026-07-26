@@ -1,6 +1,13 @@
 <template>
-  <Card title="Skills">
-    <template #headerElements>
+  <DashboardListPage
+      title="Skills"
+      :columns="columns"
+      :data="data"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+  >
+    <template #headerActions>
       <span v-if="!waitForStatus" class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'">
         {{ onlineStatus ? "ONLINE" : "OFFLINE" }}
       </span>
@@ -17,26 +24,17 @@
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="data"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <NlpSkillModal ref="nlpSkillModal"/>
 </template>
 
 <script>
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import {cloneDeep} from "lodash";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 
 /**
  * Shows the list of available nlp skills to admins
@@ -48,7 +46,7 @@ import {cloneDeep} from "lodash";
  */
 export default {
   name: "NlpSkills",
-  components: {BasicTable, Card, BasicButton, NlpSkillModal},
+  components: {DashboardListPage, BasicButton, NlpSkillModal},
   props: {
     'admin': {
       type: Boolean,
@@ -58,14 +56,7 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
       columns: [
         {name: "Name", key: "name"},
         {name: "# Nodes", key: "nodes"},
@@ -92,18 +83,10 @@ export default {
   computed: {
     buttons() {
       return [
-        {
-          icon: "gear",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-secondary": true,
-            }
-          },
+        dashboardRowAction("settings", {
           title: "Configure",
           action: "configure",
-          // todo which stats params to pass
-        }
+        }),
       ];
     },
     data() {

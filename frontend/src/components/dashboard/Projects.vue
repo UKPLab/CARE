@@ -1,6 +1,13 @@
 <template>
-  <Card title="Projects">
-    <template #headerElements>
+  <DashboardListPage
+    title="Projects"
+    :columns="columns"
+    :data="projects"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
@@ -19,17 +26,7 @@
       />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-        :columns="columns"
-        :data="projects"
-        :options="options"
-        :buttons="buttons"
-        :max-table-height="'65vh'"
-        @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
   <ConfirmModal ref="deleteConf"/>
@@ -38,13 +35,15 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
 
 /**
  * Project list component
@@ -58,8 +57,7 @@ export default {
   subscribeTable: ["project"],
   components: {
     ExportModal,
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ProjectModal,
     ConfirmModal,
@@ -67,14 +65,7 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
       columns: [
         {name: "", key: "select", type: "icon-selector"},
         {name: "Project name", key: "name"},
@@ -93,86 +84,51 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "clipboard",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        dashboardRowAction("copy", {
           title: "Copy project",
           action: "copy",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
-          filter: [
-            {key: "userId", value: this.userId},
-          ],
+        }),
+        dashboardRowAction("edit", {
           title: "Edit project",
           action: "edit",
-          stats: {
-            projectId: "id",
-          }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
           filter: [
             {key: "userId", value: this.userId},
           ],
-          title: "Delete project",
-          action: "delete",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          icon: "share",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("delete", {
+          title: "Delete project",
+          action: "delete",
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          stats: {
+            projectId: "id",
+          }
+        }),
+        dashboardRowAction("share", {
+          title: "Share project",
+          action: "publish",
           filter: [
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
-          title: "Share project",
-          action: "publish",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("download", {
           title: "Export data",
-          icon: "download",
           action: "export",
           stats: {
             projectId: "id",
           }
-        }
+        }),
       ];
       return buttons;
     },
@@ -242,28 +198,19 @@ export default {
         warning += `There ${documents.length !== 1 ? "are" : "is"} currently ${documents.length} ${documents.length !== 1 ? "documents" : "document"} linked to this project. Deleting the project will also delete the ${documents.length !== 1 ? "documents" : "document"}.\n`;
       }
 
-      this.$refs.deleteConf.open(
-        "Delete Project",
-        "Are you sure you want to delete this project?",
-        warning,
-        (val) => {
-          if (val) {
-            this.$socket.emit("appDataUpdate", {
-              table: "project",
-              data: {
-                id: params.id,
-                deleted: true
-              }
-            }, (result) => {
-              if (!result.success) {
-                this.eventBus.emit('toast', {
-                  title: "Project delete failed",
-                  message: result.message,
-                  variant: "danger"
-                });
-              }
-            });
-          }
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "project",
+          id: params.id,
+          title: "Delete Project",
+          message: "Are you sure you want to delete this project?",
+          warning,
+          failTitle: "Project delete failed",
         }
       );
       this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
