@@ -3,8 +3,6 @@
     ref="coordinator"
     table="tag_set"
     :title="$t('tags.tagSet')"
-    :new-title-key="'tags.modalTitle.newTagSet'"
-    :edit-title-key="'tags.modalTitle.editTagSet'"
   />
 </template>
 

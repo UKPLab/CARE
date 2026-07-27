@@ -8,10 +8,6 @@
   "shareTagSet": "Share tag set",
   "exportTagSet": "Export tag set",
   "selectAsDefault": "Select tag set as default",
-  "modalTitle": {
-    "newTagSet": "New Tag Set",
-    "editTagSet": "Edit Tag Set"
-  },
   "columns": {
     "tags": "Tags",
     "lastChange": "Last Change",

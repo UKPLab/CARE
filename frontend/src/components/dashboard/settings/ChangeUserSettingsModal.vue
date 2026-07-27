@@ -81,12 +81,12 @@
 
         <div class="alert alert-info">
           <strong>{{$t('dashboard.projects.summary')}}</strong><br />
-          {{$t('dashboard.settings.setting:')}} <strong>{{ settingSelection.settingKey }}</strong><br />
+          {{$t('dashboard.settings.settingLabel')}} <strong>{{ settingSelection.settingKey }}</strong><br />
           {{$t('dashboard.settings.newValue')}}
           <strong>
             {{ previewValue }}
           </strong><br />
-          {{$t('dashboard.settings.users:')}} <strong>{{ userSelection.length }}</strong>
+          {{$t('dashboard.settings.usersLabel')}} <strong>{{ userSelection.length }}</strong>
         </div>
 
         <div class="alert alert-warning">

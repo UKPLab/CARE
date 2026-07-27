@@ -123,9 +123,9 @@
   "settings": {
     "selectSetting": "Einstellung auswählen",
     "selectedValue": "Ausgewählter Wert:",
-    "setting:": "Einstellung:",
+    "settingLabel": "Einstellung:",
     "newValue": "Neuer Wert:",
-    "users:": "Benutzer:",
+    "usersLabel": "Benutzer:",
     "noteBody1": "Dies aktualisiert die ausgewählte benutzerspezifische Einstellung für alle ausgewählten Benutzer. Die globale Standardeinstellung wird nicht geändert.",
     "setting": "Einstellung",
     "selectedUsers": "Ausgewählte Benutzer",
