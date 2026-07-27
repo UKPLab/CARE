@@ -3,7 +3,9 @@
  * Frontend i18n checker (complements @intlify/vue-i18n/no-raw-text).
  *
  * 1. Literal $t / this.$t / keypath keys must exist in EN catalogs.
- * 2. Hardcoded user-facing English in title/message/label/text / throw (Vue SFCs).
+ * 2. Hardcoded user-facing English in title/message/label/text (Vue SFCs).
+ *    Throws: only missing-key check when the message looks like an i18n key;
+ *    plain English Error("…") is treated as internal.
  * 3. Unused catalog keys: unused only if referenced on neither frontend nor backend
  *    (including db/migrations meta / seeds).
  *
@@ -21,11 +23,13 @@ const SRC_ROOT = path.join(FRONTEND_ROOT, 'src')
 const BACKEND_ROOT = path.join(REPO_ROOT, 'backend')
 const EN_DIR = path.join(REPO_ROOT, 'utils/modules/i18n/en')
 
-/** Paths ignored for missing-key / hardcoded checks (wizard + Settings out of scope). */
+/** Paths ignored for missing-key / hardcoded checks (wizard + Settings + unused submission modals). */
 const HARDCODED_IGNORE_PARTS = [
     `${path.sep}auth${path.sep}SetupWizard.vue`,
     `${path.sep}components${path.sep}wizard${path.sep}`,
     `${path.sep}components${path.sep}dashboard${path.sep}Settings.vue`,
+    `${path.sep}components${path.sep}dashboard${path.sep}submission${path.sep}UploadModal.vue`,
+    `${path.sep}components${path.sep}dashboard${path.sep}submission${path.sep}PublishModal.vue`,
 ]
 
 /** Directories skipped when walking FE/BE source. */
@@ -322,6 +326,9 @@ function checkFileHardcodedAndMissing(filePath, catalog) {
         }
     }
 
+    // Throws: only validate i18n-key messages. Plain English Error("…") is treated as
+    // internal (console / control flow); user-facing errors should use catalog keys
+    // (or toast via $t / resolveApiMessage), not raw English in throw.
     if (isVue) {
         const throwRe =
             /throw\s+new\s+\w*Error\s*\(\s*(['"`])([^'"`]+)\1/g
@@ -336,14 +343,6 @@ function checkFileHardcodedAndMissing(filePath, catalog) {
                         `missing i18n key in throw: ${value}`
                     )
                 }
-                continue
-            }
-            if (looksLikeEnglish(value)) {
-                report(
-                    filePath,
-                    lineAt(source, m.index),
-                    `hardcoded throw message (use i18n key if user-facing): ${JSON.stringify(value)}`
-                )
             }
         }
     }

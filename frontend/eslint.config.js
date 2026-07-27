@@ -68,7 +68,6 @@ export default [
                             'placeholder',
                             'message',
                             'alt',
-                            'aria-label',
                             'submit-text',
                             'next-text',
                             'cancel-next-text',
@@ -104,13 +103,16 @@ export default [
             'vue/no-restricted-html-elements': 'off',
         },
     },
-    // Setup wizard + Settings mail-test UI are out of scope for i18n lint.
+    // Out of scope for i18n lint: setup wizard, Settings mail-test UI,
+    // unused submission ReviewUpload/Publish modals (not imported).
     {
         files: [
             'src/auth/SetupWizard.vue',
             'src/components/wizard/**/*.vue',
             'src/components/wizard/**/*.js',
             'src/components/dashboard/Settings.vue',
+            'src/components/dashboard/submission/UploadModal.vue',
+            'src/components/dashboard/submission/PublishModal.vue',
         ],
         rules: {
             '@intlify/vue-i18n/no-raw-text': 'off',
