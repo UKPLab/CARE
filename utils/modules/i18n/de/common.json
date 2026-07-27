@@ -1,6 +1,8 @@
 {
     "yes": "Ja",
     "no": "Nein",
+    "guest": "Gast",
+    "other": "Sonstiges",
     "ok": "OK",
     "save": "Speichern",
     "cancel": "Abbrechen",

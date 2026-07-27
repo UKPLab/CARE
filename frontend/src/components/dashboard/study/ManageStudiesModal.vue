@@ -264,8 +264,8 @@ export default {
     },
     groupOptions() {
       return [
-        { key: "Guest", name: this.$t("users.guest") },
-        { key: "Other", name: this.$t("tags.other") },
+        { key: "Guest", name: this.$t("common.guest") },
+        { key: "Other", name: this.$t("common.other") },
       ];
     },
     columns() {

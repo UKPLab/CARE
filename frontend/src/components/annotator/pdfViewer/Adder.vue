@@ -11,7 +11,7 @@
       <input
         v-model="searchTerm"
         type="text"
-        :placeholder="$t('annotator.searchTags')"
+        :placeholder="$t('editor.annotator.searchTags')"
         class="form-control"
         @mouseup.stop
       />
@@ -41,7 +41,7 @@
       v-if="shouldShowExtender"
       class="expand-btn"
       icon="three-dots"
-      :title="$t('annotator.expandAdder')"
+      :title="$t('editor.annotator.expandAdder')"
       @click="isExtended=true"
     />
   </div>

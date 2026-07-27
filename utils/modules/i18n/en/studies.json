@@ -94,7 +94,9 @@
     "sessionWarning": "There are currently {count} study sessions existing for this study. Deleting it will delete the study sessions!",
     "sessionFinished": "Session Finished",
     "sessionFinishedMessage": "Your session has been submitted successfully.",
-    "studySessionErrorTitle": "Study Session Error"
+    "studySessionErrorTitle": "Study Session Error",
+    "cannotFinishSession": "Cannot finish session",
+    "studyClosedAutoTerminated": "The study has been closed. Sessions are automatically terminated when a study is closed."
   },
   "loading": {
     "title": "Loading Study Step",

@@ -94,7 +94,9 @@
     "sessionWarning": "Es existieren derzeit {count} Sitzungen für diese Studie. Das Löschen der Studie entfernt auch diese Sitzungen!",
     "sessionFinished": "Sitzung beendet",
     "sessionFinishedMessage": "Ihre Sitzung wurde erfolgreich eingereicht.",
-    "studySessionErrorTitle": "Fehler in der Studiensitzung"
+    "studySessionErrorTitle": "Fehler in der Studiensitzung",
+    "cannotFinishSession": "Sitzung kann nicht beendet werden",
+    "studyClosedAutoTerminated": "Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
   },
   "loading": {
     "title": "Lade Studienschritt",

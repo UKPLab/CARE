@@ -1,6 +1,8 @@
 {
     "yes": "Yes",
     "no": "No",
+    "guest": "Guest",
+    "other": "Other",
     "ok": "OK",
     "save": "Save",
     "cancel": "Cancel",
