@@ -1,5 +1,4 @@
 {
-    "service": "NLP Service",
     "serviceRequest": "NLP Service Request",
     "notAvailable": "{name} not available",
     "skillDetails": "Skill Details",
@@ -65,7 +64,6 @@
         "cancelButton": "Cancel Preprocess",
         "submissionName": "Submission {id}",
         "cancelApplySkills": "Cancel Apply Skills",
-        "cancelSuccess": "Preprocessing cancelled successfully.",
         "toasts": {
             "inProgressTitle": "Preprocessing In Progress",
             "inProgressMsg": "Preprocessing is currently running. Showing progress...",
@@ -81,7 +79,6 @@
         },
         "setupStepper": {
             "title": "Apply Skills",
-            "submitButton": "Apply Skills",
             "steps": {
                 "selectSkill": "Select Skill",
                 "selectFiles": "Select Files",
@@ -116,16 +113,14 @@
                 "title": "Submissions in Queue",
                 "empty": "No submissions in queue. Processing the last request...",
                 "columns": {
-                "id": "ID",
-                "submissionName": "Submission Name",
-                "user": "User"
+                    "id": "ID",
+                    "submissionName": "Submission Name",
+                    "user": "User"
                 }
             },
             "cancel": {
                 "title": "Cancel Processing",
-                "message": "Are you sure you want to cancel the remaining requests?",
-                "confirmButton": "Confirm",
-                "nextButton": "Next"
+                "message": "Are you sure you want to cancel the remaining requests?"
             }
         }
     },
@@ -156,6 +151,5 @@
             "settingUpdatedMessage": "Skill \"{name}\" activation updated.",
             "updateFailedTitle": "Failed to Update Setting"
         }
-  }
-
+    }
 }

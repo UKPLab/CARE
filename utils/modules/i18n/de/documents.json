@@ -6,7 +6,6 @@
   "addDocument": "Dokument hinzufügen",
   "uploadDocument": "Dokument hochladen",
   "uploadNewDocument": "Neues Dokument hochladen",
-  "uploadConfiguration": "Neue Konfigurationsdatei hochladen",
   "createDocument": "Dokument erstellen",
   "createNewDocument": "Neues Dokument erstellen",
   "renameDocument": "Dokument umbenennen...",
@@ -56,21 +55,16 @@
     "documentEdited": "Das Dokument wurde erfolgreich bearbeitet.",
     "documentEditedTitle": "Dokument bearbeitet",
     "documentEditedMessage": "Dokument erfolgreich bearbeitet!",
-    "configurationUploaded": "Konfiguration hochgeladen",
     "fileUploaded": "Datei wurde erfolgreich hochgeladen.",
     "annotationsAdded": "{count} Annotationen wurden hinzugefügt.",
-    "annotationImportPartialFailure": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, jedoch fehlen möglicherweise einige Annotationen.",
     "issuesOccurred": "Es sind einige Probleme aufgetreten",
     "uploadedWithWarnings": "Mit Warnungen hochgeladen",
     "uploadedFile": "Hochgeladene Datei",
-    "documentCreated": "Dokument erfolgreich erstellt.",
-    "documentNotFoundTitle": "Dokument nicht gefunden",
-    "documentErrorTitle": "Dokumentfehler"
+    "documentCreated": "Dokument erfolgreich erstellt."
   },
   "downloadPdf": {
     "title": "PDF herunterladen",
     "includeAnnotations": "Annotationen im PDF einschließen",
-    "preparing": "PDF wird vorbereitet...",
     "toasts": {
       "successTitle": "PDF erfolgreich heruntergeladen",
       "successMessage": "Ihr PDF wurde heruntergeladen.",
@@ -83,5 +77,3 @@
   "noTemplateCreateEmpty": "Keine (leeres Dokument erstellen)",
   "templatePrefillHint": "Wählen Sie eine Vorlage aus, um den Dokumentinhalt vorauszufüllen (Typ 4: Dokument - Allgemein)"
 }
-
-

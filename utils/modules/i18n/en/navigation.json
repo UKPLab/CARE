@@ -1,6 +1,4 @@
 {
-    "goBack": "Go back...",
-    "project": "Project: {name}",
     "documentation": "Documentation",
     "feedback": "Feedback",
     "projectPage": "Project Page",
@@ -10,7 +8,6 @@
         "hideSidebar": "Hide sidebar",
         "showSidebar": "Show sidebar",
         "moreActions": "More actions",
-        "noContent": "No sidebar content selected.",
         "sidebarSection": "Sidebar section"
     },
     "topbar": {

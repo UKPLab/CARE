@@ -9,7 +9,6 @@
   "addDocument": "Add document",
   "uploadDocument": "Upload document",
   "uploadNewDocument": "Upload new document",
-  "uploadConfiguration": "Upload new configuration file",
   "createDocument": "Create document",
   "createNewDocument": "Create new document",
   "renameDocument": "Rename document...",
@@ -59,21 +58,16 @@
     "documentEdited": "The document has been successfully edited.",
     "documentEditedTitle": "Document edited",
     "documentEditedMessage": "Successfully edited document!",
-    "configurationUploaded": "Configuration uploaded",
     "fileUploaded": "File has been uploaded successfully.",
     "annotationsAdded": "{count} annotations were added.",
-    "annotationImportPartialFailure": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but some annotations may be missing.",
     "issuesOccurred": "Some issues occurred",
     "uploadedWithWarnings": "Uploaded with warnings",
     "uploadedFile": "Uploaded file",
-    "documentCreated": "Document created successfully.",
-    "documentNotFoundTitle": "Document not found",
-    "documentErrorTitle": "Document Error"
+    "documentCreated": "Document created successfully."
   },
   "downloadPdf": {
     "title": "Download PDF",
     "includeAnnotations": "Include annotations in PDF",
-    "preparing": "Preparing your PDF...",
     "toasts": {
       "successTitle": "PDF downloaded successfully",
       "successMessage": "Your PDF has been downloaded.",
@@ -83,4 +77,3 @@
     }
   }
 }
-

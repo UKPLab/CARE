@@ -1,148 +1,113 @@
 {
     "dashboard": {
-      "title": "Submissions",
-      "buttons": {
-        "assignGroup": "Assign Group",
-        "publishReviews": "Publish Reviews",
-        "publishSubmissions": "Publish Submissions",
-        "manualImport": "Manual Import",
-        "importMoodle": "Import via Moodle",
-        "viewProcessing": "View Processing",
-        "applySkills": "Apply Skills",
-        "publishAssessment": "Publish Assessment"
-      },
-      "tooltips": {
-        "assignGroup": "Assign Group",
-        "publishReviews": "Publish Reviews",
-        "publishSubmissions": "Publish Submissions",
-        "manualImport": "Manual Import",
-        "importMoodle": "Import via Moodle",
-        "viewProcessing": "View Processing Progress",
-        "applySkills": "Apply Skills",
-        "processingActive": "Processing active",
-        "publishAssessment": "Publish Assessment"
-      },
-      "columns": {
-        "id": "ID",
-        "firstName": "First Name",
-        "lastName": "Last Name",
-        "submissionId": "Submission ID",
-        "group": "Group",
-        "validationId": "Validation ID",
-        "createdAt": "Created At"
-      },
-      "actions": {
-        "download": "Download submission files",
-        "delete": "Delete document..."
-      },
-      "delete": {
-        "title": "Delete Document",
-        "message": "Are you sure you want to delete the document?",
-        "warning": "There is currently {count} study running on this document. Deleting it will delete the study! | There are currently {count} studies running on this document. Deleting it will delete the studies!"
-      },
-      "toasts": {
-        "deleteSuccessTitle": "Document deleted",
-        "deleteSuccessMessage": "The document has been deleted",
-        "deleteFailedTitle": "Failed to delete document",
-        "noDocumentsTitle": "No documents found",
-        "noDocumentsMessage": "This submission has no associated documents to download",
-        "downloadIssueTitle": "Document download issue",
-        "downloadIssueMessage": "Could not download {name}",
-        "downloadErrorTitle": "Download error",
-        "downloadErrorMessage": "Failed to download {name}: {error}",
-        "downloadCompleteTitle": "Download complete",
-        "downloadCompleteMessage": "Downloaded submission {id} with {count} documents",
-        "downloadFailedTitle": "Download failed"
-      }
+        "buttons": {
+            "importMoodle": "Import via Moodle"
+        },
+        "columns": {
+            "id": "ID",
+            "createdAt": "Created At"
+        },
+        "actions": {
+            "download": "Download submission files"
+        },
+        "toasts": {
+            "noDocumentsTitle": "No documents found",
+            "noDocumentsMessage": "This submission has no associated documents to download",
+            "downloadErrorTitle": "Download error",
+            "downloadErrorMessage": "Failed to download {name}: {error}",
+            "downloadCompleteTitle": "Download complete",
+            "downloadCompleteMessage": "Downloaded submission {id} with {count} documents",
+            "downloadFailedTitle": "Download failed"
+        }
     },
     "publishAssessment": {
-      "title": "Publish Assessment",
-      "selectConfiguration": "Select Assessment Configuration:",
-      "selectConfigurationDescription": "Choose which assessment configuration you want to export data for.",
-      "selectWorkflows": "Select Workflows:",
-      "selectWorkflowsDescription": "Select one or more workflow steps that use the selected configuration. You can see how many sessions (open/closed) are available for each step.",
-      "selectSessions": "Select Sessions:",
-      "selectSessionsDescriptionPrefix": "Select which study sessions to include in the assessment export. Please note only",
-      "closedStudySessions": "closed study sessions",
-      "selectSessionsDescriptionSuffix": "are displayed here.",
-      "noSessionsFound": "No sessions found matching the selected workflows and configuration.",
-      "hashCollection": "Hash Collection:",
-      "hashCollectionStudies": "based on Studies (session hashes for each study)",
-      "hashCollectionSessions": "based on Sessions (hashes for own sessions)",
-      "hashes": "Hashes:",
-      "publishingMethod": "Publishing Method:",
-      "includeReviewUrl": "Include review URL in Moodle feedback",
-      "includeReviewUrlDescription": "If checked, the review URL will be included as feedback text in Moodle for each published grade.",
-      "moodleGradePublishingOverview": "Moodle Grade Publishing Overview:",
-      "numberOfGradesToPublish": "Number of grades to publish:",
-      "assessmentScaleCurrentScores": "Assessment scale (current scores):",
-      "pointsRange": "from {from} to {to} points",
-      "moodleGradeScaleTarget": "Moodle grade scale (target):",
-      "selectAssignmentForInformation": "select an assignment to view this information",
-      "conversionFactor": "Conversion factor:",
-      "conversionFactorValue": "1 assessment point = {factor} Moodle points",
-      "conversionNote": "Note: All selected assessment scores will be converted linearly from the assessment scale to the Moodle grade scale using the factor shown above.",
-      "workflowFallback": "Workflow {id}",
-      "steps": {
-        "configuration": "Configuration",
-        "workflow": "Workflow",
-        "session": "Session",
-        "confirmation": "Confirmation",
-        "publishing": "Publishing"
-      },
-      "columns": {
-        "workflowId": "Workflow ID",
-        "workflowName": "Workflow Name",
-        "step": "Step",
-        "openSessions": "Open Sessions",
-        "closedSessions": "Closed Sessions",
-        "totalSessions": "Total Sessions",
-        "created": "Created",
-        "study": "Study",
-        "reviewerFirstName": "Reviewer First Name",
-        "reviewerLastName": "Reviewer Last Name",
-        "ownerFirstName": "Owner First Name",
-        "ownerLastName": "Owner Last Name",
-        "submissionExtId": "Submission ExtId"
-      },
-      "publishMethods": {
-        "downloadCsv": "Download CSV",
-        "moodle": "Moodle",
-        "email": "Email"
-      },
-      "csv": {
-        "userExtId": "User ExtId",
-        "userFirstName": "User First Name",
-        "userLastName": "User Last Name",
-        "userName": "User Name",
-        "submissionId": "Submission ID",
-        "submissionExtId": "Submission ExtId",
-        "reviewerFirstName": "Reviewer First Name",
-        "reviewerLastName": "Reviewer Last Name",
-        "reviewerUserName": "Reviewer User Name",
-        "reviewerRoles": "Reviewer Roles",
-        "hash": "Hash",
-        "totalPoints": "Total Points"
-      },
-      "toasts": {
-        "configurationMissing": {
-          "title": "Configuration missing",
-          "message": "Selected configuration content could not be loaded."
+        "title": "Publish Assessment",
+        "selectConfiguration": "Select Assessment Configuration:",
+        "selectConfigurationDescription": "Choose which assessment configuration you want to export data for.",
+        "selectWorkflows": "Select Workflows:",
+        "selectWorkflowsDescription": "Select one or more workflow steps that use the selected configuration. You can see how many sessions (open/closed) are available for each step.",
+        "selectSessions": "Select Sessions:",
+        "selectSessionsDescriptionPrefix": "Select which study sessions to include in the assessment export. Please note only",
+        "closedStudySessions": "closed study sessions",
+        "selectSessionsDescriptionSuffix": "are displayed here.",
+        "noSessionsFound": "No sessions found matching the selected workflows and configuration.",
+        "hashCollection": "Hash Collection:",
+        "hashCollectionStudies": "based on Studies (session hashes for each study)",
+        "hashCollectionSessions": "based on Sessions (hashes for own sessions)",
+        "hashes": "Hashes:",
+        "publishingMethod": "Publishing Method:",
+        "includeReviewUrl": "Include review URL in Moodle feedback",
+        "includeReviewUrlDescription": "If checked, the review URL will be included as feedback text in Moodle for each published grade.",
+        "moodleGradePublishingOverview": "Moodle Grade Publishing Overview:",
+        "numberOfGradesToPublish": "Number of grades to publish:",
+        "assessmentScaleCurrentScores": "Assessment scale (current scores):",
+        "pointsRange": "from {from} to {to} points",
+        "moodleGradeScaleTarget": "Moodle grade scale (target):",
+        "selectAssignmentForInformation": "select an assignment to view this information",
+        "conversionFactor": "Conversion factor:",
+        "conversionFactorValue": "1 assessment point = {factor} Moodle points",
+        "conversionNote": "Note: All selected assessment scores will be converted linearly from the assessment scale to the Moodle grade scale using the factor shown above.",
+        "workflowFallback": "Workflow {id}",
+        "steps": {
+            "configuration": "Configuration",
+            "workflow": "Workflow",
+            "session": "Session",
+            "confirmation": "Confirmation",
+            "publishing": "Publishing"
         },
-        "gradesPublished": {
-          "title": "Grades published",
-          "message": "The selected sessions' grades have been published to the assignment"
+        "columns": {
+            "workflowId": "Workflow ID",
+            "workflowName": "Workflow Name",
+            "step": "Step",
+            "openSessions": "Open Sessions",
+            "closedSessions": "Closed Sessions",
+            "totalSessions": "Total Sessions",
+            "created": "Created",
+            "study": "Study",
+            "reviewerFirstName": "Reviewer First Name",
+            "reviewerLastName": "Reviewer Last Name",
+            "ownerFirstName": "Owner First Name",
+            "ownerLastName": "Owner Last Name",
+            "submissionExtId": "Submission ExtId"
         },
-        "failedToPublishGrades": {
-          "title": "Failed to publish grades"
+        "publishMethods": {
+            "downloadCsv": "Download CSV",
+            "moodle": "Moodle",
+            "email": "Email"
         },
-        "csvExport": {
-          "title": "CSV Export",
-          "message": "Assessment data CSV successfully generated and exported"
+        "csv": {
+            "userExtId": "User ExtId",
+            "userFirstName": "User First Name",
+            "userLastName": "User Last Name",
+            "userName": "User Name",
+            "submissionId": "Submission ID",
+            "submissionExtId": "Submission ExtId",
+            "reviewerFirstName": "Reviewer First Name",
+            "reviewerLastName": "Reviewer Last Name",
+            "reviewerUserName": "Reviewer User Name",
+            "reviewerRoles": "Reviewer Roles",
+            "hash": "Hash",
+            "totalPoints": "Total Points"
+        },
+        "toasts": {
+            "configurationMissing": {
+                "title": "Configuration missing",
+                "message": "Selected configuration content could not be loaded."
+            },
+            "gradesPublished": {
+                "title": "Grades published",
+                "message": "The selected sessions' grades have been published to the assignment"
+            },
+            "failedToPublishGrades": {
+                "title": "Failed to publish grades"
+            },
+            "csvExport": {
+                "title": "CSV Export",
+                "message": "Assessment data CSV successfully generated and exported"
+            }
         }
-      }
     },
     "assign": {
-      "noAdditionalSettings": "No additional settings"
+        "noAdditionalSettings": "No additional settings"
     }
-  }
+}

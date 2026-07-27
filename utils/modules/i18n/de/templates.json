@@ -117,19 +117,19 @@
     "language": "Sprache",
     "newLanguageMessage": "Für dieses Template wird eine neue Sprache hinzugefügt. Soll der aktuelle Inhalt in diese Sprache kopiert werden?<br><br><strong>Beim Verlassen der aktuellen Sprache wird deren Inhalt gespeichert.</strong>",
     "leave": {
-        "missingPlaceholdersConfirm": "Dieses Template enthält nicht alle erforderlichen Platzhalter; Ihre Änderungen werden nicht gespeichert."
+      "missingPlaceholdersConfirm": "Dieses Template enthält nicht alle erforderlichen Platzhalter; Ihre Änderungen werden nicht gespeichert."
     },
     "toasts": {
-        "templateSaveFailed": "Template konnte nicht gespeichert werden",
-        "templateDiscardFailed": "Template-Änderungen konnten nicht verworfen werden",
-        "failedToLoadTemplate": "Template konnte nicht geladen werden",
-        "failedToAddLanguage": "Sprache konnte nicht hinzugefügt werden",
-        "noCursorPosition": {
+      "templateSaveFailed": "Template konnte nicht gespeichert werden",
+      "templateDiscardFailed": "Template-Änderungen konnten nicht verworfen werden",
+      "failedToLoadTemplate": "Template konnte nicht geladen werden",
+      "failedToAddLanguage": "Sprache konnte nicht hinzugefügt werden",
+      "noCursorPosition": {
         "title": "Keine Cursorposition",
         "message": "Klicken Sie bitte in den Editor, um die Cursorposition zu setzen, bevor Sie einen Platzhalter einfügen."
-        },
-        "previousEditFailed": "Vorherige Bearbeitung fehlgeschlagen; versuchen Sie es erneut",
-        "templateError": "Template-Fehler"
+      },
+      "previousEditFailed": "Vorherige Bearbeitung fehlgeschlagen; versuchen Sie es erneut",
+      "templateError": "Template-Fehler"
     }
   },
   "dashboard": {
@@ -140,32 +140,32 @@
     "addTemplate": "Vorlage hinzufügen",
     "chooseType": "Typ auswählen",
     "actions": {
-        "editTemplate": "Vorlage bearbeiten",
-        "editContent": "Inhalt bearbeiten",
-        "viewContentReadOnly": "Inhalt anzeigen (schreibgeschützt)",
-        "publishTemplate": "Vorlage veröffentlichen",
-        "publishedCannotBeUnpublished": "Veröffentlicht (kann nicht zurückgezogen werden)",
-        "sourceUpdated": "Quelle aktualisiert",
-        "deleteTemplate": "Vorlage löschen",
-        "exportTemplate": "Vorlage exportieren"
+      "editTemplate": "Vorlage bearbeiten",
+      "editContent": "Inhalt bearbeiten",
+      "viewContentReadOnly": "Inhalt anzeigen (schreibgeschützt)",
+      "publishTemplate": "Vorlage veröffentlichen",
+      "publishedCannotBeUnpublished": "Veröffentlicht (kann nicht zurückgezogen werden)",
+      "sourceUpdated": "Quelle aktualisiert",
+      "deleteTemplate": "Vorlage löschen",
+      "exportTemplate": "Vorlage exportieren"
     },
     "status": {
-        "published": "Veröffentlicht",
-        "draft": "Entwurf",
-        "updateAvailable": "Update verfügbar",
-        "sourceUnavailable": "Quelle nicht verfügbar"
+      "published": "Veröffentlicht",
+      "draft": "Entwurf",
+      "updateAvailable": "Update verfügbar",
+      "sourceUnavailable": "Quelle nicht verfügbar"
     },
     "toasts": {
-        "templateDetached": {
+      "templateDetached": {
         "title": "Vorlage getrennt",
         "message": "Sie können diese Vorlage jetzt bearbeiten"
-        },
-        "detachFailed": "Trennen fehlgeschlagen",
-        "templateDeleteFailed": "Löschen der Vorlage fehlgeschlagen"
+      },
+      "detachFailed": "Trennen fehlgeschlagen",
+      "templateDeleteFailed": "Löschen der Vorlage fehlgeschlagen"
     },
     "confirmDelete": {
-        "title": "Vorlage löschen",
-        "message": "Möchten Sie \"{name}\" wirklich löschen?"
+      "title": "Vorlage löschen",
+      "message": "Möchten Sie \"{name}\" wirklich löschen?"
     }
   },
   "publicTemplates": {
@@ -236,14 +236,7 @@
     }
   },
   "fields": {
-    "name": {
-      "label": "Name"
-    },
-    "description": {
-      "label": "Beschreibung"
-    },
     "type": {
-      "label": "Typ",
       "options": {
         "chooseType": "Typ auswählen",
         "emailGeneral": "E-Mail - Allgemein",

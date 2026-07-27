@@ -117,19 +117,19 @@
     "language": "Language",
     "newLanguageMessage": "A new language is being added for this template. Copy current content into this language?<br><br><strong>Leaving the current language will save the content in it.</strong>",
     "leave": {
-        "missingPlaceholdersConfirm": "This template is missing required placeholders, so your changes will not be saved."
+      "missingPlaceholdersConfirm": "This template is missing required placeholders, so your changes will not be saved."
     },
     "toasts": {
-        "templateSaveFailed": "Template save failed",
-        "templateDiscardFailed": "Could not discard template changes",
-        "failedToLoadTemplate": "Failed to load template",
-        "failedToAddLanguage": "Failed to add language",
-        "noCursorPosition": {
+      "templateSaveFailed": "Template save failed",
+      "templateDiscardFailed": "Could not discard template changes",
+      "failedToLoadTemplate": "Failed to load template",
+      "failedToAddLanguage": "Failed to add language",
+      "noCursorPosition": {
         "title": "No Cursor Position",
         "message": "Please click in the editor to set the cursor position before inserting a placeholder."
-        },
-        "previousEditFailed": "Previous edit failed; try again",
-        "templateError": "Template Error"
+      },
+      "previousEditFailed": "Previous edit failed; try again",
+      "templateError": "Template Error"
     }
   },
   "dashboard": {
@@ -140,32 +140,32 @@
     "addTemplate": "Add Template",
     "chooseType": "Choose Type",
     "actions": {
-        "editTemplate": "Edit template",
-        "editContent": "Edit content",
-        "viewContentReadOnly": "View content (read-only)",
-        "publishTemplate": "Publish template",
-        "publishedCannotBeUnpublished": "Published (cannot be unpublished)",
-        "sourceUpdated": "Source updated",
-        "deleteTemplate": "Delete template",
-        "exportTemplate": "Export template"
+      "editTemplate": "Edit template",
+      "editContent": "Edit content",
+      "viewContentReadOnly": "View content (read-only)",
+      "publishTemplate": "Publish template",
+      "publishedCannotBeUnpublished": "Published (cannot be unpublished)",
+      "sourceUpdated": "Source updated",
+      "deleteTemplate": "Delete template",
+      "exportTemplate": "Export template"
     },
     "status": {
-        "published": "Published",
-        "draft": "Draft",
-        "updateAvailable": "Update available",
-        "sourceUnavailable": "Source unavailable"
+      "published": "Published",
+      "draft": "Draft",
+      "updateAvailable": "Update available",
+      "sourceUnavailable": "Source unavailable"
     },
     "toasts": {
-        "templateDetached": {
+      "templateDetached": {
         "title": "Template detached",
         "message": "You can now edit this template"
-        },
-        "detachFailed": "Detach failed",
-        "templateDeleteFailed": "Template delete failed"
+      },
+      "detachFailed": "Detach failed",
+      "templateDeleteFailed": "Template delete failed"
     },
     "confirmDelete": {
-        "title": "Delete Template",
-        "message": "Are you sure you want to delete \"{name}\"?"
+      "title": "Delete Template",
+      "message": "Are you sure you want to delete \"{name}\"?"
     }
   },
   "publicTemplates": {
@@ -236,14 +236,7 @@
     }
   },
   "fields": {
-    "name": {
-      "label": "Name"
-    },
-    "description": {
-      "label": "Description"
-    },
     "type": {
-      "label": "Type",
       "options": {
         "chooseType": "Choose type",
         "emailGeneral": "Email - General",

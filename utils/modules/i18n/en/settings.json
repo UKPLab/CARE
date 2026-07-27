@@ -6,7 +6,6 @@
   "saveSettings": "Save Settings",
   "saveSettingsUnsaved": "Save Settings (Unsaved changes)",
   "importSettings": "Import Settings",
-  "rememberToSave": "Remember to click Save Settings after making changes.",
   "importDescription": "Select a previous downloaded settings file. Only existing keys will be updated.",
   "messages": {
     "settingsLoaded": "Settings Loaded",

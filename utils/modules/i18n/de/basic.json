@@ -1,117 +1,110 @@
 {
     "form": {
-      "placeholders": {
-        "documentBracket": "<Dokument>",
-        "documentTemplateSuffix": "(Dokumentvorlage)"
-      },
-      "advancedSettings": "Erweiterte Einstellungen"
+        "placeholders": {
+            "documentBracket": "<Dokument>",
+            "documentTemplateSuffix": "(Dokumentvorlage)"
+        },
+        "advancedSettings": "Erweiterte Einstellungen"
     },
     "configuration": {
-      "title": "Konfiguration",
-      "filesTitle": "Konfigurationsdateien",
-      "uploadButton": "Konfiguration hochladen",
-      "uploadTooltip": "Neue Konfigurationsdatei hochladen",
-      "types": {
-        "assessment": "Bewertung",
-        "validation": "Validierung"
-      },
-      "fields": {
-        "name": {
-          "label": "Name",
-          "placeholder": "Konfigurationsname"
+        "title": "Konfiguration",
+        "filesTitle": "Konfigurationsdateien",
+        "uploadButton": "Konfiguration hochladen",
+        "uploadTooltip": "Neue Konfigurationsdatei hochladen",
+        "types": {
+            "assessment": "Bewertung",
+            "validation": "Validierung"
         },
-        "description": {
-          "label": "Beschreibung",
-          "placeholder": "Optionale Beschreibung"
+        "fields": {
+            "name": {
+                "label": "Name",
+                "placeholder": "Konfigurationsname"
+            },
+            "description": {
+                "label": "Beschreibung",
+                "placeholder": "Optionale Beschreibung"
+            },
+            "userId": {
+                "label": "Benutzer-ID"
+            },
+            "hideInFrontend": {
+                "label": "Im Frontend ausblenden"
+            },
+            "type": {
+                "label": "Typ"
+            },
+            "content": {
+                "label": "Konfiguration (JSON)"
+            }
         },
-        "userId": {
-          "label": "Benutzer-ID"
+        "viewer": {
+            "title": "Konfiguration: {name}"
         },
-        "hideInFrontend": {
-          "label": "Im Frontend ausblenden"
+        "editor": {
+            "title": "Konfiguration bearbeiten: {name}",
+            "placeholder": "JSON-Inhalt hier bearbeiten..."
         },
-        "type": {
-          "label": "Typ"
+        "delete": {
+            "title": "Konfiguration löschen",
+            "message": "Möchten Sie \"{name}\" wirklich löschen?"
         },
-        "content": {
-          "label": "Konfiguration (JSON)"
+        "tooltips": {
+            "view": "Konfiguration anzeigen",
+            "edit": "Konfiguration bearbeiten",
+            "export": "Konfiguration exportieren",
+            "delete": "Konfiguration löschen"
+        },
+        "steps": {
+            "general": "Allgemeine Einstellungen",
+            "services": "Dienste",
+            "placeholders": "Platzhalter"
+        },
+        "editButton": "Konfiguration bearbeiten",
+        "saveButton": "Konfiguration speichern",
+        "toasts": {
+            "updatedTitle": "Konfiguration aktualisiert",
+            "updatedMessage": "Die Konfigurationsdaten wurden erfolgreich aktualisiert.",
+            "loadErrorTitle": "Konfigurationsfehler",
+            "loadErrorMessage": "Fehler beim Laden des Konfigurationsinhalts: {error}",
+            "editorNotInit": "Editor nicht initialisiert",
+            "noContent": "Kein Konfigurationsinhalt zum Speichern",
+            "contentUnavailable": "Kein Konfigurationsinhalt verfügbar",
+            "invalidJsonTitle": "Ungültiges JSON",
+            "invalidJsonMessage": "Bitte überprüfen Sie Ihre JSON-Syntax: {error}",
+            "updateErrorTitle": "Fehler beim Aktualisieren der Konfiguration",
+            "deleteFailedTitle": "Löschen der Konfiguration fehlgeschlagen"
+        },
+        "stepTitles": {
+            "general": "Allgemeine Konfiguration",
+            "services": "Dienste-Konfiguration",
+            "placeholders": "Platzhalter-Konfiguration"
         }
-      },
-      "viewer": {
-        "title": "Konfiguration: {name}"
-      },
-      "editor": {
-        "title": "Konfiguration bearbeiten: {name}",
-        "placeholder": "JSON-Inhalt hier bearbeiten..."
-      },
-      "delete": {
-        "title": "Konfiguration löschen",
-        "message": "Möchten Sie \"{name}\" wirklich löschen?"
-      },
-      "tooltips": {
-        "view": "Konfiguration anzeigen",
-        "edit": "Konfiguration bearbeiten",
-        "export": "Konfiguration exportieren",
-        "delete": "Konfiguration löschen"
-      },
-      "steps": {
-        "general": "Allgemeine Einstellungen",
-        "services": "Dienste",
-        "placeholders": "Platzhalter"
-      },
-      "editButton": "Konfiguration bearbeiten",
-      "saveButton": "Konfiguration speichern",
-      "toasts": {
-        "updatedTitle": "Konfiguration aktualisiert",
-        "updatedMessage": "Die Konfigurationsdaten wurden erfolgreich aktualisiert.",
-        "loadErrorTitle": "Konfigurationsfehler",
-        "loadErrorMessage": "Fehler beim Laden des Konfigurationsinhalts: {error}",
-        "editorNotInit": "Editor nicht initialisiert",
-        "noContent": "Kein Konfigurationsinhalt zum Speichern",
-        "contentUnavailable": "Kein Konfigurationsinhalt verfügbar",
-        "invalidJsonTitle": "Ungültiges JSON",
-        "invalidJsonMessage": "Bitte überprüfen Sie Ihre JSON-Syntax: {error}",
-        "updateErrorTitle": "Fehler beim Aktualisieren der Konfiguration",
-        "updateErrorMessage": "Aktualisierung der Konfiguration fehlgeschlagen",
-        "deleteFailedTitle": "Löschen der Konfiguration fehlgeschlagen"
-      },
-      "stepTitles": {
-        "general": "Allgemeine Konfiguration",
-        "services": "Dienste-Konfiguration",
-        "placeholders": "Platzhalter-Konfiguration"
-      }
-    },
-    "consent": {
-      "successTitle": "Zustimmung erfolgreich aktualisiert",
-      "successMessage": "Die Zustimmungseinstellungen wurden erfolgreich aktualisiert.",
-      "errorTitle": "Fehler beim Aktualisieren der Zustimmung"
-
     },
     "export": {
-      "successTitle": "Export erfolgreich",
-      "successMessage": "{id} erfolgreich exportiert"
+        "successTitle": "Export erfolgreich",
+        "successMessage": "{id} erfolgreich exportiert"
     },
     "graph": {
-      "inspectNode": "Knoten prüfen",
-      "copyNode": "Knoten kopieren",
-      "addNodeBefore": "Knoten davor hinzufügen",
-      "addNodeAfter": "Knoten danach hinzufügen",
-      "removeNode": "Knoten entfernen",
-      "editNode": "Knoten bearbeiten",
-      "pasteCopiedNode": "Kopierten Knoten einfügen",
-      "pasteBeforeSelectedNode": "Vor ausgewähltem Knoten einfügen",
-      "pasteAfterSelectedNode": "Nach ausgewähltem Knoten einfügen",
-      "readOnly": "Sie können diesen Graphen nicht bearbeiten",
-      "confirmRemove": {
-        "title": "Knoten entfernen",
-        "message": "Möchten Sie den ausgewählten Knoten wirklich entfernen?",
-        "warning": "Alle nachfolgenden Knoten werden ebenfalls entfernt!"
-      }
+        "inspectNode": "Knoten prüfen",
+        "copyNode": "Knoten kopieren",
+        "addNodeBefore": "Knoten davor hinzufügen",
+        "addNodeAfter": "Knoten danach hinzufügen",
+        "removeNode": "Knoten entfernen",
+        "editNode": "Knoten bearbeiten",
+        "pasteCopiedNode": "Kopierten Knoten einfügen",
+        "pasteBeforeSelectedNode": "Vor ausgewähltem Knoten einfügen",
+        "pasteAfterSelectedNode": "Nach ausgewähltem Knoten einfügen",
+        "readOnly": "Sie können diesen Graphen nicht bearbeiten",
+        "confirmRemove": {
+            "title": "Knoten entfernen",
+            "message": "Möchten Sie den ausgewählten Knoten wirklich entfernen?",
+            "warning": "Alle nachfolgenden Knoten werden ebenfalls entfernt!"
+        }
     },
     "workflowStepEditor": {
-      "title": "Workflow-Schritt",
-      "errors": {
-        "addNextNode": "Fehler beim Hinzufügen des nächsten Knotens: {error}"
-      }
+        "title": "Workflow-Schritt",
+        "errors": {
+            "addNextNode": "Fehler beim Hinzufügen des nächsten Knotens: {error}"
+        }
     }
 }
