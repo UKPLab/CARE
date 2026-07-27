@@ -27,50 +27,45 @@ const promptPlaceholders = [
     placeholderKey: "assessmentResult",
     placeholderLabel: "Assessment result",
     placeholderType: "text",
-    placeholderDescription: "Saved assessment scores and comments from the Assessment sidebar.",
+    placeholderDescription: "Saved rubric from the assessment sidebar for this document and step.",
     placeholderExample:
-      "Assessment Result: {\"Clarity\":{\"currentScore\":3,\"assessment\":\"Clear structure; conclusion could be stronger.\"}," +
-      "\"Sources\":{\"currentScore\":2,\"assessment\":\"Two claims need citations.\"}}",
+      '{"clarity":{"currentScore":3,"assessment":"Good structure but weak conclusion"},"sources":{"currentScore":2,"assessment":"Missing one reference"}}',
   },
   {
     type: 8,
     placeholderKey: "inlineComments",
     placeholderLabel: "Inline comments",
     placeholderType: "text",
-    placeholderDescription: "PDF inline comments and annotations.",
+    placeholderDescription: "Structured comments and annotations for this document and step.",
     placeholderExample:
-      "Inline Comments: [{\"page\":2,\"quote\":\"The baseline is unclear\",\"comment\":\"Define the baseline in the methods section.\"," +
-      "\"tag\":\"MajorIssue\"},{\"page\":4,\"quote\":\"Table 2 summarizes the main findings\",\"comment\":\"Good comparison of conditions.\"," +
-      "\"tag\":\"Strength\"}]",
+      '[{"page":2,"quote":"Baseline is unclear","comment":"Please define baseline.","tag":"MajorIssue"},{"page":4,"quote":"Table 2","comment":"Nice comparison.","tag":"Strength"}]',
   },
   {
     type: 8,
     placeholderKey: "nlpAssessmentSuggestion",
     placeholderLabel: "NLP assessment suggestion",
     placeholderType: "text",
-    placeholderDescription: "AI-generated draft assessment, when available.",
+    placeholderDescription: "Model draft assessment for this step if available.",
     placeholderExample:
-      "NLP Assessment Suggestion: [{\"name\":\"Clarity\",\"score\":3,\"justification\":\"Logical flow with minor gaps in the conclusion.\"}," +
-      "{\"name\":\"Sources\",\"score\":2,\"justification\":\"Several statements lack supporting references.\"}]",
+      '[{"name":"clarity","score":3,"justification":"Clear flow with minor issues"},{"name":"sources","score":2,"justification":"Some claims lack citations"}]',
   },
   {
     type: 8,
     placeholderKey: "previousAssessmentResult",
     placeholderLabel: "Previous assessment result",
     placeholderType: "text",
-    placeholderDescription: "Saved assessment from a prior step when carry-over is enabled.",
+    placeholderDescription: "Saved rubric from the previous step when carry-over is configured.",
     placeholderExample:
-      "Previous Assessment Result: {\"Clarity\":{\"currentScore\":2,\"assessment\":\"Argumentation was fragmented in the prior draft.\"}," +
-      "\"Sources\":{\"currentScore\":2,\"assessment\":\"Reference list was incomplete last step.\"}}",
+      '{"clarity":{"currentScore":2,"assessment":"Argumentation was fragmented"},"sources":{"currentScore":2,"assessment":"References were incomplete"}}',
   },
   {
     type: 8,
     placeholderKey: "assessmentConfiguration",
     placeholderLabel: "Assessment configuration",
     placeholderType: "text",
-    placeholderDescription: "Rubric structure and criteria from the assessment configuration.",
+    placeholderDescription: "Assessment rubric configuration used in this step.",
     placeholderExample:
-      "Assessment Configuration: {\"type\":\"assessment\",\"rubrics\":[{\"name\":\"Overall\",\"criteria\":[{\"name\":\"Clarity\",\"maxPoints\":5},{\"name\":\"Sources\",\"maxPoints\":5}]}]}",
+      '{"type":"assessment","rubrics":[{"name":"overall","criteria":[{"name":"clarity","maxPoints":5},{"name":"sources","maxPoints":5}]}]}',
   },
   {
     type: 8,
@@ -87,9 +82,9 @@ const promptPlaceholders = [
     placeholderKey: "studyContext",
     placeholderLabel: "Study context",
     placeholderType: "text",
-    placeholderDescription: "Study, step, and document metadata.",
+    placeholderDescription: "Basic metadata from current study, step, and document context.",
     placeholderExample:
-      "Study Context: {\"studyName\":\"Peer Review Pilot\",\"stepName\":\"Essay feedback\",\"documentTitle\":\"Draft essay v2.pdf\"}",
+      '{"studyName":"Peer Review Pilot","stepName":"Essay feedback","documentTitle":"Draft essay v2.pdf"}',
   },
 ];
 

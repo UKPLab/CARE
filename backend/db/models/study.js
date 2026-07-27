@@ -393,8 +393,8 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async createBudgets(study, options, studyStepsMap) {
             const ctx = options.context || {};
-            const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../utils/aiBudgetLimitTypes");
             const Budget = sequelize.models.ai_budget;
+            const LT = Budget.limitTypes;
             const { transaction } = options;
 
             // Each create runs in the same transaction that's writing the
