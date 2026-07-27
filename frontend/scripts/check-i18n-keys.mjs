@@ -89,8 +89,24 @@ function isHardcodedIgnored(filePath) {
 }
 
 /**
+ * True when `/` at `i` starts a regex literal rather than division / HTML (`</tag>`).
+ * Needed so quotes inside `/"/g` do not derail the string walker for the rest of the file.
+ */
+function isRegexLiteralStart(source, i) {
+    let k = i - 1
+    while (k >= 0 && /[ \t\n\r]/.test(source[k])) k -= 1
+    if (k < 0) return true
+    const prev = source[k]
+    if (prev === '<') return false
+    // After these, `/` is division (or a close-tag already handled above).
+    if (/[\w$)'"`\]]/.test(prev)) return false
+    return true
+}
+
+/**
  * Walk source: drop comments, keep code. Optionally collect string/template contents
  * (handles empty "" and escapes — unlike a naive [^'"`]+ regex).
+ * Also skips JS regex literals so e.g. `.replace(/"/g, …)` does not swallow the file.
  */
 function walkSource(source, { onString } = {}) {
     let out = ''
@@ -109,6 +125,42 @@ function walkSource(source, { onString } = {}) {
         if (source.startsWith('//', i)) {
             const end = source.indexOf('\n', i)
             i = end === -1 ? source.length : end
+            continue
+        }
+        if (
+            source[i] === '/' &&
+            !source.startsWith('//', i) &&
+            !source.startsWith('/*', i) &&
+            isRegexLiteralStart(source, i)
+        ) {
+            let j = i + 1
+            let inClass = false
+            while (j < source.length) {
+                const c = source[j]
+                if (c === '\\') {
+                    j += 2
+                    continue
+                }
+                if (c === '\n') break
+                if (inClass) {
+                    if (c === ']') inClass = false
+                    j += 1
+                    continue
+                }
+                if (c === '[') {
+                    inClass = true
+                    j += 1
+                    continue
+                }
+                if (c === '/') {
+                    j += 1
+                    break
+                }
+                j += 1
+            }
+            while (j < source.length && /[gimsuyvd]/.test(source[j])) j += 1
+            out += source.slice(i, j)
+            i = j
             continue
         }
         const q = source[i]
