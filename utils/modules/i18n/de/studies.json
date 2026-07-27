@@ -1,13 +1,10 @@
 {
   "title": "Studien",
-  "overview": "Übersicht",
   "study": "Studie",
   "template": "Vorlage",
-  "sessions": "Sitzungen",
   "savedTemplates": "Gespeicherte Vorlagen",
-  "closeAllStudies": "Alle Studien schließen",
   "manageStudies": "Studien verwalten",
-  "addBulkAssignments": "Sammelzuweisung hinzufügen", 
+  "addBulkAssignments": "Sammelzuweisung hinzufügen",
   "addSingleAssignment": "Zuweisung hinzufügen",
   "editStudy": "Studie bearbeiten",
   "deleteStudy": "Studie löschen",
@@ -41,7 +38,6 @@
   "thankYouJoining": "Vielen Dank für Ihre Teilnahme!",
   "clickFinishToSubmit": "Mit einem Klick auf \"Beenden\" reichen Sie Ihre Ergebnisse ein.",
   "timeExpired": "Die Zeit ist abgelaufen, es sind keine Änderungen mehr möglich.",
-  "nameOfStudy": "Name der Studie:",
   "foreignUnstartedSession": "Diese Studien-Sitzung wurde noch nicht gestartet und gehört einem anderen Benutzer.",
   "cannotResumeSession": "Sie können diese Sitzung nicht starten oder fortsetzen.",
   "columns": {
@@ -55,7 +51,6 @@
     "resumable": "Fortsetzbar",
     "collaborative": "Kollaborativ",
     "multipleSubmissions": "Mehrfacheinreichungen",
-    "timeLimit": "Zeitlimit",
     "sessionStartFinishEmails": "E-Mails zum Start/Abschluss der Sitzung",
     "parentSessionId": "Übergeordnete Sitzungs-ID"
   },
@@ -70,8 +65,6 @@
     "enjoy": "Viel Erfolg!",
     "studyPublishedSuccess": "Studie erfolgreich veröffentlicht!",
     "participantsCanJoin": "Teilnehmer können über folgenden Link beitreten:",
-    "studyClosed": "Studie geschlossen",
-    "studyClosedMessage": "Die Studie wurde geschlossen",
     "studyDeleted": "Studie gelöscht",
     "studyDeletedMessage": "Die Studie wurde gelöscht",
     "studyRestarted": "Studie neustarten",
@@ -94,7 +87,9 @@
     "sessionWarning": "Es existieren derzeit {count} Sitzungen für diese Studie. Das Löschen der Studie entfernt auch diese Sitzungen!",
     "sessionFinished": "Sitzung beendet",
     "sessionFinishedMessage": "Ihre Sitzung wurde erfolgreich eingereicht.",
-    "studySessionErrorTitle": "Fehler in der Studiensitzung"
+    "studySessionErrorTitle": "Fehler in der Studiensitzung",
+    "cannotFinishSession": "Sitzung kann nicht beendet werden",
+    "studyClosedAutoTerminated": "Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
   },
   "loading": {
     "title": "Lade Studienschritt",
@@ -145,61 +140,6 @@
     "createStudy": "Studie erstellen",
     "editStudy": "Studie bearbeiten",
     "newStudy": "Neue Studie"
-  },
-  "unit": {
-    "sessions": "Sitzung(en)"
-  },
-  "form": {
-    "name": {
-      "label": "Name der Studie",
-      "placeholder": "Meine Nutzerstudie"
-    },
-    "workflow": {
-      "label": "Workflow für die Studie auswählen",
-      "help": "Wählen Sie eine Workflow-Vorlage für die einzelnen Studienschritte aus."
-    },
-    "tagSet": {
-      "label": "Tag-Set für die Studie",
-      "help": "Wählen Sie ein Tag-Set aus, das in dieser Studie verwendet werden soll."
-    },
-    "stepDocuments": {
-      "label": "Dokumente den Workflow-Schritten zuordnen"
-    },
-    "description": {
-      "label": "Beschreibung der Studie",
-      "help": "Dieser Text wird den Teilnehmenden zu Beginn der Studie angezeigt."
-    },
-    "timeLimit": {
-      "label": "Wie viel Zeit steht den Teilnehmenden für die Studie zur Verfügung?",
-      "help": "Legen Sie die maximale Bearbeitungszeit fest. Verwenden Sie 0, um das Zeitlimit zu deaktivieren."
-    },
-    "limitSessions": {
-      "label": "Anzahl der Sitzungen für die Studie begrenzen",
-      "help": "Legen Sie fest, wie oft Teilnehmende die Studie starten oder fortsetzen dürfen. Verwenden Sie 0 für eine unbegrenzte Anzahl an Sitzungen."
-    },
-    "limitSessionsPerUser": {
-      "label": "Anzahl der Sitzungen pro Person begrenzen",
-      "help": "Legen Sie fest, wie oft jede teilnehmende Person die Studie starten oder fortsetzen darf. Verwenden Sie 0 für unbegrenzte Sitzungen."
-    },
-    "collab": {
-      "label": "Soll die Studie kollaborativ sein?"
-    },
-    "anonymize": {
-      "label": "Sollen Kommentare anonymisiert werden?"
-    },
-    "resumable": {
-      "label": "Soll die Studie fortsetzbar sein?"
-    },
-    "multipleSubmit": {
-      "label": "Mehrfache Abgaben erlauben?",
-      "help": "Legen Sie fest, ob Teilnehmende die Studie mehr als einmal abschicken dürfen."
-    },
-    "start": {
-      "label": "Studien-Sitzungen dürfen nicht starten vor"
-    },
-    "end": {
-      "label": "Studien-Sitzungen dürfen nicht starten nach"
-    }
   },
   "assignUserSession": {
     "title": "Benutzer zur Studiensitzung zuweisen",

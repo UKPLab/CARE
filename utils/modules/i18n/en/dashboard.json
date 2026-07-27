@@ -36,7 +36,6 @@
         "totalCommentsVotes": "Total Comment Votes:",
         "totalEdits": "Total Edits:",
         "exportType": "Export Type",
-        "exportReviewers": "Export a list of all reviewers",
         "extId": "extId",
         "numberOfAssignments": "Number of Assignments",
         "roles": "Roles",
@@ -73,14 +72,11 @@
             "edit": "Edit project",
             "delete": "Delete project",
             "share": "Share project",
-            "export": "Export data",
-            "selectDefault": "Select project as default"
+            "export": "Export data"
         },
         "delete": {
             "title": "Delete Project",
-            "message": "Are you sure you want to delete this project?",
-            "warningStudies": "There is currently {count} study linked to this project. Deleting the project will also delete the study. | There are currently {count} studies linked to this project. Deleting the project will also delete the studies.",
-            "warningDocuments": "There is currently {count} document linked to this project. Deleting the project will also delete the document. | There are currently {count} documents linked to this project. Deleting the project will also delete the documents."
+            "message": "Are you sure you want to delete this project?"
         },
         "toasts": {
             "deleteFailed": "Project delete failed",
@@ -127,7 +123,6 @@
     "settings": {
         "selectSetting": "Select setting",
         "selectedValue": "Selected Value:",
-        "usersSelected": "user(s) selected",
         "setting:": "Setting:",
         "newValue": "New Value:",
         "users:": "Users:",
@@ -137,27 +132,7 @@
         "updateFailed": "Update failed",
         "selectSettingAndUser": "Please select a setting and at least one user.",
         "settingsUpdated": "Settings updated",
-        "updatedMessage": "Updated \"{key}\" for {count} user(s).",
-        "mainSettings": "Main settings of the application",
-        "sensitiveDataNote": "Note: Make sure that no sensitive data are present!",
-        "toolbarNote": "Note: When the toolbar is disabled, all the tools will be hidden!",
-        "nlpSupport": "Activate/Deactivate NLP support",
-        "changeUserSettings": "Change User Settings",
-        "exportJson": "Export JSON",
-        "importJson": "Import JSON",
-        "saveSettings": "Save Settings",
-        "saveSettingsUnsaved": "Save Settings (Unsaved changes)",
-        "rememberToSaveBefore": "Remember to click",
-        "rememberToSaveAfter": "after making changes.",
-        "importSettings": "Import Settings",
-        "importDescription": "Select a previous downloaded settings file. Only existing keys will be updated.",
-        "messages": {
-        "unsavedChangesWarning": "You have unsaved changes in your settings. Are you sure you want to leave without saving?",
-        "settingsLoaded": "Settings Loaded",
-        "settingsLoadedMessage": "Settings have been successfully loaded.",
-        "settingsImported": "Settings imported",
-        "updatedSettings": "Updated {count} existing setting(s)."
-        }
+        "updatedMessage": "Updated \"{key}\" for {count} user(s)."
     },
     "study": {
         "addSingleAssignment": "Add Single Assignment",
@@ -208,12 +183,6 @@
         "assignmentCreated": "Assignment created",
         "assignmentCreatedMessage": "The assignment has been created successfully",
         "failedToCreateAssignment": "Failed to create assignment",
-        "bulkCloseStudies": "Bulk Close Studies",
-        "closeStudiesPrompt": "Are you sure you want to close all open studies?",
-        "allStudiesClosed": "All studies closed",
-        "closeAllStudies": "Close All Studies",
-        "allStudiesClosedMessage": "All open studies have been closed",
-        "failedToClose": "Failed to close all studies",
         "createTemplate": "Create Template",
         "deleteTemplate": "Delete Template",
         "deleteTemplatePrompt": "Are you sure you want to delete this template?",
@@ -222,8 +191,6 @@
         "deletionFailed": "Study template deletion failed",
         "assignmentType": "Assignment Type:",
         "workflowAssignments": "Workflow Assignments:",
-        "createAssignment": "Create Assignment",
-        "assignmentSelection": "Assignment Selection",
         "studySessionsOf": "Study Sessions of",
         "openSession": "Open session",
         "inspectSession": "Inspect session",
@@ -256,18 +223,14 @@
         "workflowType": "Workflow Type",
         "submissionGroup": "Submission Group",
         "studySessions": "Study Sessions",
-        "noEmailWillBeSent": "None (no email will be sent)",
         "sessionUserBasedSelection": "Session user-based selection (assign each study session to its original user)",
         "workflowStepOption": "<Workflow> Step {index} ({type})",
         "revisedDocument": "<Document> Revised Document",
         "workflowMapping": "Workflow Mapping",
         "studySessionSelection": "Study Session Selection",
-        "sendEmailToParticipants": "Send email notification to participants with open sessions",
         "targetWorkflow": "Target Workflow",
         "selectedStudySession": "Selected Study Session",
         "sessionWithId": "Session {id}",
-        "stepType": "Step Type",
-        "stepOption": "Step {index}: {type}",
         "createSingleAssignmentTitle": "Create Single Assignment",
         "submissionSelection": "Submission Selection",
         "typeDocument": "Document",
@@ -293,11 +256,8 @@
         "studiesToOpen": "Studies to Open",
         "studiesToDelete": "Studies to Delete",
         "aboutToClose": "You are about to close {count} study:",
-        "aboutToClose_plural": "You are about to close {count} studies:",
         "aboutToOpen": "You are about to open {count} study:",
-        "aboutToOpen_plural": "You are about to open {count} studies:",
         "aboutToDelete": "You are about to permanently delete {count} study:",
-        "aboutToDelete_plural": "You are about to permanently delete {count} studies:",
         "studyListItem": "{name} ({workflow}) - Owner: {owner}",
         "notifyOpenSessionsAlert": "Email notifications will be sent to participants with open sessions.",
         "notifyActiveSessionsAlert": "Email notifications will be sent to participants with active sessions.",
@@ -309,19 +269,16 @@
         "closedTitle": "Studies closed",
         "closeFinishedTitle": "Bulk close finished",
         "closedMessage": "{count} study closed.",
-        "closedMessage_plural": "{count} studies closed.",
         "noneClosed": "No studies were updated (they may already be closed).",
         "closeFailed": "Bulk close failed",
         "openedTitle": "Studies opened",
         "openFinishedTitle": "Bulk open finished",
         "openedMessage": "{count} study opened.",
-        "openedMessage_plural": "{count} studies opened.",
         "noneOpened": "No studies were updated.",
         "openFailed": "Bulk open failed",
         "deletedTitle": "Studies deleted",
         "deleteFinishedTitle": "Bulk delete finished",
         "deletedMessage": "{count} study permanently deleted.",
-        "deletedMessage_plural": "{count} studies permanently deleted.",
         "noneDeleted": "No studies were deleted.",
         "deleteFailed": "Bulk delete failed",
         "deleteConfirmPrompt": "Are you sure you want to delete these studies?",
@@ -339,17 +296,7 @@
         "typeHtml": "HTML"
     },
     "users": {
-        "manageRightsFor": "Manage rights for",
-        "role": "role",
-        "selectRightsNote": "Select the rights for this role. Note: All users have basic {user} rights by default.",
         "userWithQuotes": "\"user\"",
-        "selectRole": "Select Role",
-        "manageRights": "Manage Rights",
-        "rightName": "Right Name",
-        "description": "Description",
-        "chooseARole": "Choose a role to assign to the user.",
-        "roleRightsUpdated": "Role Rights Updated",
-        "roleRightsUpdatedMessage": "Role rights have been successfully updated",
         "userNameLabel": "Username:",
         "firstNameLabel": "First Name:",
         "lastNameLabel": "Last Name:",
@@ -422,8 +369,7 @@
             "successMessage": "Successfully assigned {count} submission(s) to group {group}",
             "failureTitle": "Failed to assign group",
             "columns": {
-                "additionalSettings": "Additional Settings",
-                "dataExisting": "Data Existing"
+                "additionalSettings": "Additional Settings"
             },
             "filters": {
                 "noGroupId": "No GroupID"
@@ -434,23 +380,11 @@
         "title": "Import Moodle Submissions",
         "stepMoodle": "Moodle",
         "stepPreview": "Preview",
-        "stepConfigure": "Configure",
         "stepConfirm": "Confirm",
         "stepResult": "Result",
-        "assignGroup": "Assign Group",
-        "groupNumber": "Group Number",
-        "groupNumberPlaceholder": "Enter group number",
         "confirmImport": "Confirm Import Settings",
         "importSummary": "Import Summary",
         "submissionsToImport": "Submissions to import:",
-        "groupNumberLabel": "Group Number:",
-        "validationSchema": "Validation schema:",
-        "noneSelected": "None selected",
-        "totalSubmissions": "Total submissions:",
-        "requiredFiles": "Required files:",
-        "validationDetails": "Validation Details:",
-        "validationWillCheck": "This will validate ZIP file contents according to the \"{name}\" schema. Submissions must contain all required files: {files}.",
-        "noValidationSelected": "No validation schema selected. Submissions will be imported without validation.",
         "areYouSure": "Are you sure you want to import {count} {message}?",
         "submissionSingular": "submission",
         "submissionPlural": "submissions",
@@ -464,8 +398,6 @@
             "duplicate": "Duplicate",
             "externalId": "External ID",
             "userId": "User ID",
-            "firstName": "First Name",
-            "lastName": "Last Name",
             "fileCount": "File Count"
         },
         "filters": {
@@ -506,8 +438,6 @@
             "extId": "extId",
             "submissionId": "Submission ID",
             "group": "Group",
-            "firstName": "First Name",
-            "lastName": "Last Name",
             "studies": "Studies",
             "sessions": "Sessions",
             "documentTitle": "Document Title",
@@ -517,11 +447,7 @@
     "uploadModal": {
         "title": "Upload Submission",
         "stepSelectUser": "Select User",
-        "stepSelectConfig": "Select Config",
         "stepUploadFile": "Upload File",
-        "assignGroup": "Assign Group",
-        "groupNumber": "Group Number",
-        "groupNumberPlaceholder": "Enter group number",
         "invalidFiles": "Invalid file(s)",
         "pleaseUploadFiles": "Please upload all required files.",
         "uploadedFile": "Uploaded file",
@@ -541,7 +467,6 @@
         "maintainer": "maintainer",
         "admin": "admin",
         "system": "system",
-
         "descriptions": {
             "regular": "no system rights",
             "maintainer": "manage users",
@@ -555,18 +480,6 @@
             "newEmptyDoc": "New Empty Document"
         }
     },
-    "assessment": {
-        "title": "Assessment"
-    },
-    "errors": {
-        "permission": {
-            "accessError": "Access Error!"
-        },
-        "studies": {
-            "sessionNotFinished": "Study Session not finished",
-            "stepUpdateFailed": "Study Step update failed"
-        }
-    },
     "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
@@ -574,9 +487,9 @@
         "allWorkflows": "All Workflows",
         "step": "Step {number}",
         "columns": {
-        "studyName": "Study Name",
-        "maxStep": "Max Step",
-        "numberOfSteps": "Number of Steps"
+            "studyName": "Study Name",
+            "maxStep": "Max Step",
+            "numberOfSteps": "Number of Steps"
         }
     }
 }

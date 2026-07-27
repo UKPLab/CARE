@@ -6,7 +6,6 @@
   "saveSettings": "Einstellungen speichern",
   "saveSettingsUnsaved": "Einstellungen speichern (Ungespeicherte Änderungen)",
   "importSettings": "Einstellungen importieren",
-  "rememberToSave": "Denken Sie daran, nach Änderungen auf \"Einstellungen speichern\" zu klicken.",
   "importDescription": "Wählen Sie eine zuvor heruntergeladene Einstellungsdatei. Nur vorhandene Schlüssel werden aktualisiert.",
   "messages": {
     "settingsLoaded": "Einstellungen geladen",

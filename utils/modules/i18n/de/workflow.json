@@ -58,49 +58,10 @@
     }
   },
   "exportFormatModal": {
-    "title": "Workflows exportieren",
-    "json": {
-      "title": "JSON-Format",
-      "description": "Standardmäßiges JSON-Format mit korrekter Formatierung"
-    },
-    "yaml": {
-      "title": "YAML-Format",
-      "description": "Menschenlesbares YAML-Format"
-    },
-    "success": {
-      "title": "Export erfolgreich",
-      "single": "Workflow erfolgreich im {format}-Format exportiert",
-      "multiple": "Workflows erfolgreich im {format}-Format exportiert"
-    }
+    "title": "Workflows exportieren"
   },
   "importFormatModal": {
-    "title": "Workflows importieren",
-    "selectWorkflowFile": "Workflow-Datei auswählen (JSON oder YAML):",
-    "selectedFile": "Ausgewählt: {file}",
-    "selectWorkflowsPrefix": "Wählen Sie aus, welche Workflows importiert werden sollen aus",
-    "confirmQuestion": "Möchten Sie die folgenden Workflows wirklich importieren?",
-    "stepCount": "{count} Schritt(e)",
-    "steps": {
-      "fileSelection": "Dateiauswahl",
-      "workflowSelection": "Workflow-Auswahl",
-      "confirmation": "Bestätigung"
-    },
-    "table": {
-      "steps": "Schritte",
-      "hidden": "Ausgeblendet"
-    },
-    "errors": {
-      "parseFileFailed": "Datei konnte nicht gelesen werden: {message}",
-      "readFileFailed": "Datei konnte nicht gelesen werden",
-      "importError": "Importfehler",
-      "importStepFailed": "Schritt \"{step}\" konnte nicht importiert werden: {message}",
-      "importWorkflowFailed": "Workflow \"{workflow}\" konnte nicht importiert werden: {message}"
-    },
-    "success": {
-      "title": "Import erfolgreich",
-      "single": "{count} Workflow erfolgreich importiert!",
-      "multiple": "{count} Workflows erfolgreich importiert!"
-    }
+    "title": "Workflows importieren"
   },
   "createModal": {
     "title": "Workflow",

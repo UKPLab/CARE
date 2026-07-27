@@ -51,42 +51,10 @@
     "tagSetPublished": "TagSet published",
     "tagSetPublishedMessage": "The TagSet was successfully published"
   },
-  "form": {
-    "name": {
-      "label": "Name of the Tag set:",
-      "placeholder": "My tag set"
-    },
-    "description": {
-      "label": "Description of the Tag set:",
-      "placeholder": "Tag set description"
-    },
-    "tags": {
-      "label": "Tags:"
-    }
-  },
   "editMainTag": "Edit main tag",
-  "basicTags": {
-    "highlight": "Highlight",
-    "strength": "Strength",
-    "weakness": "Weakness",
-    "other": "Other"
-  },
-  "basicTagGroups": {
-    "peerReview": "Peer Review",
-    "standardSet": "A standard tagset for peer review process"
-  },
-  "tag":{
+  "tag": {
     "form": {
-      "name":{
-        "label": "Name",
-        "placeholder": "Name of the Tag"
-      },
-      "description": {
-        "label": "Description",
-        "placeholder":"Tag description"
-      },
       "colorCode": {
-        "label": "Color",
         "options": {
           "info": "Info",
           "warning": "Warning",

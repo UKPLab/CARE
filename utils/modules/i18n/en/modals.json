@@ -1,6 +1,5 @@
 {
     "confirm": "Confirm",
-    "confirmAction": "Confirm {action}",
     "pleaseConfirm": "Please confirm",
     "sending": "Sending...",
     "sendResetEmail": "Send Reset Email",

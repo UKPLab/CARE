@@ -3,30 +3,14 @@
     "invalidResetLink": "Ungültiger Link zum Zurücksetzen des Passworts. Bitte fordern Sie ein neues Passwort an.",
     "invalidResetToken": "Ungültiges Reset-Token. Bitte fordern Sie ein neues Passwort an.",
     "invalidOrExpiredToken": "Ungültiges oder abgelaufenes Reset-Token.",
-    "tokenRequired": "Token ist erforderlich.",
-    "tokenAndPasswordRequired": "Token und neues Passwort sind erforderlich.",
     "failedToValidateToken": "Validierung des Reset-Tokens fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "failedToResetPassword": "Zurücksetzen des Passworts fehlgeschlagen. Bitte versuchen Sie es später erneut.",
     "passwordResetFailed": "Zurücksetzen des Passworts fehlgeschlagen",
-    "accessDeniedData": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen.",
-    "passwordResetDisabled": "Das Zurücksetzen des Passworts ist deaktiviert.",
-    "passwordResetRateLimited": "Bitte warten Sie {minutes} Minute(n), bevor Sie eine weitere E-Mail zum Zurücksetzen des Passworts anfordern.",
     "emailVerificationError": "Fehler bei der Bestätigung der E-Mail",
-    "emailVerificationDisabled": "E-Mail-Verifizierung ist deaktiviert.",
-    "emailAlreadyVerified": "Die E-Mail-Adresse ist bereits verifiziert.",
-    "verificationRateLimited": "Bitte warten Sie {minutes} Minute(n), bevor Sie eine weitere Verifizierungs-E-Mail anfordern.",
     "failedToVerifyEmail": "E-Mail konnte nicht bestätigt werden. Bitte versuchen Sie es später erneut.",
     "failedToSendResetEmail": "Die E-Mail zum Zurücksetzen des Passworts konnte nicht gesendet werden.",
     "failedToSendVerificationEmail": "Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es später erneut.",
-    "failedToLogin": "Anmeldung fehlgeschlagen.",
-    "failedToEstablishLoginSession": "Anmeldesitzung konnte nicht erstellt werden.",
-    "authenticationRequired": "Authentifizierung erforderlich.",
-    "emailNotVerified": "Bitte bestätigen Sie Ihre E-Mail-Adresse, bevor Sie sich anmelden.",
-    "failedToCreateUser": "Benutzer konnte nicht erstellt werden.",
-    "emailAlreadyTaken": "E-Mail-Adresse ist bereits vergeben.",
-    "usernameTaken": "Benutzername ist bereits vergeben.",
-    "userNotFoundByEmail": "Benutzer mit dieser E-Mail-Adresse existiert nicht.",
-    "invalidCredentials": "Ungültige Anmeldedaten", 
+    "invalidCredentials": "Ungültige Anmeldedaten",
     "termsUpdateError": "Fehler beim Aktualisieren der Zustimmung",
     "consentUpdateError": "Aktualisierung der Zustimmung fehlgeschlagen",
     "twoFactorSessionSaveFailed": "2FA konnte aufgrund eines Sitzungsproblems nicht gestartet werden. Bitte versuchen Sie erneut, sich anzumelden.",
@@ -39,20 +23,12 @@
     "samlLoginFailed": "SAML-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "loginFailed": "Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "invalidInstitutionalCredentials": "Ungültige institutionelle Anmeldedaten. Bitte versuchen Sie es erneut.",
-    "ldapLoginDisabled": "LDAP-Anmeldung wurde vom Administrator deaktiviert.",
-    "ldapLoginNotReady": "LDAP-Anmeldung ist aktiviert, aber noch nicht vollständig konfiguriert. Bitte kontaktieren Sie einen Administrator.",
     "ldapLoginFailed": "LDAP-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut."
   },
   "permission": {
     "accessError": "Zugriffsfehler",
-    "accessDenied": "Zugriff verweigert.",
-    "noPermission": "Sie haben keine Berechtigung, diese Aktion auszuführen.",
-    "noUploadAccess": "Sie haben keine Berechtigung, Dokumente hochzuladen.",
-    "noUserAccess": "Sie haben keine Berechtigung, auf die Daten dieses Benutzers zuzugreifen.",
-    "noRoleAccess": "Sie haben nicht die erforderliche Rolle, um diese Aktion auszuführen.",
     "noAnnotationChangePermission": "Sie haben keine Berechtigung, diese Annotation zu verändern.",
     "cannotUpdateOtherUserTable": "Sie sind nicht berechtigt, die Tabelle {dataTable} für einen anderen Benutzer zu aktualisieren.",
-    "noDataAccess": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen",
     "noCommentEditPermission": "Sie sind nicht berechtigt, diesen Kommentar zu bearbeiten.",
     "noCommentPermission": "Sie sind nicht berechtigt, einen Kommentar hinzuzufügen.",
     "noCommentAccess": "Sie haben keinen Zugriff auf diesen Kommentar",
@@ -60,9 +36,7 @@
     "noPreprocessSubmissionPermission": "Sie haben keine Berechtigung, Einreichungen vorzuverarbeiten"
   },
   "configuration": {
-    "idRequired": "Konfigurations-ID ist erforderlich.",
     "idRequiredNoPeriod": "Konfigurations-ID ist erforderlich",
-    "contentRequired": "Konfigurationsinhalt ist erforderlich.",
     "contentRequiredNoPeriod": "Konfigurationsinhalt ist erforderlich",
     "notFound": "Konfiguration nicht gefunden.",
     "accessDenied": "Zugriff verweigert",
@@ -73,9 +47,7 @@
     "ensurePasswordRequirements": "Bitte stellen Sie sicher, dass die Passwörter den Anforderungen entsprechen.",
     "validationError": "Validierungsfehler",
     "validationErrorWithMessage": "Validierungsfehler: {message}",
-    "validationFailed": "Validierung fehlgeschlagen: {message}",
     "validationFailedGeneric": "Validierung fehlgeschlagen",
-    "required": "Dieses Feld ist erforderlich",
     "requiredFieldMissing": "Erforderliches Feld fehlt: {fieldKey}",
     "tableNameRequired": "Tabellenname ist erforderlich",
     "fileDownloadFailed": "Datei {fileName} konnte nicht heruntergeladen werden: {message}",
@@ -126,15 +98,14 @@
     "noTableAvailable": "{tableType} steht nicht zur Auswahl.",
     "noParameters": "Keine Parameter für die Dateiauswahl gefunden. Alle Parameter verwenden konfigurationsbasierte Eingaben.",
     "pdfNotFound": "PDF-Datei wurde nicht gefunden",
-    "tableNameRequired": "Tabellenname ist erforderlich",
     "copyJsonError": {
       "title": "JSON nicht kopiert",
       "notCopiedMsg": "JSON konnte nicht in die Zwischenablage kopiert werden!",
       "notLoadedMsg": "JSON konnte nicht kopiert werden, da es nicht geladen oder leer ist."
     },
     "pdfLoadingError": {
-        "title": "Fehler beim Laden der PDF-Datei",
-        "message": "Laden der PDF-Datei fehlgeschlagen. Stellen Sie sicher, dass die Datei nicht beschädigt ist und im gültigen PDF-Format vorliegt."
+      "title": "Fehler beim Laden der PDF-Datei",
+      "message": "Laden der PDF-Datei fehlgeschlagen. Stellen Sie sicher, dass die Datei nicht beschädigt ist und im gültigen PDF-Format vorliegt."
     }
   },
   "clipboard": {
@@ -143,13 +114,12 @@
     "retrieveFailed": "Die URL konnte nicht abgerufen werden. Bitte versuchen Sie es später erneut.",
     "configNotCopied": "Konfiguration nicht kopiert",
     "skillConfigCopyFailed": "Skill-Konfiguration konnte nicht in die Zwischenablage kopiert werden!",
-    "couldNotCopyStudySession":"Link zur Studiensitzung konnte nicht in die Zwischenablage kopiert werden!"
+    "couldNotCopyStudySession": "Link zur Studiensitzung konnte nicht in die Zwischenablage kopiert werden!"
   },
   "documents": {
     "deleteFailed": "Löschen des Dokuments fehlgeschlagen",
     "documentNotPublished": "Dokument nicht veröffentlicht",
     "documentEditFailed": "Bearbeitung des Dokuments fehlgeschlagen",
-    "failedToUploadConfiguration": "Fehler beim Hochladen der Konfiguration",
     "failedToUpload": "Hochladen fehlgeschlagen",
     "failedToProcessPdf": "Verarbeitung der PDF-Datei fehlgeschlagen",
     "errorProcessingPdf": "Fehler bei der Verarbeitung der PDF-Datei",
@@ -159,10 +129,8 @@
     "documentError": "Dokumentfehler",
     "uploadingFailed": "Hochladen fehlgeschlagen",
     "noDocumentSelected": "Sie müssen ein Dokument auswählen.",
-    "notFound": "Dokument nicht gefunden.",
     "withIdNotFound": "Dokument mit ID {documentId} nicht gefunden",
     "byIdNotFound": "Dokument {documentId} nicht gefunden",
-    "unsupportedDocumentTypeOperation": "Diese Operation wird nur für HTML/MODAL-Dokumente unterstützt.",
     "processingError": "Fehler bei der Verarbeitung von Dokument {documentId}: {message}",
     "fileNotFound": "Datei für Dokument {documentId} nicht gefunden: {filePath}",
     "readError": "Fehler beim Lesen der Dokumentdatei {documentId}: {message}",
@@ -180,14 +148,11 @@
     "replaceNotAllowed": "Sie dürfen diese Einreichung nicht ersetzen.",
     "replaceDocumentsUsedInStudies": "Einreichung kann nicht ersetzt werden, da mindestens ein verknüpftes Dokument in Studien verwendet wird.",
     "annotationDeleteOriginalFailed": "Fehler beim Löschen von Annotationen: Ursprüngliche Annotationen konnten nicht gelöscht werden",
-    "annotationDeleteFailed": "Fehler beim Löschen von Annotationen: {message}",
     "annotationDeleteFailedGeneric": "Fehler beim Löschen von Annotationen.",
     "exactTextNotFound": "Exakter Text \"{text}\" wurde im Dokumenttext nicht gefunden",
     "textPositionExtractionFailed": "Fehler beim Extrahieren von Textpositionen für Text \"{text}\".",
     "annotationAddFailed": "Fehler beim Hinzufügen der Annotation.",
-    "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen.",
-    "notEnoughDocumentsForRole": "Nicht genügend Dokumente zur Überprüfung für die Rolle {roleName}. Bitte fügen Sie weitere Dokumente hinzu.",
-    "notEnoughDocumentsForReviewer": "Nicht genügend Dokumente zur Überprüfung für {reviewerName}. Bitte fügen Sie weitere Dokumente hinzu."
+    "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen."
   },
   "editor": {
     "cursorPositionError": {
@@ -199,7 +164,6 @@
   },
   "studies": {
     "studyCannotStart": "Studie kann nicht gestartet werden!",
-    "studyClosingFailed": "Schließen der Studie fehlgeschlagen",
     "studyDeleteFailed": "Löschen der Studie fehlgeschlagen",
     "studyRestartFailed": "Neustart der Studie fehlgeschlagen",
     "templateSaveFailed": "Speichern der Vorlage fehlgeschlagen",
@@ -230,7 +194,6 @@
       "notFound": "Kein erster Schritt für diese Studie gefunden",
       "referencedStepNotFound": "Referenzierter Studienschritt für Workflow-Schritt {originalEntryId} nicht gefunden",
       "referencedDocumentNotFound": "Referenziertes Dokument für Studienschritt {referencedStudyStepId} nicht gefunden",
-      "documentNotFound": "Dokument nicht gefunden: Dokument-ID {dataDocumentId} fehlt für Schritt {dataWorkflowStepId}",
       "documentNotFoundExact": "Dokument nicht gefunden: documentId {dataDocumentId} fehlt für Schritt {dataWorkflowStepId}",
       "documentTypeMismatch": "Dokumenttyp stimmt nicht überein: Schritt {dataWorkflowStepId} erwartet ein Editor-Dokument (Typ 1), es wurde jedoch Typ {documentType} gefunden."
     }
@@ -288,18 +251,16 @@
     "cannotChangeLanguage": "Sie dürfen die Benutzeroberflächensprache nicht ändern."
   },
   "users": {
-    "errorFetchingUsers": "Fehler beim Abrufen der Nutzer",
     "userNotDeleted": "Nutzer nicht gelöscht",
     "updateFailed": "Aktualisierung fehlgeschlagen",
     "failedToGetUsersFromMoodle": "Fehler beim Abrufen der Nutzer von Moodle",
     "failedToBulkCreateUsers": "Fehler beim Massenanlegen von Nutzern",
-    "failedToCheckDuplicateUsers":"Fehler beim Überprüfen doppelter Nutzer",
+    "failedToCheckDuplicateUsers": "Fehler beim Überprüfen doppelter Nutzer",
     "failedToCheckDuplicateUsersMessage": "Bitte wenden Sie sich an das CARE-Team, um das Problem zu beheben.",
     "errorFetchingUserRights": "Fehler beim Abrufen der Nutzerrechte",
     "userCreationFailed": "Erstellung des Nutzers fehlgeschlagen",
     "userNotFound": "Nutzer wurde nicht gefunden",
     "failedToUpdateUser": "Fehler beim Aktualisieren des Nutzers: Nutzer wurde nicht gefunden",
-    "noUserFoundForRole": "Für die Rolle {roleName} wurden keine Benutzer gefunden. Bitte fügen Sie der Rolle Benutzer hinzu.",
     "userRightsArgumentMismatch": "Benutzerrechte und Argument stimmen nicht überein",
     "noRightToLoadUsersByRole": "Dieser Benutzer hat nicht das Recht, Benutzer nach ihrer Rolle zu laden.",
     "incorrectPassword": "Sie haben ein falsches Passwort eingegeben",
@@ -312,21 +273,19 @@
     "bulkCreateValidationFailed": "{message}"
   },
   "submission": {
-        "notFound": "Einreichung mit ID {submissionId} nicht gefunden",
+    "notFound": "Einreichung mit ID {submissionId} nicht gefunden",
     "notFoundForAssignment": "Einreichung mit ID {submissionId} wurde für diese Zuweisung nicht gefunden.",
-        "documentCopyFailed": "Fehler beim Kopieren des Dokuments mit ID {documentId}: {message}",
-        "noValidFiles": "Keine gültigen Dateien für Einreichung {submissionId} gefunden",
-        "missingAdminRights": "Vorverarbeitung kann nicht abgebrochen werden: fehlende Administratorrechte",
-        "noActivePreprocessing": "Vorverarbeitung kann nicht abgebrochen werden: keine aktive Vorverarbeitung",
-        "invalidPreprocessRequest": "Ungültige Anfrage zur Vorverarbeitung.",
-        "noSkillParameterMappings": "Keine Skill-Parameterzuordnungen angegeben.",
-        "copyFailed": "Die Einreichung {submissionId} konnte nicht kopiert werden. Fehler: {originalMessage}",
-        "copyWithIdFailed": "Einreichung mit {submissionId} konnte nicht kopiert werden: {message}",
-        "updateNotAllowed": "Sie dürfen diese Einreichung nicht aktualisieren.",
-        "noGradeUploadPermission": "Sie haben keine Berechtigung, Noten hochzuladen",
-        "notFoundGeneric": "Einreichung nicht gefunden.",
-        "deleteAssignmentClosed": "Einreichung kann nicht gelöscht werden, da das Assignment geschlossen ist.",
-        "deleteDocumentsUsedInStudies": "Einreichung kann nicht gelöscht werden, da mindestens ein verknüpftes Dokument in Studien verwendet wird."
+    "documentCopyFailed": "Fehler beim Kopieren des Dokuments mit ID {documentId}: {message}",
+    "noValidFiles": "Keine gültigen Dateien für Einreichung {submissionId} gefunden",
+    "missingAdminRights": "Vorverarbeitung kann nicht abgebrochen werden: fehlende Administratorrechte",
+    "noActivePreprocessing": "Vorverarbeitung kann nicht abgebrochen werden: keine aktive Vorverarbeitung",
+    "noSkillParameterMappings": "Keine Skill-Parameterzuordnungen angegeben.",
+    "copyWithIdFailed": "Einreichung mit {submissionId} konnte nicht kopiert werden: {message}",
+    "updateNotAllowed": "Sie dürfen diese Einreichung nicht aktualisieren.",
+    "noGradeUploadPermission": "Sie haben keine Berechtigung, Noten hochzuladen",
+    "notFoundGeneric": "Einreichung nicht gefunden.",
+    "deleteAssignmentClosed": "Einreichung kann nicht gelöscht werden, da das Assignment geschlossen ist.",
+    "deleteDocumentsUsedInStudies": "Einreichung kann nicht gelöscht werden, da mindestens ein verknüpftes Dokument in Studien verwendet wird."
   },
   "tags": {
     "tagSetDeleteFailed": "Löschen des Tag-Sets fehlgeschlagen",
@@ -338,7 +297,6 @@
       "title": "Leeres Tagset",
       "message": "Es wurde kein Tag-Set oder ein leeres Tag-Set ausgewählt. Annotationen können nicht erstellt werden."
     }
-
   },
   "annotator": {
     "commentNotUpdated": "Kommentar nicht aktualisiert",
@@ -381,14 +339,9 @@
   },
   "collaboration": {
     "collabUpdateFailed": "Aktualisierung der Kollaboration fehlgeschlagen",
-    "collabCreationFailed":  "Kollaboration konnte nicht gestartet werden"
+    "collabCreationFailed": "Kollaboration konnte nicht gestartet werden"
   },
   "connectionError": "Verbindungsfehler! Verbindung wird wiederhergestellt...",
-  "roles": {
-    "loadAvailableRightsFailed": "Fehler beim Laden der verfügbaren Rechte",
-    "loadRoleRightsFailed": "Rollenberechtigungen konnten nicht geladen werden",
-    "assignRoleRightsFailed": "Rollenberechtigungen konnten nicht zugewiesen werden"
-  },
   "csv": {
     "missingRequiredHeaders": "CSV-Datei enthält nicht alle erforderlichen Überschriften",
     "emptyValue": "Leerer Wert gefunden für {key} an Index {index}",
@@ -425,7 +378,7 @@
     "notEnoughDocumentsForReviewer": "Nicht genügend Dokumente zur Überprüfung für {reviewerName}. Bitte fügen Sie weitere Dokumente hinzu.",
     "couldNotAssignReviewers": "Nicht alle Reviewer konnten zugewiesen werden. Bitte versuchen Sie es erneut.",
     "studySessionOwnerNotSelectedReviewer": "Der Besitzer der Studiensitzung (Benutzer-ID: {reviewerId}) ist nicht in der ausgewählten Reviewerliste. Bitte fügen Sie ihn zur Reviewerauswahl hinzu.",
-    "invalidMode":"Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben.",
+    "invalidMode": "Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben.",
     "firstStepNotSubmission": "Der ausgewählte erste Schritt ist keiner Einreichung zugeordnet.",
     "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden."
   },

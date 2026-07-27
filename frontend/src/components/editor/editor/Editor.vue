@@ -396,7 +396,7 @@ export default {
             if (!res.success) {
               quill.setContents(backup);
               this.eventBus.emit("toast", {
-                title: this.$t("errors.documents.previousEditFailed"),
+                title: this.$t("errors.editor.previousEditFailed"),
                 message: resolveApiMessage(res),
                 variant: "danger",
               });

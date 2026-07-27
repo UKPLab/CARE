@@ -30,12 +30,12 @@
     },
     "documentRoute": {
         "errors": {
-        "goToDashboard": "Go to Dashboard",
-        "documentNotFoundTitle": "Document Not Found",
-        "accessDeniedTitle": "Access Denied",
-        "fileMissingTitle": "File Not Available",
-        "documentErrorTitle": "Document Error",
-        "unexpectedError": "An unexpected error occurred."
+        "goToDashboard": "Zum Dashboard",
+        "documentNotFoundTitle": "Dokument nicht gefunden",
+        "accessDeniedTitle": "Zugriff verweigert",
+        "fileMissingTitle": "Datei nicht verfügbar",
+        "documentErrorTitle": "Dokumentfehler",
+        "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten."
         }
     },
     "studyRoute": {

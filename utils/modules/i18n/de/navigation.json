@@ -1,6 +1,4 @@
 {
-  "goBack": "Zurück...",
-  "project": "Projekt: {name}",
   "documentation": "Dokumentation",
   "feedback": "Feedback",
   "projectPage": "Projektseite",
@@ -10,7 +8,6 @@
     "hideSidebar": "Seitenleiste ausblenden",
     "showSidebar": "Seitenleiste einblenden",
     "moreActions": "Weitere Aktionen",
-    "noContent": "Kein Inhalt in der Seitenleiste ausgewählt.",
     "sidebarSection": "Seitenleistenbereich"
   },
   "topbar": {

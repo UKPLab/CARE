@@ -3,29 +3,13 @@
         "invalidResetLink": "Invalid reset link. Please request a new password reset.",
         "invalidResetToken": "Invalid reset token. Please request a new password reset.",
         "invalidOrExpiredToken": "Invalid or expired reset token.",
-        "accessDeniedData": "You do not have rights to access this data.",
-        "tokenRequired": "Token is required.",
-        "tokenAndPasswordRequired": "Token and new password are required.",
         "failedToValidateToken": "Failed to validate reset token. Please try again.",
         "failedToResetPassword": "Failed to reset password. Please try again later.",
         "passwordResetFailed": "Password Reset Failed",
-        "passwordResetDisabled": "Password reset is disabled.",
-        "passwordResetRateLimited": "Please wait {minutes} minute(s) before requesting another password reset email.",
         "emailVerificationError": "Email Verification Error",
-        "emailVerificationDisabled": "Email verification is disabled.",
-        "emailAlreadyVerified": "Email address is already verified.",
-        "verificationRateLimited": "Please wait {minutes} minute(s) before requesting another verification email.",
         "failedToVerifyEmail": "Failed to verify email. Please try again later.",
         "failedToSendResetEmail": "Failed to send password reset email.",
         "failedToSendVerificationEmail": "Failed to send verification email. Please try again later.",
-        "failedToLogin": "Login failed.",
-        "failedToEstablishLoginSession": "Failed to establish login session.",
-        "authenticationRequired": "Authentication required.",
-        "emailNotVerified": "Please verify your email address before logging in.",
-        "failedToCreateUser": "Failed to create user.",
-        "emailAlreadyTaken": "Email is already in use.",
-        "usernameTaken": "Username already taken.",
-        "userNotFoundByEmail": "User with this email does not exist.",
         "invalidCredentials": "Invalid User Credentials",
         "termsUpdateError": "Consent Update Error",
         "consentUpdateError": "Error in updating consent",
@@ -39,20 +23,12 @@
         "samlLoginFailed": "SAML login failed. Please try again.",
         "loginFailed": "Login failed. Please try again.",
         "invalidInstitutionalCredentials": "Invalid institutional credentials. Please try again.",
-        "ldapLoginDisabled": "LDAP login is disabled by the administrator.",
-        "ldapLoginNotReady": "LDAP login is enabled but not fully configured. Please contact an administrator.",
         "ldapLoginFailed": "LDAP login failed. Please try again."
     },
     "permission": {
         "accessError": "Access Error",
-        "accessDenied": "Access denied.",
-        "noPermission": "You do not have permission to perform this action.",
-        "noUploadAccess": "You do not have permission to upload documents.",
-        "noUserAccess": "You do not have permission to access this user's data.",
-        "noRoleAccess": "You do not have the required role to perform this action.",
         "noAnnotationChangePermission": "You have no permission to change this annotation",
         "cannotUpdateOtherUserTable": "You are not allowed to update the table {dataTable} for another user!",
-        "noDataAccess": "You don't have rights to access this data",
         "noPermissionToAccesData": "You don't have permission to access this data",
         "noCommentEditPermission": "You are not allowed to edit this comment.",
         "noCommentPermission": "You are not allowed to add a comment.",
@@ -60,9 +36,7 @@
         "noPreprocessSubmissionPermission": "You do not have permission to preprocess submissions"
     },
     "configuration": {
-        "idRequired": "Configuration ID is required.",
         "idRequiredNoPeriod": "Configuration ID is required",
-        "contentRequired": "Configuration content is required.",
         "contentRequiredNoPeriod": "Configuration content is required",
         "notFound": "Configuration not found.",
         "accessDenied": "Access denied",
@@ -73,9 +47,7 @@
         "ensurePasswordRequirements": "Please ensure passwords meet the requirements.",
         "validationError": "Validation Error",
         "validationErrorWithMessage": "Validation error: {message}",
-        "validationFailed": "Validation failed: {message}",
         "validationFailedGeneric": "Validation failed",
-        "required": "This field is required",
         "requiredFieldMissing": "Required field missing: {fieldKey}",
         "tableNameRequired": "Table name is required",
         "fileDownloadFailed": "Failed to download file {fileName}: {message}",
@@ -126,7 +98,6 @@
         "noTableAvailable": "No {tableType} available for selection.",
         "noParameters": "No file selection parameters found. All parameters are using configuration-based inputs.",
         "pdfNotFound": "PDF file not found",
-        "tableNameRequired": "Table name is required",
         "copyJsonError": {
             "title": "Json not copied",
             "notCopiedMsg": "Could not copy json to clipboard!",
@@ -149,7 +120,6 @@
         "deleteFailed": "Document delete failed",
         "documentNotPublished": "Document not published",
         "documentEditFailed": "Document edit failed",
-        "failedToUploadConfiguration": "Failed to upload configuration",
         "failedToUpload": "Failed to upload",
         "failedToProcessPdf": "Failed to process PDF",
         "errorProcessingPdf": "Error processing PDF",
@@ -159,10 +129,8 @@
         "documentError": "Document Error",
         "uploadingFailed": "Uploading failed",
         "noDocumentSelected": "You need to select a document.",
-        "notFound": "Document not found.",
         "withIdNotFound": "Document with id {documentId} not found",
         "byIdNotFound": "Document {documentId} not found",
-        "unsupportedDocumentTypeOperation": "This operation is only supported for HTML/MODAL documents.",
         "processingError": "Error processing document {documentId}: {message}",
         "fileNotFound": "File not found for document {documentId}: {filePath}",
         "readError": "Error reading document file {documentId}: {message}",
@@ -180,14 +148,11 @@
         "replaceNotAllowed": "You are not allowed to replace this submission.",
         "replaceDocumentsUsedInStudies": "Cannot replace submission because one or more linked documents are used in studies.",
         "annotationDeleteOriginalFailed": "Error deleting annotations: Couldn't delete original annotations",
-        "annotationDeleteFailed": "Error deleting annotations: {message}",
         "annotationDeleteFailedGeneric": "Error deleting annotations.",
         "exactTextNotFound": "Exact text \"{text}\" not found in document text",
         "textPositionExtractionFailed": "Error extracting text positions for text \"{text}\".",
         "annotationAddFailed": "Error adding annotation.",
-        "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.",
-        "notEnoughDocumentsForRole": "Not enough documents to review for role {roleName}. Please add more documents.",
-        "notEnoughDocumentsForReviewer": "Not enough documents to review for {reviewerName}. Please add more documents."
+        "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing."
     },
     "editor": {
         "cursorPositionError": {
@@ -199,7 +164,6 @@
     },
     "studies": {
         "studyCannotStart": "Study cannot be started!",
-        "studyClosingFailed": "Study closing failed",
         "studyDeleteFailed": "Study delete failed",
         "studyRestartFailed": "Study restart failed",
         "templateSaveFailed": "Template Save Failed",
@@ -230,7 +194,6 @@
             "notFound": "No first step found for this study",
             "referencedStepNotFound": "Referenced study step not found for workflow step {originalEntryId}",
             "referencedDocumentNotFound": "Referenced document not found for study step {referencedStudyStepId}",
-            "documentNotFound": "Document not found: document ID {dataDocumentId} is missing for step {dataWorkflowStepId}",
             "documentNotFoundExact": "Document not found: documentId {dataDocumentId} is missing for step {dataWorkflowStepId}",
             "documentTypeMismatch": "Document type mismatch: step {dataWorkflowStepId} expects an Editor document (type 1), but found type {documentType}."
         }
@@ -288,7 +251,6 @@
         "cannotChangeLanguage": "You are not allowed to change the UI language."
     },
     "users": {
-        "errorFetchingUsers": "Error fetching users",
         "userNotDeleted": "User not deleted",
         "updateFailed": "Failed to update",
         "failedToGetUsersFromMoodle": "Failed to get users from Moodle",
@@ -299,7 +261,6 @@
         "userCreationFailed": "User Creation Failed",
         "userNotFound": "User not found",
         "failedToUpdateUser": "Failed to update user: User not found",
-        "noUserFoundForRole": "No users found for role {roleName}. Please add users to the role.",
         "userRightsArgumentMismatch": "User rights and argument mismatch",
         "noRightToLoadUsersByRole": "This user does not have the right to load users by their role.",
         "incorrectPassword": "You entered an incorrect Password",
@@ -318,9 +279,7 @@
         "noValidFiles": "No valid files found for submission {submissionId}",
         "missingAdminRights": "Cannot cancel preprocessing: missing admin rights",
         "noActivePreprocessing": "Cannot cancel preprocessing: no active preprocessing",
-        "invalidPreprocessRequest": "Invalid preprocessing request payload.",
         "noSkillParameterMappings": "No skill parameter mappings provided.",
-        "copyFailed": "Failed to copy submission {submissionId}. Error: {originalMessage}",
         "copyWithIdFailed": "Failed to copy submission with {submissionId}: {message}",
         "updateNotAllowed": "You are not allowed to update this submission.",
         "noGradeUploadPermission": "You do not have permission to upload grades",
@@ -338,7 +297,6 @@
             "title": "Empty Tagset",
             "message": "No tagset or an empty tagset have been selected. Cannot make annotations."
         }
-
     },
     "annotator": {
         "commentNotUpdated": "Comment not updated",
@@ -384,11 +342,6 @@
         "collabCreationFailed": "Could not start collaboration"
     },
     "connectionError": "Connection error! Reconnecting...",
-    "roles": {
-        "loadAvailableRightsFailed": "Failed to load available rights",
-        "loadRoleRightsFailed": "Failed to load role rights",
-        "assignRoleRightsFailed": "Failed to assign role rights"
-    },
     "csv": {
         "missingRequiredHeaders": "CSV does not contain all required headers",
         "emptyValue": "Empty value found for {key} at index {index}",

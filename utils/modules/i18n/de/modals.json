@@ -1,6 +1,5 @@
 {
     "confirm": "Bestätigen",
-    "confirmAction": "Bestätige {action}",
     "pleaseConfirm": "Bitte bestätigen",
     "sending": "Wird gesendet...",
     "sendResetEmail": "E-Mail zum Zurücksetzen des Passworts senden",

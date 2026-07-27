@@ -1,10 +1,6 @@
 {
     "documentNote": "Dokumentnotiz",
     "createdByUser": "Erstellt von Benutzer {userId}",
-    "messages": {
-        "unsavedAnnotations": "Nicht gespeicherte Anmerkungen",
-        "unsavedAnnotationsWarning": "Sind Sie sicher, dass Sie den Annotator verlassen möchten? Ungespeicherte Änderungen gehen verloren."
-    },
     "annotations": "Anmerkungen",
     "submitReview": "Überprüfung einreichen",
     "report": "Bericht",

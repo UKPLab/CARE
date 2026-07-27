@@ -1,5 +1,4 @@
 {
-  "service": "NLP-Dienst",
   "serviceRequest": "NLP-Dienstanfrage",
   "notAvailable": "{name} nicht verfügbar",
   "skillDetails": "Skilldetails",
@@ -65,7 +64,6 @@
     "cancelButton": "Vorverarbeitung abbrechen",
     "submissionName": "Einreichung {id}",
     "cancelApplySkills": "Skill-Anwendung abbrechen",
-    "cancelSuccess": "Vorverarbeitung erfolgreich abgebrochen.",
     "toasts": {
       "inProgressTitle": "Vorverarbeitung läuft",
       "inProgressMsg": "Die Vorverarbeitung läuft derzeit. Fortschritt wird angezeigt...",
@@ -81,7 +79,6 @@
     },
     "setupStepper": {
       "title": "Skills anwenden",
-      "submitButton": "Skills anwenden",
       "steps": {
         "selectSkill": "Skill auswählen",
         "selectFiles": "Dateien auswählen",
@@ -123,9 +120,7 @@
       },
       "cancel": {
         "title": "Verarbeitung abbrechen",
-        "message": "Möchten Sie die verbleibenden Anfragen wirklich abbrechen?",
-        "confirmButton": "Bestätigen",
-        "nextButton": "Weiter"
+        "message": "Möchten Sie die verbleibenden Anfragen wirklich abbrechen?"
       }
     }
   },
