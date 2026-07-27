@@ -33,6 +33,7 @@
     "csv": "CSV",
     "reload": "Reload",
     "loading": "Loading...",
+    "appVersion": "App Version",
     "noData": "No data",
     "success": "Success",
     "error": "Error",

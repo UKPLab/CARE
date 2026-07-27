@@ -251,7 +251,7 @@
                 "btn-outline-secondary": true,
               },
             },
-            title: "Export template",
+            title: this.$t('templates.dashboard.actions.exportTemplate'),
             action: "export",
           },
           // Delete - own templates that can be deleted (including copies)

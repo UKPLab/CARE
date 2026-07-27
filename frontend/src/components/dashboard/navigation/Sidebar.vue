@@ -133,7 +133,7 @@
 
       <!-- Sidebar footer -->
       <div v-if="isAdmin && !isCollapsed" class="text-center text-secondary">
-        App Version: {{ version }}
+        {{ $t('common.appVersion') }}: {{ version }}
       </div>
 
       <div

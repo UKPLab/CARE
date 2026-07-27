@@ -51,6 +51,7 @@
       "tooltips": {
         "view": "Konfiguration anzeigen",
         "edit": "Konfiguration bearbeiten",
+        "export": "Konfiguration exportieren",
         "delete": "Konfiguration löschen"
       },
       "steps": {
@@ -67,6 +68,7 @@
         "loadErrorMessage": "Fehler beim Laden des Konfigurationsinhalts: {error}",
         "editorNotInit": "Editor nicht initialisiert",
         "noContent": "Kein Konfigurationsinhalt zum Speichern",
+        "contentUnavailable": "Kein Konfigurationsinhalt verfügbar",
         "invalidJsonTitle": "Ungültiges JSON",
         "invalidJsonMessage": "Bitte überprüfen Sie Ihre JSON-Syntax: {error}",
         "updateErrorTitle": "Fehler beim Aktualisieren der Konfiguration",

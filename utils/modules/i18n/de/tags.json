@@ -6,6 +6,7 @@
     "editTagSet": "Tag-Set bearbeiten",
     "deleteTagSet": "Tag-Set löschen",
     "shareTagSet": "Tag-Set freigeben",
+    "exportTagSet": "Tag-Set exportieren",
     "selectAsDefault": "Tag-Set als Standard auswählen",
     "modalTitle": {
         "newTagSet": "Neues Tag-Set",
