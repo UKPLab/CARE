@@ -165,7 +165,7 @@ export default {
             iconOnly: true,
             specifiers: {"btn-outline-secondary": true},
           },
-          title: "Export configuration",
+          title: this.$t('basic.configuration.tooltips.export'),
           action: "export",
         },
         {
@@ -225,7 +225,7 @@ export default {
 
       try {
         if (!config || !config.content) {
-          throw new Error("No configuration content available");
+          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
         }
         const jsonContent = config.content;
         this.configContent = JSON.stringify(jsonContent, null, 2);
@@ -244,7 +244,7 @@ export default {
 
       try {
         if (!config || !config.content) {
-          throw new Error("No configuration content available");
+          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
         }
         this.editableConfigContent = JSON.stringify(config.content, null, 2);
         this.$refs.editModal.openModal();

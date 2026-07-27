@@ -51,6 +51,7 @@
       "tooltips": {
         "view": "View configuration",
         "edit": "Edit configuration",
+        "export": "Export configuration",
         "delete": "Delete configuration"
       },
       "steps": {
@@ -67,6 +68,7 @@
         "loadErrorMessage": "Failed to load configuration content: {error}",
         "editorNotInit": "Editor not initialized",
         "noContent": "No configuration content to save",
+        "contentUnavailable": "No configuration content available",
         "invalidJsonTitle": "Invalid JSON",
         "invalidJsonMessage": "Please check your JSON syntax: {error}",
         "updateErrorTitle": "Configuration Update Error",

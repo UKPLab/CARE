@@ -156,7 +156,7 @@
           {{ $t('auth.copyright') }}
         </div>
         <div v-if="showVersion" class="text-center text-secondary">
-          {{ $t('auth.appVersion') }}: {{ version }}
+          {{ $t('common.appVersion') }}: {{ version }}
         </div>
       </div>
     </div>

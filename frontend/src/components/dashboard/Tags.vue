@@ -177,7 +177,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Export tag set",
+          title: this.$t('tags.exportTagSet'),
           action: "exportTagSet",
         }
       ];

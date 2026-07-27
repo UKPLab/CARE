@@ -162,7 +162,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Export",
+          title: this.$t('common.export'),
           action: "exportTemplate",
         },
       ],

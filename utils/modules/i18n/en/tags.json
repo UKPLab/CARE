@@ -6,6 +6,7 @@
   "editTagSet": "Edit tag set",
   "deleteTagSet": "Delete tag set",
   "shareTagSet": "Share tag set",
+  "exportTagSet": "Export tag set",
   "selectAsDefault": "Select tag set as default",
   "modalTitle": {
     "newTagSet": "New Tag Set",

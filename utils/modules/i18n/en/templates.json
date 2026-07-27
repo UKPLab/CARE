@@ -146,7 +146,8 @@
         "publishTemplate": "Publish template",
         "publishedCannotBeUnpublished": "Published (cannot be unpublished)",
         "sourceUpdated": "Source updated",
-        "deleteTemplate": "Delete template"
+        "deleteTemplate": "Delete template",
+        "exportTemplate": "Export template"
     },
     "status": {
         "published": "Published",

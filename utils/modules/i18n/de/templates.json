@@ -146,7 +146,8 @@
         "publishTemplate": "Vorlage veröffentlichen",
         "publishedCannotBeUnpublished": "Veröffentlicht (kann nicht zurückgezogen werden)",
         "sourceUpdated": "Quelle aktualisiert",
-        "deleteTemplate": "Vorlage löschen"
+        "deleteTemplate": "Vorlage löschen",
+        "exportTemplate": "Vorlage exportieren"
     },
     "status": {
         "published": "Veröffentlicht",
