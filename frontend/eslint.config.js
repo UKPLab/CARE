@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import { FlatCompat } from '@eslint/eslintrc'
 import pluginVue from 'eslint-plugin-vue'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 
 const compat = new FlatCompat()
 
@@ -17,10 +18,19 @@ export default [
     js.configs.recommended,
     ...pluginVue.configs['flat/recommended'],
     eslintConfigPrettier,
+    ...vueI18n.configs['flat/recommended'],
     {
         languageOptions: {
+            ecmaVersion: 'latest',
             globals: {
                 APP_VERSION: 'readonly',
+            },
+        },
+        settings: {
+            'vue-i18n': {
+                // Catalogs are checked by scripts/check-i18n-keys.mjs (filename = namespace).
+                // localeDir is unused while no-missing-keys is off.
+                messageSyntaxVersion: '^9.0.0',
             },
         },
         rules: {
@@ -42,6 +52,34 @@ export default [
                     message: 'Always name caught errors `_error`.',
                 },
             ],
+            // Templates: ban hardcoded user-facing text.
+            '@intlify/vue-i18n/no-raw-text': [
+                'error',
+                {
+                    // Empty, non-Latin, single letter, tiny UI crumbs.
+                    ignorePattern: '^$|^([^A-Za-z]+|[A-Za-z]|KB\\)?|\\(ID:)$',
+                    ignoreText: ['CARE', 'ID', 'REQ', 'CMD', 'ORCID', 'LDAP', 'SSO', '-'],
+                    // CARE uses Vue props heavily (BasicButton text=, Modal title=, etc.).
+                    attributes: {
+                        '/.+/': [
+                            'text',
+                            'title',
+                            'label',
+                            'placeholder',
+                            'message',
+                            'alt',
+                            'aria-label',
+                            'submit-text',
+                            'next-text',
+                            'cancel-next-text',
+                            'error-message',
+                        ],
+                    },
+                },
+            ],
+            // Missing keys: custom script reads utils/modules/i18n/en/*.json.
+            '@intlify/vue-i18n/no-missing-keys': 'off',
+            '@intlify/vue-i18n/no-unused-keys': 'off',
         },
     },
     {
@@ -64,6 +102,18 @@ export default [
         ],
         rules: {
             'vue/no-restricted-html-elements': 'off',
+        },
+    },
+    // Setup wizard + Settings mail-test UI are out of scope for i18n lint.
+    {
+        files: [
+            'src/auth/SetupWizard.vue',
+            'src/components/wizard/**/*.vue',
+            'src/components/wizard/**/*.js',
+            'src/components/dashboard/Settings.vue',
+        ],
+        rules: {
+            '@intlify/vue-i18n/no-raw-text': 'off',
         },
     },
 ]
