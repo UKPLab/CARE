@@ -123,9 +123,9 @@
     "settings": {
         "selectSetting": "Select setting",
         "selectedValue": "Selected Value:",
-        "setting:": "Setting:",
+        "settingLabel": "Setting:",
         "newValue": "New Value:",
-        "users:": "Users:",
+        "usersLabel": "Users:",
         "noteBody1": "This will update the selected per-user setting for all chosen users. It does not change the global default setting.",
         "setting": "Setting",
         "selectedUsers": "Selected Users",

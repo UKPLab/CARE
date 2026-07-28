@@ -3,13 +3,13 @@
     <div class="btn-group btn-group-sm position-absolute top-0 end-0 px-3 py-3">
       <BasicButton
           class="btn btn-outline-secondary"
-          :title="$t('nlp.copyConfig')"
+          :tooltip="$t('nlp.copyConfig')"
           icon="clipboard"
           @click="copyConfig"
       />
       <BasicButton
         class="btn btn-outline-secondary"
-        :title="$t('nlp.downloadConfig')"
+        :tooltip="$t('nlp.downloadConfig')"
         icon="cloud-arrow-down"
         @click="downloadConfig"
       />
@@ -17,7 +17,7 @@
         class="btn btn-outline-secondary"
         :class="commandEditorActive ? 'active' : ''"
         :aria-pressed="commandEditorActive"
-        :title="$t('nlp.sendCommand')"
+        :tooltip="$t('nlp.sendCommand')"
         icon="send"
         @click="commandEditorActive=!commandEditorActive"
       />
