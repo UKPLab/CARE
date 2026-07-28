@@ -29,8 +29,7 @@
 import FormElement from "@/basic/form/Element.vue";
 
 /**
- * Radio button group — single-select from a list of options.
- * Each option has { value, label }. Returns the selected value (not array).
+ * Radio button group — single-select from a list of options. Each option has { value, label }. 
  *
  * @author Mohammed Rawhani
  */
