@@ -811,7 +811,7 @@ module.exports = function (server) {
                         .map(({ sessionHash, ...rest }) => rest)
                         .sort(compareGradeRecords);
                     if (sessionGrades.length > 0) {
-                        archive.append(JSON.stringify(sessionGrades, null, 2), { name: `${sessionFolder}/grades.json` });
+                        archive.append(JSON.stringify(sessionGrades, null, 2), { name: `${sessionFolder}/scores.json` });
                     }
                 }
 

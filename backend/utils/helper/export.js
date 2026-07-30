@@ -465,7 +465,7 @@ function parseUserIds(rawUserIds) {
  * Builds flat grade records for the given users/project by resolving each
  * assessment_result row's session/study/step/configuration context and score.
  * Shared by processGradesExport (grouped by user for JSON/CSV output) and
- * processStudyBasedExport (grouped by session for a per-session grades.json).
+ * processStudyBasedExport (grouped by session for a per-session scores.json).
  *
  * @param {Object} server - The server instance providing database models and Sequelize operators.
  * @param {number} projectId - The project whose grades should be resolved.
