@@ -18,7 +18,9 @@
           :fields="dataSelectionFields"
       />
     </template>
+
     <template #step-2>
+
       <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>Exporting a list of all study sessions with hash:</p>
         <p>
@@ -26,13 +28,14 @@
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
-        <StepSelectStudents 
+      <div v-else-if="['submissions', 'grades', 'documents', 'studies'].includes(dataSelection.exportType)">
+        <StepSelectUsers
           v-if="dataSelection.projectId"
-          v-model="submissionSelection" 
-          :project-id="dataSelection.projectId" 
+          :project-id="dataSelection.projectId"
+          :export-type="dataSelection.exportType"
+          v-model="userSelection"
         />
-        <!-- We send the project ID and get the selected students back -->
+        <!-- We send the project ID and get the selected users back -->
       </div>
       <div v-else>
         <p>Exporting all data</p>
@@ -50,30 +53,50 @@
         </p>
       </div>
     </template>
-    <template 
-      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
-      #step-3 
-    >
-      <StepOptions 
-        v-model:generate-aliases="generateAliases"
-        v-model:faker-seed="fakerSeed"
-        v-model:grade-format="gradeFormat"
-        v-model:merge-csv-files="mergeCsvFiles"
-        :show-grade-format="dataSelection.exportType === 'grades'"
-      />
-      <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+
+    
+    <template #step-3>
+      <div v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
+        <StepOptions 
+          v-model:generate-aliases="generateAliases"
+          v-model:faker-seed="fakerSeed"
+          v-model:grade-format="gradeFormat"
+          v-model:merge-csv-files="mergeCsvFiles"
+          :show-grade-format="dataSelection.exportType === 'grades'"
+        />
+        <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+      </div>
+      <div v-else-if="['documents'].includes(dataSelection.exportType)">
+        <StepOptionsDocuments
+          v-model:selectedTypes="selectedDocumentTypes"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
+          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
+        />
+        <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
+      </div>
+      <div v-else-if="['studies'].includes(dataSelection.exportType)">
+        <StepOptionsStudies
+          :project-id="dataSelection.projectId"
+          v-model:selectedWorkflowIds="selectedWorkflowIds"
+          v-model:includeEmptyStudies="includeEmptyStudies"
+          v-model:includeDocumentFiles="includeStudyDocumentFiles"
+          v-model:includeGrades="includeStudyGrades"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
+          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
+        />
+      </div>
     </template>
+
     <template 
-      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      v-if="['submissions', 'grades', 'documents', 'studies'].includes(dataSelection.exportType)"
       #step-4
     >
-      <StepConfirmDownload 
-        v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      <StepConfirmDownload
         :wait="wait"
         :generate-aliases="generateAliases"
-        :submission-selection="submissionSelection"
+        :user-selection="userSelection"
+        :export-type="dataSelection.exportType"
       />
-      <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
     </template>
   </StepperModal>
 </template>
@@ -87,8 +110,11 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
+import BasicLoading from "@/basic/Loading.vue";
+import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
+import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
+import StepOptionsStudies from "@/components/dashboard/projects/export/StepOptionsStudies.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
 
@@ -96,11 +122,11 @@ import getServerURL from "@/assets/serverUrl.js";
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska, Mélissa Loew, Linyin Huang
+ * @author Dennis Zyska, Mélissa Loew
  */
 export default {
   name: "ExportProjectModal",
-  components: { StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
+  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -119,6 +145,14 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
+  }, {
+      table: "document_data",
+  }, {
+      table: "study_step",
+  }, {
+      table: "configuration",
+  }, {
+      table: "workflow",
   }
   ],
   provide() {
@@ -135,11 +169,17 @@ export default {
       filter: [],
       wait: false,
       // Data for Export Submissions
-      submissionSelection: [],
+      userSelection: [],
       generateAliases:false,
       fakerSeed: 846569412,
       gradeFormat: "json",
-      mergeCsvFiles: false
+      mergeCsvFiles: false,
+      selectedDocumentTypes: [0, 1, 2, 4],
+      excludeNonConsentingEdits: false,
+      excludeNonConsentingAnnotations: false,
+      selectedWorkflowIds: [],
+      includeStudyGrades: true,
+      includeEmptyStudies: false
     };
   },
   computed: {
@@ -147,9 +187,23 @@ export default {
       if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
           !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
-          this.submissionSelection.length > 0, // must select at least one student
+          this.userSelection.length > 0, // must select at least one student
           true,
           true
+        ];
+      } else if (this.dataSelection.exportType === "documents") {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          this.selectedDocumentTypes.length > 0,
+          true,
+        ];
+      } else if (this.dataSelection.exportType === 'studies') {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          this.selectedWorkflowIds.length > 0,
+          true,
         ];
       }
       return [
@@ -158,14 +212,14 @@ export default {
       ];
     },
     steps() {
-      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
+      if (["submissions", "grades", "documents", "studies"].includes(this.dataSelection.exportType)) {
         return [
           { title: "Settings" },
-          { title: "Select Students" },
+          { title: "Select Users" },
           { title: "Options" },
           { title: "Confirm Download" }
         ];
-      }
+      } 
       return [
         {title: "Settings"},
         {title: "Confirmation"}
@@ -191,6 +245,8 @@ export default {
             {name: "Export a list of all reviewers", value: "reviewerList"},
             {name: "Export submissions", value: "submissions"},
             {name: "Export grades", value: "grades"},
+            {name: "Export documents", value:"documents"},
+            {name: "Export studies", value: "studies"},
             {name: "All", value: "all"},
           ],
           required: true,
@@ -256,6 +312,16 @@ export default {
     },
     hide() {
       this.filter = [];
+      this.userSelection = [];
+      this.generateAliases = false;
+      this.fakerSeed = 846569412;
+      this.selectedDocumentTypes = [0, 1, 2, 4];
+      this.excludeNonConsentingEdits = false;
+      this.excludeNonConsentingAnnotations = false;
+      this.selectedWorkflowIds = [];
+      this.includeStudyGrades = true;
+      this.includeEmptyStudies = false;
+      this.wait = false;
     },
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
@@ -264,6 +330,10 @@ export default {
         this.downloadSubmissions();
       } else if (this.dataSelection.exportType === "grades") {
         this.downloadGrades();
+      } else if (this.dataSelection.exportType === "documents") {
+        this.downloadDocuments();
+      } else if (this.dataSelection.exportType === 'studies') {
+        this.downloadStudies();
       } else {
         this.downloadAllData();
       }
@@ -327,7 +397,7 @@ export default {
     async downloadSubmissions() {
       try {
         // get the selected student's user ids
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        const selectedUserIds = this.userSelection.map(row => row.userId);
 
         // call helper function to trigger the stream download
         this.triggerStreamDownload({
@@ -346,7 +416,7 @@ export default {
     },
     async downloadGrades() {
       try {
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
+        const selectedUserIds = this.userSelection.map(row => row.userId);
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
           exportType: 'grades',
@@ -355,6 +425,44 @@ export default {
           fakerSeed: this.generateAliases ? this.fakerSeed : null,
           gradeFormat: this.gradeFormat,
           mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+        });
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadDocuments() {
+      try {
+        const selectedUserIds = this.userSelection.map(row => row.userId);
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'documents',
+          userIds: selectedUserIds,
+          documentTypes: this.selectedDocumentTypes,
+          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+        });
+
+        this.$refs.exportStepper.close();
+      } catch (error) {
+          console.error("Streaming error:", error);
+          this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadStudies() {
+      try {
+        const selectedUserIds = this.userSelection.map(row => row.userId);
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'studies',
+          userIds: selectedUserIds,
+          workflowIds: this.selectedWorkflowIds,
+          includeEmptyStudies: this.includeEmptyStudies,
+          includeDocumentFiles: this.includeStudyDocumentFiles,
+          includeGrades: this.includeStudyGrades,
+          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
         });
         this.$refs.exportStepper.close();
       } catch (error) {
