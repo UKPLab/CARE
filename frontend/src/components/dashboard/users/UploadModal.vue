@@ -41,17 +41,19 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
+      <div class="btn-group">
+        <BasicButton
           title="Cancel"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
-      />
-      <BasicButton
+        />
+        <BasicButton
           title="Upload"
           class="btn btn-primary"
           :disabled="isDisabled"
           @click="uploadToMoodle"
-      />
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

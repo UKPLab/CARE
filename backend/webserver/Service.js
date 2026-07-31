@@ -5,7 +5,7 @@
  *
  * @author Dennis Zyska
  */
-const {overrideObjectAttributes} = require("../utils/generic");
+const {overrideObjectAttributes} = require("../utils/helper/generic");
 module.exports = class Service {
     constructor(server, metadata = null) {
         this.logger = require("../utils/logger")("Service/" + this.constructor.name, server.db);

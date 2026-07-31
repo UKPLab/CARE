@@ -1,7 +1,7 @@
 'use strict';
 
 const passport = require('passport');
-const { relevantFields } = require('../../../utils/auth');
+const { relevantFields } = require('../../auth/utils');
 
 /**
  * Register login/logout/session-check routes, including local and external provider entrypoints.

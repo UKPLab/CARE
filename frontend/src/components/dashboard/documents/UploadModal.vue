@@ -40,7 +40,7 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="!uploading">
+      <div v-if="!uploading" class="btn-group">
         <BasicButton
           class="btn btn-secondary"
           text="Close"

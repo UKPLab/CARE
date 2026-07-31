@@ -9,7 +9,7 @@
 
 const chat = require("./chat");
 const helpers = require("./helpers");
-const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
+const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
 /**
  * Loads an enabled, non-deleted AI hook by id.

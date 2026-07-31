@@ -1,6 +1,6 @@
 "use strict";
 
-const { resolveTemplate } = require("../../utils/templateResolver");
+const { resolveTemplate } = require("../../utils/helper/templateResolver");
 const {buildStudyHookKey} = require("../../utils/studyNlpDocumentData");
 const aiHook = require("./ai/hook");
 

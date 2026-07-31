@@ -171,7 +171,7 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
-    this.$refs.Modal.addEventListener('hide.bs.modal', this.hideEvent);
+    this.$refs.Modal.addEventListener('hidden.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('shown.bs.modal', this.showEvent);
 
     if (this.autoOpen) {
@@ -180,7 +180,7 @@ export default {
   },
   beforeUnmount() {
     if (this.$refs.Modal) {
-      this.$refs.Modal.removeEventListener('hide.bs.modal', this.hideEvent);
+      this.$refs.Modal.removeEventListener('hidden.bs.modal', this.hideEvent);
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
     }
     if (this.modal) {

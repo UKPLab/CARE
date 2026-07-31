@@ -14,17 +14,19 @@
       />
     </template>
     <template #footer>
-      <BasicButton
+      <div class="btn-group">
+        <BasicButton
           title="Cancel"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
-      />
-      <BasicButton
+        />
+        <BasicButton
           title="Add"
           class="btn btn-primary"
           :disabled="isDisabled"
           @click="createUser"
-      />
+        />
+      </div>
     </template>
   </BasicModal>
 </template>
@@ -41,7 +43,6 @@ import BasicForm from "@/basic/Form.vue";
 export default {
   name: "UserAddModal",
   components: {BasicModal, BasicButton, BasicForm},
-  emits: ["updateUser"],
   data() {
     return {
       formFields: [
@@ -125,7 +126,6 @@ export default {
             message: "The user creation was successful",
           });
           this.$refs.modal.close();
-          this.$emit("updateUser");
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
