@@ -269,7 +269,7 @@ module.exports = class Server {
     #initSessionManagement() {
 
         // Define Session Model Table
-        this.db.sequelize.define("session", {
+        const Session = this.db.sequelize.define("session", {
             sid: {
                 type: Sequelize.STRING,
                 primaryKey: true,
@@ -279,8 +279,10 @@ module.exports = class Server {
             data: Sequelize.TEXT,
         });
 
-        // Sync Session Table
-        this.db.sequelize.sync();
+        // Sync only the session table. Do not call sequelize.sync() on all models —
+        // that creates empty migration-managed tables (e.g. wizard_step) and blocks
+        // pending migrations after a dump restore.
+        Session.sync();
 
         // Sequelize Session Store
         this.logger.debug("Initializing Sequelize Session Store...");
