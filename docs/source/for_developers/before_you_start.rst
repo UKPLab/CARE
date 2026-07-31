@@ -278,7 +278,7 @@ More Commands
     * - ``make backup_db CONTAINER=<name>``
       - Create a database dump from the given Postgres container into ``db_dumps/``.
     * - ``make recover_db CONTAINER=<name> DUMP=<file>``
-      - Load a given database dump into the specified Postgres container.
+      - Load a dump into the Postgres container, then apply pending migrations to match the current codebase. Stop the backend first if it is running.
     * - ``make test``
       - Run backend unit tests.
     * - ``make test-rpc``

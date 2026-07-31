@@ -49,11 +49,13 @@ The target produces two output files in ``db_dumps/``:
 - ``anonymized_<timestamp>.sql`` — the anonymized database dump.
 - ``anonymized_<timestamp>_files.zip`` — the document files referenced by surviving records.
 
-To load the dump into an existing CARE instance, place the SQL file in ``db_dumps/`` and use the standard recovery command:
+To load the dump into an existing CARE instance, place the SQL file in ``db_dumps/``, stop the CARE backend if it is running, then use the standard recovery command:
 
 .. code-block:: bash
 
     make recover_db CONTAINER=<container-name-or-id> DUMP=anonymized_<timestamp>.sql
+
+``recover_db`` restores the dump and then runs pending Sequelize migrations so an older dump is upgraded to the current codebase schema.
 
 If you need to regenerate the files archive from an existing anonymized SQL dump without re-running the full pipeline, use:
 

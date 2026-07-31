@@ -169,9 +169,14 @@ From the **project root** (where the ``Makefile`` is located):
 
     make clean                        # drop any existing local database
     make docker                       # build & start the Postgres container
-    make init                         # create empty tables / seed data
+    # Stop the backend if it is running so DROP DATABASE is not blocked by open connections.
     make recover_db CONTAINER=<project_name>-postgres-1 \
                     DUMP=dump_dd-mm-yyyy_xx_yy_zz.sql     # DUMP is just the file name, because the Makefile already prefixes it with `db_dumps/`
+    make dev                          
+
+.. note::
+
+   Do **not** run ``make init`` after ``recover_db`` for a dump restore. ``init`` is for a fresh empty database; the dump already contains schema and data, and ``recover_db`` upgrades the schema with migrations.
 
 .. note::
 
