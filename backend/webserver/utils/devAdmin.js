@@ -5,7 +5,8 @@ const { createInitialAdmin } = require("./setupAdmin");
 /**
  * Set up a dev admin from ADMIN_EMAIL/ADMIN_PWD and mark the setup wizard
  * complete, skipping the first-time wizard. Active only when DEV_SKIP_WIZARD=true.
- * No-op if an admin already exists.
+ * If an admin already exists (typical after a dump restore), still mark the wizard
+ * complete so login is not forced to /wizard when setup settings are missing.
  *
  * @param {Server} server 
  * @returns {Promise<void>}
@@ -18,6 +19,8 @@ async function setupDevAdmin(server) {
     try {
         const admins = await server.db.models["user"].getUsersByRole("admin");
         if (admins.length > 0) {
+            await server.db.models["setting"].set("app.setup.wizardCompleted", "true");
+            server.logger.info("DEV_SKIP_WIZARD: admin exists; marked wizard complete.");
             return;
         }
 
