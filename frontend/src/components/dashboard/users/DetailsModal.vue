@@ -11,13 +11,13 @@
     <template #body>
       <BasicForm
           ref="form"
-          v-model="userInfo"
+          v-model="formData"
           :fields="formFields"
       />
       <div class="detail-table-container">
         <BasicTable
             :columns="columns"
-            :data="[userInfo]"
+            :data="[userDetails]"
             :options="options"
             :max-table-height="'60vh'"
         />
@@ -54,11 +54,17 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "DetailsModal",
   components: {BasicModal, BasicForm, BasicTable, BasicButton},
-  emits: ["updateUser"],
   data() {
     return {
       userId: 0,
-      userInfo: {},
+      formData: {
+        userName: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        roles: [],
+      },
+      userDetails: {},
       formFields: [
         {
           key: "userName",
@@ -124,17 +130,57 @@ export default {
     this.formFields[index].options = options;
   },
   methods: {
+    /**
+     * Open the modal and load a writable draft from the Vuex user row.
+     * @param {number} userId - User id to edit
+     */
     open(userId) {
       this.userId = userId;
-      this.getUserDetails(userId);
+      this.loadFormFromStore(userId);
       this.$refs.modal.open();
+    },
+    /**
+     * Copy store user into local formData / userDetails (draft for editing).
+     * @param {number} userId - User id
+     */
+    loadFormFromStore(userId) {
+      const user = this.$store.getters["table/user/get"](userId);
+      if (!user) {
+        this.formData = {
+          userName: "",
+          firstName: "",
+          lastName: "",
+          email: "",
+          roles: [],
+        };
+        this.userDetails = {};
+        return;
+      }
+      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+      this.formData = {
+        userName: user.userName || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        roles: (user.roles || [])
+            .map((roleId) => this.systemRoles.find((r) => r.id === roleId)?.name)
+            .filter(Boolean),
+      };
+      this.userDetails = {
+        acceptTerms: user.acceptTerms,
+        acceptStats: user.acceptStats,
+        lastLoginAt: formatDate(user.lastLoginAt),
+        createdAt: formatDate(user.createdAt),
+        updatedAt: formatDate(user.updatedAt),
+        deletedAt: formatDate(user.deletedAt),
+      };
     },
     submit() {
       if (!this.$refs.form.validate()) {
         return;
       }
       const userId = this.userId;
-      const {firstName, lastName, email, roles} = this.userInfo;
+      const {firstName, lastName, email, roles} = this.formData;
       const userData = {
         firstName,
         lastName,
@@ -142,11 +188,10 @@ export default {
         roles,
       };
       this.$refs.modal.waiting = true;
-      this.$socket.emit("userUpdateDetails", {userId, userData}, (response) => {
+      this.$socket.emit("userUpdateDetails", { userId, userData }, (response) => {
         if (response.success) {
           this.$refs.modal.waiting = false;
           this.$refs.modal.close();
-          this.$emit("updateUser");
           this.eventBus.emit("toast", {
             title: "User updated",
             message: "Successfully updated user!",
@@ -162,22 +207,16 @@ export default {
         }
       });
     },
-    getUserDetails(userId) {
-      this.$socket.emit("userGetDetails", userId, (res) => {
-        if (res.success) {
-          const userInfo = res["data"];
-          const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
-          this.userInfo = {
-            ...userInfo,
-            createdAt: formatDate(userInfo.createdAt),
-            updatedAt: formatDate(userInfo.updatedAt),
-            lastLoginAt: formatDate(userInfo.lastLoginAt),
-            deletedAt: formatDate(userInfo.deletedAt),
-          };
-        }
-      });
-    },
     resetForm() {
+      this.formData = {
+        userName: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        roles: [],
+      };
+      this.userDetails = {};
+      this.userId = 0;
       this.eventBus.emit("resetFormField");
     },
   },

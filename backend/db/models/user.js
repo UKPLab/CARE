@@ -1,8 +1,8 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
-const {genSalt, genPwdHash, genPwd} = require("../../utils/auth.js");
-const {generateAnimalUsername} = require("../../utils/generator");
+const {genSalt, genPwdHash, genPwd} = require("../../webserver/auth/utils.js");
+const {generateAnimalUsername} = require("../../utils/helper/generator");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 
 module.exports = (sequelize, DataTypes) => {
@@ -14,6 +14,10 @@ module.exports = (sequelize, DataTypes) => {
                 right: "frontend.dashboard.studies.view.userPrivateInfo",
                 columns: ["firstName", "lastName", "email", "extId"]
             },
+            {
+                right: "frontend.dashboard.studies.view.userPublicInfo",
+                columns:["id", "userName"]
+            }
         ];
 
         /**
@@ -385,8 +389,15 @@ module.exports = (sequelize, DataTypes) => {
 
             const UserRoleMatching = User.sequelize.models["user_role_matching"];
 
+            const existingUser = await User.getById(userId, options);
+            if (!existingUser) {
+                throw new Error("User not found");
+            }
+
             const roleIdMap = await User.getRoleIdMap();
-            const [updatedRowsCount] = await User.update(
+            // Profile fields may be unchanged; Sequelize then reports 0 updated rows.
+            // Still continue so role matching runs.
+            await User.update(
                 {
                     firstName: userData.firstName,
                     lastName: userData.lastName,
@@ -395,14 +406,10 @@ module.exports = (sequelize, DataTypes) => {
                 {
                     where: {id: userId},
                     returning: true,
+                    individualHooks: true,
                     transaction: options.transaction,
                 }
             );
-
-            if (updatedRowsCount === 0) {
-                console.error("Failed to update user: User not found");
-                return;
-            }
 
             // Get current roles
             const currentRoles = await UserRoleMatching.findAll({
@@ -440,6 +447,34 @@ module.exports = (sequelize, DataTypes) => {
                 individualHooks: true,
                 transaction: options.transaction,
             });
+
+            // Rebuild role ids and force a user broadcast that includes `roles`,
+            // so Vuex table/user (and the edit modal checkboxes) stay in sync.
+            const updatedRoleRows = await UserRoleMatching.findAll({
+                where: {userId, deleted: false},
+                attributes: ["userRoleId"],
+                transaction: options.transaction,
+                raw: true,
+            });
+            const roleIds = updatedRoleRows.map((row) => row.userRoleId);
+
+            // individualHooks so this update is queued on transaction.changes (for roles below).
+            await User.update(
+                {rolesUpdatedAt: new Date()},
+                {
+                    where: {id: userId},
+                    individualHooks: true,
+                    transaction: options.transaction,
+                }
+            );
+
+            if (options.transaction && Array.isArray(options.transaction.changes)) {
+                for (const entry of options.transaction.changes) {
+                    if (entry.constructor?.tableName === "user" && Number(entry.id) === Number(userId)) {
+                        entry.dataValues.roles = roleIds;
+                    }
+                }
+            }
         }
 
         /**
