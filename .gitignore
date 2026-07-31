@@ -6,6 +6,9 @@ files/*.json
 files/*.zip
 !files/8852a746-360e-4c31-add2-4d1c75bfb96d.pdf
 
+#logs
+logs/
+
 # database dumps
 db_dumps/
 
