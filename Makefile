@@ -143,15 +143,18 @@ backup_db:
 	@docker exec -t $${CONTAINER} pg_dumpall -c -U postgres > db_dumps/dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
 
 .PHONY: recover_db
-recover_db:
+recover_db: backend/node_modules/.uptodate
 	@echo "Recovering database from dump. WARNING: This will override your current DB state."
 	@echo "Recovering from $${DUMP}"
 	@echo "Recovering into container $${CONTAINER}"
+	@echo "Stop the CARE backend before recover if it is running (open DB connections can block DROP DATABASE)."
 ifeq ($(OS),Windows_NT)
 	@cmd /c "type db_dumps\%DUMP% | docker exec -i %CONTAINER% psql -U postgres"
 else
 	@cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
 endif
+	@echo "Applying pending migrations so the restored dump matches the current codebase schema..."
+	@$(MAKE) db
 
 # Internal target: zip document files from a live DB. Requires DB and FILEZIP to be set.
 .PHONY: _export_document_files
