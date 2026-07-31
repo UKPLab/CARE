@@ -178,7 +178,7 @@ export default {
       excludeNonConsentingEdits: false,
       excludeNonConsentingAnnotations: false,
       selectedWorkflowIds: [],
-      includeStudyGrades: true,
+      includeStudyGrades: false,
       includeEmptyStudies: false
     };
   },

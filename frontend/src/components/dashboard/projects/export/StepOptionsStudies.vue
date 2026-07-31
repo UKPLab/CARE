@@ -48,7 +48,7 @@ export default {
     },
     includeGrades: {
         type: Boolean,
-        default: true
+        default: false
     },
     excludeNonConsentingEdits: {
       type: Boolean,
@@ -140,6 +140,15 @@ export default {
     },
     excludeNonConsentingAnnotations(value) {
       this.optionsData.excludeNonConsentingAnnotations = value;
+    },
+    workflows: {
+        immediate: true,
+        handler(newWorkflows) {
+        if (this.optionsData.selectedWorkflowIds.length === 0 && newWorkflows.length > 0) {
+            this.optionsData.selectedWorkflowIds = newWorkflows.map(wf => wf.id);
+            this.$emit('update:selectedWorkflowIds', this.optionsData.selectedWorkflowIds);
+        }
+        }
     },
     optionsData: {
       handler(value) {
