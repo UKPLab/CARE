@@ -40,15 +40,15 @@ export default {
     },
     includeEmptyStudies: {
       type: Boolean,
-      default: false
+      default: true
     },
     includeDocumentFiles: {
       type: Boolean,
-      default: false
+      default: true
     },
     includeGrades: {
         type: Boolean,
-        default: false
+        default: true
     },
     excludeNonConsentingEdits: {
       type: Boolean,
@@ -57,9 +57,13 @@ export default {
     excludeNonConsentingAnnotations: {
       type: Boolean,
       default: false
-    }
+    },
+    includeAiScores: {
+      type: Boolean,
+      default: true
+    },
   },
-  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:includeDocumentFiles', 'update:includeGrades', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations'],
+  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:includeDocumentFiles', 'update:includeGrades', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations', 'update:includeAiScores'],
   data() {
     return {
       optionsData: {
@@ -68,7 +72,8 @@ export default {
         includeDocumentFiles: this.includeDocumentFiles,
         includeGrades: this.includeGrades,
         excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
+        includeAiScores: this.includeAiScores
       }
     };
   },
@@ -107,6 +112,11 @@ export default {
           label: "Include grades",
           type: "switch",
         },
+        ...(this.optionsData.includeGrades ? [{
+          key: "includeAiScores",
+          label: "Include AI-assisted scores",
+          type: "switch",
+        }] : []),
         {
           key: "excludeNonConsentingEdits",
           label: "Exclude edits from non-consenting users",
@@ -135,6 +145,9 @@ export default {
     includeGrades(value) {
       this.optionsData.includeGrades = value;
     },
+    includeAiScores(value) {
+      this.optionsData.includeAiScores = value;
+    },
     excludeNonConsentingEdits(value) {
       this.optionsData.excludeNonConsentingEdits = value;
     },
@@ -158,6 +171,7 @@ export default {
         this.$emit('update:includeGrades', value.includeGrades);
         this.$emit('update:excludeNonConsentingEdits', value.excludeNonConsentingEdits);
         this.$emit('update:excludeNonConsentingAnnotations', value.excludeNonConsentingAnnotations);
+        this.$emit('update:includeAiScores', value.includeAiScores);
       },
       deep: true
     }

@@ -43,7 +43,7 @@ module.exports = function (server) {
 
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies, includeDocumentFiles, includeGrades } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies, includeDocumentFiles, includeGrades, includeAiScores } = req.body;
         let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
@@ -52,6 +52,7 @@ module.exports = function (server) {
         const shouldIncludeEmptyStudies = String(includeEmptyStudies) === 'true';
         const shouldIncludeDocumentFiles = String(includeDocumentFiles) === 'true';
         const shouldIncludeGrades = String(includeGrades) === 'true';
+        const shouldIncludeAiScores = includeAiScores === undefined ? true : String(includeAiScores) === 'true';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const parsedProjectId = Number(projectId);
         const userIds = parseUserIds(rawUserIds);
@@ -140,6 +141,7 @@ module.exports = function (server) {
                         shouldExcludeNonConsentingAnnotations,
                         shouldIncludeDocumentFiles,
                         shouldIncludeGrades,
+                        shouldIncludeAiScores,
                         baseFolderName,
                         archive
                     );
@@ -574,7 +576,7 @@ module.exports = function (server) {
         return sorted;
     }
 
-    async function processStudyBasedExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, shouldIncludeDocumentFiles, shouldIncludeGrades, baseFolderName, archive) {
+    async function processStudyBasedExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, shouldIncludeDocumentFiles, shouldIncludeGrades, shouldIncludeAiScores, baseFolderName, archive) {
         const studyWhere = { userId: userIds, projectId, deleted: false, workflowId: workflowIds };
 
         const studies = await server.db.models.study.findAll({ where: studyWhere });
@@ -807,11 +809,16 @@ module.exports = function (server) {
                 const sessionFolder = `${studyFolder}/${session.hash}`;
 
                 if (shouldIncludeGrades) {
-                    const sessionGrades = (gradeRecordsBySessionId.get(session.id) || [])
-                        .map(({ sessionHash, ...rest }) => rest)
-                        .sort(compareGradeRecords);
-                    if (sessionGrades.length > 0) {
-                        archive.append(JSON.stringify(sessionGrades, null, 2), { name: `${sessionFolder}/scores.json` });
+                    const allSessionGrades = (gradeRecordsBySessionId.get(session.id) || []).sort(compareGradeRecords);
+
+                    const humanGrades = allSessionGrades.filter(r => !r.isAiGraded).map(({ sessionHash, isAiGraded, ...rest }) => rest);
+                    const aiGrades = allSessionGrades.filter(r => r.isAiGraded).map(({ sessionHash, isAiGraded, ...rest }) => rest);
+
+                    if (humanGrades.length > 0) {
+                        archive.append(JSON.stringify(humanGrades, null, 2), { name: `${sessionFolder}/scores.json` });
+                    }
+                    if (shouldIncludeAiScores && aiGrades.length > 0) {
+                        archive.append(JSON.stringify(aiGrades, null, 2), { name: `${sessionFolder}/scores_ai.json` });
                     }
                 }
 

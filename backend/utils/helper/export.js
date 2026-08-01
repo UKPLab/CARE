@@ -542,6 +542,7 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
         const studyStep = studyStepsById.get(row.studyStepId);
         const submission = document.submission;
         const studyStepConfiguration = studyStep?.configuration;
+        const isAiGraded = Array.isArray(studyStepConfiguration?.services) && studyStepConfiguration.services.some(s => s.type === "nlpRequest");
         const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
         const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
 
@@ -579,7 +580,8 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
             scores: flatScores,
             totalPoints,
             createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-            studyStepType: studyStep?.stepType ?? null
+            studyStepType: studyStep?.stepType ?? null,
+            isAiGraded
         });
     }
 

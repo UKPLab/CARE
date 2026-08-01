@@ -81,6 +81,7 @@
           v-model:includeEmptyStudies="includeEmptyStudies"
           v-model:includeDocumentFiles="includeStudyDocumentFiles"
           v-model:includeGrades="includeStudyGrades"
+          v-model:includeAiScores="includeStudyIncludeAiScores"
           v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
           v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
         />
@@ -178,8 +179,10 @@ export default {
       excludeNonConsentingEdits: false,
       excludeNonConsentingAnnotations: false,
       selectedWorkflowIds: [],
-      includeStudyGrades: false,
-      includeEmptyStudies: false
+      includeStudyDocumentFiles: true,
+      includeStudyGrades: true,
+      includeStudyIncludeAiScores: true,
+      includeEmptyStudies: true
     };
   },
   computed: {
@@ -319,8 +322,10 @@ export default {
       this.excludeNonConsentingEdits = false;
       this.excludeNonConsentingAnnotations = false;
       this.selectedWorkflowIds = [];
+      includeStudyDocumentFiles = true;
       this.includeStudyGrades = true;
-      this.includeEmptyStudies = false;
+      this.includeStudyIncludeAiScores = true;
+      this.includeEmptyStudies = true;
       this.wait = false;
     },
     downloadData() {
@@ -462,7 +467,8 @@ export default {
           includeDocumentFiles: this.includeStudyDocumentFiles,
           includeGrades: this.includeStudyGrades,
           excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
+          includeAiScores: this.includeStudyIncludeAiScores
         });
         this.$refs.exportStepper.close();
       } catch (error) {
