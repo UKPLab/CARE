@@ -34,6 +34,7 @@ function loadTranslations() {
 
     try {
         if (!fs.existsSync(i18nDir)) {
+            console.error('i18n catalog directory not found:', i18nDir);
             translations = {};
             return translations;
         }
@@ -49,7 +50,8 @@ function loadTranslations() {
         }
 
         translations = flattenObject(merged);
-    } catch (_error) {
+    } catch (error) {
+        console.error('Failed to load i18n catalog from', i18nDir, error);
         translations = {};
     }
 

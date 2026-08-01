@@ -129,9 +129,9 @@ class UserSocket extends Socket {
         try {
             const rightToFetch = `backend.socket.user.getUsers.${role}`;
             if (!(await this.hasAccess(rightToFetch))) {
-                const msg = "This user does not have the right to load users by their role.";
-                this.logger.error(msg);
-                throw new TranslatableError("errors.users.noRightToLoadUsersByRole");
+                const key = "errors.users.noRightToLoadUsersByRole";
+                this.logger.error(key);
+                throw new TranslatableError(key);
             }
             return role === "all" ? await this.models["user"].getAll() : await this.models["user"].getUsersByRole(role);
         } catch (error) {

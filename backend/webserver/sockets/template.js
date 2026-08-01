@@ -220,7 +220,6 @@ class TemplateSocket extends Socket {
    * @param {number} data.templateType      Template type (required, 1-5)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
    * @param {string} data.placeholderLabel  i18n key for label (required, e.g. "templates.placeholders.labels.emailGeneral.username")
-   * @param {string} [data.placeholderDescription] i18n key for short description
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
    * @param {boolean} [data.required=false] Whether placeholder is required
    * @param {Object} options
@@ -243,9 +242,6 @@ class TemplateSocket extends Socket {
       placeholderType: data.placeholderType,
       required: data.required ?? false,
     };
-    if (data.placeholderDescription !== undefined) {
-      payload.placeholderDescription = data.placeholderDescription;
-    }
 
     return await this.models["placeholder"].add(
       payload,

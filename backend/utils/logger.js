@@ -18,14 +18,14 @@ class SQLTransport extends Transport {
                 ? info.message
                 : JSON.stringify(info.message);
 
+            // Dashboard logs are always stored in English.
+            const i18nParams = info.i18nParams || {};
+            message = translateMaybeKey(message, i18nParams);
+
             // 🟢 Truncate if too long (DB column = varchar(1024))
             if (message.length > 1024) {
                 message = message.slice(0, 1021) + '...';
             }
-
-            // Dashboard logs (Log.vue) are always stored in English.
-            const i18nParams = info.i18nParams || {};
-            message = translateMaybeKey(message, i18nParams);
 
             // 🟢 Use safe, short message for DB insert
             const safeInfo = {...info, message};
