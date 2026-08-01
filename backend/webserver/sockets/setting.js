@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const mailTest = require("../utils/mailTest.js");
 const { saveSettings } = require("../utils/settingSave.js");
@@ -37,7 +38,7 @@ class SettingSocket extends Socket {
      */
     async sendSettings(data, options) {
          if (!(await this.isAdmin())) {
-            throw new Error("errors.settings.noAccessPermission");
+            throw new TranslatableError("errors.settings.noAccessPermission");
         }
 
         return await this.getDashboardSettingsPayload();
@@ -55,7 +56,7 @@ class SettingSocket extends Socket {
    */
     async saveSettings(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("errors.settings.noSavePermission");
+            throw new TranslatableError("errors.settings.noSavePermission");
         }
 
         const { touchesMailService } = await saveSettings(this.models["setting"], data, {
@@ -86,7 +87,7 @@ class SettingSocket extends Socket {
      */
     async mailSendTest(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("errors.settings.noTestMailPermission");
+            throw new TranslatableError("errors.settings.noTestMailPermission");
         }
 
         const rows = await this.models["setting"].getMailServiceSettings();

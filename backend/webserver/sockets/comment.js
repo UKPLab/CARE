@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
 
@@ -101,7 +102,7 @@ class CommentSocket extends Socket {
     async sendComment(data, options) {
         const comment = await this.models['comment'].getById(data.commentId);
         if (!(await this.checkDocumentAccess(comment.documentId))) {
-            throw new Error("errors.permission.noCommentAccess");
+            throw new TranslatableError("errors.permission.noCommentAccess");
         }
         this.emit("commentRefresh", comment);
     }

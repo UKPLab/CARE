@@ -68,15 +68,15 @@ class SubmissionSocket extends Socket {
 
         const submission = await this.models['submission'].getById(id, { transaction });
         if (!submission) {
-            throw new Error("errors.submission.notFoundGeneric");
+            throw new TranslatableError("errors.submission.notFoundGeneric");
         }
         if (!(await this.checkUserAccess(submission.userId))) {
-            throw new Error("errors.submission.updateNotAllowed");
+            throw new TranslatableError("errors.submission.updateNotAllowed");
         }
 
         const assignment = await this.models['assignment'].getById(submission.assignmentId, { transaction });
         if (assignment && assignment.closed) {
-            throw new Error("errors.submission.deleteAssignmentClosed");
+            throw new TranslatableError("errors.submission.deleteAssignmentClosed");
         }
 
         const documents = await this.models['document'].findAll({
@@ -86,7 +86,7 @@ class SubmissionSocket extends Socket {
         });
         const isStudyLocked = documents.some(doc => Number(doc.studyUsageCount || 0) > 0);
         if (isStudyLocked) {
-            throw new Error("errors.submission.deleteDocumentsUsedInStudies");
+            throw new TranslatableError("errors.submission.deleteDocumentsUsedInStudies");
         }
 
         return await this.models['submission'].deleteById(id, { force, transaction });
@@ -104,7 +104,7 @@ class SubmissionSocket extends Socket {
      */
     async publishGrades(data) {
         if (!(await this.isAdmin())) {
-            throw new Error("errors.submission.noGradeUploadPermission");
+            throw new TranslatableError("errors.submission.noGradeUploadPermission");
         }
         return await this.server.rpcs["MoodleRPC"].publishAssignmentGrade({
             options: data.options,

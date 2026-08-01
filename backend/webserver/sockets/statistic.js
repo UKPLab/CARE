@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 
 /**
@@ -62,7 +63,7 @@ class StatisticSocket extends Socket {
      */
     async getStats(data, options) {
         if (!await this.isAdmin()) {
-            throw new Error("errors.permission.noPermissionToAccesData");
+            throw new TranslatableError("errors.permission.noPermissionToAccesData");
         }
 
         if (data.userId) {

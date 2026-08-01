@@ -77,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
                 }, ...options,
             });
             if (!firstStep) {
-                throw new Error("errors.studies.studyStep.notFound");
+                throw new TranslatableError("errors.studies.studyStep.notFound");
             } else {
                 return firstStep;
             }

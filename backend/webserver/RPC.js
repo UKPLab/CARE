@@ -1,3 +1,4 @@
+const TranslatableError = require("../utils/TranslatableError");
 /**
  * This class is used to create a RPC object
  *
@@ -158,11 +159,11 @@ module.exports = class RPC {
         this.logger.info("Emitting event to RPC service...");
 
         if (!this.socket) {
-            throw new Error("errors.rpc.serviceNotConnected");
+            throw new TranslatableError("errors.rpc.serviceNotConnected");
         }
 
         if (!this.socket) {
-            throw new Error("errors.rpc.serviceNotConnected");
+            throw new TranslatableError("errors.rpc.serviceNotConnected");
         }
 
         try {

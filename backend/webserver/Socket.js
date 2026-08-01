@@ -98,7 +98,8 @@ module.exports = class Socket {
 
                 console.log(err);
 
-                // i18n error hub: TranslatableError, generateError(code, key), Error("errors.*")
+                // i18n error hub: TranslatableError, generateError(code, key);
+                // legacy: plain Error("errors.*") still resolved via hasKey(err.message)
                 // Log the key; SQLTransport translates to English. Frontend gets key+params (resolveApiMessage).
                 let key;
                 let params = {};
@@ -109,7 +110,7 @@ module.exports = class Socket {
                         params = err.params;
                     }
                 } else if (typeof err.message === "string" && i18n.hasKey(err.message)) {
-                    // throw new Error("errors.namespace.key") or generateError(code, "errors.*")
+                    // legacy plain Error("errors.namespace.key") or generateError(code, "errors.*")
                     key = err.message;
                     if (err.params) {
                         params = err.params;

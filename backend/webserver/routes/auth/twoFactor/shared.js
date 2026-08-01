@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const TranslatableError = require('../../../../utils/TranslatableError');
 
 /**
  * Build shared helpers for login-time and account-level 2FA workflows.
@@ -164,7 +165,7 @@ function createTwoFactorHelpers(server, sharedHelpers, emailHelpers) {
      */
     async function sendEmailOtp(userRecord) {
         if (!userRecord || !userRecord.email) {
-            throw new Error('Email address missing for email 2FA.');
+            throw new TranslatableError('auth.twoFactor.api.emailAddressNotFound');
         }
 
         const otp = crypto.randomInt(0, 1000000).toString().padStart(6, '0');

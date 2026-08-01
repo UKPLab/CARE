@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
         static async checkSessionAvailability(studyId, userId, options) {
             const study = await sequelize.models.study.getById(studyId, {transaction: options.transaction});
             if (!study) {
-                throw new Error('errors.studies.studyNotFound');
+                throw new TranslatableError('errors.studies.studyNotFound');
             }
             // Check for limited study sessions
             if (study.limitSessions !== null && study.limitSessions > 0) {
@@ -58,10 +58,10 @@ module.exports = (sequelize, DataTypes) => {
             }
             // Check for study closed or end date and start date
             if (study.closed && Date.now() > new Date(study.end)) {
-                throw new Error('errors.studies.studyClosed');
+                throw new TranslatableError('errors.studies.studyClosed');
             }
             if (study.start !== null && new Date() < new Date(study.start)) {
-                throw new Error('errors.studies.studyNotStarted');
+                throw new TranslatableError('errors.studies.studyNotStarted');
             }
         }
 
@@ -77,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
         static async duplicateStudySession(studySessionId, overrides= {}, options) {
             const studySession = await this.getById(studySessionId, {transaction: options.transaction});
             if (!studySession) {
-                throw new Error('errors.studies.studySession.notFound');
+                throw new TranslatableError('errors.studies.studySession.notFound');
             }
             let data = {
                 studyId: studySession.studyId,

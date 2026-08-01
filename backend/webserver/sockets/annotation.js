@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
 const fs = require("fs");
@@ -29,7 +30,7 @@ class AnnotationSocket extends Socket {
         const anno = await this.models['annotation'].getById(data.annotationId);
 
         if (!(await this.checkDocumentAccess(anno.documentId))) {
-            throw new Error("errors.permission.noAnnotationChangePermission");
+            throw new TranslatableError("errors.permission.noAnnotationChangePermission");
         }
 
         await this.loadCommentsByAnnotation(anno.id);
@@ -164,7 +165,7 @@ class AnnotationSocket extends Socket {
         const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
         if (!fs.existsSync(filePath)) {
-            throw new Error("errors.file.pdfNotFound");
+            throw new TranslatableError("errors.file.pdfNotFound");
         }
         const file = fs.readFileSync(filePath);
 

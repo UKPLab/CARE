@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {getEmailContent} = require("../../utils/helper/email");
 
@@ -15,7 +16,7 @@ class StudySocket extends Socket {
     async hasManageStudiesPermission() {
         const hasPermission = await this.hasAccess("frontend.dashboard.studies.canManageStudies");
         if (!hasPermission) {
-            throw new Error("errors.studies.noPermissionManageStudies");
+            throw new TranslatableError("errors.studies.noPermissionManageStudies");
         }
     }
 
@@ -74,7 +75,7 @@ class StudySocket extends Socket {
                     context: { stepDocuments: stepDocuments }
                 });
             } else {
-                throw new Error("errors.studies.noPermissionSaveAsTemplate");
+                throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");
             }
         }
     }
@@ -151,19 +152,19 @@ class StudySocket extends Socket {
      */
     async closeStudy(data, options) {
         if (!data.studyId) {
-            throw new Error("errors.studies.studyIdRequired");
+            throw new TranslatableError("errors.studies.studyIdRequired");
         }
 
         const study = await this.models["study"].getById(data.studyId, {transaction: options.transaction});
         if (!study) {
-            throw new Error("errors.studies.studyNotFound");
+            throw new TranslatableError("errors.studies.studyNotFound");
         }
         if (!(await this.checkUserAccess(study.userId))) {
-            throw new Error("errors.studies.noPermissionCloseStudy");
+            throw new TranslatableError("errors.studies.noPermissionCloseStudy");
         }
 
         if (study.closed) {
-            throw new Error("errors.studies.studyAlreadyClosed");
+            throw new TranslatableError("errors.studies.studyAlreadyClosed");
         }
 
         const updatedStudy = await this.models["study"].updateById(

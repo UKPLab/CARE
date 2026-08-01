@@ -142,16 +142,16 @@ class DocumentSocket extends Socket {
         let errors = [];
 
         if (!data['file']) {
-            throw new Error("errors.file.noFileUploaded");
+            throw new TranslatableError("errors.file.noFileUploaded");
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
         if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
-            throw new Error("errors.file.invalidFileType");
+            throw new TranslatableError("errors.file.invalidFileType");
         }
 
         if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
-            throw new Error("errors.documents.noUploadAccess");
+            throw new TranslatableError("errors.documents.noUploadAccess");
         }
 
         if (fileType === ".delta") {
@@ -350,7 +350,7 @@ class DocumentSocket extends Socket {
     async updateDocument(data, options) {
         const doc = await this.models['document'].getById(data['id']);
         if (!(await this.checkUserAccess(doc.userId))) {
-            throw new Error("errors.documents.updateNotAllowed");
+            throw new TranslatableError("errors.documents.updateNotAllowed");
         }
 
         const newDocument = await this.models['document'].updateById(doc.id, data);
@@ -475,10 +475,10 @@ class DocumentSocket extends Socket {
                 this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
                 return delta;
             } else {
-                throw new Error("errors.documents.nonHtmlModalUnsupported");
+                throw new TranslatableError("errors.documents.nonHtmlModalUnsupported");
             }
         } else {
-            throw new Error("errors.documents.noAccess");
+            throw new TranslatableError("errors.documents.noAccess");
         }
 
     }
@@ -562,7 +562,7 @@ class DocumentSocket extends Socket {
 
             this.logger.info("Deltas file updated successfully.");
         } else {
-            throw new Error("errors.documents.nonHtmlModalUnsupportedUppercase");
+            throw new TranslatableError("errors.documents.nonHtmlModalUnsupportedUppercase");
         }
     }
 
@@ -587,7 +587,7 @@ class DocumentSocket extends Socket {
      */
     async getData(data, options) {
         if (!data.documentId) {
-            throw new Error("errors.documents.idRequired");
+            throw new TranslatableError("errors.documents.idRequired");
         }
         
         const document = await this.validateDocument(data.documentId, 'id', true);
@@ -747,7 +747,7 @@ class DocumentSocket extends Socket {
         if (await this.checkUserAccess(doc.userId)) {
             this.emit("documentRefresh", await this.models['document'].updateById(doc.id, {public: true}));
         } else {
-            throw new Error("errors.documents.noAccess");
+            throw new TranslatableError("errors.documents.noAccess");
         }
     }
 
@@ -912,7 +912,7 @@ class DocumentSocket extends Socket {
                     if (validationResult.params) {
                         throw new TranslatableError( validationResult.message, validationResult.params);
                     }
-                    throw new Error(validationResult.message || "errors.validation.validationFailedGeneric");
+                    throw new TranslatableError(validationResult.message || "errors.validation.validationFailedGeneric");
                 }
 
                 // 3. Determine previousSubmissionId
@@ -1128,7 +1128,7 @@ class DocumentSocket extends Socket {
                 if (result.params) {
                     throw new TranslatableError( result.message, result.params);
                 }
-                throw new Error(result.message || "errors.validation.validationFailedGeneric");
+                throw new TranslatableError(result.message || "errors.validation.validationFailedGeneric");
             }
 
             if (assignmentId && submissionId) {
@@ -1290,7 +1290,7 @@ class DocumentSocket extends Socket {
         }
 
         if (assignment.closed) {
-            throw new Error("errors.documents.replaceAssignmentClosed");
+            throw new TranslatableError("errors.documents.replaceAssignmentClosed");
         }
 
         const oldSubmission = await this.models["submission"].findOne({
@@ -1312,7 +1312,7 @@ class DocumentSocket extends Socket {
         const isOwner = this.userId === oldSubmission.userId;
         const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
         if (!isOwner && !hasRight) {
-            throw new Error("errors.documents.replaceNotAllowed");
+            throw new TranslatableError("errors.documents.replaceNotAllowed");
         }
 
         const oldSubmissionDocuments = await this.models["document"].findAll({
@@ -1327,7 +1327,7 @@ class DocumentSocket extends Socket {
             (document) => Number(document.studyUsageCount || 0) > 0
         );
         if (hasStudyLinkedDocument) {
-            throw new Error("errors.documents.replaceDocumentsUsedInStudies");
+            throw new TranslatableError("errors.documents.replaceDocumentsUsedInStudies");
         }
 
         const newSubmission = await this.models["submission"].add({
@@ -1600,7 +1600,7 @@ class DocumentSocket extends Socket {
      */
     async publishReviewLinks(data) {
         if (!(await this.isAdmin())) {
-            throw new Error("errors.documents.noReviewLinkUploadPermission");
+            throw new TranslatableError("errors.documents.noReviewLinkUploadPermission");
         }
         return await this.server.rpcs["MoodleRPC"].publishAssignmentTextFeedback({
             options: data.options,

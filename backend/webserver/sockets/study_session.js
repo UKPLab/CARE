@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {getEmailContent} = require("../../utils/helper/email");
 
@@ -46,7 +47,7 @@ class StudySessionSocket extends Socket {
         if (data.studySessionId && data.studySessionId !== 0) {
             const existing = await this.models["study_session"].getById(data.studySessionId, {transaction: options.transaction});
             if (!existing) {
-                throw new Error("errors.studies.studySession.notFound");
+                throw new TranslatableError("errors.studies.studySession.notFound");
             }
             shouldSendSessionStartEmail = existing.start == null;
             session = await this.models["study_session"].updateById(data.studySessionId,
@@ -178,21 +179,21 @@ class StudySessionSocket extends Socket {
      */
     async finishStudySession(data, options) {
         if (!data.studySessionId) {
-            throw new Error("errors.studies.studySession.idRequired");
+            throw new TranslatableError("errors.studies.studySession.idRequired");
         }
 
         const session = await this.models["study_session"].getById(data.studySessionId, {transaction: options.transaction});
         if (!session) {
-            throw new Error("errors.studies.studySession.notFound");
+            throw new TranslatableError("errors.studies.studySession.notFound");
         }
 
         if (session.end) {
-            throw new Error("errors.studies.studySession.alreadyFinished");
+            throw new TranslatableError("errors.studies.studySession.alreadyFinished");
         }
 
         const study = await this.models["study"].getById(session.studyId, {transaction: options.transaction});
         if (study && study.closed) {
-            throw new Error("errors.studies.studySession.cannotFinishClosedStudy");
+            throw new TranslatableError("errors.studies.studySession.cannotFinishClosedStudy");
         }
 
         const updatedSession = await this.models["study_session"].updateById(
