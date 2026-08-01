@@ -98,6 +98,7 @@ import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "TwoFactorVerifyEmail",
@@ -195,9 +196,10 @@ export default {
         this.applyCooldownFromResponse(response.data);
       } catch (error) {
         this.showError = true;
-        this.errorMessage =
-          error.response?.data?.message ||
-          this.$t("auth.twoFactor.verifyEmail.errors.loadStatusFailed");
+        this.errorMessage = resolveApiMessage(
+          error.response?.data,
+          "auth.twoFactor.verifyEmail.errors.loadStatusFailed",
+        );
       }
     },
     async checkForm() {
@@ -235,15 +237,17 @@ export default {
           }, 1000);
         } else {
           this.showError = true;
-          this.errorMessage =
-            response.data.message ||
-            this.$t("auth.twoFactor.verifyEmail.errors.invalidCode");
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "auth.twoFactor.verifyEmail.errors.invalidCode",
+          );
         }
       } catch (error) {
         this.showError = true;
-        this.errorMessage =
-          error.response?.data?.message ||
-          this.$t("auth.twoFactor.verifyEmail.errors.verifyFailed");
+        this.errorMessage = resolveApiMessage(
+          error.response?.data,
+          "auth.twoFactor.verifyEmail.errors.verifyFailed",
+        );
       } finally {
         this.isSubmitting = false;
       }
@@ -277,13 +281,17 @@ export default {
           this.applyCooldownFromResponse(response.data);
         } else if (response.status === 429) {
           this.showError = true;
-          this.errorMessage =
-            response.data.message || this.$t("auth.twoFactor.verifyEmail.errors.waitBeforeResend");
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "auth.twoFactor.verifyEmail.errors.waitBeforeResend",
+          );
           this.applyCooldownFromResponse(response.data);
         } else {
           this.showError = true;
-          this.errorMessage =
-            response.data.message || this.$t("auth.twoFactor.verifyEmail.errors.resendFailed");
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "auth.twoFactor.verifyEmail.errors.resendFailed",
+          );
         }
       } catch (_error) {
         this.showError = true;

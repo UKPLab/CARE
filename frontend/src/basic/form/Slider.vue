@@ -5,7 +5,7 @@
       class="flex-grow-1 text-end"
     >
       {{ displayText }}
-      <span v-if="'unit' in options"> {{ $te(options.unit) ? $t(options.unit) : options.unit }}</span>
+      <span v-if="'unit' in options"> {{ translateMaybeKey(options.unit) }}</span>
     </span>
     <input
       :id="options.key"
@@ -23,6 +23,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue"
+import { translateMaybeKey } from "@/assets/utils"
 
 export default {
   name: "FormSlider",
@@ -63,7 +64,7 @@ export default {
     displayValue() {
       if (this.isAtUnlimitedPosition) {
         const label = this.options.unlimitedLabel || "unlimited";
-        return this.$te(label) ? this.$t(label) : label;
+        return translateMaybeKey(label);
       }
       return Number(this.currentData);
     },
@@ -79,7 +80,7 @@ export default {
           (item) => item.from === this.displayValue
         );
         if (mapping) {
-          return this.$te(mapping.to) ? this.$t(mapping.to) : mapping.to;
+          return translateMaybeKey(mapping.to);
         }
       }
       return this.displayValue;
@@ -95,6 +96,9 @@ export default {
   },
   beforeMount() {
     this.currentData = this.normalizedModelValue;
+  },
+  methods: {
+    translateMaybeKey,
   },
 }
 </script>

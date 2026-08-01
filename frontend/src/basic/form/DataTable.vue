@@ -5,7 +5,7 @@
         <thead>
         <tr>
           <th v-for="f in fields" :key="f.name" scope="col">
-            {{ $te(f.label) ? $t(f.label) : f.label }}
+            {{ translateMaybeKey(f.label) }}
           </th>
           <th scope="col">
             {{ $t('common.actions') }}
@@ -75,6 +75,7 @@
 import FormElement from "@/basic/form/Element.vue"
 import FormDefault from "@/basic/form/Default.vue"
 import FormSelect from "@/basic/form/Select.vue"
+import { translateMaybeKey } from "@/assets/utils"
 
 /**
  * Show a table to insert new elements
@@ -137,6 +138,7 @@ export default {
     this.currentData = (this.modelValue) ? this.modelValue : [];
   },
   methods: {
+    translateMaybeKey,
     add() {
       this.currentData.push(
         Object.assign({}, ...this.fields.map(f => ({

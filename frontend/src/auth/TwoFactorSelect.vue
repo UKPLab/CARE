@@ -93,6 +93,7 @@ import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "TwoFactorSelect",
@@ -163,9 +164,10 @@ export default {
 
         if (response.status !== 200) {
           this.showError = true;
-          this.errorMessage =
-            response.data.message ||
-            this.$t("auth.twoFactor.select.errors.startFailed");
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "auth.twoFactor.select.errors.startFailed",
+          );
           return;
         }
 
@@ -196,9 +198,10 @@ export default {
           this.$t("auth.twoFactor.select.errors.unsupportedMethod");
       } catch (error) {
         this.showError = true;
-        this.errorMessage =
-          error.response?.data?.message ||
-          this.$t("auth.twoFactor.select.errors.startFailedRetry");
+        this.errorMessage = resolveApiMessage(
+          error.response?.data,
+          "auth.twoFactor.select.errors.startFailedRetry",
+        );
       } finally {
         this.isSubmitting = false;
       }

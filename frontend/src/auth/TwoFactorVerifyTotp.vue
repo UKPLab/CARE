@@ -94,6 +94,7 @@ import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "TwoFactorVerifyTotp",
@@ -165,15 +166,17 @@ export default {
           }, 1000);
         } else {
           this.showError = true;
-          this.errorMessage =
-            response.data.message ||
-            this.$t("auth.twoFactor.verifyTotp.errors.invalidCode");
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "auth.twoFactor.verifyTotp.errors.invalidCode",
+          );
         }
       } catch (error) {
         this.showError = true;
-        this.errorMessage =
-          error.response?.data?.message ||
-          this.$t("auth.twoFactor.verifyTotp.errors.verifyFailed");
+        this.errorMessage = resolveApiMessage(
+          error.response?.data,
+          "auth.twoFactor.verifyTotp.errors.verifyFailed",
+        );
       } finally {
         this.isSubmitting = false;
       }

@@ -13,7 +13,7 @@
             v-model="forgotPassword.email"
             type="email"
             class="form-control"
-            :placeholder="$t('auth.emailAddress')"
+            :placeholder="$t('auth.placeholders.emailAddress')"
             required
             :class="{ 'is-invalid': !forgotPasswordValidEmail && forgotPassword.email.length > 0 }"
           >
@@ -187,7 +187,7 @@ export default {
             });
           }
         }
-      } catch (error) {
+      } catch (_error) {
         this.forgotPassword.error = true;
         this.forgotPassword.message = this.$t('errors.server.unexpectedError');
         

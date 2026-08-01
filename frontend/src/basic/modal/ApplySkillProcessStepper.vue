@@ -98,7 +98,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, formatLocalizedTime } from "@/assets/utils";
 
 export default {
   name: "ApplySkillProcessStepper",
@@ -313,9 +313,7 @@ export default {
       return this.formatDurationSeconds(diffSeconds);
     },
     formatTimestamp(timestamp) {
-      if (!timestamp) return '';
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString();
+      return formatLocalizedTime(timestamp);
     },
     resolveApiMessage,
     startElapsedTimer() {

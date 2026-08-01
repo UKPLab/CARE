@@ -153,7 +153,7 @@
           >{{ $t('navigation.projectPage') }}</a></span>
         </div>
         <div class="text-center text-secondary">
-          {{ $t('auth.copyright') }}
+          {{ copyright }}
         </div>
         <div v-if="showVersion" class="text-center text-secondary">
           {{ $t('common.appVersion') }}: {{ version }}
