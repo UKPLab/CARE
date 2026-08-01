@@ -35,7 +35,7 @@
                 role="status"
             >
               <div class="spinner-border m-5">
-                <span class="visually-hidden">{{ $t('modals.loading') }}</span>
+                <span class="visually-hidden">{{ $t('common.loading') }}</span>
               </div>
             </div>
             <div

@@ -41,7 +41,6 @@
 </template>
 
 <script>
-import StepTemplate from "@/basic/modal/StepTemplate.vue";
 import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
 import InputMap from "@/basic/modal/skills/InputMap.vue";
 
@@ -54,7 +53,6 @@ import InputMap from "@/basic/modal/skills/InputMap.vue";
 export default {
   name: "ServicesStep",
   components: {
-    StepTemplate,
     SkillSelector,
     InputMap,
   },

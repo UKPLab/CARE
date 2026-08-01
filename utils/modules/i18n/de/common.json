@@ -99,6 +99,8 @@
     "unknown": "Unbekannt",
     "use": "Verwenden",
     "hideReplies": "Antworten verbergen",
+    "showReplies": "Antworten anzeigen ({count})",
+    "hideRepliesCount": "Antworten verbergen ({count})",
     "connecting": "Verbinden...",
     "loadingProgress": "Lade {appLoadStep} ({percent}%)",
     "duplicate": "Duplizieren",
@@ -128,5 +130,8 @@
     "selectedCount": "{selected} von {total} ausgewählt",
     "description": "Beschreibung",
     "running": "Läuft",
-    "finished": "Beendet"
+    "finished": "Beendet",
+    "nlp": {
+        "serviceRequest": "NLP-Dienstanfrage"
+    }
 }

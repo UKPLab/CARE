@@ -124,7 +124,9 @@
                   data-placement="top"
                   data-toggle="tooltip"
                   :title="$t('common.reply')"
-                  :text="`${showReplies ? $t('common.hide') : $t('common.show')} ${$t('annotator.replies')} (${numberReplies})`"
+                  :text="showReplies
+                    ? $t('common.hideRepliesCount', { count: numberReplies })
+                    : $t('common.showReplies', { count: numberReplies })"
                   @click="showReplies = !showReplies; maxComments = defaultNumComments"
               />
             </div>

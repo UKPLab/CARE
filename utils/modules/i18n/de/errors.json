@@ -306,7 +306,7 @@
     "commentsLoadFailedInternal": "Interner Serverfehler. Kommentare konnten nicht geladen werden."
   },
   "nlp": {
-    "timeout": "Zeitüberschreitung bei der Anfrage für Skill {skill} - Anfrage fehlgeschlagen!",
+    "timeout": "Zeitüberschreitung bei der Anfrage für Skill: {skill}",
     "invalidService": "Der bereitgestellte Service ist ungültig. Bitte wenden Sie sich an den Serviceanbieter.",
     "configCopyFailed": "Konfiguration nicht geladen oder leer, kann nicht kopiert werden.",
     "downloadFailed": "Download fehlgeschlagen",
