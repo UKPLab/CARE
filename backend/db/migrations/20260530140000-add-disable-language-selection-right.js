@@ -10,6 +10,15 @@ const ROLE_NAME = "guest";
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
+        const userRoles = await queryInterface.sequelize.query('SELECT id, name FROM "user_role"', {
+            type: queryInterface.sequelize.QueryTypes.SELECT,
+        });
+
+        const guestRole = userRoles.find((role) => role.name === ROLE_NAME);
+        if (!guestRole) {
+            return;
+        }
+
         await queryInterface.bulkInsert(
             "user_right",
             [{
@@ -19,12 +28,6 @@ module.exports = {
             }],
             {}
         );
-
-        const userRoles = await queryInterface.sequelize.query('SELECT id, name FROM "user_role"', {
-            type: queryInterface.sequelize.QueryTypes.SELECT,
-        });
-
-        const guestRole = userRoles.find((role) => role.name === ROLE_NAME);
 
         await queryInterface.bulkInsert(
             "role_right_matching",
