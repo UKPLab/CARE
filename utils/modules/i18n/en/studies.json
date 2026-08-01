@@ -229,6 +229,12 @@
     "multipleSubmit": {
       "label": "Allow multiple submissions?",
       "help": "Specify whether participants can submit their study multiple times."
+    },
+    "step": {
+      "documentId": {
+        "label": "Select Document",
+        "newEmptyDoc": "New Empty Document"
+      }
     }
   },
   "units": {

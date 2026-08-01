@@ -55,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "public",
-                label: "documents.fields.publicSwitch",
+                label: "documents.fields.public.label",
                 type: "switch",
                 required: false,
                 default: false
@@ -275,7 +275,7 @@ module.exports = (sequelize, DataTypes) => {
 
                 return await Document.encodeDocumentFileToBase64(doc);
             } catch (err) {
-                if (err.key) {
+                if (err.isTranslatable) {
                     throw err;
                 }
                 throw new TranslatableError("errors.documents.processingError", {documentId, message: err.message})

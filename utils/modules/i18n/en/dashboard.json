@@ -473,14 +473,8 @@
             "admin": "full control",
             "system": "system user"
         }
-    },
-    "documents": {
-        "fields": {
-            "selectDoc": "Select Document",
-            "newEmptyDoc": "New Empty Document"
-        }
-    },
-    "sessionOverview": {
+  },
+  "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
         "filterWorkflowType": "Filter Workflow type:",

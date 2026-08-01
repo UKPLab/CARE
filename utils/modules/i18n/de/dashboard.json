@@ -474,12 +474,6 @@
       "system": "Systembenutzer"
     }
   },
-  "documents": {
-    "fields": {
-      "selectDoc": "Dokument auswählen",
-      "newEmptyDoc": "Neues leeres Dokument"
-    }
-  },
   "sessionOverview": {
     "title": "Übersicht der Studiensitzungen",
     "showOnlyOpenStudies": "Nur offene Studien anzeigen",

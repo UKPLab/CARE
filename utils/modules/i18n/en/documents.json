@@ -42,7 +42,9 @@
     "userId": {
       "label": "User ID of the document"
     },
-    "publicSwitch": "Is the document published?"
+    "public": {
+      "label": "Is the document published?"
+    }
   },
   "messages": {
     "deleteConfirm": "Are you sure you want to delete the document?",

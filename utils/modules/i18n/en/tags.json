@@ -29,8 +29,14 @@
       "name": {
         "placeholder": "Name of the Tag"
       },
-      "color": {
-        "label": "Color"
+      "colorCode": {
+        "label": "Color",
+        "options": {
+          "info": "Info",
+          "warning": "Warning",
+          "success": "Success",
+          "danger": "Danger"
+        }
       },
       "description": {
         "placeholder": "Tag description"
@@ -47,17 +53,5 @@
     "tagSetPublished": "TagSet published",
     "tagSetPublishedMessage": "The TagSet was successfully published"
   },
-  "editMainTag": "Edit main tag",
-  "tag": {
-    "form": {
-      "colorCode": {
-        "options": {
-          "info": "Info",
-          "warning": "Warning",
-          "success": "Success",
-          "danger": "Danger"
-        }
-      }
-    }
-  }
+  "editMainTag": "Edit main tag"
 }

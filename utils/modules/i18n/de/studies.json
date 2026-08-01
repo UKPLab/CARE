@@ -229,6 +229,12 @@
     "multipleSubmit": {
       "label": "Mehrfache Abgaben erlauben?",
       "help": "Geben Sie an, ob Teilnehmer ihre Studie mehrmals abgeben können."
+    },
+    "step": {
+      "documentId": {
+        "label": "Dokument auswählen",
+        "newEmptyDoc": "Neues leeres Dokument"
+      }
     }
   },
   "units": {
