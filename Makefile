@@ -33,7 +33,7 @@ help:
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
 	@echo "make clean             				Delete development files"
-	@echo "make lint             				Run linter (only frontend)"
+	@echo "make lint             				Run linter"
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 	@echo "make audit            				npm audit for frontend, backend, and utils/modules packages"

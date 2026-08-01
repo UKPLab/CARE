@@ -437,11 +437,24 @@ function main() {
     }
 
     if (findings.length === 0) {
-        console.log('i18n check: ok')
+        console.log(
+            `i18n check: ok — missing=0 unused=0 hardcoded=0 (scanned ${feFiles.length} FE + ${beFiles.length} BE files, ${catalogKeys.length} catalog keys)`
+        )
         return
     }
 
-    console.error(`i18n check: ${findings.length} issue(s)\n`)
+    let missing = 0
+    let unused = 0
+    let hardcoded = 0
+    for (const f of findings) {
+        if (f.message.includes('unused i18n key')) unused += 1
+        else if (f.message.includes('hardcoded')) hardcoded += 1
+        else if (f.message.includes('missing i18n')) missing += 1
+    }
+
+    console.error(
+        `i18n check: ${findings.length} issue(s) — missing=${missing} unused=${unused} hardcoded=${hardcoded}\n`
+    )
     for (const f of findings) {
         console.error(`${f.file}:${f.line}: ${f.message}`)
     }
