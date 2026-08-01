@@ -35,16 +35,18 @@
           <div v-html="newLanguageModalMessage" />
         </template>
         <template #footer>
-          <BasicButton
-            class="btn btn-outline-primary"
-            :text="$t('templates.editor.createEmpty')"
-            @click="chooseNewLanguageEmpty"
-          />
-          <BasicButton
-            class="btn btn-primary"
-            :text="$t('templates.editor.copyContent')"
-            @click="chooseNewLanguageCopied"
-          />
+          <div class="btn-group">
+            <BasicButton
+              class="btn btn-outline-primary"
+              :text="$t('templates.editor.createEmpty')"
+              @click="chooseNewLanguageEmpty"
+            />
+            <BasicButton
+              class="btn btn-primary"
+              :text="$t('templates.editor.copyContent')"
+              @click="chooseNewLanguageCopied"
+            />
+          </div>
         </template>
       </BasicModal>
     </span>

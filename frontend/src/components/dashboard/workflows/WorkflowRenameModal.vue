@@ -32,17 +32,19 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-secondary me-2"
-        :text="$t('common.cancel')"
-        @click="close"
-      />
-      <BasicButton
-        class="btn btn-primary"
-        :text="$t('workflow.renameModal.renameWorkflow')"
-        :disabled="!canSubmit"
-        @click="handleSubmit"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :text="$t('common.cancel')"
+          @click="close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :text="$t('workflow.renameModal.renameWorkflow')"
+          :disabled="!canSubmit"
+          @click="handleSubmit"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

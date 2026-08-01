@@ -35,28 +35,30 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        v-if="!forgotPassword.success"
-        :text="$t('common.cancel')"
-        class="btn btn-secondary"
-        data-bs-dismiss="modal"
-        @click="resetForm"
-      />
-      <BasicButton
-        v-if="!forgotPassword.success"
-        :disabled="!forgotPasswordValidEmail"
-        :loading="forgotPassword.isLoading"
-        class="btn btn-primary"
-        :text="forgotPassword.isLoading ? $t('modals.sending') : $t('modals.sendResetEmail')"
-        @click="sendResetEmail"
-      />
-      <BasicButton
-        v-if="forgotPassword.success"
-        :text="$t('common.close')"
-        class="btn btn-success"
-        data-bs-dismiss="modal"
-        @click="resetForm"
-      />
+      <div class="btn-group">
+        <BasicButton
+          v-if="!forgotPassword.success"
+          :text="$t('common.cancel')"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          @click="resetForm"
+        />
+        <BasicButton
+          v-if="!forgotPassword.success"
+          :disabled="!forgotPasswordValidEmail"
+          :loading="forgotPassword.isLoading"
+          class="btn btn-primary"
+          :text="forgotPassword.isLoading ? $t('modals.sending') : $t('modals.sendResetEmail')"
+          @click="sendResetEmail"
+        />
+        <BasicButton
+          v-if="forgotPassword.success"
+          :text="$t('common.close')"
+          class="btn btn-success"
+          data-bs-dismiss="modal"
+          @click="resetForm"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

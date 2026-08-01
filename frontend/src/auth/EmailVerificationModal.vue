@@ -17,25 +17,27 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        v-if="!emailVerification.showSuccess"
-        class="btn btn-secondary"
-        :text="$t('common.close')"
-        data-bs-dismiss="modal"
-      />
-      <BasicButton
-        v-if="!emailVerification.showSuccess && !emailVerification.showError"
-        :loading="emailVerification.isLoading"
-        class="btn btn-primary"
-        :text="emailVerification.isLoading ? $t('modals.sending') : $t('auth.resendVerificationEmail')"
-        @click="resendVerificationEmail"
-      />
-      <BasicButton
-        v-if="emailVerification.showSuccess"
-        class="btn btn-success"
-        :text="$t('common.ok')"
-        data-bs-dismiss="modal"
-      />
+      <div class="btn-group">
+        <BasicButton
+          v-if="!emailVerification.showSuccess"
+          class="btn btn-secondary"
+          :text="$t('common.close')"
+          data-bs-dismiss="modal"
+        />
+        <BasicButton
+          v-if="!emailVerification.showSuccess && !emailVerification.showError"
+          :loading="emailVerification.isLoading"
+          class="btn btn-primary"
+          :text="emailVerification.isLoading ? $t('modals.sending') : $t('auth.resendVerificationEmail')"
+          @click="resendVerificationEmail"
+        />
+        <BasicButton
+          v-if="emailVerification.showSuccess"
+          class="btn btn-success"
+          :text="$t('common.ok')"
+          data-bs-dismiss="modal"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

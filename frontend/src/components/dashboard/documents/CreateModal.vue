@@ -48,7 +48,7 @@
       </div>
     </template>
     <template #footer>
-      <div>
+      <div class="btn-group">
         <BasicButton
           class="btn btn-secondary"
           :text="$t('common.close')"

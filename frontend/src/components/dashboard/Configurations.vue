@@ -66,19 +66,21 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
+      <div class="btn-group">
+        <BasicButton
           class="btn btn-secondary"
           :text="$t('common.cancel')"
           data-bs-dismiss="modal"
           @click="$refs.editModal.close()"
-      />
-      <BasicButton
+        />
+        <BasicButton
           class="btn btn-primary"
           :text="$t('common.save')"
           :loading="saving"
           :disabled="saving"
           @click="saveConfiguration"
-      />
+        />
+      </div>
     </template>
   </Modal>
 </template>
