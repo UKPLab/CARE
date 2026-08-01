@@ -452,7 +452,7 @@ class AssignmentSocket extends Socket {
                     }
 
                     if (!swapped) {
-                        throw new Error("errors.assignment.couldNotAssignReviewers");
+                        throw new TranslatableError("errors.assignment.couldNotAssignReviewers");
                     }
                 }
             }
@@ -545,7 +545,7 @@ class AssignmentSocket extends Socket {
             return finalAssignments;
 
         } else {
-            throw new Error("errors.assignment.invalidMode");
+            throw new TranslatableError("errors.assignment.invalidMode");
         }
 
     }
@@ -728,7 +728,7 @@ class AssignmentSocket extends Socket {
                 if( targetWorkflowStepId === 'previousSubmission'){
                     // Get the original submission first
                     if(previousSubmissionId === null){
-                        throw new Error("errors.assignment.firstStepNotSubmission");
+                        throw new TranslatableError("errors.assignment.firstStepNotSubmission");
                     }    
                     let originalSubmission = await this.models['submission'].findOne(
                         { where: { id: previousSubmissionId } }, 
@@ -745,7 +745,7 @@ class AssignmentSocket extends Socket {
                     );
                     //get document based on validation file for now getting pdf
                     if(!latestSubmission){
-                        throw new Error("errors.assignment.latestSubmissionNotFound");
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
                     }
                     const document = await this.models['document'].findOne(
                         { where: { submissionId: latestSubmission.id, type: 0} },

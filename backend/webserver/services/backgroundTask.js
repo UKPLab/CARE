@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Service = require("../Service.js");
 const Socket = require("../Socket.js");
 const fs = require("fs");
@@ -93,15 +94,15 @@ module.exports = class BackgroundTaskService extends Service {
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!documentSocket) {
             this.server.logger.error("No DocumentSocket found for client");
-            throw new Error("errors.backgroundTask.noDocumentSocketForClient");
+            throw new TranslatableError("errors.backgroundTask.noDocumentSocketForClient");
         }
 
         if (!preprocessingData || !preprocessingData.skillName || !preprocessingData.skillParameterMappings) {
-            throw new Error("errors.backgroundTask.invalidPreprocessRequest");
+            throw new TranslatableError("errors.backgroundTask.invalidPreprocessRequest");
         }
 
         if (!(await documentSocket.isAdmin())) {
-            throw new Error("errors.permission.noPreprocessSubmissionPermission");
+            throw new TranslatableError("errors.permission.noPreprocessSubmissionPermission");
         }
 
         await this.initializePreprocessingState();
@@ -195,7 +196,7 @@ module.exports = class BackgroundTaskService extends Service {
         const {skillName, skillParameterMappings, baseFileParameter, baseFiles} = preprocessingData;
 
         if (!skillParameterMappings) {
-            throw new Error("errors.submission.noSkillParameterMappings");
+            throw new TranslatableError("errors.submission.noSkillParameterMappings");
         }
 
         this.preprocessItems = [];
@@ -450,10 +451,10 @@ module.exports = class BackgroundTaskService extends Service {
     async cancelPreprocessing(client) {
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!documentSocket || !(await documentSocket.isAdmin())) {
-            throw new Error("errors.submission.missingAdminRights");
+            throw new TranslatableError("errors.submission.missingAdminRights");
         }
         if (!this.backgroundTask.preprocess) {
-            throw new Error("errors.submission.noActivePreprocessing");
+            throw new TranslatableError("errors.submission.noActivePreprocessing");
         }
 
         this.backgroundTask.preprocess.cancelled = true;
@@ -473,12 +474,12 @@ module.exports = class BackgroundTaskService extends Service {
     async confirmCompletion(client) {
         const preprocess = this.backgroundTask.preprocess;
         if (!preprocess?.completed) {
-            throw new Error("errors.backgroundTask.noCompletedPreprocessing");
+            throw new TranslatableError("errors.backgroundTask.noCompletedPreprocessing");
         }
 
         const documentSocket = this.server.availSockets[client.socket.id]?.DocumentSocket;
         if (!(documentSocket && await Socket.prototype.isAdmin.call(documentSocket))) {
-            throw new Error("errors.backgroundTask.confirmCompletionMissingAdminRights");
+            throw new TranslatableError("errors.backgroundTask.confirmCompletionMissingAdminRights");
         }
 
         delete this.backgroundTask.preprocess;

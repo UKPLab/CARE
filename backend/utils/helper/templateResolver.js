@@ -195,11 +195,11 @@ async function getTemplateContentForLanguage(templateId, language, models, optio
  */
 async function resolveTemplate(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("errors.templates.templateIdRequired");
+        throw new TranslatableError("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("errors.templates.modelsObjectRequired");
+        throw new TranslatableError("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
@@ -264,11 +264,11 @@ async function resolveTemplate(templateId, context, models, options = {}) {
  */
 async function resolveTemplateToDelta(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("errors.templates.templateIdRequired");
+        throw new TranslatableError("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("errors.templates.modelsObjectRequired");
+        throw new TranslatableError("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
@@ -400,7 +400,7 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
     const action = options.action || "publishing";
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error("errors.templates.notFound");
+        throw new TranslatableError("errors.templates.notFound");
     }
     if (![1, 2, 3, 6, 7].includes(template.type)) {
         return;

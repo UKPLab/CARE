@@ -1,4 +1,6 @@
 'use strict';
+
+const TranslatableError = require("../../utils/TranslatableError");
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 
@@ -204,13 +206,13 @@ module.exports = (sequelize, DataTypes) => {
             const study = await sequelize.models.study.getById(studyId);
             if (study) {
                 if (study.closed) {
-                    throw new Error('errors.studies.studyClosed');
+                    throw new TranslatableError('errors.studies.studyClosed');
                 }
                 if (!study.multipleSubmit && study.end && new Date(study.end) < new Date()) {
-                    throw new Error('errors.studies.studyEnded');
+                    throw new TranslatableError('errors.studies.studyEnded');
                 }
             } else {
-                throw new Error('errors.studies.studyNotFound');
+                throw new TranslatableError('errors.studies.studyNotFound');
             }
         }
 
@@ -432,7 +434,7 @@ module.exports = (sequelize, DataTypes) => {
             afterCreate: async (study, options) => {
 
                 if (!options.context || !options.context.stepDocuments) {
-                    throw new Error("errors.studies.missingContextOrStepDocuments");
+                    throw new TranslatableError("errors.studies.missingContextOrStepDocuments");
                 }
 
                 await Study.createStudySteps(study, options);

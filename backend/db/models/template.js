@@ -196,10 +196,10 @@ module.exports = (sequelize, DataTypes) => {
                 throw new TranslatableError("errors.templates.withIdNotFound", {sourceTemplateId});
             }
             if (!source.public) {
-                throw new Error("errors.templates.onlyPublicCanBeCopied");
+                throw new TranslatableError("errors.templates.onlyPublicCanBeCopied");
             }
             if (source.userId === userId) {
-                throw new Error("errors.templates.cannotCopyOwn");
+                throw new TranslatableError("errors.templates.cannotCopyOwn");
             }
 
             // Prevent duplicate copy (unless overrides.force is true)
@@ -209,7 +209,7 @@ module.exports = (sequelize, DataTypes) => {
                     transaction,
                 });
                 if (existing) {
-                    throw new Error("errors.templates.alreadyCopied");
+                    throw new TranslatableError("errors.templates.alreadyCopied");
                 }
             }
 
@@ -337,12 +337,12 @@ module.exports = (sequelize, DataTypes) => {
 
             const copy = await Template.findByPk(copyId, { transaction });
             if (!copy || !copy.sourceId) {
-                throw new Error("errors.templates.notCopyOrDoesNotExist");
+                throw new TranslatableError("errors.templates.notCopyOrDoesNotExist");
             }
 
             const source = await Template.findByPk(copy.sourceId, { transaction });
             if (!source || source.deleted) {
-                throw new Error("errors.templates.sourceNoLongerAvailable");
+                throw new TranslatableError("errors.templates.sourceNoLongerAvailable");
             }
 
             // 1. Get all source language content
@@ -423,10 +423,10 @@ module.exports = (sequelize, DataTypes) => {
         static async detach(copyId, options = {}) {
             const copy = await Template.findByPk(copyId, { transaction: options.transaction });
             if (!copy) {
-                throw new Error("errors.templates.notFound");
+                throw new TranslatableError("errors.templates.notFound");
             }
             if (!copy.sourceId) {
-                throw new Error("errors.templates.notACopy");
+                throw new TranslatableError("errors.templates.notACopy");
             }
             await copy.update({ sourceId: null }, { transaction: options.transaction });
             return await Template.findByPk(copyId, { transaction: options.transaction });
@@ -469,8 +469,7 @@ module.exports = (sequelize, DataTypes) => {
                         template._previousDataValues.public === true &&
                         template.public === false
                     ) {
-                        throw new Error(
-                            "errors.templates.cannotMakeNonPublic"
+                        throw new TranslatableError("errors.templates.cannotMakeNonPublic"
                         );
                     }
 
@@ -492,8 +491,7 @@ module.exports = (sequelize, DataTypes) => {
                     }
 
                     if (template.userId !== options.callerUserId) {
-                        throw new Error(
-                            "errors.templates.updateOwnOnly"
+                        throw new TranslatableError("errors.templates.updateOwnOnly"
                         );
                     }
 
@@ -504,7 +502,7 @@ module.exports = (sequelize, DataTypes) => {
                         prevSourceId != null &&
                         nextSourceId != null
                     ) {
-                        throw new Error("errors.templates.copiedCannotBeEdited");
+                        throw new TranslatableError("errors.templates.copiedCannotBeEdited");
                     }
                 }
             }
