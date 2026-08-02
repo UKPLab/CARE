@@ -2,7 +2,7 @@
 'use strict';
 
 /**
- * CARE perf-test harness (ramp mode — login + connect milestone).
+ * CARE perf harness (ramp mode — login + connect milestone).
  *
  * Replays recorded sessions as concurrent load against a running CARE backend
  * and reports degradation. Driven as a socket.io client so it exercises the
@@ -11,7 +11,7 @@
  */
 
 const { io: SocketIOClient } = require('socket.io-client');
-const { login, verifyAuthenticatedSession } = require('./perf-auth');
+const { login, verifyAuthenticatedSession } = require('./utils/auth');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
 const readline = require('readline');
 
@@ -46,6 +46,11 @@ function promptPassword() {
     });
 }
 
+/**
+ * Parse `--flag value` and bare `--flag` CLI arguments into an object.
+ * @param {Array<string>} argv - Raw argument list (process.argv minus node and script)
+ * @returns {Object} Flag names (without `--`) mapped to their value, or `true` when the flag takes none
+ */
 function parseArgs(argv) {
     const args = {};
     for (let i = 0; i < argv.length; i++) {
@@ -79,11 +84,22 @@ function parseDuration(val) {
     return n * mult;
 }
 
+/**
+ * Parse a comma-separated list of recording ids.
+ * @param {string|boolean} val - Raw `--recordings` value
+ * @returns {Array<number>} Positive integer ids; empty if the flag was absent or held no valid ids
+ */
 function parseRecordings(val) {
     if (!val || val === true) return [];
     return String(val).split(',').map(s => parseInt(s.trim(), 10)).filter(n => Number.isInteger(n) && n > 0);
 }
 
+/**
+ * Build the run configuration from parsed CLI arguments, applying defaults
+ * and falling back to environment variables where flags are absent.
+ * @param {Object} args - Parsed arguments from parseArgs
+ * @returns {Object} The run configuration consumed by validateConfig and the mode handlers
+ */
 function buildConfig(args) {
     return {
         mode: args.mode || 'ramp',
@@ -107,6 +123,11 @@ function buildConfig(args) {
     };
 }
 
+/**
+ * Check a configuration for invalid or missing values before the run starts.
+ * @param {Object} cfg - Configuration from buildConfig
+ * @returns {Array<string>} Human-readable error messages; empty when the config is valid
+ */
 function validateConfig(cfg) {
     const errors = [];
     if (!['ramp', 'soak', 'regression', 'inspect', 'ceiling'].includes(cfg.mode)) errors.push(`--mode must be "ramp", "soak", "regression", "inspect", or "ceiling" (got "${cfg.mode}")`);
@@ -118,6 +139,14 @@ function validateConfig(cfg) {
     return errors;
 }
 
+/**
+ * Open a Socket.IO connection using the session cookie and wait for the
+ * server's ready signal before resolving.
+ * @param {string} serverUrl - Target server, e.g. http://localhost:3001
+ * @param {string} cookie - The "connect.sid=..." session cookie
+ * @returns {Promise<Object>} The connected socket
+ * @throws {Error} If the connection fails or no ready signal arrives in time
+ */
 function connectSocket(serverUrl, cookie) {
     return new Promise((resolve, reject) => {
         const socket = SocketIOClient(serverUrl, {
@@ -131,6 +160,15 @@ function connectSocket(serverUrl, cookie) {
     });
 }
 
+/**
+ * Emit a socket event and wait for the server's acknowledgement.
+ * @param {Object} socket - Connected Socket.IO client
+ * @param {string} event - Event name to emit
+ * @param {Object} payload - Event payload
+ * @param {number} [timeoutMs=5000] - Ack timeout in ms; 0 disables the timeout
+ * @returns {Promise<Object>} The acknowledgement payload
+ * @throws {Error} If no acknowledgement arrives before the timeout
+ */
 function emitWithAck(socket, event, payload, timeoutMs = 5000) {
     return new Promise((resolve, reject) => {
         const timer = timeoutMs > 0
@@ -156,6 +194,12 @@ async function verifyAdminAccess(socket) {
     throw new Error('Configured account is not admin (recordingGetOnlineSessions rejected: ' + msg + '). Use an admin account.');
 }
 
+/**
+ * Run one perf session: authenticate, connect, verify admin access, then
+ * dispatch to the handler for the configured mode.
+ * @param {Object} cfg - Validated run configuration
+ * @throws {Error} If login, connection, or admin verification fails
+ */
 async function run(cfg) {
     console.log('\nLogging in as "' + cfg.user + '" at ' + cfg.server + ' ...');
     const cookie = await login(cfg.server, cfg.user, cfg.password);
@@ -174,31 +218,31 @@ async function run(cfg) {
     const ctx = { socket, emitWithAck: emit, userId: user.id };
 
     if (cfg.mode === 'regression') {
-        const { runRegression } = require('./perf-regression');
+        const { runRegression } = require('./regression');
         const code = await runRegression(cfg, ctx);
         socket.disconnect();
         process.exit(code);
     }
     if (cfg.mode === 'inspect') {
-        const { runInspect } = require('./perf-inspect');
+        const { runInspect } = require('./inspect');
         const code = await runInspect(cfg, ctx);
         socket.disconnect();
         process.exit(code);
     }
     if (cfg.mode === 'ramp') {
-        const { runRamp } = require('./perf-ramp');
+        const { runRamp } = require('./ramp');
         const code = await runRamp(cfg, ctx);
         socket.disconnect();
         process.exit(code);
     }
     if (cfg.mode === 'ceiling') {
-        const { runCeiling } = require('./perf-ceiling');
+        const { runCeiling } = require('./ceiling');
         const { code } = await runCeiling(cfg, ctx);
         socket.disconnect();
         process.exit(code);
     }
     if (cfg.mode === 'soak') {
-        const { runSoak } = require('./perf-soak');
+        const { runSoak } = require('./soak');
         const code = await runSoak(cfg, ctx);
         socket.disconnect();
         process.exit(code);
@@ -210,6 +254,11 @@ async function run(cfg) {
     throw new Error(`No handler for mode "${cfg.mode}"`);
 }
 
+/**
+ * CLI entry point: parse arguments, prompt for a password when needed,
+ * validate the configuration, and start the run.
+ * @returns {Promise<void>} Resolves when the run completes
+ */
 async function main() {
     const cfg = buildConfig(parseArgs(process.argv.slice(2)));
 
@@ -229,7 +278,7 @@ async function main() {
         process.exit(1);
     }
 
-    console.log('CARE perf-test — configuration');
+    console.log('CARE perf — configuration');
     console.log('  mode:          ' + cfg.mode);
     console.log('  recordings:    ' + cfg.recordings.join(', '));
     console.log('  maxIterations: ' + cfg.maxIterations);
@@ -237,7 +286,7 @@ async function main() {
     console.log('  user:          ' + cfg.user);
 
     run(cfg).then(() => process.exit(0)).catch(err => {
-        console.error('\nperf-test error: ' + err.message);
+        console.error('\nperf error: ' + err.message);
         process.exit(1);
     });
 }

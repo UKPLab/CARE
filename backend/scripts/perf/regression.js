@@ -1,8 +1,8 @@
 'use strict';
 
-const { resolvePayload } = require('./perf-recordings');
-const { printTraceStats } = require('./perf-trace-stats');
-const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
+const { resolvePayload } = require('./utils/recordings');
+const { printTraceStats } = require('./utils/trace-stats');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/report');
 
 /**
  * Regression mode: replay the given recordings once at concurrency 1 and

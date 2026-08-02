@@ -1,6 +1,6 @@
 'use strict';
 
-const { resolvePayload } = require('./perf-recordings');
+const { resolvePayload } = require('./utils/recordings');
 
 /**
  * Inspect recordings: fetch each recording's traces and report a plain
@@ -45,6 +45,12 @@ async function runInspect(cfg, ctx) {
     return 0;
 }
 
+/**
+ * Print a trace-count and action-distribution summary for one recording.
+ * @param {number|string} id - Recording id or display name for the header
+ * @param {Array<Object>} traces - The recording's traces ({action, direction})
+ * @returns {void}
+ */
 function analyzeRecording(id, traces) {
     const total = traces.length;
     const byAction = {};

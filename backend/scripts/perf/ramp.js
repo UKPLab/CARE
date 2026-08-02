@@ -1,10 +1,10 @@
 'use strict';
 
-const { resolvePayload } = require('./perf-recordings');
+const { resolvePayload } = require('./utils/recordings');
 const { randomUUID } = require('crypto');
-const { printTraceStats } = require('./perf-trace-stats');
-const { MetricSampler } = require('./perf-metrics');
-const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
+const { printTraceStats } = require('./utils/trace-stats');
+const { MetricSampler } = require('./utils/metrics');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/report');
 
 /**
  * Ramp mode: escalate concurrency (N, 2N, 3N...) until a hard failure or the
@@ -80,12 +80,25 @@ async function runRamp(cfg, ctx) {
     return brokeEarly ? 1 : 0;
 }
 
+/**
+ * Read a percentile value from a pre-sorted numeric array.
+ * @param {Array<number>} sorted - Values sorted ascending
+ * @param {number} p - Percentile to read (0-100)
+ * @returns {number} The value at that percentile, or 0 if the array is empty
+ */
 function percentile(sorted, p) {
     if (sorted.length === 0) return 0;
     const idx = Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length));
     return sorted[idx];
 }
 
+/**
+ * Print the ramp results table, memory and DB vitals, and the final verdict.
+ * @param {Array<Object>} levels - Per-level replay results from replayRun
+ * @param {Object} cfg - Run configuration
+ * @param {Object} sampler - Stopped MetricSampler, read for memory and Postgres stats
+ * @returns {void}
+ */
 function reportRamp(levels, cfg, sampler) {
     console.log('\n=== Ramp results ===');
     console.log('  level  sessions  passed  failed  avgMs  p95Ms  maxMs  thru/s  status');
@@ -151,6 +164,11 @@ function reportRamp(levels, cfg, sampler) {
     }
 }
 
+/**
+ * Average trace latency across all sessions in one level.
+ * @param {Object} level - One level's replay result ({results: Array<Object>})
+ * @returns {number} Mean latency in ms, rounded; 0 if the level has no latencies
+ */
 function avgLatency(level) {
     const lats = [];
     for (const s of (level.results || [])) for (const l of (s.latencies || [])) lats.push(l.latency);

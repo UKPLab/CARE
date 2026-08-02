@@ -1,10 +1,10 @@
 'use strict';
 
 const { randomUUID } = require('crypto');
-const { resolvePayload } = require('./perf-recordings');
-const { MetricSampler } = require('./perf-metrics');
-const { printTraceStats, printMemoryCorrelation } = require('./perf-trace-stats');
-const { saveResults, makeOutputCapture, saveReadableReport } = require('./perf-report');
+const { resolvePayload } = require('./utils/recordings');
+const { MetricSampler } = require('./utils/metrics');
+const { printTraceStats, printMemoryCorrelation } = require('./utils/trace-stats');
+const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/report');
 
 /**
  * Soak mode: hold a FIXED concurrency continuously for a duration, sampling
@@ -176,6 +176,11 @@ function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
     return 0;
 }
 
+/**
+ * Aggregate one replay level's session results into summary metrics.
+ * @param {Object} lvl - One level's replay result ({results: Array<Object>, duration: number})
+ * @returns {{passed: number, failed: number, avg: number, p95: number, thru: number}} Trace pass/fail counts, average and 95th-percentile latency in ms, and throughput in traces per second
+ */
 function metrics(lvl) {
     let passed = 0, failed = 0;
     const lats = [];
@@ -192,7 +197,19 @@ function metrics(lvl) {
     return { passed, failed, avg, p95, thru };
 }
 
+/**
+ * Pause execution for a fixed duration.
+ * @param {number} ms - Milliseconds to wait
+ * @returns {Promise<void>} Resolves once the delay has elapsed
+ */
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+/**
+ * Right-pad a value to a fixed width for aligned table output.
+ * @param {*} v - Value to pad (coerced to string)
+ * @param {number} w - Target column width
+ * @returns {string} The padded string
+ */
 function pad(v, w) { return String(v).padEnd(w); }
 
 module.exports = { runSoak };

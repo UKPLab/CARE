@@ -2,7 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { traceStats } = require('./perf-trace-stats');
+const { traceStats } = require('./trace-stats');
 
 /**
  * Persist a perf run's complete results to a local JSON file, so results

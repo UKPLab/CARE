@@ -102,6 +102,12 @@ function printTraceStats(results, opts = {}) {
     }
 }
 
+/**
+ * Right-pad a value to a fixed width for aligned table output.
+ * @param {*} v - Value to pad (coerced to string)
+ * @param {number} w - Target column width
+ * @returns {string} The padded string
+ */
 function pad(v, w) { return String(v).padEnd(w); }
 
 /**
