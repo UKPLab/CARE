@@ -12,7 +12,7 @@
 
 const { io: SocketIOClient } = require('socket.io-client');
 const { login, verifyAuthenticatedSession } = require('./perf-auth');
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.env') });
 const readline = require('readline');
 
 /**
