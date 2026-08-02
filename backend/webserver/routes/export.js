@@ -24,6 +24,7 @@ const {
     loadExportRequestContext,
     SUPPORTED_EXPORT_TYPES,
     buildGradeRecords,
+    attachTagNames,
 } = require('../../utils/helper/export.js');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
@@ -412,6 +413,8 @@ module.exports = function (server) {
                     server.db.models.comment.findAll({ where: { documentId: allDocIds }, raw: true }),
                 ]);
 
+                annotations = await attachTagNames(server, annotations);
+
                 if (shouldExcludeNonConsentingAnnotations) {
                     const allUserIds = [...new Set([
                         ...annotations.map(a => a.userId),
@@ -642,6 +645,8 @@ module.exports = function (server) {
                                 where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
                                 raw: true,
                             });
+                            
+                            annotations = await attachTagNames(server, annotations);
 
                             let comments = await server.db.models.comment.findAll({
                                 where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },

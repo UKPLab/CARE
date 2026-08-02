@@ -588,6 +588,20 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
     return { records, criteriaReferencesByConfigId };
 }
 
+async function attachTagNames(server, annotations) {
+    const tagIds = [...new Set(annotations.map(a => a.tagId).filter(Boolean))];
+    if (tagIds.length === 0) return annotations;
+
+    const tags = await server.db.models.tag.findAll({
+        where: { id: tagIds },
+        attributes: ['id', 'name'],
+        raw: true,
+    });
+    const tagNameById = new Map(tags.map(t => [t.id, t.name]));
+
+    return annotations.map(a => ({ ...a, tagName: tagNameById.get(a.tagId) ?? null }));
+}
+
 module.exports = {
     replaceAuthorInZip,
     buildUserMapping,
@@ -609,4 +623,5 @@ module.exports = {
     loadExportRequestContext,
     SUPPORTED_EXPORT_TYPES,
     buildGradeRecords,
+    attachTagNames,
 };
