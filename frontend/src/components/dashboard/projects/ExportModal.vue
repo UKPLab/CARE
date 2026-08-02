@@ -28,7 +28,7 @@
           Total Study Sessions: {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="['submissions', 'grades', 'documents', 'studies'].includes(dataSelection.exportType)">
+      <div v-else-if="['submissions', 'grades', 'documents', 'studies', 'userBehaviour'].includes(dataSelection.exportType)">
         <StepSelectUsers
           v-if="dataSelection.projectId"
           :project-id="dataSelection.projectId"
@@ -86,10 +86,16 @@
           v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
         />
       </div>
+      <div v-else-if="['userBehaviour'].includes(dataSelection.exportType)">
+        <StepOptionsUserBehaviour
+          v-model:outputFormat="behaviourOutputFormat"
+          v-model:fileFormat="behaviourFileFormat"
+        />
+      </div>
     </template>
 
     <template 
-      v-if="['submissions', 'grades', 'documents', 'studies'].includes(dataSelection.exportType)"
+      v-if="['submissions', 'grades', 'documents', 'studies', 'userBehaviour'].includes(dataSelection.exportType)"
       #step-4
     >
       <StepConfirmDownload
@@ -116,6 +122,7 @@ import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUs
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
 import StepOptionsStudies from "@/components/dashboard/projects/export/StepOptionsStudies.vue";
+import StepOptionsUserBehaviour from "@/components/dashboard/projects/export/StepOptionsUserBehaviour.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
 
@@ -127,7 +134,7 @@ import getServerURL from "@/assets/serverUrl.js";
  */
 export default {
   name: "ExportProjectModal",
-  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepConfirmDownload },
+  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepOptionsUserBehaviour, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -182,7 +189,9 @@ export default {
       includeStudyDocumentFiles: true,
       includeStudyGrades: true,
       includeStudyIncludeAiScores: true,
-      includeEmptyStudies: true
+      includeEmptyStudies: true,
+      behaviourOutputFormat: 'single',
+      behaviourFileFormat: 'json',
     };
   },
   computed: {
@@ -208,6 +217,13 @@ export default {
           this.selectedWorkflowIds.length > 0,
           true,
         ];
+      } else if (this.dataSelection.exportType === 'userBehaviour') {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          true,
+          true,
+        ];
       }
       return [
         !!this.dataSelection.projectId && !!this.dataSelection.exportType,
@@ -215,7 +231,7 @@ export default {
       ];
     },
     steps() {
-      if (["submissions", "grades", "documents", "studies"].includes(this.dataSelection.exportType)) {
+      if (["submissions", "grades", "documents", "studies", "userBehaviour"].includes(this.dataSelection.exportType)) {
         return [
           { title: "Settings" },
           { title: "Select Users" },
@@ -250,6 +266,7 @@ export default {
             {name: "Export grades", value: "grades"},
             {name: "Export documents", value:"documents"},
             {name: "Export studies", value: "studies"},
+            ...(this.$store.getters["auth/isAdmin"] ? [{name: "Export user behaviour", value: "userBehaviour"}] : []),
             {name: "All", value: "all"},
           ],
           required: true,
@@ -327,6 +344,8 @@ export default {
       this.includeStudyIncludeAiScores = true;
       this.includeEmptyStudies = true;
       this.wait = false;
+      this.behaviourOutputFormat = 'single';
+      this.behaviourFileFormat = 'json';
     },
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
@@ -339,6 +358,8 @@ export default {
         this.downloadDocuments();
       } else if (this.dataSelection.exportType === 'studies') {
         this.downloadStudies();
+      } else if (this.dataSelection.exportType === 'userBehaviour') {
+        this.downloadUserBehaviour();
       } else {
         this.downloadAllData();
       }
@@ -469,6 +490,22 @@ export default {
           excludeNonConsentingEdits: this.excludeNonConsentingEdits,
           excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
           includeAiScores: this.includeStudyIncludeAiScores
+        });
+        this.$refs.exportStepper.close();
+      } catch (error) {
+        console.error("Streaming error:", error);
+        this.$toast.error("An error occurred starting the stream. Please try again.");
+      }
+    },
+    async downloadUserBehaviour() {
+      try {
+        const selectedUserIds = this.userSelection.map(row => row.userId);
+        this.triggerStreamDownload({
+          projectId: this.dataSelection.projectId,
+          exportType: 'userBehaviour',
+          userIds: selectedUserIds,
+          behaviourOutputFormat: this.behaviourOutputFormat,
+          behaviourFileFormat: this.behaviourFileFormat,
         });
         this.$refs.exportStepper.close();
       } catch (error) {

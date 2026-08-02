@@ -5,8 +5,9 @@ const { deriveUserSeed } = require('../../webserver/auth/utils');
 const path = require('path');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 const Papa = require('papaparse');
+const { Readable } = require('stream');
 
-const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents", "studies"]);
+const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents", "studies", "userBehaviour"]);
 const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
 const ASSESSMENT_RESULT_KEY = "assessment_result";
 
@@ -602,6 +603,110 @@ async function attachTagNames(server, annotations) {
     return annotations.map(a => ({ ...a, tagName: tagNameById.get(a.tagId) ?? null }));
 }
 
+async function resolveIsAdmin(server, userId) {
+    const roleIds = await server.db.models["user_role_matching"].getUserRolesById(userId);
+    return await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
+}
+
+/**
+ * Builds a Readable that emits a JSON array incrementally, paging through fetchPage(lastId, limit)
+ * using keyset pagination so the full result set is never held in memory at once.
+ * @param {(lastId: number, limit: number) => Promise<Array<{id:number}>>} fetchPage
+ */
+function createJsonArrayStream(fetchPage, mapRow = (row) => row, pageSize = 1000) {
+    let lastId = 0;
+    let started = false;
+    let finished = false;
+    let isFirst = true;
+    let fetching = false;
+
+    return new Readable({
+        read() {
+            if (fetching || finished) return;
+            fetching = true;
+
+            (async () => {
+                try {
+                    if (!started) {
+                        this.push('[');
+                        started = true;
+                    }
+
+                    const rows = await fetchPage(lastId, pageSize);
+                    if (rows.length === 0) {
+                        this.push('\n]');
+                        this.push(null);
+                        finished = true;
+                        return;
+                    }
+
+                    let chunk = '';
+                    for (const row of rows) {
+                        chunk += (isFirst ? '' : ',') + '\n' + JSON.stringify(mapRow(row));
+                        isFirst = false;
+                    }
+                    lastId = rows[rows.length - 1].id;
+
+                    if (rows.length < pageSize) {
+                        chunk += '\n]';
+                        this.push(chunk);
+                        this.push(null);
+                        finished = true;
+                    } else {
+                        this.push(chunk);
+                    }
+                } catch (err) {
+                    this.destroy(err);
+                } finally {
+                    fetching = false;
+                }
+            })();
+        }
+    });
+}
+
+function createCsvRowsStream(fetchPage, mapRow, pageSize = 1000) {
+    let lastId = 0;
+    let started = false;
+    let finished = false;
+    let fetching = false;
+
+    return new Readable({
+        read() {
+            if (fetching || finished) return;
+            fetching = true;
+
+            (async () => {
+                try {
+                    const rows = await fetchPage(lastId, pageSize);
+                    if (rows.length === 0) {
+                        if (!started) this.push(Papa.unparse([mapRow].length ? [] : []));
+                        this.push(null);
+                        finished = true;
+                        return;
+                    }
+
+                    const records = rows.map(mapRow);
+                    const csvChunk = Papa.unparse(records, { header: !started }) + '\n';
+                    started = true;
+                    lastId = rows[rows.length - 1].id;
+
+                    this.push(csvChunk);
+
+                    if (rows.length < pageSize) {
+                        this.push(null);
+                        finished = true;
+                    }
+                } catch (err) {
+                    this.destroy(err);
+                } finally {
+                    fetching = false;
+                }
+            })();
+        }
+    });
+}
+
 module.exports = {
     replaceAuthorInZip,
     buildUserMapping,
@@ -624,4 +729,7 @@ module.exports = {
     SUPPORTED_EXPORT_TYPES,
     buildGradeRecords,
     attachTagNames,
+    resolveIsAdmin,
+    createJsonArrayStream,
+    createCsvRowsStream
 };

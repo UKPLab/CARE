@@ -32,6 +32,7 @@ function getExportTypeColumn(exportType, userTableData) {
         submissions: { name: "Submissions", key: "count", sortable: true },
         documents: { name: "Documents", key: "count", sortable: true },
         studies: { name: "Studies", key: "count", sortable: true },
+        userBehaviour: { name: "Submissions", key: "count", sortable: true },
         grades: {
             name: "Assessment Configuration",
             key: "configurationName",
@@ -130,7 +131,7 @@ export default {
         return submissionsByUser[uid];
       };
 
-      if (this.exportType === 'submissions') {
+      if (this.exportType === 'submissions' || this.exportType === 'userBehaviour') {
         const submissionDocs = this.documents.filter(doc =>
           doc.projectId == this.projectId &&
           doc.submissionId &&

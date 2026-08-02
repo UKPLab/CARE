@@ -25,6 +25,9 @@ const {
     SUPPORTED_EXPORT_TYPES,
     buildGradeRecords,
     attachTagNames,
+    resolveIsAdmin,
+    createJsonArrayStream,
+    createCsvRowsStream
 } = require('../../utils/helper/export.js');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
@@ -44,7 +47,7 @@ module.exports = function (server) {
 
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies, includeDocumentFiles, includeGrades, includeAiScores } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies, includeDocumentFiles, includeGrades, includeAiScores, behaviourOutputFormat, behaviourFileFormat } = req.body;
         let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
@@ -54,6 +57,8 @@ module.exports = function (server) {
         const shouldIncludeDocumentFiles = String(includeDocumentFiles) === 'true';
         const shouldIncludeGrades = String(includeGrades) === 'true';
         const shouldIncludeAiScores = includeAiScores === undefined ? true : String(includeAiScores) === 'true';
+        const normalizedBehaviourOutputFormat = behaviourOutputFormat === 'perUser' ? 'perUser' : 'single';
+        const normalizedBehaviourFileFormat = behaviourFileFormat === 'csv' ? 'csv' : 'json';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const parsedProjectId = Number(projectId);
         const userIds = parseUserIds(rawUserIds);
@@ -147,6 +152,24 @@ module.exports = function (server) {
                         archive
                     );
                     break;
+                case 'userBehaviour': {
+                    const isAdmin = await resolveIsAdmin(server, currentUserId);
+                    if (!isAdmin) {
+                        return res.status(403).send("Admin rights required for this export.");
+                    }
+                    await processUserBehaviourExport(
+                        server,
+                        users,
+                        shouldGenerateAliases,
+                        hasPrivateInfoRight,
+                        userMapping,
+                        normalizedBehaviourOutputFormat,
+                        normalizedBehaviourFileFormat,
+                        baseFolderName,
+                        archive
+                    );
+                    break;
+                }
                 default:
                     return res.status(400).send("Unsupported export type.");
             }
@@ -645,7 +668,7 @@ module.exports = function (server) {
                                 where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
                                 raw: true,
                             });
-                            
+
                             annotations = await attachTagNames(server, annotations);
 
                             let comments = await server.db.models.comment.findAll({
@@ -863,6 +886,59 @@ module.exports = function (server) {
                     }
                 }
             }
+        }
+    }
+    /**
+     * Exports usage statistics for the selected users, respecting each user's acceptStats consent.
+     * @param {string} behaviourOutputFormat - 'single' for one combined file, 'perUser' for one file per user.
+     */
+    async function processUserBehaviourExport(server, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, behaviourOutputFormat, behaviourFileFormat, baseFolderName, archive) {
+        const { Op } = server.db.Sequelize;
+
+        const consentedUsers = users.filter(u => u.acceptStats);
+        if (consentedUsers.length === 0) return;
+        const usersById = new Map(consentedUsers.map(u => [u.id, u]));
+        const consentedUserIds = consentedUsers.map(u => u.id);
+        const extension = behaviourFileFormat === 'csv' ? 'csv' : 'json';
+
+        const parseStatData = (raw) => {
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                return raw;
+            }
+        };
+
+        const toRecord = (stat) => ({
+            action: stat.action,
+            data: behaviourFileFormat === 'csv' ? stat.data : parseStatData(stat.data),
+            timestamp: stat.timestamp instanceof Date ? stat.timestamp.toISOString() : stat.timestamp,
+            user: getDisplayName(usersById.get(stat.userId), shouldGenerateAliases, hasPrivateInfoRight, userMapping),
+        });
+
+        const buildStream = (fetchPage) => behaviourFileFormat === 'csv'
+            ? createCsvRowsStream(fetchPage, toRecord)
+            : createJsonArrayStream(fetchPage, toRecord);
+
+        if (behaviourOutputFormat === 'perUser') {
+            for (const user of consentedUsers) {
+                const folderName = sanitizeFolderName(getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping));
+                const fetchPage = (lastId, limit) => server.db.models.statistic.findAll({
+                    where: { userId: user.id, deleted: false, id: { [Op.gt]: lastId } },
+                    order: [['id', 'ASC']],
+                    limit,
+                    raw: true,
+                });
+                archive.append(buildStream(fetchPage), { name: `${baseFolderName}/${folderName}/behaviour_data.${extension}` });
+            }
+        } else {
+            const fetchPage = (lastId, limit) => server.db.models.statistic.findAll({
+                where: { userId: { [Op.in]: consentedUserIds }, deleted: false, id: { [Op.gt]: lastId } },
+                order: [['id', 'ASC']],
+                limit,
+                raw: true,
+            });
+            archive.append(buildStream(fetchPage), { name: `${baseFolderName}/behaviour_data.${extension}` });
         }
     }
 };
