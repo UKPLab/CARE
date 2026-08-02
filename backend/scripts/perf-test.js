@@ -11,7 +11,7 @@
  */
 
 const { io: SocketIOClient } = require('socket.io-client');
-const { loginAsAdmin, verifyAuthenticatedSession } = require('./perf-auth');
+const { login, verifyAuthenticatedSession } = require('./perf-auth');
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const readline = require('readline');
 
@@ -158,7 +158,7 @@ async function verifyAdminAccess(socket) {
 
 async function run(cfg) {
     console.log('\nLogging in as "' + cfg.user + '" at ' + cfg.server + ' ...');
-    const cookie = await loginAsAdmin(cfg.server, cfg.user, cfg.password);
+    const cookie = await login(cfg.server, cfg.user, cfg.password);
     const user = await verifyAuthenticatedSession(cfg.server, cookie);
     console.log('  logged in as: ' + (user.userName || user.id) + ' (' + user.email + ')');
     console.log('Connecting socket ...');

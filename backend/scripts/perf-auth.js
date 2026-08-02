@@ -10,7 +10,7 @@
  * @param {string} password - admin password (from config/env, never hardcoded)
  * @returns {Promise<string>} The "connect.sid=..." cookie string
  */
-async function loginAsAdmin(serverUrl, userName, password) {
+async function login(serverUrl, userName, password) {
     let res;
     try {
         res = await fetch(serverUrl + '/auth/login', {
@@ -60,4 +60,4 @@ async function verifyAuthenticatedSession(serverUrl, cookie) {
     return data.user;
 }
 
-module.exports = { loginAsAdmin, verifyAuthenticatedSession };
+module.exports = { login, verifyAuthenticatedSession };
