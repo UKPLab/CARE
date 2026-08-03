@@ -209,7 +209,7 @@ export default {
 
 .form-text {
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .spinner-border-sm {

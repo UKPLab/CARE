@@ -505,21 +505,21 @@ export default {
 }
 
 .confirmation-content .alert-warning {
-  background-color: #fff8e1;
-  border-color: #ffc107;
-  color: #856404;
+  background-color: var(--bs-warning-bg-subtle);
+  border-color: var(--bs-warning-border-subtle);
+  color: var(--bs-warning-text-emphasis);
 }
 
 .confirmation-content .alert-danger {
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-  color: #721c24;
+  background-color: var(--bs-danger-bg-subtle);
+  border-color: var(--bs-danger-border-subtle);
+  color: var(--bs-danger-text-emphasis);
 }
 
 .confirmation-content .alert-info {
-  background-color: #d1ecf1;
-  border-color: #bee5eb;
-  color: #0c5460;
+  background-color: var(--bs-info-bg-subtle);
+  border-color: var(--bs-info-border-subtle);
+  color: var(--bs-info-text-emphasis);
 }
 
 .confirmation-content .alert strong {
@@ -532,7 +532,7 @@ export default {
 }
 
 .danger-banner {
-  background-color: #f8d7da !important;
+  background-color: var(--bs-danger-bg-subtle) !important;
   border: 2px solid #dc3545 !important;
   border-radius: 0.5rem;
   padding: 1.25rem !important;
@@ -544,7 +544,7 @@ export default {
 
 .confirm-checkbox-container {
   padding: 1.25rem;
-  background-color: #fff3cd;
+  background-color: var(--bs-warning-bg-subtle);
   border-radius: 0.375rem;
   border: 1px solid #ffc107;
 }
@@ -601,10 +601,10 @@ export default {
 
 .confirmation-content .text-muted strong {
   font-weight: 700;
-  background-color: #e7f3ff;
+  background-color: var(--bs-primary-bg-subtle, #e7f3ff);
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
-  color: #0056b3;
+  color: var(--bs-primary-text-emphasis, #0056b3);
 }
 
 .confirmation-content .alert {

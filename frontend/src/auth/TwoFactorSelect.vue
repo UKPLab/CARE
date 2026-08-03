@@ -233,11 +233,11 @@ form {
 
 .method-card:hover {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-color: #0d6efd;
+  border-color: var(--bs-primary, #0d6efd);
 }
 
 .method-card.selected {
-  border-color: #0d6efd;
+  border-color: var(--bs-primary, #0d6efd);
   background-color: var(--bs-primary-bg-subtle, #e7f1ff);
 }
 </style>

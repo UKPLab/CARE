@@ -293,15 +293,15 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .text-muted {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .fw-bold {

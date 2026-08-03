@@ -748,11 +748,11 @@ export default {
 }
 
 .annoBlockquote:hover {
-  color: #000000;
+  color: var(--bs-body-color, #000000);
 }
 
 .check-icon:hover {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 
 .header-hoverable {

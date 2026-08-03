@@ -362,7 +362,7 @@ export default {
 
 .btn-close.pinned {
   opacity: 1;
-  color: #0d6efd;
+  color: var(--bs-primary, #0d6efd);
 }
 
 .info-panel-content {
@@ -370,7 +370,7 @@ export default {
 }
 
 .info-panel-content p {
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   line-height: 1.4;
 }
 
