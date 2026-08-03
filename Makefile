@@ -53,16 +53,21 @@ doc_clean:
 	@docker compose -f docker-compose.yml --env-file ".env" build docs_sphinx
 	@docker run --rm -v ${CURDIR}/docs:/docs docs_sphinx make clean
 
+# Local file: deps need their own node_modules (Node resolves from the linked package path).
+UTILS_MODULES_UPTODATE := \
+	utils/modules/editor-delta-conversion/node_modules/.uptodate \
+	utils/modules/assessment-score/node_modules/.uptodate
+
 .PHONY: test
-test: backend/node_modules/.uptodate
-	cd backend && npm run test
+test: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
+	cd backend && npm run test 
 
 .PHONY: test-rpc
-test-rpc: backend/node_modules/.uptodate
+test-rpc: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run test_rpc
 
 .PHONY: test-modules
-test-modules:
+test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/editor-delta-conversion && npm run test:module -- tests/editor-delta-conversion.test.js
 	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
 
@@ -75,7 +80,7 @@ docker:
 	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test rpc_moodle rpc_pdf
 
 .PHONY: db
-db: backend/node_modules/.uptodate
+db: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	@echo ${POSTGRES_HOST}
 	cd backend/db && npx sequelize-cli db:create || echo "IGNORING ERROR"
 	cd backend/db && npx sequelize-cli db:migrate
@@ -84,11 +89,11 @@ db: backend/node_modules/.uptodate
 init: modules db
 
 .PHONY: dev
-dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate
+dev: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev & cd backend && DEV_SKIP_WIZARD=true npm run start
 
 .PHONY: dev-wizard
-dev-wizard: frontend/node_modules/.uptodate backend/node_modules/.uptodate
+dev-wizard: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-frontend
@@ -96,21 +101,21 @@ dev-frontend: frontend/node_modules/.uptodate
 	cd frontend && npm run frontend-dev
 
 .PHONY: dev-build
-dev-build: backend/node_modules/.uptodate build-frontend
+dev-build: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE) build-frontend
 	cd backend && npm run start
 
 .PHONY: dev-backend
 dev-backend: DEV_SKIP_WIZARD=true
-dev-backend: backend/node_modules/.uptodate
+dev-backend: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run start 
 
 .PHONY: dev-backend-wizard
-dev-backend-wizard: backend/node_modules/.uptodate
+dev-backend-wizard: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run start
 
 .PHONY: dev-backend-watch
 dev-backend-watch: DEV_SKIP_WIZARD=true
-dev-backend-watch: backend/node_modules/.uptodate
+dev-backend-watch: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run start:watch
 
 .PHONY: dev-build-frontend
@@ -172,7 +177,7 @@ _export_document_files:
 	echo "Done: $${FILEZIP}"
 
 .PHONY: anonymize_dump
-anonymize_dump: backend/node_modules/.uptodate
+anonymize_dump: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	@echo "Creating anonymized dump from $${DUMP}"
 	@set -e; \
 	TS="$$(date +%d-%m-%Y_%H_%M_%S)"; \
@@ -273,8 +278,8 @@ else
 endif
 
 utils/modules/%/node_modules/.uptodate: utils/modules/%/package.json
-	@echo "Running npm install in $(@D)"
-	@cd $(@D) && npm install --no-audit --no-fund --loglevel=error
+	@echo "Running npm install in utils/modules/$*"
+	@cd utils/modules/$* && npm install --no-audit --no-fund --loglevel=error
 ifeq ($(OS),Windows_NT)
 	@echo. > $@
 else
@@ -283,12 +288,10 @@ endif
 
 install-utils-modules:
 ifeq ($(OS),Windows_NT)
-	@if exist "frontend\node_modules" rmdir /S /Q "frontend\node_modules"
-	@for /D %%d in (utils\modules\*) do @if exist "%%d\package.json" (cd %%d && npm install --no-audit --no-fund --loglevel=error && @echo. > node_modules\.uptodate)
+	@powershell -NoProfile -Command "$$root = '$(CURDIR)'; Get-ChildItem -Directory (Join-Path $$root 'utils\modules') | Where-Object { Test-Path (Join-Path $$_.FullName 'package.json') } | ForEach-Object { Write-Host ('Installing ' + $$_.Name); npm.cmd install --prefix $$_.FullName --no-audit --no-fund --loglevel=error; $$marker = Join-Path $$_.FullName 'node_modules\.uptodate'; New-Item -ItemType File -Path $$marker -Force | Out-Null }"
 else
-	rm -rf frontend/node_modules
 	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
-		(cd $$d && npm install --no-audit --no-fund --loglevel=error && touch node_modules/.uptodate); \
+		(cd $$d && npm install --no-audit --no-fund --loglevel=error && mkdir -p node_modules && touch node_modules/.uptodate); \
 	done
 endif
 
