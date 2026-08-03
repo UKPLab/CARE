@@ -464,8 +464,9 @@ export default {
     updateMapping(input, source) {
       this.isUpdatingFromWithin = true;
 
-      if (source && source.requiresTableSelection) {
-        // Clear any other inputs that currently use a table-based source
+      // Apply Skills allow only one table-based source. Hooks need multiple when the
+      // prompt template uses indexed placeholders (e.g. submissionFiles[1] and [2]).
+      if (source && source.requiresTableSelection && !this.isHook) {
         Object.keys(this.inputMappings).forEach(paramName => {
           if (
               paramName !== input &&
