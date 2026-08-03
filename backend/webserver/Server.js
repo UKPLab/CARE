@@ -387,9 +387,18 @@ module.exports = class Server {
             // All per-socket handlers are now initialized and listening, so it's
             // safe for clients (including replay clients) to start emitting events.
             socket.emit("ready");
-            // Notify clients (e.g. an open recording session picker) that the
+
+            // Session-change notifications are admin-only: broadcasting them to
+            // every client would leak platform-wide connect/disconnect activity
+            // (who is online, when, how many) to any logged-in user. Admins join
+            // a room once at connect so the broadcast stays cheap.
+            const recorderSocket = this.availSockets[socket.id]["RecorderSocket"];
+            if (recorderSocket && await recorderSocket.isAdmin()) {
+                socket.join("admins");
+            }
+            // Notify admins (e.g. an open recording session picker) that the
             // set of online sessions changed, so they can refresh live.
-            this.io.emit("sessionsChanged");
+            this.io.to("admins").emit("sessionsChanged");
 
             // (Removed) Uncaptured-connection warning: with per-socket recordings
             // there is no single active batch a new connection is "outside" of,
@@ -470,9 +479,10 @@ module.exports = class Server {
 
                     delete this.availSockets[socket.id];
 
-                    // Notify clients that the online-session set changed so an
-                    // open recording session picker can refresh live.
-                    this.io.emit("sessionsChanged");
+                    // Notify admins that the online-session set changed so an
+                    // open recording session picker can refresh live. Admin-only
+                    // to avoid leaking connect/disconnect activity to all clients.
+                    this.io.to("admins").emit("sessionsChanged");
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);
                 }
