@@ -402,18 +402,18 @@ export default {
 
 .floating-info-panel::-webkit-scrollbar-track,
 .scoring-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bs-tertiary-bg, #f1f1f1);
   border-radius: 3px;
 }
 
 .floating-info-panel::-webkit-scrollbar-thumb,
 .scoring-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--bs-secondary-color, #c1c1c1);
   border-radius: 3px;
 }
 
 .floating-info-panel::-webkit-scrollbar-thumb:hover,
 .scoring-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--bs-body-color, #a8a8a8);
 }
 </style>

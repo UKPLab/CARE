@@ -668,16 +668,16 @@ export default {
 }
 
 .selected-items-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bs-tertiary-bg, #f1f1f1);
 }
 
 .selected-items-list::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--bs-secondary-color, #888);
   border-radius: 3px;
 }
 
 .selected-items-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--bs-body-color, #555);
 }
 
 .alert-sm {
