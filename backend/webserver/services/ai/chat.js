@@ -176,6 +176,23 @@ async function getStatus(service) {
 }
 
 /**
+ * Lists LiteLLM-supported provider slugs for credential UI selection.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @returns {Promise<{providers: string[]}>}
+ */
+async function getProviders(service) {
+    const rpc = runtime.getRPC(service.server);
+    if (!rpc) {
+        throw new Error("LiteLLM service is not available");
+    }
+    if (!(await rpc.isOnline())) {
+        throw new Error("LiteLLM service is not connected");
+    }
+    return rpc.getProviders();
+}
+
+/**
  * Lists remote models reachable with the caller-owned credential metadata.
  *
  * @param {{ server: Object }} service AIService.
@@ -286,6 +303,7 @@ module.exports = {
     chatCompletion,
     abortChatCompletion,
     getStatus,
+    getProviders,
     getValidModels,
     testModel,
 };

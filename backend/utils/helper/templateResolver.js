@@ -11,7 +11,7 @@ const fs = require("fs");
 const path = require("path");
 const {Op} = require("sequelize");
 const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
-const {resolveNlpAssessmentDraft} = require("./studyNlpDocumentData");
+const {resolveNlpAssessmentDraft} = require("../studyNlpDocumentData");
 const {
     applyPlaceholderReplacements,
     countPlaceholdersByKey,
@@ -20,7 +20,7 @@ const {
     getUsedIndexes,
     hasPlaceholderForKey,
     tokenInnerText,
-} = require("./placeholderTokens");
+} = require("../placeholderTokens");
 const UPLOAD_PATH = `${__dirname}/../../files`;
 const TEXT_PLACEHOLDER_CHAR_CAP = 2000;
 

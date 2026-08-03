@@ -74,6 +74,20 @@ module.exports = class LiteLLMRPC extends RPC {
     }
 
     /**
+     * Fetch LiteLLM's supported provider slugs for credential selection.
+     *
+     * @returns {Promise<{providers: string[]}>}
+     */
+    async getProviders() {
+        const response = await this.emit("getProviders", {}, this.timeout);
+        if (!response['success']) {
+            this.logger.error("getProviders error: " + response['message']);
+            throw new Error(response['message']);
+        }
+        return response.data || {providers: []};
+    }
+
+    /**
      * Fetch models available for the supplied credential.
      *
      * @param {Object} data
