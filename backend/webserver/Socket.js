@@ -510,28 +510,28 @@ module.exports = class Socket {
         let fullRowAccess = isPublicOrAdmin;
 
         if (!fullRowAccess) {
-            // --- Ownership: user always sees their own rows when table has userId ---
-            if (hasUserIdAttribute) {
-                rowVisibilityConditions.push({userId});
-            }
-
-            // --- Public rows: always visible regardless of ownership or access rights ---
-            if ('public' in model.getAttributes()) {
-                rowVisibilityConditions.push({public: true});
-            }
-
-            // --- User-level row filter ---
+            // --- User-level row filter (authoritative when present, e.g. template type rules) ---
             if (hasModelUserFilter) {
-                const userFilter = await model.getUserFilter(userId);
+                const userFilter = await model.getUserFilter(userId, isAdmin);
                 if (Reflect.ownKeys(userFilter).length > 0) {
                     rowVisibilityConditions.push(userFilter);
                 } else {
                     // getUserFilter returns {} → grants full row access (e.g. for admins)
                     fullRowAccess = true;
                 }
-            } else if (!hasUserIdAttribute && accessRights.length === 0) {
-                this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
-                return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+            } else {
+                // --- Ownership: user always sees their own rows when table has userId ---
+                if (hasUserIdAttribute) {
+                    rowVisibilityConditions.push({userId});
+                }
+
+                // --- Public rows: always visible regardless of ownership or access rights ---
+                if ('public' in model.getAttributes()) {
+                    rowVisibilityConditions.push({public: true});
+                } else if (!hasUserIdAttribute && accessRights.length === 0) {
+                    this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
+                    return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+                }
             }
 
             // --- Access-map limitations (ORed with user filter conditions) ---

@@ -92,9 +92,14 @@ class TemplateSocket extends Socket {
     
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
+    const isAdmin = await this.isAdmin();
+    const isEmailType = [1, 2, 3, 6, 7].includes(template.type);
     
     if (!isOwner && !isPublicFromOthers) {
       throw new Error("You can only view templates that you own or public templates from others");
+    }
+    if (!isAdmin && !isOwner && isEmailType) {
+      throw new Error("Access denied: Only administrators can view email templates");
     }
 
     const langRow = await this.models["template_content"].findOne({
