@@ -20,6 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/helper/generic");
+const { flagDisconnectedRecording, recoverInterruptedRecordings } = require("../utils/recording-recovery");
 
 /**
  * Defines Express Webserver of Content Server
@@ -431,51 +432,7 @@ module.exports = class Server {
                         this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
                     }
 
-                    // If a recorded socket drops mid-recording, stop ONLY that
-                    // socket's recording and flag it "disconnected". Other active
-                    // recordings (including other admins' batches) keep running.
-                    try {
-                        const activeRecordings = this.activeRecordings || {};
-                        const entry = activeRecordings[socket.id];
-                        // A start-recording claim has no recordingId until its
-                        // transaction commits; there's nothing to stop or flag
-                        // yet, and the claim expires on its own.
-                        if (entry && entry.recordingId) {
-                            const ownerSocketId = entry.ownerSocketId;
-                            const recorder = this.availSockets[socket.id]['RecorderSocket'];
-                            if (recorder) {
-                                const stoppedId = entry.recordingId;
-                                await recorder.stopRecording(
-                                    { socketId: socket.id, status: "disconnected" },
-                                    { internal: true }
-                                );
-
-                                // The disconnect-triggered stop runs outside the normal
-                                // socket transaction flow, so the automatic table broadcast
-                                // doesn't fire. Push the updated recording row to subscribed
-                                // clients manually so their tables reflect the new status.
-                                try {
-                                    const updatedRow = await this.db.models["recording"].getById(stoppedId);
-                                    if (updatedRow) {
-                                        await recorder.broadcastTable("recording", [updatedRow]);
-                                    }
-                                } catch (e) {
-                                    this.logger.warn("Failed to broadcast disconnected recording: " + e);
-                                }
-
-                                const ownerSocket = this.io.sockets.sockets.get(ownerSocketId);
-                                if (ownerSocket) {
-                                    ownerSocket.emit("toast", {
-                                        title: "Recording stopped",
-                                        message: "A recorded participant disconnected — recording flagged as disconnected.",
-                                        variant: "warning",
-                                    });
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        this.logger.warn("Failed to flag disconnected recording: " + e);
-                    }
+                    await flagDisconnectedRecording(this, socket);
 
                     delete this.availSockets[socket.id];
 
@@ -564,7 +521,7 @@ module.exports = class Server {
             this.logger.warn('Failed to start DB stats scheduler: ' + e.message);
         }
         // Recover any recordings interrupted by the previous server shutdown
-        this.recoverInterruptedRecordings().catch((e) => {
+        recoverInterruptedRecordings(this).catch((e) => {
             this.logger.warn("recoverInterruptedRecordings failed: " + e);
         });
         return this.http;
@@ -606,30 +563,4 @@ module.exports = class Server {
             this.logger.error("flushAllStats encountered an error: " + e);
         }
     }
-    /**
-     * Mark any recordings still in "recording" status as "interrupted".
-     * These are recordings whose server died mid-capture — the in-memory
-     * activeRecordings map is gone but the DB rows were never closed out.
-     * @returns {Promise<void>}
-     */
-    async recoverInterruptedRecordings() {
-        try {
-            const stale = await this.db.models["recording"].getAllByKey("status", "recording");
-            for (const rec of stale) {
-                await this.db.models["recording"].updateById(rec.id, {
-                    status: "interrupted",
-                    endTime: rec.endTime || new Date(),
-                });
-                this.logger.warn(
-                    `Marked recording ${rec.id} as interrupted (server was not running cleanly when stopped)`
-                );
-            }
-            if (stale.length > 0) {
-                this.logger.info(`Recovered ${stale.length} interrupted recording(s) on startup`);
-            }
-        } catch (e) {
-            this.logger.error("Failed to recover interrupted recordings: " + e);
-        }
-    }
-
 }
