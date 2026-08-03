@@ -32,7 +32,7 @@ async function runRamp(cfg, ctx) {
 
     // Sample server vitals (memory + DB pool) during the whole ramp climb.
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
-    sampler.start();
+    await sampler.start();
 
     let ack;
     try {

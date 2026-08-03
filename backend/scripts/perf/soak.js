@@ -32,7 +32,7 @@ async function runSoak(cfg, ctx) {
     let sampleNum = 0;
     // Sample server vitals (memory + DB pool) once per second during the soak.
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
-    sampler.start();
+    await sampler.start();
 
     try {
     while (Date.now() - start < durationMs) {

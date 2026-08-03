@@ -37,10 +37,13 @@ class MetricSampler {
         }
     }
 
-    /** Start sampling. Takes one immediate sample, then polls on the interval. */
-    start() {
+    /**
+     * Start sampling. Takes one immediate sample, then polls on the interval.
+     * @returns {Promise<void>} Resolves once the first sample has been taken
+     */
+    async start() {
         this.samples = [];
-        this._poll();
+        await this._poll();
         this._timer = setInterval(() => this._poll(), this.intervalMs);
     }
 

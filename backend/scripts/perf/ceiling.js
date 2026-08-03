@@ -35,7 +35,7 @@ async function runCeiling(cfg, ctx) {
     // each level we read the peak pool-waiting since the last level — the DB
     // pool backing up is the original pool-exhaustion failure, measured directly.
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
-    sampler.start();
+    await sampler.start();
     // Capture the pool's idle waiting level before applying load, so saturation
     // means "climbed above resting" rather than "above zero" — some deployments
     // idle with non-zero pool waiting.
