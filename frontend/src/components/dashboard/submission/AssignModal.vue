@@ -307,6 +307,6 @@ export default {
 .summary-item strong {
   display: inline-block;
   min-width: 180px;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
 }
 </style>

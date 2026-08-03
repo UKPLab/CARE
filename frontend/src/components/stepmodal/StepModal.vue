@@ -279,7 +279,7 @@ export default {
 .feedback-container {
   max-height: 400px;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.5rem;
 }
 

@@ -380,7 +380,7 @@ export default {
 }
 
 .json-content {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
   padding: 1rem;
@@ -390,7 +390,7 @@ export default {
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
-  color: #212529;
+  color: var(--bs-body-color, #212529);
 }
 
 .json-editor-container {
@@ -406,11 +406,11 @@ export default {
   font-family: 'Courier New', monospace !important;
   font-size: 0.875rem !important;
   line-height: 1.5 !important;
-  background-color: #f8f9fa !important;
+  background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
   border: 1px solid #dee2e6 !important;
   border-radius: 0.375rem !important;
   padding: 1rem !important;
-  color: #212529 !important;
+  color: var(--bs-body-color, #212529) !important;
   min-height: 400px !important;
 }
 

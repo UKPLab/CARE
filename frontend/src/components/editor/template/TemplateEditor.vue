@@ -801,7 +801,7 @@
   <style>
   .ql-toolbar .ql-languageSelector {
     min-width: 100px;
-    background-color: #f5f5f5;
+    background-color: var(--bs-tertiary-bg, #f5f5f5);
     margin-left: 10px;
   }
   .ql-toolbar .ql-languageSelector .ql-picker-label {

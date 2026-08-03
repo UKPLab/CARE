@@ -591,11 +591,11 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: #f3f3f3;
+  background-color: var(--bs-tertiary-bg, #f3f3f3);
   border: 1px solid #ccc;
   border-radius: 4px;
   margin-bottom: 0px;
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   font-size: 14px;
 }
 

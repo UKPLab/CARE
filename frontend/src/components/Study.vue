@@ -1,7 +1,7 @@
 <template>
     <!-- Error state -->
   <div v-if="studyError" class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
-    <div class="error-card text-center p-5 bg-white rounded shadow">
+    <div class="error-card text-center p-5 bg-body rounded shadow">
       <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
       <h2 class="mt-4 text-danger">{{ studyError.title }}</h2>
       <p class="text-muted mb-4">{{ studyError.message }}</p>
@@ -675,7 +675,7 @@ export default {
 }
 
 .study-error-page {
-  background-color: #f5f5f5;
+  background-color: var(--bs-tertiary-bg, #f5f5f5);
   min-height: 100vh;
 }
 .error-card {

@@ -476,7 +476,7 @@ export default {
 
 .confirmation-content .form-check {
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.375rem;
   border: 1px solid #e9ecef;
 }
@@ -569,7 +569,7 @@ export default {
 
 .filters-container {
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
   border-left: 3px solid #6c757d;
 }
@@ -589,7 +589,7 @@ export default {
 .confirmation-content h6 {
   margin-bottom: 1.25rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--bs-body-color, #212529);
   font-size: 1.1rem;
 }
 
@@ -615,13 +615,13 @@ export default {
 
 .mode-selection-container {
   padding: 1.5rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
   border-left: 4px solid #007bff;
 }
 
 .mode-selection-container h5 {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
@@ -653,7 +653,7 @@ export default {
   font-size: 0.95rem;
   border-left: 3px solid #0d6efd;
   margin-bottom: 0.5rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
 }
 

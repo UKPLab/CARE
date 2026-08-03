@@ -25,7 +25,7 @@
         <strong>{{ submissionSelection.length }}</strong> student(s).
       </div>
 
-      <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
+      <div class="card card-body bg-body-tertiary" style="max-height: 150px; overflow-y: auto;">
         <ul class="mb-0 pl-3">
           <li v-for="row in submissionSelection" :key="row.userId">
             {{ row.studentName || row.userName }} ({{ row.fileCount }} files)

@@ -330,7 +330,7 @@ export default {
 }
 
 .info-panel-header {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 12px 16px;
   border-bottom: 1px solid #dee2e6;
   border-radius: 8px 8px 0 0;
@@ -339,7 +339,7 @@ export default {
 
 .info-panel-header h6 {
   margin: 0;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   padding-right: 30px; /* Make room for pin button */
 }
@@ -380,12 +380,12 @@ export default {
 }
 
 .scoring-item {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   transition: background-color 0.2s;
 }
 
 .scoring-item:hover {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg, #e9ecef);
 }
 
 .badge {

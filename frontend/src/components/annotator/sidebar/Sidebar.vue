@@ -388,7 +388,7 @@ export default {
 
 #addPageNote .btn {
   border: none;
-  color: #575757;
+  color: var(--bs-secondary-color, #575757);
 }
 
 .readonly-notice {
@@ -397,7 +397,7 @@ export default {
 }
 
 .readonly-notice .card {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -407,7 +407,7 @@ export default {
 }
 
 .readonly-notice .card-title {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   font-size: 0.875rem;
 }

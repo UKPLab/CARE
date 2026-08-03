@@ -357,7 +357,7 @@ export default {
   height: 500px;
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .workflow-network-graph {

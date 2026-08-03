@@ -1,6 +1,6 @@
 <template>
   <div class="card shadow mb-4 configurator">
-    <div class="card-header bg-white">
+    <div class="card-header bg-body">
       <h3 class="card-title fw-bold mb-0">Placeholders</h3>
     </div>
     <div class="card-body p-0">
@@ -164,7 +164,7 @@ export default {
 }
 
 .list-group-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .badge {

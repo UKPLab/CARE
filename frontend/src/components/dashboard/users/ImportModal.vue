@@ -513,13 +513,13 @@ export default {
 }
 
 .drag-drop-area:hover {
-  background-color: #f0f0f0;
+  background-color: var(--bs-tertiary-bg, #f0f0f0);
 }
 
 .drag-drop-area p {
   margin: 0;
   font-size: 0.925rem;
-  color: #666;
+  color: var(--bs-secondary-color, #666);
 }
 
 .template-link {
@@ -532,7 +532,7 @@ export default {
   align-items: center;
   justify-content: space-between;
   border: 1px solid #dee2e6;
-  background: #f2f2f2;
+  background: var(--bs-tertiary-bg, #f2f2f2);
   border-radius: 4px;
 }
 
@@ -543,7 +543,7 @@ export default {
 
 .file-info-container strong {
   margin: 0 0.5rem;
-  color: #333;
+  color: var(--bs-body-color, #333);
 }
 
 .file-info-container button {

@@ -689,7 +689,7 @@ export default {
 
 .replies {
   font-size: smaller;
-  color: #929292;
+  color: var(--bs-secondary-color, #929292);
 }
 
 @keyframes flickerAnimation {
@@ -760,13 +760,13 @@ export default {
 }
 
 .header-hoverable:hover {
-  background-color: #e9ecef !important;
+  background-color: var(--bs-secondary-bg, #e9ecef) !important;
   border-radius: 4px;
 }
 
 .card-header {
   font-size: smaller;
-  color: #929292;
+  color: var(--bs-secondary-color, #929292);
   transition: background-color 0.2s ease;
 }
 </style>

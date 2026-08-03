@@ -136,7 +136,7 @@ export default {
   position: sticky;
   top: 0;
   z-index: 200;
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border-bottom: 1px solid #ddd;
   display: flex;
   align-items: center;
@@ -160,7 +160,7 @@ export default {
 }
 
 .pdf-toolbar :deep(.btn:hover) {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg, #e9ecef);
   transform: translateY(-2px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -182,7 +182,7 @@ export default {
 }
 
 .toolbar-toggle-btn:hover {
-  background: #e9ecef;
+  background: var(--bs-secondary-bg, #e9ecef);
   transform: scale(1.1);
 }
 

@@ -340,7 +340,7 @@ export default {
 
 .criterion-name {
   font-weight: 400;
-  color: #333;
+  color: var(--bs-body-color, #333);
 }
 
 /* Assessment Content */
@@ -359,12 +359,12 @@ export default {
 }
 
 .assessment-text strong {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
 .assessment-text p {
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   margin-top: 4px;
 }
 
