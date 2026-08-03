@@ -15,8 +15,7 @@
     "updatedSettings": "Updated {count} existing setting(s).",
     "unsavedChangesWarning": "You have unsaved changes in your settings. Are you sure you want to leave without saving?"
   },
-  "rememberToSaveBefore": "Remember to click",
-  "rememberToSaveAfter": "after making changes.",
+  "rememberToSave": "Remember to click {save} after making changes.",
   "noneUseDefaultEmail": "None (use default email)",
   "pickColor": "Pick a color"
 }

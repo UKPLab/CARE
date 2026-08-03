@@ -11,13 +11,13 @@
     <template #body>
       <BasicForm
           ref="form"
-          v-model="userInfo"
+          v-model="formData"
           :fields="formFields"
       />
       <div class="detail-table-container">
         <BasicTable
             :columns="columns"
-            :data="[userInfo]"
+            :data="[userDetails]"
             :options="options"
             :max-table-height="'60vh'"
         />
@@ -58,7 +58,29 @@ export default {
   data() {
     return {
       userId: 0,
-      formFields: [
+      formData: {
+        userName: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        roles: [],
+      },
+      userDetails: {},
+      options: {
+        striped: true,
+        hover: true,
+        bordered: true,
+        borderless: false,
+        small: false,
+      },
+    };
+  },
+  computed: {
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
+    formFields() {
+      return [
         {
           key: "userName",
           label: this.$t("dashboard.users.userNameLabel"),
@@ -90,68 +112,78 @@ export default {
           type: "checkbox",
           required: true,
           readOnly: false,
+          options: this.systemRoles.map((role) => ({
+            value: role.name,
+            label: this.$te(`users.roles.${role.name}`)
+              ? this.$t(`users.roles.${role.name}`)
+              : role.name.charAt(0).toUpperCase() + role.name.slice(1),
+          })),
         },
-      ],
-      options: {
-        striped: true,
-        hover: true,
-        bordered: true,
-        borderless: false,
-        small: false,
-      },
-      columns: [
+      ];
+    },
+    columns() {
+      return [
         {name: this.$t("users.columns.acceptTerms"), key: "acceptTerms"},
         {name: this.$t("users.columns.acceptStats"), key: "acceptStats"},
         {name: this.$t("users.columns.lastLogin"), key: "lastLoginAt"},
         {name: this.$t("common.createdAt"), key: "createdAt"},
         {name: this.$t("dashboard.users.updatedAt"), key: "updatedAt"},
         {name: this.$t("dashboard.users.deletedAt"), key: "deletedAt"},
-      ],
-    };
-  },
-  computed: {
-    systemRoles() {
-      return this.$store.getters["admin/getSystemRoles"];
+      ];
     },
-    userInfo(){
-      const user = this.$store.getters["table/user/get"](this.userId);
+  },
+  methods: {
+    /**
+     * Open the modal and load a writable draft from the Vuex user row.
+     * @param {number} userId - User id to edit
+     */
+    open(userId) {
+      this.userId = userId;
+      this.loadFormFromStore(userId);
+      this.$refs.modal.open();
+    },
+    /**
+     * Copy store user into local formData / userDetails (draft for editing).
+     * @param {number} userId - User id
+     */
+    loadFormFromStore(userId) {
+      const user = this.$store.getters["table/user/get"](userId);
       if (!user) {
-        return {};
+        this.formData = {
+          userName: "",
+          firstName: "",
+          lastName: "",
+          email: "",
+          roles: [],
+        };
+        this.userDetails = {};
+        return;
       }
       const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
-      return {
-        ...user,
+      this.formData = {
+        userName: user.userName || "",
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
         roles: (user.roles || [])
             .map((roleId) => this.systemRoles.find((r) => r.id === roleId)?.name)
             .filter(Boolean),
+      };
+      this.userDetails = {
+        acceptTerms: user.acceptTerms,
+        acceptStats: user.acceptStats,
+        lastLoginAt: formatDate(user.lastLoginAt),
         createdAt: formatDate(user.createdAt),
         updatedAt: formatDate(user.updatedAt),
-        lastLoginAt: formatDate(user.lastLoginAt),
         deletedAt: formatDate(user.deletedAt),
       };
-    },
-  },
-  mounted() {
-    const options = this.systemRoles.map((role) => ({
-      value: role.name,
-      label: this.$te(`users.roles.${role.name}`)
-        ? this.$t(`users.roles.${role.name}`)
-        : role.name.charAt(0).toUpperCase() + role.name.slice(1),
-    }));
-    const index = this.formFields.findIndex(({key}) => key === "roles");
-    this.formFields[index].options = options;
-  },
-  methods: {
-    open(userId) {
-      this.userId = userId;
-      this.$refs.modal.open();
     },
     submit() {
       if (!this.$refs.form.validate()) {
         return;
       }
       const userId = this.userId;
-      const {firstName, lastName, email, roles} = this.userInfo;
+      const {firstName, lastName, email, roles} = this.formData;
       const userData = {
         firstName,
         lastName,
@@ -179,6 +211,15 @@ export default {
       });
     },
     resetForm() {
+      this.formData = {
+        userName: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        roles: [],
+      };
+      this.userDetails = {};
+      this.userId = 0;
       this.eventBus.emit("resetFormField");
     },
   },

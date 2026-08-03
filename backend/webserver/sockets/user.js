@@ -3,6 +3,7 @@ const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const {inject} = require("../../utils/helper/generic");
 const _ = require("lodash");
+const {Op} = require("sequelize");
 const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
@@ -128,9 +129,9 @@ class UserSocket extends Socket {
         try {
             const rightToFetch = `backend.socket.user.getUsers.${role}`;
             if (!(await this.hasAccess(rightToFetch))) {
-                const msg = "This user does not have the right to load users by their role.";
-                this.logger.error(msg);
-                throw new TranslatableError("errors.users.noRightToLoadUsersByRole");
+                const key = "errors.users.noRightToLoadUsersByRole";
+                this.logger.error(key);
+                throw new TranslatableError(key);
             }
             return role === "all" ? await this.models["user"].getAll() : await this.models["user"].getUsersByRole(role);
         } catch (error) {
@@ -292,6 +293,20 @@ class UserSocket extends Socket {
             this.socket.emit("progressUpdate", {
                 id: data["progressId"], current: users.indexOf(user) + 1, total: users.length,
             });
+        }
+
+        // Push created/updated users to subscribed clients once at the end
+        // so the Users table updates without a full page reload.
+        const userIds = createdUsers.map((u) => u.id).filter(Boolean);
+        if (userIds.length > 0) {
+            try {
+                const freshUsers = await this.models["user"].getAll({
+                    where: {id: {[Op.in]: userIds}, deleted: false},
+                });
+                await this.broadcastTable("user", freshUsers);
+            } catch (e) {
+                this.logger.error("Failed to broadcast bulk-created users: " + e.message);
+            }
         }
 
         return {createdUsers, errors};

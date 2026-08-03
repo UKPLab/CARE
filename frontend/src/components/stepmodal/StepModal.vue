@@ -3,7 +3,7 @@
     <BasicModal
       ref="modal"
       :size="studyStep?.configuration?.settings?.modalSize"
-      :name="studyStep?.configuration?.name || $t('modals.modal')"
+      :name="studyStep?.configuration?.name || 'Modal'"
       :disable-keyboard="true"
       :remove-close="true"
     >
@@ -43,7 +43,7 @@
         </div>      
       </template>
       <template #footer>
-        <div v-if="!waiting">
+        <div v-if="!waiting" class="btn-group">
           <BasicButton
             v-if="!isLastStep"
             :title="studyStep?.configuration?.nextButtonText || $t('common.next')"

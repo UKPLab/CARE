@@ -260,7 +260,6 @@ export default {
     },
     
     onMouseLeave() {
-      console.log("Mouse left info panel");
       this.isHovering = false;
       this.$emit('mouse-leave');
       this.requestClose();

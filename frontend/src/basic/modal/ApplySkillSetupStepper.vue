@@ -4,7 +4,7 @@
         ref="applySkillsStepper"
         :steps="stepperSteps"
         :validation="stepValid"
-        :submit-text="$t('nlp.preprocessing.setupStepper.title')"
+        :submit-text="$t('nlp.preprocessing.setupStepper.submit')"
         @submit="applySkills"
         @close-requested="handleCloseRequest"
     >

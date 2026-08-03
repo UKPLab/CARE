@@ -119,8 +119,6 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
-  }, {
-    table: "document"
   }
   ],
   provide() {

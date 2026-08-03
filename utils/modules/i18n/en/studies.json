@@ -32,7 +32,8 @@
   "notStartedYet": "The study has not started yet!",
   "noMoreSessions": "No more sessions available for this study.",
   "clickToStart": "Click \"Start User Study\" to start the user study.",
-  "collaborativeNote": "This is a collaborative user study, so everyone can join and proceed with this study simultaneously!",
+  "collaborativeNote": "This is a {collaborative} user study, so everyone can join and proceed with this study simultaneously!",
+  "collaborativeEmphasis": "collaborative",
   "thankYouParticipation": "Thank you for your participation :-)",
   "canCloseBrowser": "You can close the browser now!",
   "thankYouJoining": "Thank you for joining!",
@@ -83,7 +84,8 @@
     "studyFinished": "This study has finished on {date}",
     "studyStartDate": "Start: {date}",
     "timeLimitNote": "Please note that there is a time limitation of {minutes} min for this study!",
-    "sessionsLeft": "You have {count} sessions left for this study.",
+    "sessionsLeft": "You have {sessions} left for this study.",
+    "sessionsLeftEmphasis": "{count} sessions",
     "sessionWarning": "There are currently {count} study sessions existing for this study. Deleting it will delete the study sessions!",
     "sessionFinished": "Session Finished",
     "sessionFinishedMessage": "Your session has been submitted successfully.",
@@ -164,7 +166,7 @@
   },
   "closeModal": {
     "title": "Close Study",
-    "confirmPrefix": "Are you sure you want to close the study",
+    "confirm": "Are you sure you want to close the study {name}?",
     "notifySessions": "Send email notification to participants with open sessions",
     "closeStudy": "Close study",
     "success": {
@@ -229,6 +231,12 @@
     "multipleSubmit": {
       "label": "Allow multiple submissions?",
       "help": "Specify whether participants can submit their study multiple times."
+    },
+    "step": {
+      "documentId": {
+        "label": "Select Document",
+        "newEmptyDoc": "New Empty Document"
+      }
     }
   },
   "units": {

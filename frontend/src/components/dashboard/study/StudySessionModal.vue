@@ -11,7 +11,14 @@
     remove-close
   >
     <template #title>
-      <span> {{$t('dashboard.study.studySessionsOf')}} {{ studyName }} </span>
+      <i18n-t
+        keypath="dashboard.study.studySessionsOf"
+        tag="span"
+      >
+        <template #name>
+          {{ studyName }}
+        </template>
+      </i18n-t>
     </template>
     <template #body>
       <StudySessionTable

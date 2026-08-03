@@ -285,7 +285,9 @@ export default {
       } catch (error) {
         this.eventBus.emit("toast", {
           title: this.$t("submission.dashboard.toasts.downloadFailedTitle"),
-          message: error.message,
+          message: this.$t("submission.dashboard.toasts.downloadFailedMessage", {
+            error: error.message,
+          }),
           variant: "danger",
         });
       }

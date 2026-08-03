@@ -122,7 +122,7 @@
     "documentEditFailed": "Bearbeitung des Dokuments fehlgeschlagen",
     "failedToUpload": "Hochladen fehlgeschlagen",
     "failedToProcessPdf": "Verarbeitung der PDF-Datei fehlgeschlagen",
-    "errorProcessingPdf": "Fehler bei der Verarbeitung der PDF-Datei",
+    "errorProcessingPdf": "Fehler bei der Verarbeitung der PDF-Datei: {error}",
     "failedToLoadDocContent": "Laden des Dokumenteninhalts fehlgeschlagen.",
     "documentOpenError": "Fehler beim Öffnen des Dokuments",
     "documentCloseError": "Fehler beim Schließen des Dokuments",
@@ -306,7 +306,7 @@
     "commentsLoadFailedInternal": "Interner Serverfehler. Kommentare konnten nicht geladen werden."
   },
   "nlp": {
-    "timeout": "Zeitüberschreitung bei der Anfrage für Skill {skill} - Anfrage fehlgeschlagen!",
+    "timeout": "Zeitüberschreitung bei der Anfrage für Skill: {skill}",
     "invalidService": "Der bereitgestellte Service ist ungültig. Bitte wenden Sie sich an den Serviceanbieter.",
     "configCopyFailed": "Konfiguration nicht geladen oder leer, kann nicht kopiert werden.",
     "downloadFailed": "Download fehlgeschlagen",

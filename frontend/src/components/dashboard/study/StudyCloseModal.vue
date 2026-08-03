@@ -8,11 +8,15 @@
     </template>
     <template #body>
       <div>
-        <p>
-          {{ $t("studies.closeModal.confirmPrefix") }}
-          <strong v-if="studyName">"{{ studyName }}"</strong>
-          <span v-else>?</span>
-        </p>
+        <i18n-t
+          keypath="studies.closeModal.confirm"
+          tag="p"
+        >
+          <template #name>
+            <strong v-if="studyName">"{{ studyName }}"</strong>
+            <span v-else>?</span>
+          </template>
+        </i18n-t>
         <div class="form-check mt-3">
           <input
             id="notifySessionsCheckbox"

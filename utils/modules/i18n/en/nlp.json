@@ -1,5 +1,4 @@
 {
-    "serviceRequest": "NLP Service Request",
     "notAvailable": "{name} not available",
     "skillDetails": "Skill Details",
     "copyConfig": "Copy config",
@@ -55,10 +54,6 @@
             "serviceOutput": "<Service {service}> {skill}_{output} (Workflow Step {step})"
         }
     },
-    "request": {
-        "title": "NLP Service Request",
-        "timeout": "Timeout in request for skill: {skill}"
-    },
     "preprocessing": {
         "title": "Preprocess Grading",
         "cancelButton": "Cancel Preprocess",
@@ -79,6 +74,7 @@
         },
         "setupStepper": {
             "title": "Apply Skills",
+            "submit": "Apply Skills",
             "steps": {
                 "selectSkill": "Select Skill",
                 "selectFiles": "Select Files",

@@ -1,12 +1,12 @@
 {
     "confirm": "Bestätigen",
+    "confirmName": "{name} bestätigen",
     "pleaseConfirm": "Bitte bestätigen",
     "sending": "Wird gesendet...",
     "sendResetEmail": "E-Mail zum Zurücksetzen des Passworts senden",
     "passwordReset": "Passwort zurückgesetzt",
     "passwordUpdated": "Passwort aktualisiert",
     "passwordResetSuccess": "Das Passwort wurde erfolgreich zurückgesetzt.",
-    "loading": "Wird geladen...",
     "closeModal": "Schließen",
     "placeholders": {
         "documentPreview": "Dokumentvorschau",

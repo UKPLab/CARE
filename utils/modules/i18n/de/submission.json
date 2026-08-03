@@ -17,7 +17,8 @@
             "downloadErrorMessage": "Fehler beim Herunterladen von {name}: {error}",
             "downloadCompleteTitle": "Download abgeschlossen",
             "downloadCompleteMessage": "Einreichung {id} mit {count} Dokumenten heruntergeladen",
-            "downloadFailedTitle": "Download fehlgeschlagen"
+            "downloadFailedTitle": "Download fehlgeschlagen",
+            "downloadFailedMessage": "Download fehlgeschlagen: {error}"
         }
     },
     "publishAssessment": {
@@ -74,20 +75,6 @@
             "downloadCsv": "CSV herunterladen",
             "moodle": "Moodle",
             "email": "E-Mail"
-        },
-        "csv": {
-            "userExtId": "Benutzer ExtId",
-            "userFirstName": "Vorname des Benutzers",
-            "userLastName": "Nachname des Benutzers",
-            "userName": "Benutzername",
-            "submissionId": "Submission-ID",
-            "submissionExtId": "Submission ExtId",
-            "reviewerFirstName": "Vorname des Reviewers",
-            "reviewerLastName": "Nachname des Reviewers",
-            "reviewerUserName": "Benutzername des Reviewers",
-            "reviewerRoles": "Reviewer-Rollen",
-            "hash": "Hash",
-            "totalPoints": "Gesamtpunkte"
         },
         "toasts": {
             "configurationMissing": {

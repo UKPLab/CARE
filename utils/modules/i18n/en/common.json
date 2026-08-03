@@ -39,6 +39,7 @@
     "noData": "No data",
     "success": "Success",
     "error": "Error",
+    "accessDenied": "Access denied",
     "warning": "Warning",
     "readOnly": "Read Only",
     "id": "ID",
@@ -99,6 +100,8 @@
     "unknown": "Unknown",
     "use": "Use",
     "hideReplies": "Hide replies",
+    "showReplies": "Show replies ({count})",
+    "hideRepliesCount": "Hide replies ({count})",
     "connecting": "Connecting...",
     "loadingProgress": "Load {appLoadStep} ({percent}%)",
     "duplicate": "Duplicate",
@@ -128,5 +131,8 @@
     "selectedCount": "{selected} of {total} selected",
     "description": "Description",
     "running": "Running",
-    "finished": "Finished"
+    "finished": "Finished",
+    "nlp": {
+        "serviceRequest": "NLP Service Request"
+    }
 }

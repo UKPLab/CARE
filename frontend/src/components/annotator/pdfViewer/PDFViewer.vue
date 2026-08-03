@@ -45,6 +45,7 @@ import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import { resolveApiMessage } from "@/assets/utils";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -181,7 +182,7 @@ export default {
         } else {
           this.eventBus.emit('toast', {
             title: this.$t('errors.file.pdfLoadingError.title'),
-            message: res.message,
+            message: resolveApiMessage(res),
             variant: "danger"
           });
           this.$router.push("/");

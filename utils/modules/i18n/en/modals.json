@@ -1,12 +1,12 @@
 {
     "confirm": "Confirm",
+    "confirmName": "Confirm {name}",
     "pleaseConfirm": "Please confirm",
     "sending": "Sending...",
     "sendResetEmail": "Send Reset Email",
     "passwordReset": "Password Reset",
     "passwordUpdated": "Password Updated",
     "passwordResetSuccess": "Password has been reset successfully.",
-    "loading": "Loading...",
     "closeModal": "Close",
     "placeholders": {
         "documentPreview": "Document Preview",

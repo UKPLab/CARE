@@ -51,9 +51,6 @@ module.exports = {
       const keys = keysFor(row.placeholderKey);
       const placeholderLabel = translateMaybeKey(keys.placeholderLabel);
       const placeholderDescription = translateMaybeKey(keys.placeholderDescription);
-      if (!placeholderLabel || !placeholderDescription) {
-        continue;
-      }
       await queryInterface.bulkUpdate(
         "placeholder",
         {

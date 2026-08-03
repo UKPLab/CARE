@@ -38,7 +38,7 @@ export default {
       if (data.studySessionHash === this.studySessionHash) {
         this.eventBus.emit('toast', {
           title: this.$t("studies.messages.studySessionErrorTitle"),
-          message: data.message,
+          message: resolveApiMessage(data),
           variant: "danger"
         });
         this.$router.push("/");

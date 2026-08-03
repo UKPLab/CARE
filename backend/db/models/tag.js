@@ -15,27 +15,27 @@ module.exports = (sequelize, DataTypes) => {
             },
             {
                 key: "colorCode",
-                label: "tags.fields.tag.color.label",
+                label: "tags.fields.tag.colorCode.label",
                 type: "select",
                 default: "info",
                 options: [
                     {
-                        name: "tags.tag.form.colorCode.options.info",
+                        name: "tags.fields.tag.colorCode.options.info",
                         value: "info",
                         class: "border border-info"
                     },
                     {
-                        name: "tags.tag.form.colorCode.options.warning",
+                        name: "tags.fields.tag.colorCode.options.warning",
                         value: "warning",
                         class: "border border-warning"
                     },
                     {
-                        name: "tags.tag.form.colorCode.options.success",
+                        name: "tags.fields.tag.colorCode.options.success",
                         value: "success",
                         class: "border-2 border-success"
                     },
                     {
-                        name: "tags.tag.form.colorCode.options.danger",
+                        name: "tags.fields.tag.colorCode.options.danger",
                         value: "danger",
                         class: "border-2 border-danger"
                     },

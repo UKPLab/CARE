@@ -998,18 +998,18 @@ export default {
         const submission = session.submissionId ? this.submissions.find((s) => s.id === session.submissionId) : null;
 
         const row = {
-          [this.$t("submission.publishAssessment.csv.userExtId")]: ownerUser?.extId || session.ownerExtId || "",
-          [this.$t("submission.publishAssessment.csv.userFirstName")]: ownerUser?.firstName || session.ownerFirstName || "",
-          [this.$t("submission.publishAssessment.csv.userLastName")]: ownerUser?.lastName || session.ownerLastName || "",
-          [this.$t("submission.publishAssessment.csv.userName")]: ownerUser?.userName || session.ownerUserName || "",
-          [this.$t("submission.publishAssessment.csv.submissionId")]: session.submissionId || "",
-          [this.$t("submission.publishAssessment.csv.submissionExtId")]: submission?.extId || "",
-          [this.$t("submission.publishAssessment.csv.reviewerFirstName")]: reviewer?.firstName || "",
-          [this.$t("submission.publishAssessment.csv.reviewerLastName")]: reviewer?.lastName || "",
-          [this.$t("submission.publishAssessment.csv.reviewerUserName")]: reviewer?.userName || "",
-          [this.$t("submission.publishAssessment.csv.reviewerRoles")]: reviewer ? this.getUserRoles(reviewer.id) : "",
-          [this.$t("submission.publishAssessment.csv.hash")]: session.hash || "",
-          [this.$t("submission.publishAssessment.csv.totalPoints")]: assessment.achieved_points ?? 0,
+          "User ExtId": ownerUser?.extId || session.ownerExtId || "",
+          "User First Name": ownerUser?.firstName || session.ownerFirstName || "",
+          "User Last Name": ownerUser?.lastName || session.ownerLastName || "",
+          "User Name": ownerUser?.userName || session.ownerUserName || "",
+          "Submission ID": session.submissionId || "",
+          "Submission ExtId": submission?.extId || "",
+          "Reviewer First Name": reviewer?.firstName || "",
+          "Reviewer Last Name": reviewer?.lastName || "",
+          "Reviewer User Name": reviewer?.userName || "",
+          "Reviewer Roles": reviewer ? this.getUserRoles(reviewer.id) : "",
+          "Hash": session.hash || "",
+          "Total Points": assessment.achieved_points ?? 0,
         };
 
         // Add dynamic criteria columns

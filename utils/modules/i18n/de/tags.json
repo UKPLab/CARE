@@ -29,8 +29,14 @@
             "name": {
                 "placeholder": "Name des Tags"
             },
-            "color": {
-                "label": "Farbe"
+            "colorCode": {
+                "label": "Farbe",
+                "options": {
+                    "info": "Info",
+                    "warning": "Warnung",
+                    "success": "Erfolg",
+                    "danger": "Gefahr"
+                }
             },
             "description": {
                 "placeholder": "Tag-Beschreibung"
@@ -47,17 +53,5 @@
         "tagSetPublished": "Tag-Set veröffentlicht",
         "tagSetPublishedMessage": "Das Tag-Set wurde erfolgreich veröffentlicht"
     },
-    "editMainTag": "Haupt-Tag bearbeiten",
-    "tag": {
-        "form": {
-            "colorCode": {
-                "options": {
-                    "info": "Info",
-                    "warning": "Warnung",
-                    "success": "Erfolg",
-                    "danger": "Gefahr"
-                }
-            }
-        }
-    }
+    "editMainTag": "Haupt-Tag bearbeiten"
 }

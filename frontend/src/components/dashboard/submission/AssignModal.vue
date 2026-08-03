@@ -103,8 +103,31 @@ export default {
         copySubmissions: false,
       },
       selectionPercentage: 100,
-      steps: [{title: this.$t('dashboard.submission.assignGroup.stepOne')}, {title: this.$t('dashboard.submission.assignGroup.stepTwo')}, {title: this.$t('dashboard.submission.assignGroup.stepThree')}],
-      formFields: [
+      submissionTableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        selectableRows: true,
+        scrollY: true,
+        scrollX: true,
+        singleSelect: false,
+        search: true,
+        pagination: 10,
+      },
+    };
+  },
+  computed: {
+    steps() {
+      return [
+        { title: this.$t('dashboard.submission.assignGroup.stepOne') },
+        { title: this.$t('dashboard.submission.assignGroup.stepTwo') },
+        { title: this.$t('dashboard.submission.assignGroup.stepThree') },
+      ];
+    },
+    formFields() {
+      return [
         {
           key: "group",
           label: this.$t('dashboard.submission.assignGroup.groupNumber'),
@@ -135,23 +158,8 @@ export default {
             },
           ],
         },
-      ],
-      submissionTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        selectableRows: true,
-        scrollY: true,
-        scrollX: true,
-        singleSelect: false,
-        search: true,
-        pagination: 10,
-      },
-    };
-  },
-  computed: {
+      ];
+    },
     selectionTargetCount() {
       if (!this.selectedSubmissions.length) return 0;
       const raw = (this.selectedSubmissions.length * this.selectionPercentage) / 100;

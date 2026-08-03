@@ -13,7 +13,7 @@
             v-model="forgotPassword.email"
             type="email"
             class="form-control"
-            :placeholder="$t('auth.emailAddress')"
+            :placeholder="$t('auth.placeholders.emailAddress')"
             required
             :class="{ 'is-invalid': !forgotPasswordValidEmail && forgotPassword.email.length > 0 }"
           >
@@ -35,28 +35,30 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        v-if="!forgotPassword.success"
-        :text="$t('common.cancel')"
-        class="btn btn-secondary"
-        data-bs-dismiss="modal"
-        @click="resetForm"
-      />
-      <BasicButton
-        v-if="!forgotPassword.success"
-        :disabled="!forgotPasswordValidEmail"
-        :loading="forgotPassword.isLoading"
-        class="btn btn-primary"
-        :text="forgotPassword.isLoading ? $t('modals.sending') : $t('modals.sendResetEmail')"
-        @click="sendResetEmail"
-      />
-      <BasicButton
-        v-if="forgotPassword.success"
-        :text="$t('common.close')"
-        class="btn btn-success"
-        data-bs-dismiss="modal"
-        @click="resetForm"
-      />
+      <div class="btn-group">
+        <BasicButton
+          v-if="!forgotPassword.success"
+          :text="$t('common.cancel')"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          @click="resetForm"
+        />
+        <BasicButton
+          v-if="!forgotPassword.success"
+          :disabled="!forgotPasswordValidEmail"
+          :loading="forgotPassword.isLoading"
+          class="btn btn-primary"
+          :text="forgotPassword.isLoading ? $t('modals.sending') : $t('modals.sendResetEmail')"
+          @click="sendResetEmail"
+        />
+        <BasicButton
+          v-if="forgotPassword.success"
+          :text="$t('common.close')"
+          class="btn btn-success"
+          data-bs-dismiss="modal"
+          @click="resetForm"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>
@@ -185,7 +187,7 @@ export default {
             });
           }
         }
-      } catch (error) {
+      } catch (_error) {
         this.forgotPassword.error = true;
         this.forgotPassword.message = this.$t('errors.server.unexpectedError');
         

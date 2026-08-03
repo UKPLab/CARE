@@ -178,17 +178,22 @@
     },
     methods: {
       translateMaybeKey,
-      // Help text lives in templates.json; derive key from description key in DB (same slug + placeholderKey).
+      // Help lives only in templates.json. Lookup by type + placeholderKey
       getPlaceholderHelp(placeholder) {
-        const descriptionKey = placeholder.description;
-        if (typeof descriptionKey !== "string") {
-          return descriptionKey;
+        const typeSlug = {
+          1: "emailGeneral",
+          2: "emailStudySession",
+          3: "emailAssignment",
+          6: "emailStudyClose",
+          7: "emailSubmissionUpload",
+        }[this.templateType];
+        if (typeSlug && placeholder.id) {
+          const helpKey = `templates.placeholders.help.${typeSlug}.${placeholder.id}`;
+          if (this.$te(helpKey)) {
+            return this.$t(helpKey);
+          }
         }
-        const helpKey = descriptionKey.replace(".descriptions.", ".help.");
-        if (this.$te(helpKey)) {
-          return this.$t(helpKey);
-        }
-        return translateMaybeKey(descriptionKey);
+        return translateMaybeKey(placeholder.description);
       },
       initializePlaceholderCounts() {
         const counts = {};

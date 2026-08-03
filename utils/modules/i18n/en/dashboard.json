@@ -6,7 +6,7 @@
         "OneProjectSelected": "1 project selected",
         "ZeroProjectsSelected": "0 projects selected",
         "selectUsersToAssignProjectsTo": "Select users to assign projects to:",
-        "usersSelected": "user(s) selected",
+        "usersSelected": "{count} user(s) selected",
         "confirmAssignment": "Confirm assignment:",
         "summary": "Summary:",
         "aboutToAssign": "You are about to assign {projectCount} project to {userCount} user(s).",
@@ -177,8 +177,8 @@
         "reviewerSelectionMode": "Reviewer Selection Mode",
         "roleBasedSelection": "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
         "reviewerBasedSelection": "Reviewer-based selection (distribute document between the selected reviewers)",
-        "nameOfReviewsForRole": "Number of reviews for role: ",
-        "nameofReviewsForUsers": "Number of reviews for user: ",
+        "numberOfReviewsForRole": "Number of reviews for role: {name}",
+        "numberOfReviewsForUser": "Number of reviews for user: {name}",
         "reviews": "review(s)",
         "assignmentCreated": "Assignment created",
         "assignmentCreatedMessage": "The assignment has been created successfully",
@@ -191,7 +191,7 @@
         "deletionFailed": "Study template deletion failed",
         "assignmentType": "Assignment Type:",
         "workflowAssignments": "Workflow Assignments:",
-        "studySessionsOf": "Study Sessions of",
+        "studySessionsOf": "Study Sessions of {name}",
         "openSession": "Open session",
         "inspectSession": "Inspect session",
         "copySession": "Copy session",
@@ -473,14 +473,8 @@
             "admin": "full control",
             "system": "system user"
         }
-    },
-    "documents": {
-        "fields": {
-            "selectDoc": "Select Document",
-            "newEmptyDoc": "New Empty Document"
-        }
-    },
-    "sessionOverview": {
+  },
+  "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
         "filterWorkflowType": "Filter Workflow type:",

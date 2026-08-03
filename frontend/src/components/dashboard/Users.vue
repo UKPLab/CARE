@@ -19,8 +19,8 @@
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            :title="$t('users.assignRoles')"
-            :text="$t('users.assignRoles')"
+            :title="$t('users.rights.managementTitle')"
+            :text="$t('users.rights.managementTitle')"
             icon="shield-lock"
             @click="openRightsManagementModal"
         />
@@ -413,7 +413,7 @@ export default {
       this.openPasswordModal(user.id);
     },
     deleteUser(user) {
-      this.$refs.confirmModal.open(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {
+      this.openConfirmModal(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {
         if (val) {
           this.$socket.emit(
               "appDataUpdate",

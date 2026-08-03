@@ -1,7 +1,6 @@
 {
     "title": "Benutzer",
     "downloadUsers": "Benutzer herunterladen",
-    "assignRoles": "Rollen zuweisen",
     "uploadPassword": "Passwort hochladen",
     "importCsv": "CSV importieren",
     "importViaMoodle": "Import über Moodle",

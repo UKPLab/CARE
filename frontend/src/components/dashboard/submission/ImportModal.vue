@@ -248,12 +248,13 @@ export default {
     },
     downloadFileAsCSV() {
       const filename = `submissions_${Date.now()}`;
-      const rows = this.importResults.errors.map((err) => ({
-        userId: err.userId,
-        firstName: err.firstName,
-        lastName: err.lastName,
-        message: resolveApiMessage(err),
-      }));
+      const rows = this.importResults.errors.map((err) => {
+        const { params: _params, ...rest } = err;
+        return {
+          ...rest,
+          message: resolveApiMessage(err),
+        };
+      });
       downloadObjectsAs(rows, filename, "csv");
     },
     handleStepChange(step) {

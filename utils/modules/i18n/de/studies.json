@@ -32,7 +32,8 @@
   "notStartedYet": "Die Studie ist noch nicht gestartet!",
   "noMoreSessions": "Keine weiteren Sitzungen für diese Studie verfügbar.",
   "clickToStart": "Klicken Sie auf \"Benutzerstudie starten\", um zu beginnen.",
-  "collaborativeNote": "Dies ist eine kollaborative Studie. Alle Teilnehmer können gleichzeitig beitreten und arbeiten!",
+  "collaborativeNote": "Dies ist eine {collaborative} Studie. Alle Teilnehmer können gleichzeitig beitreten und arbeiten!",
+  "collaborativeEmphasis": "kollaborative",
   "thankYouParticipation": "Vielen Dank für Ihre Teilnahme :-)",
   "canCloseBrowser": "Sie können den Browser jetzt schließen!",
   "thankYouJoining": "Vielen Dank für Ihre Teilnahme!",
@@ -83,7 +84,8 @@
     "studyFinished": "Diese Studie wurde am {date} beendet",
     "studyStartDate": "Start: {date}",
     "timeLimitNote": "Bitte beachten Sie das Zeitlimit von {minutes} Min. für diese Studie!",
-    "sessionsLeft": "Sie haben noch {count} Sitzungen für diese Studie übrig.",
+    "sessionsLeft": "Sie haben noch {sessions} für diese Studie übrig.",
+    "sessionsLeftEmphasis": "{count} Sitzungen",
     "sessionWarning": "Es existieren derzeit {count} Sitzungen für diese Studie. Das Löschen der Studie entfernt auch diese Sitzungen!",
     "sessionFinished": "Sitzung beendet",
     "sessionFinishedMessage": "Ihre Sitzung wurde erfolgreich eingereicht.",
@@ -164,7 +166,7 @@
   },
   "closeModal": {
     "title": "Studie schließen",
-    "confirmPrefix": "Möchten Sie die Studie wirklich schließen",
+    "confirm": "Möchten Sie die Studie {name} wirklich schließen?",
     "notifySessions": "E-Mail-Benachrichtigung an Teilnehmende mit offenen Sitzungen senden",
     "closeStudy": "Studie schließen",
     "success": {
@@ -229,6 +231,12 @@
     "multipleSubmit": {
       "label": "Mehrfache Abgaben erlauben?",
       "help": "Geben Sie an, ob Teilnehmer ihre Studie mehrmals abgeben können."
+    },
+    "step": {
+      "documentId": {
+        "label": "Dokument auswählen",
+        "newEmptyDoc": "Neues leeres Dokument"
+      }
     }
   },
   "units": {

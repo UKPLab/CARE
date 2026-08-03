@@ -175,8 +175,8 @@ export default {
       this.timeoutId = setTimeout(() => {
         if (this.status === 'pending') {
           this.eventBus.emit('toast', {
-            title: this.$t('nlp.request.title'),
-            message: this.$t('nlp.request.timeout', { 
+            title: this.$t('common.nlp.serviceRequest'),
+            message: this.$t('errors.nlp.timeout', { 
               skill: this.skill 
             }),
             variant: "danger"

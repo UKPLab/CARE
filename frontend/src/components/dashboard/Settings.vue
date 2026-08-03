@@ -58,9 +58,14 @@
         >
           <LoadIcon class="me-2" icon-name="exclamation-triangle-fill"/>
           <div>
-            {{ $t('settings.rememberToSaveBefore') }}
-            <strong>{{ $t('settings.saveSettings') }}</strong>
-            {{ $t('settings.rememberToSaveAfter') }}
+            <i18n-t
+              keypath="settings.rememberToSave"
+              tag="span"
+            >
+              <template #save>
+                <strong>{{ $t('settings.saveSettings') }}</strong>
+              </template>
+            </i18n-t>
           </div>
         </div>
 

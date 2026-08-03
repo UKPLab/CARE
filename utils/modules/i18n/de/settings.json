@@ -15,8 +15,7 @@
     "updatedSettings": "{count} vorhandene Einstellungen aktualisiert.",
     "unsavedChangesWarning": "Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich ohne Speichern verlassen?"
   },
-  "rememberToSaveBefore": "Denken Sie daran, nach Änderungen auf",
-  "rememberToSaveAfter": "zu klicken.",
+  "rememberToSave": "Denken Sie daran, nach Änderungen auf {save} zu klicken.",
   "noneUseDefaultEmail": "Keine (Standard-E-Mail verwenden)",
   "pickColor": "Farbe auswählen"
 }

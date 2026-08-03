@@ -4,7 +4,7 @@
     :name="'confirm'+name"
   >
     <template #title>
-      {{ $t('modals.confirm') }} {{ name }}
+      {{ $t('modals.confirmName', { name }) }}
     </template>
     <template #body>
       <!-- eslint-disable-next-line vue/no-v-html -->

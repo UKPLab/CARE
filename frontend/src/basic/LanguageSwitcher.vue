@@ -1,24 +1,27 @@
 <template>
     <div :class="['language-switcher', { 'language-switcher--standalone': standalone }]">
         <div class="btn-group" role="group">
-            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle language-toggle"
-                :disabled="disabled" data-bs-toggle="dropdown" aria-expanded="false" :title="$t('common.language')">
-                <span class="language-flag">
-                    <img v-if="currentLanguage?.flagImage" :src="currentLanguage.flagImage" :alt="currentLanguage.code"
-                        class="flag-image" />
-                    <span v-else>{{ currentLanguage?.flag || '🌐' }}</span>
-                </span>
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-primary dropdown-toggle language-toggle"
+                :disabled="disabled"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                :title="$t('common.language')"
+            >
+                <span class="language-flag">{{ currentLanguage?.flag || '🌐' }}</span>
                 <span class="language-name">{{ currentLanguageName }}</span>
             </button>
             <ul class="dropdown-menu language-menu">
                 <li v-for="lang in sortedLanguages" :key="lang.code">
-                    <a class="dropdown-item d-flex align-items-center justify-content-between" href="#"
-                        @click.prevent="setLanguage(lang.code)" :class="{ active: $i18n.locale === lang.code }">
+                    <a
+                        class="dropdown-item d-flex align-items-center justify-content-between"
+                        href="#"
+                        :class="{ active: $i18n.locale === lang.code }"
+                        @click.prevent="setLanguage(lang.code)"
+                    >
                         <span class="d-flex align-items-center gap-2">
-                            <span class="language-flag">
-                                <img v-if="lang.flagImage" :src="lang.flagImage" :alt="lang.code" class="flag-image" />
-                                <span v-else>{{ lang.flag || '🌐' }}</span>
-                            </span>
+                            <span class="language-flag">{{ lang.flag || '🌐' }}</span>
                             <span>{{ lang.name }}</span>
                         </span>
                         <span v-if="$i18n.locale === lang.code">✓</span>
@@ -129,11 +132,5 @@ export default {
     justify-content: center;
     width: 1.2em;
     height: 1.2em;
-}
-
-.flag-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
 }
 </style>

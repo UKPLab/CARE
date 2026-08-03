@@ -122,7 +122,7 @@
         "documentEditFailed": "Document edit failed",
         "failedToUpload": "Failed to upload",
         "failedToProcessPdf": "Failed to process PDF",
-        "errorProcessingPdf": "Error processing PDF",
+        "errorProcessingPdf": "Error processing PDF: {error}",
         "failedToLoadDocContent": "Failed to load the document content.",
         "documentOpenError": "Document Open Error",
         "documentCloseError": "Document Close Error",
@@ -306,7 +306,7 @@
         "commentsLoadFailedInternal": "Internal server error. Failed to load comments."
     },
     "nlp": {
-        "timeout": "Timeout in request for skill {skill} - Request failed!",
+        "timeout": "Timeout in request for skill: {skill}",
         "invalidService": "The provided service is invalid. Please consult with the service provider.",
         "configCopyFailed": "Configuration not loaded or empty, cannot copy.",
         "downloadFailed": "Download failed",
