@@ -121,3 +121,38 @@
 [data-bs-theme="dark"] .nav-link.disabled {
   opacity: 0.8;
 }
+
+/* Quill's snow theme is fixed-light; retheme its surfaces and toolbar for dark mode. */
+[data-bs-theme="dark"] .ql-toolbar.ql-snow,
+[data-bs-theme="dark"] .ql-container.ql-snow {
+  border-color: var(--bs-border-color);
+}
+[data-bs-theme="dark"] .ql-toolbar.ql-snow {
+  background-color: var(--bs-tertiary-bg);
+}
+[data-bs-theme="dark"] .ql-container.ql-snow,
+[data-bs-theme="dark"] .ql-editor {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .ql-editor.ql-blank::before {
+  color: var(--bs-secondary-color);
+}
+[data-bs-theme="dark"] .ql-snow .ql-stroke {
+  stroke: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .ql-snow .ql-fill {
+  fill: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .ql-snow .ql-picker {
+  color: var(--bs-body-color);
+}
+[data-bs-theme="dark"] .ql-snow .ql-picker-options {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+}
+
+/* Black drop shadows vanish on dark; use a border to define the toolbar edge. */
+[data-bs-theme="dark"] .pdf-toolbar {
+  border: 1px solid var(--bs-border-color);
+}

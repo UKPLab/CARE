@@ -144,7 +144,7 @@ export default {
 
 <style scoped>
 .configurator {
-  --bg-color: rgb(219, 234, 254);
+  --bg-color: var(--bs-secondary-bg, rgb(219, 234, 254));
   --icon-container-size: 36px;
 }
 
@@ -159,7 +159,7 @@ export default {
   margin-right: 0.625rem;
   align-items: center;
   justify-content: center;
-  color: var(--text-color);
+  color: var(--bs-body-color);
   background-color: var(--bg-color);
 }
 
