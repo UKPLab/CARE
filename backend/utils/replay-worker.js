@@ -1,6 +1,6 @@
 'use strict';
 
-const { createAuthenticatedClient, cleanupSession } = require('./auth');
+const { createAuthenticatedClient, cleanupSession } = require('./replay-auth');
 
 // How long to wait after each trace for the Refresh events it triggered. Long
 // enough for a local round-trip, short enough not to dominate replay time —

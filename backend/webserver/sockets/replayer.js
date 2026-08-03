@@ -1,7 +1,7 @@
 'use strict';
 
 const Socket = require('../Socket.js');
-const { replayUserTraces } = require('../replay/worker');
+const { replayUserTraces } = require('../../utils/replay-worker');
 const throttle = require('lodash/throttle');
 
 // Ceilings on caller-supplied load parameters. Replay opens real sockets
