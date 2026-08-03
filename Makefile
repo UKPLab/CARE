@@ -291,7 +291,9 @@ ifeq ($(OS),Windows_NT)
 	@powershell -NoProfile -Command "$$root = '$(CURDIR)'; Get-ChildItem -Directory (Join-Path $$root 'utils\modules') | Where-Object { Test-Path (Join-Path $$_.FullName 'package.json') } | ForEach-Object { Write-Host ('Installing ' + $$_.Name); npm.cmd install --prefix $$_.FullName --no-audit --no-fund --loglevel=error; $$marker = Join-Path $$_.FullName 'node_modules\.uptodate'; New-Item -ItemType File -Path $$marker -Force | Out-Null }"
 else
 	@for d in $(shell find utils/modules -type d -maxdepth 1 -mindepth 1); do \
-		(cd $$d && npm install --no-audit --no-fund --loglevel=error && mkdir -p node_modules && touch node_modules/.uptodate); \
+		if [ -f "$$d/package.json" ]; then \
+			(cd $$d && npm install --no-audit --no-fund --loglevel=error && mkdir -p node_modules && touch node_modules/.uptodate); \
+		fi; \
 	done
 endif
 
