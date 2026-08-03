@@ -34,7 +34,6 @@
         <span
             class="badge"
             :class="(readOnly || isSaved) ? 'bg-success' : 'bg-secondary'"
-            :title="`isSaved: ${isSaved}`"
         >
           {{ displayScore }} P
         </span>
@@ -300,7 +299,6 @@ export default {
         isEditing: false,
         isSaved: false,
       };
-      this.$emit("saved-and-next");
     },
     cancelEdit() {
       if (this.readOnly) return;
@@ -316,6 +314,7 @@ export default {
         ...this.state,
         isSaved: true,
       };
+      this.$emit("saved-and-next");
     },
     getTextareaRows(text) {
       if (!text) return 3;

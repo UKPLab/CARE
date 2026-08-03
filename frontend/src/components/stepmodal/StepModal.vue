@@ -3,7 +3,7 @@
     <BasicModal
       ref="modal"
       :size="studyStep?.configuration?.settings?.modalSize"
-      :name="studyStep?.configuration?.name || $t('modals.modal')"
+      :name="studyStep?.configuration?.name || 'Modal'"
       :disable-keyboard="true"
       :remove-close="true"
     >
