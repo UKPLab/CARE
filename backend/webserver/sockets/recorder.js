@@ -315,19 +315,8 @@ class RecorderSocket extends Socket {
             throw new Error("Admin access required");
         }
         if (!data || !data.id) throw new Error("Recording ID required");
-        const traces = (await this.models["trace"].getAllByKey("recordingId", data.id, options))
+        return (await this.models["trace"].getAllByKey("recordingId", data.id, options))
             .sort((a, b) => a.id - b.id);
-        return traces.map(t => ({
-            id: t.id,
-            recordingId: t.recordingId,
-            userId: t.userId,
-            socketId: t.socketId,
-            action: t.action,
-            payload: t.payload,
-            direction: t.direction,
-            startTime: t.startTime,
-            endTime: t.endTime,
-        }));
     }
 
     /**
