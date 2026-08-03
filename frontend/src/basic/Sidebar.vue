@@ -73,7 +73,7 @@
                   <LoadIcon
                       icon-name="three-dots-vertical"
                       :size="18"
-                      color="#495057"
+                      color="var(--bs-body-color)"
                   />
                 </TopBarButton>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sidebarDropdownButton">

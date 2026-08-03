@@ -209,7 +209,7 @@ export default {
 
 .stepper div {
   z-index: 1;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   padding: 0 5px;
 
   &:before {

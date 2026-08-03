@@ -21,3 +21,40 @@
     line-height: 1.4;
   }
 }
+
+/* === CARE dark mode overrides === */
+/* Bootstrap's outline-secondary uses the muted grey for text, which is
+   too dim against a dark background. Retarget the button's own variables. */
+[data-bs-theme="dark"] .btn-outline-secondary {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+}
+
+/* Project selector reads too dim in dark mode; use the brighter blue. */
+[data-bs-theme="dark"] .project-box {
+  color: var(--bs-blue) !important;
+  border-color: var(--bs-blue) !important;
+}
+
+/* Avatar circle uses a hardcoded darkblue that reads muddy on the dark topbar. */
+[data-bs-theme="dark"] #dropdownMenuButton {
+  background: var(--bs-blue) !important;
+}
+
+/* Project selector hover: match the brighter blue used in dark mode. */
+[data-bs-theme="dark"] .project-box:hover {
+  background-color: var(--bs-blue) !important;
+  color: #fff !important;
+}
+
+/* btn-outline-dark is near-black by design; invert it in dark mode. */
+[data-bs-theme="dark"] .btn-outline-dark {
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+}

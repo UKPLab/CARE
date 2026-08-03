@@ -37,7 +37,7 @@
           <LoadIcon
             icon-name="lock-fill"
             :size="20"
-            color="#6c757d"
+            color="var(--bs-secondary-color)"
             class="mb-1"
           />
           <h6 class="card-title mb-0">Read-Only Mode</h6>

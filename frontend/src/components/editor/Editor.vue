@@ -9,7 +9,7 @@
       </span>
       <LoadIcon
         :size="22"
-        :color="'#800000'"
+        :color="'var(--bs-danger-text-emphasis)'"
         icon-name="lock-fill"
       />
     </div>

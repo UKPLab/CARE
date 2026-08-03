@@ -291,8 +291,8 @@ body.sidebar-exists #backButton {
   align-items: center;
   padding: 2px 10px;
   background: var(--bs-tertiary-bg, #f5f5f5);
-  border: 1px solid var(--bs-primary, darkblue);
-  color: var(--bs-primary, darkblue);
+  border: 1px solid darkblue;
+  color: darkblue;
   border-radius: 4px;
   vertical-align: middle;
   max-width: 180px;
@@ -308,7 +308,7 @@ body.sidebar-exists #backButton {
 }
 
 .project-box:hover {
-  background-color: var(--bs-primary, darkblue);
+  background-color: darkblue;
   color: white;
 }
 
