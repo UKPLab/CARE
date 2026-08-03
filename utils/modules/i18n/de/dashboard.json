@@ -462,18 +462,6 @@
     },
     "fileLabel": "{format}-Datei:"
   },
-  "systemRoles": {
-    "regular": "Standardnutzer",
-    "maintainer": "Verwalter",
-    "admin": "Administrator",
-    "system": "System",
-    "descriptions": {
-      "regular": "Keine Systemrechte",
-      "maintainer": "Benutzerverwaltung",
-      "admin": "Volle Kontrolle",
-      "system": "Systembenutzer"
-    }
-  },
   "sessionOverview": {
     "title": "Übersicht der Studiensitzungen",
     "showOnlyOpenStudies": "Nur offene Studien anzeigen",

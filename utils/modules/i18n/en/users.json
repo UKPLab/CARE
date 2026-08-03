@@ -50,7 +50,10 @@
     "student": "student",
     "guest": "guest",
     "user": "user",
-    "admin": "admin"
+    "admin": "admin",
+    "regular": "regular",
+    "maintainer": "maintainer",
+    "system": "system"
   },
   "liveSessions": "Live Sessions",
   "viewSessions": "View Sessions",

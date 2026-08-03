@@ -50,7 +50,10 @@
         "student": "Student",
         "guest": "Gast",
         "user": "Benutzer",
-        "admin": "Administrator"
+        "admin": "Administrator",
+        "regular": "Standardnutzer",
+        "maintainer": "Verwalter",
+        "system": "System"
   },
   "liveSessions": "Live-Sitzungen",
   "viewSessions": "Sitzungen anzeigen",

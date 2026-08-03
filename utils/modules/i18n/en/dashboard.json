@@ -462,18 +462,6 @@
         },
         "fileLabel": "{format} File:"
     },
-    "systemRoles": {
-        "regular": "regular",
-        "maintainer": "maintainer",
-        "admin": "admin",
-        "system": "system",
-        "descriptions": {
-            "regular": "no system rights",
-            "maintainer": "manage users",
-            "admin": "full control",
-            "system": "system user"
-        }
-  },
   "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
