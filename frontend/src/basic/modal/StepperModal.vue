@@ -203,7 +203,7 @@ export default {
     left: 0;
     right: 0;
     height: 2px;
-    background-color: #ccc;
+    background-color: var(--bs-secondary-bg, #ccc);
   }
 }
 
@@ -235,7 +235,7 @@ export default {
 }
 
 .stepper div.active {
-  --btn-color: #0d6efd;
+  --btn-color: var(--bs-primary, #0d6efd);
   border-color: var(--btn-color);
 
   &:before {

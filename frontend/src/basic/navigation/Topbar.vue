@@ -4,7 +4,7 @@
     ref="topbar"
     class="nav-container"
   >
-    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
+    <nav class="navbar fixed-top navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container-fluid">
         <button
           id="backButton"
@@ -290,9 +290,9 @@ body.sidebar-exists #backButton {
   display: flex;
   align-items: center;
   padding: 2px 10px;
-  background: #f5f5f5;
-  border: 1px solid darkblue;
-  color: darkblue;
+  background: var(--bs-tertiary-bg, #f5f5f5);
+  border: 1px solid var(--bs-primary, darkblue);
+  color: var(--bs-primary, darkblue);
   border-radius: 4px;
   vertical-align: middle;
   max-width: 180px;
@@ -308,7 +308,7 @@ body.sidebar-exists #backButton {
 }
 
 .project-box:hover {
-  background-color: darkblue;
+  background-color: var(--bs-primary, darkblue);
   color: white;
 }
 

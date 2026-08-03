@@ -32,7 +32,7 @@ export default {
 }
 
 .step-template h5 {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;

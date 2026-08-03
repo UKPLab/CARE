@@ -247,15 +247,15 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .short-preview {
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border: 1px solid #ddd;
   border-radius: 0.5rem;
   font-size: 14px;

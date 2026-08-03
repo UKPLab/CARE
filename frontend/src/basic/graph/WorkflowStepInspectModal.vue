@@ -166,7 +166,7 @@ export default {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   border-bottom: 1px solid #dee2e6;
   padding-bottom: 0.25rem;
   margin-bottom: 0.5rem;
@@ -182,7 +182,7 @@ export default {
 
 .info-grid dt {
   font-weight: 500;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-size: 0.875rem;
   align-self: start;
   padding-top: 0.1rem;
@@ -195,7 +195,7 @@ export default {
 }
 
 .config-block {
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border: 1px solid #dee2e6;
   border-radius: 0.375rem;
   padding: 0.75rem 1rem;

@@ -102,7 +102,7 @@ export default {
 }
 
 .section-title {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
@@ -110,14 +110,14 @@ export default {
 }
 
 .config-fields {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #e9ecef;
 }
 
 .general-settings {
-  background-color: #ffffff;
+  background-color: var(--bs-body-bg, #ffffff);
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #e9ecef;
@@ -125,14 +125,14 @@ export default {
 
 .setting-item {
   padding: 0.75rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.375rem;
   border: 1px solid #e9ecef;
 }
 
 .form-label {
   font-weight: 500;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   margin-bottom: 0.5rem;
 }
 
@@ -141,7 +141,7 @@ export default {
 }
 
 .form-control:focus {
-  border-color: #0d6efd;
+  border-color: var(--bs-primary, #0d6efd);
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
@@ -150,8 +150,8 @@ export default {
 }
 
 .form-check-input:checked {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
+  background-color: var(--bs-primary, #0d6efd);
+  border-color: var(--bs-primary, #0d6efd);
 }
 
 .form-text {
