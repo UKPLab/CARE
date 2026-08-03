@@ -8,7 +8,7 @@
     >
       <label class="form-label">{{ input }}:</label>
       <FormSelect
-          v-model="inputMappings[input]"
+          :model-value="inputMappings[input]"
           :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
           :value-as-object="true"
           @update:model-value="updateMapping(input, $event)"
@@ -33,7 +33,7 @@
     >
       <label class="form-label">{{ output }}:</label>
       <FormSelect
-          v-model="outputMappings[output]"
+          :model-value="outputMappings[output]"
           :options="{ options: outputDataOptions }"
           :value-as-object="true"
           @update:model-value="updateOutputMapping(output, $event)"

@@ -71,7 +71,7 @@
           v-for="option in selectOptions"
           :key="option.value"
           :class="option.class"
-          :value="valueAsObject ? option : option.value"
+          :value="option.value"
           :disabled="option.disabled"
         >
           {{ option.name }}
@@ -146,7 +146,7 @@ export default {
       return this.options.readOnly !== undefined || this.options.disabled !== undefined;
     },
     selectClass() {
-      const option = this.selectOptions.find((c) => c.value === (this.valueAsObject ? this.currentData?.value : this.currentData));
+      const option = this.selectOptions.find((c) => c.value === this.currentData);
       return option ? option.class : "";
     },
     userId() {
@@ -283,10 +283,13 @@ export default {
     },
   },
   watch: {
-    currentData() {
-      this.$emit("update:modelValue", this.currentData);
+    currentData(newVal, oldVal) {
+      if (newVal === oldVal) return;
+      this.$emit("update:modelValue", this.emitValue(newVal));
     },
-    modelValue() {
+    modelValue(newVal) {
+      const next = this.resolveCurrent(newVal);
+      if (next === this.currentData && newVal !== -1) return;
       this.updateData();
     },
     isOpen(open) {
@@ -306,6 +309,21 @@ export default {
     document.removeEventListener("mousedown", this.onDocumentClick);
   },
   methods: {
+    // Native <select> must bind primitives. valueAsObject only affects the emitted/model shape.
+    resolveCurrent(modelValue) {
+      if (modelValue === -1) return -1;
+      if (this.valueAsObject && modelValue && typeof modelValue === "object") {
+        return modelValue.value;
+      }
+      return modelValue;
+    },
+    emitValue(current) {
+      if (!this.valueAsObject) return current;
+      if (current === -1 || current === null || current === undefined || current === "") {
+        return null;
+      }
+      return this.selectOptions.find((option) => option.value === current) || null;
+    },
     updateData() {
       // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
       if (this.modelValue === -1) {
@@ -317,12 +335,12 @@ export default {
             if (this.options.table) {
               this.currentData = this.selectOptions[0][this.options.options.value];
             } else {
-              this.currentData = this.valueAsObject ? this.selectOptions[0] : this.selectOptions[0].value;
+              this.currentData = this.selectOptions[0].value;
             }
           }
         }
       } else {
-        this.currentData = this.modelValue;
+        this.currentData = this.resolveCurrent(this.modelValue);
       }
     },
     selectOption(option, blur) {
