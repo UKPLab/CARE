@@ -131,7 +131,7 @@ function buildConfig(args) {
 function validateConfig(cfg) {
     const errors = [];
     if (!['ramp', 'soak', 'regression', 'inspect', 'ceiling'].includes(cfg.mode)) errors.push(`--mode must be "ramp", "soak", "regression", "inspect", or "ceiling" (got "${cfg.mode}")`);
-    if (cfg.recordings.length === 0 && cfg.files.length === 0) errors.push('need --recordings <ids> and/or --files <json,...>');
+    if (cfg.recordings.length === 0 && cfg.files.length === 0 && !cfg.dir) errors.push('need --recordings <ids> and/or --files <json,...> / --dir <folder>');
     if (cfg.mode === 'ramp' && (!Number.isInteger(cfg.maxIterations) || cfg.maxIterations < 1)) errors.push('--max-iterations must be a positive integer');
     if (!Number.isFinite(cfg.latencyThreshold) || cfg.latencyThreshold <= 0) errors.push('--latency-threshold must be a positive number');
     if (cfg.timingMode !== 'fast' && cfg.timingMode !== 'realtime') errors.push('--timing-mode must be "fast" or "realtime"');
@@ -276,13 +276,15 @@ async function main() {
     if (errors.length > 0) {
         console.error('Invalid configuration:');
         for (const e of errors) console.error('  - ' + e);
-        console.error('\nExample:\n  PERF_ADMIN_PASSWORD=... npm run perf -- --mode ramp --recordings 12,15 --max-iterations 30');
+        console.error('\nExample:\n  PERF_ADMIN_PASSWORD=... npm run perf -- --mode ramp --recordings 12,15 --max-iterations 30\n  PERF_ADMIN_PASSWORD=... npm run perf -- --mode regression --dir stories/');
         process.exit(1);
     }
 
     console.log('CARE perf — configuration');
     console.log('  mode:          ' + cfg.mode);
-    console.log('  recordings:    ' + cfg.recordings.join(', '));
+    console.log('  recordings:    ' + (cfg.recordings.length ? cfg.recordings.join(', ') : '—'));
+    if (cfg.files.length) console.log('  files:         ' + cfg.files.join(', '));
+    if (cfg.dir) console.log('  dir:           ' + cfg.dir);
     console.log('  maxIterations: ' + cfg.maxIterations);
     console.log('  server:        ' + cfg.server);
     console.log('  user:          ' + cfg.user);
