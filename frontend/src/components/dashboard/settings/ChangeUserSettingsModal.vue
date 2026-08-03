@@ -67,9 +67,10 @@
           :columns="userColumns"
           :data="users"
           :options="tableOptions"
+          :max-table-height="'60vh'"
         />
         <small class="text-muted">
-          {{ userSelection.length }} {{ $t('dashboard.projects.usersSelected') }}
+          {{ $t('dashboard.projects.usersSelected', { count: userSelection.length }) }}
         </small>
       </div>
     </template>
@@ -160,7 +161,6 @@ export default {
   },
   data() {
     return {
-      steps: [{ title: this.$t('dashboard.settings.selectSetting') }, { title: this.$t('dashboard.projects.selectUsers') }, { title: this.$t('common.confirm') }],
       settingSelection: {
         settingKey: null,
         value: null,
@@ -180,15 +180,24 @@ export default {
           order: "ASC",
         },
       },
-      userColumns: [
+    };
+  },
+  computed: {
+    steps() {
+      return [
+        { title: this.$t('dashboard.settings.selectSetting') },
+        { title: this.$t('dashboard.projects.selectUsers') },
+        { title: this.$t('common.confirm') },
+      ];
+    },
+    userColumns() {
+      return [
         { name: this.$t('common.userId'), key: "id", sortable: true },
         { name: this.$t('common.firstName'), key: "firstName", sortable: true },
         { name: this.$t('common.lastName'), key: "lastName", sortable: true },
         { name: this.$t('users.columns.email'), key: "email", sortable: true },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     users() {
       return this.$store.getters["admin/getUsersByRole"] || [];
     },
@@ -241,7 +250,7 @@ export default {
       }
       if (this.isLocaleSetting) {
         const match = SUPPORTED_LOCALES.find((lang) => lang.code === v);
-        return `${match.name} (${v})`;
+        return match ? `${match.name} (${v})` : String(v ?? "");
       }
       return String(v ?? "");
     },

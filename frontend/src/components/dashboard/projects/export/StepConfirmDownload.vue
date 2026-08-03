@@ -80,7 +80,7 @@ export default {
   },
   computed: {
     hasDeclinedSharingSelected() {
-      return this.submissionSelection.some(row => row.acceptDataSharing === 'No');
+      return this.submissionSelection.some(row => row.acceptDataSharing === false);
     }
   }
 }

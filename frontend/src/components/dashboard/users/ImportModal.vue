@@ -203,7 +203,14 @@ export default {
         pagination: 10,
         selectableRows: true,
       },
-      columns: [
+      updatedUserCount: null,
+      createdUsers: [],
+      createdErrors: [],
+    };
+  },
+  computed: {
+    columns() {
+      return [
         {
           name: this.$t('common.duplicate'),
           key: "exists",
@@ -223,13 +230,8 @@ export default {
         { name: this.$t('common.lastName'), key: "lastName" },
         { name: this.$t('users.columns.email'), key: "email" },
         { name: this.$t('dashboard.projects.roles'), key: "roles" },
-      ],
-      updatedUserCount: null,
-      createdUsers: [],
-      createdErrors: [],
-    };
-  },
-  computed: {
+      ];
+    },
     userCount() {
       return {
         new: this.selectedUsers.filter((u) => !u.exists).length,
@@ -252,6 +254,7 @@ export default {
     },
   },
   methods: {
+    resolveApiMessage,
     downloadFileAsCSV() {
       const filename = `users_${Date.now()}`;
       const users = this.createdUsers.map((user) => ({

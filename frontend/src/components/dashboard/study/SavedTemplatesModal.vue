@@ -97,7 +97,11 @@ export default {
         pagination: 10,
         search: true,
       },
-      columns: [
+    };
+  },
+  computed:{
+    columns() {
+      return [
         { name: this.$t('common.name'), key: "name" },
         { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
         {
@@ -127,8 +131,10 @@ export default {
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-      ],
-      tableButtons: [
+      ];
+    },
+    tableButtons() {
+      return [
         {
           icon: "trash",
           options: {
@@ -165,10 +171,8 @@ export default {
           title: this.$t('common.export'),
           action: "exportTemplate",
         },
-      ],
-    };
-  },
-  computed:{
+      ];
+    },
     savedTemplates() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.template === true).map((s) => {
         return {
@@ -206,6 +210,7 @@ export default {
       this.$refs.exportFormatModal.open(template.id, "study", "study_step");
     },
     deleteTemplate(template) {
+      this.close();
       this.$refs.deleteConf.open(
         this.$t('dashboard.study.deleteTemplate'),
         this.$t('dashboard.study.deleteTemplatePrompt'),

@@ -66,7 +66,21 @@ export default {
         roles: [],
       },
       userDetails: {},
-      formFields: [
+      options: {
+        striped: true,
+        hover: true,
+        bordered: true,
+        borderless: false,
+        small: false,
+      },
+    };
+  },
+  computed: {
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"];
+    },
+    formFields() {
+      return [
         {
           key: "userName",
           label: this.$t("dashboard.users.userNameLabel"),
@@ -98,39 +112,25 @@ export default {
           type: "checkbox",
           required: true,
           readOnly: false,
+          options: this.systemRoles.map((role) => ({
+            value: role.name,
+            label: this.$te(`users.roles.${role.name}`)
+              ? this.$t(`users.roles.${role.name}`)
+              : role.name.charAt(0).toUpperCase() + role.name.slice(1),
+          })),
         },
-      ],
-      options: {
-        striped: true,
-        hover: true,
-        bordered: true,
-        borderless: false,
-        small: false,
-      },
-      columns: [
+      ];
+    },
+    columns() {
+      return [
         {name: this.$t("users.columns.acceptTerms"), key: "acceptTerms"},
         {name: this.$t("users.columns.acceptStats"), key: "acceptStats"},
         {name: this.$t("users.columns.lastLogin"), key: "lastLoginAt"},
         {name: this.$t("common.createdAt"), key: "createdAt"},
         {name: this.$t("dashboard.users.updatedAt"), key: "updatedAt"},
         {name: this.$t("dashboard.users.deletedAt"), key: "deletedAt"},
-      ],
-    };
-  },
-  computed: {
-    systemRoles() {
-      return this.$store.getters["admin/getSystemRoles"];
+      ];
     },
-  },
-  mounted() {
-    const options = this.systemRoles.map((role) => ({
-      value: role.name,
-      label: this.$te(`users.roles.${role.name}`)
-        ? this.$t(`users.roles.${role.name}`)
-        : role.name.charAt(0).toUpperCase() + role.name.slice(1),
-    }));
-    const index = this.formFields.findIndex(({key}) => key === "roles");
-    this.formFields[index].options = options;
   },
   methods: {
     /**

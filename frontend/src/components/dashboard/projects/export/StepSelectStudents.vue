@@ -92,7 +92,7 @@ export default {
               userName: `${student.userName}`,
               studentName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
               fileCount: 0,
-              acceptDataSharing: student.acceptDataSharing ? this.$t('common.yes') : this.$t('common.no'),
+              acceptDataSharing: !!student.acceptDataSharing,
               lastSubmissionDate: currentDocDate
             };
           }
@@ -118,9 +118,16 @@ export default {
           name: this.$t('dashboard.projects.columns.acceptedDataSharing'), 
           key: "acceptDataSharing", 
           sortable: true,
+          type: "badge",
+          typeOptions: {
+            keyMapping: {
+              true: this.$t('common.yes'),
+              false: this.$t('common.no'),
+            },
+          },
           filter: [
-            { key: this.$t('common.yes'), name: this.$t('common.yes') },
-            { key: this.$t('common.no'), name: this.$t('common.no') },
+            { key: true, name: this.$t('common.yes') },
+            { key: false, name: this.$t('common.no') },
           ],
         },
         { name: this.$t('dashboard.projects.columns.lastSubmitted'), key: "lastSubmissionDate", sortable: true }
