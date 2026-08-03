@@ -52,4 +52,3 @@ email-mappings.py
 gitleaks-clean.sh
 .mailmap
 .DS_Store
-perf-results/

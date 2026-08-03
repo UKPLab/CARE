@@ -11,13 +11,15 @@ const { traceStats } = require('./trace-stats');
  * pg reading), complete per-trace stats, config, and verdict.
  *
  * @param {string} mode - which mode ran (soak, ceiling, ramp, regression)
- * @param {Object} cfg - the run's config
+ * @param {Object} cfg - The run's config; recorded in the saved JSON so a result file is self-describing
  * @param {Object} payload - mode-specific data: { results, samples, sampler, verdict, extra }
  * @returns {string|null} the file path written, or null on failure
  */
 function saveResults(mode, cfg, payload = {}) {
     try {
-        const dir = path.join(process.cwd(), 'perf-results');
+        // Save alongside the backend's logs (LOGGING_PATH) so results land in the
+        // directory docker-compose already mounts, rather than an unmounted path.
+        const dir = path.join(process.env.LOGGING_PATH || './logs', 'perf');
         fs.mkdirSync(dir, { recursive: true });
 
         const ts = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
