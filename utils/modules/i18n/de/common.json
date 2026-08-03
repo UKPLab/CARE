@@ -39,6 +39,7 @@
     "noData": "Keine Daten",
     "success": "Erfolg",
     "error": "Fehler",
+    "accessDenied": "Zugriff verweigert",
     "warning": "Warnung",
     "readOnly": "Schreibgeschützt",
     "id": "ID",

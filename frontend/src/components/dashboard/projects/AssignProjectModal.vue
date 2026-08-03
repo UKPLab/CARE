@@ -30,13 +30,14 @@
         <h6>{{ $t('dashboard.projects.selectUsersToAssignProjectsTo') }}</h6>
         <BasicTable
           v-model="userSelection"
-          :columns="tableColumns"
+          :columns="table.columns"
           :data="users"
           :options="table.options"
+          :max-table-height="'60vh'"
         />
-        <small class="text-muted"
-          >{{ Object.keys(userSelection || {}).length }} {{ $t('dashboard.projects.usersSelected') }}</small
-        >
+        <small class="text-muted">{{
+          $t('dashboard.projects.usersSelected', { count: Object.keys(userSelection || {}).length })
+        }}</small>
       </div>
     </template>
 

@@ -61,7 +61,7 @@ export default {
         const role = this.roles.find(r => r.id === roleId);
         return {
           key: role.id,
-          label: this.$t("dashboard.study.nameOfReviewsForRole") + role.name,
+          label: this.$t("dashboard.study.numberOfReviewsForRole", { name: role.name }),
           type: "slider",
           class: 'custom-slider-class',
           min: 0,
@@ -82,7 +82,9 @@ export default {
     reviewerSelectionFields() {
       return this.selectedReviewer.map(user => ({
         key: user.id,
-        label: this.$t("dashboard.study.nameofReviewsForUsers") + user.firstName + " " + user.lastName,
+        label: this.$t("dashboard.study.numberOfReviewsForUser", {
+          name: `${user.firstName} ${user.lastName}`,
+        }),
         type: "slider",
         class: 'custom-slider-class',
         min: 0,

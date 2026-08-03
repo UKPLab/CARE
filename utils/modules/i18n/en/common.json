@@ -39,6 +39,7 @@
     "noData": "No data",
     "success": "Success",
     "error": "Error",
+    "accessDenied": "Access denied",
     "warning": "Warning",
     "readOnly": "Read Only",
     "id": "ID",

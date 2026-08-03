@@ -318,7 +318,7 @@ export default {
         case "editAssignment":
           if (!data.params.isOwner && !this.canEditAssignments) {
             this.eventBus.emit("toast", {
-              title: this.$t("errors.configuration.accessDenied"),
+              title: this.$t("common.accessDenied"),
               message: this.$t("assignments.dashboard.toasts.noPermissionEdit"),
               variant: "warning",
             });
@@ -349,7 +349,7 @@ export default {
     closeAssignment(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
-          title: this.$t("errors.configuration.accessDenied"),
+          title: this.$t("common.accessDenied"),
           message: this.$t("assignments.dashboard.toasts.noPermissionClose"),
           variant: "warning",
         });
@@ -394,7 +394,7 @@ export default {
     toggleDisable(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
-          title: this.$t("errors.configuration.accessDenied"),
+          title: this.$t("common.accessDenied"),
           message: this.$t("assignments.dashboard.toasts.noPermissionDisable"),
           variant: "warning",
         });
@@ -432,7 +432,7 @@ export default {
     deleteAssignment(params) {
       if (!params.isOwner && !this.canEditAssignments) {
         this.eventBus.emit("toast", {
-          title: this.$t("errors.configuration.accessDenied"),
+          title: this.$t("common.accessDenied"),
           message: this.$t("assignments.dashboard.toasts.noPermissionDelete"),
           variant: "warning",
         });

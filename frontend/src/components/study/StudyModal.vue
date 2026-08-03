@@ -42,7 +42,7 @@
             v-else-if="!started"
             class="text-xxl-center text-secondary fs-5">
           {{ $t('studies.notStartedYet') }} <br>
-          {{ $t('studies.messages.studyStartDate', { date: new Date(study.start).toLocaleString() }) }}</div>
+          {{ $t('studies.messages.studyStartDate', { date: formatLocalizedDateTime(study.start) }) }}</div>
         <div
             v-else-if="studyClosed"
             class="text-xxl-center text-danger fs-5">
@@ -75,13 +75,21 @@
               v-if="study.collab"
               class="mt-1"
           >
-            {{ $t('studies.collaborativeNote') }}
+            <i18n-t keypath="studies.collaborativeNote" tag="span">
+              <template #collaborative>
+                <b>{{ $t('studies.collaborativeEmphasis') }}</b>
+              </template>
+            </i18n-t>
           </div>
           <div
               v-if="studySessionId === 0 && study.limitSessionsPerUser > 0"
               class="mt-1"
           >
-            {{ $t('studies.messages.sessionsLeft', { count: study.limitSessionsPerUser - totalNumberOfOpenedSessions }) }}
+            <i18n-t keypath="studies.messages.sessionsLeft" tag="span">
+              <template #sessions>
+                <b>{{ $t('studies.messages.sessionsLeftEmphasis', { count: study.limitSessionsPerUser - totalNumberOfOpenedSessions }) }}</b>
+              </template>
+            </i18n-t>
           </div>
         </span>
       </span>
@@ -135,7 +143,7 @@ import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue";
 import BasicTable from "@/basic/Table.vue";
 import Editor from "@/basic/editor/Editor.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -217,10 +225,10 @@ export default {
     studyEnd() {
       if (this.study) {
         if (this.study.closed) {
-          return new Date(this.study.closed).toLocaleString()
+          return formatLocalizedDateTime(this.study.closed)
         }
         if (this.study.end) {
-          return new Date(this.study.end).toLocaleString()
+          return formatLocalizedDateTime(this.study.end)
         }
       }
       return "";
@@ -293,7 +301,7 @@ export default {
             .map(s => {
               let session = {...s}
               session.resumable = this.study.resumable;
-              session.startParsed = session.start ? new Date(session.start).toLocaleString() : this.$t('studies.sessionNotStarted');
+              session.startParsed = session.start ? formatLocalizedDateTime(session.start) : this.$t('studies.sessionNotStarted');
               session.finished = session.end !== null
               session.showResumeButton = session.resumable && session.start && !this.studyClosed;
               session.showStartButton = !session.start && !this.studyClosed;
@@ -348,6 +356,7 @@ export default {
     },
   },
   methods: {
+    formatLocalizedDateTime,
     open() {
       this.$refs.modal.open();
     },

@@ -495,14 +495,12 @@ export default {
 
     tNavGroup(group) {
       const key = `sidebar.nav.groups.${group.name.toLowerCase()}`;
-      const translated = this.$t(key);
-      return translated === key ? group.name : translated;
+      return this.$te(key) ? this.$t(key) : group.name;
     },
 
     tNavElement(element) {
       const key = `sidebar.nav.${element.path}`;
-      const translated = this.$t(key);
-      return translated === key ? element.name : translated;
+      return this.$te(key) ? this.$t(key) : element.name;
     },
   },
 };

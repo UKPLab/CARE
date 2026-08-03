@@ -68,7 +68,7 @@
         />
         <div v-if="selectedMode.mode === 'bulkClose'" class="confirmation-content">
           <h6>{{ $t('dashboard.study.studiesToClose') }}</h6>
-          <p class="text-muted">{{ $tc('dashboard.study.aboutToClose', selectedCount, { count: selectedCount }) }}</p>
+          <p class="text-muted">{{ $t('dashboard.study.aboutToClose', { count: selectedCount }) }}</p>
           <ul class="selected-items-list">
             <li v-for="study in selectedStudies" :key="study.id">
               {{ $t('dashboard.study.studyListItem', {
@@ -85,7 +85,7 @@
 
         <div v-else-if="selectedMode.mode === 'bulkOpen'" class="confirmation-content">
           <h6>{{ $t('dashboard.study.studiesToOpen') }}</h6>
-          <p class="text-muted">{{ $tc('dashboard.study.aboutToOpen', selectedCount, { count: selectedCount }) }}</p>
+          <p class="text-muted">{{ $t('dashboard.study.aboutToOpen', { count: selectedCount }) }}</p>
           <ul class="selected-items-list">
             <li v-for="study in selectedStudies" :key="study.id">
               {{ $t('dashboard.study.studyListItem', {
@@ -102,7 +102,7 @@
 
         <div v-else-if="selectedMode.mode === 'bulkDelete'" class="confirmation-content delete-warning-container">
           <h6>{{ $t('dashboard.study.studiesToDelete') }}</h6>
-          <p class="text-muted">{{ $tc('dashboard.study.aboutToDelete', selectedCount, { count: selectedCount }) }}</p>
+          <p class="text-muted">{{ $t('dashboard.study.aboutToDelete', { count: selectedCount }) }}</p>
           <ul class="selected-items-list">
             <li v-for="study in selectedStudies" :key="study.id">
               {{ $t('dashboard.study.studyListItem', {
@@ -394,7 +394,7 @@ export default {
               : this.$t("dashboard.study.closeFinishedTitle"),
             message:
               closed > 0
-                ? this.$tc("dashboard.study.closedMessage", closed, { count: closed })
+                ? this.$t("dashboard.study.closedMessage", { count: closed })
                 : this.$t("dashboard.study.noneClosed"),
             variant: closed > 0 ? "success" : "info",
           });
@@ -437,7 +437,7 @@ export default {
               : this.$t("dashboard.study.openFinishedTitle"),
             message:
               opened > 0
-                ? this.$tc("dashboard.study.openedMessage", opened, { count: opened })
+                ? this.$t("dashboard.study.openedMessage", { count: opened })
                 : this.$t("dashboard.study.noneOpened"),
             variant: opened > 0 ? "success" : "info",
           });
@@ -480,7 +480,7 @@ export default {
               : this.$t("dashboard.study.deleteFinishedTitle"),
             message:
               deleted > 0
-                ? this.$tc("dashboard.study.deletedMessage", deleted, { count: deleted })
+                ? this.$t("dashboard.study.deletedMessage", { count: deleted })
                 : this.$t("dashboard.study.noneDeleted"),
             variant: deleted > 0 ? "success" : "info",
           });

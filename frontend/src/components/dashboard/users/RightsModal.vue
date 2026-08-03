@@ -91,14 +91,8 @@ export default {
   },
   methods: {
     tSystemRoleName(roleName) {
-      const key = `dashboard.systemRoles.${roleName}`;
-      const translated = this.$t(key);
-      return translated === key  ? roleName : translated;
-    },
-    tSystemRoleDescription(roleDescription) {
-      const key = `dashboard.systemRoles.descriptions.${roleDescription}`;
-      const translated = this.$t(key);
-      return translated === key ? roleDescription : translated;
+      const key = `users.roles.${roleName}`;
+      return this.$te(key) ? this.$t(key) : roleName;
     },
     open(userId) {
       this.$refs.modal.open();

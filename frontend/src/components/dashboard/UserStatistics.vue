@@ -29,7 +29,7 @@
   </Card>
   <hr>
   <Card
-      :title="$t('users.stats.userStatsTitle', selectedUsers ? selectedUsers.length : 0, { count: selectedUsers ? selectedUsers.length : 0 })">
+      :title="$t('users.stats.userStatsTitle', { count: selectedUsers ? selectedUsers.length : 0 })">
     <template #body>
       <BasicTable
           ref="stats_table"

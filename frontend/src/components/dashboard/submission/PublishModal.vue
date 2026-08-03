@@ -520,8 +520,7 @@ export default {
   methods: {
     tUserRole(roleName) {
       const key = `users.roles.${roleName}`;
-      const translated = this.$t(key);
-      return translated === key ? roleName : translated;
+      return this.$te(key) ? this.$t(key) : roleName;
     },
     getUserRoles(userId) {
       const roleMatchings = this.userRoleMatchings.filter((urm) => urm.userId === userId && !urm.deleted);
