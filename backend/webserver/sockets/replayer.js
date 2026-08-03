@@ -34,6 +34,7 @@ class ReplayerSocket extends Socket {
      * exactly one of the two.
      *
      * @param {Object} data - Input data from the caller (frontend or perf CLI)
+     * @param {boolean} [data.sequential=false] - Replay sessions one at a time instead of in parallel
      * @param {Array<number>} [data.recordingIds] - Recordings to pool from the DB
      * @param {Array<Object>} [data.sessions] - Sessions from exported files; each is {sessionKey?, recordingName?, traces}
      * @param {string} [data.timingMode="fast"] - "realtime" preserves original delays, "fast" skips them
@@ -61,6 +62,7 @@ class ReplayerSocket extends Socket {
             progressId = null,
             latencyThreshold = Infinity,
             singleLevel = null,
+            sequential = false,
         } = data;
 
         const hasIds = Array.isArray(recordingIds) && recordingIds.length > 0;
@@ -115,7 +117,7 @@ class ReplayerSocket extends Socket {
         }
 
         const iterations = await this.runScalingTest(
-            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId, latencyThreshold
+            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId, latencyThreshold, sequential
         );
 
         return iterations;
@@ -320,29 +322,39 @@ class ReplayerSocket extends Socket {
     }
 
     /**
-     * Replay one list of sessions in parallel, labelling each result with its
-     * source session.
-     * @param {Array<Object>} activeSessions - Sessions to run concurrently
+     * Replay one list of sessions, labelling each result with its source
+     * session. Parallel by default; sequential when `sequential` is true, which
+     * regression uses so stories that create rows get predictable ids.
+     * @param {Array<Object>} activeSessions - Sessions to run
      * @param {Map} userMap - Maps a session's userId to its user row
      * @param {string} serverUrl - Replay target URL
      * @param {string} timingMode - "realtime" or "fast"
      * @param {number} ackTimeout - Max ms to wait for each trace's ack
      * @param {Function} onTraceProgress - Called once per completed trace
+     * @param {boolean} [sequential=false] - Run sessions one at a time instead of in parallel
      * @returns {Promise<Array<Object>>} One result per session
      */
-    async runSessions(activeSessions, userMap, serverUrl, timingMode, ackTimeout, onTraceProgress) {
-        return await Promise.all(
-            activeSessions.map(session => {
-                const user = userMap.get(session.userId);
-                return replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress)
-                    .then(result => ({
-                        ...result,
-                        sessionKey: session.sessionKey,
-                        recordingId: session.recordingId,
-                        recordingName: session.recordingName,
-                    }));
-            })
-        );
+    async runSessions(activeSessions, userMap, serverUrl, timingMode, ackTimeout, onTraceProgress, sequential = false) {
+        const replayOne = async (session) => {
+            const user = userMap.get(session.userId);
+            const result = await replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress);
+            return {
+                ...result,
+                sessionKey: session.sessionKey,
+                recordingId: session.recordingId,
+                recordingName: session.recordingName,
+            };
+        };
+
+        if (sequential) {
+            const results = [];
+            for (const session of activeSessions) {
+                results.push(await replayOne(session));
+            }
+            return results;
+        }
+
+        return await Promise.all(activeSessions.map(replayOne));
     }
 
     /**
@@ -391,9 +403,10 @@ class ReplayerSocket extends Socket {
      * @param {number} ackTimeout - Max ms to wait for each trace's ack
      * @param {string} [progressId=null] - Id to emit progressUpdate against
      * @param {number} [latencyThreshold=Infinity] - Stop if a level's p95 exceeds this (ms)
+     * @param {boolean} [sequential=false] - Replay sessions one at a time within each level
      * @returns {Promise<Array<Object>>} One entry per iteration run
      */
-    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null, latencyThreshold = Infinity) {
+    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null, latencyThreshold = Infinity, sequential = false) {
         const allResults = [];
         const N = pool.sessions.length;
 
@@ -414,7 +427,7 @@ class ReplayerSocket extends Socket {
 
             const levelStart = Date.now();
             const levelResults = await this.runSessions(
-                activeSessions, pool.userMap, serverUrl, timingMode, ackTimeout, progress.onTraceProgress
+                activeSessions, pool.userMap, serverUrl, timingMode, ackTimeout, progress.onTraceProgress, sequential
             );
             const levelDuration = Date.now() - levelStart;
 

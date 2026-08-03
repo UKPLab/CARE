@@ -27,6 +27,7 @@ async function runRegression(cfg, ctx) {
             timingMode: 'fast',
             continueOnFailure: true,   // run all stories so we report every failure, not just the first
             maxIterations: 1,          // once — no scaling
+            sequential: true,          // one story at a time so created rows get predictable ids
             ackTimeout: cfg.ackTimeout,
         }, 0);
     } catch (err) {
