@@ -2,6 +2,7 @@
   <BasicModal
     ref="modal"
     name="aiCredentialModal"
+    size="lg"
     @hide="resetForm"
   >
     <template #title>
@@ -55,21 +56,18 @@ export default {
   },
   computed: {
     providerSelectOptions() {
+      if (this.isLoadingProviders) {
+        return [];
+      }
+
       const options = new Set(this.providerOptions);
       const current = this.credentialForm.provider?.trim().toLowerCase();
       if (current) {
         options.add(current);
       }
-      const providerValues = [...options].sort((a, b) => a.localeCompare(b));
-
-      if (this.isLoadingProviders) {
-        return [{ value: "", name: "Loading providers..." }];
-      }
-
-      return [
-        { value: "", name: "Select provider" },
-        ...providerValues.map((provider) => ({ value: provider, name: provider })),
-      ];
+      return [...options]
+        .sort((a, b) => a.localeCompare(b))
+        .map((provider) => ({ value: provider, name: provider }));
     },
     credentialFields() {
       return [
@@ -98,6 +96,8 @@ export default {
           type: "select",
           required: true,
           default: "",
+          search: true,
+          placeholder: this.isLoadingProviders ? "Loading providers..." : "Select provider",
           help: this.providerLookupError
             || "Select the LiteLLM provider for your API key (e.g. openai, groq, openrouter).",
           options: this.providerSelectOptions,
