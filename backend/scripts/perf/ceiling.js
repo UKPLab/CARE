@@ -11,8 +11,8 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/
  * condition trips (trace failure or p95 latency over threshold). Reports the
  * max concurrency the server sustained. Drives escalation one level at a time
  * via replayRun's singleLevel mode.
- * @param {Object} cfg
- * @param {Object} ctx
+ * @param {Object} cfg - Run configuration; reads step (concurrency added per level), maxIterations (safety cap on levels), latencyThreshold and maxFailures (stop conditions), ackTimeout, and the recordings/files that resolvePayload consumes
+ * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
  * @returns {Promise<{code: number, maxConcurrency: number}>} Exit code (0 ok, 1 error) and the max concurrency the server sustained (lastGood)
  */
 async function runCeiling(cfg, ctx) {

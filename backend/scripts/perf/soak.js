@@ -11,8 +11,8 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/
  * each batch, and report whether the platform drifts over time (latency creep
  * or failure accumulation at constant load). Reuses replayRun's singleLevel
  * mode to run one fixed-concurrency batch per sample.
- * @param {Object} cfg
- * @param {Object} ctx
+ * @param {Object} cfg - Run configuration; reads concurrency (sessions held constant), duration (total soak time in ms), sampleInterval (pause between batches, 0 for back-to-back), ackTimeout, and the recordings/files that resolvePayload consumes
+ * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
  * @returns {Promise<number>} exit code (0 = stable, 1 = drift detected)
  */
 async function runSoak(cfg, ctx) {

@@ -11,8 +11,8 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/
  * iteration cap, then report the degradation curve. The server (replayRun)
  * already does the escalation and stops on failure; this reads the results and
  * computes/prints the per-level metrics + verdict.
- * @param {Object} cfg
- * @param {Object} ctx - { emitWithAck }
+ * @param {Object} cfg - Run configuration; reads maxIterations (levels to climb), ackTimeout, latencyThreshold (p95 stop condition), timingMode, and the recordings/files that resolvePayload consumes
+ * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
  * @returns {Promise<number>} exit code (0 = reached cap clean, 1 = broke early)
  */
 async function runRamp(cfg, ctx) {
@@ -95,8 +95,8 @@ function percentile(sorted, p) {
 /**
  * Print the ramp results table, memory and DB vitals, and the final verdict.
  * @param {Array<Object>} levels - Per-level replay results from replayRun
- * @param {Object} cfg - Run configuration
- * @param {Object} sampler - Stopped MetricSampler, read for memory and Postgres stats
+ * @param {Object} cfg - Run configuration; reads maxIterations and latencyThreshold to phrase the final verdict
+ * @param {Object} sampler - Stopped MetricSampler; read for rss/heap trends, pool waiting, and Postgres stat deltas
  * @returns {void}
  */
 function reportRamp(levels, cfg, sampler) {

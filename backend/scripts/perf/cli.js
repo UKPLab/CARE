@@ -162,9 +162,9 @@ function connectSocket(serverUrl, cookie) {
 
 /**
  * Emit a socket event and wait for the server's acknowledgement.
- * @param {Object} socket - Connected Socket.IO client
+ * @param {Object} socket - Connected Socket.IO client from connectSocket
  * @param {string} event - Event name to emit
- * @param {Object} payload - Event payload
+ * @param {Object} payload - Event payload sent as the emit's first argument; defaults to {} when omitted
  * @param {number} [timeoutMs=5000] - Ack timeout in ms; 0 disables the timeout
  * @returns {Promise<Object>} The acknowledgement payload
  * @throws {Error} If no acknowledgement arrives before the timeout
@@ -197,7 +197,7 @@ async function verifyAdminAccess(socket) {
 /**
  * Run one perf session: authenticate, connect, verify admin access, then
  * dispatch to the handler for the configured mode.
- * @param {Object} cfg - Validated run configuration
+ * @param {Object} cfg - Validated run configuration: server, user, password, mode, plus the mode-specific fields consumed by the mode handler
  * @throws {Error} If login, connection, or admin verification fails
  */
 async function run(cfg) {

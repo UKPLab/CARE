@@ -7,8 +7,8 @@ const { resolvePayload } = require('./utils/recordings');
  * distribution of every action type (count + %), so a regression "pass" can be
  * eyeballed for what it actually exercised. Also flags possible Gap-2
  * truncation (a recording cut short by a page navigation).
- * @param {Object} cfg
- * @param {Object} ctx - { emitWithAck }
+ * @param {Object} cfg - Run configuration; reads the recordings/files that resolvePayload consumes
+ * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
  * @returns {Promise<number>} exit code (0; inspection is informational)
  */
 async function runInspect(cfg, ctx) {

@@ -8,8 +8,8 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/
  * Regression mode: replay the given recordings once at concurrency 1 and
  * require that EVERY trace passes. Any failure or ack timeout = regression fail.
  * Returns a process exit code (0 = pass, 1 = fail) so it works as a CI gate.
- * @param {Object} cfg
- * @param {Object} ctx - { emitWithAck, userId }
+ * @param {Object} cfg - Run configuration; reads ackTimeout and the recordings/files that resolvePayload consumes
+ * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
  * @returns {Promise<number>}
  */
 async function runRegression(cfg, ctx) {
