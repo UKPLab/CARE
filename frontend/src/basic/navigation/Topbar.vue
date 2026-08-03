@@ -203,7 +203,7 @@ export default {
   },
   mounted() {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
-    this.initTheme();
+    this.isDarkMode = document.documentElement.getAttribute("data-bs-theme") === "dark";
   },
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
@@ -222,12 +222,6 @@ export default {
       const next = this.isDarkMode ? "light" : "dark";
       this.applyTheme(next);
       this.$socket.emit("appSettingSet", {key: "app.theme.mode", value: next});
-    },
-    initTheme() {
-      const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
-      const cached = localStorage.getItem("care.theme");
-      const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      this.applyTheme(saved || cached || (osPrefersDark ? "dark" : "light"));
     },
     handleClickOutside(event) {
         if (!this.$el.contains(event.target)) {

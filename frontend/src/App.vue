@@ -232,6 +232,7 @@ export default {
     this.connect();
   },
   async mounted() {
+    this.initTheme();
     if (this.$route.meta.checkLogin) {
       await this.runCheckLoginFlow();
     }
@@ -242,6 +243,16 @@ export default {
     }
   },
   methods: {
+    applyTheme(mode) {
+      document.documentElement.setAttribute("data-bs-theme", mode);
+      localStorage.setItem("care.theme", mode);
+    },
+    initTheme() {
+      const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
+      const cached = localStorage.getItem("care.theme");
+      const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      this.applyTheme(saved || cached || (osPrefersDark ? "dark" : "light"));
+    },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {
         withCredentials: true,
