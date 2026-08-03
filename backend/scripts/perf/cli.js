@@ -72,7 +72,7 @@ function parseArgs(argv) {
 /**
  * Parse a duration string like "30m", "90s", "1h" into milliseconds.
  * @param {string} val - Duration string such as "30s", "5m", or a raw millisecond count
- * @returns {number} Duration in milliseconds; 0 when the value can't be parsed
+ * @returns {number|null} Duration in milliseconds, or null when the value is absent or unparseable
  */
 function parseDuration(val) {
     if (!val || val === true) return null;
