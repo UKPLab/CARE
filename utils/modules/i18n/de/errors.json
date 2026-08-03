@@ -122,7 +122,7 @@
     "documentEditFailed": "Bearbeitung des Dokuments fehlgeschlagen",
     "failedToUpload": "Hochladen fehlgeschlagen",
     "failedToProcessPdf": "Verarbeitung der PDF-Datei fehlgeschlagen",
-    "errorProcessingPdf": "Fehler bei der Verarbeitung der PDF-Datei",
+    "errorProcessingPdf": "Fehler bei der Verarbeitung der PDF-Datei: {error}",
     "failedToLoadDocContent": "Laden des Dokumenteninhalts fehlgeschlagen.",
     "documentOpenError": "Fehler beim Öffnen des Dokuments",
     "documentCloseError": "Fehler beim Schließen des Dokuments",

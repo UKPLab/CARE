@@ -199,7 +199,7 @@ export default {
         this.$refs.uploadModal.waiting = false;
         this.eventBus.emit("toast", {
           title: this.$t('errors.documents.failedToProcessPdf'),
-          message: this.$t('errors.documents.errorProcessingPdf') + ": " + error.message,
+          message: this.$t('errors.documents.errorProcessingPdf', { error: error.message }),
           variant: "danger",
         });
       }

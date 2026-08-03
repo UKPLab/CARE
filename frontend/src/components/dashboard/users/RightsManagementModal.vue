@@ -37,7 +37,7 @@
         <BasicTable
             v-model="roleRights"
             :columns="rightsColumns"
-            :data="rightsForTable"
+            :data="allRights"
             :options="rightsTableOptions"
             :max-table-height="'60vh'"
         />
@@ -50,6 +50,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AssignRolesModal",
@@ -117,7 +118,9 @@ export default {
           required: true,
           options: this.availableRoles.filter(role => !role.deleted && role.name !== "admin").map(role => ({
             value: role.id,
-            name: `users.roles.${role.name}`,
+            name: this.$te(`users.roles.${role.name}`)
+              ? this.$t(`users.roles.${role.name}`)
+              : role.name,
           })),
           description: this.$t('users.rights.chooseRoleDescription'),
         },
@@ -133,12 +136,6 @@ export default {
       }
       const key = `users.roles.${role.name}`;
       return this.$te(key) ? this.$t(key) : role.name;
-    },
-    rightsForTable() {
-      return this.allRights.map((right) => ({
-        ...right,
-        description: right.description,
-      }));
     },
   },
   watch: {
@@ -179,8 +176,8 @@ export default {
           // Get the selected right names from the role_right_matching response
           const selectedRightNames = response.data.map(item => item.userRightName);
 
-          // Filter rightsForTable so v-model rows match :data (translated descriptions)
-          this.roleRights = this.rightsForTable.filter((right) =>
+          // Filter allRights so v-model rows match :data
+          this.roleRights = this.allRights.filter((right) =>
               selectedRightNames.includes(right.name)
           );
 
@@ -237,7 +234,7 @@ export default {
               console.error("Failed to assign role rights:", result);
               this.eventBus.emit("toast", {
                 title: this.$t('common.error'),
-                message: result.message || this.$t('users.rights.errors.assignRoleRightsFailed'),
+                message: resolveApiMessage(result, 'users.rights.errors.assignRoleRightsFailed'),
                 variant: "danger",
               });
             }

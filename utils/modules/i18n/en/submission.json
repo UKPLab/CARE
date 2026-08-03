@@ -17,7 +17,8 @@
             "downloadErrorMessage": "Failed to download {name}: {error}",
             "downloadCompleteTitle": "Download complete",
             "downloadCompleteMessage": "Downloaded submission {id} with {count} documents",
-            "downloadFailedTitle": "Download failed"
+            "downloadFailedTitle": "Download failed",
+            "downloadFailedMessage": "Download failed: {error}"
         }
     },
     "publishAssessment": {

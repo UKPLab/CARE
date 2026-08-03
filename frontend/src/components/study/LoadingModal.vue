@@ -71,6 +71,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyLoadingModal",
@@ -118,13 +119,15 @@ export default {
       rotatingIndex: 0,
       documentData: null,
       nlpRequests: {},
-      rotatingMessages: this.$tm('studies.loading.messages'),
     }
   },
   computed: {
 
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
+    },
+    rotatingMessages() {
+      return this.$tm('studies.loading.messages');
     },
     rotatingTimerLong() {
       return this.$store.getters["settings/getValue"]('modal.nlp.rotation_timer.long');
@@ -253,7 +256,8 @@ export default {
               }
             } else {
               this.error = true;
-              this.errorMessage = response.message || this.$t('studies.loading.generalError');
+              const message = resolveApiMessage(response, 'studies.loading.generalError');
+              this.errorMessage = message;
 
               this.$nextTick(() => {
                 if (this.$refs.modal) {
@@ -263,7 +267,7 @@ export default {
               
               this.$emit('error', {
                 code: response.code || 'UNKNOWN_ERROR',
-                message: response.message || this.$t('studies.loading.generalError')
+                message
               });
 
             }

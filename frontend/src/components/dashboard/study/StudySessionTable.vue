@@ -14,6 +14,7 @@
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Table of study session with management buttons
@@ -373,7 +374,7 @@ export default {
             this.showSuccessToast(this.$t('dashboard.study.studySessionDeleted'), this.$t('dashboard.study.studySessionHasBeenDeleted'));
             this.$emit("session-deleted", sessionId);
           } else {
-            this.showErrorToast(this.$t('dashboard.study.studySessionNotDeleted'), result.message);
+            this.showErrorToast(this.$t('dashboard.study.studySessionNotDeleted'), resolveApiMessage(result));
           }
         }
       );

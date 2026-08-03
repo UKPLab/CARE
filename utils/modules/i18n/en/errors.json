@@ -122,7 +122,7 @@
         "documentEditFailed": "Document edit failed",
         "failedToUpload": "Failed to upload",
         "failedToProcessPdf": "Failed to process PDF",
-        "errorProcessingPdf": "Error processing PDF",
+        "errorProcessingPdf": "Error processing PDF: {error}",
         "failedToLoadDocContent": "Failed to load the document content.",
         "documentOpenError": "Document Open Error",
         "documentCloseError": "Document Close Error",
