@@ -65,7 +65,7 @@
 .theme-toggle {
   /* 28.5px matches .project-box rendered height (padding + line-height + border) */
   height: 28.5px !important;
-  width: 29px !important;
+  width: 28.5px !important;
   padding: 0 !important;
   border-radius: 4px !important;
   display: inline-flex !important;
