@@ -35,7 +35,7 @@
         <ul class="navbar-nav">
           <li class="nav-item me-2 d-flex align-items-center">
             <button
-              class="btn btn-link nav-link p-1 theme-toggle"
+              class="btn theme-toggle"
               :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
               @click="toggleTheme()"
             >
