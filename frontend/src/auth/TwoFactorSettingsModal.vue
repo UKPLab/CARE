@@ -659,7 +659,7 @@ export default {
 }
 
 .totp-setup-section {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 16px;
   border-radius: 8px;
   border: 1px solid #dee2e6;

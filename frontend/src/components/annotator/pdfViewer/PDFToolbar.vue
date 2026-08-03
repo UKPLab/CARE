@@ -175,7 +175,7 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 32px;
   min-height: 32px;
@@ -188,11 +188,11 @@ export default {
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn {
   margin-left: 0;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn:hover {
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .pdf-toolbar.loading::after {
@@ -202,7 +202,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(248, 249, 250, 0.7);
+  background: var(--bs-tertiary-bg, rgba(248, 249, 250, 0.7));
   display: flex;
   align-items: center;
   justify-content: center;

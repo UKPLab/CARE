@@ -85,3 +85,39 @@
 [data-bs-theme="dark"] .theme-toggle:hover {
   background-color: #0b5ed7 !important;
 }
+
+/* btn-light is a fixed near-white button; make it theme-aware in dark mode. */
+[data-bs-theme="dark"] .btn-light {
+  --bs-btn-bg: var(--bs-secondary-bg);
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-bg: var(--bs-tertiary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+}
+
+/* btn-light is a fixed near-white button; make it theme-aware in dark mode. */
+[data-bs-theme="dark"] .btn-light {
+  --bs-btn-bg: var(--bs-secondary-bg);
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+  --bs-btn-hover-bg: var(--bs-tertiary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-border-color: var(--bs-border-color);
+}
+
+/* Remaining fixed Bootstrap variants that ignore data-bs-theme. */
+[data-bs-theme="dark"] .btn-dark {
+  --bs-btn-bg: var(--bs-secondary-bg);
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-border-color: var(--bs-border-color);
+}
+[data-bs-theme="dark"] .text-dark {
+  color: var(--bs-body-color) !important;
+}
+
+/* Disabled controls at 65% opacity lose more contrast on dark than on light. */
+[data-bs-theme="dark"] .btn:disabled,
+[data-bs-theme="dark"] .nav-link.disabled {
+  opacity: 0.8;
+}
