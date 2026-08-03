@@ -35,18 +35,18 @@
 
 /* Project selector reads too dim in dark mode; use the brighter blue. */
 [data-bs-theme="dark"] .project-box {
-  color: var(--bs-blue) !important;
-  border-color: var(--bs-blue) !important;
+  color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
 }
 
 /* Avatar circle uses a hardcoded darkblue that reads muddy on the dark topbar. */
 [data-bs-theme="dark"] #dropdownMenuButton {
-  background: var(--bs-blue) !important;
+  background: var(--bs-primary) !important;
 }
 
 /* Project selector hover: match the brighter blue used in dark mode. */
 [data-bs-theme="dark"] .project-box:hover {
-  background-color: var(--bs-blue) !important;
+  background-color: var(--bs-primary) !important;
   color: #fff !important;
 }
 
@@ -57,4 +57,12 @@
   --bs-btn-hover-bg: var(--bs-secondary-bg);
   --bs-btn-hover-color: var(--bs-body-color);
   --bs-btn-hover-border-color: var(--bs-border-color);
+}
+
+/* Theme toggle matches the project selector: navy on light, bright blue on dark. */
+.theme-toggle {
+  color: darkblue !important;
+}
+[data-bs-theme="dark"] .theme-toggle {
+  color: var(--bs-primary) !important;
 }

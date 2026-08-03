@@ -33,6 +33,18 @@
           class="navbar-nav ms-auto mt-2 mt-lg-0"
         />   
         <ul class="navbar-nav">
+          <li class="nav-item me-2 d-flex align-items-center">
+            <button
+              class="btn btn-link nav-link p-1 theme-toggle"
+              :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+              @click="toggleTheme()"
+            >
+              <LoadIcon
+                :size="18"
+                :name="isDarkMode ? 'sun' : 'moon-stars'"
+              />
+            </button>
+          </li>
           <li class="nav-item me-3">
             <div
               v-if="!isProjectButtonHidden && isInDashboard"
@@ -154,6 +166,7 @@ export default {
   data() {
     return {
       showProjectDropdown: false,
+      isDarkMode: false,
     }
   },
   subscribeTable: [{
@@ -190,6 +203,7 @@ export default {
   },
   mounted() {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
+    this.initTheme();
   },
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
@@ -198,6 +212,22 @@ export default {
     selectProject(projectId) {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
       this.showProjectDropdown = false;
+    },
+    applyTheme(mode) {
+      document.documentElement.setAttribute("data-bs-theme", mode);
+      this.isDarkMode = mode === "dark";
+      localStorage.setItem("care.theme", mode);
+    },
+    toggleTheme() {
+      const next = this.isDarkMode ? "light" : "dark";
+      this.applyTheme(next);
+      this.$socket.emit("appSettingSet", {key: "app.theme.mode", value: next});
+    },
+    initTheme() {
+      const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
+      const cached = localStorage.getItem("care.theme");
+      const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      this.applyTheme(saved || cached || (osPrefersDark ? "dark" : "light"));
     },
     handleClickOutside(event) {
         if (!this.$el.contains(event.target)) {
