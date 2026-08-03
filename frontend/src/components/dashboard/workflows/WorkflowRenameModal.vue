@@ -14,7 +14,7 @@
         </p>
         
         <div class="alert alert-info" role="alert">
-          <strong>{{ $t("workflow.renameModal.currentWorkflow") }}:</strong> {{ translateMaybeKey(selectedWorkflow.name) }}
+          <strong>{{ $t("workflow.renameModal.currentWorkflow") }}:</strong> {{ selectedWorkflow.name }}
         </div>
         
         <BasicForm
@@ -53,7 +53,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
-import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Workflow Rename Modal Component
@@ -95,20 +95,16 @@ export default {
       ];
     },
     canSubmit() {
-      const currentName = this.selectedWorkflow
-        ? translateMaybeKey(this.selectedWorkflow.name)
-        : "";
       return (
         !this.isLoading &&
         this.formData.name &&
         this.formData.name.trim().length > 0 &&
         this.selectedWorkflow &&
-        this.formData.name.trim() !== currentName
+        this.formData.name.trim() !== this.selectedWorkflow.name
       );
     },
   },
   methods: {
-    translateMaybeKey,
     open(workflowId) {
       this.selectedWorkflow = this.$store.getters["table/workflow/get"](workflowId);
       if (!this.selectedWorkflow) {
@@ -121,7 +117,7 @@ export default {
       }
       
       this.formData = {
-        name: translateMaybeKey(this.selectedWorkflow.name),
+        name: this.selectedWorkflow.name,
       };
       this.isLoading = false;
       
@@ -186,7 +182,7 @@ export default {
         this.eventBus.emit("toast", {
           title: this.$t("workflow.renameModal.success.title"),
           message: this.$t("workflow.renameModal.success.message", {
-            oldName: translateMaybeKey(this.selectedWorkflow.name),
+            oldName: this.selectedWorkflow.name,
             newName: this.formData.name.trim(),
           }),
           variant: "success",

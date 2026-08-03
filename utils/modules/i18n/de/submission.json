@@ -76,20 +76,6 @@
             "moodle": "Moodle",
             "email": "E-Mail"
         },
-        "csv": {
-            "userExtId": "Benutzer ExtId",
-            "userFirstName": "Vorname des Benutzers",
-            "userLastName": "Nachname des Benutzers",
-            "userName": "Benutzername",
-            "submissionId": "Submission-ID",
-            "submissionExtId": "Submission ExtId",
-            "reviewerFirstName": "Vorname des Reviewers",
-            "reviewerLastName": "Nachname des Reviewers",
-            "reviewerUserName": "Benutzername des Reviewers",
-            "reviewerRoles": "Reviewer-Rollen",
-            "hash": "Hash",
-            "totalPoints": "Gesamtpunkte"
-        },
         "toasts": {
             "configurationMissing": {
                 "title": "Konfiguration fehlt",

@@ -43,7 +43,7 @@
   <!-- JSON Configuration Viewer Modal -->
   <Modal ref="viewModal" name="json-viewer" size="xl">
     <template #title>
-      {{ $t('basic.configuration.viewer.title', { name: translatedConfigName(selectedConfig) }) }}
+      {{ $t('basic.configuration.viewer.title', { name: selectedConfig?.name }) }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-viewer-container">
@@ -55,7 +55,7 @@
   <!-- JSON Configuration Editor Modal -->
   <Modal ref="editModal" name="json-editor" size="xl">
     <template #title>
-      {{ $t('basic.configuration.editor.title', { name: translatedConfigName(selectedConfig) }) }}
+      {{ $t('basic.configuration.editor.title', { name: selectedConfig?.name }) }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-editor-container">
@@ -184,7 +184,6 @@ export default {
     configurationsTable() {
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.name = cfg.name;
         newC.typeName = cfg.type === 0 ? this.$t('basic.configuration.types.assessment') : this.$t('basic.configuration.types.validation');
         return newC;
       });
@@ -202,9 +201,6 @@ export default {
     },
   },
   methods: {
-    translatedConfigName(config) {
-      return config?.name;
-    },
     action(data) {
       switch (data.action) {
         case "view":
@@ -346,7 +342,7 @@ export default {
     deleteConfiguration(config) {
       this.$refs.deleteModal.open(
           this.$t('basic.configuration.delete.title'),
-          this.$t('basic.configuration.delete.message', { name: this.translatedConfigName(config) }),
+          this.$t('basic.configuration.delete.message', { name: config.name }),
           null,
           (confirmed) => {
             if (confirmed) {

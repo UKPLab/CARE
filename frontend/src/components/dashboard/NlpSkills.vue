@@ -74,7 +74,7 @@ export default {
   computed: {
     columns() {
       return [
-        {name: this.$t('common.name'), key: "displayName"},
+        {name: this.$t('common.name'), key: "name"},
         {name: this.$t('nlp.skills.columns.nodes'), key: "nodes"},
         {
           name: this.$t('nlp.skills.columns.activated'),
@@ -114,7 +114,6 @@ export default {
 
       return skills ? Object.values(skills).map(s => {
         s = cloneDeep(s);
-        s.displayName = s.name;
         // check for relevant settings
         const activeStatus = this.$store.getters["settings/getValue"](`annotator.nlp.${s.name}.activated`);
         s.activated = {
