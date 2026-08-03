@@ -99,8 +99,15 @@ async function runSoak(cfg, ctx) {
 }
 
 /**
- * Compare early vs late samples to detect drift over time.
- * @returns {number} exit code
+ * Compare early vs late samples to detect drift over time, and print the soak
+ * summary: latency and failure trends, memory and Postgres vitals, per-action
+ * trace stats, and the stability verdict.
+ * @param {Array<Object>} samples - Per-batch metrics in run order, each {passed, failed, avg, p95, thru, elapsedSec}
+ * @param {number} concurrency - Sessions held constant for the whole soak
+ * @param {number} durationMs - Total soak duration in ms
+ * @param {Object} sampler - Stopped MetricSampler; read for rss/heap trends, pool waiting, and Postgres stat deltas
+ * @param {Array<Object>} allResults - Every trace result across all batches, used for the action breakdown and memory correlation
+ * @returns {number} Exit code: 0 when stable, 1 when drift is detected
  */
 function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
     console.log('');

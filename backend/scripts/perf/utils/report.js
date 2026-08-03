@@ -56,9 +56,9 @@ function saveResults(mode, cfg, payload = {}) {
 }
 
 /**
- * Tee console.log to an in-memory buffer while still printing to screen.
- * Call start() at the beginning of a run, stop() to get the captured text.
- * Lets us save a .txt report byte-identical to what the user saw live.
+ * Tee console.log to an in-memory buffer while still printing to the terminal,
+ * so the run's output can be saved as a readable report.
+ * @returns {{start: Function, stop: Function}} start() begins capturing; stop() restores console.log and returns the captured text
  */
 function makeOutputCapture() {
     const buffer = [];

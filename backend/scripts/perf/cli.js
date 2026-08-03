@@ -71,8 +71,8 @@ function parseArgs(argv) {
 
 /**
  * Parse a duration string like "30m", "90s", "1h" into milliseconds.
- * @param {string} val
- * @returns {number|null} milliseconds, or null if unparseable
+ * @param {string} val - Duration string such as "30s", "5m", or a raw millisecond count
+ * @returns {number} Duration in milliseconds; 0 when the value can't be parsed
  */
 function parseDuration(val) {
     if (!val || val === true) return null;
@@ -182,9 +182,11 @@ function emitWithAck(socket, event, payload, timeoutMs = 5000) {
 }
 
 /**
- * Confirm the connected socket actually has admin rights by calling an
- * admin-guarded handler. The tool needs admin to drive replayRun, so fail
- * fast here with a clear message rather than discovering it mid-run.
+ * Confirm the connected session has admin rights by calling an admin-guarded
+ * handler. Replay requires admin, so fail fast here rather than mid-run.
+ * @param {Object} socket - Connected Socket.IO client
+ * @returns {Promise<Object>} The handler's acknowledgement payload
+ * @throws {Error} If the session lacks admin access
  */
 async function verifyAdminAccess(socket) {
     const res = await emitWithAck(socket, 'recordingGetOnlineSessions', {});

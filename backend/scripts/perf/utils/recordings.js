@@ -5,7 +5,7 @@ const path = require('path');
 
 /**
  * Validate an exported recording payload (schemaVersion 1). Throws on any issue.
- * @param {Object} p - parsed JSON
+ * @param {Object} p - Parsed recording export; expects { traces: Array<Object> } with optional sessionKey and recordingName
  */
 function validatePayload(p) {
     if (!p || typeof p !== 'object') throw new Error('Not a valid JSON object');
