@@ -84,7 +84,7 @@ export default {
     StepPreview,
     StepResult,
   },
-  subscribeTable: ["assignment", "submission", "document", "user", "document_metadata"],
+  subscribeTable: ["assignment", "submission", "document", "user"],
   data() {
     return {
       assignmentId: 0,

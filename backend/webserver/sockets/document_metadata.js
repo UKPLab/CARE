@@ -225,7 +225,6 @@ class DocumentMetadataSocket extends Socket {
                 where: {
                     documentId: documents.map((document) => document.id),
                     metaKey: metadataKeys,
-                    deleted: false,
                 },
                 raw: true,
                 transaction: options.transaction,

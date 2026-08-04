@@ -3,14 +3,12 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     class DocumentMetadata extends MetaModel {
-        static autoTable = true;
-
         /**
          * Create or update one metadata entry for a document and key.
          *
          * Metadata import stores one logical record per document/key pair.
          * If the key already exists for the document, the entry is updated in place
-         * instead of creating duplicate active rows.
+         * and revived if it was previously soft-deleted.
          *
          * @param {Object} data - Metadata entry to create or update.
          * @param {number} data.documentId - Document that owns the metadata row.
@@ -21,26 +19,28 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object>}
          */
         static async upsertByDocumentAndKey(data, options = {}) {
-            const existing = await this.findOne({
+            const payload = {
+                documentId: data.documentId,
+                userId: data.userId,
+                metaKey: data.metaKey,
+                metaValue: data.metaValue,
+                deleted: false,
+                deletedAt: null,
+            };
+
+            await this.upsert(payload, {
+                conflictFields: ["documentId", "metaKey"],
+                ...options,
+            });
+
+            return await this.findOne({
                 where: {
                     documentId: data.documentId,
                     metaKey: data.metaKey,
-                    deleted: false,
                 },
                 raw: true,
                 transaction: options.transaction,
             });
-
-            if (existing) {
-                return await this.updateById(existing.id, {
-                    userId: data.userId,
-                    metaValue: data.metaValue,
-                    deleted: false,
-                    deletedAt: null,
-                }, options);
-            }
-
-            return await this.add(data, options);
         }
 
         /**
@@ -73,52 +73,20 @@ module.exports = (sequelize, DataTypes) => {
                 dedupedEntries.push(entry);
             }
 
-            const documentIds = Array.from(new Set(dedupedEntries.map((entry) => entry.documentId)));
-            const metaKeys = Array.from(new Set(dedupedEntries.map((entry) => entry.metaKey)));
-            const existingRows = await this.findAll({
-                where: {
-                    documentId: documentIds,
-                    metaKey: metaKeys,
-                    deleted: false,
-                },
-                raw: true,
-                transaction: options.transaction,
+            const payloads = dedupedEntries.map((entry) => ({
+                documentId: entry.documentId,
+                userId: entry.userId,
+                metaKey: entry.metaKey,
+                metaValue: entry.metaValue,
+                deleted: false,
+                deletedAt: null,
+            }));
+
+            await this.bulkCreate(payloads, {
+                conflictAttributes: ["documentId", "metaKey"],
+                updateOnDuplicate: ["userId", "metaValue", "deleted", "deletedAt", "updatedAt"],
+                ...options,
             });
-
-            const existingByPair = new Map(
-                existingRows.map((row) => [`${row.documentId}:${row.metaKey}`, row])
-            );
-
-            const rowsToCreate = [];
-            const updatePromises = [];
-
-            for (const entry of dedupedEntries) {
-                const pairKey = `${entry.documentId}:${entry.metaKey}`;
-                const existing = existingByPair.get(pairKey);
-                const payload = {
-                    documentId: entry.documentId,
-                    userId: entry.userId,
-                    metaKey: entry.metaKey,
-                    metaValue: entry.metaValue,
-                    deleted: false,
-                    deletedAt: null,
-                };
-
-                if (existing) {
-                    updatePromises.push(this.updateById(existing.id, payload, options));
-                } else {
-                    rowsToCreate.push(payload);
-                }
-            }
-
-            if (rowsToCreate.length > 0) {
-                await this.bulkCreate(rowsToCreate, {
-                    transaction: options.transaction,
-                });
-            }
-            if (updatePromises.length > 0) {
-                await Promise.all(updatePromises);
-            }
 
             return dedupedEntries.length;
         }
@@ -173,10 +141,24 @@ module.exports = (sequelize, DataTypes) => {
     }
 
     DocumentMetadata.init({
-        documentId: DataTypes.INTEGER,
-        userId: DataTypes.INTEGER,
-        metaKey: DataTypes.STRING,
-        metaValue: DataTypes.TEXT,
+        documentId: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            allowNull: false,
+        },
+        userId: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+        },
+        metaKey: {
+            type: DataTypes.STRING,
+            primaryKey: true,
+            allowNull: false,
+        },
+        metaValue: {
+            type: DataTypes.TEXT,
+            allowNull: false,
+        },
         deleted: DataTypes.BOOLEAN,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -186,6 +168,8 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'document_metadata',
         tableName: 'document_metadata',
     });
+
+    DocumentMetadata.removeAttribute('id');
 
     return DocumentMetadata;
 };

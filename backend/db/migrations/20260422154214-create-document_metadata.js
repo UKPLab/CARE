@@ -8,14 +8,9 @@ module.exports = {
      */
     async up(queryInterface, Sequelize) {
         await queryInterface.createTable('document_metadata', {
-            id: {
-                type: Sequelize.INTEGER,
-                primaryKey: true,
-                autoIncrement: true,
-                allowNull: false,
-            },
             documentId: {
                 type: Sequelize.INTEGER,
+                primaryKey: true,
                 allowNull: false,
                 references: {
                     model: 'document',
@@ -36,6 +31,7 @@ module.exports = {
             },
             metaKey: {
                 type: Sequelize.STRING,
+                primaryKey: true,
                 allowNull: false,
             },
             metaValue: {
