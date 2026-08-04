@@ -1167,7 +1167,7 @@ class DocumentSocket extends Socket {
 
                     if (chainDepth >= assignment.maxRevisions) {
                         throw new Error(
-                            `Maximum revisions reached for this assignment (${chainDepth}/${assignment.maxRevisions})`
+                            `Maximum revisions reached for this assignment submission`
                         );
                     }
                 }
