@@ -38,7 +38,7 @@ module.exports = (sequelize, DataTypes) => {
 				unit: "revision(s)",
 				unlimitedAtMax: true,
 				unlimitedLabel: "unlimited",
-				unlimitedStoredValue: 100,
+				unlimitedStoredValue: -1,
 				required: true,
 				default: 1,
 				help: "Maximum number of allowed resubmissions after the original submission (e.g. 1 revision = original + 1 resubmission = 2 submissions total). Move to the end for unlimited.",

@@ -896,8 +896,8 @@ class DocumentSocket extends Socket {
                         transaction,
                     });
 
-                    // Check revision limit (0 = unlimited)
-                    if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
+                    // Check revision limit (-1 = unlimited)
+                    if (assignment && assignment.maxRevisions !== -1 && assignmentSubmissions.length >= assignment.maxRevisions) {
                         throw new Error(`Revision limit reached: user ${submission.userId} already has ${assignmentSubmissions.length} submission(s) for this assignment (max: ${assignment.maxRevisions}).`);
                     }
 
@@ -1154,7 +1154,7 @@ class DocumentSocket extends Socket {
                     previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
                 }
 
-                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && previousSubmissionId) {
+                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && assignment.maxRevisions !== -1 && previousSubmissionId) {
                     let chainDepth = 0;
                     let currentId = previousSubmissionId;
                     const visited = new Set();
