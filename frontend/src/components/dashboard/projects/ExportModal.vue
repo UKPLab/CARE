@@ -117,7 +117,6 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import BasicLoading from "@/basic/Loading.vue";
 import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
@@ -134,7 +133,7 @@ import getServerURL from "@/assets/serverUrl.js";
  */
 export default {
   name: "ExportProjectModal",
-  components: { BasicLoading, StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepOptionsUserBehaviour, StepConfirmDownload },
+  components: { StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepOptionsUserBehaviour, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -339,7 +338,7 @@ export default {
       this.excludeNonConsentingEdits = false;
       this.excludeNonConsentingAnnotations = false;
       this.selectedWorkflowIds = [];
-      includeStudyDocumentFiles = true;
+      this.includeStudyDocumentFiles = true;
       this.includeStudyGrades = true;
       this.includeStudyIncludeAiScores = true;
       this.includeEmptyStudies = true;
