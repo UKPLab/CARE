@@ -1,6 +1,6 @@
 const {io: io_client} = require("socket.io-client");
 const Service = require("../Service.js");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 const yaml = require('js-yaml')
 
