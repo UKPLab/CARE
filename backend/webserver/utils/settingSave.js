@@ -1,6 +1,6 @@
 "use strict";
 
-const { assertStableEmailTemplateContent } = require("../../utils/templateResolver");
+const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
 const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
 

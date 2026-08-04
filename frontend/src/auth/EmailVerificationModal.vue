@@ -17,25 +17,27 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        v-if="!emailVerification.showSuccess"
-        class="btn btn-secondary"
-        text="Close"
-        data-bs-dismiss="modal"
-      />
-      <BasicButton
-        v-if="!emailVerification.showSuccess && !emailVerification.showError"
-        :loading="emailVerification.isLoading"
-        class="btn btn-primary"
-        :text="emailVerification.isLoading ? 'Sending...' : 'Resend Verification Email'"
-        @click="resendVerificationEmail"
-      />
-      <BasicButton
-        v-if="emailVerification.showSuccess"
-        class="btn btn-success"
-        text="OK"
-        data-bs-dismiss="modal"
-      />
+      <div class="btn-group">
+        <BasicButton
+          v-if="!emailVerification.showSuccess"
+          class="btn btn-secondary"
+          text="Close"
+          data-bs-dismiss="modal"
+        />
+        <BasicButton
+          v-if="!emailVerification.showSuccess && !emailVerification.showError"
+          :loading="emailVerification.isLoading"
+          class="btn btn-primary"
+          :text="emailVerification.isLoading ? 'Sending...' : 'Resend Verification Email'"
+          @click="resendVerificationEmail"
+        />
+        <BasicButton
+          v-if="emailVerification.showSuccess"
+          class="btn btn-success"
+          text="OK"
+          data-bs-dismiss="modal"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

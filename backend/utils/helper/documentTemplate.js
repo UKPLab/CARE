@@ -4,7 +4,7 @@ const {promises: fs} = require("fs");
 const {resolveTemplateToDelta} = require("./templateResolver");
 const {deltaToDb} = require("editor-delta-conversion");
 
-const UPLOAD_PATH = `${__dirname}/../../files`;
+const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
  * Apply a template to a document by:

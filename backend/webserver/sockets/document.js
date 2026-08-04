@@ -2,16 +2,16 @@ const fs = require("fs");
 const Socket = require("../Socket.js");
 const Delta = require('quill-delta');
 const {docTypes} = require("../../db/models/document.js");
-const {inject} = require("../../utils/generic");
+const {inject} = require("../../utils/helper/generic");
 const path = require("path");
-const {getTextPositions} = require("../../utils/text.js");
-const {enqueueDocumentTask} = require("../../utils/queue.js");
+const {getTextPositions} = require("../../utils/helper/text.js");
+const {enqueueDocumentTask} = require("../../utils/helper/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
-const Validator = require("../../utils/validator.js");
+const Validator = require("../../utils/Validator.js");
 const {Op} = require('sequelize');
-const {applyTemplateToDocument} = require("../../utils/documentTemplateHelper.js");
-const {generateError} = require("../../utils/generic.js");
-const {getEmailContent} = require("../../utils/emailHelper.js");
+const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
+const {generateError} = require("../../utils/helper/generic.js");
+const {getEmailContent} = require("../../utils/helper/email.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 

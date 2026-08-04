@@ -32,17 +32,19 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-secondary me-2"
-        text="Cancel"
-        @click="close"
-      />
-      <BasicButton
-        class="btn btn-primary"
-        text="Rename Workflow"
-        :disabled="!canSubmit"
-        @click="handleSubmit"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          text="Cancel"
+          @click="close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          text="Rename Workflow"
+          :disabled="!canSubmit"
+          @click="handleSubmit"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>
