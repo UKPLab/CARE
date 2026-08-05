@@ -4,10 +4,6 @@
 
 export const ASSESSMENT_RESULT_KEY = "assessment_result";
 
-export function normalizeDocumentDataKeyPart(value) {
-  return typeof value === "string" ? value.trim().replace(/\s+/g, "_") : value;
-}
-
 export function buildServiceSkillKey(serviceName, skillName) {
   if (!serviceName || !skillName) return null;
   return `${serviceName}_${skillName}`;
@@ -19,31 +15,30 @@ export function buildSkillResultKey(serviceName, skillName, resultField) {
   return `${baseKey}_${resultField}`;
 }
 
-export function buildHookResultKey(serviceName, hookName) {
-  if (!serviceName || !hookName) return null;
-  return `${serviceName}_${normalizeDocumentDataKeyPart(hookName)}`;
+export function buildHookResultKey(serviceName) {
+  return serviceName || null;
 }
 
-export function getHookResultKeyCandidates(serviceName, serviceType, hookName) {
+export function getHookResultKeyCandidates(serviceName, serviceType) {
   return [...new Set([
-    buildHookResultKey(serviceName, hookName),
-    buildHookResultKey(serviceType, hookName),
+    buildHookResultKey(serviceName),
+    buildHookResultKey(serviceType),
   ].filter(Boolean))];
 }
 
 export function buildServiceResultKey(service, resultField) {
   if (!service) return null;
   if (service.hookId) {
-    return buildHookResultKey(service.name, service.hookName);
+    return buildHookResultKey(service.name);
   }
   return buildSkillResultKey(service.name, service.skill, resultField);
 }
 
-export function getAssessmentResultKeyCandidates(service, hookName, resultField = "assessment") {
+export function getAssessmentResultKeyCandidates(service, resultField = "assessment") {
   if (!service) return [];
 
   const keys = service.hookId
-    ? getHookResultKeyCandidates(service.name, service.type, hookName)
+    ? getHookResultKeyCandidates(service.name, service.type)
     : [
         buildSkillResultKey(service.name, service.skill, resultField),
         buildSkillResultKey(service.type, service.skill, resultField),

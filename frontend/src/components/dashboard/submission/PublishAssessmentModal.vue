@@ -780,7 +780,7 @@ export default {
      */
     getAssessmentDataKeys(studyStep) {
       const svc = this.getNlpServiceForStudyStep(studyStep);
-      const keys = getAssessmentResultKeyCandidates(svc, svc?.hookName);
+      const keys = getAssessmentResultKeyCandidates(svc);
       return keys.length ? keys : [ASSESSMENT_RESULT_KEY];
     },
     /**
