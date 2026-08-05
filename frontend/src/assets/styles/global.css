@@ -109,3 +109,13 @@
 [data-bs-theme="dark"] canvas.pdf-page {
   filter: invert(1) hue-rotate(180deg);
 }
+
+/* Bootstrap declares color-scheme: light dark, which lets the browser pick
+   scrollbar and native control colours from the operating system instead of
+   the theme CARE is actually showing. Tie it to our theme instead. */
+html[data-bs-theme="light"] {
+  color-scheme: light;
+}
+html[data-bs-theme="dark"] {
+  color-scheme: dark;
+}
