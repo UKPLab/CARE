@@ -324,6 +324,14 @@ export default {
       return this.$store.getters["table/project/getAll"];
     },
   },
+  watch: {
+    'dataSelection.exportType'() {
+      this.userSelection = [];
+    },
+    'dataSelection.projectId'() {
+      this.userSelection = [];
+    }
+  },
   methods: {
     open(projectId) {
       this.dataSelection.projectId = projectId;
