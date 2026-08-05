@@ -202,6 +202,14 @@ export default {
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
   },
+  watch: {
+    "$store.state.settings": {
+      handler() {
+        this.isDarkMode = document.documentElement.getAttribute("data-bs-theme") === "dark";
+      },
+      deep: true,
+    },
+  },
   methods: {
     selectProject(projectId) {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });

@@ -192,6 +192,15 @@ export default {
     }
   },
   watch: {
+    "$store.state.settings": {
+      handler() {
+        const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
+        if (saved) {
+          applyTheme(saved);
+        }
+      },
+      deep: true,
+    },
     $route(to, from) {
       if (to.meta && to.meta.checkLogin) {
         this.runCheckLoginFlow();
