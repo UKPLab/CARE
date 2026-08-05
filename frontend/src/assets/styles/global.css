@@ -22,9 +22,14 @@
   }
 }
 
-/* === CARE dark mode overrides === */
-/* Bootstrap's outline-secondary uses the muted grey for text, which is
-   too dim against a dark background. Retarget the button's own variables. */
+/* Dark mode overrides.
+   Bootstrap switches themes when data-bs-theme="dark" is set on <html>, but a
+   few of its classes have a fixed colour built in and stay light regardless.
+   The rules below give those a dark version. Quill and the PDF viewer come
+   from other libraries and do not follow the theme at all, so they are here too.
+   The PDF page is inverted and then hue-rotated back so coloured figures keep
+   their original colours instead of flipping to the opposite. */
+
 [data-bs-theme="dark"] .btn-outline-secondary {
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-border-color: var(--bs-border-color);
@@ -33,25 +38,10 @@
   --bs-btn-hover-border-color: var(--bs-border-color);
 }
 
-/* Project selector reads too dim in dark mode; use the brighter blue. */
-[data-bs-theme="dark"] .project-box {
-  border-color: var(--bs-primary) !important;
-  background-color: var(--bs-primary) !important;
-  color: #fff !important;
-}
-
-/* Avatar circle uses a hardcoded darkblue that reads muddy on the dark topbar. */
 [data-bs-theme="dark"] #dropdownMenuButton {
   background: var(--bs-primary) !important;
 }
 
-/* Project selector hover: match the brighter blue used in dark mode. */
-[data-bs-theme="dark"] .project-box:hover {
-  background-color: #0b5ed7 !important;
-  color: #fff !important;
-}
-
-/* btn-outline-dark is near-black by design; invert it in dark mode. */
 [data-bs-theme="dark"] .btn-outline-dark {
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-border-color: var(--bs-border-color);
@@ -60,7 +50,6 @@
   --bs-btn-hover-border-color: var(--bs-border-color);
 }
 
-/* btn-light is a fixed near-white button; make it theme-aware in dark mode. */
 [data-bs-theme="dark"] .btn-light {
   --bs-btn-bg: var(--bs-secondary-bg);
   --bs-btn-color: var(--bs-body-color);
@@ -70,7 +59,6 @@
   --bs-btn-hover-border-color: var(--bs-border-color);
 }
 
-/* Remaining fixed Bootstrap variants that ignore data-bs-theme. */
 [data-bs-theme="dark"] .btn-dark {
   --bs-btn-bg: var(--bs-secondary-bg);
   --bs-btn-color: var(--bs-body-color);
@@ -80,13 +68,11 @@
   color: var(--bs-body-color) !important;
 }
 
-/* Disabled controls at 65% opacity lose more contrast on dark than on light. */
 [data-bs-theme="dark"] .btn:disabled,
 [data-bs-theme="dark"] .nav-link.disabled {
   opacity: 0.8;
 }
 
-/* Quill's snow theme is fixed-light; retheme its surfaces and toolbar for dark mode. */
 [data-bs-theme="dark"] .ql-toolbar.ql-snow,
 [data-bs-theme="dark"] .ql-container.ql-snow {
   border-color: var(--bs-border-color);
@@ -116,14 +102,10 @@
   border-color: var(--bs-border-color);
 }
 
-/* Black drop shadows vanish on dark; use a border to define the toolbar edge. */
 [data-bs-theme="dark"] .pdf-toolbar {
   border: 1px solid var(--bs-border-color);
 }
 
-/* Dark mode PDF pages: invert the rendered canvas, then rotate hues back so
-   coloured figures keep their original hue instead of shifting to the opposite. */
 [data-bs-theme="dark"] canvas.pdf-page {
   filter: invert(1) hue-rotate(180deg);
 }
-

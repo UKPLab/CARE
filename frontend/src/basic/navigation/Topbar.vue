@@ -33,7 +33,6 @@
           class="navbar-nav ms-auto mt-2 mt-lg-0"
         />   
         <ul class="navbar-nav">
-          <!-- v-if moved from the inner div to the li: an empty li still rendered its me-3 margin, causing uneven topbar spacing when the project button is hidden -->
           <li v-if="!isProjectButtonHidden && isInDashboard" class="nav-item me-3">
             <div
               style="
@@ -160,7 +159,6 @@ export default {
   data() {
     return {
       showProjectDropdown: false,
-      isDarkMode: false,
     }
   },
   subscribeTable: [{
@@ -194,21 +192,16 @@ export default {
     consentEnabled() {
       return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
+    isDarkMode() {
+      const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
+      return (saved || localStorage.getItem("care.theme")) === "dark";
+    },
   },
   mounted() {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
-    this.isDarkMode = document.documentElement.getAttribute("data-bs-theme") === "dark";
   },
   beforeUnmount() {
     this.$refs.topbar.removeEventListener('click', this.handleClickOutside);
-  },
-  watch: {
-    "$store.state.settings": {
-      handler() {
-        this.isDarkMode = document.documentElement.getAttribute("data-bs-theme") === "dark";
-      },
-      deep: true,
-    },
   },
   methods: {
     selectProject(projectId) {
@@ -218,7 +211,6 @@ export default {
     toggleTheme() {
       const next = this.isDarkMode ? "light" : "dark";
       applyTheme(next);
-      this.isDarkMode = next === "dark";
       this.$socket.emit("appSettingSet", {key: "app.theme.mode", value: next});
     },
     handleClickOutside(event) {
@@ -334,4 +326,13 @@ body.sidebar-exists #backButton {
   color: white;
 }
 
+[data-bs-theme="dark"] .project-box {
+  background: var(--bs-primary);
+  border-color: var(--bs-primary);
+  color: #fff;
+}
+
+[data-bs-theme="dark"] .project-box:hover {
+  background: var(--bs-primary-border-subtle);
+}
 </style>
