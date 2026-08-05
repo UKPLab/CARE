@@ -26,6 +26,7 @@
   </Card>
   <AssignmentModal ref="assignmentModal" />
   <AssignmentSubmissionsModal ref="assignmentSubmissionsModal" />
+  <AssignmentMetadataModal ref="assignmentMetadataModal" />
   <ImportModal ref="importModal" />
   <ConfirmModal ref="deleteConf" />
 </template>
@@ -38,6 +39,7 @@ import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.
 import AssignmentSubmissionsModal from "@/components/dashboard/assignments/AssignmentSubmissionsModal.vue";
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignmentMetadataModal from "./assignments/AssignmentMetadataModal.vue";
 
 export default {
   name: "DashboardAssignments",
@@ -48,6 +50,7 @@ export default {
     BasicButton,
     AssignmentModal,
     AssignmentSubmissionsModal,
+    AssignmentMetadataModal,
     ImportModal,
     ConfirmModal,
   },
@@ -157,6 +160,22 @@ export default {
           },
           title: "Inspect submissions",
           action: "inspectSubmissions",
+          stats: {
+            assignmentId: "id",
+          },
+        },
+        {
+          icon: "upload",
+          filter: [{ key: "canEditAssignment", value: true }],
+          options: {
+            iconOnly: true,
+            specifiers: {
+              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          title: "Upload Metadata",
+          action: "uploadMetadata",
           stats: {
             assignmentId: "id",
           },
@@ -329,6 +348,12 @@ export default {
           break;
         case "inspectSubmissions":
           this.$refs.assignmentSubmissionsModal.open(data.params.id);
+          break;
+        case "uploadMetadata":
+          this.$refs.assignmentMetadataModal.open(data.params.id);
+          break;
+        case "togglePublic":
+          this.togglePublic(data.params);
           break;
         case "importMoodle":
           this.$refs.importModal.open(data.params.id);
