@@ -909,12 +909,18 @@ module.exports = function (server) {
             }
         };
 
-        const toRecord = (stat) => ({
-            action: stat.action,
-            data: behaviourFileFormat === 'csv' ? stat.data : parseStatData(stat.data),
-            timestamp: stat.timestamp instanceof Date ? stat.timestamp.toISOString() : stat.timestamp,
-            user: getDisplayName(usersById.get(stat.userId), shouldGenerateAliases, hasPrivateInfoRight, userMapping),
-        });
+        const toRecord = (stat) => {
+            const user = usersById.get(stat.userId);
+            return {
+                action: stat.action,
+                data: behaviourFileFormat === 'csv' ? stat.data : parseStatData(stat.data),
+                timestamp: stat.timestamp instanceof Date ? stat.timestamp.toISOString() : stat.timestamp,
+                user: getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
+                username: user?.userName ?? null,
+                userId: stat.userId,
+                session: stat.session,
+            };
+        };
 
         const buildStream = (fetchPage) => behaviourFileFormat === 'csv'
             ? createCsvRowsStream(fetchPage, toRecord)
