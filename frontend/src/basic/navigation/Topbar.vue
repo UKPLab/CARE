@@ -33,18 +33,6 @@
           class="navbar-nav ms-auto mt-2 mt-lg-0"
         />   
         <ul class="navbar-nav">
-          <li class="nav-item ms-3 me-3 d-flex align-items-center">
-            <button
-              class="btn theme-toggle"
-              :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
-              @click="toggleTheme()"
-            >
-              <LoadIcon
-                :size="18"
-                :name="isDarkMode ? 'sun' : 'moon-stars'"
-              />
-            </button>
-          </li>
           <!-- v-if moved from the inner div to the li: an empty li still rendered its me-3 margin, causing uneven topbar spacing when the project button is hidden -->
           <li v-if="!isProjectButtonHidden && isInDashboard" class="nav-item me-3">
             <div
@@ -124,6 +112,11 @@
                 >
                   Change password
                 </a>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click.prevent="toggleTheme()"
+                >{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</a>
                 <a
                   class="dropdown-item"
                   href="#"
