@@ -27,19 +27,22 @@ import BasicTable from "@/basic/Table.vue";
  * @param {Array<Object>} userTableData - Current table rows, used to build the grades filter options.
  * @returns {Object} A column definition to slot into the table's columns array.
  */
-function getExportTypeColumn(exportType, userTableData) {
+function getExportTypeColumn(exportType, userTableData, configurationsById) {
     const columnsByExportType = {
         submissions: { name: "Submissions", key: "count", sortable: true },
         documents: { name: "Documents", key: "count", sortable: true },
         studies: { name: "Studies", key: "count", sortable: true },
-        userBehaviour: { name: "Submissions", key: "count", sortable: true },
+        userBehaviour: { name: "Logged Events", key: "count", sortable: true },
         grades: {
-            name: "Assessment Configuration",
+            name: "Assessment Configuration(s)",
             key: "configurationName",
             sortable: true,
-            filter: [...new Set(userTableData.map(row => row.configurationName))]
-                .sort()
-                .map(name => ({ key: name, name })),
+            filter: [...new Set(userTableData.flatMap(row => row.configurationIds))]
+              .sort((a, b) => a - b)
+              .map(id => ({
+                  key: id,
+                  name: `${id}: ${configurationsById.get(id)?.name ?? "Unknown"}`,
+              })),
         },
     };
     return columnsByExportType[exportType] || columnsByExportType.documents;
@@ -105,6 +108,9 @@ export default {
     configurations() {
       return this.$store.getters["table/configuration/getAll"];
     },
+    configurationsById() {
+      return new Map(this.configurations.map(c => [c.id, c]));
+    },
     userTableData() {
       const currentUser = this.$store.getters["auth/getUser"];
 
@@ -125,8 +131,10 @@ export default {
           countedSubmissions: new Set(),
           acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
           lastSubmissionDate: null,
-          configurationName: this.gradeConfigurations[uid]?.name ?? "No configuration",
-          configurationHasMultiple: this.gradeConfigurations[uid]?.hasMultipleConfigurations ?? false,
+          configurationName: this.gradeConfigurations[uid]?.ids?.length
+            ? this.gradeConfigurations[uid].ids.join(", ")
+            : "No configuration",
+          configurationIds: this.gradeConfigurations[uid]?.ids ?? [],
         };
         return submissionsByUser[uid];
       };
@@ -197,7 +205,7 @@ export default {
     userTable() {
       const cols = [
         { name: "Username", key: "userName", sortable: true },
-        getExportTypeColumn(this.exportType, this.userTableData),
+        getExportTypeColumn(this.exportType, this.userTableData, this.configurationsById),
         { 
           name: "Accepted Data Sharing", 
           key: "acceptDataSharing", 
@@ -230,7 +238,6 @@ export default {
       if (this.exportType !== 'grades') return {};
 
       const studyStepsById = new Map(this.studySteps.map(s => [s.id, s]));
-      const configurationsById = new Map(this.configurations.map(c => [c.id, c]));
 
       const getConfigurationId = (stepConfiguration) => {
         if (!stepConfiguration || typeof stepConfiguration !== "object") return null;
@@ -254,11 +261,9 @@ export default {
 
       const result = {};
       for (const [userId, configIds] of configIdsByUser.entries()) {
-        const names = [...configIds].map(id => configurationsById.get(id)?.name ?? `Configuration ${id}`).sort();
+        const sortedIds = [...configIds].sort((a, b) => a - b);
         result[userId] = {
-          ids: [...configIds],
-          name: names.length === 1 ? names[0] : `Multiple (${names.join(", ")})`,
-          hasMultipleConfigurations: names.length > 1,
+          ids: sortedIds,
         };
       }
       return result;
