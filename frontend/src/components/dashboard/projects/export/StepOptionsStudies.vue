@@ -6,6 +6,18 @@
     <div v-if="workflows.length === 0" class="text-muted fst-italic mb-3">
       No workflows found for this project.
     </div>
+    <div v-else class="d-flex justify-content-end gap-2 mb-2">
+      <BasicButton
+        class="btn btn-sm btn-outline-secondary"
+        title="Select All"
+        @click="selectAllWorkflows"
+      />
+      <BasicButton
+        class="btn btn-sm btn-outline-secondary"
+        title="Unselect All"
+        @click="unselectAllWorkflows"
+      />
+    </div>
     <BasicForm
       v-model="optionsData"
       :fields="fields"
@@ -15,6 +27,7 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * StepOptionsStudies
@@ -28,7 +41,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "StepOptionsStudies",
-  components: { BasicForm },
+  components: { BasicForm, BasicButton },
   props: {
     projectId: {
       type: Number,
@@ -174,6 +187,14 @@ export default {
         this.$emit('update:includeAiScores', value.includeAiScores);
       },
       deep: true
+    }
+  },
+  methods: {
+    selectAllWorkflows() {
+      this.optionsData.selectedWorkflowIds = this.workflows.map(wf => wf.id);
+    },
+    unselectAllWorkflows() {
+      this.optionsData.selectedWorkflowIds = [];
     }
   }
 }

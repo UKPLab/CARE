@@ -3,6 +3,18 @@
     <h6 class="mb-3 pb-2 border-bottom text-muted">
       Document Options
     </h6>
+    <div class="d-flex justify-content-end gap-2 mb-2">
+      <BasicButton
+        class="btn btn-sm btn-outline-secondary"
+        title="Select All"
+        @click="selectAllTypes"
+      />
+      <BasicButton
+        class="btn btn-sm btn-outline-secondary"
+        title="Unselect All"
+        @click="unselectAllTypes"
+      />
+    </div>
     <BasicForm
       v-model="optionsData"
       :fields="fields"
@@ -12,6 +24,7 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * StepOptionsDocuments
@@ -23,7 +36,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "StepOptionsDocuments",
-  components: { BasicForm },
+  components: { BasicForm, BasicButton },
   props: {
     selectedTypes: {
       type: Array,
@@ -111,6 +124,14 @@ export default {
         this.$emit('update:excludeNonConsentingAnnotations', value.excludeNonConsentingAnnotations);
       },
       deep: true
+    }
+  },
+  methods: {
+    selectAllTypes() {
+      this.optionsData.selectedTypes = this.fields.find(f => f.key === 'selectedTypes').options.map(o => o.value);
+    },
+    unselectAllTypes() {
+      this.optionsData.selectedTypes = [];
     }
   }
 }
