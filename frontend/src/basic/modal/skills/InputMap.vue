@@ -8,7 +8,7 @@
     >
       <label class="form-label">{{ input }}:</label>
       <FormSelect
-          v-model="inputMappings[input]"
+          :model-value="inputMappings[input]"
           :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
           :value-as-object="true"
           @update:model-value="updateMapping(input, $event)"
@@ -33,7 +33,7 @@
     >
       <label class="form-label">{{ output }}:</label>
       <FormSelect
-          v-model="outputMappings[output]"
+          :model-value="outputMappings[output]"
           :options="{ options: outputDataOptions }"
           :value-as-object="true"
           @update:model-value="updateOutputMapping(output, $event)"
@@ -464,8 +464,9 @@ export default {
     updateMapping(input, source) {
       this.isUpdatingFromWithin = true;
 
-      if (source && source.requiresTableSelection) {
-        // Clear any other inputs that currently use a table-based source
+      // Apply Skills allow only one table-based source. Hooks need multiple when the
+      // prompt template uses indexed placeholders (e.g. submissionFiles[1] and [2]).
+      if (source && source.requiresTableSelection && !this.isHook) {
         Object.keys(this.inputMappings).forEach(paramName => {
           if (
               paramName !== input &&

@@ -24,6 +24,7 @@ module.exports = class AIService extends Service {
                 "abortChatCompletion",
                 "getStatus",
                 "testModel",
+                "getProviders",
                 "getValidModels",
             ],
             resTypes: [],
@@ -45,6 +46,7 @@ module.exports = class AIService extends Service {
             abortChatCompletion: () => chat.abortChatCompletion(this, data),
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
+            getProviders: () => chat.getProviders(this),
             getValidModels: () => chat.getValidModels(this, client, data),
         };
         if (handlers[command]) {

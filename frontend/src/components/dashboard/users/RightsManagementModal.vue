@@ -49,7 +49,6 @@ export default {
     BasicForm,
     BasicTable,
   },
-  emits: ["updateUser"],
   data() {
     return {
       formData: {
@@ -188,7 +187,6 @@ export default {
         variant: "success",
       });
 
-      this.$emit("updateUser");
       this.$refs.stepperModal.setWaiting(false);
       this.$refs.stepperModal.close();
     },

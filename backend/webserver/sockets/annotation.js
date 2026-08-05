@@ -1,5 +1,5 @@
 const Socket = require("../Socket.js");
-const {pickObjectAttributeSubset} = require("../../utils/generic");
+const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
 const fs = require("fs");
 const path = require("path");
 

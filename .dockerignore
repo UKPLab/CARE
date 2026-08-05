@@ -1,6 +1,7 @@
 # exclude generated folders
 dist
 node_modules
+**/node_modules
 
 # exclude files (except showcase doc)
 files
@@ -15,4 +16,9 @@ docs
 .idea
 
 # exclude database dumps 
-db_dumps 
+db_dumps
+backups
+
+# exclude logs (runtime volume, not needed in image)
+logs
+**/logs
