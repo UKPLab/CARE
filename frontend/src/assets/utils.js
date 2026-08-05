@@ -370,3 +370,16 @@ export async function extractTextFromPDF(pdfDocument) {
     
     return fullText;
 }
+
+/**
+ * Applies a colour theme to the document root and caches it locally so the
+ * correct theme is used on first paint before user settings load.
+ *
+ * @param mode the theme to apply, "light" or "dark"
+ * @returns {void}
+ */
+export function applyTheme(mode) {
+    document.documentElement.setAttribute("data-bs-theme", mode);
+    localStorage.setItem("care.theme", mode);
+}
+

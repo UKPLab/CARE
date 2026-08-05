@@ -146,6 +146,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
+import { applyTheme } from "@/assets/utils";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -206,14 +207,10 @@ export default {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
       this.showProjectDropdown = false;
     },
-    applyTheme(mode) {
-      document.documentElement.setAttribute("data-bs-theme", mode);
-      this.isDarkMode = mode === "dark";
-      localStorage.setItem("care.theme", mode);
-    },
     toggleTheme() {
       const next = this.isDarkMode ? "light" : "dark";
-      this.applyTheme(next);
+      applyTheme(next);
+      this.isDarkMode = next === "dark";
       this.$socket.emit("appSettingSet", {key: "app.theme.mode", value: next});
     },
     handleClickOutside(event) {

@@ -41,6 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
+import { applyTheme } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -243,15 +244,11 @@ export default {
     }
   },
   methods: {
-    applyTheme(mode) {
-      document.documentElement.setAttribute("data-bs-theme", mode);
-      localStorage.setItem("care.theme", mode);
-    },
     initTheme() {
       const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
       const cached = localStorage.getItem("care.theme");
       const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      this.applyTheme(saved || cached || (osPrefersDark ? "dark" : "light"));
+      applyTheme(saved || cached || (osPrefersDark ? "dark" : "light"));
     },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {
