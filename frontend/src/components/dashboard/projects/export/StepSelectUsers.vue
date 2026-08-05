@@ -32,7 +32,6 @@ function getExportTypeColumn(exportType, userTableData, configurationsById) {
         submissions: { name: "Submissions", key: "count", sortable: true },
         documents: { name: "Documents", key: "count", sortable: true },
         studies: { name: "Studies", key: "count", sortable: true },
-        userBehaviour: { name: "Logged Events", key: "count", sortable: true },
         grades: {
             name: "Assessment Configuration(s)",
             key: "configurationName",
@@ -130,6 +129,7 @@ export default {
           count: 0,
           countedSubmissions: new Set(),
           acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
+          acceptStatsSharing: student.acceptStats ? 'Yes' : 'No',
           lastSubmissionDate: null,
           configurationName: this.gradeConfigurations[uid]?.ids?.length
             ? this.gradeConfigurations[uid].ids.join(", ")
@@ -139,7 +139,7 @@ export default {
         return submissionsByUser[uid];
       };
 
-      if (this.exportType === 'submissions' || this.exportType === 'userBehaviour') {
+      if (this.exportType === 'submissions') {
         const submissionDocs = this.documents.filter(doc =>
           doc.projectId == this.projectId &&
           doc.submissionId &&
@@ -192,6 +192,10 @@ export default {
           const dDate = new Date(d.createdAt);
           if (!row.lastSubmissionDate || dDate > row.lastSubmissionDate) row.lastSubmissionDate = dDate;
         });
+      } else if (this.exportType === 'userBehaviour') {
+        this.users.forEach(user => {
+          getOrCreateRow(user.id);
+        });
       }
 
       return Object.values(submissionsByUser).map(submission => ({
@@ -205,18 +209,35 @@ export default {
     userTable() {
       const cols = [
         { name: "Username", key: "userName", sortable: true },
-        getExportTypeColumn(this.exportType, this.userTableData, this.configurationsById),
-        { 
-          name: "Accepted Data Sharing", 
-          key: "acceptDataSharing", 
+      ];
+
+      if (this.exportType === 'userBehaviour') {
+        cols.push({
+          name: "Accept Behaviour Sharing",
+          key: "acceptStatsSharing",
           sortable: true,
           filter: [
             { key: "Yes", name: "Yes" },
             { key: "No", name: "No" },
           ],
-        },
-        { name: "Last Submitted", key: "lastSubmissionDate", sortable: true }
-      ];
+        });
+      } else {
+        cols.push(getExportTypeColumn(this.exportType, this.userTableData, this.configurationsById));
+      }
+
+      cols.push({ 
+        name: "Accepted Data Sharing", 
+        key: "acceptDataSharing", 
+        sortable: true,
+        filter: [
+          { key: "Yes", name: "Yes" },
+          { key: "No", name: "No" },
+        ],
+      });
+
+      if (this.exportType !== 'userBehaviour') {
+        cols.push({ name: "Last Submitted", key: "lastSubmissionDate", sortable: true });
+      }
 
       if (this.hasPrivateInfoRight) {
         cols.splice(1, 0, { name: "Student Name", key: "studentName", sortable: true });
