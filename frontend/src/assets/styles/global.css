@@ -130,3 +130,10 @@
 [data-bs-theme="dark"] .pdf-toolbar {
   border: 1px solid var(--bs-border-color);
 }
+
+/* Dark mode PDF pages: invert the rendered canvas, then rotate hues back so
+   coloured figures keep their original hue instead of shifting to the opposite. */
+[data-bs-theme="dark"] canvas.pdf-page {
+  filter: invert(1) hue-rotate(180deg);
+}
+
