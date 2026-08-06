@@ -59,10 +59,7 @@ function getStudyNlpKeyCandidates(service, resultField) {
     if (!service) return [];
 
     if (service.hookId) {
-        const keys = [
-            service.name && service.hookName ? buildStudyHookKey(service.name, service.hookName) : null,
-            service.type && service.hookName ? buildStudyHookKey(service.type, service.hookName) : null,
-        ].filter(Boolean);
+        const keys = [service.name, service.type].filter(Boolean);
         return [...new Set(keys)];
     }
 
