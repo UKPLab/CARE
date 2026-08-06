@@ -119,3 +119,9 @@ html[data-bs-theme="light"] {
 html[data-bs-theme="dark"] {
   color-scheme: dark;
 }
+
+@media print {
+  canvas.pdf-page {
+    filter: none !important;
+  }
+}
