@@ -142,8 +142,8 @@ Admins can do everything, so they are not listed separately in each row.
      - ``frontend.dashboard.projects.view``
      - guest, user
 
-   * - View Study Sessions dashboard
-     - ``frontend.dashboard.study_sessions.view``
+   * - View My Sessions dashboard
+     - ``frontend.dashboard.my_sessions.view``
      - guest, user
 
    * - View Studies

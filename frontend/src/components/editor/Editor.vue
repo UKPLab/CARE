@@ -27,6 +27,7 @@
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar"
+          :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
           @sidebar-change="handleSidebarChange"
