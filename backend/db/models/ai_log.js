@@ -13,6 +13,7 @@ module.exports = (sequelize, DataTypes) => {
 
         static associate(models) {
             AiLog.belongsTo(models["study_session"], { foreignKey: "studySessionId", as: "studySession" });
+            AiLog.belongsTo(models["ai_message"], { foreignKey: "aiMessageId", as: "message" });
         }
     }
 
@@ -23,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
         documentId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
         studyStepId: DataTypes.INTEGER,
+        aiMessageId: DataTypes.INTEGER,
         requestId: DataTypes.STRING,
         input: DataTypes.TEXT,
         output: DataTypes.TEXT,
@@ -36,6 +38,8 @@ module.exports = (sequelize, DataTypes) => {
         costs: DataTypes.FLOAT,
         status: DataTypes.STRING,
         requestStart: DataTypes.DATE,
+        totalLatencyMs: DataTypes.INTEGER,
+        ttftMs: DataTypes.INTEGER,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
