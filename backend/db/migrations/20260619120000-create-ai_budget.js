@@ -18,7 +18,7 @@ module.exports = {
                     onDelete: 'CASCADE',
                     onUpdate: 'CASCADE',
                 },
-                modelId: {
+                aiModelId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                     defaultValue: null,
@@ -26,7 +26,7 @@ module.exports = {
                     onDelete: 'CASCADE',
                     onUpdate: 'CASCADE',
                 },
-                shareId: {
+                aiModelShareId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                     defaultValue: null,
@@ -34,7 +34,7 @@ module.exports = {
                     onDelete: 'CASCADE',
                     onUpdate: 'CASCADE',
                 },
-                hookId: {
+                aiHookId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                     defaultValue: null,
@@ -42,7 +42,7 @@ module.exports = {
                     onDelete: 'CASCADE',
                     onUpdate: 'CASCADE',
                 },
-                hookShareId: {
+                aiHookShareId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                     defaultValue: null,
@@ -102,27 +102,26 @@ module.exports = {
                 },
             }, { transaction });
 
-            // Exactly one valid entity FK pattern must match. Mirrors
-            // chk_assignment_share_exclusive in 20260418000000-create-assignment_share.js.
+            // Exactly one valid entity FK pattern must match.
             await queryInterface.sequelize.query(`
                 ALTER TABLE "ai_budget" ADD CONSTRAINT "chk_ai_budget_shape" CHECK (
-                  ("modelId" IS NOT NULL AND "shareId" IS NULL AND "hookId" IS NULL
-                   AND "hookShareId" IS NULL AND "studyId" IS NULL AND "studyStepId" IS NULL)
+                  ("aiModelId" IS NOT NULL AND "aiModelShareId" IS NULL AND "aiHookId" IS NULL
+                   AND "aiHookShareId" IS NULL AND "studyId" IS NULL AND "studyStepId" IS NULL)
                   OR
-                  ("shareId" IS NOT NULL AND "modelId" IS NULL AND "hookId" IS NULL
-                   AND "hookShareId" IS NULL AND "studyId" IS NULL AND "studyStepId" IS NULL)
+                  ("aiModelShareId" IS NOT NULL AND "aiModelId" IS NULL AND "aiHookId" IS NULL
+                   AND "aiHookShareId" IS NULL AND "studyId" IS NULL AND "studyStepId" IS NULL)
                   OR
-                  ("hookId" IS NOT NULL AND "studyStepId" IS NULL AND "modelId" IS NULL
-                   AND "shareId" IS NULL AND "hookShareId" IS NULL AND "studyId" IS NULL)
+                  ("aiHookId" IS NOT NULL AND "studyStepId" IS NULL AND "aiModelId" IS NULL
+                   AND "aiModelShareId" IS NULL AND "aiHookShareId" IS NULL AND "studyId" IS NULL)
                   OR
-                  ("hookShareId" IS NOT NULL AND "modelId" IS NULL AND "shareId" IS NULL
-                   AND "hookId" IS NULL AND "studyId" IS NULL AND "studyStepId" IS NULL)
+                  ("aiHookShareId" IS NOT NULL AND "aiModelId" IS NULL AND "aiModelShareId" IS NULL
+                   AND "aiHookId" IS NULL AND "studyId" IS NULL AND "studyStepId" IS NULL)
                   OR
-                  ("studyId" IS NOT NULL AND "modelId" IS NULL AND "shareId" IS NULL
-                   AND "hookId" IS NULL AND "hookShareId" IS NULL AND "studyStepId" IS NULL)
+                  ("studyId" IS NOT NULL AND "aiModelId" IS NULL AND "aiModelShareId" IS NULL
+                   AND "aiHookId" IS NULL AND "aiHookShareId" IS NULL AND "studyStepId" IS NULL)
                   OR
-                  ("studyStepId" IS NOT NULL AND "hookId" IS NOT NULL AND "modelId" IS NULL
-                   AND "shareId" IS NULL AND "hookShareId" IS NULL AND "studyId" IS NULL)
+                  ("studyStepId" IS NOT NULL AND "aiHookId" IS NOT NULL AND "aiModelId" IS NULL
+                   AND "aiModelShareId" IS NULL AND "aiHookShareId" IS NULL AND "studyId" IS NULL)
                 )
             `, { transaction });
 

@@ -308,7 +308,7 @@ export default {
       const budgets = this.$store.getters["table/ai_budget/getFiltered"]
         ? this.$store.getters["table/ai_budget/getFiltered"](
             (b) => !b.deleted
-              && Number(b.hookId) === Number(hookId)
+              && Number(b.aiHookId) === Number(hookId)
               && !b.studyStepId
               && Number(b.limitType) === 0
           )
@@ -425,7 +425,7 @@ export default {
           const existing = this.findExistingCapRow(hookId);
           const capData = existing
             ? { id: existing.id, costLimit: costLimitValue }
-            : { hookId: Number(hookId), limitType: 0, costLimit: costLimitValue };
+            : { aiHookId: Number(hookId), limitType: 0, costLimit: costLimitValue };
           await this.emitUpdate("ai_budget", capData);
         }
 
