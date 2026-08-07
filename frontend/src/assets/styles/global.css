@@ -39,7 +39,8 @@
 }
 
 [data-bs-theme="dark"] #dropdownMenuButton {
-  background: var(--bs-primary) !important;
+  color: #212529 !important;
+  background: #ffe599 !important;
 }
 
 [data-bs-theme="dark"] .btn-outline-dark {
@@ -124,4 +125,45 @@ html[data-bs-theme="dark"] {
   canvas.pdf-page {
     filter: none !important;
   }
+}
+
+/* Dark mode uses CARE's logo yellow as the accent instead of Bootstrap's blue,
+   with dark text on top since the yellow is too light for white. Bootstrap's
+   button and form-control colours are set per component, so each family needs
+   its own override rather than a single variable change. */
+[data-bs-theme="dark"] .btn-primary {
+  --bs-btn-bg: #ffe599;
+  --bs-btn-border-color: #ffe599;
+  --bs-btn-color: #212529;
+  --bs-btn-hover-bg: #f5d77e;
+  --bs-btn-hover-border-color: #f5d77e;
+  --bs-btn-hover-color: #212529;
+  --bs-btn-active-bg: #e8c86a;
+  --bs-btn-active-border-color: #e8c86a;
+  --bs-btn-active-color: #212529;
+}
+
+[data-bs-theme="dark"] .page-item.active .page-link {
+  background-color: #ffe599;
+  border-color: #ffe599;
+  color: #212529;
+}
+
+[data-bs-theme="dark"] .form-check-input:checked {
+  background-color: #ffe599;
+  border-color: #ffe599;
+}
+
+[data-bs-theme="dark"] .form-check-input:focus {
+  border-color: #ffe599;
+  box-shadow: 0 0 0 0.25rem rgba(255, 229, 153, 0.25);
+}
+
+[data-bs-theme="dark"] .form-switch .form-check-input:focus {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffe599'/%3e%3c/svg%3e");
+}
+
+[data-bs-theme="dark"] .form-switch .form-check-input:checked,
+[data-bs-theme="dark"] .form-switch .form-check-input:checked:focus {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
 }

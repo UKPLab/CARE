@@ -327,12 +327,12 @@ body.sidebar-exists #backButton {
 }
 
 [data-bs-theme="dark"] .project-box {
-  background: var(--bs-primary);
-  border-color: var(--bs-primary);
-  color: #fff;
+  background: #ffe599;
+  border-color: #ffe599;
+  color: #212529;
 }
 
 [data-bs-theme="dark"] .project-box:hover {
-  background: var(--bs-primary-border-subtle);
+  background: #f5d77e;
 }
 </style>
