@@ -186,7 +186,7 @@ export default {
       return typeof skill.skillName === "string" && skill.skillName.startsWith("hook:");
     },
     /**
-     * Reads the latest ai_budget rows for this (studyStepId, hookId).
+     * Reads the latest ai_budget rows for this (studyStepId, aiHookId).
      * Returns { total, perSession, perUser }
      */
     lookupStepHookCaps(hookId) {
@@ -197,7 +197,7 @@ export default {
       const rows = getter(
         (b) => !b.deleted
           && Number(b.studyStepId) === Number(this.studyStepId)
-          && Number(b.hookId) === Number(hookId)
+          && Number(b.aiHookId) === Number(hookId)
       );
       for (const row of rows) {
         const value = Number(row.costLimit);

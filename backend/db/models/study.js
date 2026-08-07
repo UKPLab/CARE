@@ -432,7 +432,7 @@ module.exports = (sequelize, DataTypes) => {
                         if (Number.isFinite(value) && value > 0) {
                             await createCap({
                                 studyStepId: studyStep.id,
-                                hookId,
+                                aiHookId: hookId,
                                 limitType,
                                 costLimit: value,
                             });

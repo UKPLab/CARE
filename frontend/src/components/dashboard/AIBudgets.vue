@@ -3,15 +3,14 @@
     <template #body>
       <ul class="nav nav-tabs mb-3">
         <li v-for="tab in tabs" :key="tab.key" class="nav-item">
-          <button
+          <BasicButton
             class="nav-link"
             :class="{ active: activeTab === tab.key }"
-            type="button"
             @click="activeTab = tab.key"
           >
             {{ tab.label }}
             <span v-if="tabRows(tab.key).length" class="badge bg-secondary ms-1">{{ tabRows(tab.key).length }}</span>
-          </button>
+          </BasicButton>
         </li>
       </ul>
       <BasicTable
@@ -188,30 +187,30 @@ export default {
       return this.budgetRows.filter((r) => tab.types.includes(r.entityType));
     },
     resolveScope(b) {
-      if (b.studyStepId && b.hookId) {
+      if (b.studyStepId && b.aiHookId) {
         const step = this.studyStepsById[b.studyStepId];
         const study = step ? this.studiesById[step.studyId] : null;
-        const hook = this.hooksById[b.hookId];
+        const hook = this.hooksById[b.aiHookId];
         const studyLabel = study?.name || (step ? `Study #${step.studyId}` : `Study #?`);
         const levelLabel = step ? `Step ${step.stepNumber || step.id}` : `Step #${b.studyStepId}`;
-        const hookLabel = hook?.name || `Hook #${b.hookId}`;
+        const hookLabel = hook?.name || `Hook #${b.aiHookId}`;
         return { entityType: "step_hook", entityLabel: studyLabel, sharedWith: null, studyLabel, levelLabel, hookLabel };
       }
-      if (b.modelId) {
-        const m = this.modelsById[b.modelId];
-        return { entityType: "model", entityLabel: m?.name || `Model #${b.modelId}`, sharedWith: null };
+      if (b.aiModelId) {
+        const m = this.modelsById[b.aiModelId];
+        return { entityType: "model", entityLabel: m?.name || `Model #${b.aiModelId}`, sharedWith: null };
       }
-      if (b.shareId) {
-        const share = this.modelSharesById[b.shareId];
+      if (b.aiModelShareId) {
+        const share = this.modelSharesById[b.aiModelShareId];
         const model = share ? this.modelsById[share.aiModelId] : null;
         return { entityType: "model_share", entityLabel: model?.name || `Model #${share?.aiModelId}`, sharedWith: this.recipientLabel(share) };
       }
-      if (b.hookId) {
-        const h = this.hooksById[b.hookId];
-        return { entityType: "hook", entityLabel: h?.name || `Hook #${b.hookId}`, sharedWith: null };
+      if (b.aiHookId) {
+        const h = this.hooksById[b.aiHookId];
+        return { entityType: "hook", entityLabel: h?.name || `Hook #${b.aiHookId}`, sharedWith: null };
       }
-      if (b.hookShareId) {
-        const share = this.hookSharesById[b.hookShareId];
+      if (b.aiHookShareId) {
+        const share = this.hookSharesById[b.aiHookShareId];
         const hook = share ? this.hooksById[share.aiHookId] : null;
         return { entityType: "hook_share", entityLabel: hook?.name || `Hook #${share?.aiHookId}`, sharedWith: this.recipientLabel(share) };
       }

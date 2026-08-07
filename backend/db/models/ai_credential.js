@@ -60,11 +60,10 @@ module.exports = (sequelize, DataTypes) => {
                 },
             );
 
-            // ai_budget uses `modelId`, not `aiModelId`.
             await db.ai_budget.update(
                 {deleted: true, deletedAt: new Date()},
                 {
-                    where: {modelId: {[Op.in]: modelIds}, deleted: false},
+                    where: {aiModelId: {[Op.in]: modelIds}, deleted: false},
                     transaction,
                     context: options.context,
                     individualHooks: true,

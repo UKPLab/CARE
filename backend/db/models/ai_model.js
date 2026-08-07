@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
             AiModel.belongsTo(models["ai_credential"], { foreignKey: "aiCredentialId", as: "credential" });
             AiModel.belongsTo(models["user"], { foreignKey: "userId", as: "user" });
             AiModel.hasMany(models["ai_model_share"], { foreignKey: "aiModelId", as: "shares" });
-            AiModel.hasMany(models["ai_budget"], { foreignKey: "modelId", as: "budgets" });
+            AiModel.hasMany(models["ai_budget"], { foreignKey: "aiModelId", as: "budgets" });
             AiModel.hasMany(models["ai_hook_models"], { foreignKey: "aiModelId", as: "hookModels" });
             AiModel.hasMany(models["ai_log"], { foreignKey: "aiModelId", as: "logs" });
         }
