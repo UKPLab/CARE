@@ -102,10 +102,6 @@ html[data-bs-theme="dark"] {
   --bs-btn-active-color: var(--care-on-accent);
 }
 
-[data-bs-theme="dark"] #dropdownMenuButton {
-  background: var(--care-accent);
-  color: var(--care-on-accent);
-}
 
 [data-bs-theme="dark"] .page-item.active .page-link {
   background-color: var(--care-accent);

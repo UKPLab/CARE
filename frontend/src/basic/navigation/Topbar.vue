@@ -326,13 +326,18 @@ body.sidebar-exists #backButton {
   color: white;
 }
 
+[data-bs-theme="dark"] #dropdownMenuButton {
+  background: var(--care-accent);
+  color: var(--care-on-accent);
+}
+
 [data-bs-theme="dark"] .project-box {
-  background: #ffe599;
-  border-color: #ffe599;
-  color: #212529;
+  background: var(--care-accent);
+  border-color: var(--care-accent);
+  color: var(--care-on-accent);
 }
 
 [data-bs-theme="dark"] .project-box:hover {
-  background: #f5d77e;
+  background: var(--care-accent-hover);
 }
 </style>
