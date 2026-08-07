@@ -70,7 +70,7 @@
 
 [data-bs-theme="dark"] .btn:disabled,
 [data-bs-theme="dark"] .nav-link.disabled {
-  opacity: 0.8;
+  opacity: 0.95;
 }
 
 [data-bs-theme="dark"] .ql-toolbar.ql-snow,

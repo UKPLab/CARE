@@ -188,11 +188,11 @@ export default {
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn {
   margin-left: 0;
-  color: var(--bs-secondary-color, #6c757d);
+  color: var(--bs-body-color, #6c757d);
 }
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn:hover {
-  color: var(--bs-secondary-color, #6c757d);
+  color: var(--bs-body-color, #6c757d);
 }
 
 .pdf-toolbar.loading::after {

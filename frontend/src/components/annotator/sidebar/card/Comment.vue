@@ -91,14 +91,14 @@
             <SidebarButton
               :loading="false"
               :props="$props"
-              icon="save-fill"
+              icon="floppy"
               title="Save (Ctrl+Enter)"
               @click="save"
             />
             <SidebarButton
               :loading="false"
               :props="$props"
-              icon="x-square-fill"
+              icon="x-square"
               title="Cancel"
               @click="cancel"
             />
@@ -115,7 +115,7 @@
               v-if="settingResponse && !readOnly"
               :loading="false"
               :props="$props"
-              icon="reply-fill"
+              icon="reply"
               title="Reply"
               @click="reply(); maxComments = numChildComments+1"
             />

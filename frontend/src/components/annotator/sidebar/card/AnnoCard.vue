@@ -65,7 +65,7 @@
           <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="x-square-fill"
+                  icon="x-square"
                   title="Cancel"
                   @click="editingTag = false"
           />
@@ -100,14 +100,14 @@
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="floppy-fill"
+                  icon="floppy"
                   title="Save"
                   @click="save"
               />
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="x-square-fill"
+                  icon="x-square"
                   title="Cancel"
                   @click="cancel"
               />
@@ -135,7 +135,7 @@
                   v-if="settingResponse && !readOnly"
                   :loading="false"
                   :props="$props"
-                  icon="reply-fill"
+                  icon="reply"
                   title="Reply"
                   @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
               />

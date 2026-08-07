@@ -318,7 +318,7 @@ export default {
           id: 'toggle-nlp',
           icon: 'robot',
           title: this.nlpActive ? 'Deactivate NLP support' : 'Activate NLP support',
-          color: this.nlpActive ? '#097969' : '#777777',
+          color: this.nlpActive ? '#12a085' : '#9aa3b0',
           action: 'toggleNlp'
         });
       }
