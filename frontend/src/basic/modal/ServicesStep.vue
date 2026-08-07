@@ -12,10 +12,11 @@
         <div class="skill-selection mb-2">
           <SkillSelector
               v-model="skill.skillName"
+              :service-type="serviceAt(index).type"
               @update:model-value="onSkillChange(index, $event)"
           />
         </div>
-        <!-- Input/output mapping (same for skills and hooks) -->
+        <!-- Input mapping and optional output mapping -->
         <InputMap
             v-if="skill.skillName"
             :skill-name="skill.skillName"
@@ -28,7 +29,9 @@
             :step-config="modelValue"
             :selected-skills="selectedSkills"
             :document-id="documentId"
+            :output-mapping="serviceAt(index).outputMapping !== false"
             @update:model-value="handleInputMappingUpdate(index, $event)"
+            @validation-change="handleInputValidationChange(index, $event)"
         />
         <!-- Hook-only budget caps: total / per session / per user -->
         <div v-if="isHook(skill)" class="cap-fields mt-2">
@@ -77,10 +80,12 @@ import FormDefault from "@/basic/form/Default.vue";
 /**
  * ServicesStep Component
  *
- * Configures a step's service slots. Each slot is filled with either an NLP skill or an AI hook
- * (chosen from the same dropdown). Skills and hooks share the same input/output mapping.
+ * Configures a step's service slots. Each slot is filled with either an NLP skill or an AI hook.
+ * The service declaration controls its type and whether output mapping is available.
  * Budget caps for hook entries live in ai_budget (configured in the budget operations dashboard).
- * A slot stores `skill` (NLP) or `hookId` and `hookName` (hook); `type` stays `nlpRequest`.
+ * A slot stores `skill` (NLP) or `hookId` and `hookName` (hook).
+ *
+ * @author Mohammed Rawhani
  */
 export default {
   name: "ServicesStep",
@@ -135,6 +140,7 @@ export default {
             capTotal: caps.total,
             capPerSession: caps.perSession,
             capPerUser: caps.perUser,
+            inputMappingValid: false,
           };
         }
         if (service.skill) {
@@ -142,9 +148,10 @@ export default {
             skillName: service.skill,
             dataInput: service.inputs || {},
             dataOutput: service.outputs || {},
+            inputMappingValid: false,
           };
         }
-        return {skillName: "", dataInput: {}, dataOutput: {}};
+        return {skillName: "", dataInput: {}, dataOutput: {}, inputMappingValid: false};
       }),
     };
   },
@@ -157,12 +164,12 @@ export default {
       );
     },
     isValid() {
-      return this.selectedSkills?.every((skill) => {
-        if (!skill.skillName) return false;
+      return this.selectedSkills?.every((skill, index) => {
+        if (!skill.skillName) return !this.isServiceRequired(index);
+        if (this.isTemplateMode) return true;
+        if (this.isAiChatService(index)) return skill.inputMappingValid;
         // Hook: only requires a chosen hook (inputs are optional, like template mode for skills).
         if (this.isHook(skill)) return true;
-        // Skill: in template mode only a skill is required.
-        if (this.isTemplateMode) return true;
         // Normal mode: require all skill inputs to be mapped.
         const inputs = this.getSkillInputs(skill.skillName);
         return inputs.every((input) => {
@@ -181,6 +188,30 @@ export default {
     },
   },
   methods: {
+    /**
+     * Return the service declaration at an index.
+     * @param {number} index Service index
+     * @returns {Object} Service declaration
+     */
+    serviceAt(index) {
+      return this.modelValue.services[index] || {};
+    },
+    /**
+     * Check whether an AI Chat service is configured at an index.
+     * @param {number} index Service index
+     * @returns {boolean} Whether the service is AI Chat
+     */
+    isAiChatService(index) {
+      return this.serviceAt(index).type === "aiChat";
+    },
+    /**
+     * Check whether a service selection is required.
+     * @param {number} index Service index
+     * @returns {boolean} Whether a selection is required
+     */
+    isServiceRequired(index) {
+      return this.serviceAt(index).required !== false;
+    },
     /** True when the slot's selection is an AI hook (encoded as `hook:<id>`). */
     isHook(skill) {
       return typeof skill.skillName === "string" && skill.skillName.startsWith("hook:");
@@ -221,13 +252,19 @@ export default {
     },
     /** Builds one service entry from a selected slot, as a skill or a hook. */
     buildServiceEntry(skill, index) {
-      const existing = this.modelValue.services[index] || {};
+      const existing = this.serviceAt(index);
       const base = {
         name: existing.name || "",
         type: existing.type || "nlpRequest",
+        required: existing.required !== false,
         inputs: skill.dataInput || {},
-        outputs: skill.dataOutput || {},
       };
+      if (existing.outputMapping !== undefined) {
+        base.outputMapping = existing.outputMapping;
+      }
+      if (existing.outputMapping !== false) {
+        base.outputs = skill.dataOutput || {};
+      }
       if (this.isHook(skill)) {
         return {
           ...base,
@@ -248,9 +285,26 @@ export default {
     /** Resets the slot's mappings when the chosen skill/hook changes, then emits. */
     onSkillChange(index, value) {
       const updated = [...this.selectedSkills];
-      updated[index] = {...updated[index], skillName: value, dataInput: {}, dataOutput: {}};
+      updated[index] = {
+        ...updated[index],
+        skillName: value,
+        dataInput: {},
+        dataOutput: {},
+        inputMappingValid: false,
+      };
       this.selectedSkills = updated;
       this.emitServices();
+    },
+    /**
+     * Store the input validation state emitted by a mapping component.
+     * @param {number} index Service index
+     * @param {boolean} isValid Whether all inputs are mapped
+     * @returns {void}
+     */
+    handleInputValidationChange(index, isValid) {
+      const updated = [...this.selectedSkills];
+      updated[index] = {...updated[index], inputMappingValid: isValid};
+      this.selectedSkills = updated;
     },
     /** Stores the input/output mapping for a slot, then emits. */
     handleInputMappingUpdate(index, mappingData) {
