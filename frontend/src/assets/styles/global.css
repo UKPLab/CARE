@@ -27,8 +27,8 @@
    few of its classes have a fixed colour built in and stay light regardless.
    The rules below give those a dark version. Quill and the PDF viewer come
    from other libraries and do not follow the theme at all, so they are here too.
-   The PDF page is inverted and then hue-rotated back so coloured figures keep
-   their original colours instead of flipping to the opposite. */
+   The PDF page is inverted and tinted cool so it sits with the rest of the dark UI
+   rather than looking warm and out of place. */
 
 [data-bs-theme="dark"] .btn-outline-secondary {
   --bs-btn-color: var(--bs-body-color);
@@ -106,8 +106,8 @@
   border: 1px solid var(--bs-border-color);
 }
 
-[data-bs-theme="dark"] canvas.pdf-page {
-  filter: invert(1) hue-rotate(180deg);
+[data-bs-theme="dark"] .scrolling-page:not(.pdf-light) canvas.pdf-page {
+  filter: invert(0.88) grayscale(0.85) sepia(0.3) hue-rotate(185deg) saturate(1.4);
 }
 
 /* Bootstrap declares color-scheme: light dark, which lets the browser pick

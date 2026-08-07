@@ -14,6 +14,8 @@
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
       :is-zooming="isZooming"
+      :pdf-dark-mode="pdfDarkMode"
+      @toggle-pdf-theme="pdfDarkMode = !pdfDarkMode"
       @update:zoom-form-data="zoomFormData = $event"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
@@ -25,7 +27,7 @@
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
-      :class="'scrolling-page'"
+      :class="['scrolling-page', { 'pdf-light': !pdfDarkMode }]"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
@@ -113,6 +115,7 @@ export default {
       zoomFormData: {
         zoom: 1.0,
       },
+      pdfDarkMode: true,
     }
   },
   computed: {

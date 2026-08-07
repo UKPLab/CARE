@@ -26,13 +26,17 @@
         :fields="zoomFields"
         @update:model-value="$emit('update:zoomFormData', $event)"
       />
+      <TopBarButton
+        :icon="pdfDarkMode ? 'sun' : 'moon-stars'"
+        @click="$emit('toggle-pdf-theme')"
+      />
     </template>
 
     <!-- Toggle Button (always visible) -->
     <BasicButton
       class="toolbar-toggle-btn"
       :icon="toolbarVisible ? 'chevron-right' : 'tools'"
-      tooltip="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
+      :tooltip="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
       @click="toggleToolbar"
     />
   </div>
@@ -70,8 +74,12 @@ export default {
       type: Boolean,
       default: false,
     },
+    pdfDarkMode: {
+      type: Boolean,
+      default: true,
+    },
   },
-  emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset'],
+  emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset', 'toggle-pdf-theme'],
   data() {
     return {
       baseZoomOptions: this.generateZoomOptions(50, 200, 10),
