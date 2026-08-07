@@ -28,7 +28,6 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             AiMessage.belongsTo(models["ai_conversation"], { foreignKey: "conversationId", as: "conversation" });
             AiMessage.belongsTo(models["study_step"], { foreignKey: "studyStepId", as: "studyStep" });
-            AiMessage.belongsTo(models["document"], { foreignKey: "documentId", as: "document" });
             AiMessage.belongsTo(models["ai_model"], { foreignKey: "aiModelId", as: "model" });
             AiMessage.hasMany(models["ai_log"], { foreignKey: "aiMessageId", as: "logs" });
         }
@@ -37,12 +36,10 @@ module.exports = (sequelize, DataTypes) => {
     AiMessage.init({
         conversationId: DataTypes.INTEGER,
         studyStepId: DataTypes.INTEGER,
-        documentId: DataTypes.INTEGER,
         aiModelId: DataTypes.INTEGER,
         role: DataTypes.INTEGER,
         content: DataTypes.TEXT,
         status: DataTypes.INTEGER,
-        metadata: DataTypes.JSONB,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

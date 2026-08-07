@@ -24,13 +24,6 @@ module.exports = {
                     onDelete: 'SET NULL',
                     onUpdate: 'CASCADE',
                 },
-                documentId: {
-                    type: Sequelize.INTEGER,
-                    allowNull: true,
-                    references: { model: 'document', key: 'id' },
-                    onDelete: 'SET NULL',
-                    onUpdate: 'CASCADE',
-                },
                 aiModelId: {
                     type: Sequelize.INTEGER,
                     allowNull: true,
@@ -49,10 +42,6 @@ module.exports = {
                 status: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                },
-                metadata: {
-                    type: Sequelize.JSONB,
-                    allowNull: true,
                 },
                 deleted: {
                     type: Sequelize.BOOLEAN,
