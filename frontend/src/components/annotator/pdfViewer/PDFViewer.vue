@@ -15,7 +15,7 @@
       :zoom-form-data="zoomFormData"
       :is-zooming="isZooming"
       :pdf-dark-mode="pdfDarkMode"
-      @toggle-pdf-theme="pdfDarkMode = !pdfDarkMode"
+      @toggle-pdf-theme="togglePdfTheme"
       @update:zoom-form-data="zoomFormData = $event"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
@@ -115,7 +115,7 @@ export default {
       zoomFormData: {
         zoom: 1.0,
       },
-      pdfDarkMode: true,
+      pdfDarkMode: localStorage.getItem("care.pdfDark") !== "false",
     }
   },
   computed: {
@@ -196,6 +196,10 @@ export default {
     this.pdf = null;
   },
   methods: {
+    togglePdfTheme() {
+      this.pdfDarkMode = !this.pdfDarkMode;
+      localStorage.setItem("care.pdfDark", this.pdfDarkMode);
+    },
     zoomIn() {
       if (this.isZooming) return;
       this.isZooming = true;
@@ -252,7 +256,7 @@ export default {
       this.$emit('copy', event);
     },
   },
-
+  
 }
 </script>
 

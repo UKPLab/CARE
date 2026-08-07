@@ -22,27 +22,39 @@
   }
 }
 
-/* Dark mode overrides.
-   Bootstrap switches themes when data-bs-theme="dark" is set on <html>, but a
-   few of its classes have a fixed colour built in and stay light regardless.
-   The rules below give those a dark version. Quill and the PDF viewer come
-   from other libraries and do not follow the theme at all, so they are here too.
-   The PDF page is inverted and tinted cool so it sits with the rest of the dark UI
-   rather than looking warm and out of place. */
+/* ===== Dark mode =====
+   Bootstrap switches themes when data-bs-theme="dark" is set on <html>. Most of
+   CARE follows automatically, but three things need help here:
+   1. A few Bootstrap classes have a fixed colour built in and stay light.
+   2. Dark mode uses CARE's logo yellow as the accent instead of Bootstrap's
+      blue, with dark text on top since the yellow is too light for white.
+      Bootstrap sets button and form-control colours per component, so each
+      family needs its own override rather than one variable change.
+   3. Quill, the PDF viewer and bootstrap-vue-3 come from other libraries and
+      do not follow the theme at all. */
 
-[data-bs-theme="dark"] .btn-outline-secondary {
-  --bs-btn-color: var(--bs-body-color);
-  --bs-btn-border-color: var(--bs-border-color);
-  --bs-btn-hover-bg: var(--bs-secondary-bg);
-  --bs-btn-hover-color: var(--bs-body-color);
-  --bs-btn-hover-border-color: var(--bs-border-color);
+html[data-bs-theme="dark"] {
+  --care-accent: #ffe599;
+  --care-accent-hover: #f5d77e;
+  --care-accent-active: #e8c86a;
+  --care-on-accent: #212529;
 }
 
-[data-bs-theme="dark"] #dropdownMenuButton {
-  color: #212529 !important;
-  background: #ffe599 !important;
+/* Tell the browser which theme is showing. Bootstrap declares
+   color-scheme: light dark, which lets the browser pick scrollbar and native
+   control colours from the operating system rather than from CARE. The html
+   prefix beats Bootstrap's own rule on specificity. */
+html[data-bs-theme="light"] {
+  color-scheme: light;
 }
 
+html[data-bs-theme="dark"] {
+  color-scheme: dark;
+}
+
+/* --- Bootstrap classes with a fixed colour --- */
+
+[data-bs-theme="dark"] .btn-outline-secondary,
 [data-bs-theme="dark"] .btn-outline-dark {
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-border-color: var(--bs-border-color);
@@ -65,100 +77,53 @@
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-border-color: var(--bs-border-color);
 }
+
 [data-bs-theme="dark"] .text-dark {
   color: var(--bs-body-color) !important;
 }
 
+/* Disabled controls lose more contrast against dark than against white. */
 [data-bs-theme="dark"] .btn:disabled,
 [data-bs-theme="dark"] .nav-link.disabled {
-  opacity: 0.95;
+  opacity: 0.85;
 }
 
-[data-bs-theme="dark"] .ql-toolbar.ql-snow,
-[data-bs-theme="dark"] .ql-container.ql-snow {
-  border-color: var(--bs-border-color);
-}
-[data-bs-theme="dark"] .ql-toolbar.ql-snow {
-  background-color: var(--bs-tertiary-bg);
-}
-[data-bs-theme="dark"] .ql-container.ql-snow,
-[data-bs-theme="dark"] .ql-editor {
-  background-color: var(--bs-body-bg);
-  color: var(--bs-body-color);
-}
-[data-bs-theme="dark"] .ql-editor.ql-blank::before {
-  color: var(--bs-secondary-color);
-}
-[data-bs-theme="dark"] .ql-snow .ql-stroke {
-  stroke: var(--bs-body-color);
-}
-[data-bs-theme="dark"] .ql-snow .ql-fill {
-  fill: var(--bs-body-color);
-}
-[data-bs-theme="dark"] .ql-snow .ql-picker {
-  color: var(--bs-body-color);
-}
-[data-bs-theme="dark"] .ql-snow .ql-picker-options {
-  background-color: var(--bs-body-bg);
-  border-color: var(--bs-border-color);
-}
+/* --- Accent colour --- */
 
-[data-bs-theme="dark"] .pdf-toolbar {
-  border: 1px solid var(--bs-border-color);
-}
-
-[data-bs-theme="dark"] .scrolling-page:not(.pdf-light) canvas.pdf-page {
-  filter: invert(0.88) grayscale(0.85) sepia(0.3) hue-rotate(185deg) saturate(1.4);
-}
-
-/* Bootstrap declares color-scheme: light dark, which lets the browser pick
-   scrollbar and native control colours from the operating system instead of
-   the theme CARE is actually showing. Tie it to our theme instead. */
-html[data-bs-theme="light"] {
-  color-scheme: light;
-}
-html[data-bs-theme="dark"] {
-  color-scheme: dark;
-}
-
-@media print {
-  canvas.pdf-page {
-    filter: none !important;
-  }
-}
-
-/* Dark mode uses CARE's logo yellow as the accent instead of Bootstrap's blue,
-   with dark text on top since the yellow is too light for white. Bootstrap's
-   button and form-control colours are set per component, so each family needs
-   its own override rather than a single variable change. */
 [data-bs-theme="dark"] .btn-primary {
-  --bs-btn-bg: #ffe599;
-  --bs-btn-border-color: #ffe599;
-  --bs-btn-color: #212529;
-  --bs-btn-hover-bg: #f5d77e;
-  --bs-btn-hover-border-color: #f5d77e;
-  --bs-btn-hover-color: #212529;
-  --bs-btn-active-bg: #e8c86a;
-  --bs-btn-active-border-color: #e8c86a;
-  --bs-btn-active-color: #212529;
+  --bs-btn-bg: var(--care-accent);
+  --bs-btn-border-color: var(--care-accent);
+  --bs-btn-color: var(--care-on-accent);
+  --bs-btn-hover-bg: var(--care-accent-hover);
+  --bs-btn-hover-border-color: var(--care-accent-hover);
+  --bs-btn-hover-color: var(--care-on-accent);
+  --bs-btn-active-bg: var(--care-accent-active);
+  --bs-btn-active-border-color: var(--care-accent-active);
+  --bs-btn-active-color: var(--care-on-accent);
+}
+
+[data-bs-theme="dark"] #dropdownMenuButton {
+  background: var(--care-accent);
+  color: var(--care-on-accent);
 }
 
 [data-bs-theme="dark"] .page-item.active .page-link {
-  background-color: #ffe599;
-  border-color: #ffe599;
-  color: #212529;
+  background-color: var(--care-accent);
+  border-color: var(--care-accent);
+  color: var(--care-on-accent);
 }
 
 [data-bs-theme="dark"] .form-check-input:checked {
-  background-color: #ffe599;
-  border-color: #ffe599;
+  background-color: var(--care-accent);
+  border-color: var(--care-accent);
 }
 
 [data-bs-theme="dark"] .form-check-input:focus {
-  border-color: #ffe599;
+  border-color: var(--care-accent);
   box-shadow: 0 0 0 0.25rem rgba(255, 229, 153, 0.25);
 }
 
+/* The switch knob is a background image, so each state needs its own SVG. */
 [data-bs-theme="dark"] .form-switch .form-check-input:focus {
   --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23ffe599'/%3e%3c/svg%3e");
 }
@@ -168,8 +133,70 @@ html[data-bs-theme="dark"] {
   --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
 }
 
+/* --- Quill editor --- */
+
+[data-bs-theme="dark"] .ql-toolbar.ql-snow,
+[data-bs-theme="dark"] .ql-container.ql-snow {
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .ql-toolbar.ql-snow {
+  background-color: var(--bs-tertiary-bg);
+}
+
+[data-bs-theme="dark"] .ql-container.ql-snow,
+[data-bs-theme="dark"] .ql-editor {
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .ql-editor.ql-blank::before {
+  color: var(--bs-secondary-color);
+}
+
+/* Quill draws its toolbar icons as SVG, so they need stroke and fill. */
+[data-bs-theme="dark"] .ql-snow .ql-stroke {
+  stroke: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .ql-snow .ql-fill {
+  fill: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .ql-snow .ql-picker {
+  color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .ql-snow .ql-picker-options {
+  background-color: var(--bs-body-bg);
+  border-color: var(--bs-border-color);
+}
+
+/* --- Toasts --- */
+
 /* bootstrap-vue-3 hardcodes light toast colours, so the close button must not be
    inverted to white the way Bootstrap does for dark backgrounds. */
 [data-bs-theme="dark"] .b-toast .btn-close {
   filter: none;
+}
+
+/* --- PDF viewer --- */
+
+/* A black drop shadow is invisible on dark, so define the edge with a border. */
+[data-bs-theme="dark"] .pdf-toolbar {
+  border: 1px solid var(--bs-border-color);
+}
+
+/* Invert the rendered page, then tint it cool so it sits with the rest of the
+   dark UI rather than looking warm. Skipped when the reader has switched an
+   individual document back to light from the toolbar. */
+[data-bs-theme="dark"] .scrolling-page:not(.pdf-light) canvas.pdf-page {
+  filter: invert(0.88) grayscale(0.85) sepia(0.3) hue-rotate(185deg) saturate(1.4);
+}
+
+/* Printing a dark page wastes ink and reads badly, so never invert for print. */
+@media print {
+  canvas.pdf-page {
+    filter: none !important;
+  }
 }
