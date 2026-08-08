@@ -85,7 +85,11 @@ module.exports = (sequelize, DataTypes) => {
                 return await UserSetting.create(dbObj, options).then((msg) => {
                     return msg;
                 }).catch(async (err) => {
-                    return await UserSetting.update({value: value}, {where: {[Op.and]: [{userId: userId}, {key: key}]}, ...options});
+                    return await UserSetting.update({value: value}, {
+                        where: {[Op.and]: [{userId: userId}, {key: key}]},
+                        ...options,
+                        individualHooks: true,
+                    });
                 });
             } catch (e) {
                 console.log(e);
