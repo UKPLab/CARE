@@ -51,9 +51,12 @@
         </div>
       </template>
       <template #body>
-        <BasicTable
+        <BackendTable
+            ref="studiesBackendTable"
+            table="study"
             :columns="columns"
-            :data="studiesTable"
+            :query-filter="studyQueryFilter"
+            :enrich-row="(row) => enrichStudyRow(row)"
             :options="options"
             :buttons="buttons"
             :max-table-height="'65vh'"
@@ -76,7 +79,7 @@
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
+import BackendTable from "@/basic/BackendTable.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
@@ -99,7 +102,7 @@ export default {
     ManageStudiesModal,
     StudyCloseModal,
     Card,
-    BasicTable,
+    BackendTable,
     StudyModal,
     StudySessionModal,
     BasicButton,
@@ -143,8 +146,15 @@ export default {
         bordered: false,
         borderless: false,
         small: false,
-        pagination: 10,
-        search: true
+        pagination: {
+          serverSide: true,
+          itemsPerPage: 10,
+          itemsPerPageList: [10, 25, 50, 100],
+          total: 0,
+          showPages: 3,
+        },
+        search: true,
+        sort: {column: "createdAt", order: "ASC"},
       },
     }
   },
@@ -153,6 +163,17 @@ export default {
       return this.$store.getters["table/study/getFiltered"](
           (study) => study.projectId === this.projectId
       );
+    },
+    studyQueryFilter() {
+      const filters = [
+        {key: "projectId", value: this.projectId},
+        {key: "template", value: false},
+      ];
+      // Approximate ownership filter for users without fullAccess (ACL also applies server-side)
+      if (!this.canViewAllStudies) {
+        filters.push({key: "userId", value: this.userId});
+      }
+      return filters;
     },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
@@ -337,7 +358,7 @@ export default {
             }
           }
         },
-        {name: "Created", key: "createdAt", sortable: true},
+        {name: "Created", key: "createdAt", sortable: true, type: "datetime"},
         //{name: "Time Limit", key: "timeLimit", sortable: true},
         {name: "Sessions", key: "sessions", sortable: true},
         {name: "Session Limit", key: "limitSessions", sortable: true},
@@ -393,39 +414,7 @@ export default {
               (((study.createdByUserId === null && study.userId === this.userId) ||
                   (study.createdByUserId === this.userId))))
           .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
-          .map(st => {
-            let study = {...st};
-
-            if (study.start !== null && new Date(study.start) > new Date()) {
-              study.state = "not started";
-            } else if (study.end !== null && new Date(study.end) < new Date()) {
-              if (study.multipleSubmit) {
-                study.state = study.closed ? "closed" : "running";
-              } else {
-                study.state = "ended";
-              }
-            } else {
-              study.state = study.closed ? "closed" : "running";
-            }
-
-            if (this.canReadPrivateInformation) {
-              const user = this.$store.getters["table/user/get"](study.userId);
-              if (user) {
-                study.firstName = user.firstName;
-                study.lastName = user.lastName;
-              }
-            }
-
-            study.createdAt = new Date(study.createdAt).toLocaleString()
-            study.sessions = sessionCounts[study.id] ?? 0;
-
-            study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
-            study.showDeleteButton = this.isAdmin || study.userId === this.userId;
-            study.showRestartButton = (this.isAdmin || study.userId === this.userId) && !!study.closed;
-            study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
-            study.showTemplateButton = this.isAdmin || study.userId === this.userId;
-            return study;
-          });
+          .map(st => this.enrichStudyRow(st));
     },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
@@ -446,7 +435,50 @@ export default {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.canManageStudies");
     },
   },
+  watch: {
+    // Session counts live in Vuex via subscribeTable — re-enrich current page rows
+    "$store.state.table.study_session.data": {
+      deep: true,
+      handler() {
+        this.$refs.studiesBackendTable?.reEnrichItems?.();
+      },
+    },
+  },
   methods: {
+    enrichStudyRow(st) {
+      const sessionCounts = this.$store.getters["table/study_session/sessionCountByStudyId"];
+      let study = {...st};
+
+      if (study.start !== null && new Date(study.start) > new Date()) {
+        study.state = "not started";
+      } else if (study.end !== null && new Date(study.end) < new Date()) {
+        if (study.multipleSubmit) {
+          study.state = study.closed ? "closed" : "running";
+        } else {
+          study.state = "ended";
+        }
+      } else {
+        study.state = study.closed ? "closed" : "running";
+      }
+
+      if (this.canReadPrivateInformation) {
+        const user = this.$store.getters["table/user/get"](study.userId);
+        if (user) {
+          study.firstName = user.firstName;
+          study.lastName = user.lastName;
+        }
+      }
+
+      // Keep raw createdAt for backend sort / delta position checks
+      study.sessions = sessionCounts[study.id] ?? 0;
+
+      study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
+      study.showDeleteButton = this.isAdmin || study.userId === this.userId;
+      study.showRestartButton = (this.isAdmin || study.userId === this.userId) && !!study.closed;
+      study.showCloseButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
+      study.showTemplateButton = this.isAdmin || study.userId === this.userId;
+      return study;
+    },
     openStudyCoordinator(id = 0, linkOnly = false) {
       this.modals.studyCoordinator = true;
       this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly));

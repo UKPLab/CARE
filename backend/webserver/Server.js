@@ -373,6 +373,8 @@ module.exports = class Server {
                 ids: {},
                 merged: {}
             };
+            // Last queryTable params per autoTable — marks socket as query-mode for Delta/Stale
+            socket.currentQueries = {};
             socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 

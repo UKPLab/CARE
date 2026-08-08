@@ -253,7 +253,8 @@ class StudySocket extends Socket {
     }
 
     /**
-     * Soft-deletes studies identified by studyIds.
+     * Soft-deletes studies identified by studyIds in a single transaction so
+     * query-mode clients receive same-op bulk Deltas (not N separate commits).
      *
      * @socketEvent studyDeleteBulk
      * @param {object} data
@@ -265,16 +266,39 @@ class StudySocket extends Socket {
     async deleteBulk(data, options) {
         await this.hasManageStudiesPermission();
 
-        const deletedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
-            await this.models["study"].updateById(
-                id,
-                { deleted: true },
-                { transaction }
-            );
-            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
-        });
+        const studyIds = Array.isArray(data.studyIds) ? data.studyIds : [];
+        const progressId = data.progressId;
+        if (studyIds.length === 0) {
+            return {deletedCount: 0};
+        }
 
-        return { deletedCount };
+        const transaction = await this.server.db.sequelize.transaction();
+        let deletedCount = 0;
+        try {
+            for (let i = 0; i < studyIds.length; i++) {
+                await this.models["study"].updateById(
+                    studyIds[i],
+                    {deleted: true},
+                    {transaction}
+                );
+                deletedCount++;
+                if (progressId) {
+                    this.socket.emit("progressUpdate", {
+                        id: progressId,
+                        current: i + 1,
+                        total: studyIds.length,
+                    });
+                }
+            }
+            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
+            await transaction.commit();
+        } catch (e) {
+            this.logger.error(e);
+            await transaction.rollback();
+            throw e;
+        }
+
+        return {deletedCount};
     }
 
     async init() {

@@ -1,0 +1,2266 @@
+<template>
+  <Transition name="pending-banner">
+    <div
+      v-if="pendingBannerVisible"
+      class="pending-inserts-banner"
+      role="button"
+      :aria-busy="pendingLoadPhase === 'out'"
+      @click="loadPendingChanges"
+    >
+      {{ pendingBannerText }}
+    </div>
+  </Transition>
+  <div
+    v-if="options && options['search']"
+    class="input-group input-group-sm"
+  >
+    <span
+      id="search-addon1"
+      class="input-group-text"
+    >
+      <BasicIcon icon-name="search"></BasicIcon>
+    </span>
+    <input
+      v-model="search"
+      type="text"
+      class="form-control"
+      placeholder="Type to filter table..."
+      aria-label="table-search"
+      aria-describedby="search-addon1"
+    />
+    <slot name="additional-buttons"/>
+  </div>
+  <div
+    ref="tableWrapper"
+    class="table-wrapper"
+    :class="{
+      'pending-load-out': pendingLoadPhase === 'out',
+      'pending-load-in': pendingLoadPhase === 'in',
+    }"
+    :style="tableWrapperStyle"
+  >
+    <table
+      ref="tableElement"
+      :class="tableClass"
+      class="table"
+    >
+      <thead>
+        <tr>
+          <th v-if="selectableRows">
+            <div class="form-check">
+              <input
+                v-if="!(options && options.singleSelect)"
+                class="form-check-input"
+                type="checkbox"
+                :checked="isAllRowsSelected"
+                @change="selectAllRows"
+              />
+            </div>
+          </th>
+          <th
+            v-for="(c, index) in visibleColumns"
+            :key="c.key"
+            :ref="'header-' + c.key"
+            :class="[
+              'width' in c ? 'col-' + c.width : 'col-auto',
+              getFixedColumnClass(c, index),
+            ]"
+          
+            :style="[getFixedColumnStyle(c), c.style || {}]"
+          >
+            {{ c.name }}
+            <span
+              v-if="c.sortable"
+              title="Sort By"
+            >
+              <LoadIcon
+                v-if="c.sortable"
+                :class="{
+                  'bg-success': sortColumn === c.key,
+                  'bg-opacity-50': sortColumn === c.key,
+                  'bg-opacity-10': sortColumn !== c.key,
+                  'bg-black': sortColumn !== c.key,
+                }"
+                :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
+                class="me-1"
+                style="cursor: pointer"
+                @click="sort('sortKey' in c ? c.sortKey : c.key)"
+              />
+            </span>
+            <span v-if="filter && c.filter && hasFilterableData">
+              <span
+                aria-expanded="true"
+                aria-haspopup="true"
+                data-bs-toggle="dropdown"
+                role="button"
+                style="cursor: pointer"
+              >
+                <LoadIcon
+                  :id="'filterDropDown_' + c.key"
+                  :color="c.key in sequelizeFilter ? 'blue' : ''"
+                  :icon-name="
+                    c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'
+                  "
+                />
+              </span>
+              <template v-if="!c.filter.type">
+                <ul
+                  :aria-labelledby="'filterDropDown_' + c.key"
+                  class="dropdown-menu p-1"
+                  @click.stop=""
+                >
+                  <li
+                    v-for="f in c.filter"
+                    :key="f.key"
+                    class="form-check"
+                  >
+                    <input
+                      :id="'filterDropDown_' + c.key + '_label_' + f.key"
+                      v-model="filter[c.key][f.key]"
+                      class="form-check-input"
+                      type="checkbox"
+                    />
+                    <label
+                      :for="'filterDropDown_' + c.key + '_label_' + f.key"
+                      class="form-check-label"
+                      >{{ f.name }}</label
+                    >
+                  </li>
+                </ul>
+              </template>
+              <template v-else-if="c.filter.type === 'numeric'">
+                <div class="dropdown-menu p-2">
+                  <select
+                    v-model="filter[c.key].operator"
+                    class="form-select form-select-sm mb-2"
+                  >
+                    <option value="gt">&gt;</option>
+                    <option value="lt">&lt;</option>
+                    <option value="gte">&ge;</option>
+                    <option value="lte">&le;</option>
+                    <option value="eq">=</option>
+                  </select>
+                  <input
+                    v-model="filter[c.key].value"
+                    class="form-control form-control-sm"
+                    type="number"
+                    min="0"
+                  />
+                </div>
+              </template>
+            </span>
+          </th>
+          <th
+            v-if="hasManageButtons"
+            ref="manageHeader"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
+          >
+            Manage
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-if="serverSidePagination && total > 0 && sourceData.length === 0">
+          <td
+            :colspan="emptyColspan"
+            class="text-center"
+          >
+            Loading data from server...
+          </td>
+        </tr>
+        <tr v-else-if="!sourceData || sourceData.length === 0">
+          <td
+            :colspan="emptyColspan"
+            class="text-center"
+          >
+            No data
+          </td>
+        </tr>
+        <tr
+          v-for="r in tableData"
+          v-else
+          :key="r.id"
+          :class="{
+            'row-deleting': isDeletingRow(r.id),
+            'row-placeholder': isPlaceholderRow(r.id),
+            'row-updated': isUpdatedRow(r.id),
+            'row-stale': staleIds && staleIds.has(r.id),
+            'row-entering': isEnteringRow(r.id),
+            'row-entering-top': isEnteringTopRow(r.id),
+            'row-entering-bottom': isEnteringBottomRow(r.id),
+          }"
+          @click="isPlaceholderRow(r.id) ? null : selectRow(r)"
+        >
+          <td v-if="selectableRows">
+            <div
+              class="form-check"
+              @click.stop=""
+            >
+              <input
+                class="form-check-input"
+                type="checkbox"
+                :class="{
+                  pointer: selectableRows && !r.isDisabled,
+                }"
+                :disabled="r.isDisabled"
+                :checked="isRowSelected(r)"
+                @change="(e) => selectRow(r)"
+              />
+            </div>
+          </td>
+          <td
+            v-for="(c, index) in visibleColumns"
+            :key="c.key"
+            :class="[
+              'width' in c ? 'col-' + c.width : 'col-auto',
+              { pointer: selectableRows && !r.isDisabled },
+              getFixedColumnClass(c, index),
+            ]"
+            :style="[getFixedColumnStyle(c), c.style || {}]"
+          >
+            <span v-if="c.key in r">
+              <TIcon
+                v-if="c.type === 'icon'"
+                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
+                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
+                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
+                :size="c.typeOptions?.size ?? 16"
+              />
+              <TBadge
+                v-else-if="c.type === 'badge'"
+                :options="c.typeOptions ? c.typeOptions : null"
+                :value="r[c.key]"
+              />
+              <TButton
+                v-else-if="c.type === 'button'"
+                :action="r[c.key].action"
+                :stats="r[c.key].stats"
+                :icon="r[c.key].icon"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
+              />
+              <TToggle
+                v-else-if="c.type === 'toggle'"
+                :action="r[c.key].action"
+                :value="r[c.key].value"
+                :options="r[c.key].options"
+                :params="r"
+                :title="r[c.key].title"
+                @action="actionEmitter"
+              />
+              <span v-else-if="c.type === 'datetime'">
+                {{ new Date(r[c.key]).toLocaleString() }}
+              </span>
+
+              <span v-else-if="c.type === 'icon-selector'">
+                <LoadIcon
+                  v-if="r[c.key].selected"
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  style="color: yellowgreen"
+                />
+                <LoadIcon
+                  v-else
+                  v-tooltip
+                  :icon-name="r[c.key].icon"
+                  :size="16"
+                  :title="r[c.key].title"
+                  role="button"
+                  @click="actionEmitter({ action: r[c.key].action, params: r })"
+                />
+              </span>
+              <span
+                v-else
+                :class="{
+                  multiline: c.multiline,
+                }"
+                :style="getMultilineStyles(c)"
+              >
+                {{ r[c.key] }}
+              </span>
+            </span>
+            <span v-else> - </span>
+          </td>
+          <td
+            v-if="getFilteredButtons(r).length > 0"
+            :class="getManageColumnClass()"
+            :style="manageColumnStyle"
+            @click.stop=""
+          >
+            <TButtonGroup
+              :buttons="getFilteredButtons(r)"
+              :params="r"
+              @action="actionEmitter"
+            />
+          </td>
+        </tr>
+        <tr v-if="isAllMode && allRenderLimit < total" ref="loadMoreSentinel">
+          <td 
+            :colspan="emptyColspan" 
+            style="height: 1px; 
+            padding: 0; 
+            border: 0;">
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div
+    v-if="selectableRows && !(options && options.singleSelect)"
+    class="text-end text-muted small mb-2"
+  >
+    {{ selectedCount }} of {{ totalSelectableCount }} selected
+  </div>
+  <Pagination
+    v-if="options && options.pagination && total > 0"
+    ref="pagination"
+    :current-page="currentPage"
+    :items-per-page="limit"
+    :items-per-page-list="itemsPerPageList"
+    :pages="pages"
+    :show-pages="paginationShowPages"
+    :total-items="total"
+    @update-items-per-page="paginationItemsPerPageChange"
+    @update-page="paginationPageChange"
+  />
+</template>
+
+<script>
+import TButton from "./table/Button.vue";
+import TButtonGroup from "./table/ButtonGroup.vue";
+import TToggle from "./table/Toggle.vue";
+import TBadge from "./table/Badge.vue";
+import TIcon from "./table/Icon.vue";
+import Pagination from "./table/Pagination.vue";
+import LoadIcon from "@/basic/Icon.vue";
+import BasicIcon from "@/basic/Icon.vue";
+import { tooltip } from "@/assets/tooltip.js";
+import deepEqual from "deep-equal";
+
+/**
+ * generic table with feature-rich API
+ *
+ * Use this component for tabulating data with a diverse API for interactions like buttons or row selection.
+ *
+ * @example
+ * // Example of using numeric filter
+ * const columns = [{
+ *   key: "documentCount",
+ *   name: "Document Count",
+ *   filter: {
+ *     type: "numeric",
+ *     defaultValue: 0, // Optional
+ *     defaultOperator: 'gt', // Optional
+ *   }
+ * }]
+ * // Example of using checkbox filter
+ * const columns = [{
+ *   key: "role",
+ *   name: "Role",
+ *   filter: [
+ *     { key: "admin", name: "Admin" },
+ *     { key: "user", name: "User" },
+ *   ],
+ * }]
+ *
+ * @author Dennis Zyska, Nils Dycke, Linyin Huang
+ */
+export default {
+  name: "BackendTable",
+  components: {
+    BasicIcon,
+    Pagination,
+    TIcon,
+    TBadge,
+    TButtonGroup,
+    TButton,
+    TToggle,
+    LoadIcon,
+  },
+  directives: { tooltip },
+  inject: {
+    acceptStats: {
+      default: () => false,
+    },
+  },
+  props: {
+    data: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
+    columns: {
+      type: Array,
+      required: true,
+    },
+    options: {
+      type: Object,
+      required: false,
+      default: () => {},
+    },
+    count: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    modelValue: {
+      type: Object,
+      required: false,
+      default: () => {
+        return {};
+      },
+    },
+    buttons: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
+    maxTableHeight: {
+      type: [Number, String],
+      required: false,
+      default: null,
+    },
+    /** autoTable name — enables queryTable + Delta (issue #88) */
+    table: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    /** subscribeAppData-style filter items for queryTable */
+    queryFilter: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
+    /** Optional (row) => enrichedRow mapper (e.g. Study computed fields) */
+    enrichRow: {
+      type: Function,
+      required: false,
+      default: null,
+    },
+  },
+  emits: ["action", "update:modelValue", "paginationUpdate", "delta", "stale"],
+  data: function () {
+    return {
+      tableClass: {
+        "table-striped": this.options && this.options.striped,
+        "table-hover": this.options && this.options.hover,
+        "table-bordered": this.options && this.options.bordered,
+        "table-borderless": this.options && this.options.borderless,
+        "table-sm": this.options && this.options.small,
+      },
+      sortColumn: this.options && this.options.sort && this.options.sort.column ? this.options.sort.column : null,
+      sortDirection: this.options && this.options.sort && this.options.sort.order ? this.options.sort.order : "ASC",
+      currentPage: 1,
+      selectableRows: this.options && this.options.selectableRows,
+      currentData: [],
+      itemsPerPage: null,
+      itemsPerPageList: [10, 25, 50, 100],
+      paginationShowPages: 3,
+      filter: null, // Can be assigned an object or an array, see example above.
+      search: "",
+      hasManageButtons: false, // Use this flag to decide on the visibility of the column header
+      fixedColumnStyles: {},
+      manageColumnStyle: {},
+      debouncedComputeFixedColumns: null,
+      hasHorizontalOverflow: false,
+      resizeObserver: null,
+      allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
+      allChunkSize: 50, // Append the next 50 items on scroll
+      allObserver: null,
+      // queryTable / Delta (issue #88)
+      queryItems: [],
+      queryMeta: {total: 0, page: 0, pageSize: 10, totalPages: 1},
+      currentQuery: null,
+      pendingInserts: 0,
+      anchorDisplacement: 0,
+      pendingStructural: false,
+      deletingIds: new Set(),
+      placeholderIds: new Set(),
+      updatedIds: [],
+      staleIds: new Set(),
+      enteringIds: [],
+      enteringTopIds: [],
+      enteringBottomIds: [],
+      enteringFrom: null, // legacy unused; kept clear for safety
+      pendingLoadPhase: null, // null | 'out' | 'in'
+      processedDeleteIds: new Set(),
+      searchDebounceTimer: null,
+      queryLoading: false,
+      _deltaHandler: null,
+      _staleHandler: null,
+      _pendingConnectFetch: null,
+      _pendingLoadBusy: false,
+      _enteringClearTimer: null,
+      _pendingBackfillCount: 0,
+      _pendingBackfillSlots: [], // unused (kept for HMR safety)
+      _backfillTimer: null,
+      _backfillBusy: false,
+      _deleteAnimMs: 750,
+    };
+  },
+  computed: {
+    queryMode() {
+      return !!(this.table && this.serverSidePagination);
+    },
+    pendingBannerVisible() {
+      return this.queryMode && (this.pendingInserts > 0 || this.pendingStructural);
+    },
+    pendingBannerText() {
+      if (this.pendingInserts > 0) {
+        return `${this.pendingInserts} new entr${this.pendingInserts === 1 ? "y" : "ies"} available — click to load`;
+      }
+      return "Table updated — click to refresh";
+    },
+    sourceData() {
+      return this.queryMode ? this.queryItems : this.data;
+    },
+    hasFilterableData() {
+      return this.sourceData && this.sourceData.length > 0;
+    },
+    isAllRowsSelected() {
+      // Use the existing method to get filtered data across all pages
+      const allFilteredData = this.getFilteredAndSortedData();
+      const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
+      return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
+    },
+    tableWrapperStyle() {
+      if (!this.maxTableHeight) return null;
+      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
+      if (!maxHeight) return null;
+      return {
+        maxHeight,
+        overflowY: "auto",
+      };
+    },
+    serverSidePagination() {
+      return (
+        this.options &&
+        this.options.pagination &&
+        typeof this.options.pagination === "object" &&
+        "serverSide" in this.options.pagination &&
+        this.options.pagination.serverSide
+      );
+    },
+    emptyColspan() {
+      let colspan = this.visibleColumns.length;
+      if (this.selectableRows) {
+        colspan += 1;
+      }
+      if (this.buttons.length > 0) {
+        colspan += 1;
+      }
+      return colspan;
+    },
+    total() {
+      if (this.queryMode) {
+        return this.queryMeta.total;
+      }
+      if (this.serverSidePagination) {
+        return this.options.pagination.total;
+      }
+      return this.data.length;
+    },
+    isAllMode() {
+      return this.itemsPerPage === 0;
+    },
+    limit() {
+      // if manually set, use that
+      if (this.itemsPerPage !== null) {
+        if (this.itemsPerPage === 0) {
+          // Prevent UI freeze when "All" is selected
+          return Math.min(this.total, this.allRenderLimit);
+        }
+        return this.itemsPerPage;
+      }
+      // if pagination is enabled, use that
+      if (this.options && this.options.pagination) {
+        if (typeof this.options.pagination === "object") {
+          return this.options.pagination.itemsPerPage;
+        } else {
+          return this.options.pagination;
+        }
+      }
+      // otherwise, use all elements
+      return this.total;
+    },
+    pages() {
+      if (this.isAllMode) {
+        return 1;
+      }
+      if (this.serverSidePagination) {
+        return Math.ceil(this.total / this.limit);
+      }
+      // For client-side pagination, use filtered data length
+      return Math.ceil(this.filteredDataLength / this.limit);
+    },
+    filteredDataLength() {
+      if (this.serverSidePagination) {
+        return this.total;
+      }
+      
+      return this.getFilteredAndSortedData().length;
+    },
+    sortIcon() {
+      return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
+    },
+    tableData() {
+      if (this.serverSidePagination) {
+        return this.sourceData;
+      }
+      
+      let data = this.getFilteredAndSortedData();
+
+      if (this.options && this.options.pagination && !this.isAllMode) {
+        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
+      } else if (this.isAllMode) {
+        // In "All" mode we render a growing prefix (0..limit)
+        data = data.slice(0, this.limit);
+      }
+      return data;
+    },
+    sequelizeFilter() {
+      let sequelizeFilter = Object.assign(
+        {},
+        ...Object.entries(this.filter).map(([k, v]) => ({
+          [k]: Object.entries(v)
+            .filter(([_k, v]) => v)
+            .map(([k, _v]) => k),
+        }))
+      );
+      return Object.assign(
+        {},
+        ...Object.entries(sequelizeFilter)
+          .filter(([_k, v]) => v.length > 0)
+          .map(([k, v]) => ({ [k]: v }))
+      );
+    },
+    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
+    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
+    visibleColumns() {
+      if (!this.sourceData || this.sourceData.length === 0) return this.columns;
+      return this.columns.filter((c) => this.sourceData.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
+    },
+    hasFixedColumns() {
+      return this.visibleColumns.some((c) => ["left", "right"].includes(c.fixed));
+    },
+    hasRightFixedColumns() {
+      return this.visibleColumns.some((c) => c.fixed === "right");
+    },
+    // Determine if manage column should be sticky
+    shouldFixManageColumn() {
+      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+    },
+    // Cache the indices to avoid repeated searches
+    fixedColumnIndices() {
+      return {
+        lastLeft: this.visibleColumns.findLastIndex((col) => col.fixed === "left"),
+        firstRight: this.visibleColumns.findIndex((col) => col.fixed === "right"),
+      };
+    },
+    selectedCount() {
+      return this.currentData.length;
+    },
+    totalSelectableCount() {
+      if (!this.selectableRows) return 0;
+      const allFilteredData = this.getFilteredAndSortedData();
+      return allFilteredData.filter((r) => !r.isDisabled).length;
+    },
+  },
+  watch: {
+    currentData: {
+      handler() {
+        if (!deepEqual(this.currentData, this.modelValue)) {
+          this.$emit("update:modelValue", this.currentData);
+        }
+      },
+      deep: true,
+    },
+    modelValue: {
+      handler() {
+        this.currentData = this.updateValues(this.modelValue);
+      },
+      deep: true,
+    },
+    pages(val) {
+      if (val === 0) {
+        this.currentPage = 1;
+      } else if (this.currentPage > val) {
+        this.currentPage = val;
+      }
+    },
+    filter: {
+      handler() {
+        this.paginationUpdate();
+      },
+      deep: true,
+    },
+    hasManageButtons(newVal) {
+      if(newVal) {
+        this.setupFixedColumns();
+      } else if(!this.hasFixedColumns) {
+        this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
+      }
+    },
+    itemsPerPage(newVal) {
+      if (newVal === 0) {
+        this.currentPage = 1;
+        this.allRenderLimit = this.allChunkSize;
+        this.$nextTick(() => this.setupAllObserver());
+      } else {
+        this.cleanupAllObserver();
+      }
+    },
+    search() {
+      if (!this.queryMode) return;
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = setTimeout(() => {
+        this.currentPage = 1;
+        this.fetchQueryPage();
+      }, 300);
+    },
+    queryFilter: {
+      handler() {
+        if (this.queryMode) {
+          this.currentPage = 1;
+          this.fetchQueryPage();
+        }
+      },
+      deep: true,
+    },
+  },
+  mounted() {
+    this.currentData = this.updateValues(this.modelValue);
+
+    if (this.options && this.options.pagination) {
+      if (typeof this.options.pagination === "object") {
+        if ("itemsPerPageList" in this.options.pagination) {
+          this.itemsPerPageList = this.options.pagination.itemsPerPageList;
+        }
+        if ("showPages" in this.options.pagination) {
+          this.paginationShowPages = this.options.pagination.showPages;
+        }
+      }
+    }
+    // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
+    this.filter = Object.assign(
+      {},
+      ...this.columns
+        .filter((c) => "filter" in c)
+        .map((c) => ({
+          [c.key]:
+            c.filter.type === "numeric"
+              ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" } // initialize numeric filter
+              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))), // initialize checkbox filter
+        }))
+    );
+
+    this.setupQueryMode();
+
+    if (this.hasFixedColumns || this.hasManageButtons) {
+      this.setupFixedColumns();
+    }
+  },
+  created() {
+    this.debouncedComputeFixedColumns = this.debounce(() => {
+      this.computeFixedColumnStyles();
+    }, 150);
+  },
+  beforeUnmount() {
+    this.teardownQueryMode();
+    clearTimeout(this.searchDebounceTimer);
+    clearTimeout(this._enteringClearTimer);
+    clearTimeout(this._backfillTimer);
+    this.cleanupFixedColumns();
+    this.cleanupAllObserver();
+  },
+  methods: {
+    setupFixedColumns() {
+      this.$nextTick(() => {
+        this.computeFixedColumnStyles();
+        // Use ResizeObserver for better performance if available
+        if (window.ResizeObserver && this.$refs.tableWrapper) {
+          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
+          this.resizeObserver.observe(this.$refs.tableWrapper);
+        } else {
+          // Fallback to window resize
+          window.addEventListener("resize", this.debouncedComputeFixedColumns);
+        }
+      });
+    },
+    cleanupFixedColumns() {
+      if (this.resizeObserver) {
+        this.resizeObserver.disconnect();
+        this.resizeObserver = null;
+      }
+      if (this.debouncedComputeFixedColumns) {
+        window.removeEventListener("resize", this.debouncedComputeFixedColumns);
+      }
+    },
+    getManageColumnClass() {
+      if (!this.shouldFixManageColumn) return null;
+
+      return {
+        "table-fixed": true,
+        "table-fixed-right": true,
+        "table-fixed-shadow": !this.hasRightFixedColumns,
+      };
+    },
+    getFixedColumnStyle(column) {
+      if (!column?.key || !column?.fixed) return null;
+      return this.fixedColumnStyles[column.key] || null;
+    },
+    getFixedColumnClass(column, index) {
+      if (!column?.fixed) return null;
+
+      const { lastLeft, firstRight } = this.fixedColumnIndices;
+      const isLastLeft = column.fixed === "left" && index === lastLeft;
+      const isFirstRight = column.fixed === "right" && index === firstRight;
+
+      return {
+        "table-fixed": true,
+        "table-fixed-left": column.fixed === "left",
+        "table-fixed-right": column.fixed === "right",
+        "table-fixed-shadow": isLastLeft || isFirstRight,
+      };
+    },
+    getManageColumnWidth() {
+      const ref = this.$refs.manageHeader;
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      return el?.offsetWidth || 100; // Default 100px 
+    },
+    computeFixedColumnStyles() {
+      // Check for horizontal overflow
+      const hasOverflow = this.detectHorizontalOverflow();
+      if (hasOverflow !== this.hasHorizontalOverflow) {
+        this.hasHorizontalOverflow = hasOverflow;
+      }
+
+      // Early return if no fixed columns needed
+      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
+        this.fixedColumnStyles = {};
+        this.manageColumnStyle = {};
+        return;
+      }
+
+      const styles = {};
+      const baseStyle = {
+        position: "sticky",
+        zIndex: 2,
+        background: "var(--bs-body-bg, #fff)",
+      };
+
+      // Compute left-fixed columns
+      let leftOffset = 0;
+      this.visibleColumns.forEach((column) => {
+        if (column.fixed === "left") {
+          styles[column.key] = {
+            ...baseStyle,
+            left: `${leftOffset}px`,
+          };
+          leftOffset += this.getColumnWidth(column);
+        }
+      });
+
+      // Compute right-fixed columns
+      let rightOffset = 0;
+
+      // Reserve space for manage column if it should be fixed
+      if (this.shouldFixManageColumn) {
+        rightOffset = this.getManageColumnWidth();
+      }
+
+      // Process right-fixed columns from right to left
+      [...this.visibleColumns]
+        .reverse()
+        .filter((c) => c.fixed === "right")
+        .forEach((column) => {
+          styles[column.key] = {
+            ...baseStyle,
+            right: `${rightOffset}px`,
+          };
+          rightOffset += this.getColumnWidth(column);
+        });
+
+      // Set manage column style
+      this.manageColumnStyle = this.shouldFixManageColumn
+        ? {
+            ...baseStyle,
+            right: "0px",
+            zIndex: 3, // Higher z-index for manage column
+          }
+        : null;
+
+      this.fixedColumnStyles = styles;
+    },
+    getColumnWidth(column) {
+      // Check explicit width properties first 
+      if (column.fixedWidth) return Number(column.fixedWidth);
+      if (column.widthPx) return Number(column.widthPx);
+      if (column.width) return Number(column.width);
+
+      // Fall back to measuring DOM
+      const ref = this.$refs[`header-${column.key}`];
+      const el = Array.isArray(ref) ? ref[0] : ref;
+      if (el?.offsetWidth) return el.offsetWidth;
+
+      // Default fallback
+      return 150;
+    },
+    detectHorizontalOverflow() {
+      const wrapper = this.$refs.tableWrapper;
+      const table = this.$refs.tableElement;
+
+      if (!wrapper || !table) return false;
+
+      return table.scrollWidth > wrapper.clientWidth;
+    },
+    normalizeCssSize(value) {
+      if (!value) return null;
+      if (typeof value === "number" && !Number.isNaN(value)) {
+        return `${value}px`;
+      }
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        if (/^\d+$/.test(trimmed)) {
+          return `${trimmed}px`;
+        }
+        return trimmed;
+      }
+      return null;
+    },
+    debounce(func, wait = 100) {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          func.apply(this, args);
+        }, wait);
+      };
+    },
+    getFilteredAndSortedData() {
+      let data = this.sourceData.map((d) => d);
+
+      // Apply search filter
+      if (this.search && this.search !== "") {
+        data = data.filter((d) => {
+          for (const [_key, value] of Object.entries(d)) {
+            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
+              return true;
+            }
+          }
+          return false;
+        });
+      }
+
+      // Apply sorting (pre-group)
+      if (this.sortColumn) {
+        if (this.sortDirection === "ASC") {
+          data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
+        } else {
+          data = data.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
+        }
+      }
+
+      // Apply filters
+      if (this.filter) {
+        data = data.filter((d) => {
+          for (const [key, filterValue] of Object.entries(this.filter)) {
+            if (typeof filterValue === "object" && "operator" in filterValue) {
+              const value = parseFloat(d[key]);
+              const compareValue = parseFloat(filterValue.value);
+
+              switch (filterValue.operator) {
+                case "gt":
+                  if (!(value > compareValue)) return false;
+                  break;
+                case "lt":
+                  if (!(value < compareValue)) return false;
+                  break;
+                case "gte":
+                  if (!(value >= compareValue)) return false;
+                  break;
+                case "lte":
+                  if (!(value <= compareValue)) return false;
+                  break;
+                case "eq":
+                  if (value !== compareValue) return false;
+                  break;
+              }
+            } else {
+              // only selected filter
+              const filter = Object.entries(filterValue)
+                .filter(([_k, v]) => v)
+                .map(([k, _v]) => k);
+              if (filter.length > 0) {
+                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
+                const hasMatch = dataValues.some((val) =>
+                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
+                );
+
+                if (!hasMatch) {
+                  return false;
+                }
+              }
+            }
+          }
+          return true;
+        });
+      }
+
+      // Group rows if requested
+      if (this.options && this.options.groupBy) {
+        const groupBy = this.options.groupBy;
+        const groupKey = typeof groupBy === "string" ? groupBy : groupBy.key;
+        const groups = {};
+        for (const row of data) {
+          const key = row[groupKey];
+          if (!(key in groups)) groups[key] = [];
+          groups[key].push(row);
+        }
+        let aggregated = Object.values(groups).map((rows) => {
+          if (typeof groupBy === "object" && typeof groupBy.aggregate === "function") {
+            return groupBy.aggregate(rows);
+          }
+          // Default: use first row of the group
+          return rows[0];
+        });
+
+        // Re-apply sorting on aggregated rows to respect current sort
+        if (this.sortColumn) {
+          if (this.sortDirection === "ASC") {
+            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
+          } else {
+            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
+          }
+        }
+
+        return aggregated;
+      }
+
+      return data;
+    },
+    updateValues(data) {
+      return data;
+    },
+    sort(column) {
+      if (this.sortColumn && this.sortColumn === column) {
+        this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
+      } else {
+        this.sortDirection = "ASC";
+      }
+      this.sortColumn = column;
+      this.paginationUpdate();
+    },
+    actionEmitter(data) {
+      this.$emit("action", data);
+      let statsParams = {};
+      if (data.stats) {
+        // Only include the stat fields in the stats data
+       Object.entries(data.stats).forEach(([statsKey, paramKey]) => {
+        statsParams[statsKey] = data.params[paramKey];
+      });
+      }
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "actionClick",
+            data: {
+              action: data.action,
+              params: statsParams,
+            },
+          });
+        }
+    },
+    selectRow(row) {
+      if (this.selectableRows) {
+        if (!this.isRowSelected(row)) {
+          // check if selected
+          if (this.options && this.options.singleSelect) {
+            this.currentData = [row];
+          } else {
+            this.currentData.push(row);
+          }
+        } else {
+          const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
+          if (toRemove >= 0) {
+            this.currentData.splice(toRemove, 1);
+          }
+        }
+      }
+    },
+    selectAllRows() {
+      if (this.isAllRowsSelected) {
+        this.currentData = [];
+      } else {
+        // Use the existing method to get filtered data across all pages
+        const allFilteredData = this.getFilteredAndSortedData();
+        // Select all filtered rows that are not disabled
+        this.currentData = [...allFilteredData.filter((t) => !t.isDisabled)];
+      }
+    },
+    paginationPageChange(page) {
+      this.currentPage = page;
+      this.paginationUpdate();
+    },
+    paginationUpdate() {
+      if (this.serverSidePagination) {
+        const payload = {
+          page: this.currentPage - 1,
+          limit: this.limit,
+          order: this.sortColumn ? [[this.sortColumn, this.sortDirection]] : null,
+          filter: this.sequelizeFilter,
+        };
+        this.$emit("paginationUpdate", payload);
+        if (this.queryMode) {
+          this.fetchQueryPage();
+        }
+      }
+    },
+    paginationItemsPerPageChange(value) {
+      this.itemsPerPage = value;
+      this.currentPage = 1;
+      this.paginationUpdate();
+    },
+    // NOTE: Because deepEqual is imported after its reference in the template.
+    // Therefore, add this wrapper function here to prevent reference error.
+    deepEqual(row1, row2) {
+      return deepEqual(row1, row2);
+    },
+    getFilteredButtons(row) {
+      const filteredButtons = this.buttons.filter((b) => {
+        if (!b.filter || !b.filter.length) return true;
+        
+        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
+        const filterMode = b.filterMode || "or";
+        
+        if (filterMode === "and") {
+          // AND logic: all filters must match
+          return b.filter.every((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        } else {
+          // OR logic (default): at least one filter must match
+          return b.filter.some((f) => {
+            if (f.type === "not") {
+              return row[f.key] !== f.value;
+            }
+            return row[f.key] === f.value;
+          });
+        }
+      });
+
+      // Update this flag if there are any buttons
+      if (filteredButtons.length > 0) {
+        this.hasManageButtons = true;
+      }
+
+
+      return filteredButtons;
+    },
+    getMultilineStyles(column) {
+      if (!column.multiline) {
+        return null;
+      }
+      const lines =
+        typeof column.multiline === "number" ? 
+          column.multiline
+          : column.multiline === true
+            ? 2
+            : column.multiline;
+      return {
+        "--line-clamp": lines,
+      };
+    },
+    setupAllObserver() {
+      this.cleanupAllObserver();
+
+      const wrapper = this.$refs.tableWrapper;
+      const sentinel = this.$refs.loadMoreSentinel;
+      if (!sentinel) return;
+
+      // If there is a scroll container (maxTableHeight), observe within it.
+      // Otherwise observe in the viewport.
+      const root = wrapper && this.maxTableHeight ? wrapper : null;
+
+      this.allObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0];
+          if (!entry?.isIntersecting) return;
+
+          if (this.allRenderLimit < this.total) {
+            this.allRenderLimit = Math.min(this.total, this.allRenderLimit + this.allChunkSize);
+          }
+        },
+        { 
+          root, 
+          threshold: 0.1,
+        }
+      );
+
+      this.allObserver.observe(sentinel);
+    },
+
+    cleanupAllObserver() {
+      if (this.allObserver) {
+        this.allObserver.disconnect();
+        this.allObserver = null;
+      }
+    },
+
+    isRowSelected(row) {
+      if (row.id !== undefined) {
+        return this.currentData.some(r => r.id === row.id);
+      }
+      return this.currentData.some(r => deepEqual(r, row));
+    },
+
+    // --- queryTable / Delta (issue #88) ---
+
+    setupQueryMode() {
+      if (!this.table || !this.$socket) return;
+      if (!this.serverSidePagination) return;
+
+      this.teardownQueryMode();
+      this._deltaHandler = (payload) => this.handleDelta(payload);
+      this._staleHandler = (payload) => this.handleStale(payload);
+      // vue-3-socket.io overrides socket.io onevent and routes custom events
+      // through its emitter — $socket.on(...) never fires for studyDelta/Stale.
+      // Use sockets.subscribe (same pattern as DownloadSingle / Toast).
+      if (this.sockets?.subscribe) {
+        this.sockets.subscribe(this.table + "Delta", this._deltaHandler);
+        this.sockets.subscribe(this.table + "Stale", this._staleHandler);
+      } else {
+        this.$socket.on(this.table + "Delta", this._deltaHandler);
+        this.$socket.on(this.table + "Stale", this._staleHandler);
+      }
+      // fetchQueryPage waits for socket.connect when autoConnect:false
+      this.fetchQueryPage();
+    },
+    teardownQueryMode() {
+      if (!this.table || !this.$socket) return;
+      if (this._deltaHandler || this._staleHandler) {
+        if (this.sockets?.unsubscribe) {
+          this.sockets.unsubscribe(this.table + "Delta");
+          this.sockets.unsubscribe(this.table + "Stale");
+        } else {
+          if (this._deltaHandler) {
+            this.$socket.off(this.table + "Delta", this._deltaHandler);
+          }
+          if (this._staleHandler) {
+            this.$socket.off(this.table + "Stale", this._staleHandler);
+          }
+        }
+      }
+      if (this._pendingConnectFetch) {
+        this.$socket.off("connect", this._pendingConnectFetch);
+      }
+      this._deltaHandler = null;
+      this._staleHandler = null;
+      this._pendingConnectFetch = null;
+    },
+    buildQueryPayload() {
+      const page = this.currentPage - 1;
+      const limit = this.limit;
+      const sort = this.sortColumn
+        ? {column: this.sortColumn, direction: this.sortDirection}
+        : {column: "id", direction: "ASC"};
+      return {
+        table: this.table,
+        filter: this.queryFilter || [],
+        query: {
+          page,
+          limit,
+          sort,
+          search: this.search || "",
+          columnFilters: this.sequelizeFilter || {},
+        },
+      };
+    },
+    applyQueryResult(result, {highlightNewFrom = null} = {}) {
+      const items = (result.items || []).map((row) => this.applyEnrich(row));
+      this.queryItems = items;
+      this.queryMeta = result.meta || this.queryMeta;
+      if (this.options?.pagination) {
+        this.options.pagination.total = this.queryMeta.total;
+      }
+      this.currentQuery = {
+        page: this.queryMeta.page,
+        limit: this.queryMeta.pageSize,
+        sort: {
+          column: this.sortColumn || "id",
+          direction: this.sortDirection || "ASC",
+        },
+        search: this.search || "",
+        columnFilters: this.sequelizeFilter || {},
+      };
+      this.pendingInserts = 0;
+      this.anchorDisplacement = 0;
+      this.pendingStructural = false;
+      this.staleIds = new Set();
+      this.updatedIds = [];
+      this.placeholderIds = new Set();
+      if (highlightNewFrom) {
+        // Plain array — safer with Vue reactivity / HMR than Set
+        this.enteringIds = items
+          .filter((row) => row?.id != null && !highlightNewFrom.has(row.id))
+          .map((row) => row.id);
+        this.enteringTopIds = [];
+        this.enteringBottomIds = [];
+        this.enteringFrom = null;
+      } else {
+        this.enteringIds = [];
+        this.enteringTopIds = [];
+        this.enteringBottomIds = [];
+        this.enteringFrom = null;
+      }
+    },
+    applyEnrich(row) {
+      if (typeof this.enrichRow !== "function") {
+        return {...row};
+      }
+      try {
+        return this.enrichRow({...row});
+      } catch (err) {
+        console.warn("BackendTable enrichRow failed", err);
+        return {...row};
+      }
+    },
+    fetchQueryPage(options = {}) {
+      if (!this.queryMode || !this.$socket) return;
+      if (!this.$socket.connected) {
+        // Socket uses autoConnect:false; emit+ack before connect is dropped.
+        if (!this._pendingConnectFetch) {
+          this._pendingConnectFetch = () => {
+            this._pendingConnectFetch = null;
+            this.fetchQueryPage(options);
+          };
+          this.$socket.once("connect", this._pendingConnectFetch);
+        }
+        return;
+      }
+      this.queryLoading = true;
+      const payload = this.buildQueryPayload();
+      this.$socket.emit("queryTable", payload, (response) => {
+        this.queryLoading = false;
+        if (!response?.success) {
+          console.warn("queryTable failed", response);
+          if (typeof options.onError === "function") options.onError(response);
+          return;
+        }
+        try {
+          this.applyQueryResult(response.data, {
+            highlightNewFrom: options.highlightNewFrom || null,
+          });
+          if (typeof options.onApplied === "function") {
+            options.onApplied(response.data);
+          }
+        } catch (err) {
+          console.warn("queryTable applyQueryResult failed", err);
+          if (typeof options.onError === "function") options.onError(err);
+        }
+      });
+    },
+    isOwnSocket(originSocketId) {
+      return originSocketId && this.$socket?.id && originSocketId === this.$socket.id;
+    },
+    isEnteringRow(id) {
+      const ids = this.enteringIds;
+      return Array.isArray(ids) && ids.includes(id);
+    },
+    isEnteringTopRow(id) {
+      return Array.isArray(this.enteringTopIds) && this.enteringTopIds.includes(id);
+    },
+    isEnteringBottomRow(id) {
+      return Array.isArray(this.enteringBottomIds) && this.enteringBottomIds.includes(id);
+    },
+    isUpdatedRow(id) {
+      return Array.isArray(this.updatedIds) && this.updatedIds.includes(id);
+    },
+    isDeletingRow(id) {
+      return !!(this.deletingIds && this.deletingIds.has && this.deletingIds.has(id));
+    },
+    isPlaceholderRow(id) {
+      return !!(this.placeholderIds && this.placeholderIds.has && this.placeholderIds.has(id));
+    },
+    bumpTotal(delta) {
+      this.queryMeta.total = Math.max(0, (this.queryMeta.total || 0) + delta);
+      this.queryMeta.totalPages = this.queryMeta.pageSize
+        ? Math.ceil(this.queryMeta.total / this.queryMeta.pageSize)
+        : 1;
+      if (this.options?.pagination) {
+        this.options.pagination.total = this.queryMeta.total;
+      }
+    },
+    passesCurrentFilter(row) {
+      const q = this.currentQuery || {};
+      if (q.search) {
+        const needle = String(q.search).toLowerCase();
+        const hit = Object.values(row).some(
+          (v) => v != null && String(v).toLowerCase().includes(needle)
+        );
+        if (!hit) return false;
+      }
+      for (const [col, filter] of Object.entries(q.columnFilters || {})) {
+        if (Array.isArray(filter)) {
+          if (filter.length && !filter.map(String).includes(String(row[col]))) return false;
+        } else if (filter?.operator) {
+          const v = Number(row[col]);
+          const fv = Number(filter.value);
+          if (filter.operator === "gt" && !(v > fv)) return false;
+          if (filter.operator === "lt" && !(v < fv)) return false;
+          if (filter.operator === "gte" && !(v >= fv)) return false;
+          if (filter.operator === "lte" && !(v <= fv)) return false;
+          if (filter.operator === "eq" && !(v === fv)) return false;
+        }
+      }
+      // Client base filters from queryFilter
+      for (const f of this.queryFilter || []) {
+        if (!f?.key) continue;
+        if (f.type === "not") {
+          if (row[f.key] === f.value) return false;
+        } else if (row[f.key] !== f.value) {
+          return false;
+        }
+      }
+      return true;
+    },
+    compareSort(a, b, direction) {
+      if (a === b) return 0;
+      if (a == null) return 1;
+      if (b == null) return -1;
+      if (a > b) return direction === "ASC" ? 1 : -1;
+      return direction === "ASC" ? -1 : 1;
+    },
+    isAfterCurrentPage(row) {
+      const sort = this.currentQuery?.sort;
+      if (!sort || this.queryItems.length === 0) return false;
+      const ref = this.queryItems[this.queryItems.length - 1];
+      const cmp = this.compareSort(row[sort.column], ref[sort.column], sort.direction);
+      if (cmp === 0) {
+        return this.compareSort(row.id, ref.id, "ASC") > 0;
+      }
+      return cmp > 0;
+    },
+    isBeforeAnchor(row) {
+      const sort = this.currentQuery?.sort;
+      if (!sort || this.queryItems.length === 0) return false;
+      const anchor = this.queryItems[0];
+      const cmp = this.compareSort(row[sort.column], anchor[sort.column], sort.direction);
+      if (cmp === 0) {
+        return this.compareSort(row.id, anchor.id, "ASC") < 0;
+      }
+      return cmp < 0;
+    },
+    markRowDeleted(id) {
+      if (this.isDeletingRow(id) || this.isPlaceholderRow(id)) return;
+      const next = new Set(this.deletingIds);
+      next.add(id);
+      this.deletingIds = next;
+      this._pendingBackfillCount = (this._pendingBackfillCount || 0) + 1;
+
+      const animMs = this._deleteAnimMs;
+      setTimeout(() => {
+        // Keep the slot as a frozen skeleton until backfill so layout does not
+        // briefly shrink (double-jump). Atomic swap then shifts rows up once.
+        const cleared = new Set(this.deletingIds);
+        cleared.delete(id);
+        this.deletingIds = cleared;
+        const placeholders = new Set(this.placeholderIds);
+        placeholders.add(id);
+        this.placeholderIds = placeholders;
+        this.schedulePageBackfill();
+      }, animMs);
+    },
+    schedulePageBackfill() {
+      clearTimeout(this._backfillTimer);
+      this._backfillTimer = setTimeout(() => {
+        this.backfillAfterDeletes();
+      }, 40);
+    },
+    /**
+     * After on-page deletes: remaining rows shift up; gaps are always filled
+     * from the *next* page with enter-from-bottom animation.
+     * No previous-page / top enter. Last page: leave the page short.
+     */
+    async backfillAfterDeletes() {
+      if (!this.queryMode || this._backfillBusy || !this.$socket?.connected) return;
+      if (this.deletingIds && this.deletingIds.size > 0) {
+        this.schedulePageBackfill();
+        return;
+      }
+
+      const pageSize = this.currentQuery?.limit || this.limit;
+      const placeholders = this.placeholderIds || new Set();
+      const remaining = this.queryItems.filter((row) => !placeholders.has(row.id));
+      const need = pageSize - remaining.length;
+      this._pendingBackfillCount = 0;
+      this._pendingBackfillSlots = [];
+
+      if (need <= 0) {
+        if (placeholders.size) {
+          this.queryItems = remaining;
+          this.placeholderIds = new Set();
+        }
+        return;
+      }
+
+      const currentPage = this.currentQuery?.page ?? Math.max(0, this.currentPage - 1);
+      const total = this.queryMeta?.total ?? 0;
+      if (total <= remaining.length) {
+        this.queryItems = remaining;
+        this.placeholderIds = new Set();
+        return;
+      }
+
+      this._backfillBusy = true;
+      try {
+        const visibleIds = new Set(remaining.map((i) => i.id));
+        // Re-query this page index: server slides following (next-page) rows in
+        const pageItems = await this.fetchPageItems(currentPage);
+        const bottomFill = pageItems
+          .filter((row) => !visibleIds.has(row.id))
+          .slice(0, need);
+
+        // Atomic swap: drop placeholders, append next-page rows at bottom
+        this.queryItems = [...remaining, ...bottomFill].slice(0, pageSize);
+        this.placeholderIds = new Set();
+        this.enteringIds = [];
+        this.enteringTopIds = [];
+        this.enteringBottomIds = bottomFill.map((row) => row.id);
+        clearTimeout(this._enteringClearTimer);
+        this._enteringClearTimer = setTimeout(() => {
+          this.enteringBottomIds = [];
+        }, 1100);
+      } catch (err) {
+        console.warn("BackendTable backfillAfterDeletes failed", err);
+        this.queryItems = remaining;
+        this.placeholderIds = new Set();
+      } finally {
+        this._backfillBusy = false;
+      }
+    },
+    fetchPageItems(pageIndex) {
+      return new Promise((resolve, reject) => {
+        if (!this.$socket?.connected) {
+          reject(new Error("socket not connected"));
+          return;
+        }
+        const sort = this.sortColumn
+          ? {column: this.sortColumn, direction: this.sortDirection}
+          : {column: "id", direction: "ASC"};
+        const payload = {
+          table: this.table,
+          filter: this.queryFilter || [],
+          query: {
+            page: pageIndex,
+            limit: this.currentQuery?.limit || this.limit,
+            sort,
+            search: this.search || "",
+            columnFilters: this.sequelizeFilter || {},
+          },
+        };
+        const t = setTimeout(() => reject(new Error("queryTable timeout")), 15000);
+        this.$socket.emit("queryTable", payload, (response) => {
+          clearTimeout(t);
+          if (!response?.success) {
+            reject(new Error(response?.message || "queryTable failed"));
+            return;
+          }
+          const items = (response.data?.items || []).map((row) => this.applyEnrich(row));
+          resolve(items);
+        });
+      });
+    },
+    markRowStale(id) {
+      const next = new Set(this.staleIds);
+      next.add(id);
+      this.staleIds = next;
+    },
+    replaceRow(updatedRow) {
+      const enriched = this.applyEnrich(updatedRow);
+      const idx = this.queryItems.findIndex((i) => i.id === enriched.id);
+      if (idx === -1) return;
+      // Preserve enriched display fields (e.g. firstName) if delta row lacks them
+      const prev = this.queryItems[idx];
+      const merged = {
+        ...prev,
+        ...enriched,
+        firstName: enriched.firstName ?? prev.firstName,
+        lastName: enriched.lastName ?? prev.lastName,
+        state: enriched.state ?? prev.state,
+        sessions: enriched.sessions ?? prev.sessions,
+      };
+      this.queryItems.splice(idx, 1, merged);
+      // Restart highlight even if id was already in the list
+      this.updatedIds = this.updatedIds.filter((id) => id !== merged.id);
+      this.$nextTick(() => {
+        this.updatedIds = [...this.updatedIds, merged.id];
+        setTimeout(() => {
+          this.updatedIds = this.updatedIds.filter((id) => id !== merged.id);
+        }, 1400);
+      });
+    },
+    showBannerOrApply(own, applyFn) {
+      if (own) {
+        applyFn();
+      } else {
+        this.pendingStructural = true;
+      }
+    },
+    /** True if an update changed a column that has an active columnFilter. */
+    updateTouchesActiveFilters(oldRow, newRow) {
+      if (!oldRow || !newRow) return false;
+      const filters = this.currentQuery?.columnFilters || {};
+      for (const [col, filter] of Object.entries(filters)) {
+        const active = Array.isArray(filter)
+          ? filter.length > 0
+          : !!(filter && (filter.operator || filter.value != null && filter.value !== ""));
+        if (!active) continue;
+        if (oldRow[col] !== newRow[col]) return true;
+      }
+      return false;
+    },
+    handleStale(payload = {}) {
+      this.$emit("stale", payload);
+      if (this.isOwnSocket(payload.originSocketId)) {
+        this.fetchQueryPage();
+      } else {
+        this.pendingStructural = true;
+      }
+    },
+    handleDelta(delta) {
+      if (!this.queryMode || !delta) return;
+      this.$emit("delta", delta);
+      const {operation, row, originSocketId} = delta;
+      if (!row?.id && row?.id !== 0) return;
+      const own = this.isOwnSocket(originSocketId);
+      const currentIds = new Set(this.queryItems.map((i) => i.id));
+
+      if (operation === "delete") {
+        if (this.processedDeleteIds.has(row.id)) return;
+        this.processedDeleteIds.add(row.id);
+        if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
+
+        if (currentIds.has(row.id)) {
+          // Current page → animate + backfill immediately (no banner)
+          this.markRowDeleted(row.id);
+          this.bumpTotal(-1);
+        } else if (own) {
+          this.bumpTotal(-1);
+        } else if (this.isAfterCurrentPage(row)) {
+          // Next / later pages → silent total bump (no banner)
+          this.bumpTotal(-1);
+        } else {
+          // Previous page (before current) → banner
+          this.pendingStructural = true;
+          this.bumpTotal(-1);
+        }
+        return;
+      }
+
+      if (operation === "update") {
+        if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
+        if (!this.passesCurrentFilter(row)) {
+          if (currentIds.has(row.id)) {
+            this.markRowStale(row.id);
+            // Filtered out of current view (e.g. column filter no longer matches)
+            if (own) {
+              this.markRowDeleted(row.id);
+              this.bumpTotal(-1);
+            } else {
+              this.pendingStructural = true;
+            }
+          }
+          return;
+        }
+        const sortCol = this.currentQuery?.sort?.column;
+        const oldRow = this.queryItems.find((i) => i.id === row.id);
+        const sortKeyChanged = !!(oldRow && sortCol && oldRow[sortCol] !== row[sortCol]);
+        // Banner only when the updated field is one we actively filter/sort by
+        // (sort column or an active columnFilter) — otherwise just highlight.
+        const filteredFieldChanged = this.updateTouchesActiveFilters(oldRow, row);
+        const structural = sortKeyChanged || filteredFieldChanged;
+
+        if (currentIds.has(row.id)) {
+          if (structural) {
+            this.showBannerOrApply(own, () => this.fetchQueryPage());
+          } else {
+            this.replaceRow(row);
+          }
+        } else if (structural) {
+          // Off-page row moved by sort/filter key → may enter this page
+          this.showBannerOrApply(own, () => this.fetchQueryPage());
+        }
+        return;
+      }
+
+      if (operation === "create") {
+        if (this.deletingIds.has(row.id)) return;
+        if (!this.passesCurrentFilter(row)) return;
+
+        if (this.isAfterCurrentPage(row)) {
+          this.bumpTotal(1);
+          return;
+        }
+
+        if (own) {
+          this.fetchQueryPage();
+          return;
+        }
+
+        if (this.isBeforeAnchor(row)) {
+          this.pendingInserts += 1;
+          this.anchorDisplacement += 1;
+          this.bumpTotal(1);
+        } else {
+          // on visible page (between anchor and last)
+          this.pendingInserts += 1;
+          this.bumpTotal(1);
+        }
+      }
+    },
+    loadPendingChanges() {
+      if (this._pendingLoadBusy) return;
+      if (!this.currentQuery) {
+        this.fetchQueryPage();
+        return;
+      }
+
+      const previousIds = new Set(this.queryItems.map((i) => i.id));
+      const limit = this.currentQuery.limit || this.limit;
+      const anchorPosition = this.currentQuery.page * limit;
+      const newAnchorPosition = anchorPosition + this.anchorDisplacement;
+      const newPage = Math.floor(newAnchorPosition / limit);
+
+      this._pendingLoadBusy = true;
+      this.pendingInserts = 0;
+      this.anchorDisplacement = 0;
+      this.pendingStructural = false;
+      this.currentPage = newPage + 1;
+      this.pendingLoadPhase = "out";
+
+      const reduceMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      const outMs = reduceMotion ? 0 : 180;
+      const startedAt = Date.now();
+
+      const finishIn = () => {
+        this.pendingLoadPhase = "in";
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            this.pendingLoadPhase = null;
+          });
+        });
+        clearTimeout(this._enteringClearTimer);
+        this._enteringClearTimer = setTimeout(() => {
+          this.enteringIds = [];
+          this.enteringTopIds = [];
+          this.enteringBottomIds = [];
+          this._pendingLoadBusy = false;
+        }, reduceMotion ? 0 : 1200);
+      };
+
+      // Fetch in parallel with fade-out so the row swap happens while dimmed.
+      this.fetchQueryPage({
+        highlightNewFrom: previousIds,
+        onApplied: () => {
+          const wait = Math.max(0, outMs - (Date.now() - startedAt));
+          if (wait > 0) {
+            setTimeout(finishIn, wait);
+          } else {
+            finishIn();
+          }
+        },
+        onError: () => {
+          this.pendingLoadPhase = null;
+          this._pendingLoadBusy = false;
+        },
+      });
+    },
+    /** Re-apply enrichRow to current page (e.g. after related Vuex data changes) */
+    reEnrichItems() {
+      if (!this.queryMode) return;
+      this.queryItems = this.queryItems.map((row) => this.applyEnrich(row));
+    },
+  },
+};
+</script>
+
+<style scoped>
+.table-wrapper {
+  position: relative;
+  overflow-x: auto;
+  min-height: 80px;
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: max-content;
+  min-width: 100%;
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+.table-fixed {
+  position: sticky;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-fixed-left.table-fixed-shadow {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.table-fixed-right.table-fixed-shadow {
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.table thead .table-fixed {
+  z-index: 3;
+}
+
+.form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: initial;
+  opacity: 0.5;
+  background-color: #d8d8d8;
+  border: 1px solid gray;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.multiline {
+  display: -webkit-box;
+  -webkit-line-clamp: var(--line-clamp, 2);
+  line-clamp: var(--line-clamp, 2);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.pending-inserts-banner {
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  background: rgba(13, 110, 253, 0.12);
+  color: #084298;
+  font-size: 0.875rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.pending-inserts-banner:hover {
+  background: rgba(13, 110, 253, 0.2);
+}
+
+.pending-banner-enter-active,
+.pending-banner-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    max-height 0.22s ease,
+    margin 0.22s ease,
+    padding 0.22s ease;
+}
+
+.pending-banner-enter-from,
+.pending-banner-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.pending-banner-enter-to,
+.pending-banner-leave-from {
+  max-height: 3rem;
+}
+
+.table-wrapper tbody {
+  transition: opacity 0.22s ease, filter 0.22s ease;
+}
+
+.table-wrapper.pending-load-out tbody {
+  opacity: 0.28;
+  filter: saturate(0.7);
+}
+
+.table-wrapper.pending-load-in tbody {
+  opacity: 1;
+  filter: none;
+}
+
+.row-deleting td {
+  position: relative;
+  z-index: 0;
+  animation: row-delete-flash 0.75s ease forwards;
+}
+
+.table-wrapper tbody tr.row-deleting td.table-fixed,
+.table-wrapper tbody tr.row-deleting td.table-fixed-left,
+.table-wrapper tbody tr.row-deleting td.table-fixed-right {
+  z-index: 3 !important;
+  animation: row-delete-flash-sticky 0.75s ease forwards;
+}
+
+@keyframes row-delete-flash {
+  0% {
+    background-color: rgba(220, 53, 69, 0.55);
+    box-shadow: inset 3px 0 0 #dc3545;
+    opacity: 1;
+  }
+  45% {
+    background-color: rgba(220, 53, 69, 0.32);
+    box-shadow: inset 3px 0 0 #dc3545;
+    opacity: 1;
+  }
+  100% {
+    background-color: rgba(220, 53, 69, 0.08);
+    box-shadow: inset 3px 0 0 transparent;
+    opacity: 0;
+  }
+}
+
+/* Opaque sticky flash — transparent/rgba bg lets scrolled cells paint over Manage */
+@keyframes row-delete-flash-sticky {
+  0% {
+    background-color: color-mix(in srgb, #dc3545 55%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 #dc3545;
+    opacity: 1;
+  }
+  45% {
+    background-color: color-mix(in srgb, #dc3545 32%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 #dc3545;
+    opacity: 1;
+  }
+  100% {
+    background-color: color-mix(in srgb, #dc3545 8%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 transparent;
+    opacity: 0;
+  }
+}
+
+.row-placeholder {
+  pointer-events: none;
+}
+
+.row-placeholder td {
+  opacity: 1 !important;
+  color: transparent !important;
+  border-color: #e9ecef !important;
+  background: linear-gradient(
+    90deg,
+    #eceff1 0%,
+    #f5f7f8 40%,
+    #eceff1 80%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
+  box-shadow: none !important;
+}
+
+.table-wrapper tbody tr.row-placeholder td.table-fixed,
+.table-wrapper tbody tr.row-placeholder td.table-fixed-left,
+.table-wrapper tbody tr.row-placeholder td.table-fixed-right {
+  background: linear-gradient(
+    90deg,
+    #eceff1 0%,
+    #f5f7f8 40%,
+    #eceff1 80%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
+}
+
+.row-placeholder td * {
+  visibility: hidden;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.row-updated td {
+  position: relative;
+  z-index: 0;
+  animation: row-update-flash 1.4s ease;
+}
+
+.table-wrapper tbody tr.row-updated td.table-fixed,
+.table-wrapper tbody tr.row-updated td.table-fixed-left,
+.table-wrapper tbody tr.row-updated td.table-fixed-right {
+  z-index: 3 !important;
+  animation: row-update-flash-sticky 1.4s ease;
+}
+
+@keyframes row-update-flash {
+  0% {
+    background-color: rgba(25, 135, 84, 0.5);
+    box-shadow: inset 3px 0 0 #198754;
+  }
+  45% {
+    background-color: rgba(25, 135, 84, 0.28);
+    box-shadow: inset 3px 0 0 #198754;
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+
+@keyframes row-update-flash-sticky {
+  0% {
+    background-color: color-mix(in srgb, #198754 50%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 #198754;
+  }
+  45% {
+    background-color: color-mix(in srgb, #198754 28%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 #198754;
+  }
+  100% {
+    background-color: var(--bs-body-bg, #fff);
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+
+.row-stale {
+  background: rgba(108, 117, 125, 0.18) !important;
+  opacity: 0.7;
+}
+
+.row-entering td,
+.row-entering-top td,
+.row-entering-bottom td {
+  position: relative;
+  z-index: 0;
+}
+
+.row-entering td {
+  animation: row-enter-flash 1.15s ease;
+}
+
+.row-entering-top td {
+  animation: row-enter-from-top 0.95s ease;
+}
+
+.row-entering-bottom td {
+  animation: row-enter-from-bottom 0.95s ease;
+}
+
+/* Opaque sticky flash + raised z-index so scrolled cells stay under Manage/fixed cols */
+.table-wrapper tbody tr.row-entering td.table-fixed,
+.table-wrapper tbody tr.row-entering td.table-fixed-left,
+.table-wrapper tbody tr.row-entering td.table-fixed-right {
+  z-index: 3 !important;
+  animation: row-enter-flash-sticky 1.15s ease;
+}
+
+.table-wrapper tbody tr.row-entering-top td.table-fixed,
+.table-wrapper tbody tr.row-entering-top td.table-fixed-left,
+.table-wrapper tbody tr.row-entering-top td.table-fixed-right {
+  z-index: 3 !important;
+  animation: row-enter-from-top-sticky 0.95s ease;
+}
+
+.table-wrapper tbody tr.row-entering-bottom td.table-fixed,
+.table-wrapper tbody tr.row-entering-bottom td.table-fixed-left,
+.table-wrapper tbody tr.row-entering-bottom td.table-fixed-right {
+  z-index: 3 !important;
+  animation: row-enter-from-bottom-sticky 0.95s ease;
+}
+
+@keyframes row-enter-flash {
+  0% {
+    background-color: rgba(13, 110, 253, 0.42);
+    box-shadow: inset 3px 0 0 #0d6efd;
+  }
+  45% {
+    background-color: rgba(25, 135, 84, 0.22);
+    box-shadow: inset 3px 0 0 #198754;
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+
+@keyframes row-enter-flash-sticky {
+  0% {
+    background-color: color-mix(in srgb, #0d6efd 42%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 #0d6efd;
+  }
+  45% {
+    background-color: color-mix(in srgb, #198754 22%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 #198754;
+  }
+  100% {
+    background-color: var(--bs-body-bg, #fff);
+    box-shadow: inset 0 0 0 transparent;
+  }
+}
+
+@keyframes row-enter-from-top {
+  0% {
+    background-color: rgba(13, 110, 253, 0.4);
+    box-shadow: inset 0 3px 0 #0d6efd;
+    opacity: 0.15;
+  }
+  40% {
+    background-color: rgba(25, 135, 84, 0.22);
+    box-shadow: inset 0 3px 0 #198754;
+    opacity: 1;
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 transparent;
+    opacity: 1;
+  }
+}
+
+@keyframes row-enter-from-top-sticky {
+  0% {
+    background-color: color-mix(in srgb, #0d6efd 40%, var(--bs-body-bg, #fff));
+    box-shadow: inset 0 3px 0 #0d6efd;
+    opacity: 0.15;
+  }
+  40% {
+    background-color: color-mix(in srgb, #198754 22%, var(--bs-body-bg, #fff));
+    box-shadow: inset 0 3px 0 #198754;
+    opacity: 1;
+  }
+  100% {
+    background-color: var(--bs-body-bg, #fff);
+    box-shadow: inset 0 0 0 transparent;
+    opacity: 1;
+  }
+}
+
+@keyframes row-enter-from-bottom {
+  0% {
+    background-color: rgba(13, 110, 253, 0.4);
+    box-shadow: inset 0 -3px 0 #0d6efd;
+    opacity: 0.15;
+  }
+  40% {
+    background-color: rgba(25, 135, 84, 0.22);
+    box-shadow: inset 0 -3px 0 #198754;
+    opacity: 1;
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 transparent;
+    opacity: 1;
+  }
+}
+
+@keyframes row-enter-from-bottom-sticky {
+  0% {
+    background-color: color-mix(in srgb, #0d6efd 40%, var(--bs-body-bg, #fff));
+    box-shadow: inset 0 -3px 0 #0d6efd;
+    opacity: 0.15;
+  }
+  40% {
+    background-color: color-mix(in srgb, #198754 22%, var(--bs-body-bg, #fff));
+    box-shadow: inset 0 -3px 0 #198754;
+    opacity: 1;
+  }
+  100% {
+    background-color: var(--bs-body-bg, #fff);
+    box-shadow: inset 0 0 0 transparent;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-banner-enter-active,
+  .pending-banner-leave-active,
+  .table-wrapper tbody {
+    transition: none;
+  }
+
+  .row-entering td,
+  .row-entering-top td,
+  .row-entering-bottom td {
+    animation: none;
+    background-color: rgba(25, 135, 84, 0.18);
+  }
+
+  .row-updated td {
+    animation: none;
+    background-color: rgba(25, 135, 84, 0.22);
+  }
+
+  .row-deleting td {
+    animation: none;
+    background-color: rgba(220, 53, 69, 0.35);
+    opacity: 0.4;
+  }
+
+  .row-placeholder td {
+    animation: none !important;
+    background: #eceff1 !important;
+  }
+}
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed,
+.table-wrapper thead th.table-fixed-left,
+.table-wrapper thead th.table-fixed-right {
+  z-index: 6 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed-right {
+  z-index: 7 !important;
+}
+
+.table-wrapper tbody td.table-fixed,
+.table-wrapper tbody td.table-fixed-left,
+.table-wrapper tbody td.table-fixed-right {
+  z-index: 2 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th:has(.dropdown-menu.show) {
+  z-index: 5 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th .dropdown-menu {
+  z-index: 9999 !important;
+}
+
+.input-group.input-group-sm,
+.input-group.input-group-sm .input-group-text,
+.input-group.input-group-sm .form-control {
+  position: relative;
+  z-index: 20;
+}
+
+</style>

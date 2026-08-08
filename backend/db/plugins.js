@@ -12,12 +12,14 @@ function GlobalChangeTrackingPlugin(sequelize) {
             afterCreate: (instance, options) => {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
+                    instance._broadcastOp = "create";
                     options.transaction.changes.push(instance);
                 }
             },
             afterUpdate: (instance, options) => {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
+                    instance._broadcastOp = instance.deleted ? "delete" : "update";
                     options.transaction.changes.push(instance);
                 }
             },
@@ -25,6 +27,7 @@ function GlobalChangeTrackingPlugin(sequelize) {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
                     const record = Array.isArray(instance) ? instance[0] : instance;
+                    record._broadcastOp = record.deleted ? "delete" : "update";
                     options.transaction.changes.push(record);
                 }
             },
@@ -32,6 +35,7 @@ function GlobalChangeTrackingPlugin(sequelize) {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
                     instance.dataValues.deleted = true;
+                    instance._broadcastOp = "delete";
                     options.transaction.changes.push(instance);
                 }
             }

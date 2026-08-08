@@ -171,20 +171,37 @@ module.exports = class Socket {
         try {
             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
             if (transaction && transaction.changes) {
+                // Group by table → operation so query-mode clients get granular Deltas
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
                         const tableName = entry.constructor.tableName;
                         const entryData = _.omit(entry.dataValues, defaultExcludes);
+                        const operation = entry._broadcastOp
+                            || (entryData.deleted ? "delete" : "update");
                         if (!acc.has(tableName)) {
-                            acc.set(tableName, []);
+                            acc.set(tableName, new Map());
                         }
-                        acc.get(tableName).push(entryData);
+                        const byOp = acc.get(tableName);
+                        if (!byOp.has(operation)) {
+                            byOp.set(operation, []);
+                        }
+                        byOp.get(operation).push(entryData);
                     }
                     return acc;
                 }, new Map());
 
-                for (const [table, changes] of changesMap) {
-                    this.broadcastTable(table, changes);
+                for (const [table, byOp] of changesMap) {
+                    // Mixed operations in one txn → Stale for query-mode.
+                    // Same-op bulk (e.g. multi-delete) → keep operation so clients get per-row Deltas
+                    // (current/next page apply immediately; only prior-page changes banner).
+                    if (byOp.size > 1) {
+                        const allRows = [...byOp.values()].flat();
+                        this.broadcastTable(table, allRows, null);
+                    } else {
+                        for (const [operation, rows] of byOp) {
+                            this.broadcastTable(table, rows, operation);
+                        }
+                    }
                 }
             }
         } catch (e) {
@@ -935,39 +952,73 @@ module.exports = class Socket {
     }
 
     /**
-     * Broadcasts data to all clients that have permissions to see it
+     * Broadcasts data to all clients that have permissions to see it.
+     * Query-mode sockets (socket.currentQueries[table]) receive {table}Delta or {table}Stale
+     * instead of a full {table}Refresh (issue #88).
      * @param {string} tableName The name of table
-     * @param {object} data The data to broadcast
+     * @param {object|Array} data The data to broadcast
+     * @param {string|null} [operation] create|update|delete — null means bulk/unknown → Stale for query-mode
      * @returns {Promise<void>}
      */
-    async broadcastTable(tableName, data) {
+    async broadcastTable(tableName, data, operation = null) {
         const sockets = await this.io.fetchSockets();
         if (!sockets) return;
+        const rows = Array.isArray(data) ? data : [data];
+        const originSocketId = this.socket?.id || null;
+
         for (const socket of sockets) {
             if (!(tableName in socket.appDataSubscriptions.tables)) {
                 continue;
             }
+
+            const isQueryMode = !!(socket.currentQueries && socket.currentQueries[tableName]);
+            const emitQueryMode = (filteredRows) => {
+                if (!operation) {
+                    this.io.to(socket.id).emit(tableName + "Stale", {
+                        originSocketId,
+                    });
+                    return;
+                }
+                // One Delta per row so bulk same-op (multi-delete) can animate / bump
+                // immediately for on-page and next-page rows without a Stale banner.
+                for (const row of filteredRows) {
+                    this.io.to(socket.id).emit(tableName + "Delta", {
+                        operation,
+                        row,
+                        originSocketId,
+                    });
+                }
+            };
+
             const userId = socket.user.id;
             const rolesUpdatedAt = socket.user.rolesUpdatedAt;
-            // if the changes come from same user, just send
+            // Same user (any tab): still respect query-mode vs legacy
             if (socket.user.id === this.userId) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
-                continue
+                if (isQueryMode) {
+                    emitQueryMode(rows);
+                } else {
+                    this.io.to(socket.id).emit(tableName + "Refresh", rows);
+                }
+                continue;
             }
             const model = this.models[tableName];
             const hasModelUserFilter = typeof model.getUserFilter === "function";
             const hasBroadcastExpander = typeof model.expandBroadcastFilter === "function";
             const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
             const isPublicTable = model.publicTable;
-            
+
             // if socket is admin or table is public, also just send (unless model requires per-user filtering/expansion)
             if (!hasModelUserFilter && !hasBroadcastExpander && (isAdmin || isPublicTable)) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
-                continue
+                if (isQueryMode) {
+                    emitQueryMode(rows);
+                } else {
+                    this.io.to(socket.id).emit(tableName + "Refresh", rows);
+                }
+                continue;
             }
             let allFilter = {};
             let allAttributes = {};
-            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
+            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt);
             if (!filtersAndAttributes.accessAllowed) {
                 continue;
             }
@@ -976,10 +1027,19 @@ module.exports = class Socket {
             if (hasBroadcastExpander) {
                 allFilter = await model.expandBroadcastFilter(allFilter, userId, isAdmin);
             }
-            const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
-            this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
+            // Deletes: row may already be soft-deleted; always deliver id so client can patch
+            const filteredData = operation === "delete"
+                ? rows
+                : rows.filter(entry => this.matchesFilter(entry, allFilter));
+            if (filteredData.length === 0) {
+                continue;
+            }
+            if (isQueryMode) {
+                emitQueryMode(filteredData);
+            } else {
+                this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
+            }
         }
-        ;
     }
 
     /**
