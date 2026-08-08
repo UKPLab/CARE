@@ -20,6 +20,20 @@ async function runRegression(cfg, ctx) {
 
     console.log('Running regression (replay once, all traces must pass) ...');
     let ack;
+    const onProgress = ({ id, current, total }) => {
+        if (id !== 'regression' || !total) {
+            return;
+        }
+        const pct = Math.floor((current / total) * 100);
+        process.stdout.write(`\r  replaying ${current}/${total} traces (${pct}%)   `);
+    };
+    ctx.socket.on('progressUpdate', onProgress);
+
+    const clearProgress = () => {
+        ctx.socket.off('progressUpdate', onProgress);
+        process.stdout.write('\r' + ' '.repeat(50) + '\r');
+    };
+
     try {
         ack = await ctx.emitWithAck('replayRun', {
             recordingIds,
@@ -27,20 +41,25 @@ async function runRegression(cfg, ctx) {
             timingMode: 'fast',
             continueOnFailure: true,   // run all stories so we report every failure, not just the first
             maxIterations: 1,          // once — no scaling
+            progressId: 'regression',
             sequential: true,          // one story at a time so created rows get predictable ids
             ackTimeout: cfg.ackTimeout,
         }, 0);
     } catch (err) {
         capture.stop();
         console.error('REGRESSION ERROR — replayRun threw: ' + err.message);
+        clearProgress();
         return 1;
     }
 
     if (!ack || !ack.success) {
         capture.stop();
         console.error('REGRESSION ERROR — replayRun failed: ' + (ack && ack.message));
+        clearProgress();
         return 1;
     }
+
+    clearProgress();
 
     // ack.data is the iteration results array. maxIterations=1 => one iteration.
     const iterations = ack.data || [];
