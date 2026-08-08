@@ -127,6 +127,12 @@ module.exports = (sequelize, DataTypes) => {
                 options
             );
 
+            await sequelize.models.document_metadata.duplicateDocumentMetadata(
+                originalDoc.id,
+                duplicatedDoc.id,
+                options
+            );
+
             return duplicatedDoc;
         }
 
@@ -275,7 +281,7 @@ module.exports = (sequelize, DataTypes) => {
 
                 return await Document.encodeDocumentFileToBase64(doc);
             } catch (err) {
-                if (err.isTranslatable) {
+                if (TranslatableError.is(err)) {
                     throw err;
                 }
                 throw new TranslatableError("errors.documents.processingError", {documentId, message: err.message})

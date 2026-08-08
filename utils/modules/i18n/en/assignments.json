@@ -54,6 +54,7 @@
       "editAssignment": "Edit assignment",
       "deleteAssignment": "Delete assignment",
       "inspectSubmissions": "Inspect submissions",
+      "uploadMetadata": "Upload Metadata",
       "toggleDisable": "Toggle Disable",
       "copyAssignment": "Copy assignment",
       "closeAssignment": "Close assignment"
@@ -206,6 +207,97 @@
           "message": "Are you sure you want to delete this submission?"
         }
       }
+    }
+  },
+  "metadata": {
+    "modal": {
+      "title": "Import Metadata"
+    },
+    "steps": {
+      "upload": "Upload",
+      "target": "Target",
+      "mapping": "Mapping",
+      "preview": "Preview",
+      "result": "Result"
+    },
+    "fallback": {
+      "assignmentLabel": "Assignment #{id}"
+    },
+    "upload": {
+      "help": "Upload a metadata file in `.json` or `.csv` format. CARE will extract the available fields so you can define the target and mappings in the next steps.",
+      "loadedFile": "Loaded file:",
+      "parsedSummary": "Parsed {rows} rows with {fields} fields.",
+      "errors": {
+        "unsupportedFormat": "Unsupported file format. Please upload .json or .csv.",
+        "noUsableRows": "The uploaded file did not contain usable rows.",
+        "noUsableFields": "The uploaded file did not contain any usable fields.",
+        "parseFailed": "Failed to parse metadata file.",
+        "csvFailed": "Failed to parse CSV. {details}",
+        "csvUnknownRow": "unknown row",
+        "csvRow": "row {row}",
+        "csvMalformed": "Malformed CSV content."
+      }
+    },
+    "target": {
+      "typeLabel": "Target type",
+      "help": "Metadata will be written to documents belonging to submissions in the selected assignment."
+    },
+    "mapping": {
+      "primaryKeyHeading": "Primary Key Mapping",
+      "sourceKey": "Source key",
+      "selectField": "Select a field",
+      "matchAgainst": "Match against",
+      "primaryKeyHelp": "This mapping controls how CARE matches uploaded rows to submission owners in the selected assignment.",
+      "metadataHeading": "Metadata Mappings",
+      "targetMetaKey": "Target metaKey",
+      "action": "Action",
+      "addMapping": "Add Mapping",
+      "remove": "Remove",
+      "empty": "No metadata mappings configured yet.",
+      "metaKeyPlaceholder": "topic"
+    },
+    "validation": {
+      "selectSourceKey": "Select the uploaded source key used for matching.",
+      "selectTargetField": "Select which CARE field the primary key should match against.",
+      "addMapping": "Add at least one metadata mapping.",
+      "mappingNeedsSource": "Every metadata mapping needs a source key.",
+      "mappingNeedsMetaKey": "Every metadata mapping needs a target metaKey.",
+      "uniqueMetaKeys": "Target metaKeys must be unique.",
+      "uniquePrimaryKeys": "Primary key values must be present and unique across all uploaded rows."
+    },
+    "preview": {
+      "warning": "This import affects only the selected assignment. Existing metadata entries with the same `metaKey` will be overwritten.",
+      "targetType": "Target type:",
+      "assignment": "Assignment:",
+      "primaryKeyMapping": "Primary key mapping:",
+      "mappedFields": "Mapped metadata fields:",
+      "willMatchRows": "Will match rows:",
+      "rowsWithoutMatch": "Rows without submission match:",
+      "willSkipWithoutDocuments": "Will skip matched rows without documents:",
+      "documentsAffected": "Documents affected:",
+      "willWriteEntries": "Will write metadata entries:",
+      "willOverwriteEntries": "Will overwrite existing metadata entries:"
+    },
+    "result": {
+      "wroteSummary": "Wrote {entries} metadata entries across {documents} documents ({matched} matched rows).",
+      "noneWritten": "No metadata entries were written.",
+      "issues": "Issues:",
+      "notRunYet": "Import has not been run yet."
+    },
+    "issues": {
+      "unknownValue": "unknown",
+      "unmatched": "Unmatched value \"{value}\": {detail}",
+      "submission": "Submission {id}: {detail}",
+      "row": "Row: {detail}",
+      "import": "Import: {detail}"
+    },
+    "toasts": {
+      "previewFailed": "Failed to preview metadata import",
+      "importSuccess": {
+        "title": "Metadata imported",
+        "message": "Wrote {count} metadata entries."
+      },
+      "importFailed": "Metadata import failed"
     }
   }
 }

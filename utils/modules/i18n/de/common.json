@@ -4,6 +4,7 @@
     "guest": "Gast",
     "other": "Sonstiges",
     "ok": "OK",
+    "assignment": "Assignment",
     "save": "Speichern",
     "cancel": "Abbrechen",
     "close": "Schließen",
@@ -91,7 +92,6 @@
         "lessThanMinutes": "<{min} Min."
     },
     "reply": "Antworten",
-    "hide": "Verbergen",
     "showMore": "Mehr anzeigen",
     "showLess": "Weniger anzeigen",
     "hideMore": "Mehr verbergen",

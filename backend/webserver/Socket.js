@@ -1,5 +1,6 @@
 const {inject} = require("../utils/helper/generic");
 const i18n = require("../utils/i18n");
+const TranslatableError = require("../utils/TranslatableError");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
@@ -103,14 +104,14 @@ module.exports = class Socket {
                 // Log the key; SQLTransport translates to English. Frontend gets key+params (resolveApiMessage).
                 let key;
                 let params = {};
-                if (err.isTranslatable || err.key) {
-                    // TranslatableError: err.key + optional err.params (+ optional err.code)
+                if (TranslatableError.is(err)) {
+                    // TranslatableError / generateError: err.key + optional err.params (+ optional err.code)
                     key = err.key;
                     if (err.params) {
                         params = err.params;
                     }
                 } else if (typeof err.message === "string" && i18n.hasKey(err.message)) {
-                    // legacy plain Error("errors.namespace.key") or generateError(code, "errors.*")
+                    // legacy plain Error("errors.namespace.key")
                     key = err.message;
                     if (err.params) {
                         params = err.params;

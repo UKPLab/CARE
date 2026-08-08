@@ -154,6 +154,26 @@
         "annotationAddFailed": "Error adding annotation.",
         "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing."
     },
+    "documentMetadata": {
+        "assignmentClosed": "Cannot import metadata because the assignment is closed.",
+        "noPermission": "You do not have permission to import metadata for this assignment.",
+        "unsupportedTargetType": "Unsupported target type \"{targetType}\".",
+        "assignmentIdRequired": "Assignment ID is required.",
+        "assignmentNotFound": "Assignment with id {assignmentId} not found",
+        "primaryKeySourceRequired": "Primary key source field is required.",
+        "primaryKeyTargetInvalid": "Primary key target field must be either \"extId\" or \"email\".",
+        "noRows": "No metadata rows provided.",
+        "mappingRequired": "At least one metadata mapping is required.",
+        "uniqueMetaKeys": "Target metaKeys must be unique.",
+        "reservedMetaKeySuffixes": "Target metaKeys cannot end with reserved provenance suffixes: {keys}",
+        "primaryKeyValuesInvalid": "Primary key values must be present and valid for every imported row.",
+        "duplicatePrimaryKeys": "Duplicate primary key values found for {targetField}: {values}",
+        "noSubmissionOwnerMatch": "No submission owner match found in this assignment.",
+        "multipleOwnersMatch": "Primary key matched submissions owned by different users.",
+        "noMappedSourceFields": "Row does not contain any mapped source fields.",
+        "submissionHasNoDocuments": "Submission has no documents.",
+        "entriesOverwritten": "{count} metadata entries were overwritten."
+    },
     "editor": {
         "cursorPositionError": {
             "title": "No Cursor Position",

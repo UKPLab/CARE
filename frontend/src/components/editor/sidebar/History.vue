@@ -6,7 +6,7 @@
       :key="group"
     >
       <div v-if="periodEdits[group].length > 0">
-        <span class="small">{{ $t(`sidebar.periode.${group}`) }}</span>
+        <span class="small">{{ $te(`sidebar.periode.${group}`) ? $t(`sidebar.periode.${group}`) : group }}</span>
         <ul class="list-group">
           <li
             v-for="editGroup in periodEdits[group]"

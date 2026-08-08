@@ -6,27 +6,29 @@ const KEY = 'app.locale';
 module.exports = {
     async up(queryInterface) {
         const now = new Date();
-        await queryInterface.sequelize.query(
-            `UPDATE setting SET "displayName" = :dn, "displayGroup" = :dg, "displaySubsection" = :ds, "updatedAt" = :now WHERE key = :k`,
+        await queryInterface.bulkUpdate(
+            'setting',
             {
-                replacements: {
-                    dn: 'Default UI language',
-                    dg: 'Interface',
-                    ds: 'Localization',
-                    k: KEY,
-                    now,
-                },
-            }
+                displayName: 'Default UI language',
+                displayGroup: 'Interface',
+                displaySubsection: 'Localization',
+                updatedAt: now,
+            },
+            { key: KEY }
         );
     },
 
     async down(queryInterface) {
         const now = new Date();
-        await queryInterface.sequelize.query(
-            `UPDATE setting SET "displayName" = NULL, "displayGroup" = NULL, "displaySubsection" = NULL, "updatedAt" = :now WHERE key = :k`,
+        await queryInterface.bulkUpdate(
+            'setting',
             {
-                replacements: { k: KEY, now },
-            }
+                displayName: null,
+                displayGroup: null,
+                displaySubsection: null,
+                updatedAt: now,
+            },
+            { key: KEY }
         );
     },
 };

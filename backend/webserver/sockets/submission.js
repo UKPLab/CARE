@@ -32,7 +32,7 @@ class SubmissionSocket extends Socket {
                     const copyResult = await this.models["submission"].copySubmission(submissionId, this.userId, {transaction});
                     copiedResults.push(copyResult);
                 } catch (error) {
-                    if (error.key) {
+                    if (TranslatableError.is(error)) {
                         throw error;
                     }
                     throw new TranslatableError( "errors.submission.copyWithIdFailed", {submissionId, message: error.message});

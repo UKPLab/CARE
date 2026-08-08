@@ -4,6 +4,7 @@
     "guest": "Guest",
     "other": "Other",
     "ok": "OK",
+    "assignment": "Assignment",
     "save": "Save",
     "cancel": "Cancel",
     "close": "Close",
@@ -91,7 +92,6 @@
         "lessThanMinutes": "<{min}min"
     },
     "reply": "Reply",
-    "hide": "Hide",
     "showMore": "Show more",
     "showLess": "Show less",
     "hideMore": "Hide more",

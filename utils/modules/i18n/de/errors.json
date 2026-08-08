@@ -154,6 +154,26 @@
     "annotationAddFailed": "Fehler beim Hinzufügen der Annotation.",
     "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen."
   },
+  "documentMetadata": {
+    "assignmentClosed": "Metadaten können nicht importiert werden, weil das Assignment geschlossen ist.",
+    "noPermission": "Sie haben keine Berechtigung, Metadaten für dieses Assignment zu importieren.",
+    "unsupportedTargetType": "Nicht unterstützter Zieltyp \"{targetType}\".",
+    "assignmentIdRequired": "Assignment-ID ist erforderlich.",
+    "assignmentNotFound": "Assignment mit ID {assignmentId} wurde nicht gefunden",
+    "primaryKeySourceRequired": "Quellfeld für den Primärschlüssel ist erforderlich.",
+    "primaryKeyTargetInvalid": "Zielfeld für den Primärschlüssel muss \"extId\" oder \"email\" sein.",
+    "noRows": "Keine Metadatenzeilen angegeben.",
+    "mappingRequired": "Mindestens eine Metadaten-Zuordnung ist erforderlich.",
+    "uniqueMetaKeys": "Ziel-metaKeys müssen eindeutig sein.",
+    "reservedMetaKeySuffixes": "Ziel-metaKeys dürfen nicht mit reservierten Provenienz-Suffixen enden: {keys}",
+    "primaryKeyValuesInvalid": "Primärschlüsselwerte müssen in jeder importierten Zeile vorhanden und gültig sein.",
+    "duplicatePrimaryKeys": "Doppelte Primärschlüsselwerte für {targetField}: {values}",
+    "noSubmissionOwnerMatch": "Kein passender Submission-Besitzer in diesem Assignment gefunden.",
+    "multipleOwnersMatch": "Primärschlüssel traf auf Submissions unterschiedlicher Benutzer.",
+    "noMappedSourceFields": "Zeile enthält keine zugeordneten Quellfelder.",
+    "submissionHasNoDocuments": "Submission hat keine Dokumente.",
+    "entriesOverwritten": "{count} Metadateneinträge wurden überschrieben."
+  },
   "editor": {
     "cursorPositionError": {
       "title": "Keine Cursorposition",

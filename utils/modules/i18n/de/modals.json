@@ -28,7 +28,6 @@
         "firstVersionStep": "Erste Version (Schritt {step})",
         "currentVersionStep": "Aktuelle Version (Schritt {step})"
     },
-    "modal": "Modal",
     "noContentForThisStep": "Für diesen Schritt sind keine Inhalte verfügbar.",
     "finishStudy": "Studie beenden",
     "exportStudyData": "Studiendaten exportieren",

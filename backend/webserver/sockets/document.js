@@ -228,9 +228,16 @@ class DocumentSocket extends Socket {
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 this.logger.warn("Failed to delete annotations from PDF", annotationRpcErr);
-                errors.push(annotationRpcErr.key === "errors.documents.annotationDeleteOriginalFailed"
-                    ? {message: annotationRpcErr.key}
-                    : {message: "errors.documents.annotationDeleteFailedGeneric"});
+                if (annotationRpcErr.key) {
+                    errors.push({
+                        message: annotationRpcErr.key,
+                        params: annotationRpcErr.params,
+                    });
+                } else if (typeof annotationRpcErr.message === "string" && i18n.hasKey(annotationRpcErr.message)) {
+                    errors.push({message: annotationRpcErr.message});
+                } else {
+                    errors.push({message: "errors.documents.annotationDeleteFailedGeneric"});
+                }
                 fs.writeFileSync(target, data.file);
             }
 
@@ -249,7 +256,7 @@ class DocumentSocket extends Socket {
                             try {
                                 textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
-                                if (error.key) {
+                                if (TranslatableError.is(error)) {
                                     errors.push({
                                         message: error.key,
                                         params: {text: extracted.text, ...(error.params || {})},
@@ -885,6 +892,7 @@ class DocumentSocket extends Socket {
     async downloadMoodleSubmissions(data, options) {
         const downloadedSubmissions = [];
         const downloadedErrors = [];
+        const downloadedWarnings = [];
         const submissions = data.submissions || [];
         const assignmentId = data.assignmentId || null;
         // Validate assignment once before the loop (if provided)
@@ -982,6 +990,45 @@ class DocumentSocket extends Socket {
                     );
                     documentIds.push(doc.id);
                 }
+
+                let topicStatus = "missing";
+                let topicMessage = "No published topic allocation found for this Moodle user.";
+                const topicAllocation = submission.topicAllocation || null;
+                if (topicAllocation) {
+                    try {
+                        const topicValue = topicAllocation.topicName ?? topicAllocation.topic ?? null;
+                        await this.getSocket("DocumentMetadataSocket").attachMappedMetadataToDocuments({
+                            documentIds,
+                            userId: submission.userId,
+                            row: { topic: topicValue },
+                            mappings: [{ sourceField: "topic", metaKey: "topic" }],
+                            fileName: null,
+                        }, {transaction});
+                        topicStatus = "attached";
+                        topicMessage = `Attached topic "${topicValue}".`;
+                    } catch (metadataError) {
+                        topicStatus = "warning";
+                        topicMessage = `Imported submission, but failed to attach topic metadata: ${metadataError.message}`;
+                        downloadedWarnings.push({
+                            submissionId: submission.submissionId,
+                            userId: submission.userId,
+                            userExtId: submission.userExtId,
+                            firstName: submission.firstName,
+                            lastName: submission.lastName,
+                            message: topicMessage,
+                        });
+                    }
+                } else {
+                    downloadedWarnings.push({
+                        submissionId: submission.submissionId,
+                        userId: submission.userId,
+                        userExtId: submission.userExtId,
+                        firstName: submission.firstName,
+                        lastName: submission.lastName,
+                        message: topicMessage,
+                    });
+                }
+
                 transaction.afterCommit(() => {
                     this.broadcastTransactionChanges(transaction);
                 });
@@ -990,6 +1037,9 @@ class DocumentSocket extends Socket {
                 downloadedSubmissions.push({
                     submissionId: submissionEntry.id,
                     documentIds,
+                    topicStatus,
+                    topicMessage,
+                    topicName: topicAllocation?.topicName || null,
                 });
             } catch (err) {
                 this.logger.error(err.message);
@@ -1013,7 +1063,7 @@ class DocumentSocket extends Socket {
             });
         }
 
-        return {downloadedSubmissions, downloadedErrors};
+        return {downloadedSubmissions, downloadedErrors, downloadedWarnings};
     }
 
     /**

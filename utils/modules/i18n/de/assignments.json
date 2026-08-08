@@ -54,6 +54,7 @@
       "editAssignment": "Assignment bearbeiten",
       "deleteAssignment": "Assignment löschen",
       "inspectSubmissions": "Submissions anzeigen",
+      "uploadMetadata": "Metadaten hochladen",
       "toggleDisable": "Deaktivierung umschalten",
       "copyAssignment": "Assignment kopieren",
       "closeAssignment": "Assignment schließen"
@@ -206,6 +207,97 @@
           "message": "Möchten Sie diese Submission wirklich löschen?"
         }
       }
+    }
+  },
+  "metadata": {
+    "modal": {
+      "title": "Metadaten importieren"
+    },
+    "steps": {
+      "upload": "Upload",
+      "target": "Ziel",
+      "mapping": "Zuordnung",
+      "preview": "Vorschau",
+      "result": "Ergebnis"
+    },
+    "fallback": {
+      "assignmentLabel": "Assignment #{id}"
+    },
+    "upload": {
+      "help": "Laden Sie eine Metadaten-Datei im Format `.json` oder `.csv` hoch. CARE extrahiert die verfügbaren Felder, damit Sie Ziel und Zuordnungen in den nächsten Schritten festlegen können.",
+      "loadedFile": "Geladene Datei:",
+      "parsedSummary": "{rows} Zeilen mit {fields} Feldern gelesen.",
+      "errors": {
+        "unsupportedFormat": "Nicht unterstütztes Dateiformat. Bitte laden Sie .json oder .csv hoch.",
+        "noUsableRows": "Die hochgeladene Datei enthielt keine nutzbaren Zeilen.",
+        "noUsableFields": "Die hochgeladene Datei enthielt keine nutzbaren Felder.",
+        "parseFailed": "Metadaten-Datei konnte nicht gelesen werden.",
+        "csvFailed": "CSV konnte nicht gelesen werden. {details}",
+        "csvUnknownRow": "unbekannte Zeile",
+        "csvRow": "Zeile {row}",
+        "csvMalformed": "Ungültiger CSV-Inhalt."
+      }
+    },
+    "target": {
+      "typeLabel": "Zieltyp",
+      "help": "Metadaten werden in Dokumente von Submissions des ausgewählten Assignments geschrieben."
+    },
+    "mapping": {
+      "primaryKeyHeading": "Primärschlüssel-Zuordnung",
+      "sourceKey": "Quellschlüssel",
+      "selectField": "Feld auswählen",
+      "matchAgainst": "Abgleichen mit",
+      "primaryKeyHelp": "Diese Zuordnung steuert, wie CARE hochgeladene Zeilen den Submission-Besitzern im ausgewählten Assignment zuordnet.",
+      "metadataHeading": "Metadaten-Zuordnungen",
+      "targetMetaKey": "Ziel-metaKey",
+      "action": "Aktion",
+      "addMapping": "Zuordnung hinzufügen",
+      "remove": "Entfernen",
+      "empty": "Noch keine Metadaten-Zuordnungen konfiguriert.",
+      "metaKeyPlaceholder": "topic"
+    },
+    "validation": {
+      "selectSourceKey": "Wählen Sie den Quellschlüssel aus der Datei für den Abgleich.",
+      "selectTargetField": "Wählen Sie das CARE-Feld, mit dem der Primärschlüssel abgeglichen werden soll.",
+      "addMapping": "Fügen Sie mindestens eine Metadaten-Zuordnung hinzu.",
+      "mappingNeedsSource": "Jede Metadaten-Zuordnung braucht einen Quellschlüssel.",
+      "mappingNeedsMetaKey": "Jede Metadaten-Zuordnung braucht einen Ziel-metaKey.",
+      "uniqueMetaKeys": "Ziel-metaKeys müssen eindeutig sein.",
+      "uniquePrimaryKeys": "Primärschlüsselwerte müssen in allen hochgeladenen Zeilen vorhanden und eindeutig sein."
+    },
+    "preview": {
+      "warning": "Dieser Import betrifft nur das ausgewählte Assignment. Vorhandene Metadateneinträge mit demselben `metaKey` werden überschrieben.",
+      "targetType": "Zieltyp:",
+      "assignment": "Assignment:",
+      "primaryKeyMapping": "Primärschlüssel-Zuordnung:",
+      "mappedFields": "Zugeordnete Metadatenfelder:",
+      "willMatchRows": "Passende Zeilen:",
+      "rowsWithoutMatch": "Zeilen ohne Submission-Treffer:",
+      "willSkipWithoutDocuments": "Übersprungene Treffer ohne Dokumente:",
+      "documentsAffected": "Betroffene Dokumente:",
+      "willWriteEntries": "Zu schreibende Metadateneinträge:",
+      "willOverwriteEntries": "Zu überschreibende Metadateneinträge:"
+    },
+    "result": {
+      "wroteSummary": "{entries} Metadateneinträge in {documents} Dokumenten geschrieben ({matched} passende Zeilen).",
+      "noneWritten": "Es wurden keine Metadateneinträge geschrieben.",
+      "issues": "Hinweise:",
+      "notRunYet": "Der Import wurde noch nicht ausgeführt."
+    },
+    "issues": {
+      "unknownValue": "unbekannt",
+      "unmatched": "Kein Treffer für Wert \"{value}\": {detail}",
+      "submission": "Submission {id}: {detail}",
+      "row": "Zeile: {detail}",
+      "import": "Import: {detail}"
+    },
+    "toasts": {
+      "previewFailed": "Vorschau des Metadaten-Imports fehlgeschlagen",
+      "importSuccess": {
+        "title": "Metadaten importiert",
+        "message": "{count} Metadateneinträge geschrieben."
+      },
+      "importFailed": "Metadaten-Import fehlgeschlagen"
     }
   }
 }
