@@ -63,12 +63,11 @@ class Validator {
 
             return validationResult;
         } catch (error) {
-            const message = error.key || error.message;
             // Keep i18n keys as messages; wrapping them would turn the key into plain text.
-            if (message && /^errors\./.test(message)) {
+            if (TranslatableError.is(error)) {
                 return {
                     success: false,
-                    message,
+                    message: error.key || error.message,
                     params: error.params,
                 };
             }

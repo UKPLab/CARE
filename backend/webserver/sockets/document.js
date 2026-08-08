@@ -249,7 +249,7 @@ class DocumentSocket extends Socket {
                             try {
                                 textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
-                                if (error.key) {
+                                if (TranslatableError.is(error)) {
                                     errors.push({
                                         message: error.key,
                                         params: {text: extracted.text, ...(error.params || {})},

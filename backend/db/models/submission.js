@@ -197,7 +197,7 @@ module.exports = (sequelize, DataTypes) => {
                     );
                     copiedDocuments.push(copiedDoc);
                 } catch (error) {
-                    if (error.key) {
+                    if (TranslatableError.is(error)) {
                         throw error;
                     }
                     throw new TranslatableError("errors.submission.documentCopyFailed", {documentId: originalDoc.id, message: error.message});

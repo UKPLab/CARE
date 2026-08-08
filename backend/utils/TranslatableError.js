@@ -54,6 +54,16 @@ class TranslatableError extends Error {
         // Flag to identify translatable errors in catch blocks
         this.isTranslatable = true;
     }
+
+    /**
+     * True for TranslatableError or generateError()-shaped errors (has `key`).
+     *
+     * @param {*} err
+     * @returns {boolean}
+     */
+    static is(err) {
+        return !!(err && (err.isTranslatable || err.key));
+    }
 }
 
 module.exports = TranslatableError;
