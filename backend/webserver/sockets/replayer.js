@@ -189,23 +189,18 @@ class ReplayerSocket extends Socket {
      * Build the same {sessions, userMap} pool from exported recording files
      * instead of the DB, so the CLI can replay without importing.
      *
-     * The file's own userId values belong to the source database and won't map
-     * to a real user here, so — exactly as the DB import path already does —
-     * every file session replays as the caller running the tool (this.userId).
-     * One real user row is fetched for auth; the recording data never touches
-     * the DB.
+     * Each session replays as the user it was recorded under, resolved by id
+     * against this database — the same treatment the DB path gives its own
+     * sessions. Sessions whose recorded user does not exist here are dropped.
+     * The recording data itself never touches the DB.
      *
      * @param {Array<Object>} payloadSessions - Sessions from files; each is {sessionKey?, recordingName?, traces: Array<Object>}
-     * @returns {Promise<{sessions: Array, userMap: Map}>} Pooled sessions and the acting-user lookup
-     * @throws {Error} If the acting user cannot be resolved
+     * @returns {Promise<{sessions: Array, userMap: Map}>} Pooled sessions and the user lookup needed for replay
      */
-    async buildSessionPoolFromPayload(payloadSessions) {
-        const actingUser = await this.models['user'].getById(this.userId);
-        if (!actingUser) {
-            throw new Error('Could not resolve the acting user for file replay');
-        }
-
+   async buildSessionPoolFromPayload(payloadSessions) {
         const sessions = [];
+        const userIdSet = new Set();
+
         for (const incoming of payloadSessions) {
             const rawTraces = Array.isArray(incoming.traces) ? incoming.traces : [];
             // File contents are unvalidated input: a trace without a usable
@@ -215,9 +210,6 @@ class ReplayerSocket extends Socket {
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             if (traces.length === 0) continue;
 
-            // Group first, then stamp: grouping falls back to the trace's own
-            // userId when socketId is absent (older recordings), so overwriting
-            // userId beforehand would merge distinct users into one session.
             const sessionMap = this.groupTracesBySocket(traces);
             const multiSession = sessionMap.size > 1;
             for (const [key, session] of sessionMap) {
@@ -225,16 +217,31 @@ class ReplayerSocket extends Socket {
                     // The file's own key only identifies the file, so it can't
                     // label more than one session from it.
                     sessionKey: (!multiSession && incoming.sessionKey) ? incoming.sessionKey : key,
-                    userId: actingUser.id,
-                    traces: session.traces.map(t => ({ ...t, userId: actingUser.id })),
+                    userId: session.userId,
+                    traces: session.traces,
                     recordingId: null,
                     recordingName: incoming.recordingName || 'file',
                 });
+                userIdSet.add(session.userId);
             }
         }
 
-        const userMap = new Map([[actingUser.id, actingUser]]);
-        return { sessions, userMap };
+        const users = await this.models['user'].getAllByKeyValues('id', Array.from(userIdSet));
+        const userMap = new Map(users.map(u => [u.id, u]));
+
+        // A recorded user may not exist on this database. Those sessions can't
+        // be authenticated, so drop them rather than let a missing user surface
+        // as an auth failure mid-replay.
+        const replayable = [];
+        for (const s of sessions) {
+            if (userMap.has(s.userId)) {
+                replayable.push(s);
+                continue;
+            }
+            this.logger.warn(`Replay: user ${s.userId} from file not found on this database — session ${s.sessionKey} skipped`);
+        }
+
+        return { sessions: replayable, userMap };
     }
 
     /**
