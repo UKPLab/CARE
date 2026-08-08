@@ -228,9 +228,16 @@ class DocumentSocket extends Socket {
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
                 this.logger.warn("Failed to delete annotations from PDF", annotationRpcErr);
-                errors.push(annotationRpcErr.key === "errors.documents.annotationDeleteOriginalFailed"
-                    ? {message: annotationRpcErr.key}
-                    : {message: "errors.documents.annotationDeleteFailedGeneric"});
+                if (annotationRpcErr.key) {
+                    errors.push({
+                        message: annotationRpcErr.key,
+                        params: annotationRpcErr.params,
+                    });
+                } else if (typeof annotationRpcErr.message === "string" && i18n.hasKey(annotationRpcErr.message)) {
+                    errors.push({message: annotationRpcErr.message});
+                } else {
+                    errors.push({message: "errors.documents.annotationDeleteFailedGeneric"});
+                }
                 fs.writeFileSync(target, data.file);
             }
 
