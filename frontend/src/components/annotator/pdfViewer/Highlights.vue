@@ -220,22 +220,22 @@ export default {
         if (tag) {
           switch (tag.colorCode) {
             case "success":
-              return "009933";
+              return "4dd47a";
             case "danger":
-              return "e05f5f";
+              return "f08a8a";
             case "info":
-              return "5fe0df";
+              return "8ceceb";
             case "dark":
-              return "c8c8c8";
+              return "e0e0e0";
             case "warning":
-              return "eed042";
+              return "f5e07a";
             case "secondary":
-              return "4290ee";
+              return "7db3f5";
             default:
-              return "4c86f7";
+              return "82adf9";
           }
         } else {
-          return "efea7b";
+          return "f5f2a8";
         }
       }
     },
