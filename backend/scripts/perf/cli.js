@@ -285,7 +285,9 @@ async function main() {
     console.log('  recordings:    ' + (cfg.recordings.length ? cfg.recordings.join(', ') : '—'));
     if (cfg.files.length) console.log('  files:         ' + cfg.files.join(', '));
     if (cfg.dir) console.log('  dir:           ' + cfg.dir);
-    console.log('  maxIterations: ' + cfg.maxIterations);
+    if (cfg.mode !== 'regression') {
+        console.log('  maxIterations: ' + cfg.maxIterations);
+    }
     console.log('  server:        ' + cfg.server);
     console.log('  user:          ' + cfg.user);
 

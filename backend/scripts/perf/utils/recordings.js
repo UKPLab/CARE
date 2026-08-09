@@ -52,7 +52,11 @@ function loadSessionsFromFiles(cfg) {
             recordingName: name,
             traces: json.traces,
         });
-        console.log(`  loaded ${path.basename(f)} (${json.traces.length} traces) — no import`);
+        // Report which user(s) the traces were recorded under: replay resolves
+        // each session to its own recorded user, not the caller running the CLI.
+        const userIds = [...new Set(json.traces.map(t => t && t.userId).filter(Boolean))];
+        const userLabel = userIds.length ? `user id: ${userIds.join(', ')}` : 'no user';
+        console.log(`  loaded ${path.basename(f)} (${json.traces.length} traces) — ${userLabel}`);
     }
     return sessions;
 }
