@@ -51,7 +51,12 @@ module.exports = (sequelize, DataTypes) => {
                 return baseFilter;
             }
             const copies = await Template.findAll({
-                where: { userId, sourceId: { [Op.ne]: null }, deleted: false },
+                where: {
+                    userId,
+                    sourceId: { [Op.ne]: null },
+                    deleted: false,
+                    type: { [Op.in]: [4, 5] },
+                },
                 attributes: ["sourceId"],
                 raw: true,
             });

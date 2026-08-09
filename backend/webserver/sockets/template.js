@@ -98,7 +98,7 @@ class TemplateSocket extends Socket {
     if (!isOwner && !isPublicFromOthers) {
       throw new Error("You can only view templates that you own or public templates from others");
     }
-    if (!isAdmin && !isOwner && isEmailType) {
+    if (!isAdmin && isEmailType) {
       throw new Error("Access denied: Only administrators can view email templates");
     }
 
@@ -197,6 +197,10 @@ class TemplateSocket extends Socket {
     // Copied templates cannot be edited
     if (template.sourceId) {
       throw new Error("Copied templates cannot be edited");
+    }
+
+    if ([1, 2, 3, 6, 7].includes(template.type) && !(await this.isAdmin())) {
+      throw new Error("Access denied: Only administrators can edit email templates");
     }
 
     const bulkEdits = data.ops.map((op, idx) => ({
@@ -594,6 +598,10 @@ class TemplateSocket extends Socket {
     const template = await this.models["template"].getById(data.templateId);
     if (!template) return;
 
+    if ([1, 2, 3, 6, 7].includes(template.type) && !(await this.isAdmin())) {
+      throw new Error("Access denied: Only administrators can edit email templates");
+    }
+
     if (template.userId === this.userId) {
       await this.saveTemplate(data.templateId, data.language, options);
     }
@@ -716,6 +724,9 @@ class TemplateSocket extends Socket {
     const copy = await this.models["template"].getById(data.templateId);
     if (!copy) throw new Error("Template not found");
     if (copy.userId !== this.userId) throw new Error("You can only update your own copies");
+    if ([1, 2, 3, 6, 7].includes(copy.type) && !(await this.isAdmin())) {
+      throw new Error("Access denied: Only administrators can update email templates from source");
+    }
 
     return await this.models["template"].updateFromSource(
       data.templateId,
