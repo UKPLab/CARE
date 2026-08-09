@@ -25,7 +25,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static async getUserRolesById(userId) {
         const userRoles = await sequelize.models.user_role_matching.findAll({
-            where: {userId: userId},
+            where: {userId: userId, deleted: false},
             raw: true,
         });
         return userRoles.map((role) => role.userRoleId);
