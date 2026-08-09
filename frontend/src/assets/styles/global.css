@@ -187,7 +187,7 @@ html[data-bs-theme="dark"] {
    dark UI rather than looking warm. Skipped when the reader has switched an
    individual document back to light from the toolbar. */
 [data-bs-theme="dark"] .scrolling-page:not(.pdf-light) canvas.pdf-page {
-  filter: invert(0.88) grayscale(0.4) sepia(0.35) hue-rotate(185deg) saturate(2.2);
+  filter: invert(0.88) grayscale(0.4) sepia(0.15) hue-rotate(185deg) saturate(2.2);
 }
 
 /* Printing a dark page wastes ink and reads badly, so never invert for print. */
