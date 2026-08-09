@@ -27,7 +27,7 @@
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
-      :class="['scrolling-page', { 'pdf-light': !pdfDarkMode }]"
+      :class="['scrolling-page', { 'pdf-dark': pdfDarkMode }]"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
@@ -115,7 +115,9 @@ export default {
       zoomFormData: {
         zoom: 1.0,
       },
-      pdfDarkMode: localStorage.getItem("care.pdfDark") !== "false",
+      pdfDarkMode: localStorage.getItem("care.pdfDark") !== null
+        ? localStorage.getItem("care.pdfDark") === "true"
+        : document.documentElement.getAttribute("data-bs-theme") === "dark",
     }
   },
   computed: {

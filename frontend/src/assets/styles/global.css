@@ -186,7 +186,7 @@ html[data-bs-theme="dark"] {
 /* Invert the rendered page, then tint it cool so it sits with the rest of the
    dark UI rather than looking warm. Skipped when the reader has switched an
    individual document back to light from the toolbar. */
-[data-bs-theme="dark"] .scrolling-page:not(.pdf-light) canvas.pdf-page {
+.scrolling-page.pdf-dark canvas.pdf-page {
   filter: invert(0.88) grayscale(0.4) sepia(0.15) hue-rotate(185deg) saturate(2.2);
 }
 
@@ -200,17 +200,17 @@ html[data-bs-theme="dark"] {
 /* A pure white page glares against the dark UI when the reader switches an
    individual document back to light, so soften it. Brightness scales all
    channels equally, which keeps figure colours accurate. */
-[data-bs-theme="dark"] .pdf-light canvas.pdf-page {
+[data-bs-theme="dark"] .scrolling-page:not(.pdf-dark) canvas.pdf-page {
   filter: brightness(0.93);
 }
 
 /* Annotation highlights are SVG rects blended with multiply, which works like a
    marker pen on white paper but produces almost nothing over a dark page.
    Screen lightens instead of darkens, so the band stays visible. */
-[data-bs-theme="dark"] .scrolling-page:not(.pdf-light) svg.highlight-layer {
+.scrolling-page.pdf-dark svg.highlight-layer {
   mix-blend-mode: screen !important;
 }
 
-[data-bs-theme="dark"] .scrolling-page:not(.pdf-light) .svg-highlight {
+.scrolling-page.pdf-dark .svg-highlight {
   opacity: 0.4 !important;
 }
