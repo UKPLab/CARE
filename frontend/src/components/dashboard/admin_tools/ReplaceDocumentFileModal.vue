@@ -242,6 +242,7 @@ export default {
 
     /**
      * Clear selection when the selected document is no longer in the filtered table.
+     * @returns {void}
      */
     clearSelectionIfFilteredOut() {
       if (!this.selectedRows || this.selectedRows.length === 0) {
@@ -254,12 +255,18 @@ export default {
       }
     },
 
+    /**
+     * Store the selected replacement file from the form upload control.
+     * @param {File} file - The file chosen by the user, or null when cleared
+     * @returns {void}
+     */
     handleFileChange(file) {
       this.selectedFile = file || null;
     },
 
     /**
      * Open the modal and reset form state.
+     * @returns {void}
      */
     open() {
       this.replacing = false;
@@ -274,6 +281,7 @@ export default {
 
     /**
      * Validate client-side type match and emit documentReplaceFile.
+     * @returns {void}
      */
     replace() {
       if (!this.canSubmit) {
