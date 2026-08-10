@@ -3,12 +3,11 @@
 /**
  * Persistent AI conversation orchestration.
  *
- * @module webserver/services/ai/conversation
+ * @module webserver/services/aiAssistant/conversation
  * @author Mohammed Rawhani
  */
 
 const {Op} = require("sequelize");
-const helpers = require("./helpers");
 const {AI_CONVERSATION_TYPES} = require("../../../db/models/ai_conversation");
 const {
     AI_MESSAGE_ROLES,
@@ -23,9 +22,33 @@ const MODEL_ROLES = {
 };
 
 /**
+ * Validates the RPC client's numeric `userId`.
+ *
+ * @param {{ userId?: number }} client Incoming RPC invocation context.
+ * @returns {number} Authenticated user id.
+ */
+function requireClientUserId(client) {
+    const id = Number(client?.userId);
+    if (!Number.isInteger(id) || id <= 0) {
+        throw new Error("Invalid user context");
+    }
+    return id;
+}
+
+/**
+ * Serializes the exact OpenAI-compatible messages sent to the model.
+ *
+ * @param {unknown} messages Serialized chat history.
+ * @returns {string|null}
+ */
+function serializeMessages(messages) {
+    return Array.isArray(messages) && messages.length ? JSON.stringify(messages) : null;
+}
+
+/**
  * Returns the shared AI execution service.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @returns {Object} Registered AIService instance.
  */
 function getAIService(service) {
@@ -68,7 +91,7 @@ function requireRequestId(value) {
 /**
  * Loads the authenticated study session, step, and AI Chat service declaration.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {number} studySessionId - Study session identifier.
  * @param {number} studyStepId - Study step identifier.
@@ -82,7 +105,7 @@ async function loadChatContext(
     studyStepId,
     requireCurrentStep = true,
 ) {
-    const userId = helpers.requireClientUserId(client);
+    const userId = requireClientUserId(client);
     const models = service.server.db.models;
     const sessionId = requireId(studySessionId, "studySessionId");
     const stepId = requireId(studyStepId, "studyStepId");
@@ -107,7 +130,7 @@ async function loadChatContext(
     if (!serviceConfig || !Number.isInteger(hookId) || hookId <= 0) {
         throw new Error("AI Chat is not configured for this study step");
     }
-    await getAIService(service).loadEnabledHook(hookId);
+    await getAIService(service).call("loadHook", client, {hookId});
 
     return {
         userId,
@@ -121,7 +144,7 @@ async function loadChatContext(
 /**
  * Loads and validates a chat conversation owned by the authenticated user.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} conversationId - Conversation identifier.
  * @param {number} userId - Authenticated user identifier.
  * @param {number} studySessionId - Expected study session identifier.
@@ -153,11 +176,11 @@ async function loadConversation(
 /**
  * Lists the enabled models configured for a hook.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} hookId - AI hook identifier.
  * @returns {Promise<Object[]>} Safe model options ordered by hook priority.
  */
-async function getHookModels(service, hookId) {
+async function getHookModels(service, client, hookId) {
     const models = service.server.db.models;
     const aiService = getAIService(service);
     const rows = await models["ai_hook_models"].findAll({
@@ -167,7 +190,7 @@ async function getHookModels(service, hookId) {
     });
     const available = await Promise.all(rows.map(async (row) => {
         try {
-            await aiService.resolveHookModelParams(hookId, row.aiModelId);
+            await aiService.call("resolveHookModel", client, {hookId, aiModelId: row.aiModelId});
             const model = await models["ai_model"].getById(row.aiModelId);
             return model
                 ? {id: model.id, name: model.name || model.model, priority: row.priority}
@@ -182,7 +205,7 @@ async function getHookModels(service, hookId) {
 /**
  * Loads messages safe to display in the chat interface.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} conversationId - Conversation identifier.
  * @returns {Promise<Object[]>} User and assistant messages ordered by id.
  */
@@ -212,7 +235,7 @@ async function getVisibleMessages(service, conversationId) {
 /**
  * Lists the steps whose system context is already stored in a conversation.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} conversationId - Conversation identifier.
  * @returns {Promise<number[]>} Introduced study step identifiers.
  */
@@ -234,12 +257,12 @@ async function getIntroducedStepIds(service, conversationId) {
 /**
  * Loads the chat snapshot for a study session.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} data - Session, step, and optional conversation identifiers.
  * @returns {Promise<Object>} Conversations, visible messages, context state, and model options.
  */
-async function getChat(service, client, data) {
+async function getConversation(service, client, data) {
     const context = await loadChatContext(
         service,
         client,
@@ -269,7 +292,7 @@ async function getChat(service, client, data) {
             context.studySession.id,
         )
         : conversations[0] || null;
-    const models = await getHookModels(service, context.hookId);
+    const models = await getHookModels(service, client, context.hookId);
 
     return {
         conversations,
@@ -319,7 +342,7 @@ function buildPromptValues(inputMappings, suppliedValues) {
 /**
  * Builds the completed model-visible history for a conversation.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} conversationId - Conversation identifier.
  * @returns {Promise<Object[]>} LiteLLM-compatible messages ordered by id.
  */
@@ -344,7 +367,7 @@ async function buildModelMessages(service, conversationId) {
 /**
  * Rejects another chat request while one assistant response is pending in the session.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} userId - Authenticated user identifier.
  * @param {number} studySessionId - Study session identifier.
  * @param {Object} [options] - Sequelize query options.
@@ -376,7 +399,7 @@ async function requireNoPendingMessage(service, userId, studySessionId, options 
 /**
  * Returns the latest assistant message in a conversation.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} conversationId - Conversation identifier.
  * @param {Object} [options] - Sequelize query options.
  * @returns {Promise<Object|null>} Latest assistant message.
@@ -397,7 +420,7 @@ async function getLatestAssistantMessage(service, conversationId, options = {}) 
 /**
  * Creates one user turn and its pending assistant placeholder atomically.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} context - Validated chat context.
  * @param {Object|null} conversation - Existing conversation, or null for a new one.
  * @param {string} content - User message content.
@@ -497,7 +520,7 @@ async function createTurn(service, context, conversation, content, modelParams, 
 /**
  * Marks an assistant placeholder failed only while it is still pending.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {number} assistantMessageId - Assistant message identifier.
  * @returns {Promise<void>}
  */
@@ -517,7 +540,7 @@ async function failAssistantMessage(service, assistantMessageId) {
 /**
  * Runs LiteLLM for an existing pending assistant placeholder.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} context - Validated chat context.
  * @param {Object} conversation - Target conversation.
@@ -540,7 +563,7 @@ async function runAssistantRequest(
     const {additionalParameters, ...credentialParams} = modelParams;
     try {
         const messages = await buildModelMessages(service, conversation.id);
-        const result = await getAIService(service).chatCompletion(client, {
+        const result = await getAIService(service).call("chatCompletion", client, {
             ...additionalParameters,
             ...credentialParams,
             aiHookId: context.hookId,
@@ -551,8 +574,10 @@ async function runAssistantRequest(
             __requestId: requestId,
             messages,
         }, {
-            aiMessageId: assistantMessage.id,
-            input: helpers.serializeMessages(messages),
+            log: {
+                aiMessageId: assistantMessage.id,
+                input: serializeMessages(messages),
+            },
         });
         const content = result.choices?.[0]?.message?.content;
         const [updatedCount] = await service.server.db.models["ai_message"].update({
@@ -582,12 +607,12 @@ async function runAssistantRequest(
 /**
  * Creates or continues a chat conversation with one non-streaming model response.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} data - Message, context values, model, and study identifiers.
  * @returns {Promise<Object>} Completed visible turn.
  */
-async function sendMessage(service, client, data) {
+async function sendConversationMessage(service, client, data) {
     const context = await loadChatContext(
         service,
         client,
@@ -607,9 +632,10 @@ async function sendMessage(service, client, data) {
             context.studySession.id,
         )
         : null;
-    const modelParams = await getAIService(service).resolveHookModelParams(
-        context.hookId,
-        data?.aiModelId,
+    const modelParams = await getAIService(service).call(
+        "resolveHookModel",
+        client,
+        {hookId: context.hookId, aiModelId: data?.aiModelId},
     );
 
     const systemMessage = conversation
@@ -627,7 +653,11 @@ async function sendMessage(service, client, data) {
     let systemPrompt = null;
     if (!systemMessage) {
         const values = buildPromptValues(context.serviceConfig.inputs, data?.values);
-        systemPrompt = (await getAIService(service).resolveHookPrompt(context.hookId, values)).promptText;
+        systemPrompt = (await getAIService(service).call(
+            "resolveHookPrompt",
+            client,
+            {hookId: context.hookId, values},
+        )).promptText;
     }
 
     const turn = await createTurn(
@@ -653,12 +683,12 @@ async function sendMessage(service, client, data) {
 /**
  * Retries the latest failed or aborted assistant response without duplicating the user message.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} data - Assistant message and request identifiers.
  * @returns {Promise<Object>} Completed assistant response.
  */
-async function retryMessage(service, client, data) {
+async function retryConversationMessage(service, client, data) {
     const assistantMessageId = requireId(data?.assistantMessageId, "assistantMessageId");
     const requestId = requireRequestId(data?.requestId);
     const assistantMessage = await service.server.db.models["ai_message"].getById(assistantMessageId);
@@ -671,7 +701,7 @@ async function retryMessage(service, client, data) {
         throw new Error("AI response cannot be retried");
     }
 
-    const userId = helpers.requireClientUserId(client);
+    const userId = requireClientUserId(client);
     const conversation = await service.server.db.models["ai_conversation"].getById(
         assistantMessage.conversationId,
     );
@@ -696,9 +726,10 @@ async function retryMessage(service, client, data) {
         assistantMessage.studyStepId,
         false,
     );
-    const modelParams = await getAIService(service).resolveHookModelParams(
-        context.hookId,
-        assistantMessage.aiModelId,
+    const modelParams = await getAIService(service).call(
+        "resolveHookModel",
+        client,
+        {hookId: context.hookId, aiModelId: assistantMessage.aiModelId},
     );
 
     await service.server.db.sequelize.transaction(async (transaction) => {
@@ -744,14 +775,14 @@ async function retryMessage(service, client, data) {
 /**
  * Aborts the authenticated user's pending chat response.
  *
- * @param {Object} service - AIConversationService runtime.
+ * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} data - Request identifier.
  * @returns {Promise<Object>} Abort result.
  */
-async function abortMessage(service, client, data) {
+async function abortConversationMessage(service, client, data) {
     const requestId = requireRequestId(data?.requestId);
-    const userId = helpers.requireClientUserId(client);
+    const userId = requireClientUserId(client);
     const log = await service.server.db.models["ai_log"].findOne({
         where: {requestId, userId, status: "in_progress", deleted: false},
         raw: true,
@@ -790,21 +821,25 @@ async function abortMessage(service, client, data) {
             transaction,
         });
         if (updatedCount === 0) return false;
-        await getAIService(service).cancelRequest(log.id, {transaction});
+        await getAIService(service).call("cancelRequest", client, {logId: log.id}, {db: {transaction}});
         return true;
     });
     if (!aborted) {
         return {aborted: false, message: "AI request is no longer pending"};
     }
 
-    const result = await getAIService(service).abortChatCompletion({requestId, reason: "request aborted"});
+    const result = await getAIService(service).call(
+        "abortChatCompletion",
+        client,
+        {requestId, reason: "request aborted"},
+    );
     return {...result, aborted: true};
 }
 
 module.exports = {
-    getChat,
-    sendMessage,
-    retryMessage,
-    abortMessage,
+    getConversation,
+    sendConversationMessage,
+    retryConversationMessage,
+    abortConversationMessage,
     buildModelMessages,
 };

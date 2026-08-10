@@ -3,7 +3,7 @@
 const Service = require("../../Service.js");
 const chat = require("./chat");
 const hook = require("./hook");
-const budget = require("./budget");
+const request = require("./request");
 
 /**
  * AIService — AI / LLM RPC handlers.
@@ -57,67 +57,26 @@ module.exports = class AIService extends Service {
     }
 
     /**
-     * Executes one LiteLLM chat completion.
+     * Runs an internal AI action for other backend services.
      *
+     * @param {string} action Internal action name.
      * @param {Object} client Authenticated service client.
-     * @param {Object} data LiteLLM-compatible request data.
-     * @param {Object} [logOptions] Internal logging options.
-     * @returns {Promise<{choices: unknown[]}>}
+     * @param {Object} [data] Action payload.
+     * @param {Object} [options] Internal action options.
+     * @returns {Promise<*>}
      */
-    async chatCompletion(client, data, logOptions = {}) {
-        return chat.chatCompletion(this, client, data, logOptions);
-    }
-
-    /**
-     * Aborts one in-flight LiteLLM request.
-     *
-     * @param {Object} data Abort payload.
-     * @returns {Promise<{aborted: boolean, message?: string}>}
-     */
-    async abortChatCompletion(data) {
-        return chat.abortChatCompletion(this, data);
-    }
-
-    /**
-     * Marks one logged AI request as aborted.
-     *
-     * @param {number} logId AI log identifier.
-     * @param {Object} [options] Sequelize update options.
-     * @returns {Promise<{cancelled: boolean}>}
-     */
-    async cancelRequest(logId, options = {}) {
-        return budget.cancelRequest(this, logId, options);
-    }
-
-    /**
-     * Loads one enabled AI hook.
-     *
-     * @param {number} hookId AI hook identifier.
-     * @returns {Promise<Object>}
-     */
-    async loadEnabledHook(hookId) {
-        return hook.loadEnabledHook(this, hookId);
-    }
-
-    /**
-     * Resolves model parameters for one AI hook.
-     *
-     * @param {number} hookId AI hook identifier.
-     * @param {number|null} [aiModelId] Optional selected model identifier.
-     * @returns {Promise<Object>}
-     */
-    async resolveHookModelParams(hookId, aiModelId = null) {
-        return hook.resolveHookModelParams(this, hookId, aiModelId);
-    }
-
-    /**
-     * Resolves one AI hook prompt from placeholder values.
-     *
-     * @param {number} hookId AI hook identifier.
-     * @param {Object} values Placeholder values.
-     * @returns {Promise<{hook: Object, promptText: string}>}
-     */
-    async resolveHookPrompt(hookId, values = {}) {
-        return hook.resolveHookPrompt(this, hookId, values);
+    async call(action, client, data = {}, options = {}) {
+        const actions = {
+            chatCompletion: () => chat.chatCompletion(this, client, data, options.log),
+            abortChatCompletion: () => chat.abortChatCompletion(this, data),
+            cancelRequest: () => request.cancelRequest(this, data?.logId, options.db),
+            loadHook: () => hook.loadEnabledHook(this, data?.hookId),
+            resolveHookModel: () => hook.resolveHookModelParams(this, data?.hookId, data?.aiModelId),
+            resolveHookPrompt: () => hook.resolveHookPrompt(this, data?.hookId, data?.values),
+        };
+        if (!actions[action]) {
+            throw new Error(`Unknown AI action: ${action}`);
+        }
+        return actions[action]();
     }
 };

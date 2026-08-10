@@ -1,25 +1,25 @@
 "use strict";
 
 const Service = require("../Service.js");
-const conversation = require("./ai/conversation.js");
+const conversation = require("./aiAssistant/conversation.js");
 
 /**
- * Manages persistent AI conversations.
+ * Manages AI assistant workflows.
  *
  * @extends Service
  * @author Mohammed Rawhani
  */
-module.exports = class AIConversationService extends Service {
+module.exports = class AIAssistantService extends Service {
     /**
      * @param {*} server CARE webserver instance.
      */
     constructor(server) {
         super(server, {
             cmdTypes: [
-                "getChat",
-                "sendMessage",
-                "retryMessage",
-                "abortMessage",
+                "getConversation",
+                "sendConversationMessage",
+                "retryConversationMessage",
+                "abortConversationMessage",
             ],
             resTypes: [],
         });
@@ -35,10 +35,10 @@ module.exports = class AIConversationService extends Service {
      */
     async command(client, command, data) {
         const handlers = {
-            getChat: () => conversation.getChat(this, client, data),
-            sendMessage: () => conversation.sendMessage(this, client, data),
-            retryMessage: () => conversation.retryMessage(this, client, data),
-            abortMessage: () => conversation.abortMessage(this, client, data),
+            getConversation: () => conversation.getConversation(this, client, data),
+            sendConversationMessage: () => conversation.sendConversationMessage(this, client, data),
+            retryConversationMessage: () => conversation.retryConversationMessage(this, client, data),
+            abortConversationMessage: () => conversation.abortConversationMessage(this, client, data),
         };
         if (handlers[command]) {
             return handlers[command]();
