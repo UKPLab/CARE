@@ -285,7 +285,10 @@ async function main() {
     console.log('  recordings:    ' + (cfg.recordings.length ? cfg.recordings.join(', ') : '—'));
     if (cfg.files.length) console.log('  files:         ' + cfg.files.join(', '));
     if (cfg.dir) console.log('  dir:           ' + cfg.dir);
-    if (cfg.mode !== 'regression') {
+    // Only ramp (levels to climb) and ceiling (hard cap on levels) use this.
+    // Echoing it for soak, regression and inspect implies a knob that does
+    // nothing in those modes.
+    if (cfg.mode === 'ramp' || cfg.mode === 'ceiling') {
         console.log('  maxIterations: ' + cfg.maxIterations);
     }
     console.log('  server:        ' + cfg.server);
