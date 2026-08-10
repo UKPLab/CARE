@@ -1614,6 +1614,131 @@ class DocumentSocket extends Socket {
 
 
     /**
+     * Replace the PDF or ZIP file of an existing document on disk.
+     *
+     * Keeps the same document id and hash. Used by admins to correct a wrong
+     * submission file without creating a new document. For PDFs, existing CARE
+     * annotations and comments on the document are removed.
+     *
+     * @author Mohammad Elwan
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.documentId - The ID of the document to replace
+     * @param {Buffer} data.file - The binary content of the replacement file
+     * @param {string} data.name - The original filename (used to check the extension)
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Object>}
+     * @throws {Error} - If the user is not an admin or the file type does not match the document
+     */
+    async replaceDocumentFile(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to replace document files.");
+        }
+
+        if (!data || !data.file) {
+            throw new Error("No file uploaded");
+        }
+
+        if (!data.documentId) {
+            throw new Error("documentId is required");
+        }
+
+        if (!data.name || typeof data.name !== "string") {
+            throw new Error("File name is required");
+        }
+
+        const document = await this.validateDocument(data.documentId, "id", false);
+        const extensionMap = {
+            [docTypes.DOC_TYPE_PDF]: ".pdf",
+            [docTypes.DOC_TYPE_ZIP]: ".zip",
+        };
+        const expectedExtension = extensionMap[document.type];
+
+        if (!expectedExtension) {
+            throw new Error("Only PDF and ZIP documents can be replaced with this tool.");
+        }
+
+        const fileExtension = data.name.substring(data.name.lastIndexOf(".")).toLowerCase();
+        if (fileExtension !== expectedExtension) {
+            throw new Error(
+                `File type mismatch: document requires ${expectedExtension}, got ${fileExtension || "(none)"}`
+            );
+        }
+
+        if (document.type === docTypes.DOC_TYPE_PDF) {
+            await this.clearDocumentAnnotations(document.id, options);
+        }
+
+        const target = path.join(UPLOAD_PATH, `${document.hash}${expectedExtension}`);
+        await this.writeReplacementFile(document, data.file, target, expectedExtension);
+
+        return {
+            documentId: document.id,
+            hash: document.hash,
+            message: `Replaced ${expectedExtension} file for document #${document.id}.`,
+        };
+    }
+
+    /**
+     * Soft-delete CARE annotations and comments for a document.
+     * Matches the cascade used when a PDF document is deleted.
+     *
+     * @author Mohammad Elwan
+     * @param {number} documentId - The document whose annotations should be removed
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     */
+    async clearDocumentAnnotations(documentId, options) {
+        const annotations = await this.models["annotation"].getAllByKey("documentId", documentId);
+        const uniqueAnnotationIds = [...new Set((annotations || []).map((annotation) => annotation.id))];
+        for (const annotationId of uniqueAnnotationIds) {
+            await this.models["annotation"].deleteById(annotationId, {transaction: options.transaction});
+        }
+
+        const comments = await this.models["comment"].getAllByKey("documentId", documentId);
+        const uniqueCommentIds = [...new Set((comments || []).map((comment) => comment.id))];
+        for (const commentId of uniqueCommentIds) {
+            await this.models["comment"].deleteById(commentId, {transaction: options.transaction});
+        }
+    }
+
+    /**
+     * Write a replacement file to the document's existing hash path.
+     * For PDFs, best-effort strip embedded annotations via PDFRPC (same as documentAdd).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} target - The filesystem path to overwrite
+     * @param {string} expectedExtension - The expected file extension
+     * @returns {Promise<void>}
+     */
+    async writeReplacementFile(document, fileData, target, expectedExtension) {
+        if (expectedExtension === ".pdf") {
+            try {
+                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                    file: fileData,
+                    document,
+                });
+                if (!file) {
+                    throw new Error("Couldn't delete original annotations");
+                }
+                fs.writeFileSync(target, file);
+                return;
+            } catch (annotationRpcErr) {
+                this.logger.error(
+                    "Error deleting annotations during document file replace: " + annotationRpcErr.message
+                );
+                fs.writeFileSync(target, fileData);
+                return;
+            }
+        }
+
+        fs.writeFileSync(target, fileData);
+    }
+
+    /**
      * Subscribe the client's socket to a document-specific communication channel.
      *
      * @param {Object} data The data object containing the document identifier.
@@ -1675,6 +1800,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
+        this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
