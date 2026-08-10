@@ -92,6 +92,14 @@ async function runRegression(cfg, ctx) {
         }
     }
 
+    // A session whose recorded user doesn't exist on this database is dropped
+    // server-side rather than failed. For a load test that's right; for a
+    // regression gate it isn't — a story that never ran hasn't passed. Compare
+    // what we sent against what came back so a silent skip fails the suite.
+    const skippedSessions = sessions
+        .map(s => s.sessionKey)
+        .filter(k => !stories.has(`key:${k}`));
+
     console.log('');
     let passedStories = 0, failedStories = 0;
     for (const [, s] of stories) {
@@ -104,9 +112,15 @@ async function runRegression(cfg, ctx) {
         }
     }
 
-    const totalStories = stories.size;
+    for (const key of skippedSessions) {
+        console.log(`  [SKIP] ${key}  (recorded user not found on this database)`);
+    }
+
+    // Skipped sessions never reach `stories`, so add them back — otherwise the
+    // denominator silently excludes the stories we're reporting as missing.
+    const totalStories = stories.size + skippedSessions.length;
     console.log('');
-    if (failedStories === 0) {
+    if (failedStories === 0 && skippedSessions.length === 0) {
         console.log(`REGRESSION SUITE PASSED — all ${totalStories} story recording(s) passed.`);
         console.log('Version is STABLE.');
         const saved = saveResults('regression', cfg, {
@@ -121,7 +135,11 @@ async function runRegression(cfg, ctx) {
         }
         return 0;
     }
-    console.log(`REGRESSION SUITE FAILED — ${passedStories} of ${totalStories} stories passed, ${failedStories} failed.`);
+    const skippedNote = skippedSessions.length ? `, ${skippedSessions.length} skipped` : '';
+    console.log(`REGRESSION SUITE FAILED — ${passedStories} of ${totalStories} stories passed, ${failedStories} failed${skippedNote}.`);
+    for (const key of skippedSessions) {
+        console.log(`  Skipped: ${key} — recorded user not found on this database`);
+    }
     for (const [, s] of stories) {
         if (s.failed > 0) {
             console.log(`  Failed: ${s.name}`);
@@ -133,6 +151,7 @@ async function runRegression(cfg, ctx) {
     console.log('Version is NOT stable.');
     const saved = saveResults('regression', cfg, {
         results: iterations.flatMap(i => i.results || []),
+        skipped: skippedSessions,
         verdict: 'not stable',
     });
     const text = capture.stop();
