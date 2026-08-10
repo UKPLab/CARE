@@ -66,6 +66,16 @@ function extractInputText(messages) {
 }
 
 /**
+ * Serializes the exact OpenAI-compatible messages sent to the model.
+ *
+ * @param {unknown} messages Serialized chat history from client/RPC payloads.
+ * @returns {string|null}
+ */
+function serializeMessages(messages) {
+    return Array.isArray(messages) && messages.length ? JSON.stringify(messages) : null;
+}
+
+/**
  * Dedupes non-zero integer-ish ids after optional coercion.
  *
  * @param {Iterable<unknown>} values Source iterable.
@@ -102,6 +112,7 @@ function buildLiteLLMParams(credential, modelName) {
 module.exports = {
     requireClientUserId,
     extractInputText,
+    serializeMessages,
     uniquePositiveInts,
     buildLiteLLMParams,
 };

@@ -24,7 +24,7 @@ const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../db/models/ai_budget.js")
  */
 async function beginRequest(service, request, options = {}) {
     const {
-        userId, aiModelId, aiHookId, requestId, input,
+        userId, aiModelId, aiHookId, aiMessageId, requestId, input,
         studyId, studySessionId, studyStepId, documentId,
     } = request || {};
 
@@ -103,6 +103,7 @@ async function beginRequest(service, request, options = {}) {
         userId,
         aiModelId,
         aiHookId: aiHookId || null,
+        aiMessageId: aiMessageId || null,
         documentId: documentId || null,
         studySessionId: studySessionId || null,
         studyStepId: studyStepId || null,
@@ -122,10 +123,10 @@ async function beginRequest(service, request, options = {}) {
  * @param {Object} outcome - Parsed response fields to save (output, tokens, costs, etc).
  */
 async function completeRequest(service, logId, outcome) {
-    await service.server.db.models["ai_log"].updateById(logId, {
+    await service.server.db.models["ai_log"].update({
         ...outcome,
         status: "completed",
-    });
+    }, {where: {id: logId, status: "in_progress"}});
 }
 
 /**
@@ -134,12 +135,15 @@ async function completeRequest(service, logId, outcome) {
  * @param {Object} service - AIService, used for DB access.
  * @param {number} logId - The ai_log row id returned by beginRequest.
  * @param {string} [errorMessage] - Error text to save on the log row.
+ * @param {number|null} [totalLatencyMs] - Total failed-request latency.
+ * @returns {Promise<void>}
  */
-async function failRequest(service, logId, errorMessage) {
-    await service.server.db.models["ai_log"].updateById(logId, {
+async function failRequest(service, logId, errorMessage, totalLatencyMs = null) {
+    await service.server.db.models["ai_log"].update({
         status: "failed",
         output: errorMessage || "Unknown error",
-    });
+        totalLatencyMs,
+    }, {where: {id: logId, status: "in_progress"}});
 }
 
 /**
@@ -147,9 +151,14 @@ async function failRequest(service, logId, errorMessage) {
  *
  * @param {Object} service - AIService, used for DB access.
  * @param {number} logId - The ai_log row id returned by beginRequest.
+ * @param {Object} [options] - Sequelize update options.
+ * @returns {Promise<{cancelled: boolean}>} Cancellation result.
  */
-async function cancelRequest(service, logId) {
-    await service.server.db.models["ai_log"].updateById(logId, { status: "aborted" });
+async function cancelRequest(service, logId, options = {}) {
+    await service.server.db.models["ai_log"].update(
+        {status: "aborted"},
+        {where: {id: logId, status: "in_progress"}, ...options},
+    );
     return { cancelled: true };
 }
 

@@ -8,7 +8,7 @@
 const MetaModel = require('../MetaModel.js');
 
 const AI_CONVERSATION_TYPES = Object.freeze({
-    SIDEBAR: 0,
+    CHAT: 0,
     ADAPTIVE: 1,
 });
 

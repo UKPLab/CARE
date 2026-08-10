@@ -5,7 +5,7 @@
  * enforcing credential ownership, and recording `ai_log` rows via the budget module.
  *
  * @module webserver/services/ai/chat
- * @author Akash Gundapuneni, Mohamed Rawhani
+ * @author Akash Gundapuneni, Mohammed Rawhani
  */
 
 const {randomUUID} = require("crypto");
@@ -55,11 +55,12 @@ async function requireOwnedCredential(models, credentialId, userId) {
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
- * @param {{ bypassChecks?: boolean, testLabel?: string }} [logOptions] `testLabel` is prepended to the
+ * @param {{ bypassChecks?: boolean, testLabel?: string, aiMessageId?: number, input?: string }} [logOptions] `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
 async function chatCompletion(service, client, data, logOptions = {}) {
+    const requestStartedAt = Date.now();
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         service.logger.error("LiteLLM RPC is not registered");
@@ -77,6 +78,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
     const {
         aiModelId: _aiModelId,
         aiHookId: _aiHookId,
+        aiMessageId: _aiMessageId,
         aiCredentialId: _aiCredentialId,
         credentialId: _credentialId,
         __requestId: _requestId,
@@ -91,8 +93,9 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         userId: client?.userId,
         aiModelId,
         aiHookId: data?.aiHookId,
+        aiMessageId: logOptions.aiMessageId || null,
         requestId,
-        input: helpers.extractInputText(data?.messages),
+        input: logOptions.input || helpers.extractInputText(data?.messages),
         studyId: data?.studyId,
         studySessionId: data?.studySessionId,
         studyStepId: data?.studyStepId,
@@ -114,7 +117,12 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
             : error?.message;
-        await budget.failRequest(service, guard.logId, failureOutput);
+        await budget.failRequest(
+            service,
+            guard.logId,
+            failureOutput,
+            Date.now() - requestStartedAt,
+        );
         throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
@@ -135,6 +143,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         outputTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
         costs: parseNumericCost(payload?.response_cost),
+        totalLatencyMs: Date.now() - requestStartedAt,
     });
 
     return {choices};

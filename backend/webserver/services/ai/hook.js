@@ -41,17 +41,31 @@ async function loadEnabledHook(service, hookId) {
  * @param {Object} service - AIService runtime with DB access.
  * @param {Object} service.server - CARE webserver instance (DB access).
  * @param {number} hookId - Target `ai_hook` primary key.
+ * @param {number|null} [aiModelId] - Optional model selected from the hook.
  * @returns {Promise<Object>} Model string plus the owner's credential params for the LiteLLM passthrough.
  * @throws {Error} If no usable model/credential is configured for the hook.
  */
-async function resolveHookModelParams(service, hookId) {
+async function resolveHookModelParams(service, hookId, aiModelId = null) {
+    const selectedModelId = aiModelId === null || aiModelId === undefined
+        ? null
+        : Number(aiModelId);
+    if (selectedModelId !== null && (!Number.isInteger(selectedModelId) || selectedModelId <= 0)) {
+        throw new Error("Missing or invalid aiModelId");
+    }
+
     const hookModel = await service.server.db.models['ai_hook_models'].findOne({
-        where: { aiHookId: hookId, deleted: false },
+        where: {
+            aiHookId: hookId,
+            deleted: false,
+            ...(selectedModelId ? {aiModelId: selectedModelId} : {}),
+        },
         order: [["priority", "ASC"]],
         raw: true,
     });
     if (!hookModel) {
-        throw new Error("AI hook has no configured model");
+        throw new Error(selectedModelId
+            ? "Selected model is not configured for this AI hook"
+            : "AI hook has no configured model");
     }
 
     const aiModel = await service.server.db.models['ai_model'].getById(hookModel.aiModelId);
@@ -78,6 +92,25 @@ async function resolveHookModelParams(service, hookId) {
         additionalParameters: hookModel.additionalParameters || {},
         ...helpers.buildLiteLLMParams(credential, aiModel.model),
     };
+}
+
+/**
+ * Resolves an enabled hook's prompt template from caller-supplied values.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {number} hookId - Target `ai_hook` primary key.
+ * @param {Object} rawValues - Placeholder values supplied by the caller.
+ * @returns {Promise<{hook: Object, promptText: string}>} Hook row and resolved prompt.
+ */
+async function resolveHookPrompt(service, hookId, rawValues = {}) {
+    const hook = await loadEnabledHook(service, hookId);
+    const values = await resolveHookReferences(service, rawValues);
+    const promptText = await resolveTemplateWithValues(
+        hook.templateId,
+        values,
+        service.server.db.models,
+    );
+    return {hook, promptText};
 }
 
 /**
@@ -182,11 +215,8 @@ async function runHook(service, client, data) {
         throw new Error("Missing or invalid hookId");
     }
 
-    const hook = await loadEnabledHook(service, hookId);
+    const {hook, promptText} = await resolveHookPrompt(service, hookId, data?.values);
     const modelParams = await resolveHookModelParams(service, hookId);
-    const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
-    const values = await resolveHookReferences(service, rawValues);
-    const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
     
     const { additionalParameters, ...credentialParams } = modelParams;
     const completionData = {
@@ -215,4 +245,7 @@ async function runHook(service, client, data) {
 
 module.exports = {
     runHook,
+    loadEnabledHook,
+    resolveHookModelParams,
+    resolveHookPrompt,
 };
