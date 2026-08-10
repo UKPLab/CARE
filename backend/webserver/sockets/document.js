@@ -1670,7 +1670,7 @@ class DocumentSocket extends Socket {
         }
 
         const target = path.join(UPLOAD_PATH, `${document.hash}${expectedExtension}`);
-        await this.writeReplacementFile(document, data.file, target, expectedExtension);
+        await this.writeReplacementFile(document, data.file, target, expectedExtension, options);
 
         return {
             documentId: document.id,
@@ -1690,13 +1690,21 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async clearDocumentAnnotations(documentId, options) {
-        const annotations = await this.models["annotation"].getAllByKey("documentId", documentId);
+        const annotations = await this.models["annotation"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
         const uniqueAnnotationIds = [...new Set((annotations || []).map((annotation) => annotation.id))];
         for (const annotationId of uniqueAnnotationIds) {
             await this.models["annotation"].deleteById(annotationId, {transaction: options.transaction});
         }
 
-        const comments = await this.models["comment"].getAllByKey("documentId", documentId);
+        const comments = await this.models["comment"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
         const uniqueCommentIds = [...new Set((comments || []).map((comment) => comment.id))];
         for (const commentId of uniqueCommentIds) {
             await this.models["comment"].deleteById(commentId, {transaction: options.transaction});
@@ -1704,38 +1712,73 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Write a replacement file to the document's existing hash path.
-     * For PDFs, best-effort strip embedded annotations via PDFRPC (same as documentAdd).
+     * Prepare replacement file bytes (best-effort PDFRPC strip for PDFs).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} expectedExtension - The expected file extension
+     * @returns {Promise<Buffer>} Bytes to write after the DB transaction commits
+     */
+    async prepareReplacementFileBytes(document, fileData, expectedExtension) {
+        if (expectedExtension !== ".pdf") {
+            return fileData;
+        }
+
+        try {
+            const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                file: fileData,
+                document,
+            });
+            if (!file) {
+                throw new Error("Couldn't delete original annotations");
+            }
+            return file;
+        } catch (annotationRpcErr) {
+            this.logger.error(
+                "Error deleting annotations during document file replace: " + annotationRpcErr.message
+            );
+            return fileData;
+        }
+    }
+
+    /**
+     * Schedule writing a replacement file after the DB transaction commits.
+     * Prepares bytes (and strips embedded PDF annotations) before commit, but only
+     * mutates the live hash path in afterCommit so a rollback cannot leave disk and DB out of sync.
      *
      * @author Mohammad Elwan
      * @param {Object} document - The document record
      * @param {Buffer} fileData - The uploaded file content
      * @param {string} target - The filesystem path to overwrite
      * @param {string} expectedExtension - The expected file extension
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<void>}
      */
-    async writeReplacementFile(document, fileData, target, expectedExtension) {
-        if (expectedExtension === ".pdf") {
-            try {
-                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
-                    file: fileData,
-                    document,
-                });
-                if (!file) {
-                    throw new Error("Couldn't delete original annotations");
-                }
-                fs.writeFileSync(target, file);
-                return;
-            } catch (annotationRpcErr) {
-                this.logger.error(
-                    "Error deleting annotations during document file replace: " + annotationRpcErr.message
-                );
-                fs.writeFileSync(target, fileData);
-                return;
-            }
-        }
+    async writeReplacementFile(document, fileData, target, expectedExtension, options) {
+        const bytes = await this.prepareReplacementFileBytes(document, fileData, expectedExtension);
+        const tempPath = `${target}.replace-tmp`;
 
-        fs.writeFileSync(target, fileData);
+        options.transaction.afterCommit(() => {
+            try {
+                fs.writeFileSync(tempPath, bytes);
+                fs.renameSync(tempPath, target);
+            } catch (err) {
+                this.logger.error(
+                    `Error writing replacement file for document #${document.id}: ${err.message}`
+                );
+                try {
+                    if (fs.existsSync(tempPath)) {
+                        fs.unlinkSync(tempPath);
+                    }
+                } catch (cleanupErr) {
+                    this.logger.error(
+                        `Error cleaning up temp replacement file: ${cleanupErr.message}`
+                    );
+                }
+            }
+        });
     }
 
     /**
