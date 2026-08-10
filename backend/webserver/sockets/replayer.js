@@ -2,6 +2,7 @@
 
 const Socket = require('../Socket.js');
 const { replayUserTraces } = require('../../utils/replay-worker');
+const { groupTracesBySocket, buildActiveSessions } = require('../../utils/replay-sessions');
 const throttle = require('lodash/throttle');
 
 // Ceilings on caller-supplied load parameters. Replay opens real sockets
@@ -155,7 +156,7 @@ class ReplayerSocket extends Socket {
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             if (traces.length === 0) continue;
 
-            const sessionMap = this.groupTracesBySocket(traces);
+            const sessionMap = groupTracesBySocket(traces);
             for (const [key, session] of sessionMap) {
                 sessions.push({
                     sessionKey: key,
@@ -210,7 +211,7 @@ class ReplayerSocket extends Socket {
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
             if (traces.length === 0) continue;
 
-            const sessionMap = this.groupTracesBySocket(traces);
+            const sessionMap = groupTracesBySocket(traces);
             const multiSession = sessionMap.size > 1;
             for (const [key, session] of sessionMap) {
                 sessions.push({
@@ -242,45 +243,6 @@ class ReplayerSocket extends Socket {
         }
 
         return { sessions: replayable, userMap };
-    }
-
-    /**
-     * Group trace rows by socketId, falling back to "user-{userId}" when
-     * socketId is null (older recordings captured before per-session
-     * tracking was added).
-     * @param {Array<Object>} traces - Trace rows sorted by startTime
-     * @returns {Map<string, {userId: number, traces: Array<Object>}>} Map of session key to its traces and owning user
-     */
-    groupTracesBySocket(traces) {
-        const map = new Map();
-        for (const t of traces) {
-            if (!t.userId) continue;
-            const key = t.socketId || `user-${t.userId}`;
-            if (!map.has(key)) {
-                map.set(key, { userId: t.userId, traces: [] });
-            }
-            map.get(key).traces.push(t);
-        }
-        return map;
-    }
-
-    /**
-     * Pick `count` sessions from the pool with wraparound, so a level of any
-     * size can be built from a pool of N sessions.
-     * @param {{sessions: Array}} pool - Session pool
-     * @param {number} count - How many sessions this level runs
-     * @returns {Array<Object>} The level's session list
-     */
-    buildActiveSessions(pool, count) {
-        const N = pool.sessions.length;
-        if (N === 0) {
-            return [];
-        }
-        const activeSessions = [];
-        for (let i = 0; i < count; i++) {
-            activeSessions.push(pool.sessions[i % N]);
-        }
-        return activeSessions;
     }
 
     /**
@@ -382,7 +344,7 @@ class ReplayerSocket extends Socket {
         if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > MAX_CONCURRENCY) {
             throw new Error(`concurrency must be an integer between 1 and ${MAX_CONCURRENCY}`);
         }
-        const activeSessions = this.buildActiveSessions(pool, concurrency);
+        const activeSessions = buildActiveSessions(pool, concurrency);
         // Sum the sessions actually picked: with wraparound over unequal session
         // sizes, concurrency * average would not match what gets replayed.
         const totalTraces = activeSessions.reduce((sum, s) => sum + s.traces.length, 0);
@@ -430,7 +392,7 @@ class ReplayerSocket extends Socket {
             // Sessions are picked with wraparound, so iteration K's list is
             // pool[0], pool[1], ..., pool[N-1], pool[0], pool[1], ... (K times).
             const totalSockets = level * N;
-            const activeSessions = this.buildActiveSessions(pool, totalSockets);
+            const activeSessions = buildActiveSessions(pool, totalSockets);
 
             const levelStart = Date.now();
             const levelResults = await this.runSessions(
