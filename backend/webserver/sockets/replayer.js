@@ -2,7 +2,7 @@
 
 const Socket = require('../Socket.js');
 const { replayUserTraces } = require('../../utils/replay-worker');
-const { groupTracesBySocket, buildActiveSessions } = require('../../utils/replay-sessions');
+const { groupTracesBySocket, buildActiveSessions, reviveBuffers } = require('../../utils/replay-sessions');
 const throttle = require('lodash/throttle');
 
 // Ceilings on caller-supplied load parameters. Replay opens real sockets
@@ -150,7 +150,11 @@ class ReplayerSocket extends Socket {
 
             // Only client->server traces are replayable; server pushes are
             // captured for diagnostics but must not be emitted back.
-            const allTraces = await this.models['trace'].getAllByKey('recordingId', recordingId);
+            // Postgres has no binary type inside JSONB, so a captured Buffer
+            // comes back as a plain {type:'Buffer', data:[…]} object. Restore
+            // it here so handlers expecting file bytes get a real Buffer.
+            const allTraces = (await this.models['trace'].getAllByKey('recordingId', recordingId))
+                .map(t => ({ ...t, payload: reviveBuffers(t.payload) }));
             const traces = allTraces
                 .filter(t => t.direction === true)
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());

@@ -41,4 +41,31 @@ function buildActiveSessions(pool, count) {
     return activeSessions;
 }
 
-module.exports = {groupTracesBySocket, buildActiveSessions};
+/**
+ * Restore Buffers that JSON.stringify and JSONB storage flatten into
+ * {type:'Buffer', data:[…]}. Traces carrying file bytes (documentAdd and
+ * friends) hold a Buffer when captured, but Postgres has no binary type inside
+ * JSONB, so what comes back out is a plain object — which the handler rejects.
+ * Walks the whole payload rather than a known key, since any event may nest
+ * file bytes anywhere.
+ * @param {*} value - Any value from a stored or parsed trace payload
+ * @returns {*} The same structure with Buffer-shaped objects converted back to Buffers
+ */
+function reviveBuffers(value) {
+    if (Array.isArray(value)) {
+        return value.map(reviveBuffers);
+    }
+    if (value && typeof value === 'object') {
+        if (value.type === 'Buffer' && Array.isArray(value.data)) {
+            return Buffer.from(value.data);
+        }
+        const out = {};
+        for (const [k, v] of Object.entries(value)) {
+            out[k] = reviveBuffers(v);
+        }
+        return out;
+    }
+    return value;
+}
+
+module.exports = {groupTracesBySocket, buildActiveSessions, reviveBuffers};

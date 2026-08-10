@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { reviveBuffers } = require('../../../utils/replay-sessions');
 
 /**
  * Validate an exported recording payload (schemaVersion 1). Throws on any issue.
@@ -50,7 +51,7 @@ function loadSessionsFromFiles(cfg) {
         sessions.push({
             sessionKey: path.basename(f),
             recordingName: name,
-            traces: json.traces,
+            traces: json.traces.map(t => ({ ...t, payload: reviveBuffers(t.payload) })),
         });
         // Report which user(s) the traces were recorded under: replay resolves
         // each session to its own recorded user, not the caller running the CLI.
