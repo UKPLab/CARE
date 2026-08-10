@@ -22,24 +22,10 @@ async function flagDisconnectedRecording(server, socket) {
             return;
         }
 
-        const stoppedId = entry.recordingId;
         await recorder.stopRecording(
             { socketId: socket.id, status: "disconnected" },
             { internal: true }
         );
-
-        // The disconnect-triggered stop runs outside the normal socket
-        // transaction flow, so the automatic table broadcast doesn't fire. Push
-        // the updated recording row to subscribed clients manually so their
-        // tables reflect the new status.
-        try {
-            const updatedRow = await server.db.models["recording"].getById(stoppedId);
-            if (updatedRow) {
-                await recorder.broadcastTable("recording", [updatedRow]);
-            }
-        } catch (e) {
-            server.logger.warn("Failed to broadcast disconnected recording: " + e);
-        }
 
         const ownerSocket = server.io.sockets.sockets.get(entry.ownerSocketId);
         if (ownerSocket) {
