@@ -1,5 +1,5 @@
 /**
- * Gating tests for AI budget caps (webserver/services/ai/budget.beginRequest).
+ * Gating tests for AI budget caps (webserver/services/ai/request.beginRequest).
  *
  * These seed ai_log rows with hand-chosen costs directly in the DB, then call the
  * real beginRequest and assert allowed / denied. No LLM is involved, so the numbers
@@ -19,9 +19,9 @@ jest.mock("uuid", () => {
 });
 
 const db = require("../db");
-const budget = require("../webserver/services/ai/budget");
+const request = require("../webserver/services/ai/request");
 
-// budget.js reaches the DB through service.server.db and logs through service.logger.
+// request.js reaches the DB through service.server.db and logs through service.logger.
 const service = {
     server: { db },
     logger: { info() {}, warn() {}, error() {} },
@@ -77,8 +77,8 @@ function seedCap(fields) {
     return db.models.ai_budget.create({ deleted: false, limitType: 0, ...fields });
 }
 
-function begin(request) {
-    return budget.beginRequest(service, { requestId: uniq("begin"), ...request });
+function begin(payload) {
+    return request.beginRequest(service, { requestId: uniq("begin"), ...payload });
 }
 
 // A share must be non-deleted and not yet expired for the budget code to find it.

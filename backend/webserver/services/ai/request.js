@@ -5,7 +5,7 @@
  * All cap rows live in the ai_budget table. Each request loads the caps
  * that apply, sums the related spend, and denies on the first one that's full.
  *
- * @module webserver/services/ai/budget
+ * @module webserver/services/ai/request
  * @author Mohammed Rawhani
  */
 
