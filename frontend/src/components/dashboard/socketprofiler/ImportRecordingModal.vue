@@ -88,9 +88,8 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
  *
  * Pattern modeled on Karim Ouf's ImportFormatModal for workflows.
  *
- * Note: traces are re-created one at a time via appDataUpdate. I think this is fine
- * for typical recording sizes; can be swapped to a bulk handler if imports
- * become slow.
+ * The recording and its traces are written by the recorderImport handler in
+ * one transaction, so an import either lands completely or not at all.
  */
 export default {
   name: "ImportRecordingModal",
@@ -206,99 +205,33 @@ export default {
 
       const { recording, traces } = this.parsed;
 
-      // The traces keep their original socketIds, which replay uses purely
-      // as grouping keys to reconstruct sessions. Derive the distinct set so
-      // the recording knows how many sessions it contains (drives the session
-      // count and the replay load estimate), mirroring a normal recording.
-      const participantSocketIds = [...new Set(
-        traces.map(t => t.socketId).filter(Boolean)
-      )];
-
-      // Create the recording row, owned by the current user. The original
-      // userId is dropped (meaningless on this machine), but socketIds are
-      // kept as opaque grouping keys so sessions reconstruct correctly.
-      const recordingResult = await new Promise((resolve) => {
+      // One backend handler creates the recording and all of its traces in a
+      // single transaction, so a mid-import failure rolls everything back.
+      const importResult = await new Promise((resolve) => {
         this.$socket.emit(
-          "appDataUpdate",
-          {
-            table: "recording",
-            data: {
-              name: recording.name ? `${recording.name} (imported)` : `Imported recording ${Date.now()}`,
-              status: recording.status || "finished",
-              startTime: recording.startTime || new Date().toISOString(),
-              endTime: recording.endTime || null,
-              userId: this.userId,
-              excludeEvents: recording.excludeEvents || null,
-              participantSocketIds,
-            },
-          },
+          "recorderImport",
+          { recording, traces },
           (r) => resolve(r)
         );
       });
 
-      if (!recordingResult.success) {
+      if (!importResult.success) {
         this.$refs.stepper.setWaiting(false);
         this.eventBus.emit("toast", {
           title: "Import failed",
-          message: `Failed to create recording: ${recordingResult.message}`,
+          message: importResult.message || "Import failed",
           variant: "danger",
         });
         return;
       }
 
-      const newRecordingId = recordingResult.data;
-      let successCount = 0;
-      let failCount = 0;
-
-      // TODO: recording + traces are inserted as independent appDataUpdate calls
-      // with no shared transaction, so a server-side failure mid-loop leaves a
-      // partially imported recording. A dedicated backend import handler wrapping
-      // both in one transaction would make this atomic. Pre-validation above
-      // covers the common bad-file cases in the meantime.
-      // Re-create each trace under the new recording ID.
-      for (const trace of traces) {
-        const traceResult = await new Promise((resolve) => {
-          this.$socket.emit(
-            "appDataUpdate",
-            {
-              table: "trace",
-              data: {
-                recordingId: newRecordingId,
-                userId: this.userId,
-                socketId: trace.socketId || null,
-                action: trace.action,
-                payload: trace.payload || null,
-                direction: trace.direction,
-                startTime: trace.startTime,
-                endTime: trace.endTime,
-              },
-            },
-            (r) => resolve(r)
-          );
-        });
-
-        if (traceResult && traceResult.success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
-      }
-
       this.$refs.stepper.setWaiting(false);
 
-      if (failCount === 0) {
-        this.eventBus.emit("toast", {
-          title: "Import successful",
-          message: `Imported recording with ${successCount} trace(s)`,
-          variant: "success",
-        });
-      } else {
-        this.eventBus.emit("toast", {
-          title: "Import partial",
-          message: `Imported ${successCount} trace(s), ${failCount} failed`,
-          variant: "warning",
-        });
-      }
+      this.eventBus.emit("toast", {
+        title: "Import successful",
+        message: `Imported recording with ${importResult.data.traceCount} trace(s)`,
+        variant: "success",
+      });
       this.close();
     },
   },

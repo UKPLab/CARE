@@ -258,7 +258,6 @@ class RecorderSocket extends Socket {
             const recordingId = entry.recordingId;
 
             const recorder = this.server.availSockets[socketId] && this.server.availSockets[socketId]["RecorderSocket"];
-            if (recorder) recorder.detachListeners();
 
             await this.models["recording"].updateById(
                 recordingId,
@@ -266,19 +265,37 @@ class RecorderSocket extends Socket {
                 options
             );
 
-            // Push the updated row to subscribers so their tables reflect the
-            // new status (recorderStop runs without a transaction, so the
-            // automatic table broadcast doesn't fire on its own).
-            try {
-                const updatedRow = await this.models["recording"].getById(recordingId);
-                if (updatedRow) {
-                    await this.broadcastTable("recording", [updatedRow]);
+            // Callers without a transaction (e.g. disconnect cleanup) get no
+            // automatic table broadcast, so push the updated row to
+            // subscribers here. Under a transaction, createSocket's
+            // afterCommit hook broadcasts the change instead.
+            if (!options || !options.transaction) {
+                try {
+                    const updatedRow = await this.models["recording"].getById(recordingId, options);
+                    if (updatedRow) {
+                        await this.broadcastTable("recording", [updatedRow]);
+                    }
+                } catch (e) {
+                    this.logger.warn("Failed to broadcast stopped recording: " + e);
                 }
-            } catch (e) {
-                this.logger.warn("Failed to broadcast stopped recording: " + e);
             }
 
-            delete this.server.activeRecordings[socketId];
+            // Detaching listeners and dropping the in-memory entry are only
+            // safe once the status write is durable — a rollback would
+            // otherwise leave the server treating the recording as stopped
+            // while the row still says "recording".
+            const applyStopSideEffects = () => {
+                if (recorder) {
+                    recorder.detachListeners();
+                }
+                delete this.server.activeRecordings[socketId];
+            };
+
+            if (options && options.transaction) {
+                options.transaction.afterCommit(applyStopSideEffects);
+            } else {
+                applyStopSideEffects();
+            }
 
             const traces = (await this.models["trace"].getAllByKey("recordingId", recordingId, options))
                 .sort((a, b) => a.id - b.id);
@@ -410,16 +427,94 @@ class RecorderSocket extends Socket {
     }
 
     /**
+     * Import a previously exported recording and all of its traces in one
+     * transaction. Replaces the frontend's per-trace appDataUpdate loop: one
+     * round trip instead of N, and a mid-import failure rolls the whole thing
+     * back rather than leaving a half-imported recording behind.
+     *
+     * The original userId is dropped — it's meaningless on this server — and
+     * the importing admin becomes the owner. Original socketIds are kept as
+     * opaque grouping keys so replay can reconstruct the sessions.
+     * @param {Object} data - Import payload
+     * @param {Object} data.recording - Recording row from the export file (name, status, startTime, endTime, excludeEvents)
+     * @param {Array<Object>} data.traces - Trace rows to re-create under the new recording
+     * @param {Object} options - Socket options; carries the transaction
+     * @returns {Promise<{recordingId: number, traceCount: number}>} The new recording's id and how many traces were written
+     * @throws {Error} if the caller is not an admin or the payload is malformed
+     */
+    async importRecording(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("Admin access required");
+        }
+
+        const source = data && data.recording;
+        const traces = data && data.traces;
+
+        if (!source || typeof source !== "object") {
+            throw new Error("Missing recording object");
+        }
+        if (!Array.isArray(traces)) {
+            throw new Error("Missing traces array");
+        }
+
+        // The client validates too, for fast feedback before upload, but this
+        // handler is reachable directly so the payload can't be trusted.
+        for (const t of traces) {
+            if (!t.action) {
+                throw new Error("A trace is missing 'action'");
+            }
+            if (t.direction !== true && t.direction !== false) {
+                throw new Error("A trace is missing a valid 'direction'");
+            }
+            if (!t.startTime) {
+                throw new Error("A trace is missing 'startTime'");
+            }
+        }
+
+        // Sessions are reconstructed from the distinct socketIds, mirroring how
+        // a normally recorded row stores them.
+        const participantSocketIds = [...new Set(
+            traces.map(t => t.socketId).filter(Boolean)
+        )];
+
+        const recording = await this.models["recording"].add({
+            name: source.name ? `${source.name} (imported)` : `Imported recording ${Date.now()}`,
+            status: source.status || "finished",
+            startTime: source.startTime || new Date(),
+            endTime: source.endTime || null,
+            userId: this.userId,
+            participantSocketIds: participantSocketIds.length > 0 ? participantSocketIds : null,
+            excludeEvents: source.excludeEvents || null,
+        }, options);
+
+        for (const trace of traces) {
+            await this.models["trace"].add({
+                recordingId: recording.id,
+                userId: this.userId,
+                socketId: trace.socketId || null,
+                action: trace.action,
+                payload: trace.payload || null,
+                direction: trace.direction,
+                startTime: trace.startTime,
+                endTime: trace.endTime,
+            }, options);
+        }
+
+        return { recordingId: recording.id, traceCount: traces.length };
+    }
+
+    /**
      * Register this socket's event handlers.
      * @returns {void}
      */
     init() {
         this.createSocket("recorderStart", this.startRecording, {}, true);
-        this.createSocket("recorderStop", this.stopRecording, {}, false);
+        this.createSocket("recorderStop", this.stopRecording, {}, true);
         this.createSocket("recordingGetTraces", this.getTraces, {}, false);
         this.createSocket("recordingGetOnlineSessions", this.getOnlineSessions, {}, false);
         this.createSocket("recordingGetPerfHealth", this.getPerfHealth, {}, false);
         this.createSocket("recordingGetPerfStats", this.getPerfStats, {}, false);
+        this.createSocket("recorderImport", this.importRecording, {}, true);
     }
 }
 
