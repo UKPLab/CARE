@@ -141,8 +141,21 @@ export default {
     };
   },
   computed: {
+    /**
+     * Raw recording rows straight from the store. Kept separate from
+     * `recordings` so callers that need real values (export, filenames) don't
+     * get the display-formatted dates.
+     * @returns {Array<Object>} Unformatted recording rows
+     */
+    rawRecordings() {
+      return this.$store.getters["table/recording/getAll"];
+    },
+    /**
+     * Recording rows with dates formatted for display in the table.
+     * @returns {Array<Object>} Recording rows with localised date strings
+     */
     recordings() {
-      return this.$store.getters["table/recording/getAll"].map(r => ({
+      return this.rawRecordings.map(r => ({
         ...r,
         startTime: r.startTime ? new Date(r.startTime).toLocaleString() : "-",
         endTime: r.endTime ? new Date(r.endTime).toLocaleString() : "-",
@@ -228,8 +241,7 @@ export default {
 
         // Pull the full recording row from the store and strip DB-managed
         // and environment-specific fields that shouldn't travel with an export.
-        const recordingRow = this.$store.getters["table/recording/getAll"]
-          .find(r => r.id === row.id);
+        const recordingRow = this.rawRecordings.find(r => r.id === row.id);
         if (!recordingRow) {
           this.eventBus.emit("toast", {
             title: "Export failed",
@@ -350,7 +362,7 @@ export default {
      * @returns {void}
      */
     downloadReplayResults(results, runConfig) {
-      const allRecordings = this.$store.getters["table/recording/getAll"] || [];
+      const allRecordings = this.rawRecordings;
       const recordingNames = runConfig.recordingIds.map((id) => {
         const r = allRecordings.find((rec) => rec.id === id);
         return r ? r.name : `recording_${id}`;
