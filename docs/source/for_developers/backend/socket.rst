@@ -460,8 +460,9 @@ without creating a new document row.
 - Only PDF and ZIP documents are supported; the upload extension must match the document type
 - For PDFs: soft-deletes existing CARE annotations and comments on that document, and best-effort
   strips embedded PDF annotations via PDFRPC (falls back to the raw upload if strip fails)
-- Destructive disk write runs in ``afterCommit`` (temp file then rename) so a transaction rollback
-  cannot leave the live hash path replaced while annotation deletes are undone
+- Writes ``files/{hash}.{ext}.replace-tmp`` before commit (failure rolls back DB changes); renames
+  onto the live hash path in ``afterCommit``. If rename fails after commit, the socket returns an
+  error so the admin is notified and the temp file is left for manual recovery.
 
 .. _document-create-example:
 

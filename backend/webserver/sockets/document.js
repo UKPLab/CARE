@@ -1743,9 +1743,10 @@ class DocumentSocket extends Socket {
     }
 
     /**
-     * Schedule writing a replacement file after the DB transaction commits.
-     * Prepares bytes (and strips embedded PDF annotations) before commit, but only
-     * mutates the live hash path in afterCommit so a rollback cannot leave disk and DB out of sync.
+     * Write a replacement temp file, then rename onto the live hash path after commit.
+     * Temp write happens before commit (failure rolls back annotation deletes). Only the
+     * rename runs in afterCommit. If rename fails after commit, the socket callback fails
+     * so the admin is notified (temp file is left for manual recovery).
      *
      * @author Mohammad Elwan
      * @param {Object} document - The document record
@@ -1755,28 +1756,24 @@ class DocumentSocket extends Socket {
      * @param {Object} options - Additional configuration parameter
      * @param {Object} options.transaction - Sequelize DB transaction options
      * @returns {Promise<void>}
+     * @throws {Error} - If the temp file cannot be written, or if rename fails after commit
      */
     async writeReplacementFile(document, fileData, target, expectedExtension, options) {
         const bytes = await this.prepareReplacementFileBytes(document, fileData, expectedExtension);
         const tempPath = `${target}.replace-tmp`;
+        fs.writeFileSync(tempPath, bytes);
 
         options.transaction.afterCommit(() => {
             try {
-                fs.writeFileSync(tempPath, bytes);
                 fs.renameSync(tempPath, target);
             } catch (err) {
                 this.logger.error(
-                    `Error writing replacement file for document #${document.id}: ${err.message}`
+                    `Error promoting replacement file for document #${document.id}: ${err.message}`
                 );
-                try {
-                    if (fs.existsSync(tempPath)) {
-                        fs.unlinkSync(tempPath);
-                    }
-                } catch (cleanupErr) {
-                    this.logger.error(
-                        `Error cleaning up temp replacement file: ${cleanupErr.message}`
-                    );
-                }
+                throw new Error(
+                    `Annotations were updated but the file could not be replaced for document #${document.id}. ` +
+                    `The new file is at ${tempPath}; rename it to ${target} manually. ${err.message}`
+                );
             }
         });
     }
