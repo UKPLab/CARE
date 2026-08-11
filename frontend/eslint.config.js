@@ -1,6 +1,7 @@
 import js from '@eslint/js'
 import { FlatCompat } from '@eslint/eslintrc'
 import pluginVue from 'eslint-plugin-vue'
+import pluginSecurity from 'eslint-plugin-security'
 import eslintConfigPrettier from 'eslint-config-prettier'
 import footerButtonGroupRule from './eslint-rules/footer-button-group.js'
 import warnFileLineCountRule from './eslint-rules/warn-file-line-count.js'
@@ -23,6 +24,7 @@ export default [
         es2021: true,
     }),
     js.configs.recommended,
+    pluginSecurity.configs.recommended,
     ...pluginVue.configs['flat/recommended'],
     eslintConfigPrettier,
     {
@@ -44,6 +46,11 @@ export default [
                 },
             ],
             'local/warn-file-line-count': 'warn',
+            'security/detect-child-process': 'error',
+            'security/detect-eval-with-expression': 'error',
+            'security/detect-non-literal-fs-filename': 'error',
+            'security/detect-non-literal-regexp': 'error',
+            'security/detect-object-injection': 'error',
             'no-unused-vars': [
                 'error',
                 {

@@ -12,6 +12,177 @@ env:
   GIT_SUBMODULE_STRATEGY: recursive
 
 jobs:
+  security:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript,python
+          queries: security-extended
+
+      - name: Install security scanners
+        run: |
+          python -m pip install --disable-pip-version-check bandit pip-audit semgrep uv
+
+      - name: Semgrep
+        id: semgrep
+        continue-on-error: true
+        run: semgrep scan --config p/security-audit --error backend frontend utils
+
+      - name: npm audit
+        id: npm-audit
+        continue-on-error: true
+        run: make audit
+
+      - name: Gitleaks
+        id: gitleaks
+        continue-on-error: true
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:latest \
+            detect --source=/repo --no-git --redact
+
+      - name: ESLint security rules
+        id: eslint-security
+        continue-on-error: true
+        run: |
+          npm ci --prefix frontend --ignore-scripts
+          npm ci --prefix backend --ignore-scripts
+          status=0
+          for directory in frontend backend; do
+            (
+              cd "$directory"
+              npx eslint "**/*.js" --no-config-lookup --plugin security \
+                --rule "security/detect-bidi-characters:error" \
+                --rule "security/detect-buffer-noassert:error" \
+                --rule "security/detect-child-process:error" \
+                --rule "security/detect-disable-mustache-escape:error" \
+                --rule "security/detect-eval-with-expression:error" \
+                --rule "security/detect-new-buffer:error" \
+                --rule "security/detect-no-csrf-before-method-override:error" \
+                --rule "security/detect-non-literal-fs-filename:error" \
+                --rule "security/detect-non-literal-regexp:error" \
+                --rule "security/detect-non-literal-require:error" \
+                --rule "security/detect-object-injection:error" \
+                --rule "security/detect-possible-timing-attacks:error" \
+                --rule "security/detect-pseudoRandomBytes:error" \
+                --rule "security/detect-unsafe-regex:error"
+            ) || status=1
+          done
+          exit "$status"
+
+      - name: Bandit
+        id: bandit
+        continue-on-error: true
+        run: bandit -r utils/rpcs -ll
+
+      - name: pip-audit
+        id: pip-audit
+        continue-on-error: true
+        run: |
+          status=0
+          for requirements in utils/rpcs/*/requirements.txt; do
+            pip-audit --requirement "$requirements" || status=1
+          done
+          exit "$status"
+
+      - name: Build test image
+        id: image-build
+        continue-on-error: true
+        run: docker build --build-arg ENV=dev --tag care-security-test .
+
+      - name: Trivy
+        id: trivy
+        if: always() && steps.image-build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:latest image --exit-code 1 --severity HIGH,CRITICAL \
+            care-security-test
+
+      - name: Hadolint
+        id: hadolint
+        continue-on-error: true
+        run: |
+          status=0
+          for dockerfile in Dockerfile docs/Dockerfile utils/rpcs/*/Dockerfile; do
+            docker run --rm -i hadolint/hadolint:latest hadolint - < "$dockerfile" || status=1
+          done
+          exit "$status"
+
+      - name: Zizmor
+        id: zizmor
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: uvx zizmor --format=github .
+
+      # SECURITY-SCANNER-TEST: direct interpolation is intentionally unsafe so
+      # Zizmor detects template injection on this throwaway branch.
+      - name: Zizmor test fixture
+        continue-on-error: true
+        run: echo "${{ github.event.pull_request.title }}"
+
+      - name: Analyze with CodeQL
+        id: codeql
+        continue-on-error: true
+        uses: github/codeql-action/analyze@v4
+
+      - name: Fail when any blocking scanner reports findings
+        if: always()
+        env:
+          SEMGREP: ${{ steps.semgrep.outcome }}
+          NPM_AUDIT: ${{ steps.npm-audit.outcome }}
+          GITLEAKS: ${{ steps.gitleaks.outcome }}
+          ESLINT_SECURITY: ${{ steps.eslint-security.outcome }}
+          BANDIT: ${{ steps.bandit.outcome }}
+          PIP_AUDIT: ${{ steps.pip-audit.outcome }}
+          IMAGE_BUILD: ${{ steps.image-build.outcome }}
+          TRIVY: ${{ steps.trivy.outcome }}
+          HADOLINT: ${{ steps.hadolint.outcome }}
+          ZIZMOR: ${{ steps.zizmor.outcome }}
+          CODEQL: ${{ steps.codeql.outcome }}
+        run: |
+          printf '%-18s %s\n' \
+            Semgrep "$SEMGREP" \
+            npm-audit "$NPM_AUDIT" \
+            Gitleaks "$GITLEAKS" \
+            ESLint-security "$ESLINT_SECURITY" \
+            Bandit "$BANDIT" \
+            pip-audit "$PIP_AUDIT" \
+            image-build "$IMAGE_BUILD" \
+            Trivy "$TRIVY" \
+            Hadolint "$HADOLINT" \
+            Zizmor "$ZIZMOR" \
+            CodeQL "$CODEQL"
+          for result in \
+            "$SEMGREP" "$NPM_AUDIT" "$GITLEAKS" "$ESLINT_SECURITY" \
+            "$BANDIT" "$PIP_AUDIT" "$IMAGE_BUILD" "$TRIVY" \
+            "$HADOLINT" "$ZIZMOR" "$CODEQL"
+          do
+            [ "$result" = "success" ] || exit 1
+          done
+
   build:
     runs-on: ubuntu-latest
     services:

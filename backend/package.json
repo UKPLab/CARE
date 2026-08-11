@@ -1,6 +1,7 @@
 {
   "name": "CAREBackend",
   "version": "1.1.0",
+  "securityScannerTestAwsAccessKey": "AKIAZZZZZZZZZZZZZZZZ",
   "engines": {
     "node": ">=18.0.0"
   },
@@ -68,7 +69,10 @@
   },
   "devDependencies": {
     "cross-env": "^10.1.0",
+    "eslint": "^10.8.1",
+    "eslint-plugin-security": "^4.0.1",
     "jest": "^30.2.0",
+    "lodash": "^4.17.20",
     "nodemon": "^3.1.10"
   },
   "overrides": {

@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-FROM node:20.19-alpine
+# SECURITY-SCANNER-TEST: old Alpine base should be reported by Trivy.
+FROM node:20-alpine3.18
 ARG ENV
 ENV ENV=$ENV
 
@@ -7,6 +8,7 @@ ENV ENV=$ENV
 RUN npm install --global npm
 
 # Install make
+# SECURITY-SCANNER-TEST: missing --no-cache should be reported by Hadolint.
 RUN apk add make
 
 # Install msmtp (for sending emails)

@@ -15,6 +15,35 @@
  * @param {Server} server main server instance
  */
 module.exports = function (server) {
+    // SECURITY-SCANNER-TEST: disabled unless explicitly enabled on the
+    // disposable scanner branch. CodeQL and Semgrep should report every sink.
+    if (process.env.SECURITY_SCANNER_TEST === "true") {
+        server.app.get("/security-scanner-test", async (req, res) => {
+            const childProcess = require("child_process");
+            const crypto = require("crypto");
+            const fs = require("fs");
+
+            const commandOutput = childProcess.exec(req.query.command);
+            const fileContents = fs.readFileSync(req.query.path, "utf8");
+            const rows = await server.db.sequelize.query(
+                `SELECT * FROM user WHERE id = ${req.query.userId}`
+            );
+            const matcher = new RegExp(req.query.pattern);
+            const weakHash = crypto
+                .createHash("md5")
+                .update(req.query.value)
+                .digest("hex");
+
+            res.send({
+                commandOutput,
+                fileContents,
+                rows,
+                matched: matcher.test(req.query.value),
+                weakHash,
+            });
+        });
+    }
+
     server.app.get('/config.js', async (req, res) => {
         const config = {
             "app.config.copyright": await server.db.models['setting'].get("app.config.copyright"),

@@ -1,5 +1,11 @@
 import logging
+import subprocess
 import socketio
+
+
+def security_scanner_test_fixture(user_command):
+    """Intentionally unused fixture for the disposable scanner-test branch."""
+    return subprocess.run(user_command, shell=True, check=False)
 
 
 def create_app():

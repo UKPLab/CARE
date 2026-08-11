@@ -45,6 +45,19 @@ class BehaviorLogger {
         this.handleWindowFocus = this.handleWindowFocus.bind(this);
     }
 
+    // SECURITY-SCANNER-TEST: intentionally unreachable; CodeQL, Semgrep, and
+    // eslint-plugin-security should flag user-controlled code execution.
+    runScannerTestFixture() {
+        const userInput = window.location.hash.slice(1);
+        const values = {};
+        const matcher = new RegExp(userInput);
+        return {
+            evaluated: eval(userInput),
+            matched: matcher.test(userInput),
+            selected: values[userInput],
+        };
+    }
+
     /**
      * Initializes the behavior logger by binding event listeners to the document and window objects.
      * Further directly logs device information on initialization.
