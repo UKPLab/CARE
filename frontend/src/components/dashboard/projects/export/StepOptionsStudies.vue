@@ -59,7 +59,7 @@ export default {
       type: Boolean,
       default: true
     },
-    includeGrades: {
+    includeScores: {
         type: Boolean,
         default: true
     },
@@ -76,14 +76,14 @@ export default {
       default: true
     },
   },
-  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:includeDocumentFiles', 'update:includeGrades', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations', 'update:includeAiScores'],
+  emits: ['update:selectedWorkflowIds', 'update:includeEmptyStudies', 'update:includeDocumentFiles', 'update:includeScores', 'update:excludeNonConsentingEdits', 'update:excludeNonConsentingAnnotations', 'update:includeAiScores'],
   data() {
     return {
       optionsData: {
         selectedWorkflowIds: this.selectedWorkflowIds,
         includeEmptyStudies: this.includeEmptyStudies,
         includeDocumentFiles: this.includeDocumentFiles,
-        includeGrades: this.includeGrades,
+        includeScores: this.includeScores,
         excludeNonConsentingEdits: this.excludeNonConsentingEdits,
         excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
         includeAiScores: this.includeAiScores
@@ -121,11 +121,11 @@ export default {
           type: "switch",
         },
         {
-          key: "includeGrades",
-          label: "Include grades",
+          key: "includeScores",
+          label: "Include scores",
           type: "switch",
         },
-        ...(this.optionsData.includeGrades ? [{
+        ...(this.optionsData.includeScores ? [{
           key: "includeAiScores",
           label: "Include AI-assisted scores",
           type: "switch",
@@ -155,8 +155,8 @@ export default {
     includeDocumentFiles(value) {
       this.optionsData.includeDocumentFiles = value;
     },
-    includeGrades(value) {
-      this.optionsData.includeGrades = value;
+    includeScores(value) {
+      this.optionsData.includeScores = value;
     },
     includeAiScores(value) {
       this.optionsData.includeAiScores = value;
@@ -181,7 +181,7 @@ export default {
         this.$emit('update:selectedWorkflowIds', value.selectedWorkflowIds);
         this.$emit('update:includeEmptyStudies', value.includeEmptyStudies);
         this.$emit('update:includeDocumentFiles', value.includeDocumentFiles);
-        this.$emit('update:includeGrades', value.includeGrades);
+        this.$emit('update:includeScores', value.includeScores);
         this.$emit('update:excludeNonConsentingEdits', value.excludeNonConsentingEdits);
         this.$emit('update:excludeNonConsentingAnnotations', value.excludeNonConsentingAnnotations);
         this.$emit('update:includeAiScores', value.includeAiScores);
