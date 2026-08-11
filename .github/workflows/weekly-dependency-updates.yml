@@ -1,0 +1,61 @@
+name: Weekly dependency updates
+
+on:
+  schedule:
+    # Every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Update packages in frontend, backend, and utils
+        run: |
+          set -e
+          for dir in \
+            frontend \
+            backend \
+            utils/modules/editor-delta-conversion \
+            utils/modules/assessment-score
+          do
+            echo "=== Updating ${dir} ==="
+            (
+              cd "${dir}"
+              npx --yes npm-check-updates -u
+              npm install --no-fund --no-audit
+            )
+          done
+
+      - name: Create single Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: dev
+          branch: chore-weekly-dependency-updates
+          delete-branch: true
+          title: "[CHORE] Weekly dependency updates"
+          commit-message: "chore: weekly npm dependency updates"
+          body: |
+            Automated weekly npm package updates for:
+
+            - `frontend`
+            - `backend`
+            - `utils/modules/editor-delta-conversion`
+            - `utils/modules/assessment-score`
+
+            Please review the diff and run `make audit` / CI before merging.
+          labels: dependencies

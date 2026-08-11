@@ -126,6 +126,12 @@ module.exports = (sequelize, DataTypes) => {
                 options
             );
 
+            await sequelize.models.document_metadata.duplicateDocumentMetadata(
+                originalDoc.id,
+                duplicatedDoc.id,
+                options
+            );
+
             return duplicatedDoc;
         }
 
