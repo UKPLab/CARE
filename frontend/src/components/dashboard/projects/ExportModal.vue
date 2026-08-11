@@ -160,6 +160,10 @@ export default {
       table: "configuration",
   }, {
       table: "workflow",
+  }, {
+    table: "user_role",
+  }, {
+      table: "user_role_matching",
   }
   ],
   provide() {

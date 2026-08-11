@@ -135,6 +135,10 @@ export default {
             ? this.gradeConfigurations[uid].ids.join(", ")
             : "No configuration",
           configurationIds: this.gradeConfigurations[uid]?.ids ?? [],
+          userRoleNames: this.userRolesByUserId[uid]?.length
+            ? this.userRolesByUserId[uid].join(", ")
+            : "No role",
+          userRoleIds: this.userRolesByUserId[uid] ?? [],
         };
         return submissionsByUser[uid];
       };
@@ -213,6 +217,18 @@ export default {
 
       if (this.exportType === 'userBehaviour') {
         cols.push({
+          name: "Roles",
+          key: "userRoleNames",
+          sortable: true,
+          filter: [...new Set(this.userTableData.flatMap(row => row.userRoleIds))]
+              .sort((a, b) => a - b)
+              .map(id => ({
+                  key: id,
+                  name: `${id}: ${this.userRolesById.get(id)?.name ?? "Unknown"}`,
+              })),
+        });
+
+        cols.push({
           name: "Accept Behaviour Sharing",
           key: "acceptStatsSharing",
           sortable: true,
@@ -286,6 +302,31 @@ export default {
         result[userId] = {
           ids: sortedIds,
         };
+      }
+      return result;
+    },
+    userRoles() {
+      return this.$store.getters["table/user_role/getAll"];
+    },
+    userRolesById() {
+      return new Map(this.userRoles.map(r => [r.id, r]));
+    },
+    userRoleMatchings() {
+      return this.$store.getters["table/user_role_matching/getAll"];
+    },
+    userRolesByUserId() {
+      if (this.exportType !== 'userBehaviour') return {};
+
+      const roleIdsByUser = new Map();
+      for (const match of this.userRoleMatchings) {
+        if (match.deleted) continue;
+        if (!roleIdsByUser.has(match.userId)) roleIdsByUser.set(match.userId, new Set());
+        roleIdsByUser.get(match.userId).add(match.userRoleId);
+      }
+
+      const result = {};
+      for (const [userId, roleIds] of roleIdsByUser.entries()) {
+        result[userId] = [...roleIds].sort((a, b) => a - b);
       }
       return result;
     },
