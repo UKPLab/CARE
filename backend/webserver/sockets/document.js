@@ -897,7 +897,7 @@ class DocumentSocket extends Socket {
                     });
 
                     // Check revision limit (-1 = unlimited)
-                    if (assignment && assignment.maxRevisions !== -1 && assignmentSubmissions.length >= assignment.maxRevisions) {
+                    if (assignment && assignment.maxRevisions !== -1 && assignmentSubmissions.length >= assignment.maxRevisions + 1) {
                         throw new Error(`Revision limit reached: user ${submission.userId} already has ${assignmentSubmissions.length} submission(s) for this assignment (max: ${assignment.maxRevisions}).`);
                     }
 
