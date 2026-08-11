@@ -326,22 +326,20 @@ export default {
   },
   watch: {
     'dataSelection.exportType'() {
-      this.userSelection = [];
+      this.resetOptions();
     },
     'dataSelection.projectId'() {
-      this.userSelection = [];
+      this.resetOptions();
     }
   },
   methods: {
-    open(projectId) {
-      this.dataSelection.projectId = projectId;
-      this.$refs.exportStepper.open();
-    },
-    hide() {
+    resetOptions() {
       this.filter = [];
       this.userSelection = [];
       this.generateAliases = false;
       this.fakerSeed = 846569412;
+      this.gradeFormat = "json";
+      this.mergeCsvFiles = false;
       this.selectedDocumentTypes = [0, 1, 2, 4];
       this.excludeNonConsentingEdits = false;
       this.excludeNonConsentingAnnotations = false;
@@ -350,9 +348,16 @@ export default {
       this.includeStudyGrades = true;
       this.includeStudyIncludeAiScores = true;
       this.includeEmptyStudies = true;
-      this.wait = false;
       this.behaviourOutputFormat = 'single';
       this.behaviourFileFormat = 'json';
+    },
+    open(projectId) {
+      this.dataSelection.projectId = projectId;
+      this.$refs.exportStepper.open();
+    },
+    hide() {
+      this.resetOptions();
+      this.wait = false;
     },
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {

@@ -94,7 +94,7 @@ export default {
       return this.userSelection.map(row => ({
         userId: row.userId,
         name: row.studentName || row.userName,
-        suffix: this.exportType === 'grades' ? null : `${row.count} ${unit}`,
+        suffix: ['grades', 'userBehaviour'].includes(this.exportType) ? null : `${row.count} ${unit}`,
       }));
     },
   }
