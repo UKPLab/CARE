@@ -18,6 +18,7 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
+import { Tooltip } from "bootstrap";
 
 /**
  * Show help icon with tooltip if help is provided.
@@ -42,11 +43,22 @@ export default {
       default: null,
     },
   },
-  mounted() {
-    //new Tooltip(this.$refs.tooltip, {trigger: "click"});
-  }
-}
+
+   mounted() {
+    if (!this.$refs.tooltip) return;
+
+    this.tooltipInstance = new Tooltip(this.$refs.tooltip, {
+      trigger: "hover focus",
+      delay: 0,
+    });
+  },
+
+  beforeUnmount() {
+    this.tooltipInstance?.dispose();
+  },
+};
 </script>
+
 
 <style scoped>
 
