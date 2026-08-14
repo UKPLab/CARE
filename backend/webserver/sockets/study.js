@@ -37,7 +37,7 @@ class StudySocket extends Socket {
         if (data.onlyTemplate && data.templateData) {
             const templateData = {
                 ...data.templateData,
-                userId: this.socket.user.id,
+                userId: this.userId,
                 template: true,
             };
             
