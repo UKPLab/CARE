@@ -169,6 +169,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#manage-settings">Manage Settings</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#view-system-logs">View System Logs</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#manage-configurations">Manage Configurations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#replace-document-file-from-admin-tools">Replace Document File from Admin Tools</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#export-user-statistics">Export User Statistics</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#view-criterion-details-in-assessment">View Criterion Details in Assessment</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#switch-between-assessment-and-comments-sidebar">Switch Between Assessment and Comments Sidebar</a></li>
@@ -2156,6 +2157,37 @@ they can be selected when setting up study steps or submission assignments.</p>
 (type 0) and validation configurations (type 1).</p></li>
 <li><p>Configurations are immediately available for selection in study steps and submission
 assignments after creation.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="replace-document-file-from-admin-tools">
+<h3>Replace Document File from Admin Tools<a class="headerlink" href="#replace-document-file-from-admin-tools" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As an <strong>Admin</strong>, I want to replace the PDF or ZIP file of an existing document from
+Admin Tools, so that I can correct a wrong submission file without creating a new
+document or breaking existing links that use the same document id and hash.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p>From Settings → Admin Tools, I can open the replace-document-file tool.</p></li>
+<li><p>I can filter and search documents, select one PDF or ZIP document, and upload a
+replacement file of the same type.</p></li>
+<li><p>After a successful replace, the document keeps the same id and hash; only the file
+bytes on disk change.</p></li>
+<li><p>When I replace a PDF, existing CARE annotations and comments on that document are
+removed.</p></li>
+</ul>
+<p><strong>Negative cases:</strong></p>
+<ul class="simple">
+<li><p>When I am not an admin, I cannot use Admin Tools or the replace socket.</p></li>
+<li><p>When the uploaded file extension does not match the selected document type, the
+replace is rejected and the stored file is unchanged.</p></li>
+<li><p>When the selected document is not a PDF or ZIP, the tool does not allow replace.</p></li>
 </ul>
 </dd>
 </dl>

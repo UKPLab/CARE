@@ -78,6 +78,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#try-catch-behavior">Try-Catch Behavior</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#socket-callback-responses">Socket Callback Responses</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#tracking-db-changes-aftercommit">Tracking DB Changes (afterCommit)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#documentreplacefile">documentReplaceFile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#example-lifecycle">Example Lifecycle</a></li>
 </ul>
 </li>
@@ -559,6 +560,23 @@ CARE tracks database changes automatically and handles frontend updates for you.
 <p>When using <code class="docutils literal notranslate"><span class="pre">autoTable</span></code> models, commit-time change tracking and <code class="docutils literal notranslate"><span class="pre">&lt;table&gt;Refresh</span></code> emits are automatic.
 Details in <span class="xref std std-ref">Store Updates &amp;</span>.</p>
 </div>
+</section>
+<section id="documentreplacefile">
+<span id="document-replace-file"></span><h3>documentReplaceFile<a class="headerlink" href="#documentreplacefile" title="Link to this heading"></a></h3>
+<p>Admin-only socket used by the Admin Tools dashboard to correct a wrong PDF or ZIP on disk
+without creating a new document row.</p>
+<ul class="simple">
+<li><p>Event name: <code class="docutils literal notranslate"><span class="pre">documentReplaceFile</span></code></p></li>
+<li><p>Registered with <code class="docutils literal notranslate"><span class="pre">createSocket(...,</span> <span class="pre">true)</span></code> (transactional)</p></li>
+<li><p>Input: <code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">file</span></code> (binary), <code class="docutils literal notranslate"><span class="pre">name</span></code> (original filename for extension checks)</p></li>
+<li><p>Keeps the same document <code class="docutils literal notranslate"><span class="pre">id</span></code> and <code class="docutils literal notranslate"><span class="pre">hash</span></code>; overwrites <code class="docutils literal notranslate"><span class="pre">files/{hash}.pdf</span></code> or <code class="docutils literal notranslate"><span class="pre">files/{hash}.zip</span></code></p></li>
+<li><p>Only PDF and ZIP documents are supported; the upload extension must match the document type</p></li>
+<li><p>For PDFs: soft-deletes existing CARE annotations and comments on that document, and best-effort
+strips embedded PDF annotations via PDFRPC (falls back to the raw upload if strip fails)</p></li>
+<li><p>Writes <code class="docutils literal notranslate"><span class="pre">files/{hash}.{ext}.replace-tmp</span></code> before commit (failure rolls back DB changes); renames
+onto the live hash path in <code class="docutils literal notranslate"><span class="pre">afterCommit</span></code>. If rename fails after commit, the socket returns an
+error so the admin is notified and the temp file is left for manual recovery.</p></li>
+</ul>
 </section>
 <section id="example-lifecycle">
 <span id="document-create-example"></span><h3>Example Lifecycle<a class="headerlink" href="#example-lifecycle" title="Link to this heading"></a></h3>
@@ -1460,6 +1478,25 @@ If there is non existent on the given entity, it will create one, otherwise it w
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.clearDocumentAnnotations">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">clearDocumentAnnotations</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">documentId</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.clearDocumentAnnotations" title="Link to this definition"></a></dt>
+<dd><p>Soft-delete CARE annotations and comments for a document.
+Matches the cascade used when a PDF document is deleted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>documentId</strong> (<strong>number</strong>) – The document whose annotations should be removed</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameter</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – Sequelize DB transaction options</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.closeDocument">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">closeDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.closeDocument" title="Link to this definition"></a></dt>
 <dd><p>Close the document and save it if necessary.</p>
@@ -1711,6 +1748,24 @@ This method reads the delta file from the disk and returns it as a Delta object.
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.prepareReplacementFileBytes">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">prepareReplacementFileBytes</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fileData</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expectedExtension</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.prepareReplacementFileBytes" title="Link to this definition"></a></dt>
+<dd><p>Prepare replacement file bytes (best-effort PDFRPC strip for PDFs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>document</strong> (<strong>Object</strong>) – The document record</p></li>
+<li><p><strong>fileData</strong> (<strong>Buffer</strong>) – The uploaded file content</p></li>
+<li><p><strong>expectedExtension</strong> (<strong>string</strong>) – The expected file extension</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Buffer&gt;</strong> – Bytes to write after the DB transaction commits</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.publishDocument">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">publishDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.publishDocument" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>documentPublish</cite></p>
@@ -1805,6 +1860,36 @@ deleting the old one, and reconnecting submission chain pointers.</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – An object containing replacedSubmissionId and newSubmissionId</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.replaceDocumentFile">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">replaceDocumentFile</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.replaceDocumentFile" title="Link to this definition"></a></dt>
+<dd><p>Replace the PDF or ZIP file of an existing document on disk.</p>
+<p>Keeps the same document id and hash. Used by admins to correct a wrong
+submission file without creating a new document. For PDFs, existing CARE
+annotations and comments on the document are removed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The input data from the frontend</p></li>
+<li><p><strong>data.documentId</strong> (<strong>number</strong>) – The ID of the document to replace</p></li>
+<li><p><strong>data.file</strong> (<strong>Buffer</strong>) – The binary content of the replacement file</p></li>
+<li><p><strong>data.name</strong> (<strong>string</strong>) – The original filename (used to check the extension)</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameter</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – Sequelize DB transaction options</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – <ul class="simple">
+<li><p>If the user is not an admin or the file type does not match the document</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2019,6 +2104,36 @@ Unified check for: 1) database record exists  2) user has access  3) file exists
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – - validated document object</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.writeReplacementFile">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">writeReplacementFile</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">document</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fileData</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">expectedExtension</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.writeReplacementFile" title="Link to this definition"></a></dt>
+<dd><p>Write a replacement temp file, then rename onto the live hash path after commit.
+Temp write happens before commit (failure rolls back annotation deletes). Only the
+rename runs in afterCommit. If rename fails after commit, the socket callback fails
+so the admin is notified (temp file is left for manual recovery).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>document</strong> (<strong>Object</strong>) – The document record</p></li>
+<li><p><strong>fileData</strong> (<strong>Buffer</strong>) – The uploaded file content</p></li>
+<li><p><strong>target</strong> (<strong>string</strong>) – The filesystem path to overwrite</p></li>
+<li><p><strong>expectedExtension</strong> (<strong>string</strong>) – The expected file extension</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional configuration parameter</p></li>
+<li><p><strong>options.transaction</strong> (<strong>Object</strong>) – Sequelize DB transaction options</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Error</strong> – <ul class="simple">
+<li><p>If the temp file cannot be written, or if rename fails after commit</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;void&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
