@@ -31,6 +31,37 @@ function emitWithTimeout(client, action, payload, timeoutMs) {
 }
 
 /**
+ * Rewrite recorded hashes in a payload to the ones this replay actually
+ * produced. A recording carries the hashes from its capture run, but
+ * MetaModel.add generates a fresh uuid on every insert, so a trace that looks
+ * a row up by hash would miss. Only hashes we have observed on a Refresh
+ * broadcast are swapped — anything unknown is left exactly as recorded, so a
+ * miss degrades to current behaviour rather than corrupting the payload.
+ * @param {*} value - Any value from a trace payload
+ * @param {Map<string, string>} hashMap - Recorded hash to replayed hash
+ * @returns {*} The same structure with known hashes replaced
+ */
+function remapHashes(value, hashMap) {
+    if (hashMap.size === 0) {
+        return value;
+    }
+    if (typeof value === 'string') {
+        return hashMap.has(value) ? hashMap.get(value) : value;
+    }
+    if (Array.isArray(value)) {
+        return value.map(v => remapHashes(v, hashMap));
+    }
+    if (value && typeof value === 'object' && !Buffer.isBuffer(value)) {
+        const out = {};
+        for (const [k, v] of Object.entries(value)) {
+            out[k] = remapHashes(v, hashMap);
+        }
+        return out;
+    }
+    return value;
+}
+
+/**
  * Replay a single user's traces through an authenticated socket connection.
  * @param {Object} server - CARE server instance
  * @param {Object} user - User row from DB
@@ -71,9 +102,21 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
     try {
         let pendingDbChanges = [];
 
+        // Rows the server created during this replay, keyed by "table:id". A
+        // recording carries the hashes from its capture run, but MetaModel.add
+        // generates a fresh uuid on every insert, so those are stale here.
+        // Ids replay deterministically (fixed suite order on a fresh database),
+        // so the id is what links a recorded row to its replayed counterpart.
+        const observedHashes = new Map();
+
         client.onAny((eventName, ...args) => {
             if (eventName.endsWith('Refresh')) {
                 const records = Array.isArray(args[0]) ? args[0] : [args[0]];
+                for (const r of records) {
+                    if (r && r.id != null && typeof r.hash === 'string') {
+                        observedHashes.set(`${eventName.replace('Refresh', '')}:${r.id}`, r.hash);
+                    }
+                }
                 pendingDbChanges.push({
                     table: eventName.replace('Refresh', ''),
                     recordCount: records.length,
@@ -84,6 +127,29 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
                 });
             }
         });
+
+        // Recorded hash -> replayed hash, filled in as rows come back on
+        // Refresh broadcasts. A recorded trace tells us the row's id and the
+        // hash it had at capture time; observedHashes tells us the hash that
+        // same id has now.
+        const hashMap = new Map();
+        const rememberHashes = () => {
+            for (const t of traces) {
+                const p = t.payload;
+                if (!p || typeof p !== 'object') {
+                    continue;
+                }
+                for (const v of Object.values(p)) {
+                    if (v && typeof v === 'object' && typeof v.hash === 'string' && v.id != null) {
+                        for (const [key, current] of observedHashes) {
+                            if (key.endsWith(`:${v.id}`) && current !== v.hash) {
+                                hashMap.set(v.hash, current);
+                            }
+                        }
+                    }
+                }
+            }
+        };
 
         let prevTime = traces.length > 0 ? new Date(traces[0].startTime).getTime() : 0;
 
@@ -103,7 +169,8 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
             // failure too.
             const start = Date.now();
             try {
-                const ack = await emitWithTimeout(client, trace.action, trace.payload, ackTimeout);
+                rememberHashes();
+                const ack = await emitWithTimeout(client, trace.action, remapHashes(trace.payload, hashMap), ackTimeout);
                 const latency = Date.now() - start;
 
                 // Let any Refresh events triggered by this trace arrive before
