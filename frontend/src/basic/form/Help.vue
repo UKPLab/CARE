@@ -1,6 +1,7 @@
 <template>
   <span
     v-if="help"
+    ref="tooltip"
     v-tooltip="!!help"
     class="btn btn-sm mt-0 pt-0 border-0"
     :class="buttonClass"
