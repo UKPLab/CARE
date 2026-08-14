@@ -41,7 +41,7 @@ async function runRamp(cfg, ctx) {
             recordingIds,
             sessions,
             timingMode: 'fast',
-            continueOnFailure: false,
+            continueOnFailure: cfg.continueOnFailure ?? false,
             maxIterations: cfg.maxIterations,
             ackTimeout: cfg.ackTimeout,
             progressId,

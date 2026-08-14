@@ -11,7 +11,7 @@ const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/
  * condition trips (trace failure or p95 latency over threshold). Reports the
  * max concurrency the server sustained. Drives escalation one level at a time
  * via replayRun's singleLevel mode.
- * @param {Object} cfg - Run configuration; reads step (concurrency added per level), maxIterations (safety cap on levels), latencyThreshold and maxFailures (stop conditions), ackTimeout, and the recordings/files that resolvePayload consumes
+ * @param {Object} cfg - Run configuration; reads step (concurrency added per level), maxIterations (safety cap on levels), latencyThreshold, maxFailures and failThreshold (stop conditions), ackTimeout, and the recordings/files that resolvePayload consumes
  * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
  * @returns {Promise<{code: number, maxConcurrency: number}>} Exit code (0 ok, 1 error) and the max concurrency the server sustained (lastGood)
  */
@@ -87,15 +87,24 @@ async function runCeiling(cfg, ctx) {
         const poolSaturated = peakWaiting > poolWaitingBaseline && peakWaiting > 0;
 
         const allowedFailures = cfg.maxFailures || 0;
-        const tripped = m.failed > allowedFailures || m.p95 > cfg.latencyThreshold || poolSaturated;
+        const totalTraces = m.passed + m.failed;
+        const failRate = totalTraces > 0 ? (m.failed / totalTraces) * 100 : 0;
+        const rateExceeded = failRate > cfg.failThreshold;
+        const tripped = m.failed > allowedFailures || rateExceeded || m.p95 > cfg.latencyThreshold || poolSaturated;
         const status = tripped ? 'STOP' : 'ok';
         console.log(`  ${pad(level, 5)}  ${pad(concurrency, 11)}  ${pad(m.passed, 6)}  ${pad(m.failed, 6)}  ${pad(m.avg, 5)}  ${pad(m.p95, 5)}  ${pad(m.thru, 6)}  ${pad(peakWaiting, 4)}  ${status}`);
 
         if (tripped) {
             let reason;
-            if (poolSaturated) reason = `DB pool saturated (waiting peaked at ${peakWaiting})`;
-            else if (m.failed > allowedFailures) reason = `${m.failed} trace failure(s) (allowed: ${allowedFailures})`;
-            else reason = `overall p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms threshold`;
+            if (poolSaturated) {
+                reason = `DB pool saturated (waiting peaked at ${peakWaiting})`;
+            } else if (m.failed > allowedFailures) {
+                reason = `${m.failed} trace failure(s) (allowed: ${allowedFailures})`;
+            } else if (rateExceeded) {
+                reason = `failure rate ${failRate.toFixed(1)}% > ${cfg.failThreshold}% threshold`;
+            } else {
+                reason = `overall p95 latency ${m.p95}ms > ${cfg.latencyThreshold}ms threshold`;
+            }
             await sampler.stop();
             stopped = true;
             console.log(`\nCEILING: server sustained ${lastGood} concurrent sessions; degraded at ${concurrency} (${reason}).`);
@@ -115,7 +124,7 @@ async function runCeiling(cfg, ctx) {
 
             // Name the likely culprit, scoped to why it stopped.
             printCulprit(ack.data.results, {
-                failed: m.failed > allowedFailures,
+                failed: m.failed > allowedFailures || rateExceeded,
                 poolSaturated,
                 overallP95: m.p95,
             });

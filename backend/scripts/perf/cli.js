@@ -97,6 +97,21 @@ function parseRecordings(val) {
 /**
  * Build the run configuration from parsed CLI arguments, applying defaults
  * and falling back to environment variables where flags are absent.
+ * Parse a flag that may be absent, set without a value, or given an explicit boolean.
+ * @param {*} value - Raw argument value from parseArgs
+ * @returns {boolean|null} true/false when specified, null when the flag was not passed
+ */
+function parseOptionalBoolean(value) {
+    if (value === undefined) {
+        return null;
+    }
+    if (value === 'false' || value === '0') {
+        return false;
+    }
+    return Boolean(value);
+}
+
+/**
  * @param {Object} args - Parsed arguments from parseArgs
  * @returns {Object} The run configuration consumed by validateConfig and the mode handlers
  */
@@ -110,9 +125,9 @@ function buildConfig(args) {
         timingMode: args['timing-mode'] || 'fast',
         ackTimeout: parseInt(args['ack-timeout'], 10) || 2000,
         latencyThreshold: args['latency-threshold'] !== undefined ? Number(args['latency-threshold']) : 1000,
-        failThreshold: parseFloat(args['fail-threshold']) || 5,
+        failThreshold: args['fail-threshold'] !== undefined ? Number(args['fail-threshold']) : 5,
         server: args.server || 'http://localhost:3001',
-        continueOnFailure: Boolean(args['continue-on-failure']),
+        continueOnFailure: parseOptionalBoolean(args['continue-on-failure']),
         user: args.user || process.env.PERF_ADMIN_USER || 'admin',
         password: args.password || process.env.PERF_ADMIN_PASSWORD || process.env.ADMIN_PWD || null,
         step: parseInt(args.step, 10) || 5,
@@ -134,6 +149,7 @@ function validateConfig(cfg) {
     if (cfg.recordings.length === 0 && cfg.files.length === 0 && !cfg.dir) errors.push('need --recordings <ids> and/or --files <json,...> / --dir <folder>');
     if (cfg.mode === 'ramp' && (!Number.isInteger(cfg.maxIterations) || cfg.maxIterations < 1)) errors.push('--max-iterations must be a positive integer');
     if (!Number.isFinite(cfg.latencyThreshold) || cfg.latencyThreshold <= 0) errors.push('--latency-threshold must be a positive number');
+    if (!Number.isFinite(cfg.failThreshold) || cfg.failThreshold < 0 || cfg.failThreshold > 100) errors.push('--fail-threshold must be a percentage between 0 and 100');
     if (cfg.timingMode !== 'fast' && cfg.timingMode !== 'realtime') errors.push('--timing-mode must be "fast" or "realtime"');
     if (!cfg.password) errors.push('admin password required: pass --password or set PERF_ADMIN_PASSWORD');
     return errors;
