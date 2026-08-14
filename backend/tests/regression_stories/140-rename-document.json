@@ -1,0 +1,294 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:20:21.481Z",
+  "traceCount": 14,
+  "recording": {
+    "name": "140-rename-document",
+    "status": "finished",
+    "startTime": "2026-08-10T23:14:51.630Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "HfkJbcIP3cSFqBocAAAL"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:15:07.405Z"
+  },
+  "traces": [
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "name": "Recording 8/11/2026, 1:14:51 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:14:51.631Z",
+          "startTime": "2026-08-10T23:14:51.630Z",
+          "updatedAt": "2026-08-10T23:14:51.631Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "HfkJbcIP3cSFqBocAAAL"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:14:51.641Z",
+      "endTime": "2026-08-10T23:14:51.641Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:52.784Z",
+      "endTime": "2026-08-10T23:14:52.784Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1273,
+          "clientY": 194,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:55.944Z",
+      "endTime": "2026-08-10T23:14:55.944Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "action": "renameDoc",
+          "params": {
+            "documentId": 2
+          }
+        },
+        "action": "actionClick"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:57.345Z",
+      "endTime": "2026-08-10T23:14:57.345Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:57.793Z",
+      "endTime": "2026-08-10T23:14:57.793Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 615,
+          "clientY": 159,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:58.942Z",
+      "endTime": "2026-08-10T23:14:58.942Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "appDataUpdate",
+      "payload": {
+        "data": {
+          "id": 2,
+          "hash": "c8d1342a-9016-42c1-8a9f-17736404b365",
+          "name": "Shrek_Script_renamed",
+          "public": false,
+          "userId": 4
+        },
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:15:03.551Z",
+      "endTime": "2026-08-10T23:15:03.551Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "appDataUpdate",
+      "payload": {
+        "data": {
+          "id": 2,
+          "hash": "c8d1342a-9016-42c1-8a9f-17736404b365",
+          "name": "Shrek_Script_renamed",
+          "public": false,
+          "userId": 4
+        },
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:15:03.552Z",
+      "endTime": "2026-08-10T23:15:03.552Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "hash": "c8d1342a-9016-42c1-8a9f-17736404b365",
+          "name": "Shrek_Script_renamed",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-10T23:10:24.495Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-10T23:15:03.556Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": "Shrek_Script.pdf",
+          "parentDocumentId": null,
+          "uploadedByUserId": 4
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:15:03.574Z",
+      "endTime": "2026-08-10T23:15:03.574Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "hash": "c8d1342a-9016-42c1-8a9f-17736404b365",
+          "name": "Shrek_Script_renamed",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-10T23:10:24.495Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-10T23:15:03.570Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": "Shrek_Script.pdf",
+          "parentDocumentId": null,
+          "uploadedByUserId": 4
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:15:03.578Z",
+      "endTime": "2026-08-10T23:15:03.578Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:15:03.579Z",
+      "endTime": "2026-08-10T23:15:03.579Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1058,
+          "clientY": 434,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:15:03.845Z",
+      "endTime": "2026-08-10T23:15:03.845Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1110,
+          "clientY": 22,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:15:05.361Z",
+      "endTime": "2026-08-10T23:15:05.361Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:15:05.615Z",
+      "endTime": "2026-08-10T23:15:05.615Z"
+    }
+  ]
+}
