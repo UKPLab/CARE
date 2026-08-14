@@ -165,11 +165,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
             const start = Date.now();
             try {
                 rememberHashes();
-                if (process.env.PERF_DEBUG_HASHES) {
-                    process.stderr.write('[hashes] recorded=' + (recordedHashes ? recordedHashes.size : 0)
-                        + ' observed=' + observedHashes.size
-                        + ' mapped=' + hashMap.size + '\n');
-                }
+            
                 const ack = await emitWithTimeout(client, trace.action, remapHashes(trace.payload, hashMap), ackTimeout);
                 const latency = Date.now() - start;
 
