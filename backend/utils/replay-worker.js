@@ -86,6 +86,12 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
         total: traces.length,
         passed: 0,
         failed: 0,
+        // Traces the server never acked. Kept apart from failures: many CARE
+        // events are fire-and-forget, so silence isn't necessarily a fault —
+        // but a handler that has stopped responding lands here too, so the
+        // list is worth reading rather than ignoring.
+        noAck: 0,
+        noAckTraces: [],
         errors: [],
         latencies: [],
     };
@@ -174,7 +180,17 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
                 await new Promise(resolve => setTimeout(resolve, DB_CHANGE_WINDOW_MS));
                 const dbChanges = [...pendingDbChanges];
 
-                if (ack && ack.success === false) {
+                if (ack && ack.timedOut) {
+                    // No response within the timeout. Not the same as a
+                    // rejection: many CARE events are fire-and-forget and never
+                    // ack at all, so failing the story would be wrong. Counted
+                    // separately so a genuinely hanging handler still shows up.
+                    results.noAck++;
+                    results.noAckTraces.push({
+                        traceId: trace.id,
+                        action: trace.action,
+                    });
+                } else if (ack && ack.success === false) {
                     results.failed++;
                     results.errors.push({
                         traceId: trace.id,

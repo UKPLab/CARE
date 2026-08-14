@@ -71,7 +71,7 @@ async function runRegression(cfg, ctx) {
     // distinct recordings. recordingId groups a recording's sessions together for
     // DB replay; file replay has no id (null), so fall back to the unique
     // sessionKey there. recordingName is kept only for display.
-    const stories = new Map();  // key: recordingId ?? sessionKey -> { name, total, failed, errors[] }
+    const stories = new Map();  // key: recordingId ?? sessionKey -> { name, total, failed, noAck, errors[], noAckActions[] }
     for (const iter of iterations) {
         for (const session of (iter.results || [])) {
             const key = session.recordingId != null ? `id:${session.recordingId}` : `key:${session.sessionKey}`;
@@ -80,14 +80,20 @@ async function runRegression(cfg, ctx) {
                     name: session.recordingName || ('recording ' + (session.recordingId ?? session.sessionKey)),
                     total: 0,
                     failed: 0,
+                    noAck: 0,
                     errors: [],
+                    noAckActions: [],
                 });
             }
             const s = stories.get(key);
             s.total += session.total || 0;
             s.failed += session.failed || 0;
+            s.noAck += session.noAck || 0;
             for (const err of (session.errors || [])) {
                 s.errors.push({ action: err.action, message: err.message });
+            }
+            for (const t of (session.noAckTraces || [])) {
+                s.noAckActions.push(t.action);
             }
         }
     }
@@ -102,13 +108,29 @@ async function runRegression(cfg, ctx) {
 
     console.log('');
     let passedStories = 0, failedStories = 0;
+    const noAckActions = new Map();
     for (const [, s] of stories) {
+        for (const action of s.noAckActions) {
+            noAckActions.set(action, (noAckActions.get(action) || 0) + 1);
+        }
+        const noAckNote = s.noAck > 0 ? `, ${s.noAck} no-ack` : '';
         if (s.failed === 0) {
-            console.log(`  [PASS] ${s.name}  (${s.total} traces)`);
+            console.log(`  [PASS] ${s.name}  (${s.total} traces${noAckNote})`);
             passedStories++;
         } else {
-            console.log(`  [FAIL] ${s.name}  (${s.failed} of ${s.total} traces failed)`);
+            console.log(`  [FAIL] ${s.name}  (${s.failed} of ${s.total} traces failed${noAckNote})`);
             failedStories++;
+        }
+    }
+
+    // Events the server never acked. Fire-and-forget handlers land here
+    // legitimately, but so does one that has stopped responding — worth
+    // reading rather than ignoring.
+    if (noAckActions.size > 0) {
+        console.log('');
+        console.log('  no-ack events (no server response within the timeout):');
+        for (const [action, count] of [...noAckActions].sort((a, b) => b[1] - a[1])) {
+            console.log(`    ${action}: ${count}x`);
         }
     }
 
@@ -121,11 +143,10 @@ async function runRegression(cfg, ctx) {
     const totalStories = stories.size + skippedSessions.length;
     console.log('');
     if (failedStories === 0 && skippedSessions.length === 0) {
-        console.log(`REGRESSION SUITE PASSED — all ${totalStories} story recording(s) passed.`);
-        console.log('Version is STABLE.');
+        console.log(`REGRESSION RESULT — ${totalStories} of ${totalStories} story recording(s) replayed without failures.`);
         const saved = saveResults('regression', cfg, {
             results: iterations.flatMap(i => i.results || []),
-            verdict: 'stable',
+            verdict: 'no-failures',
         });
         const text = capture.stop();
         if (saved) {
@@ -136,7 +157,7 @@ async function runRegression(cfg, ctx) {
         return 0;
     }
     const skippedNote = skippedSessions.length ? `, ${skippedSessions.length} skipped` : '';
-    console.log(`REGRESSION SUITE FAILED — ${passedStories} of ${totalStories} stories passed, ${failedStories} failed${skippedNote}.`);
+    console.log(`REGRESSION RESULT — ${passedStories} of ${totalStories} story recording(s) replayed without failures, ${failedStories} with failures${skippedNote}.`);
     for (const key of skippedSessions) {
         console.log(`  Skipped: ${key} — recorded user not found on this database`);
     }
@@ -148,11 +169,10 @@ async function runRegression(cfg, ctx) {
         }
     }
     printTraceStats(iterations.flatMap(i => i.results || []), { title: 'Trace breakdown (all stories):' });
-    console.log('Version is NOT stable.');
     const saved = saveResults('regression', cfg, {
         results: iterations.flatMap(i => i.results || []),
         skipped: skippedSessions,
-        verdict: 'not stable',
+        verdict: 'failures',
     });
     const text = capture.stop();
     if (saved) {
