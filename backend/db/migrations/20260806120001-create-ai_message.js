@@ -39,6 +39,10 @@ module.exports = {
                     type: Sequelize.TEXT,
                     allowNull: false,
                 },
+                metadata: {
+                    type: Sequelize.JSONB,
+                    allowNull: true,
+                },
                 status: {
                     type: Sequelize.INTEGER,
                     allowNull: false,

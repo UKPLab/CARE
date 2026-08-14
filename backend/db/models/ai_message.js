@@ -39,6 +39,7 @@ module.exports = (sequelize, DataTypes) => {
         aiModelId: DataTypes.INTEGER,
         role: DataTypes.INTEGER,
         content: DataTypes.TEXT,
+        metadata: DataTypes.JSONB,
         status: DataTypes.INTEGER,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
