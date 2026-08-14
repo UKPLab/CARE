@@ -59,6 +59,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
+import "pdfjs-dist/web/pdf_viewer.css";
 // import { PDFFindController, EventBus } from "pdfjs-dist/web/pdf_viewer.mjs";
 
 

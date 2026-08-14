@@ -2,8 +2,16 @@ import js from '@eslint/js'
 import { FlatCompat } from '@eslint/eslintrc'
 import pluginVue from 'eslint-plugin-vue'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import footerButtonGroupRule from './eslint-rules/footer-button-group.js'
+import warnFileLineCountRule from './eslint-rules/warn-file-line-count.js'
 
 const compat = new FlatCompat()
+const localPlugin = {
+    rules: {
+        'footer-button-group': footerButtonGroupRule,
+        'warn-file-line-count': warnFileLineCountRule,
+    },
+}
 
 export default [
     {
@@ -18,12 +26,24 @@ export default [
     ...pluginVue.configs['flat/recommended'],
     eslintConfigPrettier,
     {
+        plugins: {
+            local: localPlugin,
+        },
         languageOptions: {
             globals: {
                 APP_VERSION: 'readonly',
             },
         },
         rules: {
+            'max-lines': [
+                'error',
+                {
+                    max: 700,
+                    skipBlankLines: true,
+                    skipComments: true,
+                },
+            ],
+            'local/warn-file-line-count': 'warn',
             'no-unused-vars': [
                 'error',
                 {
@@ -47,6 +67,7 @@ export default [
     {
         files: ['**/*.vue'],
         rules: {
+            'local/footer-button-group': 'error',
             'vue/no-restricted-html-elements': [
                 'error',
                 {

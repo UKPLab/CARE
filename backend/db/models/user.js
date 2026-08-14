@@ -475,6 +475,14 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             }
+
+            // Role rows live on user_role_matching; User.findAll (via getAll) is cached.
+            // Clear after commit so the next dashboard load cannot serve a pre-commit cache entry.
+            options.transaction.afterCommit(() => {
+                if (User.cache) {
+                    User.cache.clear();
+                }
+            });
         }
 
         /**
