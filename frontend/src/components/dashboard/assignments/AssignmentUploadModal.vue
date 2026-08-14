@@ -309,6 +309,7 @@ export default {
             title: "Failed to upload the file",
             message: res.message,
             variant: "danger",
+            delay: 10000,
           });
           this.$refs.uploadStepper.setWaiting(false);
         }
