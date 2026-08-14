@@ -68,4 +68,27 @@ function reviveBuffers(value) {
     return value;
 }
 
-module.exports = {groupTracesBySocket, buildActiveSessions, reviveBuffers};
+/**
+ * Collect the hash each row had at capture time, from a recording's incoming
+ * Refresh traces. Keyed "table:id" to match what the replay observes live.
+ * @param {Array<Object>} rawTraces - All of a recording's traces, both directions
+ * @returns {Map<string, string>} "table:id" to the hash recorded for that row
+ */
+function extractRecordedHashes(rawTraces) {
+    const recorded = new Map();
+    for (const t of rawTraces) {
+        if (!t || t.direction !== false || typeof t.action !== 'string' || !t.action.endsWith('Refresh')) {
+            continue;
+        }
+        const records = Array.isArray(t.payload) ? t.payload : [t.payload];
+        const table = t.action.replace('Refresh', '');
+        for (const r of records) {
+            if (r && r.id != null && typeof r.hash === 'string') {
+                recorded.set(`${table}:${r.id}`, r.hash);
+            }
+        }
+    }
+    return recorded;
+}
+
+module.exports = {groupTracesBySocket, buildActiveSessions, reviveBuffers, extractRecordedHashes};

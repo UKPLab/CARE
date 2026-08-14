@@ -2,7 +2,7 @@
 
 const Socket = require('../Socket.js');
 const { replayUserTraces } = require('../../utils/replay-worker');
-const { groupTracesBySocket, buildActiveSessions, reviveBuffers } = require('../../utils/replay-sessions');
+const { groupTracesBySocket, buildActiveSessions, reviveBuffers, extractRecordedHashes} = require('../../utils/replay-sessions');
 const throttle = require('lodash/throttle');
 
 // Ceilings on caller-supplied load parameters. Replay opens real sockets
@@ -210,6 +210,12 @@ class ReplayerSocket extends Socket {
             const rawTraces = Array.isArray(incoming.traces) ? incoming.traces : [];
             // File contents are unvalidated input: a trace without a usable
             // action name would be emitted as-is by the replay worker.
+            // Incoming Refresh traces carry each row as it existed at capture
+            // time, hash included. They aren't replayable, but they're the only
+            // record of what hash a row had then — the replay generates new
+            // ones, so this is what lets the worker map old to new.
+            const recordedHashes = extractRecordedHashes(rawTraces);
+
             const traces = rawTraces
                 .filter(t => t && t.direction === true && typeof t.action === 'string' && t.action.length > 0)
                 .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
@@ -226,6 +232,7 @@ class ReplayerSocket extends Socket {
                     traces: session.traces,
                     recordingId: null,
                     recordingName: incoming.recordingName || 'file',
+                    recordedHashes,
                 });
                 userIdSet.add(session.userId);
             }
@@ -308,9 +315,14 @@ class ReplayerSocket extends Socket {
      * @returns {Promise<Array<Object>>} One result per session
      */
     async runSessions(activeSessions, userMap, serverUrl, timingMode, ackTimeout, onTraceProgress, sequential = false) {
+        // Shared across every session in the run: a story that looks a row up
+        // by hash usually isn't the story that created it, so the new hash has
+        // to survive past the session that observed it.
+        const observedHashes = new Map();
+
         const replayOne = async (session) => {
             const user = userMap.get(session.userId);
-            const result = await replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress);
+            const result = await replayUserTraces(this.server, user, session.traces, serverUrl, timingMode, ackTimeout, onTraceProgress, session.recordedHashes, observedHashes);
             return {
                 ...result,
                 sessionKey: session.sessionKey,

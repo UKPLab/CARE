@@ -70,10 +70,11 @@ function remapHashes(value, hashMap) {
  * @param {string} timingMode - "realtime" to preserve original delays, "fast" to skip them
  * @param {number} [ackTimeout=2000] - Max wait time in ms for the server to ack each trace
  * @param {Function} [onProgress=null] - Called once per completed trace, for progress reporting
+ * @param {Map<string, string>|null} [recordedHashes=null] - "table:id" to the hash that row had at capture time; used to rewrite stale hashes in payloads
  * @returns {Promise<Object>} Results with pass/fail counts, errors, latencies, and DB changes
  * @throws {Error} If user is missing or has no id
  */
-async function replayUserTraces(server, user, traces, serverUrl, timingMode, ackTimeout = 2000, onProgress = null) {
+async function replayUserTraces(server, user, traces, serverUrl, timingMode, ackTimeout = 2000, onProgress = null, recordedHashes = null, observedHashes = new Map()) {
     // The pool builders filter out sessions with no resolvable user, but this
     // is exported and can't assume its caller did that.
     if (!user || !user.id) {
@@ -107,7 +108,7 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
         // generates a fresh uuid on every insert, so those are stale here.
         // Ids replay deterministically (fixed suite order on a fresh database),
         // so the id is what links a recorded row to its replayed counterpart.
-        const observedHashes = new Map();
+
 
         client.onAny((eventName, ...args) => {
             if (eventName.endsWith('Refresh')) {
@@ -128,25 +129,19 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
             }
         });
 
-        // Recorded hash -> replayed hash, filled in as rows come back on
-        // Refresh broadcasts. A recorded trace tells us the row's id and the
-        // hash it had at capture time; observedHashes tells us the hash that
-        // same id has now.
+        // Recorded hash -> the hash that row has in this replay. Both sides key
+        // on "table:id": recordedHashes comes from the recording's Refresh
+        // traces, observedHashes from the ones this run received. Ids replay
+        // deterministically, so the id is what links them.
         const hashMap = new Map();
         const rememberHashes = () => {
-            for (const t of traces) {
-                const p = t.payload;
-                if (!p || typeof p !== 'object') {
-                    continue;
-                }
-                for (const v of Object.values(p)) {
-                    if (v && typeof v === 'object' && typeof v.hash === 'string' && v.id != null) {
-                        for (const [key, current] of observedHashes) {
-                            if (key.endsWith(`:${v.id}`) && current !== v.hash) {
-                                hashMap.set(v.hash, current);
-                            }
-                        }
-                    }
+            if (!recordedHashes) {
+                return;
+            }
+            for (const [key, oldHash] of recordedHashes) {
+                const newHash = observedHashes.get(key);
+                if (newHash && newHash !== oldHash) {
+                    hashMap.set(oldHash, newHash);
                 }
             }
         };
@@ -170,6 +165,11 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
             const start = Date.now();
             try {
                 rememberHashes();
+                if (process.env.PERF_DEBUG_HASHES) {
+                    process.stderr.write('[hashes] recorded=' + (recordedHashes ? recordedHashes.size : 0)
+                        + ' observed=' + observedHashes.size
+                        + ' mapped=' + hashMap.size + '\n');
+                }
                 const ack = await emitWithTimeout(client, trace.action, remapHashes(trace.payload, hashMap), ackTimeout);
                 const latency = Date.now() - start;
 
