@@ -1,7 +1,7 @@
 <template>
   <span
     v-if="help"
-    ref="tooltip"
+    v-tooltip="!!help"
     class="btn btn-sm mt-0 pt-0 border-0"
     :class="buttonClass"
     :title="help"
@@ -18,16 +18,21 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
-import { Tooltip } from "bootstrap";
+import { tooltip } from "@/assets/tooltip.js";
 
 /**
  * Show help icon with tooltip if help is provided.
  */
-export default {
+ export default {
   name: "FormHelp",
   components: {
     LoadIcon
   },
+
+  directives: {
+    tooltip,
+  },
+
   props: {
     help: {
       type: String,
@@ -42,19 +47,6 @@ export default {
       type: [String, Object, Array],
       default: null,
     },
-  },
-
-   mounted() {
-    if (!this.$refs.tooltip) return;
-
-    this.tooltipInstance = new Tooltip(this.$refs.tooltip, {
-      trigger: "hover focus",
-      delay: 0,
-    });
-  },
-
-  beforeUnmount() {
-    this.tooltipInstance?.dispose();
   },
 };
 </script>
