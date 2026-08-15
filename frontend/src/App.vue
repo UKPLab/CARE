@@ -41,7 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
-import { applyTheme, getContrastColor } from "@/assets/utils";
+import { applyTheme, getContrastColor, shadeColor } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -202,6 +202,8 @@ export default {
         if (accent) {
           document.documentElement.style.setProperty("--care-accent", accent);
           document.documentElement.style.setProperty("--care-on-accent", getContrastColor(accent));
+          document.documentElement.style.setProperty("--care-accent-hover", shadeColor(accent, 0.12));
+          document.documentElement.style.setProperty("--care-accent-active", shadeColor(accent, 0.2));
         }
       },
       deep: true,

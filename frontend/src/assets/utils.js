@@ -383,3 +383,23 @@ export function applyTheme(mode) {
     localStorage.setItem("care.theme", mode);
 }
 
+
+/**
+ * Shifts a colour towards black or white, whichever gives a visible change.
+ * Dark colours are lightened, light colours are darkened, so a hover state is
+ * noticeable regardless of the base colour.
+ *
+ * @param hexColor the base colour as "#RRGGBB"
+ * @param amount how far to shift, 0 to 1
+ * @returns {string} the shifted colour as "#RRGGBB"
+ */
+export function shadeColor(hexColor, amount) {
+    const hex = (hexColor || "").replace(/^#/, "");
+    if (hex.length !== 6) return hexColor;
+    const channels = [0, 2, 4].map((i) => parseInt(hex.substring(i, i + 2), 16));
+    const isDark = getContrastColor(hexColor) === "#ffffff";
+    const shifted = channels.map((c) =>
+        isDark ? Math.round(c + (255 - c) * amount) : Math.round(c * (1 - amount))
+    );
+    return "#" + shifted.map((c) => c.toString(16).padStart(2, "0")).join("");
+}

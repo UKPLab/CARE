@@ -35,8 +35,6 @@
 
 html[data-bs-theme="dark"] {
   --care-accent: #e3d5a8;
-  --care-accent-hover: #d5c795;
-  --care-accent-active: #c7b982;
   --care-on-accent: #212529;
 }
 
