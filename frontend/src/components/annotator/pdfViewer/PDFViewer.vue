@@ -121,6 +121,9 @@ export default {
     }
   },
   computed: {
+    appTheme() {
+      return this.$store.getters["settings/getValue"]("app.theme.mode");
+    },
     renderCheck() {
       let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
@@ -135,6 +138,10 @@ export default {
     },
   },
   watch: {
+    appTheme(newVal) {
+      this.pdfDarkMode = newVal === "dark";
+      localStorage.removeItem("care.pdfDark");
+    },
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
