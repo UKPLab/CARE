@@ -223,7 +223,7 @@ form {
 }
 
 .method-card {
-  border: 2px solid #dee2e6;
+  border: 2px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;

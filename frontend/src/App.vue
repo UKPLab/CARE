@@ -41,7 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
-import { applyTheme, getContrastColor, shadeColor } from "@/assets/utils";
+import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -265,10 +265,7 @@ export default {
   },
   methods: {
     initTheme() {
-      const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
-      const cached = localStorage.getItem("care.theme");
-      const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      applyTheme(saved || cached || (osPrefersDark ? "dark" : "light"));
+      applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
     },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {

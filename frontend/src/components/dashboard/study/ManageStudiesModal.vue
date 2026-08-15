@@ -478,7 +478,7 @@ export default {
   padding: 1rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .confirmation-content .form-check-input {
@@ -571,7 +571,7 @@ export default {
   padding: 1rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
-  border-left: 3px solid #6c757d;
+  border-left: 3px solid var(--bs-secondary-color, #6c757d);
 }
 
 .confirmation-container {
@@ -582,7 +582,7 @@ export default {
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   border-radius: 0.5rem;
   padding: 1.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
@@ -639,7 +639,7 @@ export default {
 .selected-items-list {
   max-height: 350px;
   overflow-y: auto;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 1rem;
   background-color: white;
@@ -649,7 +649,7 @@ export default {
 
 .selected-items-list li {
   padding: 0.75rem 0.875rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bs-border-color, #f0f0f0);
   font-size: 0.95rem;
   border-left: 3px solid #0d6efd;
   margin-bottom: 0.5rem;

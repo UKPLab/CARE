@@ -498,12 +498,12 @@ export default {
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .short-preview {
   background: var(--bs-tertiary-bg, #f8f9fa);
-  border: 1px solid #ddd;
+  border: 1px solid var(--bs-border-color, #ddd);
   border-radius: 0.5rem;
   padding: 1rem;
 }
@@ -517,7 +517,7 @@ export default {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .legend-items {
@@ -539,14 +539,14 @@ export default {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .placeholder-item {
   background-color: var(--bs-body-bg, #ffffff);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .placeholder-header {
@@ -578,14 +578,14 @@ export default {
   background-color: var(--bs-secondary-bg, #f1f3f4);
   padding: 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .input-group {
   background-color: var(--bs-body-bg, #ffffff);
   padding: 0.5rem;
   border-radius: 0.25rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .form-label {

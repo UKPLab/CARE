@@ -167,7 +167,7 @@ export default {
   text-transform: uppercase;
   letter-spacing: 0.07em;
   color: var(--bs-secondary-color, #6c757d);
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   padding-bottom: 0.25rem;
   margin-bottom: 0.5rem;
 }
@@ -196,7 +196,7 @@ export default {
 
 .config-block {
   background: var(--bs-tertiary-bg, #f8f9fa);
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 0.75rem 1rem;
   font-size: 0.8rem;

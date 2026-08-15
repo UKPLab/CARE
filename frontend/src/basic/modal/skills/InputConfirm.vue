@@ -109,7 +109,7 @@ export default {
 }
 
 .confirmation-section {
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   padding-bottom: 10px;
 }
 

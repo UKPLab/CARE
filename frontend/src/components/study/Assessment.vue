@@ -630,7 +630,7 @@ export default {
 
 /* Criteria Groups */
 .criteria-group-card {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
 }
 

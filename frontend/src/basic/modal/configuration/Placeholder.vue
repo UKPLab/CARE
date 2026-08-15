@@ -106,7 +106,7 @@ export default {
 .placeholder-container {
   width: 100%;
   padding: 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--bs-border-color, #ddd);
 }
 .form-label {
   font-weight: bold;

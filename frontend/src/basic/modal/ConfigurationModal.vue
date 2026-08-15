@@ -256,7 +256,7 @@ export default {
 
 .short-preview {
   background: var(--bs-tertiary-bg, #f8f9fa);
-  border: 1px solid #ddd;
+  border: 1px solid var(--bs-border-color, #ddd);
   border-radius: 0.5rem;
   font-size: 14px;
 }

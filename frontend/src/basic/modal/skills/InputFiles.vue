@@ -306,7 +306,7 @@ export default {
 <style scoped>
 .selection-summary-custom {
   background-color: var(--bs-primary-bg-subtle, #e7f3ff);
-  border: 1px solid #007bff;
+  border: 1px solid var(--bs-primary, #007bff);
   border-radius: 0.375rem;
   padding: 0.75rem 1rem;
   color: var(--bs-primary, #007bff);

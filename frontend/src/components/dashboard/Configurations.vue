@@ -381,7 +381,7 @@ export default {
 
 .json-content {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 1rem;
   margin: 0;
@@ -407,7 +407,7 @@ export default {
   font-size: 0.875rem !important;
   line-height: 1.5 !important;
   background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
-  border: 1px solid #dee2e6 !important;
+  border: 1px solid var(--bs-border-color, #dee2e6) !important;
   border-radius: 0.375rem !important;
   padding: 1rem !important;
   color: var(--bs-body-color, #212529) !important;

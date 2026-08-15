@@ -222,7 +222,7 @@ export default {
     border-radius: 50%;
     align-items: center;
     justify-content: center;
-    border: 1px solid #6c6b6b;
+    border: 1px solid var(--bs-border-color, #6c6b6b);
   }
 
   &:first-child {

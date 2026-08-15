@@ -531,7 +531,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   background: var(--bs-tertiary-bg, #f2f2f2);
   border-radius: 4px;
 }

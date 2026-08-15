@@ -106,28 +106,28 @@ export default {
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .config-fields {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .general-settings {
   background-color: var(--bs-body-bg, #ffffff);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .setting-item {
   padding: 0.75rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .form-label {

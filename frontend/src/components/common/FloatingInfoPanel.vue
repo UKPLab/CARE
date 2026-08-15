@@ -322,7 +322,7 @@ export default {
 <style scoped>
 .floating-info-panel {
   background: white;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
@@ -332,7 +332,7 @@ export default {
 .info-panel-header {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 12px 16px;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px 8px 0 0;
   position: relative;
 }

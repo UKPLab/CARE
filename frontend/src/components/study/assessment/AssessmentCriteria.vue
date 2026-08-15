@@ -345,7 +345,7 @@ export default {
 
 /* Assessment Content */
 .criterion-assessment {
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--bs-border-color, #e9ecef);
   margin-top: 0;
 }
 
@@ -373,7 +373,7 @@ export default {
 }
 
 .assessment-textarea {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 6px;
   font-size: 0.9rem;
   resize: vertical;
@@ -445,7 +445,7 @@ export default {
 .score-dropdown {
   min-width: 80px;
   font-size: 0.875rem;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 4px;
   padding: 4px 8px;
   background-color: white;

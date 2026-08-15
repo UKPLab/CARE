@@ -145,7 +145,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
-import { applyTheme } from "@/assets/utils";
+import { applyTheme, resolveTheme } from "@/assets/utils";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -193,8 +193,7 @@ export default {
       return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
     isDarkMode() {
-      const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
-      return (saved || localStorage.getItem("care.theme")) === "dark";
+      return resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")) === "dark";
     },
   },
   mounted() {

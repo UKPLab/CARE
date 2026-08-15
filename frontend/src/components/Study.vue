@@ -680,7 +680,7 @@ export default {
 }
 .error-card {
   max-width: 500px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--bs-border-color, #e0e0e0);
 }
 
 </style>

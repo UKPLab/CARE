@@ -297,7 +297,7 @@ export default {
 
 .summary-item {
   padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .summary-item:last-of-type {

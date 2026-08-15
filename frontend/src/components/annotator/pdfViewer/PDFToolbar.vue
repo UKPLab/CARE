@@ -145,7 +145,7 @@ export default {
   top: 0;
   z-index: 200;
   background: var(--bs-tertiary-bg, #f8f9fa);
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--bs-border-color, #ddd);
   display: flex;
   align-items: center;
   gap: 12px;

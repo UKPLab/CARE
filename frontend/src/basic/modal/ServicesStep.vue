@@ -273,35 +273,35 @@ export default {
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .services-config {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .skill-item {
   background-color: var(--bs-body-bg, #ffffff);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .skill-selection {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .input-mappings {
   background-color: var(--bs-secondary-bg, #f1f3f4);
   padding: 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .input-title {
@@ -315,7 +315,7 @@ export default {
   background-color: var(--bs-body-bg, #ffffff);
   padding: 0.5rem;
   border-radius: 0.25rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .form-label {

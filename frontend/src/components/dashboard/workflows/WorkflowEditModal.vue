@@ -380,7 +380,7 @@ export default {
 }
 
 .alert {
-  border-left: 4px solid #0dcaf0;
+  border-left: 4px solid var(--bs-info, #0dcaf0);
   margin-bottom: 1rem;
 }
 
