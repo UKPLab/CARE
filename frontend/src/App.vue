@@ -41,7 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
-import { applyTheme } from "@/assets/utils";
+import { applyTheme, getContrastColor } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -192,11 +192,16 @@ export default {
     }
   },
   watch: {
-    "$store.state.settings": {
+   "$store.state.settings": {
       handler() {
         const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
         if (saved) {
           applyTheme(saved);
+        }
+        const accent = this.$store.getters["settings/getValue"]("theme.dark.accentColor");
+        if (accent) {
+          document.documentElement.style.setProperty("--care-accent", accent);
+          document.documentElement.style.setProperty("--care-on-accent", getContrastColor(accent));
         }
       },
       deep: true,
