@@ -62,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
                     userId,
                     sourceId: { [Op.ne]: null },
                     deleted: false,
-                    type: { [Op.in]: [4, 5] },
+                    type: { [Op.in]: otherTemplateTypes },
                 },
                 attributes: ["sourceId"],
                 raw: true,
@@ -498,7 +498,7 @@ module.exports = (sequelize, DataTypes) => {
                     }
 
                     // appDataUpdate / updateData passes the caller as context.currentUserId
-                    const callerUserId = options.context?.currentUserId ?? options.callerUserId;
+                    const callerUserId = options.context?.currentUserId;
                     if (callerUserId === undefined) {
                         return;
                     }
@@ -532,7 +532,3 @@ module.exports = (sequelize, DataTypes) => {
     );
     return Template;
 }
-
-module.exports.emailTemplateTypes = emailTemplateTypes;
-module.exports.otherTemplateTypes = otherTemplateTypes;
-module.exports.allTemplateTypes = allTemplateTypes;

@@ -72,7 +72,7 @@ class TemplateSocket extends Socket {
    * Fetches the template and returns its content as Quill Delta format for the given language.
    * - For owners: returns stable content from template_content composed with draft edits (like documents)
    * - For non-owners: returns only stable content (no drafts)
-   * - Non-owners who are not admins are rejected for email templates
+   * - Non-admins are rejected for email templates (including owners)
    *
    * @socketEvent templateGetContent
    * @param {Object} data                  The data object
@@ -83,7 +83,7 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    * @throws {Error} if templateId or language is missing, or the template does not exist
    * @throws {Error} if the caller is not the owner and the template is not public
-   * @throws {Error} if the caller is not the owner, not an admin, and the template is an email type 
+   * @throws {Error} if the caller is not an admin and the template is an email type
    */
   async getContent(data, options){
     if (!data.templateId) throw new Error("Template ID is required");
