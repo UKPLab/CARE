@@ -172,7 +172,7 @@ export default {
   border: 1px dashed #b9b9b9;
   border-radius: 0.5rem;
   padding: 0.9rem;
-  background: #fafafa;
+  background: var(--bs-tertiary-bg, #fafafa);
 }
 
 .mapping-panel-header {
@@ -190,7 +190,7 @@ export default {
   flex: 1;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #555;
+  color: var(--bs-body-color, #555);
   padding: 0 0.125rem;
 }
 
@@ -216,7 +216,7 @@ export default {
 }
 
 .mapping-arrow {
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   font-size: 1rem;
   line-height: 1;
   padding-top: 0.1rem;

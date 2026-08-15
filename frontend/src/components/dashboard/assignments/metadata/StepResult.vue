@@ -56,7 +56,7 @@ export default {
 <style scoped>
 .warning-container {
   margin: 0.5rem auto;
-  color: #8a6d3b;
+  color: var(--bs-warning-text-emphasis, #8a6d3b);
 
   ul {
     margin-bottom: 0.25rem;

@@ -4,7 +4,7 @@
       This import affects only the selected assignment. Existing metadata entries with the same `metaKey` will be overwritten.
     </div>
     <div class="card">
-      <div class="card-body bg-light">
+      <div class="card-body bg-body-tertiary">
         <div><strong>Target type:</strong> {{ targetTypeLabel }}</div>
         <div><strong>Assignment:</strong> {{ assignmentLabel }}</div>
         <div>
