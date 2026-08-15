@@ -117,14 +117,16 @@ html[data-bs-theme="dark"] {
   box-shadow: 0 0 0 0.25rem rgba(227, 213, 168, 0.25);
 }
 
-/* The switch knob is a background image, so each state needs its own SVG. */
+/* The switch knob is a background image, so each state needs its own SVG. Both
+   are generated from the accent colour in App.vue, since a data URL cannot
+   contain a CSS variable. */
 [data-bs-theme="dark"] .form-switch .form-check-input:focus {
-  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e3d5a8'/%3e%3c/svg%3e");
+  --bs-form-switch-bg: var(--care-switch-knob);
 }
 
 [data-bs-theme="dark"] .form-switch .form-check-input:checked,
 [data-bs-theme="dark"] .form-switch .form-check-input:checked:focus {
-  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
+  --bs-form-switch-bg: var(--care-switch-knob-on);
 }
 
 /* --- Quill editor --- */
