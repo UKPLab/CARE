@@ -475,14 +475,6 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             }
-
-            // SequelizeSimpleCache keeps User rows indefinitely (ttl: false). After roles
-            // change, clear it so the next findByPk sees the new rolesUpdatedAt.
-            options.transaction.afterCommit(() => {
-                if (User.cache) {
-                    User.cache.clear();
-                }
-            });
         }
 
         /**

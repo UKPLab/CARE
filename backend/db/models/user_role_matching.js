@@ -2,6 +2,20 @@
 const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
+  // SequelizeSimpleCache keeps User rows indefinitely (ttl: false). Clear after
+  // commit so the next findByPk sees the new rolesUpdatedAt.
+  const clearUserCacheAfterCommit = (options) => {
+    const clear = () => {
+      if (sequelize.models.user.cache) {
+        sequelize.models.user.cache.clear();
+      }
+    };
+    if (options.transaction) {
+      options.transaction.afterCommit(clear);
+    } else {
+      clear();
+    }
+  };
   class UserRoleMatching extends MetaModel {
     static autoTable = true;
     /**
@@ -117,6 +131,7 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction,
               }
             );
+            clearUserCacheAfterCommit(options);
           } catch (error) {
             console.log(error);
           }
@@ -130,6 +145,7 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction,
               }
             );
+            clearUserCacheAfterCommit(options);
           } catch (error) {
             console.log(error);
           }

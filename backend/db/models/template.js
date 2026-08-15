@@ -497,15 +497,24 @@ module.exports = (sequelize, DataTypes) => {
                         });
                     }
 
-                    // appDataUpdate / updateData passes callerUserId so hooks can enforce ownership
-                    if (options.callerUserId === undefined) {
+                    // appDataUpdate / updateData passes the caller as context.currentUserId
+                    const callerUserId = options.context?.currentUserId ?? options.callerUserId;
+                    if (callerUserId === undefined) {
                         return;
                     }
 
-                    if (template.userId !== options.callerUserId) {
+                    if (template.userId !== callerUserId) {
                         throw new Error(
                             "You can only update templates that you own"
                         );
+                    }
+
+                    if (emailTemplateTypes.includes(template.type)) {
+                        const roleIds = await sequelize.models.user_role_matching.getUserRolesById(callerUserId);
+                        const isAdmin = await sequelize.models.user_role_matching.isAdminInUserRoles(roleIds);
+                        if (!isAdmin) {
+                            throw new Error("Access denied: Only administrators can update email templates");
+                        }
                     }
 
                     const prevSourceId = template._previousDataValues?.sourceId;
