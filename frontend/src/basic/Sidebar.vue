@@ -205,6 +205,11 @@ export default {
       required: false,
       default: true
     },
+    defaultVisible: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
   emits: ['sidebar-change', 'sidebar-action', 'resize', 'sidebar-visibility-change', 'copy'],
   data() {
@@ -214,7 +219,7 @@ export default {
       minWidth: 200,
       maxWidth: 800,
       sidebarWidth: 400,
-      isSidebarVisible: true,
+      isSidebarVisible: this.defaultVisible,
       sidebarIconHighlight: false,
       numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
       isFixed: false,
@@ -325,9 +330,12 @@ export default {
     this.originalWidth = this.width;
     this.internalActiveSlot = this.activeSideBar || null;
 
+    if (window.innerWidth <= 900) {
+      this.isSidebarVisible = false;
+    }
+
     this.initDragController();
     this.initHoverController();
-    this.onResize();
     window.addEventListener('resize', this.onResize);
 
     // Emit the current active sidebar view after mount
