@@ -21,7 +21,7 @@ export const DEFAULT_DASHBOARD_TABLE_OPTIONS = Object.freeze({
 /**
  * Same as the default options, but with search turned on.
  *
- * @param {Object} - Options to start from
+ * @param {Object} [options] - Options to start from
  * @returns {Object} A new options object with search: true
  */
 export function withSearch(options = DEFAULT_DASHBOARD_TABLE_OPTIONS) {

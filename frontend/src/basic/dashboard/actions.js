@@ -169,7 +169,7 @@ export const DASHBOARD_BADGES = Object.freeze({
  * Merge catalog or style options with page overrides.
  *
  * @param {Object} baseOptions - Default options object
- * @param {Object} - Page overrides for options
+ * @param {Object} [overrideOptions] - Page overrides for options
  * @returns {Object} Merged options including deep-merged specifiers
  */
 function mergeButtonOptions(baseOptions, overrideOptions = {}) {
@@ -190,7 +190,7 @@ function mergeButtonOptions(baseOptions, overrideOptions = {}) {
  * Pass page fields like title, action, filter, and stats in overrides.
  *
  * @param {string} kind - One of the DASHBOARD_ROW_ACTIONS keys
- * @param {Object} Extra fields for this button (title, action, filter, stats, ...)
+ * @param {Object} [overrides] - Extra fields for this button (title, action, filter, stats, ...)
  * @returns {Object} Button config for BasicTable
  * @throws {Error} If kind is not a known row action
  */
@@ -213,8 +213,8 @@ export function dashboardRowAction(kind, overrides = {}) {
  * Use this for page-only actions that are not in DASHBOARD_ROW_ACTIONS.
  *
  * @param {string} icon - Bootstrap icon name
- * @param {Object} Extra fields for this button (title, action, filter, stats, ...)
- * @param {string} One of: default, danger, warning
+ * @param {Object} [overrides] - Extra fields for this button (title, action, filter, stats, ...)
+ * @param {string} [style="default"] - One of: default, danger, warning
  * @returns {Object} Button config for BasicTable
  * @throws {Error} If style is unknown
  */
