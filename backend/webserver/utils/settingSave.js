@@ -84,8 +84,8 @@ function normalizeSettingValue(value, setting = {}) {
     let normalized;
     if (value === null || value === undefined) {
         normalized = "";
-        // TODO: Should we allow value type as object?
     } else if (typeof value === "object") {
+        // NOTE: Coerce object/array payloads to JSON; persisted settings are always strings.
         normalized = JSON.stringify(value);
     } else {
         normalized = String(value);
