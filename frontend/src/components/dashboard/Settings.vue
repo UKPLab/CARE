@@ -198,6 +198,11 @@ const SUBSECTION_ORDER = {
   system: ["Token expiry"],
 };
 
+/**
+ * If there is whitespace in the following types, the system will not trim the value.
+ */
+const PRESERVE_WHITESPACE_SETTING_TYPES = new Set(["edits", "text"]);
+
 export default {
   name: "DashboardSettings",
   subscribeTable: ["template"],
@@ -336,6 +341,21 @@ export default {
       }
       this.originalSettingsSnapshot = JSON.stringify(this.settings);
     },
+    shouldTrimSetting(setting) {
+      return !PRESERVE_WHITESPACE_SETTING_TYPES.has(setting?.type);
+    },
+    normalizeSettingValue(setting, value) {
+      if (typeof value === "string" && this.shouldTrimSetting(setting)) {
+        return value.trim();
+      }
+      return value;
+    },
+    normalizeSettings() {
+      if (!this.settings) return;
+      this.settings.forEach((setting) => {
+        setting.value = this.normalizeSettingValue(setting, setting.value);
+      });
+    },
     sendMailTest() {
       const to = (this.mailTestTo || "").trim();
       if (!to || !this.$socket) return;
@@ -354,6 +374,7 @@ export default {
       });
     },
     save() {
+      this.normalizeSettings();
       this.$socket.emit("settingSave", this.settings, (res) => {
         if (res.success) {
           this.settings.forEach((s) => {
@@ -469,7 +490,7 @@ export default {
         // Overwrite only existing keys
         this.settings = this.settings.map((setting) => {
           if (visibleKeys.has(setting.key) && Object.prototype.hasOwnProperty.call(flat, setting.key)) {
-            setting.value = flat[setting.key];
+            setting.value = this.normalizeSettingValue(setting, flat[setting.key]);
             updatedCount++;
           }
           return setting;
