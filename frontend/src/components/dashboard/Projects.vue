@@ -211,9 +211,11 @@ export default {
           message: "Are you sure you want to delete this project?",
           warning,
           failTitle: "Project delete failed",
+          onSuccess: () => {
+            this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
+          },
         }
       );
-      this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
       this.$socket.emit("appDataUpdate", {
