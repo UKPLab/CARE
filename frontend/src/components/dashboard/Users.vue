@@ -121,8 +121,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
-import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Display user list by users' role

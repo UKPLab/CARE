@@ -56,9 +56,8 @@ import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import {mapGetters} from "vuex";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
-import {dashboardRowAction} from "@/basic/dashboard/actions.js";
+import {dashboardRowAction, DASHBOARD_BADGES, confirmSoftDelete} from "@/basic/dashboard/actions.js";
 import {DEFAULT_DASHBOARD_TABLE_OPTIONS} from "@/basic/dashboard/constants.js";
-import {confirmSoftDelete} from "@/basic/dashboard/deleteHelper.js";
 
 export default {
   name: "DashboardTags",
@@ -124,6 +123,7 @@ export default {
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
+          filterMode: "and",
           title: "Share tag set",
           action: "publishTagSet",
           stats: {
@@ -143,7 +143,7 @@ export default {
           let newD = {...d};
           newD.published = {
             text: newD.public || newD.userId === null ? "Yes" : "No",
-            class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
+            class: DASHBOARD_BADGES.publicPrivate[!!(newD.public || newD.userId === null)],
           };
           newD.user = {
             text: newD.creator_name

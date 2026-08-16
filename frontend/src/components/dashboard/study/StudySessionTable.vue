@@ -14,7 +14,7 @@
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
-import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 
 /**
@@ -316,34 +316,22 @@ export default {
       }
     },
     confirmDelete(params) {
-      this.$refs.deleteConf.open(
-        "Delete Session",
-        "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
-        null,
-        (confirmed) => {
-          if (confirmed) {
-            this.deleteSession(params.id);
-          }
-        }
-      );
-    },
-    deleteSession(sessionId) {
-      this.$socket.emit(
-        "appDataUpdate",
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
         {
           table: "study_session",
-          data: {
-            id: sessionId,
-            deleted: true,
-          },
-        },
-        (result) => {
-          if (result.success) {
+          id: params.id,
+          title: "Delete Session",
+          message: "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
+          failTitle: "Study Session not deleted",
+          onSuccess: () => {
             this.showSuccessToast("Study Session deleted", "Study session has been deleted");
-            this.$emit("session-deleted", sessionId);
-          } else {
-            this.showErrorToast("Study Session not deleted", result.message);
-          }
+            this.$emit("session-deleted", params.id);
+          },
         }
       );
     },

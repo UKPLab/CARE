@@ -35,8 +35,7 @@ import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
-import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 export default {
   name: "DashboardAssignments",
@@ -93,7 +92,7 @@ export default {
           type: "badge",
           typeOptions: {
             keyMapping: { true: "Yes", false: "No" },
-            classMapping: { true: "bg-success", false: "bg-secondary" },
+            classMapping: { ...DASHBOARD_BADGES.yesNo },
           },
         },
         {

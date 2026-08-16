@@ -25,7 +25,6 @@
       <slot name="afterTable" />
     </template>
   </Card>
-  <slot name="modals" />
 </template>
 
 <script>
@@ -38,7 +37,7 @@ import {
 
 /**
  * Shared shell for dashboard list pages: card, header actions, and BasicTable.
- * Pages supply columns, data, row buttons, and modals; table defaults come from constants.
+ * Pages supply columns, data, and row buttons; table defaults come from constants.
  *
  * @param {String} title - Card title
  * @param {Array} columns - BasicTable column definitions

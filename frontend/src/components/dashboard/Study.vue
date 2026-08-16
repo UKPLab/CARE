@@ -87,8 +87,7 @@ import ManageStudiesModal from "@/components/dashboard/study/ManageStudiesModal.
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
-import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { withSearch } from "@/basic/dashboard/constants.js";
 
 /**

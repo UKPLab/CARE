@@ -33,9 +33,3 @@ export function withSearch(options = DEFAULT_DASHBOARD_TABLE_OPTIONS) {
  * @type {string}
  */
 export const DASHBOARD_TABLE_HEIGHT = "65vh";
-
-/**
- * Max height for tables inside dashboard modals.
- * @type {number}
- */
-export const DASHBOARD_MODAL_TABLE_HEIGHT = 400;

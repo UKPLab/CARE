@@ -51,8 +51,7 @@ import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
-import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Document list component
@@ -236,7 +235,7 @@ export default {
             let newD = {...d};
             newD.typeName = d.type === 0 ? "PDF" : d.type === 1 ? "HTML" : "MODAL";
             newD.publicBadge = {
-              class: newD.public ? "bg-success" : "bg-danger",
+              class: DASHBOARD_BADGES.publicPrivate[!!newD.public],
               text: newD.public ? "Yes" : "No",
             };
             return newD;
@@ -340,8 +339,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>
+<style scoped></style>

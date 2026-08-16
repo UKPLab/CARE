@@ -71,6 +71,7 @@ import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 /**
  * Modal to show saved study templates
  * 
@@ -126,42 +127,21 @@ export default {
         },
       ],
       tableButtons: [
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        dashboardRowAction("delete", {
           title: "Delete",
           filter: [
             {key: "showDeleteTemplateButton", value: true},
           ],
           action: "deleteTemplate",
-        },
-        {
-          icon: "play",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("resume", {
           title: "Use",
           action: "useTemplate",
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("download", {
           title: "Export",
           action: "exportTemplate",
-        },
+        }),
       ],
     };
   },

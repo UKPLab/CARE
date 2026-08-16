@@ -65,8 +65,7 @@ import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
-import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Workflows dashboard component
@@ -322,9 +321,5 @@ export default {
 .graph-controls {
   display: flex;
   align-items: center;
-}
-
-.card .card-body {
-  padding: 1rem;
 }
 </style>

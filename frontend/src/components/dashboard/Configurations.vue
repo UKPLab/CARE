@@ -90,8 +90,7 @@ import Modal from "@/basic/Modal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import {Editor} from "@/components/editor/editorStore.js";
-import { dashboardRowAction } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Configuration Files Dashboard Component

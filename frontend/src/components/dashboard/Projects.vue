@@ -42,8 +42,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
-import { dashboardRowAction } from "@/basic/dashboard/actions.js";
-import { confirmSoftDelete } from "@/basic/dashboard/deleteHelper.js";
+import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Project list component
@@ -118,6 +117,7 @@ export default {
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
+          filterMode: "and",
           stats: {
             projectId: "id",
           }
@@ -138,7 +138,7 @@ export default {
           let newD = {...d};
           newD.published = {
             text: newD.public || newD.userId === null ? "Yes" : "No",
-            class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
+            class: DASHBOARD_BADGES.publicPrivate[!!(newD.public || newD.userId === null)],
           };
           newD.closed = {
             text: newD.closed ? "Yes" : "No",
@@ -246,8 +246,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>
+<style scoped></style>
