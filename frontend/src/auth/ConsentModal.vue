@@ -47,7 +47,7 @@
       </div>
     </template>
     <template #footer>
-      <div class="button-group">
+      <div class="btn-group">
         <BasicButton
           class="btn btn-secondary"
           text="Decline"
@@ -240,9 +240,5 @@ export default {
   font-size: 0.75em;
   line-height: 0.75em;
   color: firebrick;
-}
-
-.button-group > button:first-child {
-  margin-right: 1rem;
 }
 </style>

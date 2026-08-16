@@ -21,6 +21,7 @@
   </DashboardListPage>
   <AssignmentModal ref="assignmentModal" />
   <AssignmentSubmissionsModal ref="assignmentSubmissionsModal" />
+  <AssignmentMetadataModal ref="assignmentMetadataModal" />
   <ImportModal ref="importModal" />
   <ConfirmModal ref="deleteConf" />
 </template>
@@ -29,6 +30,7 @@
 import BasicButton from "@/basic/Button.vue";
 import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.vue";
 import AssignmentSubmissionsModal from "@/components/dashboard/assignments/AssignmentSubmissionsModal.vue";
+import AssignmentMetadataModal from "@/components/dashboard/assignments/AssignmentMetadataModal.vue";
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
@@ -44,6 +46,7 @@ export default {
     BasicButton,
     AssignmentModal,
     AssignmentSubmissionsModal,
+    AssignmentMetadataModal,
     ImportModal,
     ConfirmModal,
   },
@@ -137,24 +140,20 @@ export default {
             assignmentId: "id",
           },
         }),
-        dashboardRowAction("enable", {
-          filter: [
-            { key: "canEditAssignment", value: true },
-            { key: "disable", value: false },
-          ],
-          filterMode: "and",
+        dashboardRowButton("upload", {
+          filter: [{ key: "canEditAssignment", value: true }],
           options: {
             specifiers: {
               "btn-sm": true,
             },
           },
-          title: "Disable assignment",
-          action: "toggleDisable",
+          title: "Upload Metadata",
+          action: "uploadMetadata",
           stats: {
             assignmentId: "id",
           },
         }),
-        dashboardRowAction("disable", {
+        dashboardRowAction("enable", {
           filter: [
             { key: "canEditAssignment", value: true },
             { key: "disable", value: true },
@@ -166,6 +165,23 @@ export default {
             },
           },
           title: "Enable assignment",
+          action: "toggleDisable",
+          stats: {
+            assignmentId: "id",
+          },
+        }),
+        dashboardRowAction("disable", {
+          filter: [
+            { key: "canEditAssignment", value: true },
+            { key: "disable", value: false },
+          ],
+          filterMode: "and",
+          options: {
+            specifiers: {
+              "btn-sm": true,
+            },
+          },
+          title: "Disable assignment",
           action: "toggleDisable",
           stats: {
             assignmentId: "id",
@@ -314,6 +330,9 @@ export default {
           break;
         case "inspectSubmissions":
           this.$refs.assignmentSubmissionsModal.open(data.params.id);
+          break;
+        case "uploadMetadata":
+          this.$refs.assignmentMetadataModal.open(data.params.id);
           break;
         case "importMoodle":
           this.$refs.importModal.open(data.params.id);

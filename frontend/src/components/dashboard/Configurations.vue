@@ -63,18 +63,20 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
+      <div class="btn-group">
+        <BasicButton
           class="btn btn-secondary"
           text="Cancel"
           data-bs-dismiss="modal"
           @click="$refs.editModal.close()"
-      />
-      <BasicButton
+        />
+        <BasicButton
           class="btn btn-primary"
           text="Save"
           :disabled="saving"
           @click="saveConfiguration"
-      />
+        />
+      </div>
     </template>
   </Modal>
 </template>
