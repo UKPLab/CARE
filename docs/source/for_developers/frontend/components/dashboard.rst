@@ -24,7 +24,7 @@ Adding a New Dashboard Component
 Let's assume we want to add a new Dashboard component ``MyAnnotations``. To add the component, we need to
 
 1. Add a new :doc:`DB migration <for_developers/backend/database>` extending the navigation database.
-2. Create a new frontend component in the ``frontend/src/components`` directory
+2. Create a new frontend component in the ``frontend/src/components/dashboard`` directory
 
 Please refer to the :doc:`database <for_developers/backend/database>` chapter for a detailed explanation of the
 migration functionality. Here, we only cover the necessary commands and code snippets to add a dashboard component.
@@ -79,7 +79,7 @@ specific element again on ``down``:
         }
     };
 
-Finally, you add a new Vue component ``MyAnnotations.vue`` to the ``frontend/src/components`` directory. For testing,
+Finally, you add a new Vue component ``MyAnnotations.vue`` to the ``frontend/src/components/dashboard`` directory. For testing,
 we set this to an empty component showing just "Hello World!":
 
 .. code-block:: vue-js
@@ -94,6 +94,126 @@ we set this to an empty component showing just "Hello World!":
 That's it -- to load the new component in the frontend, you first need to stop the service, run ``make init`` and
 start it up again. Now you should see a nav element in the dashboard sidebar, which shows upon selection an empty
 component with just the words "Hello World!".
+
+List dashboard pages
+--------------------
+A list-style management screen is a **card + table + row buttons**. Do not copy a raw ``Card`` / ``BasicTable``
+shell. Use the shared list-page foundation under ``frontend/src/basic/dashboard/``
+(component reference: :doc:`../basic/dashboard`):
+
+* ``ListPage.vue`` (``DashboardListPage``) — card, header slot, table, default height
+* ``constants.js`` — ``DEFAULT_DASHBOARD_TABLE_OPTIONS``, ``withSearch()``, ``DASHBOARD_TABLE_HEIGHT``
+* ``actions.js`` — row-button catalog, ``DASHBOARD_BADGES``, ``confirmSoftDelete()``
+
+Copy a small existing page such as ``Tags.vue`` or ``Projects.vue`` and change columns, data, and buttons.
+Do not copy ``Log.vue`` (server-side pagination), ``Study.vue``, ``Submissions.vue``,
+``SessionOverview.vue``, ``Settings.vue``, ``AdminTools.vue``, or ``UserStatistics.vue`` — those layouts are
+specialized.
+
+**Template**
+
+.. code-block:: html
+
+    <template>
+      <DashboardListPage
+        title="Tag Sets"
+        :columns="columns"
+        :data="tagSets"
+        :buttons="buttons"
+        @action="action"
+      >
+        <template #headerActions>
+          <BasicButton
+            class="btn-primary btn-sm"
+            title="Add"
+            icon="plus"
+            @click="$refs.tagSetModal.open(0)"
+          />
+        </template>
+      </DashboardListPage>
+      <TagSetModal ref="tagSetModal" />
+      <ConfirmModal ref="confirm" />
+    </template>
+
+``DashboardListPage`` already applies ``DEFAULT_DASHBOARD_TABLE_OPTIONS`` and
+``DASHBOARD_TABLE_HEIGHT`` (see ``ListPage.vue``). Pass ``:table-options="withSearch()"``
+only when the table needs search. Put page modals as siblings of ``DashboardListPage``,
+as ``Tags.vue`` and ``Projects.vue`` do. Extra UI under the table goes in ``#afterTable``
+(``Documents.vue``). Register ``BasicButton``, ``ConfirmModal``, and the page modal the same
+way ``Tags.vue`` does.
+
+**Script imports**
+
+.. code-block:: javascript
+
+    import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+    import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+
+Also from those files when needed: ``withSearch`` from ``constants.js``;
+``dashboardRowButton`` and ``DASHBOARD_BADGES`` from ``actions.js``.
+
+Declare ``subscribeTable: ["<table>"]`` for every table whose getter this page reads
+(see :doc:`../plugins`). Read rows with ``this.$store.getters["table/<table>/getAll"]``
+or ``getFiltered`` (see :doc:`../vuex_store`).
+
+**Row buttons**
+
+* ``dashboardRowAction("edit", { title, action, filter, stats })`` — catalog name
+  (``edit``, ``delete``, ``copy``, ``share``, ``download``, …) so icons and colors stay consistent.
+  Unknown catalog names throw (see ``dashboardRowAction`` in ``actions.js``).
+* ``dashboardRowButton("upload", { title, action, ... })`` — first argument is a Bootstrap icon
+  name, not a catalog key. Use this for page-only icons (Assignments metadata upload uses
+  ``"upload"``).
+* Handle ``@action``. Existing pages name the handler ``action`` (Tags, Projects) or
+  ``chooseAction`` (Users, Workflows). Switch on ``data.action``.
+
+**When a button should appear only on some rows**
+
+``filter`` is a list of ``{ key, value }`` checks against that row. One check is enough by itself.
+With two or more checks, decide OR vs AND:
+
+* Default is **OR** — show the button if **any** check matches. Use this when the same field has
+  two allowed values (for example uploaded by me **or** uploaded by nobody).
+* ``filterMode: "and"`` — show the button only if **all** checks match. Use this when two different
+  fields must be true together.
+
+Share on a private row you own needs **AND**. Without it, Share also appears on someone else's
+private row (``public === false``) and on your already-public row (``userId`` matches):
+
+.. code-block:: javascript
+
+    dashboardRowAction("share", {
+      title: "Share tag set",
+      action: "publishTagSet",
+      filter: [
+        { key: "public", value: false },
+        { key: "userId", value: this.userId },
+      ],
+      filterMode: "and",
+    })
+
+**Soft delete**
+
+If the row is removed with ``appDataUpdate`` and ``deleted: true``, call ``confirmSoftDelete`` from
+``actions.js`` (confirm dialog + socket + error toast). Keep a dedicated socket such as
+``templateDelete`` or ``submissionDelete`` when that is how the backend deletes the row.
+
+.. code-block:: javascript
+
+    confirmSoftDelete(
+      {
+        confirmRef: this.$refs.confirm,
+        socket: this.$socket,
+        eventBus: this.eventBus,
+      },
+      {
+        table: "tag_set",
+        id: row.id,
+        title: "Delete Tagset",
+        message: "Do you really want to delete the Tagset?",
+        failTitle: "TagSet delete failed",
+      }
+    );
 
 Populating a Dashboard Component
 ------------------------------------
@@ -111,5 +231,6 @@ available for visualization in the frontend, but provide only a conceptual overv
 Table
 -----
 The table is the best way to visualize many rows of data.
-We recommend to use the basic table component :doc:`Table <basic/table>` for this purpose.
+For a full dashboard list page, wrap it with ``DashboardListPage`` as described above.
+``DashboardListPage`` uses the basic table component :doc:`Table <../basic/table>`.
 

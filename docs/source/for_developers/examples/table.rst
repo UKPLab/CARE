@@ -142,55 +142,66 @@ To apply the migration, we have to run the command ``make init``.
 -----------------------
 
 The last step is to create a new vue dashboard component in the folder ``./frontend/src/components/dashboard`` with the same name we defined in the navigation entry ``ExampleTable.vue``.
-We make use of several basic components, see :doc:`../frontend/base_components` for more details.
+
+For a card + table list page, use ``DashboardListPage``. Do not build a raw ``Card`` + ``BasicTable``
+shell. Table options and height come from the list page. Full recipe (row buttons, filters, soft
+delete): :doc:`../frontend/components/dashboard`. The shell itself is documented in
+:doc:`../frontend/basic/dashboard`.
 
 .. code-block:: html
 
     <template>
-      <Card title="ExampleTable">
-        <template #body>
-          <Table
-            :columns="columns"
-            :data="data"
-            :options="options"
-          />
-        </template>
-      </Card>
+      <DashboardListPage
+        title="Example Table Data"
+        :columns="columns"
+        :data="data"
+        :buttons="buttons"
+        @action="action"
+      />
     </template>
 
 .. code-block:: javascript
 
     <script>
-    import Table from "@/basic/table/Table.vue";
-    import Card from "@/basic/Card.vue";
+    import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+    import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 
     export default {
-      name: "Log",
-      components: {Card, Table},
+      name: "ExampleTable",
+      subscribeTable: ["example_table"],
+      components: { DashboardListPage },
       data() {
         return {
-          options: {
-            striped: true,
-            hover: true,
-            bordered: false,
-            borderless: false,
-            small: false,
-            pagination: 30,
-          },
           columns: [
-            {name: "User", key: "userId", sortable: true},
-            {name: "Username", key: "creator_name", sortable: true},
-            {name: "CreatedAt", key: "createdAt", sortable: true},
-            {name: "Text", key: "exampleText"},
+            { name: "User", key: "userId", sortable: true },
+            { name: "Username", key: "creator_name", sortable: true },
+            { name: "CreatedAt", key: "createdAt", sortable: true },
+            { name: "Text", key: "exampleText" },
           ],
-        }
+        };
       },
       computed: {
         data() {
-            return this.$store.getters["auto/example_table/getAll"];
-        }
-      }
-    }
+          return this.$store.getters["table/example_table/getAll"];
+        },
+        buttons() {
+          return [
+            dashboardRowAction("edit", {
+              title: "Edit",
+              action: "edit",
+            }),
+          ];
+        },
+      },
+      methods: {
+        action(data) {
+          if (data.action === "edit") {
+            // open your edit modal with data.params
+          }
+        },
+      },
+    };
+    </script>
 
 Of course, you can add more columns and more complex components to the table.
-See also the already existing code in the repository.
+See also ``Tags.vue`` and ``Projects.vue`` in the repository.
