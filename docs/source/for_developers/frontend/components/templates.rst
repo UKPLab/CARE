@@ -18,7 +18,7 @@ Templates are listed and created from **Dashboard → Templates**. See the :doc:
 
 Location: ``frontend/src/components/dashboard/Templates.vue``
 
-When you open a template for editing, the Editor loads with ``templateId`` provided; it renders the :doc:`editor` (TemplateEditor) for the main content and, for email types (1, 2, 3, 6) and prompt templates (type 8), a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts) into the text.
+When you open a template for editing, the Editor loads with ``templateId`` provided; it renders the :doc:`editor` (TemplateEditor) for the main content and, for email types (1, 2, 3, 6, 7) and prompt templates (type 8), a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts) into the text.
 
 Location: ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
 
@@ -29,7 +29,7 @@ Backend storage:
 - **template_edit** — draft edits per template and language.  
 - **placeholder** — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).
 
-Location: ``backend/utils/templateResolver.js``
+Location: ``backend/utils/helper/templateResolver.js``
 
 Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).  
 Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only keys allowed for ``context.templateType``.
@@ -50,7 +50,7 @@ Location: ``utils/modules/placeholder-tokens``
 
 This logic is used in:
 
-- ``backend/utils/templateResolver.js`` – placeholder resolution, duplicate checks, and used-index reporting
+- ``backend/utils/helper/templateResolver.js`` – placeholder resolution, duplicate checks, and used-index reporting
 - ``backend/webserver/sockets/template.js`` – save validation via the resolver
 
 Frontend Integration
@@ -104,7 +104,7 @@ Templates use the same debounced autosave as documents (see :ref:`Debounce Behav
 
 **Save-on-leave:** In-app navigation (topbar back, dashboard links) runs ``beforeRouteLeave`` in ``frontend/src/components/Template.vue``. The guard calls ``flushPendingEdits`` on ``TemplateEditor`` (cancels debounce and sends buffered ops), then emits ``templateClose``, which calls ``saveTemplate`` in ``backend/webserver/sockets/template.js`` to merge drafts into ``template_content``.
 
-**Required placeholders:** For email types (1, 2, 3, 6, 7), stable ``template_content`` in every language must include all required placeholders (``getMissingRequiredPlaceholders`` in ``backend/utils/templateResolver.js``). Enforcement points:
+**Required placeholders:** For email types (1, 2, 3, 6, 7), stable ``template_content`` in every language must include all required placeholders (``getMissingRequiredPlaceholders`` in ``backend/utils/helper/templateResolver.js``). Enforcement points:
 
 - **Editor save:** ``saveTemplate`` rejects merges that omit required placeholders. The user may confirm discard; ``templateDiscardDrafts`` soft-deletes draft rows without updating ``template_content``.
 - **Publish:** The ``template`` model ``beforeUpdate`` hook calls ``assertStableEmailTemplateContent`` when ``public`` becomes ``true``.
@@ -142,10 +142,10 @@ At resolution time, only the placeholder keys listed in the following table are 
 |                          |        |                                      | ``email.template.studyClosed`` (``sendStudyClosedEmails``) |
 |                          |        |                                      | in ``study.js``.                                           |
 +--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Prompt                   | 8      | ``pdfText``, ``editorText``,         | Study/NLP prompt templates: ``templateResolve`` in         |
-|                          |        | ``assessmentResult``,                | ``backend/webserver/sockets/template.js`` (see below)      |
-|                          |        | ``inlineComments``,                  |                                                            |
-|                          |        | ``nlpAssessmentSuggestion``,       |                                                            |
+| Prompt                   | 8      | ``pdfText``, ``editorText``,         | AI hooks: ``resolveTemplateWithValues`` in                  |
+|                          |        | ``assessmentResult``,                | ``backend/webserver/services/ai/hook.js``.                 |
+|                          |        | ``inlineComments``,                  | ``templateResolve`` in                                      |
+|                          |        | ``nlpAssessmentSuggestion``,       | ``backend/webserver/sockets/template.js`` (see below).     |
 |                          |        | ``previousAssessmentResult``,      |                                                            |
 |                          |        | ``assessmentConfiguration``,         |                                                            |
 |                          |        | ``submissionFiles``,               |                                                            |
@@ -159,12 +159,14 @@ Prompt templates (type 8)
 
 Prompt templates use the same Placeholders sidebar and ``placeholder`` table as email templates.
 
-Location: ``backend/webserver/sockets/template.js`` (``templateResolve``)
+Location: ``backend/webserver/sockets/template.js`` (``templateResolve``);
+AI hook runtime: ``backend/webserver/services/ai/hook.js`` (``resolveTemplateWithValues``).
 
-At edit time, TemplateEditor preview (types 1, 2, 3, 6, and 8) substitutes ``placeholderExample`` from the
+At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes ``placeholderExample`` from the
 ``placeholder`` row when set (sample text only; rows may be empty until examples are added).
-At runtime, ``buildPromptPlaceholderValues`` in ``backend/utils/templateResolver.js`` loads real values from
-``context`` and the database. Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
+``templateResolve`` uses ``buildPromptPlaceholderValues`` in ``backend/utils/helper/templateResolver.js`` for real values from
+``context`` and the database. AI hooks instead pass a value map from the frontend input mapping.
+Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
 if they are missing, those tokens resolve to an empty string.
 
 ``~nlpAssessmentSuggestion~`` is the NLP draft assessment for the current step (same ``document_data`` as the
@@ -172,10 +174,37 @@ Assessment sidebar pre-fill), not the saved rubric in ``assessment_result`` (use
 Resolution is implemented in ``backend/utils/studyNlpDocumentData.js``.
 
 ``~editorText~`` is plain text from the HTML or modal document (``resolveEditorText`` in
-``backend/utils/templateResolver.js``): base ``.delta`` plus session draft edits, including earlier steps in the same
-session. Pass ``context.editorText`` on ``templateResolve`` to override (capped at 15k characters). Call
+``backend/utils/helper/templateResolver.js``): base ``.delta`` plus session draft edits, including earlier steps in the same
+session. Pass ``context.editorText`` on ``templateResolve`` to override. There is no silent character cap;
+optional ``wordRange`` on the token limits retrieved text. Call
 ``templateResolve`` after step loading (``loadingReady``) or on user action—not in the same pass as NLP
 ``insertIntoEditor`` unless ``context.editorText`` is set explicitly.
+
+Prompt placeholder options
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Type 8 placeholders that inject retrieved text (``pdfText``, ``submissionFiles``, ``editorText``) can carry
+per-token options in braces, for example ``~pdfText[1]{pageRange:1}~`` or ``~editorText[1]{wordRange:1-500}~``.
+
+- **Word range** (``wordRange``): 1-based inclusive word slice. A single number ``N`` means the first N words.
+- **Page range** (``pageRange``): 1-based inclusive page slice. A single number ``N`` means the first N pages.
+  Page 2 only is ``2-2``. Seeded on ``pdfText`` and ``submissionFiles`` only (``editorText`` is seeded with ``wordRange``).
+  When the mapped ``submissionFiles`` source has no ``pages`` array (TeX/zip text), ``applyTextRangeLimit`` treats the extract as one page.
+
+Both options may be set on one token. Pages are applied first, then words
+(e.g. ``~pdfText[1]{pageRange:1,wordRange:1-200}~`` is the first 200 words of page 1).
+A repeated option name on one token (e.g. two ``wordRange`` values) is rejected on save.
+Omit options to send the full extract.
+
+**Known limitation:** a single number ``N`` always means “first N units”, not “unit N only”.
+``pageRange:2`` is pages 1–2, not page 2. Use From/To ``2``–``2`` (``pageRange:2-2``) for one page.
+
+At hook run time, PDF.js supplies ``{ pages, pageCount }`` (``numPages``); the resolver slices that list.
+Limits apply when the prompt is resolved, not to text written in the template editor.
+
+Option definitions live in ``placeholder.placeholderOptions`` (seeded by migration). The Placeholders sidebar
+collects From/To before insert. Unknown or invalid option values are listed in the sidebar warning.
+A repeated option name on one token is rejected on save.
 
 Adding a New Template Type or Placeholder
 -----------------------------------------
@@ -187,7 +216,7 @@ Adding a New Template Type or Placeholder
    fails on editor save, publish, or Settings assignment until it is added. The set of
    required placeholders is defined in the ``placeholder`` table (``required: true``) and
    enforced via ``getMissingRequiredPlaceholders`` and ``assertStableEmailTemplateContent``
-   in ``backend/utils/templateResolver.js``.
+   in ``backend/utils/helper/templateResolver.js``.
 
 Email placeholders (types 1, 2, 3, 6) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
 Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` (often from ``document_data`` or
@@ -199,7 +228,8 @@ Here is a concrete example for adding a new placeholder:
 1. **Backend (DB + resolver):**
 
    - Add a row to the ``placeholder`` table via a migration (``type``, ``placeholderKey``, label, description,
-     ``required``, and optionally ``placeholderExample`` for editor preview).
+     ``required``, and optionally ``placeholderExample`` for editor preview). For per-token options (e.g. word/page
+     range on retrieved text), set ``placeholderOptions`` on that row (see Prompt placeholder options above).
 
    - **Email (e.g. ``studyEndDate`` for type 6):** in ``buildReplacementMap``, when ``allow("studyEndDate")``::
 
