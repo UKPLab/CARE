@@ -513,7 +513,7 @@ export default {
 
 <style scoped>
 .comment {
-  color: var(--bs-secondary-color, #666)666;
+  color: var(--bs-secondary-color, #666666);
   font-style: normal;
   box-shadow: 2px, 3px lightgrey;
 }

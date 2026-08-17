@@ -350,7 +350,7 @@ export default {
 }
 
 .assessment-text {
-  background-color: #fff;
+  background-color: var(--bs-body-bg, #fff);
   padding: 12px;
   border-radius: 6px;
   border-left: 3px solid #007bff;
@@ -448,7 +448,7 @@ export default {
   border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 4px;
   padding: 4px 8px;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 

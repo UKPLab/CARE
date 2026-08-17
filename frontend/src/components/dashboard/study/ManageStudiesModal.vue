@@ -579,7 +579,7 @@ export default {
 }
 
 .confirmation-content {
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: var(--bs-body-bg, #ffffff);
   border-radius: 0.5rem;
   padding: 1.5rem;
   border: 1px solid var(--bs-border-color, #e9ecef);
@@ -642,7 +642,7 @@ export default {
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 1rem;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   margin-bottom: 1.5rem;
   list-style: none;
 }

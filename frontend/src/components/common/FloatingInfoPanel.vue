@@ -321,7 +321,7 @@ export default {
 
 <style scoped>
 .floating-info-panel {
-  background: white;
+  background: var(--bs-body-bg, white);
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
