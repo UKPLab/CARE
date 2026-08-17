@@ -20,7 +20,8 @@ env:
     utils/modules/assessment-score
 
 jobs:
-  # Minor + patch only. Updates must pass npm audit before the PR is opened.
+  # Minor + patch only. Always open a PR when those bumps exist.
+  # Remaining audit issues (majors / npm audit fix --force) do not block the PR.
   update-minor-patch:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 * * 1'
     runs-on: ubuntu-latest
@@ -45,10 +46,13 @@ jobs:
               cd "${dir}"
               npx --yes npm-check-updates -u --target minor
               npm install --no-fund --no-audit
+              # Non-breaking security patches only. Remaining vulns must not abort the job.
+              npm audit fix || true
             )
           done <<< "${PACKAGE_DIRS}"
 
       - name: Run npm audit
+        continue-on-error: true
         run: make audit
 
       - name: Create minor/patch Pull Request
@@ -67,8 +71,9 @@ jobs:
             - `utils/modules/editor-delta-conversion`
             - `utils/modules/assessment-score`
 
-            `make audit` passed on this branch before the PR was opened.
-            Please still review the diff and let CI finish before merging.
+            Includes non-breaking `npm audit fix` patches. Remaining audit
+            findings (those that need a major bump) do not block this PR.
+            Please review the diff and let CI / `make audit` finish before merging.
           labels: dependencies
 
   # Major only (quarterly). Reminder PR with bumps applied for testing —
