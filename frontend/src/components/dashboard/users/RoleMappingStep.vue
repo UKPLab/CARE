@@ -2,7 +2,7 @@
   <div class="role-mapping-container">
     <table class="table table-sm align-middle">
       <thead>
-        <tr><th>Moodle Role</th><th>Users</th><th>CARE Role</th></tr>
+        <tr><th>{{ sourceLabel }} Role</th><th>Users</th><th>CARE Role</th></tr>
       </thead>
       <tbody>
         <tr v-for="role in roleRows" :key="role.raw">
@@ -30,7 +30,7 @@
         </tr>
         <tr v-if="roleRows.length === 0">
           <td colspan="3" class="text-center text-muted">
-            No Moodle roles were returned. Imported users will receive CARE's basic user role.
+            No roles were found. Imported users will receive CARE's basic user role.
           </td>
         </tr>
       </tbody>
@@ -39,14 +39,14 @@
 </template>
 
 <script>
-import { getMoodleRoleRows } from "./moodleRoleMapping.js";
+import { getRoleRows } from "./moodleRoleMapping.js";
 
 /**
- * Step for mapping Moodle role labels to CARE roles during Moodle user import.
+ * Step for mapping external role labels to CARE roles during user import.
  * @author: Linyin Huang
  */
 export default {
-  name: "MoodleRoleMappingStep",
+  name: "RoleMappingStep",
   props: {
     modelValue: {
       type: Object,
@@ -58,6 +58,10 @@ export default {
     },
     systemRoles: {
       type: Array,
+      required: true,
+    },
+    sourceLabel: {
+      type: String,
       required: true,
     },
   },
@@ -73,7 +77,7 @@ export default {
       ];
     },
     roleRows() {
-      return getMoodleRoleRows(this.users);
+      return getRoleRows(this.users);
     },
   },
   methods: {
