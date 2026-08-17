@@ -6,6 +6,7 @@ const {mergeFilter} = require("../../utils/helper/data.js");
 const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
 const {Op} = require("sequelize");
+const {makePaginateLazy} = require("sequelize-cursor-pagination");
 
 /**
  * Send data for building the frontend app
@@ -429,15 +430,19 @@ class AppSocket extends Socket {
      * Stores params on socket.currentQueries[table]
      * so broadcastTable can emit Delta/Stale instead of full Refresh.
      *
+     * Cursor (keyset) pagination via sequelize-cursor-pagination. No OFFSET.
+     *
      * @socketEvent queryTable
      * @param {Object} data
      * @param {string} data.table autoTable name
      * @param {Array} [data.filter] same shape as subscribeAppData filter items
      * @param {Object} [data.query]
-     * @param {number} [data.query.page] 0-based page index
      * @param {number} [data.query.limit]
      * @param {Object} [data.query.sort] { column, direction }
-     * @returns {Promise<{items: Array, meta: Object}>}
+     * @param {string} [data.query.after] endCursor of previous result → next page
+     * @param {string} [data.query.before] startCursor of previous result → previous page
+     * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
+     * @returns {Promise<{items: Array, meta: Object}>} meta has total, pageSize, startCursor, endCursor, hasNext, hasPrev
      */
     async queryTable(data) {
         const {table, query = {}, filter = []} = data || {};
@@ -471,45 +476,93 @@ class AppSocket extends Socket {
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
 
-        // Page index and limit (default 10 rows per page).
-        const page = Math.max(0, Number(query.page) || 0);
+        // Rows per page (default 10).
         const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
 
-        // Options for the DB page fetch
-        const queryOpts = {
-            where: allFilter,
-            attributes: allAttributes,
-            raw: true,
-            limit,
-            offset: page * limit,
-        };
-
-        // sort by column if it exists, otherwise sort by id
+        // Sort column (fallback to id). id is always the tie-breaker so the cursor is stable.
         let sortColumn = query.sort?.column;
         let sortDirection = (query.sort?.direction || "ASC").toUpperCase();
-        if (sortColumn && sortColumn in attributes) {
-            if (sortDirection !== "ASC" && sortDirection !== "DESC") {
-                sortDirection = "ASC";
-            }
-            queryOpts.order = [[sortColumn, sortDirection], ["id", "ASC"]];
-        } else {
-            queryOpts.order = [["id", "ASC"]];
-            sortColumn = "id";
+        if (sortDirection !== "ASC" && sortDirection !== "DESC") {
             sortDirection = "ASC";
         }
+        if (!sortColumn || !(sortColumn in attributes)) {
+            sortColumn = "id";
+        }
 
-        const [items, total] = await Promise.all([
-            model.getAll(queryOpts),
-            model.count({where: allFilter}),
+        // Order field list is identical on every request so cursors are interchangeable
+        // between first / after / before / fromEnd. Cursor payload = [sortColumn, id].
+        const forwardOrder = sortColumn === "id"
+            ? [["id", sortDirection]]
+            : [[sortColumn, sortDirection], ["id", "ASC"]];
+        const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
+
+        // Same simple cache as getById/findAll: identical page query (same where/order/
+        // cursor/limit) hits memory; any study write still clears the whole model cache.
+        // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
+        const paginateLazy = makePaginateLazy(model, {omitPrimaryKeyFromOrder: true});
+
+        const after = query.after || null;
+        const before = query.before || null;
+        const fromEnd = !!query.fromEnd;
+        // Backward travel (prev page / last page): trim from the front and infer hasPrev.
+        const backward = !!before || fromEnd;
+
+        // Fetch limit + 1 to detect a further page in the travel direction without a 3rd COUNT.
+        const connection = paginateLazy({
+            where: allFilter,
+            attributes: allAttributes,
+            order: fromEnd ? reversedOrder : forwardOrder,
+            limit: limit + 1,
+            ...(after ? {after} : {}),
+            ...(before ? {before} : {}),
+        });
+
+        // Two SQL queries only: page rows (getEdges) + total (getTotalCount).
+        const [rawEdges, total] = await Promise.all([
+            connection.getEdges(),
+            connection.getTotalCount(),
         ]);
+
+        // fromEnd ran the reversed order → flip back to normal (ascending-by-request) order.
+        let edges = fromEnd ? [...rawEdges].reverse() : rawEdges;
+        const overflow = edges.length > limit;
+        if (overflow) {
+            edges = backward ? edges.slice(edges.length - limit) : edges.slice(0, limit);
+        }
+
+        const items = edges.map((edge) => {
+            const node = edge.node;
+            return (node && typeof node.get === "function") ? node.get({plain: true}) : node;
+        });
+        const startCursor = edges.length ? edges[0].cursor : null;
+        const endCursor = edges.length ? edges[edges.length - 1].cursor : null;
+
+        // hasNext / hasPrev from travel direction + the overflow probe (exact, no extra COUNT).
+        let hasNext;
+        let hasPrev;
+        if (fromEnd) {
+            hasNext = false;
+            hasPrev = overflow;
+        } else if (before) {
+            hasNext = true;
+            hasPrev = overflow;
+        } else if (after) {
+            hasPrev = true;
+            hasNext = overflow;
+        } else {
+            hasPrev = false;
+            hasNext = overflow;
+        }
 
         if (!this.socket.currentQueries) {
             this.socket.currentQueries = {};
         }
         this.socket.currentQueries[table] = {
-            page,
             limit,
             sort: {column: sortColumn, direction: sortDirection},
+            after,
+            before,
+            fromEnd,
             filter,
         };
 
@@ -517,9 +570,12 @@ class AppSocket extends Socket {
             items: items || [],
             meta: {
                 total: total || 0,
-                page,
                 pageSize: limit,
                 totalPages: limit ? Math.ceil((total || 0) / limit) : 1,
+                startCursor,
+                endCursor,
+                hasNext,
+                hasPrev,
             },
         };
     }

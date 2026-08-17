@@ -499,6 +499,7 @@ export default {
       _pendingBackfillSlots: [], // unused (kept for HMR safety)
       _backfillTimer: null,
       _backfillBusy: false,
+      _hopBusy: false,
       _deleteAnimMs: 750,
     };
   },
@@ -1096,8 +1097,56 @@ export default {
       }
     },
     paginationPageChange(page) {
-      this.currentPage = page;
-      this.paginationUpdate();
+      if (!this.queryMode) {
+        this.currentPage = page;
+        this.paginationUpdate();
+        return;
+      }
+      // Keyset navigation. Clickable targets from Pagination.vue are: First (1),
+      // Last (pages), neighbours (±1), and — near list ends — a number ±2 away.
+      const pages = this.pages || 1;
+      const target = Math.min(Math.max(1, page), pages);
+      const from = this.currentPage;
+      if (target === from) return;
+
+      if (target === 1) {
+        this.currentPage = 1;
+        this.fetchQueryPage({nav: {}});
+      } else if (target === pages) {
+        this.currentPage = pages;
+        this.fetchQueryPage({nav: {fromEnd: true}});
+      } else if (target === from + 1) {
+        this.currentPage = target;
+        this.fetchQueryPage({nav: {after: this.queryMeta.endCursor}});
+      } else if (target === from - 1) {
+        this.currentPage = target;
+        this.fetchQueryPage({nav: {before: this.queryMeta.startCursor}});
+      } else {
+        // Non-neighbour jump (e.g. window [1,2,3] at the edges): hop one page at a
+        // time via cursors. Keyset has no "page N" address, so we step.
+        this.hopToPage(target);
+      }
+    },
+    async hopToPage(target) {
+      if (this._hopBusy) return;
+      this._hopBusy = true;
+      try {
+        let guard = 0;
+        while (this.currentPage !== target && guard++ < 200) {
+          const forward = target > this.currentPage;
+          if (forward && !this.queryMeta.hasNext) break;
+          if (!forward && !this.queryMeta.hasPrev) break;
+          const nav = forward
+            ? {after: this.queryMeta.endCursor}
+            : {before: this.queryMeta.startCursor};
+          this.currentPage += forward ? 1 : -1;
+          await this.fetchQueryPageAsync({nav});
+        }
+      } catch (err) {
+        console.warn("BackendTable hopToPage failed", err);
+      } finally {
+        this._hopBusy = false;
+      }
     },
     paginationUpdate() {
       if (this.serverSidePagination) {
@@ -1109,7 +1158,11 @@ export default {
         };
         this.$emit("paginationUpdate", payload);
         if (this.queryMode) {
-          this.fetchQueryPage();
+          // Sort / filter / page-size change the keyset: always restart from the first page.
+          // Otherwise currentPage stays e.g. 2 while fetchQueryPage() (empty nav) already
+          // loaded page 1 — clicking First then only changes the number, not the rows.
+          this.currentPage = 1;
+          this.fetchQueryPage({nav: {}});
         }
       }
     },
@@ -1258,38 +1311,40 @@ export default {
       this._staleHandler = null;
       this._pendingConnectFetch = null;
     },
-    buildQueryPayload() {
-      const page = this.currentPage - 1;
+    buildQueryPayload(nav = {}) {
       const limit = this.limit;
       const sort = this.sortColumn
         ? {column: this.sortColumn, direction: this.sortDirection}
         : {column: "id", direction: "ASC"};
+      const query = {limit, sort};
+      // Keyset navigation: absence of all three → first page.
+      if (nav.after) query.after = nav.after;
+      if (nav.before) query.before = nav.before;
+      if (nav.fromEnd) query.fromEnd = true;
       return {
         table: this.table,
         filter: this.queryFilter || [],
-        query: {
-          page,
-          limit,
-          sort,
-        },
+        query,
       };
     },
-    applyQueryResult(result, {highlightNewFrom = null} = {}) {
+    applyQueryResult(result, {highlightNewFrom = null, requestedNav = {}} = {}) {
       const items = (result.items || []).map((row) => this.applyEnrich(row));
       this.queryItems = items;
       this.queryMeta = result.meta || this.queryMeta;
       if (this.options?.pagination) {
         this.options.pagination.total = this.queryMeta.total;
       }
+      // Remember the cursors that produced THIS page, so delta refetch/backfill
+      // re-requests the exact same window (keyset boundary, not a page index).
       this.currentQuery = {
-        page: this.queryMeta.page,
         limit: this.queryMeta.pageSize,
         sort: {
           column: this.sortColumn || "id",
           direction: this.sortDirection || "ASC",
         },
-        search: this.search || "",
-        columnFilters: this.sequelizeFilter || {},
+        after: requestedNav.after || null,
+        before: requestedNav.before || null,
+        fromEnd: !!requestedNav.fromEnd,
       };
       this.pendingInserts = 0;
       this.anchorDisplacement = 0;
@@ -1336,8 +1391,9 @@ export default {
         }
         return;
       }
+      const nav = options.nav || {};
       this.queryLoading = true;
-      const payload = this.buildQueryPayload();
+      const payload = this.buildQueryPayload(nav);
       this.$socket.emit("queryTable", payload, (response) => {
         this.queryLoading = false;
         if (!response?.success) {
@@ -1348,6 +1404,7 @@ export default {
         try {
           this.applyQueryResult(response.data, {
             highlightNewFrom: options.highlightNewFrom || null,
+            requestedNav: nav,
           });
           if (typeof options.onApplied === "function") {
             options.onApplied(response.data);
@@ -1357,6 +1414,31 @@ export default {
           if (typeof options.onError === "function") options.onError(err);
         }
       });
+    },
+    /** Promise wrapper around fetchQueryPage for sequential keyset hops. */
+    fetchQueryPageAsync(options = {}) {
+      return new Promise((resolve, reject) => {
+        this.fetchQueryPage({
+          ...options,
+          onApplied: (data) => {
+            if (typeof options.onApplied === "function") options.onApplied(data);
+            resolve(data);
+          },
+          onError: (err) => {
+            if (typeof options.onError === "function") options.onError(err);
+            reject(err);
+          },
+        });
+      });
+    },
+    /** Current-page keyset window (used by delta refetch / backfill). */
+    currentNav() {
+      const q = this.currentQuery || {};
+      return {
+        after: q.after || undefined,
+        before: q.before || undefined,
+        fromEnd: q.fromEnd || undefined,
+      };
     },
     isOwnSocket(originSocketId) {
       return originSocketId && this.$socket?.id && originSocketId === this.$socket.id;
@@ -1502,7 +1584,6 @@ export default {
         return;
       }
 
-      const currentPage = this.currentQuery?.page ?? Math.max(0, this.currentPage - 1);
       const total = this.queryMeta?.total ?? 0;
       if (total <= remaining.length) {
         this.queryItems = remaining;
@@ -1513,8 +1594,15 @@ export default {
       this._backfillBusy = true;
       try {
         const visibleIds = new Set(remaining.map((i) => i.id));
-        // Re-query this page index: server slides following (next-page) rows in
-        const pageItems = await this.fetchPageItems(currentPage);
+        // Re-query the SAME keyset window: with rows gone, the server slides the
+        // following rows up into this cursor page. Refresh cursors from the result.
+        const {items: pageItems, meta} = await this.fetchCurrentPageItems();
+        if (meta) {
+          this.queryMeta.startCursor = meta.startCursor;
+          this.queryMeta.endCursor = meta.endCursor;
+          this.queryMeta.hasNext = meta.hasNext;
+          this.queryMeta.hasPrev = meta.hasPrev;
+        }
         const bottomFill = pageItems
           .filter((row) => !visibleIds.has(row.id))
           .slice(0, need);
@@ -1537,24 +1625,13 @@ export default {
         this._backfillBusy = false;
       }
     },
-    fetchPageItems(pageIndex) {
+    fetchCurrentPageItems() {
       return new Promise((resolve, reject) => {
         if (!this.$socket?.connected) {
           reject(new Error("socket not connected"));
           return;
         }
-        const sort = this.sortColumn
-          ? {column: this.sortColumn, direction: this.sortDirection}
-          : {column: "id", direction: "ASC"};
-        const payload = {
-          table: this.table,
-          filter: this.queryFilter || [],
-          query: {
-            page: pageIndex,
-            limit: this.currentQuery?.limit || this.limit,
-            sort,
-          },
-        };
+        const payload = this.buildQueryPayload(this.currentNav());
         const t = setTimeout(() => reject(new Error("queryTable timeout")), 15000);
         this.$socket.emit("queryTable", payload, (response) => {
           clearTimeout(t);
@@ -1563,7 +1640,7 @@ export default {
             return;
           }
           const items = (response.data?.items || []).map((row) => this.applyEnrich(row));
-          resolve(items);
+          resolve({items, meta: response.data?.meta || null});
         });
       });
     },
@@ -1619,7 +1696,7 @@ export default {
     handleStale(payload = {}) {
       this.$emit("stale", payload);
       if (this.isOwnSocket(payload.originSocketId)) {
-        this.fetchQueryPage();
+        this.fetchQueryPage({nav: this.currentNav()});
       } else {
         this.pendingStructural = true;
       }
@@ -1643,12 +1720,10 @@ export default {
           this.bumpTotal(-1);
         } else if (own) {
           this.bumpTotal(-1);
-        } else if (this.isAfterCurrentPage(row)) {
-          // Next / later pages → silent total bump (no banner)
-          this.bumpTotal(-1);
         } else {
-          // Previous page (before current) → banner
-          this.pendingStructural = true;
+          // Off-page (before or after the current keyset window): the window is
+          // anchored to row cursors, so out-of-window rows leaving don't shift our
+          // rows — just adjust the count, no banner.
           this.bumpTotal(-1);
         }
         return;
@@ -1679,13 +1754,13 @@ export default {
 
         if (currentIds.has(row.id)) {
           if (structural) {
-            this.showBannerOrApply(own, () => this.fetchQueryPage());
+            this.showBannerOrApply(own, () => this.fetchQueryPage({nav: this.currentNav()}));
           } else {
             this.replaceRow(row);
           }
         } else if (structural) {
           // Off-page row moved by sort/filter key → may enter this page
-          this.showBannerOrApply(own, () => this.fetchQueryPage());
+          this.showBannerOrApply(own, () => this.fetchQueryPage({nav: this.currentNav()}));
         }
         return;
       }
@@ -1700,16 +1775,17 @@ export default {
         }
 
         if (own) {
-          this.fetchQueryPage();
+          this.fetchQueryPage({nav: this.currentNav()});
           return;
         }
 
         if (this.isBeforeAnchor(row)) {
-          this.pendingInserts += 1;
-          this.anchorDisplacement += 1;
+          // Insert above the keyset window: our cursor keeps the same rows visible,
+          // so nothing shifts — just bump the count, no banner.
           this.bumpTotal(1);
         } else {
-          // on visible page (between anchor and last)
+          // Insert inside the current window (between anchor and last row) → it would
+          // push our last row out; offer a banner to reveal it.
           this.pendingInserts += 1;
           this.bumpTotal(1);
         }
@@ -1723,16 +1799,13 @@ export default {
       }
 
       const previousIds = new Set(this.queryItems.map((i) => i.id));
-      const limit = this.currentQuery.limit || this.limit;
-      const anchorPosition = this.currentQuery.page * limit;
-      const newAnchorPosition = anchorPosition + this.anchorDisplacement;
-      const newPage = Math.floor(newAnchorPosition / limit);
 
       this._pendingLoadBusy = true;
       this.pendingInserts = 0;
       this.anchorDisplacement = 0;
       this.pendingStructural = false;
-      this.currentPage = newPage + 1;
+      // Keyset window is anchored to a row cursor, not a page index: refetch the
+      // SAME window to reveal in-window changes. currentPage stays put.
       this.pendingLoadPhase = "out";
 
       const reduceMotion =
@@ -1759,6 +1832,7 @@ export default {
 
       // Fetch in parallel with fade-out so the row swap happens while dimmed.
       this.fetchQueryPage({
+        nav: this.currentNav(),
         highlightNewFrom: previousIds,
         onApplied: () => {
           const wait = Math.max(0, outMs - (Date.now() - startedAt));
