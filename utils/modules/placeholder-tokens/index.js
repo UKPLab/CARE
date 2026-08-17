@@ -2,7 +2,7 @@
  * Parse and format placeholder tokens in template text (~key~, ~key[N]~, ~key[N]{options}~).
  *
  * Placeholders in a template are written as tilded tokens in the editor text, for example
- * ~pdfText[1]~ or ~submissionFiles[2]{characterLimit:5000}~. That string is the placeholder
+ * ~pdfText[1]~ or ~submissionFiles[2]{wordRange:1-500}~. That string is the placeholder
  * token — it is not the placeholder definition row in the database.
  *
  * This module reads, builds, and substitutes those tokens in the template editor
@@ -15,19 +15,19 @@
 const PLACEHOLDER_TOKEN_REGEX = /~([A-Za-z0-9_]+)(?:\[(\d+)\])?(?:\{([^}]*)\})?~/g;
 
 /**
- * Parse comma-separated name:value pairs inside placeholder option braces.
+ * Walk comma-separated name:value pairs inside placeholder option braces.
  *
  * @param {string} optionsStr - Raw text inside `{...}`
- * @returns {Object} Map of option name to string value
+ * @param {Function} callback - `(name, value) => void`
+ * @returns {void}
  */
-function parseOptionsString(optionsStr) {
-    const options = {};
+function forEachOptionPart(optionsStr, callback) {
     if (!optionsStr || typeof optionsStr !== "string") {
-        return options;
+        return;
     }
     const trimmed = optionsStr.trim();
     if (!trimmed) {
-        return options;
+        return;
     }
     for (const part of trimmed.split(",")) {
         const segment = part.trim();
@@ -41,10 +41,66 @@ function parseOptionsString(optionsStr) {
         const name = segment.slice(0, colonIndex).trim();
         const value = segment.slice(colonIndex + 1).trim();
         if (name) {
-            options[name] = value;
+            callback(name, value);
         }
     }
+}
+
+/**
+ * Parse comma-separated name:value pairs inside placeholder option braces.
+ *
+ * @param {string} optionsStr - Raw text inside `{...}`
+ * @returns {Object} Map of option name to string value
+ */
+function parseOptionsString(optionsStr) {
+    const options = {};
+    forEachOptionPart(optionsStr, (name, value) => {
+        options[name] = value;
+    });
     return options;
+}
+
+/**
+ * Option names that appear more than once in `{...}` (parse keeps the last value).
+ *
+ * @param {string} optionsStr - Raw text inside `{...}`
+ * @returns {string[]} Duplicate names, first-seen order
+ */
+function getDuplicateOptionNames(optionsStr) {
+    const seen = new Set();
+    const duplicates = [];
+    forEachOptionPart(optionsStr, (name) => {
+        if (seen.has(name)) {
+            if (!duplicates.includes(name)) {
+                duplicates.push(name);
+            }
+            return;
+        }
+        seen.add(name);
+    });
+    return duplicates;
+}
+
+/**
+ * Full tokens whose `{...}` repeats an option name.
+ *
+ * @param {string} text - Template plain text
+ * @returns {string[]} Token strings e.g. ~pdfText[1]{wordRange:1,wordRange:500}~
+ */
+function getTokensWithDuplicateOptions(text) {
+    if (!text) {
+        return [];
+    }
+    const regex = new RegExp(PLACEHOLDER_TOKEN_REGEX.source, "g");
+    const tokens = [];
+    let match = regex.exec(text);
+    while (match) {
+        if (getDuplicateOptionNames(match[3] || "").length > 0) {
+            tokens.push(match[0]);
+        }
+        match = regex.exec(text);
+    }
+    return tokens;
 }
 
 /**
@@ -73,7 +129,7 @@ function formatOptionsString(options) {
  * Parse capture groups from PLACEHOLDER_TOKEN_REGEX exec result.
  *
  * @param {RegExpExecArray} match - Regex exec result
- * @returns {Object} Parsed placeholder token
+ * @returns {Object} `{ baseKey, index, options }` (`index` is null when the token has no `[N]`)
  */
 function parsePlaceholderMatch(match) {
     if (!match || !match[1]) {
@@ -100,13 +156,144 @@ function isPositiveIntegerOptionValue(value) {
     return Number.isInteger(parsed) && parsed > 0 && String(parsed) === String(value).trim();
 }
 
+/** Placeholder keys that support wordRange / pageRange token options. */
+const RANGE_LIMIT_PLACEHOLDER_KEYS = ["pdfText", "submissionFiles", "editorText"];
+
+/**
+ * Whether `baseKey` is `pdfText`, `submissionFiles`, or `editorText` (those keys call `applyTextRangeLimit`).
+ *
+ * @param {string} baseKey - Placeholder key
+ * @returns {boolean}
+ */
+function supportsRangeLimit(baseKey) {
+    return RANGE_LIMIT_PLACEHOLDER_KEYS.includes(baseKey);
+}
+
+/**
+ * Parse a 1-based inclusive range. A single number N means 1–N (first N units).
+ *
+ * @param {string|number} value - Raw option value (`500` or `2-4`)
+ * @returns {{from: number, to: number}|null} Parsed range, or null when invalid
+ */
+function parsePositiveIntegerRange(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const trimmed = String(value).trim();
+    if (!trimmed) {
+        return null;
+    }
+    if (isPositiveIntegerOptionValue(trimmed)) {
+        const to = parseInt(trimmed, 10);
+        return { from: 1, to };
+    }
+    const match = /^(\d+)-(\d+)$/.exec(trimmed);
+    if (!match) {
+        return null;
+    }
+    const from = parseInt(match[1], 10);
+    const to = parseInt(match[2], 10);
+    if (from < 1 || to < from) {
+        return null;
+    }
+    return { from, to };
+}
+
+/**
+ * Whether an option value is a valid positive integer range string.
+ *
+ * @param {string} value - Raw option value
+ * @returns {boolean}
+ */
+function isPositiveIntegerRangeOptionValue(value) {
+    return parsePositiveIntegerRange(value) != null;
+}
+
+/**
+ * Format from/to sidebar inputs as a range option string.
+ *
+ * A lone `to` is stored as `N` (first N units). A lone `from` is stored as `N-N`.
+ *
+ * @param {string|number} fromRaw - Start (1-based), optional
+ * @param {string|number} toRaw - End (1-based), optional
+ * @returns {string} Range string, or empty when invalid
+ */
+function formatPositiveIntegerRange(fromRaw, toRaw) {
+    const fromText = fromRaw === undefined || fromRaw === null ? "" : String(fromRaw).trim();
+    const toText = toRaw === undefined || toRaw === null ? "" : String(toRaw).trim();
+    if (!fromText && isPositiveIntegerOptionValue(toText)) {
+        return toText;
+    }
+    if (isPositiveIntegerOptionValue(fromText) && !toText) {
+        return `${fromText}-${fromText}`;
+    }
+    if (isPositiveIntegerOptionValue(fromText) && isPositiveIntegerOptionValue(toText)) {
+        const from = parseInt(fromText, 10);
+        const to = parseInt(toText, 10);
+        if (to < from) {
+            return "";
+        }
+        if (from === 1) {
+            return String(to);
+        }
+        return `${from}-${to}`;
+    }
+    return "";
+}
+
+/**
+ * Page texts from a resolved placeholder value (string or `{ pages }`).
+ *
+ * @param {*} value - Resolved value
+ * @returns {string[]}
+ */
+function pagesFromPlaceholderValue(value) {
+    if (value && typeof value === "object" && Array.isArray(value.pages)) {
+        return value.pages.map((page) => (typeof page === "string" ? page : String(page ?? "")));
+    }
+    if (typeof value === "string") {
+        return value ? [value] : [];
+    }
+    if (value === undefined || value === null) {
+        return [];
+    }
+    try {
+        return [JSON.stringify(value)];
+    } catch (_error) {
+        return [String(value)];
+    }
+}
+
+/**
+ * Apply optional wordRange / pageRange from a token instance.
+ * When both are set, pages are sliced first, then words on that text.
+ *
+ * @param {*} value - Resolved string or `{ pages, pageCount }`
+ * @param {Object} [tokenOptions] - Parsed token options
+ * @returns {string}
+ */
+function applyTextRangeLimit(value, tokenOptions = {}) {
+    let pages = pagesFromPlaceholderValue(value);
+    const pageRange = parsePositiveIntegerRange(tokenOptions.pageRange);
+    if (pageRange) {
+        pages = pages.slice(pageRange.from - 1, pageRange.to);
+    }
+    const text = pages.join("\n");
+    const wordRange = parsePositiveIntegerRange(tokenOptions.wordRange);
+    if (!wordRange) {
+        return text;
+    }
+    const words = text.trim() ? text.trim().split(/\s+/) : [];
+    return words.slice(wordRange.from - 1, wordRange.to).join(" ");
+}
+
 /**
  * Format a bracket-indexed placeholder token.
  *
  * @param {string} baseKey - Placeholder key without tildes
  * @param {number} index - Placeholder index
  * @param {Object} [options] - Optional name/value map written inside `{...}`
- * @returns {string} Token string e.g. ~link[3]{characterLimit:5000}~
+ * @returns {string} Token string e.g. ~link[3]{wordRange:1-500}~
  */
 function formatPlaceholderToken(baseKey, index, options) {
     const optionsPart = formatOptionsString(options);
@@ -268,6 +455,8 @@ function formatDuplicatePlaceholderToken(entry) {
 /**
  * Replace placeholder tokens using a resolver callback.
  *
+ * Non-null values are converted with `String(value)`.
+ *
  * @param {string} text - Input text
  * @param {Function} resolveValue - Resolver `(baseKey, index, options) => value`
  * @returns {string} Text with placeholders replaced
@@ -290,10 +479,19 @@ function applyPlaceholderReplacements(text, resolveValue) {
 
 module.exports = {
     PLACEHOLDER_TOKEN_REGEX,
+    RANGE_LIMIT_PLACEHOLDER_KEYS,
     parseOptionsString,
+    getDuplicateOptionNames,
+    getTokensWithDuplicateOptions,
     formatOptionsString,
     parsePlaceholderMatch,
     isPositiveIntegerOptionValue,
+    supportsRangeLimit,
+    parsePositiveIntegerRange,
+    isPositiveIntegerRangeOptionValue,
+    formatPositiveIntegerRange,
+    pagesFromPlaceholderValue,
+    applyTextRangeLimit,
     formatPlaceholderToken,
     tokenInnerText,
     getUsedIndexes,
