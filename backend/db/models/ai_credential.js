@@ -19,7 +19,6 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Soft-delete linked models (and their shares / budgets / hook links).
-         * Uses individualHooks so GlobalChangeTrackingPlugin fills transaction.changes.
          *
          * @param {Object} credential Soft-deleted credential instance.
          * @param {Object} options Sequelize hook options (transaction + context).
@@ -40,6 +39,9 @@ module.exports = (sequelize, DataTypes) => {
                 return;
             }
 
+            // lazy: bulk Model.update, not a deleteById loop — one query per child table.
+            // individualHooks still fills transaction.changes. Switch to deleteById if a
+            // child table later needs MetaModel-only updateById (field whitelist, cache).
             await db.ai_model.update(
                 {deleted: true, deletedAt: new Date()},
                 {
