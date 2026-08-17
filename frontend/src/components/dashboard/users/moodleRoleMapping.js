@@ -1,8 +1,8 @@
-export function splitMoodleRoles(roles) {
+export function splitExternalRoles(roles) {
   return roles ? roles.split(",").map((role) => role.trim()).filter(Boolean) : [];
 }
 
-export function formatMoodleRole(role) {
+export function formatExternalRole(role) {
   const matches = [...role.matchAll(/\{mlang\s+[^}]+}([^{}]*)\{mlang}/gi)]
     .map((match) => match[1].trim())
     .filter(Boolean);
@@ -12,22 +12,22 @@ export function formatMoodleRole(role) {
   return role.replace(/\{[^}]*}/g, "").replace(/\s+/g, " ").trim() || role;
 }
 
-export function getMoodleRoleRows(users) {
+export function getRoleRows(users) {
   const roles = new Map();
   users.forEach((user) => {
-    splitMoodleRoles(user.roles).forEach((role) => {
+    splitExternalRoles(user.roles).forEach((role) => {
       roles.set(role, (roles.get(role) || 0) + 1);
     });
   });
   return Array.from(roles, ([raw, count]) => ({
     raw,
     count,
-    label: formatMoodleRole(raw),
+    label: formatExternalRole(raw),
   })).sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export function buildInitialRoleMappings(users, currentMappings = {}) {
-  return getMoodleRoleRows(users).reduce((mappings, role) => {
+  return getRoleRows(users).reduce((mappings, role) => {
     if (Object.prototype.hasOwnProperty.call(currentMappings, role.raw)) {
       mappings[role.raw] = currentMappings[role.raw];
     }
