@@ -85,11 +85,12 @@
         </template>
       </div>
 
-      <MoodleRoleMappingStep
+      <RoleMappingStep
         v-if="step.key === 'roleMapping'"
         v-model="roleMappings"
         :users="users"
         :system-roles="systemRoles"
+        :source-label="importSourceLabel"
       />
 
       <div
@@ -170,8 +171,8 @@ import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import MoodleRoleMappingStep from "@/components/dashboard/users/MoodleRoleMappingStep.vue";
-import { buildInitialRoleMappings, getMoodleRoleRows } from "@/components/dashboard/users/moodleRoleMapping.js";
+import RoleMappingStep from "@/components/dashboard/users/RoleMappingStep.vue";
+import { buildInitialRoleMappings, getRoleRows } from "@/components/dashboard/users/moodleRoleMapping.js";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -179,7 +180,7 @@ import { buildInitialRoleMappings, getMoodleRoleRows } from "@/components/dashbo
  */
 export default {
   name: "ImportModal",
-  components: { MoodleRoleMappingStep, MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
+  components: { RoleMappingStep, MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
   emits: ["updateUser"],
   data() {
     return {
@@ -232,10 +233,13 @@ export default {
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"] || [];
     },
-    moodleRoleRows() {
-      return getMoodleRoleRows(this.users);
+    importSourceLabel() {
+      return this.importType === "csv" ? "CSV" : "Moodle";
     },
-    moodleCareRoleMap() {
+    roleRows() {
+      return getRoleRows(this.users);
+    },
+    careRoleMap() {
       return Object.fromEntries(
         Object.entries(this.roleMappings).filter(([, careRole]) => careRole)
       );
@@ -253,19 +257,15 @@ export default {
         { key: "confirm", title: "Confirm" },
         { key: "result", title: "Result" },
       ];
-      if (this.importType === "moodle") {
-        return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
-      }
-      return [sourceStep, ...commonSteps];
+      return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
     },
     stepValid() {
-      if (this.importType === "csv") {
-        return [this.file.name !== "" && this.file.errors.length < 1, this.selectedUsers.length > 0, true, true];
-      }
-
       const { courseID, apiUrl, apiKey } = this.moodleOptions;
-      const hasRoleMappings = this.moodleRoleRows.every((role) => Object.prototype.hasOwnProperty.call(this.roleMappings, role.raw));
-      return [courseID && apiUrl && apiKey, hasRoleMappings, this.selectedUsers.length > 0, true, true];
+      const sourceIsValid = this.importType === "csv"
+        ? this.file.name !== "" && this.file.errors.length < 1
+        : courseID && apiUrl && apiKey;
+      const hasRoleMappings = this.roleRows.every((role) => Object.prototype.hasOwnProperty.call(this.roleMappings, role.raw));
+      return [sourceIsValid, hasRoleMappings, this.selectedUsers.length > 0, true, true];
     },
   },
   methods: {
@@ -344,7 +344,12 @@ export default {
       const stepKey = this.steps[step]?.key;
       switch (stepKey) {
         case "roleMapping":
-          this.prepareUserImport();
+          if (this.importType === "moodle") {
+            this.prepareUserImport();
+          } else {
+            this.initializeRoleMappings();
+            this.$refs.importStepper?.setWaiting(false);
+          }
           break;
         case "preview":
           if (this.importType === "csv") {
@@ -389,7 +394,7 @@ export default {
     executeUserImport() {
       const userData = {
         users: this.selectedUsers,
-        moodleCareRoleMap: this.importType === "moodle" ? this.moodleCareRoleMap : null,
+        roleMap: this.careRoleMap,
         progressId: this.$refs.importStepper.getProgressId(),
       };
       this.$refs.importStepper.startProgress();
@@ -483,6 +488,8 @@ export default {
         try {
           const parsingResults = await this.validateCSV(file);
           this.users = parsingResults;
+          this.selectedUsers = [];
+          this.roleMappings = buildInitialRoleMappings(parsingResults, this.roleMappings);
           this.file = {
             state: 1,
             name: file.name,
@@ -509,10 +516,15 @@ export default {
         state: 0,
         name: "",
         size: 0,
+        errors: [],
       };
+      this.users = [];
+      this.selectedUsers = [];
+      this.roleMappings = {};
       this.$refs.fileInput.value = "";
     },
     checkDuplicateUsers() {
+      this.selectedUsers = [];
       this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
         this.$refs.importStepper?.setWaiting(false);
         if (res.success) {
