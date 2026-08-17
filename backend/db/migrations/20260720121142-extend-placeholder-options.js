@@ -2,13 +2,29 @@
 
 /** @type {import('sequelize-cli').Migration} */
 
-const pdfTextPlaceholderOptions = [
-  {
-    name: 'characterLimit',
-    label: 'Character limit',
-    valueType: 'positiveInteger',
-  },
-];
+const wordRangeOption = {
+  name: 'wordRange',
+  label: 'Word range',
+  valueType: 'positiveIntegerRange',
+};
+
+const pageRangeOption = {
+  name: 'pageRange',
+  label: 'Page range',
+  valueType: 'positiveIntegerRange',
+};
+
+const optionsByPlaceholderKey = {
+  pdfText: [wordRangeOption, pageRangeOption],
+  submissionFiles: [wordRangeOption, pageRangeOption],
+  editorText: [wordRangeOption],
+};
+
+function optionsLiteral(Sequelize, options) {
+  return Sequelize.literal(
+    `'${JSON.stringify(options).replace(/'/g, "''")}'::jsonb`
+  );
+}
 
 module.exports = {
   async up(queryInterface, Sequelize) {
@@ -21,30 +37,30 @@ module.exports = {
       });
     }
 
-    const placeholderOptionsJson = Sequelize.literal(
-      `'${JSON.stringify(pdfTextPlaceholderOptions).replace(/'/g, "''")}'::jsonb`
-    );
-
-    await queryInterface.bulkUpdate(
-      'placeholder',
-      { placeholderOptions: placeholderOptionsJson },
-      {
-        type: 8,
-        placeholderKey: 'pdfText',
-        deleted: false,
-      }
-    );
+    for (const [placeholderKey, options] of Object.entries(optionsByPlaceholderKey)) {
+      await queryInterface.bulkUpdate(
+        'placeholder',
+        { placeholderOptions: optionsLiteral(Sequelize, options) },
+        {
+          type: 8,
+          placeholderKey,
+          deleted: false,
+        }
+      );
+    }
   },
 
-  async down(queryInterface, Sequelize) {
-    await queryInterface.bulkUpdate(
-      'placeholder',
-      { placeholderOptions: null },
-      {
-        type: 8,
-        placeholderKey: 'pdfText',
-      }
-    );
+  async down(queryInterface) {
+    for (const placeholderKey of Object.keys(optionsByPlaceholderKey)) {
+      await queryInterface.bulkUpdate(
+        'placeholder',
+        { placeholderOptions: null },
+        {
+          type: 8,
+          placeholderKey,
+        }
+      );
+    }
 
     await queryInterface.removeColumn('placeholder', 'placeholderOptions');
   },
