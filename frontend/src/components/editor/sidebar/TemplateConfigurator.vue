@@ -73,12 +73,30 @@
                             v-for="optionDef in placeholder.placeholderOptions"
                             :key="optionDef.name"
                             :value="optionDef.name"
+                            :disabled="isOptionDisabled(placeholder, optionDef.name, rowIndex)"
                           >
                             {{ optionDef.label }}
                           </option>
                         </select>
+                        <template v-if="isRangeOption(placeholder, row.name)">
+                          <input
+                            v-model="row.from"
+                            type="number"
+                            min="1"
+                            class="form-control form-control-sm option-input"
+                            placeholder="From"
+                          >
+                          <span class="text-muted">–</span>
+                          <input
+                            v-model="row.to"
+                            type="number"
+                            min="1"
+                            class="form-control form-control-sm option-input"
+                            placeholder="To"
+                          >
+                        </template>
                         <input
-                          v-if="row.name"
+                          v-else-if="row.name"
                           v-model="row.value"
                           type="number"
                           min="1"
@@ -125,9 +143,12 @@
     countPlaceholdersByKey,
     formatDuplicatePlaceholderToken,
     formatPlaceholderToken,
+    formatPositiveIntegerRange,
     getDuplicatePlaceholderIndexes,
+    getDuplicateOptionNames,
     getNextPlaceholderIndex,
     isPositiveIntegerOptionValue,
+    isPositiveIntegerRangeOptionValue,
     parsePlaceholderMatch,
     PLACEHOLDER_TOKEN_REGEX,
   } from "placeholder-tokens";
@@ -260,31 +281,100 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      /**
+       * Whether this placeholder has a non-empty `placeholderOptions` list from the database.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @returns {boolean}
+       */
       hasPlaceholderOptions(placeholder) {
         return Array.isArray(placeholder.placeholderOptions) && placeholder.placeholderOptions.length > 0;
       },
+      /**
+       * Pending option rows for a placeholder key (creates an empty list if none).
+       *
+       * @param {string} placeholderKey - Placeholder key (`placeholder.id`)
+       * @returns {Array} Rows with `name`, `value`, `from`, `to`
+       */
       getPendingOptionRows(placeholderKey) {
         if (!this.pendingOptionRowsByKey[placeholderKey]) {
           this.pendingOptionRowsByKey[placeholderKey] = [];
         }
         return this.pendingOptionRowsByKey[placeholderKey];
       },
+      /**
+       * Append an empty option row for the placeholder.
+       *
+       * @param {string} placeholderKey - Placeholder key
+       * @returns {void}
+       */
       addOptionRow(placeholderKey) {
         const rows = this.getPendingOptionRows(placeholderKey);
-        rows.push({ name: "", value: "" });
+        rows.push({ name: "", value: "", from: "", to: "" });
       },
+      /**
+       * Remove one pending option row and clear insert notices.
+       *
+       * @param {string} placeholderKey - Placeholder key
+       * @param {number} rowIndex - Index in the pending-row list
+       * @returns {void}
+       */
       removeOptionRow(placeholderKey, rowIndex) {
         const rows = this.getPendingOptionRows(placeholderKey);
         rows.splice(rowIndex, 1);
         this.optionApplyWarnings = [];
       },
+      /**
+       * Whether the named option uses From/To inputs (`valueType` is `positiveIntegerRange`).
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @param {string} optionName - Option name
+       * @returns {boolean}
+       */
+      isRangeOption(placeholder, optionName) {
+        const optionDef = this.getOptionDef(placeholder, optionName);
+        return optionDef?.valueType === "positiveIntegerRange";
+      },
+      /**
+       * Whether this option name is already selected on another pending row.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @param {string} optionName - Option name
+       * @param {number} currentRowIndex - Row that owns the dropdown
+       * @returns {boolean}
+       */
+      isOptionDisabled(placeholder, optionName, currentRowIndex) {
+        const rows = this.getPendingOptionRows(placeholder.id);
+        return rows.some((row, index) => index !== currentRowIndex && row.name === optionName);
+      },
+      /**
+       * Display label for an option name, or the name if no definition exists.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @param {string} optionName - Option name
+       * @returns {string}
+       */
       getOptionLabel(placeholder, optionName) {
         const optionDef = (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
         return optionDef ? optionDef.label : optionName;
       },
+      /**
+       * Option definition for `optionName` on this placeholder, or undefined.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @param {string} optionName - Option name
+       * @returns {Object|undefined}
+       */
       getOptionDef(placeholder, optionName) {
         return (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
       },
+      /**
+       * Whether `value` matches the option's `valueType`.
+       *
+       * @param {Object} optionDef - Option definition
+       * @param {string} value - Formatted option value
+       * @returns {boolean}
+       */
       isValidOptionValue(optionDef, value) {
         if (!optionDef) {
           return false;
@@ -292,8 +382,17 @@
         if (optionDef.valueType === "positiveInteger") {
           return isPositiveIntegerOptionValue(value);
         }
+        if (optionDef.valueType === "positiveIntegerRange") {
+          return isPositiveIntegerRangeOptionValue(value);
+        }
         return value !== undefined && value !== null && String(value).trim() !== "";
       },
+      /**
+       * Build the option map for insert from pending rows. Duplicate names keep the first row.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @returns {Object} `{ selectedOptions, applyWarnings }`
+       */
       collectSelectedOptions(placeholder) {
         const rows = this.getPendingOptionRows(placeholder.id);
         const selectedOptions = {};
@@ -301,7 +400,11 @@
 
         rows.forEach((row) => {
           if (!row.name) {
-            if (row.value !== "" && row.value != null) {
+            if (
+              (row.value !== "" && row.value != null)
+              || (row.from !== "" && row.from != null)
+              || (row.to !== "" && row.to != null)
+            ) {
               applyWarnings.push("A value was entered but no option was selected, so it was not included.");
             }
             return;
@@ -311,26 +414,45 @@
             applyWarnings.push(`Unknown option for ${placeholder.label}, so it was not included.`);
             return;
           }
-          if (!this.isValidOptionValue(optionDef, row.value)) {
-            if (row.value === "" || row.value == null) {
+          const optionValue = optionDef.valueType === "positiveIntegerRange"
+            ? formatPositiveIntegerRange(row.from, row.to)
+            : (row.value === undefined || row.value === null ? "" : String(row.value).trim());
+          if (!this.isValidOptionValue(optionDef, optionValue)) {
+            if (!optionValue) {
               applyWarnings.push(`${optionDef.label} was not included (no value entered).`);
             } else {
               applyWarnings.push(`${optionDef.label} was not included (invalid value).`);
             }
             return;
           }
-          selectedOptions[row.name] = String(row.value).trim();
+          if (Object.prototype.hasOwnProperty.call(selectedOptions, row.name)) {
+            applyWarnings.push(`${optionDef.label} was already set, so the later row was not included.`);
+            return;
+          }
+          selectedOptions[row.name] = optionValue;
         });
 
         return { selectedOptions, applyWarnings };
       },
-      validateTokenOptions(parsed, tokenText) {
+      /**
+       * Validate option names and values on a parsed token (including typed duplicates).
+       *
+       * @param {Object} parsed - Result of parsePlaceholderMatch
+       * @param {string} tokenText - Full token string for error text
+       * @param {string} [optionsStr] - Raw text inside `{...}`
+       * @returns {string[]} Error strings
+       */
+      validateTokenOptions(parsed, tokenText, optionsStr) {
         const placeholderDef = this.placeholderDefsByKey[parsed.baseKey];
         const allowedOptions = placeholderDef?.placeholderOptions || [];
         const allowedByName = Object.fromEntries(
           allowedOptions.map((entry) => [entry.name, entry])
         );
         const errors = [];
+
+        for (const name of getDuplicateOptionNames(optionsStr)) {
+          errors.push(`${tokenText} (duplicate option "${name}")`);
+        }
 
         for (const [name, value] of Object.entries(parsed.options || {})) {
           const optionDef = allowedByName[name];
@@ -345,6 +467,12 @@
 
         return errors;
       },
+      /**
+       * Tooltip text from `longDescriptions` for this template type and key, or `placeholder.description`.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @returns {string}
+       */
       getPlaceholderHelp(placeholder) {
         const type = this.templateType;
         const key = placeholder.id;
@@ -381,10 +509,12 @@
           8: { // Prompt
             pdfText:
               "Add inserts ~pdfText[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Full text extracted from a PDF. Optional Character limit truncates retrieved text for that token only; leave it empty for the full extract.",
+              "Full text extracted from a PDF. Optional Word range and Page range can be used together: pages are applied first, then words. " +
+              "One number means first N units (page 2 only is From 2 To 2). Leave empty for the full extract.",
             editorText:
               "Add inserts ~editorText[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
               "Latest plain text from an HTML/modal editor document (delta plus unsaved draft edits). " +
+              "Optional Word range limits retrieved text for that token only; leave it empty for the full extract. " +
               "When resolving during step load in the same pass as NLP insertIntoEditor, pass context.editorText explicitly so the value matches what the user sees.",
             assessmentResult:
               "Add inserts ~assessmentResult[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
@@ -408,7 +538,8 @@
               "Use when the prompt needs the rubric definition, not filled scores.",
             submissionFiles:
               "Add inserts ~submissionFiles[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Text extracted from a mapped submission file (PDF, TeX, etc.).",
+              "Text extracted from a mapped submission file (PDF, TeX, etc.). Optional Word range and Page range can be used together: pages first, then words. " +
+              "Page range uses PDF.js pages when the mapped file is a PDF; a TeX/zip file is treated as one page.",
             studyContext:
               "Add inserts ~studyContext[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
               "Study, step, and document metadata. " +
@@ -418,6 +549,11 @@
 
         return (longDescriptions[type] && longDescriptions[type][key]) || placeholder.description;
       },
+      /**
+       * Reset per-placeholder insert counts to 0.
+       *
+       * @returns {void}
+       */
       initializePlaceholderCounts() {
         const counts = {};
         this.availablePlaceholders.forEach(placeholder => {
@@ -425,6 +561,12 @@
         });
         this.placeholderCounts = counts;
       },
+      /**
+       * Count `~key[N]~` (and unbracketed `~key~` except on type 8) in editor content.
+       *
+       * @param {string} editorContent - Current template editor text
+       * @returns {void}
+       */
       updatePlaceholderCounts(editorContent) {
         this.initializePlaceholderCounts();
 
@@ -437,6 +579,13 @@
           this.placeholderCounts[placeholder.id] = countsByKey[placeholder.id] || 0;
         });
       },
+      /**
+       * Mark unknown keys, type-8 tokens without `[N]`, bad option values, and duplicate option names.
+       * Also lists duplicate `~key[N]~` ids in `duplicatePlaceholders`.
+       *
+       * @param {string} editorContent - Current template editor text
+       * @returns {void}
+       */
       validatePlaceholders(editorContent) {
         if (!editorContent || !this.templateType) {
           this.invalidPlaceholders = [];
@@ -462,7 +611,7 @@
             invalid.push(match[0]);
             continue;
           }
-          invalid.push(...this.validateTokenOptions(parsed, match[0]));
+          invalid.push(...this.validateTokenOptions(parsed, match[0], match[3]));
         }
 
         this.invalidPlaceholders = [...new Set(invalid)];
@@ -470,6 +619,12 @@
           .filter((entry) => allowedKeys.has(entry.key))
           .map((entry) => formatDuplicatePlaceholderToken(entry));
       },
+      /**
+       * Insert `~key[N]{options}~` at the next index and clear pending option rows.
+       *
+       * @param {Object} placeholder - Sidebar placeholder
+       * @returns {void}
+       */
       handlePlaceholderClick(placeholder) {
         const { selectedOptions, applyWarnings } = this.collectSelectedOptions(placeholder);
         this.optionApplyWarnings = [...new Set(applyWarnings)];
@@ -536,6 +691,6 @@
   }
 
   .option-input {
-    max-width: 8rem;
+    max-width: 5.5rem;
   }
   </style>
