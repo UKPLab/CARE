@@ -43,16 +43,6 @@ function asObject(value) {
 }
 
 /**
- * Extract transaction options for Sequelize calls.
- *
- * @param {Object} options Trigger runtime options
- * @returns {Object}
- */
-function transactionOptions(options = {}) {
-    return options.transaction ? { transaction: options.transaction } : {};
-}
-
-/**
  * Build includes for trigger event/action catalog rows.
  *
  * @param {Object} models Sequelize models
@@ -91,11 +81,10 @@ async function buildEventContext(server, eventName, context, options = {}) {
  */
 async function buildSubmissionUploadContext(server, context, options = {}) {
     const models = server.db.models;
-    const queryOptions = transactionOptions(options);
     const next = { ...context };
 
     if (next.submissionId && (next.assignmentId == null || next.userId == null)) {
-        const submission = await models["submission"].getById(next.submissionId, queryOptions);
+        const submission = await models["submission"].getById(next.submissionId, { transaction: options.transaction });
         if (submission) {
             next.assignmentId = next.assignmentId ?? submission.assignmentId;
             next.userId = next.userId ?? submission.userId;
@@ -104,7 +93,7 @@ async function buildSubmissionUploadContext(server, context, options = {}) {
     }
 
     if (next.assignmentId && (!next.assignmentName || next.projectId == null)) {
-        const assignment = await models["assignment"].getById(next.assignmentId, queryOptions);
+        const assignment = await models["assignment"].getById(next.assignmentId, { transaction: options.transaction });
         if (assignment) {
             next.assignmentName = next.assignmentName ?? assignment.name;
             next.projectId = next.projectId ?? assignment.projectId;
@@ -170,7 +159,7 @@ async function findMatchingTriggers(server, eventName, context, options = {}) {
         ),
         raw: true,
         nest: true,
-        ...transactionOptions(options),
+        transaction: options.transaction,
     });
 
     return triggers.filter((trigger) => matchesTrigger(trigger, eventName, context));
@@ -191,7 +180,7 @@ async function getTriggerWithCatalog(server, triggerId, options = {}) {
         include: triggerCatalogInclude(models),
         raw: true,
         nest: true,
-        ...transactionOptions(options),
+        transaction: options.transaction,
     });
 }
 
@@ -207,7 +196,6 @@ async function getTriggerWithCatalog(server, triggerId, options = {}) {
 async function createQueueItem(server, trigger, context, options = {}) {
     const model = server.db.models[QUEUE_TABLE];
     if (!model) return null;
-
     const item = await model.add({
         triggerId: trigger.id,
         status: QUEUE_STATUS.PENDING,
