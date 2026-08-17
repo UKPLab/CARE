@@ -2,15 +2,8 @@
 
 const { resolveTemplate } = require("../../utils/helper/templateResolver");
 const {buildStudyHookKey} = require("../../utils/studyNlpDocumentData");
+const { QUEUE_STATUS } = require("../../utils/triggerQueueStatus");
 const aiHook = require("./ai/hook");
-
-const QUEUE_STATUS = {
-    PENDING: 0,
-    RUNNING: 1,
-    COMPLETED: 2,
-    CANCELLED: 3,
-    FAILED: 4,
-};
 
 const HANDLERS = {
     send_email: sendEmail,

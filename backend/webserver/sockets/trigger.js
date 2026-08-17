@@ -1,23 +1,7 @@
 "use strict";
 const Socket = require("../Socket.js");
 const triggerHandlers = require("../services/triggerHandlers.js");
-
-const QUEUE_STATUSES = [
-    { name: "PENDING", value: 0, label: "Pending" },
-    { name: "RUNNING", value: 1, label: "Running" },
-    { name: "COMPLETED", value: 2, label: "Completed" },
-    { name: "CANCELLED", value: 3, label: "Cancelled" },
-    { name: "FAILED", value: 4, label: "Failed" },
-];
-const QUEUE_STATUS_BY_NAME = Object.fromEntries(QUEUE_STATUSES.map((s) => [s.name, s]));
-const QUEUE_STATUS_BY_VALUE = Object.fromEntries(QUEUE_STATUSES.map((s) => [s.value, s]));
-const QUEUE_STATUS = {
-    PENDING: QUEUE_STATUS_BY_NAME.PENDING.value,
-    RUNNING: QUEUE_STATUS_BY_NAME.RUNNING.value,
-    COMPLETED: QUEUE_STATUS_BY_NAME.COMPLETED.value,
-    CANCELLED: QUEUE_STATUS_BY_NAME.CANCELLED.value,
-    FAILED: QUEUE_STATUS_BY_NAME.FAILED.value,
-};
+const { QUEUE_STATUS, queueStatusLabel } = require("../../utils/triggerQueueStatus");
 
 /**
  * Handle trigger rules through websocket.
@@ -148,7 +132,7 @@ class TriggerSocket extends Socket {
             trigger: trigger || null,
             eventLabel,
             actionLabel,
-            statusLabel: this.#statusLabel(item.status),
+            statusLabel: queueStatusLabel(item.status),
         };
     }
 
@@ -230,10 +214,6 @@ class TriggerSocket extends Socket {
             },
             { transaction: options.transaction }
         );
-    }
-
-    #statusLabel(status) {
-        return QUEUE_STATUS_BY_VALUE[status]?.label ?? String(status);
     }
 
     init() {
