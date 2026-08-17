@@ -460,11 +460,6 @@ export default {
                 seenEmails.add(row.email);
               }
 
-              // Check if the values of the roles column are separated by comma
-              if (row.roles && !row.roles.includes(",") && row.roles.includes(" ")) {
-                errors.push(`Roles not comma-separated for id ${row.id} at index ${index + 1}`);
-              }
-
               // Check if the email is in a valid format
               if (!emailRegex.test(row.email)) {
                 errors.push(`Invalid email format for id ${row.id} at index ${index + 1}: ${row.email}`);
