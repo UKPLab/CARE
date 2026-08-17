@@ -6,17 +6,52 @@
     <div v-if="workflows.length === 0" class="text-muted fst-italic mb-3">
       No workflows found for this project.
     </div>
-    <div v-else class="d-flex justify-content-end gap-2 mb-2">
-      <BasicButton
-        class="btn btn-sm btn-outline-secondary"
-        title="Select All"
-        @click="selectAllWorkflows"
-      />
-      <BasicButton
-        class="btn btn-sm btn-outline-secondary"
-        title="Unselect All"
-        @click="unselectAllWorkflows"
-      />
+    <div v-else class="mb-3">
+      <label class="form-label d-block">Filter by Workflow</label>
+      <div class="dropdown d-inline-block">
+        <button
+          class="btn btn-outline-secondary dropdown-toggle text-start"
+          type="button"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+        >
+          {{ workflowDropdownLabel }}
+        </button>
+        <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;" @click.stop>
+          <li class="border-bottom mb-1">
+            <div class="dropdown-item">
+              <div class="form-check mb-0">
+                <input
+                  id="workflow-select-all"
+                  class="form-check-input"
+                  type="checkbox"
+                  :checked="allWorkflowsSelected"
+                  @change="toggleSelectAllWorkflows"
+                />
+                <label class="form-check-label fw-bold" for="workflow-select-all">
+                  Select All
+                </label>
+              </div>
+            </div>
+          </li>
+          <li v-for="wf in workflows" :key="wf.id">
+            <div class="dropdown-item">
+              <div class="form-check mb-0">
+                <input
+                  :id="'workflow-' + wf.id"
+                  class="form-check-input"
+                  type="checkbox"
+                  :checked="optionsData.selectedWorkflowIds.includes(wf.id)"
+                  @change="toggleWorkflow(wf.id)"
+                />
+                <label class="form-check-label" :for="'workflow-' + wf.id">
+                  {{ wf.name }}
+                </label>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
     </div>
     <BasicForm
       v-model="optionsData"
@@ -96,18 +131,17 @@ export default {
       const workflowIds = [...new Set(studies.map(s => s.workflowId).filter(Boolean))];
       return this.$store.getters["table/workflow/getFiltered"](w => workflowIds.includes(w.id));
     },
+    allWorkflowsSelected() {
+      return this.workflows.length > 0 && this.workflows.every(wf => this.optionsData.selectedWorkflowIds.includes(wf.id));
+    },
+    workflowDropdownLabel() {
+      const count = this.optionsData.selectedWorkflowIds.length;
+      if (count === 0) return "No workflows selected";
+      if (count === this.workflows.length) return "All workflows selected";
+      return `${count} of ${this.workflows.length} selected`;
+    },
     fields() {
       const formFields = [];
-
-      if (this.workflows.length > 0) {
-        formFields.push({
-          key: "selectedWorkflowIds",
-          label: "Filter by Workflow",
-          type: "checkbox",
-          help: "Select at least one workflow to include.",
-          options: this.workflows.map(wf => ({ label: wf.name, value: wf.id })),
-        });
-      }
 
       formFields.push(
         {
@@ -190,11 +224,18 @@ export default {
     }
   },
   methods: {
-    selectAllWorkflows() {
-      this.optionsData.selectedWorkflowIds = this.workflows.map(wf => wf.id);
-    },
-    unselectAllWorkflows() {
-      this.optionsData.selectedWorkflowIds = [];
+      toggleSelectAllWorkflows(event) {
+        this.optionsData.selectedWorkflowIds = event.target.checked
+          ? this.workflows.map(wf => wf.id)
+          : [];
+      },
+      toggleWorkflow(id) {
+        const idx = this.optionsData.selectedWorkflowIds.indexOf(id);
+        if (idx >= 0) {
+          this.optionsData.selectedWorkflowIds.splice(idx, 1);
+        } else {
+          this.optionsData.selectedWorkflowIds.push(id);
+        }
     }
   }
 }

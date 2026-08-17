@@ -125,12 +125,11 @@ export default {
         submissionsByUser[uid] = {
           userId: uid,
           userName: `${student.userName}`,
-          studentName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
+          fullName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
           count: 0,
           countedSubmissions: new Set(),
           acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
           acceptStatsSharing: student.acceptStats ? 'Yes' : 'No',
-          lastSubmissionDate: null,
           configurationName: this.gradeConfigurations[uid]?.ids?.length
             ? this.gradeConfigurations[uid].ids.join(", ")
             : "No configuration",
@@ -143,6 +142,14 @@ export default {
         return submissionsByUser[uid];
       };
 
+      const forEachUserRow = (items, getUserId, onRow) => {
+        items.forEach(item => {
+          const row = getOrCreateRow(getUserId(item));
+          if (!row) return;
+          onRow(row, item);
+        });
+      };
+
       if (this.exportType === 'submissions') {
         const submissionDocs = this.documents.filter(doc =>
           doc.projectId == this.projectId &&
@@ -150,15 +157,11 @@ export default {
           !doc.parentDocumentId &&
           !doc.deleted
         );
-        submissionDocs.forEach(doc => {
-          const row = getOrCreateRow(doc.userId);
-          if (!row) return;
+        forEachUserRow(submissionDocs, doc => doc.userId, (row, doc) => {
           if (!row.countedSubmissions.has(doc.submissionId)) {
             row.countedSubmissions.add(doc.submissionId);
             row.count++;
           }
-          const d = new Date(doc.createdAt);
-          if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
         });
       } else if (this.exportType === 'documents') {
         const exportableTypes = [0, 1, 2, 4];
@@ -168,33 +171,22 @@ export default {
           !doc.deleted &&
           exportableTypes.includes(doc.type)
         );
-        exportDocs.forEach(doc => {
-          const row = getOrCreateRow(doc.userId);
-          if (!row) return;
+        forEachUserRow(exportDocs, doc => doc.userId, (row) => {
           row.count++;
-          const d = new Date(doc.createdAt);
-          if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
         });
       } else if (this.exportType === 'studies') {
         const projectStudies = (this.studies || []).filter(s =>
           s.projectId == this.projectId && !s.deleted
         );
-        projectStudies.forEach(study => {
-          const row = getOrCreateRow(study.userId);
-          if (!row) return;
+        forEachUserRow(projectStudies, study => study.userId, (row) => {
           row.count++;
-          const d = new Date(study.createdAt);
-          if (!row.lastSubmissionDate || d > row.lastSubmissionDate) row.lastSubmissionDate = d;
         });
       } else if (this.exportType === 'grades') {
-        this.documentData.forEach(d => {
-          const doc = this.documents.find(doc => doc.id === d.documentId);
-          if (!doc || doc.projectId != this.projectId || doc.deleted) return;
-          const row = getOrCreateRow(doc.userId);
-          if (!row) return;
+        const gradeDocs = this.documentData
+          .map(d => this.documents.find(doc => doc.id === d.documentId))
+          .filter(doc => doc && doc.projectId == this.projectId && !doc.deleted);
+        forEachUserRow(gradeDocs, doc => doc.userId, (row) => {
           row.count++;
-          const dDate = new Date(d.createdAt);
-          if (!row.lastSubmissionDate || dDate > row.lastSubmissionDate) row.lastSubmissionDate = dDate;
         });
       } else if (this.exportType === 'userBehaviour') {
         this.users.forEach(user => {
@@ -205,9 +197,6 @@ export default {
       return Object.values(submissionsByUser).map(submission => ({
         ...submission,
         id: submission.userId,
-        lastSubmissionDate: submission.lastSubmissionDate
-          ? submission.lastSubmissionDate.toISOString().split('T')[0]
-          : '',
       }));
     },
     userTable() {
@@ -216,18 +205,6 @@ export default {
       ];
 
       if (this.exportType === 'userBehaviour') {
-        cols.push({
-          name: "Roles",
-          key: "userRoleNames",
-          sortable: true,
-          filter: [...new Set(this.userTableData.flatMap(row => row.userRoleIds))]
-              .sort((a, b) => a - b)
-              .map(id => ({
-                  key: id,
-                  name: `${id}: ${this.userRolesById.get(id)?.name ?? "Unknown"}`,
-              })),
-        });
-
         cols.push({
           name: "Accept Behaviour Sharing",
           key: "acceptStatsSharing",
@@ -241,6 +218,18 @@ export default {
         cols.push(getExportTypeColumn(this.exportType, this.userTableData, this.configurationsById));
       }
 
+      cols.push({
+        name: "Roles",
+        key: "userRoleNames",
+        sortable: true,
+        filter: [...new Set(this.userTableData.flatMap(row => row.userRoleIds))]
+            .sort((a, b) => a - b)
+            .map(id => ({
+                key: id,
+                name: `${id}: ${this.userRolesById.get(id)?.name ?? "Unknown"}`,
+            })),
+      });
+
       cols.push({ 
         name: "Accepted Data Sharing", 
         key: "acceptDataSharing", 
@@ -251,12 +240,8 @@ export default {
         ],
       });
 
-      if (this.exportType !== 'userBehaviour') {
-        cols.push({ name: "Last Submitted", key: "lastSubmissionDate", sortable: true });
-      }
-
       if (this.hasPrivateInfoRight) {
-        cols.splice(1, 0, { name: "Student Name", key: "studentName", sortable: true });
+        cols.splice(1, 0, { name: "Full Name", key: "fullName", sortable: true });
       }
 
       return {
@@ -315,8 +300,6 @@ export default {
       return this.$store.getters["table/user_role_matching/getAll"];
     },
     userRolesByUserId() {
-      if (this.exportType !== 'userBehaviour') return {};
-
       const roleIdsByUser = new Map();
       for (const match of this.userRoleMatchings) {
         if (match.deleted) continue;

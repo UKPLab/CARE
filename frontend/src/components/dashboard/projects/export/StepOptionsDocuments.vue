@@ -3,17 +3,23 @@
     <h6 class="mb-3 pb-2 border-bottom text-muted">
       Document Options
     </h6>
-    <div class="d-flex justify-content-end gap-2 mb-2">
-      <BasicButton
-        class="btn btn-sm btn-outline-secondary"
-        title="Select All"
-        @click="selectAllTypes"
-      />
-      <BasicButton
-        class="btn btn-sm btn-outline-secondary"
-        title="Unselect All"
-        @click="unselectAllTypes"
-      />
+    <div class="mb-3">
+      <label class="form-label mb-0 d-block">Document Types to Include</label>
+      <a href="#" class="link-secondary small d-inline-block mb-2" @click.prevent="toggleAllTypes">
+        {{ allTypesSelected ? 'Unselect All' : 'Select All' }}
+      </a>
+      <div v-for="opt in documentTypeOptions" :key="opt.value" class="form-check">
+        <input
+          :id="'doc-type-' + opt.value"
+          class="form-check-input"
+          type="checkbox"
+          :checked="optionsData.selectedTypes.includes(opt.value)"
+          @change="toggleType(opt.value)"
+        />
+        <label class="form-check-label" :for="'doc-type-' + opt.value">
+          {{ opt.label }}
+        </label>
+      </div>
     </div>
     <BasicForm
       v-model="optionsData"
@@ -24,7 +30,6 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
-import BasicButton from "@/basic/Button.vue";
 
 /**
  * StepOptionsDocuments
@@ -36,7 +41,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "StepOptionsDocuments",
-  components: { BasicForm, BasicButton },
+  components: { BasicForm },
   props: {
     selectedTypes: {
       type: Array,
@@ -62,6 +67,17 @@ export default {
     };
   },
   computed: {
+    documentTypeOptions() {
+      return [
+        { label: "PDF — Includes annotations and comments", value: 0 },
+        { label: "HTML — Includes edits, plain text and HTML", value: 1 },
+        { label: "Modal — Includes edits, plain text and HTML", value: 2 },
+        { label: "ZIP — Includes the zip file", value: 4 },
+      ];
+    },
+    allTypesSelected() {
+      return this.documentTypeOptions.every(opt => this.optionsData.selectedTypes.includes(opt.value));
+    },
     hasEditorTypes() {
       return this.optionsData.selectedTypes.some(t => t === 1 || t === 2);
     },
@@ -69,19 +85,7 @@ export default {
       return this.optionsData.selectedTypes.some(t => t === 0);
     },
     fields() {
-      const formFields = [
-        {
-          key: "selectedTypes",
-          label: "Document Types to Include",
-          type: "checkbox",
-          options: [
-            { label: "PDF — Includes annotations and comments", value: 0 },
-            { label: "HTML — Includes edits, plain text and HTML", value: 1 },
-            { label: "Modal — Includes edits, plain text and HTML", value: 2 },
-            { label: "ZIP — Includes the zip file", value: 4 },
-          ],
-        },
-      ];
+      const formFields = [];
 
       if (this.hasEditorTypes) {
         formFields.push({
@@ -127,11 +131,18 @@ export default {
     }
   },
   methods: {
-    selectAllTypes() {
-      this.optionsData.selectedTypes = this.fields.find(f => f.key === 'selectedTypes').options.map(o => o.value);
+    toggleAllTypes() {
+      this.optionsData.selectedTypes = this.allTypesSelected
+        ? []
+        : this.documentTypeOptions.map(opt => opt.value);
     },
-    unselectAllTypes() {
-      this.optionsData.selectedTypes = [];
+    toggleType(value) {
+      const idx = this.optionsData.selectedTypes.indexOf(value);
+      if (idx >= 0) {
+        this.optionsData.selectedTypes.splice(idx, 1);
+      } else {
+        this.optionsData.selectedTypes.push(value);
+      }
     }
   }
 }
