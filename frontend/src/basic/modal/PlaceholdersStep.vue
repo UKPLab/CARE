@@ -564,8 +564,8 @@ export default {
 }
 
 .placeholder-type {
-  background-color: var(--bs-secondary-color, #6c757d);
-  color: white;
+  background-color: var(--bs-secondary-bg, #6c757d);
+  color: var(--bs-body-color, white);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.7rem;

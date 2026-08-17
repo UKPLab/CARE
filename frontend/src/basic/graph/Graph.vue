@@ -411,7 +411,7 @@ export default {
   position: absolute;
   top: 100%;
   left: -75%;
-  background: white;
+  background: var(--bs-body-bg, white);
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);

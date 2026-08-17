@@ -131,7 +131,7 @@ export default {
 }
 
 .btn-outline-secondary:hover {
-  background-color: var(--bs-secondary-color, #6c757d);
+  background-color: var(--bs-secondary-bg, #6c757d);
   color: var(--bs-body-color, #fff);
 }
 </style>
