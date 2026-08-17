@@ -14,15 +14,17 @@ const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
 const {resolveNlpAssessmentDraft} = require("../studyNlpDocumentData");
 const {
     applyPlaceholderReplacements,
+    applyTextRangeLimit,
     countPlaceholdersByKey,
     formatDuplicatePlaceholderToken,
     getDuplicatePlaceholderIndexes,
+    getTokensWithDuplicateOptions,
     getUsedIndexes,
     hasPlaceholderForKey,
+    supportsRangeLimit,
     tokenInnerText,
 } = require("placeholder-tokens");
 const UPLOAD_PATH = `${__dirname}/../../files`;
-const TEXT_PLACEHOLDER_CHAR_CAP = 2000;
 
 /**
  * Extract plain text from Quill Delta operations
@@ -51,55 +53,21 @@ function textToDelta(text) {
 }
 
 /**
- * Cap text deterministically to a maximum number of characters.
- *
- * @param {string} text - Input text
- * @param {number} cap  - Max character count
- * @returns {string} Input truncated to at most cap characters
- */
-function capText(text, cap = TEXT_PLACEHOLDER_CHAR_CAP) {
-    if (typeof text !== "string") return "";
-    return text.length > cap ? text.slice(0, cap) : text;
-}
-
-/**
- * Apply optional characterLimit from a pdfText token instance.
- *
- * @param {string} text - Resolved pdfText value
- * @param {Object} [tokenOptions] - Parsed token options
- * @returns {string}
- */
-function applyPdfTextCharacterLimit(text, tokenOptions = {}) {
-    if (typeof text !== "string" || !text) {
-        return "";
-    }
-    const limitRaw = tokenOptions.characterLimit;
-    if (limitRaw === undefined || limitRaw === null || String(limitRaw).trim() === "") {
-        return text;
-    }
-    const limit = parseInt(String(limitRaw), 10);
-    if (!Number.isInteger(limit) || limit <= 0) {
-        return text;
-    }
-    return capText(text, limit);
-}
-
-/**
- * Resolve a placeholder token and apply per-instance options where supported.
+ * Resolve a placeholder token and apply per-instance range options where supported.
  *
  * @param {string} baseKey - Placeholder key
  * @param {number|null} index - Placeholder index
  * @param {Object} tokenOptions - Parsed token options
  * @param {Object} replacements - Replacement map
- * @returns {string|undefined}
+ * @returns {*|undefined} String from `applyTextRangeLimit` when `supportsRangeLimit(baseKey)`; otherwise the map value
  */
 function resolveTokenWithOptions(baseKey, index, tokenOptions, replacements) {
     const value = resolveReplacementForToken(baseKey, index, replacements);
     if (value === undefined) {
         return undefined;
     }
-    if (baseKey === "pdfText") {
-        return applyPdfTextCharacterLimit(value, tokenOptions);
+    if (supportsRangeLimit(baseKey)) {
+        return applyTextRangeLimit(value, tokenOptions);
     }
     return value;
 }
@@ -148,10 +116,10 @@ function loadDocumentBaseDelta(document) {
  * @param {Object} models - DB models
  * @param {Object} context - Resolver context
  * @param {Object} options - Query options
- * @returns {Promise<string>} Capped plain text from editor context or document delta
+ * @returns {Promise<string>} Plain text from editor context or document delta
  */
 async function resolveEditorText(models, context, options = {}) {
-    if (context.editorText) return capText(context.editorText);
+    if (context.editorText) return context.editorText;
     if (!context.documentId) return "";
 
     const document = await models["document"].getById(context.documentId, options);
@@ -195,7 +163,7 @@ async function resolveEditorText(models, context, options = {}) {
     }
 
     const mergedDelta = baseDelta.compose(new Delta(dbToDelta(edits)));
-    return capText(deltaToPlainText({ops: mergedDelta.ops}));
+    return deltaToPlainText({ops: mergedDelta.ops});
 }
 
 /**
@@ -273,13 +241,13 @@ function resolveMappingEntry(mapping, index) {
 }
 
 /**
- * Plain text for a document id (used by indexed submissionFiles placeholders).
+ * Value for a document id used by indexed `submissionFiles` placeholders.
  *
  * @param {number} documentId - Document id
  * @param {Object} models - DB models
  * @param {Object} context - Resolver context
  * @param {Object} options - Query options
- * @returns {Promise<string>} Capped plain text for the document id
+ * @returns {Promise<*>} Value from `context.submissionPdfTexts` / `context.pdfText`, or `loadPlainText`, or `""`
  */
 async function resolveDocumentPlainText(documentId, models, context, options = {}) {
     if (!documentId) return "";
@@ -292,15 +260,15 @@ async function resolveDocumentPlainText(documentId, models, context, options = {
             submissionPdfTexts[documentId] ??
             submissionPdfTexts[String(documentId)];
         if (fromMap) {
-            return capText(fromMap);
+            return fromMap;
         }
     }
     if (context.pdfText && Number(context.documentId) === Number(documentId)) {
-        return capText(context.pdfText);
+        return context.pdfText;
     }
 
     const extracted = await models["document"].loadPlainText(documentId);
-    return extracted ? capText(extracted) : "";
+    return extracted || "";
 }
 
 /**
@@ -308,8 +276,8 @@ async function resolveDocumentPlainText(documentId, models, context, options = {
  *
  * @param {string} baseKey - Placeholder key
  * @param {number} index - Placeholder index, or null for unbracketed ~key~
- * @param {Object} replacements - Map of ~token~ to resolved string
- * @returns {string|undefined} Resolved replacement value, or undefined when not in the map
+ * @param {Object} replacements - Map of `~token~` to resolved value
+ * @returns {*|undefined} Map value, or undefined when the token is not in the map
  */
 function resolveReplacementForToken(baseKey, index, replacements) {
     if (index != null) {
@@ -865,12 +833,24 @@ async function getDuplicatePlaceholderIds(content, templateType, models, options
 }
 
 /**
+ * Return placeholder tokens whose `{...}` repeats an option name.
+ *
+ * @param {Object} content - Quill Delta object with ops array
+ * @returns {string[]} Token strings with duplicate option names
+ */
+function getDuplicatePlaceholderOptionTokens(content) {
+    const contentDelta = content && content.ops ? { ops: content.ops } : content;
+    const text = deltaToPlainText(contentDelta);
+    return getTokensWithDuplicateOptions(text);
+}
+
+/**
  * Resolve a prompt template by substituting caller-supplied placeholder values (push model).
  *
  * Unlike {@link resolveTemplate}, this does NOT query the database for placeholder data — the
  * caller provides a `{ placeholderKey: value }` map (e.g. assembled in the frontend and the runhook function from the
- * input mapping). Each `~placeholderKey[N]~` token is replaced by its value (objects/arrays are
- * JSON-stringified). Used by the AI-hook runtime.
+ * input mapping). For `pdfText`, `submissionFiles`, and `editorText`, values pass through `applyTextRangeLimit`.
+ * Other keys use `JSON.stringify` when the value is not already a string. Used by the AI-hook runtime.
  *
  * @param {number} templateId - Prompt template id.
  * @param {Object} values - Map of placeholderKey → value (optional `language`).
@@ -908,11 +888,11 @@ async function resolveTemplateWithValues(templateId, values, models, options = {
         if (index != null) {
             const inner = tokenInnerText(baseKey, index);
             if (Object.prototype.hasOwnProperty.call(valueMap, inner)) {
-                let text = toText(valueMap[inner]);
-                if (baseKey === "pdfText") {
-                    text = applyPdfTextCharacterLimit(text, tokenOptions);
+                const raw = valueMap[inner];
+                if (supportsRangeLimit(baseKey)) {
+                    return applyTextRangeLimit(raw, tokenOptions);
                 }
-                return text;
+                return toText(raw);
             }
             return undefined;
         }
@@ -1023,6 +1003,7 @@ module.exports = {
     resolveTemplateWithValues,
     getMissingRequiredPlaceholders,
     getDuplicatePlaceholderIds,
+    getDuplicatePlaceholderOptionTokens,
     getUsedPlaceholders,
     resolveEditorText,
     formatMissingPlaceholderError,

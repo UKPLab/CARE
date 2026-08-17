@@ -108,11 +108,12 @@ async function resolveServiceInput(service, input) {
             const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
             if (!submissionId || !selectedFiles.length) return "";
 
-            const parts = [];
-
-            if (selectedFiles.includes("pdf") && pdfText) {
-                parts.push(pdfText);
+            // Keep PDF.js `{ pages, pageCount }` until `applyTextRangeLimit` in the resolver.
+            if (selectedFiles.includes("pdf")) {
+                return pdfText || "";
             }
+
+            const parts = [];
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
             // filePatterns maps logical name → validation-config regex (e.g. "expose" → "Expose\\.tex$").
