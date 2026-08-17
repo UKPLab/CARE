@@ -532,6 +532,34 @@ Here is a full example showing how the backend and frontend work together when u
    - The frontend receives ``{ success: false, message: "..." }`` with the error message
    - An error toast is displayed using that message
 
+AI Service and Trigger Events
+-----------------------------
+
+AI requests use the existing ``serviceCommand`` event with ``service: "AIService"``:
+
+.. code-block:: javascript
+
+    this.$socket.emit("serviceCommand", {
+        service: "AIService",
+        command: "chatCompletion",
+        data: {model, messages},
+    }, callback);
+
+Supported commands are ``chatCompletion``, ``runHook``, ``abortChatCompletion``,
+``getStatus``, ``testModel``, ``getProviders``, and ``getValidModels``. Frontend
+components should use the ``this.$ai`` helpers where available.
+
+The admin-only trigger socket provides:
+
+- ``triggerCreate``: create a trigger from an event, action, and configuration.
+- ``triggerUpdate`` and ``triggerDelete``: update or soft-delete a trigger by ``id``.
+- ``triggerQueueGetDetails``: return details for a queue item by ``id``.
+- ``triggerQueueRetry``: retry a failed or cancelled queue item.
+- ``triggerQueueRerun``: create a new run from a completed queue item.
+- ``triggerQueueCancel``: cancel a pending or running queue item.
+
+All events use the standard :ref:`createSocket` callback response.
+
 Socket functions
 -------------------------
 
@@ -573,6 +601,11 @@ Logger Socket Functions (`log.js`)
 Service Socket Functions (`service.js`)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. js:autoclass:: ServiceSocket
+   :members:
+
+Trigger Socket Functions (`trigger.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: TriggerSocket
    :members:
 
 Setting Socket Functions (`setting.js`)
