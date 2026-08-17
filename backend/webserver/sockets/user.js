@@ -221,6 +221,7 @@ class UserSocket extends Socket {
      */
     async bulkCreateUsers(data) {
         const users = data["users"];
+        const roleMap = data["roleMap"];
 
         const createdUsers = [];
         const errors = [];
@@ -233,7 +234,7 @@ class UserSocket extends Socket {
                 if (!user.exists) {
                     createdUser = await this.models["user"].add(user, {
                         transaction, context: {
-                            userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                            userRoles: user.roles, roleMap,
                         },
                     })
 
@@ -244,7 +245,7 @@ class UserSocket extends Socket {
                             firstName: user.firstName, lastName: user.lastName, extId: user.extId, emailVerified: true,
                         }, {
                             transaction, context: {
-                                userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                                userRoles: user.roles, roleMap,
                             }
                         });
                     } else {
