@@ -1780,6 +1780,34 @@ Manage Configurations
 
 -----
 
+Replace Document File from Admin Tools
+--------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to replace the PDF or ZIP file of an existing document from
+     Admin Tools, so that I can correct a wrong submission file without creating a new
+     document or breaking existing links that use the same document id and hash.
+
+   :Acceptance:
+     - From Settings → Admin Tools, I can open the replace-document-file tool.
+     - I can filter and search documents, select one PDF or ZIP document, and upload a
+       replacement file of the same type.
+     - After a successful replace, the document keeps the same id and hash; only the file
+       bytes on disk change.
+     - When I replace a PDF, existing CARE annotations and comments on that document are
+       removed.
+
+     **Negative cases:**
+
+     - When I am not an admin, I cannot use Admin Tools or the replace socket.
+     - When the uploaded file extension does not match the selected document type, the
+       replace is rejected and the stored file is unchanged.
+     - When the selected document is not a PDF or ZIP, the tool does not allow replace.
+
+-----
+
 Export User Statistics
 -----------------------
 

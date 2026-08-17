@@ -28,7 +28,7 @@
                 @click="handleCloseClick"
             />
           </div>
-          <div class="modal-body">
+          <div class="modal-body" :class="{ 'modal-body-scroll': scrollableBody }">
             <div
                 v-if="waiting"
                 class="justify-content-center flex-grow-1 d-flex"
@@ -56,7 +56,10 @@
                 </div>
               </div>
             </div>
-            <div v-show="!waiting && !progress">
+            <div
+                v-show="!waiting && !progress"
+                :class="{ 'modal-body-shell': scrollableBody }"
+            >
               <slot name="body"/>
             </div>
           </div>
@@ -82,6 +85,7 @@
  * @props removeClose: Boolean Remove close button
  * @props props: Object Props for statistics (socket emit stats with data)
  * @props name: Name of the modal (for statistics)
+ * @props scrollableBody: Boolean Make the body a flex column so a fixed header (e.g. a stepper) can stay put while only the body content scrolls
  * @emits show: Event triggered on show
  * @emits hide: Event triggered on hide
  * @slot title: Title of the modal
@@ -139,6 +143,11 @@ export default {
     name: {
       type: String,
       required: true
+    },
+    scrollableBody: {
+      type: Boolean,
+      required: false,
+      default: false,
     }
   },
   emits: ['show', 'hide', 'close-requested'],
@@ -324,5 +333,22 @@ export default {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+}
+
+/* Body is a non-scrolling flex column so a fixed header (e.g. a stepper)
+   stays put while only its content scrolls. Lives here because the modal is
+   teleported. */
+.modal-body.modal-body-scroll {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 0;
+}
+
+.modal-body-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 </style>
