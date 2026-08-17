@@ -2,7 +2,7 @@
 
 /**
  * AIService helpers for forwarding chat and model-validation traffic to LiteLLM via RPC,
- * enforcing credential ownership, and recording `ai_log` rows via the budget module.
+ * enforcing credential ownership, and recording `ai_log` rows via the request module.
  *
  * @module webserver/services/ai/chat
  * @author Akash Gundapuneni, Mohamed Rawhani
@@ -11,7 +11,7 @@
 const {randomUUID} = require("crypto");
 const helpers = require("./helpers");
 const runtime = require("./runtime");
-const budget = require("./budget");
+const request = require("./request");
 
 /**
  * Normalizes provider-reported monetary cost fields for persisted logging.
@@ -87,7 +87,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         ...completionParams
     } = data || {};
 
-    const guard = await budget.beginRequest(service, {
+    const guard = await request.beginRequest(service, {
         userId: client?.userId,
         aiModelId,
         aiHookId: data?.aiHookId,
@@ -114,7 +114,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
             : error?.message;
-        await budget.failRequest(service, guard.logId, failureOutput);
+        await request.failRequest(service, guard.logId, failureOutput);
         throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
@@ -128,7 +128,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
     );
 
     const outputPayload = JSON.stringify(choices);
-    await budget.completeRequest(service, guard.logId, {
+    await request.completeRequest(service, guard.logId, {
         output: logOptions.testLabel ? `${logOptions.testLabel}\n${outputPayload}` : outputPayload,
         reasoning: payload?.reasoning_content || null,
         inputTokens: usage?.prompt_tokens ?? null,
@@ -173,6 +173,23 @@ async function getStatus(service) {
         service.logger.error("Failed to get LLM status: " + error.message);
         return {online: false, error: error.message};
     }
+}
+
+/**
+ * Lists LiteLLM-supported provider slugs for credential UI selection.
+ *
+ * @param {{ server: Object }} service AIService.
+ * @returns {Promise<{providers: string[]}>}
+ */
+async function getProviders(service) {
+    const rpc = runtime.getRPC(service.server);
+    if (!rpc) {
+        throw new Error("LiteLLM service is not available");
+    }
+    if (!(await rpc.isOnline())) {
+        throw new Error("LiteLLM service is not connected");
+    }
+    return rpc.getProviders();
 }
 
 /**
@@ -286,6 +303,7 @@ module.exports = {
     chatCompletion,
     abortChatCompletion,
     getStatus,
+    getProviders,
     getValidModels,
     testModel,
 };

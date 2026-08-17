@@ -9,28 +9,14 @@
 
 const chat = require("./chat");
 const helpers = require("./helpers");
-const {PDFParse} = require("pdf-parse");
-const { resolveTemplateWithValues } = require("../../../utils/templateResolver");
-
-async function loadDocumentText(service, documentId) {
-    const document = await service.server.db.models["document"].findByPk(documentId, {raw: true});
-    if (!document || document.type !== service.server.db.models["document"].docTypes.DOC_TYPE_PDF) return "";
-    const buffer = await service.server.db.models["document"].readDocumentFile(document, ".pdf");
-    if (!buffer) return "";
-
-    const parser = new PDFParse({data: buffer});
-    try {
-        return (await parser.getText()).text || "";
-    } finally {
-        await parser.destroy();
-    }
-}
+const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
 /**
  * Loads an enabled, non-deleted AI hook by id.
  *
- * @param {{ server: Object }} service AIService runtime with DB access.
- * @param {number} hookId Target `ai_hook` primary key.
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} service.server - CARE webserver instance (DB access).
+ * @param {number} hookId - Target `ai_hook` primary key.
  * @returns {Promise<Object>} The hook row.
  * @throws {Error} If the hook is missing, deleted, or disabled.
  */
@@ -52,9 +38,10 @@ async function loadEnabledHook(service, hookId) {
  * Resolves the hook's primary model (priority 1) into the model string plus the owner's
  * credential parameters required by the LiteLLM passthrough.
  *
- * @param {{ server: Object }} service AIService runtime with DB access.
- * @param {number} hookId Target `ai_hook` primary key.
- * @returns {Promise<{aiModelId: number, aiCredentialId: number, model: string, api_key: string, api_base?: string, api_version?: string, additionalParameters: Object}>}
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} service.server - CARE webserver instance (DB access).
+ * @param {number} hookId - Target `ai_hook` primary key.
+ * @returns {Promise<Object>} Model string plus the owner's credential params for the LiteLLM passthrough.
  * @throws {Error} If no usable model/credential is configured for the hook.
  */
 async function resolveHookModelParams(service, hookId) {
@@ -97,8 +84,9 @@ async function resolveHookModelParams(service, hookId) {
  * Resolves a single backend-side input reference (mirrors NLP `serviceReplacement`, but yields
  * text/JSON for prompt substitution rather than base64).
  *
- * @param {{ server: Object }} service AIService runtime with DB access.
- * @param {Object} input The reference's `input` spec (carries `type` + ids).
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} service.server - CARE webserver instance (DB access).
+ * @param {Object} input - The reference's `input` spec (carries `type` + ids).
  * @returns {Promise<*>} Resolved value for the placeholder.
  */
 async function resolveServiceInput(service, input) {
@@ -122,24 +110,8 @@ async function resolveServiceInput(service, input) {
 
             const parts = [];
 
-            if (selectedFiles.includes("pdf")) {
-                let resolvedPdfText = pdfText;
-                if (resolvedPdfText == null) {
-                    const pdfDocument = await service.server.db.models["document"].findOne({
-                        where: {
-                            submissionId,
-                            type: service.server.db.models["document"].docTypes.DOC_TYPE_PDF,
-                            deleted: false,
-                        },
-                        raw: true,
-                    });
-                    resolvedPdfText = pdfDocument
-                        ? await loadDocumentText(service, pdfDocument.id)
-                        : "";
-                }
-                if (resolvedPdfText) {
-                    parts.push(resolvedPdfText);
-                }
+            if (selectedFiles.includes("pdf") && pdfText) {
+                parts.push(pdfText);
             }
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
@@ -167,8 +139,6 @@ async function resolveServiceInput(service, input) {
 
             return parts.join("\n\n");
         }
-        case "document":
-            return input.documentId ? await loadDocumentText(service, input.documentId) : "";
         default:
             return null;
     }
@@ -178,8 +148,9 @@ async function resolveServiceInput(service, input) {
  * Resolves any backend-side references in the pushed values map (configuration, submission),
  * leaving frontend-resolved values (document text, study data) as-is.
  *
- * @param {{ server: Object }} service AIService runtime with DB access.
- * @param {Object} values Map of placeholderKey → value or `{type:"serviceReplacement", input}`.
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} service.server - CARE webserver instance (DB access).
+ * @param {Object} values - Map of placeholderKey → value or `{type:"serviceReplacement", input}`.
  * @returns {Promise<Object>} Map with references resolved to values.
  */
 async function resolveHookReferences(service, values) {
@@ -199,9 +170,9 @@ async function resolveHookReferences(service, values) {
  * caller-supplied placeholder `values` (assembled in the frontend from the input mapping),
  * attaches the hook's primary model credential, and forwards through the shared chat path.
  *
- * @param {{ logger: Object, server: Object }} service AIService runtime.
- * @param {{ userId?: number }} client Authenticated RPC client triggering the hook.
- * @param {{ hookId: number, values?: Object, studyId?: number, studySessionId?: number, studyStepId?: number, documentId?: number }} data Hook execution payload.
+ * @param {Object} service - AIService runtime.
+ * @param {Object} client - Authenticated RPC client triggering the hook.
+ * @param {Object} data - Hook execution payload (hookId, values, studyId, studySessionId, studyStepId, documentId).
  * @returns {Promise<{choices: unknown[], outputText: string}>} Provider choices plus first-choice text.
  * @throws {Error} If the hook id is invalid or any required model/credential/template is missing.
  */

@@ -1,5 +1,5 @@
 /**
- * Gating tests for AI budget caps (webserver/services/ai/budget.beginRequest).
+ * Gating tests for AI budget caps (webserver/services/ai/request.beginRequest).
  *
  * These seed ai_log rows with hand-chosen costs directly in the DB, then call the
  * real beginRequest and assert allowed / denied. No LLM is involved, so the numbers
@@ -19,9 +19,9 @@ jest.mock("uuid", () => {
 });
 
 const db = require("../db");
-const budget = require("../webserver/services/ai/budget");
+const request = require("../webserver/services/ai/request");
 
-// budget.js reaches the DB through service.server.db and logs through service.logger.
+// request.js reaches the DB through service.server.db and logs through service.logger.
 const service = {
     server: { db },
     logger: { info() {}, warn() {}, error() {} },
@@ -77,8 +77,8 @@ function seedCap(fields) {
     return db.models.ai_budget.create({ deleted: false, limitType: 0, ...fields });
 }
 
-function begin(request) {
-    return budget.beginRequest(service, { requestId: uniq("begin"), ...request });
+function begin(payload) {
+    return request.beginRequest(service, { requestId: uniq("begin"), ...payload });
 }
 
 // A share must be non-deleted and not yet expired for the budget code to find it.
@@ -140,7 +140,7 @@ afterAll(async () => {
 describe("model total cap", () => {
     test("allowed when spend is under the limit", async () => {
         const model = await makeModel({ userId: owner.id });
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10 });
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 9.99 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id });
@@ -149,7 +149,7 @@ describe("model total cap", () => {
 
     test("denied when spend is exactly at the limit", async () => {
         const model = await makeModel({ userId: owner.id });
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10 });
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 10 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id });
@@ -159,7 +159,7 @@ describe("model total cap", () => {
     test("trap: spend on a different model does not count", async () => {
         const model = await makeModel({ userId: owner.id });
         const otherModel = await makeModel({ userId: owner.id });
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10 });
         await seedLog({ userId: owner.id, aiModelId: otherModel.id, costs: 100 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id });
@@ -168,7 +168,7 @@ describe("model total cap", () => {
 
     test("trap: failed requests do not count, completed ones do", async () => {
         const model = await makeModel({ userId: owner.id });
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10 });
         // 100 of spend, but only on failed rows -> ignored by the sum.
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 100, status: "failed" });
 
@@ -178,7 +178,7 @@ describe("model total cap", () => {
 
     test("free model bypasses the cap even when over the limit", async () => {
         const model = await makeModel({ userId: owner.id, freeModel: true });
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10 });
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 999 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id });
@@ -307,7 +307,7 @@ describe("hook total cap", () => {
     test("counts spend from every user (all students), not just the requester", async () => {
         const model = await makeModel({ userId: owner.id });
         const hook = await makeHook({ userId: owner.id });
-        await seedCap({ userId: owner.id, hookId: hook.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiHookId: hook.id, costLimit: 10 });
         // owner and other each spent 5 on the hook -> 10 total, hitting the cap.
         await seedLog({ userId: owner.id, aiModelId: model.id, aiHookId: hook.id, costs: 5 });
         await seedLog({ userId: other.id, aiModelId: model.id, aiHookId: hook.id, costs: 5 });
@@ -320,7 +320,7 @@ describe("hook total cap", () => {
         const modelA = await makeModel({ userId: owner.id });
         const modelB = await makeModel({ userId: owner.id });
         const hook = await makeHook({ userId: owner.id });
-        await seedCap({ userId: owner.id, hookId: hook.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiHookId: hook.id, costLimit: 10 });
         // Same hook, two different models; the hook cap must sum both.
         await seedLog({ userId: owner.id, aiModelId: modelA.id, aiHookId: hook.id, costs: 6 });
         await seedLog({ userId: owner.id, aiModelId: modelB.id, aiHookId: hook.id, costs: 4 });
@@ -333,7 +333,7 @@ describe("hook total cap", () => {
         const model = await makeModel({ userId: owner.id });
         const hook = await makeHook({ userId: owner.id });
         const otherHook = await makeHook({ userId: owner.id });
-        await seedCap({ userId: owner.id, hookId: hook.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiHookId: hook.id, costLimit: 10 });
         await seedLog({ userId: owner.id, aiModelId: model.id, aiHookId: otherHook.id, costs: 100 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id, aiHookId: hook.id });
@@ -348,7 +348,7 @@ describe("model-share cap", () => {
     test("denied at the limit, counting the grantee's own spend", async () => {
         const model = await makeModel({ userId: owner.id });
         const share = await shareModelWith({ aiModelId: model.id, userId: other.id });
-        await seedCap({ userId: owner.id, shareId: share.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelShareId: share.id, costLimit: 10 });
         await seedLog({ userId: other.id, aiModelId: model.id, costs: 10 });
 
         const res = await begin({ userId: other.id, aiModelId: model.id });
@@ -358,7 +358,7 @@ describe("model-share cap", () => {
     test("trap: the model owner's own spend is not charged to the grantee's cap", async () => {
         const model = await makeModel({ userId: owner.id });
         const share = await shareModelWith({ aiModelId: model.id, userId: other.id });
-        await seedCap({ userId: owner.id, shareId: share.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiModelShareId: share.id, costLimit: 10 });
         // Owner spent heavily outside any of the grantee's studies -> must not count.
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 100 });
 
@@ -382,7 +382,7 @@ describe("hook-share cap", () => {
 
     test("denied at the limit, counting the grantee's own hook spend", async () => {
         const { model, hook, hookShare } = await shareSetup();
-        await seedCap({ userId: owner.id, hookShareId: hookShare.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiHookShareId: hookShare.id, costLimit: 10 });
         await seedLog({ userId: other.id, aiModelId: model.id, aiHookId: hook.id, costs: 10 });
 
         const res = await begin({ userId: other.id, aiModelId: model.id, aiHookId: hook.id });
@@ -391,7 +391,7 @@ describe("hook-share cap", () => {
 
     test("allowed when under the limit", async () => {
         const { model, hook, hookShare } = await shareSetup();
-        await seedCap({ userId: owner.id, hookShareId: hookShare.id, costLimit: 10 });
+        await seedCap({ userId: owner.id, aiHookShareId: hookShare.id, costLimit: 10 });
         await seedLog({ userId: other.id, aiModelId: model.id, aiHookId: hook.id, costs: 9.99 });
 
         const res = await begin({ userId: other.id, aiModelId: model.id, aiHookId: hook.id });
@@ -414,7 +414,7 @@ describe("step-hook caps", () => {
     test("TOTAL: denied at the limit, counting the hook's use across the study", async () => {
         const { model, hook, study, step } = await stepSetup();
         const session = await makeSession({ studyId: study.id, userId: other.id });
-        await seedCap({ userId: owner.id, studyStepId: step.id, hookId: hook.id, limitType: 0, costLimit: 10 });
+        await seedCap({ userId: owner.id, studyStepId: step.id, aiHookId: hook.id, limitType: 0, costLimit: 10 });
         await seedLog({ userId: other.id, aiModelId: model.id, aiHookId: hook.id, studySessionId: session.id, costs: 10 });
 
         const res = await begin({
@@ -429,7 +429,7 @@ describe("step-hook caps", () => {
         const session = await makeSession({ studyId: study.id, userId: other.id });
         const otherStudy = await makeStudy(owner.id);
         const otherSession = await makeSession({ studyId: otherStudy.id, userId: other.id });
-        await seedCap({ userId: owner.id, studyStepId: step.id, hookId: hook.id, limitType: 0, costLimit: 10 });
+        await seedCap({ userId: owner.id, studyStepId: step.id, aiHookId: hook.id, limitType: 0, costLimit: 10 });
         await seedLog({ userId: other.id, aiModelId: model.id, aiHookId: hook.id, studySessionId: otherSession.id, costs: 100 });
 
         const res = await begin({
@@ -443,7 +443,7 @@ describe("step-hook caps", () => {
         const { model, hook, study, step } = await stepSetup();
         const sessionA = await makeSession({ studyId: study.id, userId: other.id });
         const sessionB = await makeSession({ studyId: study.id, userId: other.id });
-        await seedCap({ userId: owner.id, studyStepId: step.id, hookId: hook.id, limitType: 1, costLimit: 10 });
+        await seedCap({ userId: owner.id, studyStepId: step.id, aiHookId: hook.id, limitType: 1, costLimit: 10 });
         await seedLog({ userId: other.id, aiModelId: model.id, aiHookId: hook.id, studySessionId: sessionB.id, costs: 100 });
 
         const res = await begin({
@@ -457,7 +457,7 @@ describe("step-hook caps", () => {
         const { model, hook, study, step } = await stepSetup();
         const guestSession = await makeSession({ studyId: study.id, userId: other.id });
         const ownerSession = await makeSession({ studyId: study.id, userId: owner.id });
-        await seedCap({ userId: owner.id, studyStepId: step.id, hookId: hook.id, limitType: 2, costLimit: 10 });
+        await seedCap({ userId: owner.id, studyStepId: step.id, aiHookId: hook.id, limitType: 2, costLimit: 10 });
         await seedLog({ userId: owner.id, aiModelId: model.id, aiHookId: hook.id, studySessionId: ownerSession.id, costs: 100 });
 
         const res = await begin({
@@ -528,7 +528,7 @@ describe("resetAt window", () => {
     test("spend older than resetAt is ignored (cap counts only after the reset)", async () => {
         const model = await makeModel({ userId: owner.id });
         // resetAt is in the future, so a log created now is 'before' it -> excluded.
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10, resetAt: TOMORROW() });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10, resetAt: TOMORROW() });
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 100 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id });
@@ -537,10 +537,11 @@ describe("resetAt window", () => {
 
     test("spend after resetAt still counts", async () => {
         const model = await makeModel({ userId: owner.id });
-        await seedCap({ userId: owner.id, modelId: model.id, costLimit: 10, resetAt: YESTERDAY() });
+        await seedCap({ userId: owner.id, aiModelId: model.id, costLimit: 10, resetAt: YESTERDAY() });
         await seedLog({ userId: owner.id, aiModelId: model.id, costs: 10 });
 
         const res = await begin({ userId: owner.id, aiModelId: model.id });
         expect(res.allowed).toBe(false);
     });
 });
+

@@ -92,22 +92,16 @@ export default {
     isHook() {
       return !!this.service?.hookId;
     },
-    hookName() {
-      if (this.service?.hookName) return this.service.hookName;
-      if (!this.service?.hookId) return null;
-      return this.$store.getters["table/ai_hook/get"](this.service.hookId)?.name || null;
-    },
     resultKeyBase() {
       return this.isHook
-        ? buildHookResultKey(this.serviceName, this.hookName)
+        ? buildHookResultKey(this.serviceName)
         : this.skillKey;
     },
     resultKeyCandidates() {
       if (!this.isHook) return [this.resultKeyBase].filter(Boolean);
       return getHookResultKeyCandidates(
         this.serviceName,
-        this.service?.type,
-        this.hookName
+        this.service?.type
       );
     },
     nlpResults() {
@@ -295,8 +289,8 @@ export default {
         case 'configuration':
           return {type: "serviceReplacement", input: spec};
         case 'submission': {
-          // PDF is extracted in the browser; zip contents are resolved on the backend.
-          // Both travel together inside one serviceReplacement so the backend combines them.
+          // selectedFiles holds exactly one entry, "pdf" or one zip file name.
+          // PDF is extracted here in the browser; a zip file name is resolved on the backend.
           const selectedFiles = spec.selectedFiles || [];
           let pdfText = null;
           if (selectedFiles.includes("pdf") && spec.pdfDocumentId) {
@@ -334,7 +328,7 @@ export default {
       return extractTextFromPDF(pdf);
     },
     /**
-     * Persists a hook's single completion to document_data under `${name}_${hookName}` (skill takes multi key).
+     * Persists a hook's single completion to document_data under the service name alone (skill takes multi key).
      *
      * @param {{ outputText?: string }} response
      * @returns {void}

@@ -1,7 +1,7 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
-const {getEmailContent} = require("../../utils/emailHelper");
+const {getEmailContent} = require("../../utils/helper/email");
 
 /**
  * Handle user through websocket

@@ -439,7 +439,7 @@ export default {
         const costLimitValue = Number(this.shareForm.costLimit);
         const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
         if (wantsCap) {
-          const shareKey = this.resourceIdKey === "aiHookId" ? "hookShareId" : "shareId";
+          const shareKey = this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
           for (const shareId of sharedIds) {
             const existingCap = this.findExistingShareCap(shareKey, shareId);
             const capData = existingCap

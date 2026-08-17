@@ -11,7 +11,7 @@ const fs = require("fs");
 const path = require("path");
 const {Op} = require("sequelize");
 const {deltaToPlainText, dbToDelta} = require("editor-delta-conversion");
-const {resolveNlpAssessmentDraft} = require("./studyNlpDocumentData");
+const {resolveNlpAssessmentDraft} = require("../studyNlpDocumentData");
 const {
     applyPlaceholderReplacements,
     countPlaceholdersByKey,
@@ -31,9 +31,7 @@ const TEXT_PLACEHOLDER_CHAR_CAP = 2000;
  * @returns {string} Plain text extracted from Delta
  */
 function extractTextFromDelta(delta) {
-    if (!delta || !delta.ops) {
-        return "";
-    }
+    if (!delta || !delta.ops) return "";
     
     return delta.ops
         .filter(op => op.insert && typeof op.insert === 'string')
@@ -48,9 +46,7 @@ function extractTextFromDelta(delta) {
  * @returns {Object} Quill Delta object
  */
 function textToDelta(text) {
-    if (!text) {
-        return new Delta();
-    }
+    if (!text) return new Delta();
     return new Delta().insert(text);
 }
 
@@ -59,7 +55,7 @@ function textToDelta(text) {
  *
  * @param {string} text - Input text
  * @param {number} cap  - Max character count
- * @returns {string}
+ * @returns {string} Input truncated to at most cap characters
  */
 function capText(text, cap = TEXT_PLACEHOLDER_CHAR_CAP) {
     if (typeof text !== "string") return "";
@@ -113,7 +109,7 @@ function resolveTokenWithOptions(baseKey, index, tokenOptions, replacements) {
  * Objects/arrays are serialized to JSON text.
  *
  * @param {*} value - Value to convert
- * @returns {string}
+ * @returns {string} String form of value, or empty string when nullish or not serializable
  */
 function normalizeReplacementValue(value) {
     if (value === undefined || value === null) return "";
@@ -130,7 +126,7 @@ function normalizeReplacementValue(value) {
  * Load a base delta from disk for HTML/MODAL documents.
  *
  * @param {Object} document - Document row
- * @returns {Delta}
+ * @returns {Delta} Base delta from disk, or empty delta when missing or invalid
  */
 function loadDocumentBaseDelta(document) {
     const deltaPath = path.join(UPLOAD_PATH, `${document.hash}.delta`);
@@ -152,20 +148,14 @@ function loadDocumentBaseDelta(document) {
  * @param {Object} models - DB models
  * @param {Object} context - Resolver context
  * @param {Object} options - Query options
- * @returns {Promise<string>}
+ * @returns {Promise<string>} Capped plain text from editor context or document delta
  */
 async function resolveEditorText(models, context, options = {}) {
-    if (context.editorText) {
-        return capText(context.editorText);
-    }
-    if (!context.documentId) {
-        return "";
-    }
+    if (context.editorText) return capText(context.editorText);
+    if (!context.documentId) return "";
 
     const document = await models["document"].getById(context.documentId, options);
-    if (!document) {
-        return "";
-    }
+    if (!document) return "";
 
     const docTypes = models["document"].docTypes;
     if (![docTypes.DOC_TYPE_HTML, docTypes.DOC_TYPE_MODAL].includes(document.type)) {
@@ -215,12 +205,10 @@ async function resolveEditorText(models, context, options = {}) {
  * @param {Object} models - DB models
  * @param {Object} context - Resolver context
  * @param {Object} options - Query options
- * @returns {Promise<Object>}
+ * @returns {Promise<Object>} Merged document_data key/value map for the current context
  */
 async function getMergedDocumentData(models, context, options = {}) {
-    if (!context.documentId) {
-        return {};
-    }
+    if (!context.documentId) return {};
 
     const where = {
         documentId: context.documentId,
@@ -274,9 +262,7 @@ function getPlaceholderMappingForKey(context, baseKey) {
  * @returns {*} Mapped value or undefined
  */
 function resolveMappingEntry(mapping, index) {
-    if (mapping == null) {
-        return undefined;
-    }
+    if (mapping == null) return undefined;
     if (Array.isArray(mapping)) {
         return mapping[index - 1];
     }
@@ -293,12 +279,10 @@ function resolveMappingEntry(mapping, index) {
  * @param {Object} models - DB models
  * @param {Object} context - Resolver context
  * @param {Object} options - Query options
- * @returns {Promise<string>}
+ * @returns {Promise<string>} Capped plain text for the document id
  */
 async function resolveDocumentPlainText(documentId, models, context, options = {}) {
-    if (!documentId) {
-        return "";
-    }
+    if (!documentId) return "";
 
     const submissionPdfTexts = context.submissionPdfTexts && typeof context.submissionPdfTexts === "object"
         ? context.submissionPdfTexts
@@ -325,7 +309,7 @@ async function resolveDocumentPlainText(documentId, models, context, options = {
  * @param {string} baseKey - Placeholder key
  * @param {number} index - Placeholder index, or null for unbracketed ~key~
  * @param {Object} replacements - Map of ~token~ to resolved string
- * @returns {string} Resolved replacement value
+ * @returns {string|undefined} Resolved replacement value, or undefined when not in the map
  */
 function resolveReplacementForToken(baseKey, index, replacements) {
     if (index != null) {
@@ -349,13 +333,11 @@ function resolveReplacementForToken(baseKey, index, replacements) {
  * @param {Object} context - Resolver context
  * @param {Object} models - DB models
  * @param {Object} options - Query options
- * @returns {Promise<void>}
+ * @returns {Promise<void>} Resolves nothing; mutates replacements with per-index submission file text
  */
 async function addIndexedSubmissionFileReplacements(text, replacements, context, models, options = {}) {
     const indexes = getUsedIndexes(text, "submissionFiles");
-    if (indexes.length === 0) {
-        return;
-    }
+    if (indexes.length === 0) return;
     const mapping = getPlaceholderMappingForKey(context, "submissionFiles");
     for (const index of indexes) {
         const documentId = resolveMappingEntry(mapping, index);
@@ -371,7 +353,7 @@ async function addIndexedSubmissionFileReplacements(text, replacements, context,
  * @param {Object} models - DB models
  * @param {Function} allow - Allowed-key checker
  * @param {Object} options - Query options
- * @returns {Promise<Object>}
+ * @returns {Promise<Object>} Map of ~token~ keys to resolved prompt placeholder values
  */
 async function buildPromptPlaceholderValues(context, models, allow, options = {}) {
     const promptValues = {};
@@ -658,9 +640,7 @@ async function buildReplacementMap(context, models, options = {}) {
  * @returns {Promise<boolean>} True if study anonymizes data
  */
 async function shouldAnonymize(studyId, models, options = {}) {
-    if (!studyId) {
-        return false;
-    }
+    if (!studyId) return false;
     
     const study = await models["study"].getById(studyId, options);
     return study ? (study.anonymize === true) : false;
@@ -678,9 +658,7 @@ async function shouldAnonymize(studyId, models, options = {}) {
  */
 async function getTemplateContentForLanguage(templateId, language, models, options = {}) {
     const templateContentModel = models["template_content"];
-    if (!templateContentModel) {
-        return null;
-    }
+    if (!templateContentModel) return null;
     const row = await templateContentModel.findOne({
         where: { templateId, language, deleted: false },
         raw: true,
@@ -878,10 +856,12 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
 async function getDuplicatePlaceholderIds(content, templateType, models, options = {}) {
     const rows = await models["placeholder"].getAllByKey("type", templateType, options);
     const allowedKeys = new Set(rows.map((row) => row.placeholderKey));
-    const text = deltaToPlainText(content && content.ops ? { ops: content.ops } : content);
-    return getDuplicatePlaceholderIndexes(text)
+    const contentDelta = content && content.ops ? { ops: content.ops } : content;
+    const text = deltaToPlainText(contentDelta);
+    const duplicates = getDuplicatePlaceholderIndexes(text)
         .filter((entry) => allowedKeys.has(entry.key))
         .map((entry) => formatDuplicatePlaceholderToken(entry));
+    return duplicates;
 }
 
 /**
@@ -951,8 +931,8 @@ async function resolveTemplateWithValues(templateId, values, models, options = {
  * @param {number} templateId - Template id
  * @param {Object} models
  * @param {Object} [options] 
- * @returns {Promise<Array>} Matching placeholder rows with usedIndexes and occurrenceCount
- * @throws {Error}
+ * @returns {Promise<Array>} Placeholder catalog rows used in the template, with usedIndexes and occurrenceCount
+ * @throws {Error} When the template id is invalid
  */
 async function getUsedPlaceholders(templateId, models, options = {}) {
     const template = await models["template"].getById(templateId, options);
@@ -1000,8 +980,9 @@ function formatMissingPlaceholderError(missing, { action = "saving", language } 
  *
  * @param {number} templateId
  * @param {Object} models
- * @param {Object}
- * @returns {Promise<void>}
+ * @param {Object} options
+ * @returns {Promise<void>} Resolves when required placeholders are present
+ * @throws {Error} When a required placeholder is missing from stable template content
  */
 async function assertStableEmailTemplateContent(templateId, models, options = {}) {
     const action = options.action || "publishing";

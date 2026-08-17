@@ -5,8 +5,63 @@
     :options="options"
   >
     <template #element="{ blur }">
+      <div
+        v-if="options.search"
+        ref="searchSelect"
+        class="searchable-select w-100"
+      >
+        <button
+          type="button"
+          class="form-select text-start searchable-select-toggle"
+          :class="selectClass"
+          :disabled="isDisabled"
+          @click="isOpen = !isOpen"
+        >
+          <span
+            class="searchable-select-label"
+            :class="{ 'text-muted': !hasSelection }"
+          >
+            {{ selectedLabel }}
+          </span>
+        </button>
+        <div
+          v-if="isOpen"
+          class="dropdown-menu show searchable-select-menu w-100"
+        >
+          <div class="px-2 pb-2">
+            <input
+              ref="searchInput"
+              v-model="searchQuery"
+              type="text"
+              class="form-control form-control-sm"
+              placeholder="Search..."
+              aria-label="Search options"
+              @click.stop
+            >
+          </div>
+          <div class="searchable-select-options">
+            <button
+              v-for="option in filteredSelectOptions"
+              :key="option.value"
+              type="button"
+              class="dropdown-item"
+              :class="[option.class, { active: currentData === option.value }]"
+              :disabled="option.disabled"
+              @mousedown.prevent="selectOption(option, blur)"
+            >
+              {{ option.name }}
+            </button>
+            <div
+              v-if="filteredSelectOptions.length === 0"
+              class="dropdown-item text-muted disabled"
+            >
+              No matches
+            </div>
+          </div>
+        </div>
+      </div>
       <select
-        v-if="Array.isArray(options.options)"
+        v-else-if="Array.isArray(options.options)"
         v-model="currentData"
         :class="selectClass"
         class="form-select"
@@ -16,7 +71,7 @@
           v-for="option in selectOptions"
           :key="option.value"
           :class="option.class"
-          :value="valueAsObject ? option : option.value"
+          :value="option.value"
           :disabled="option.disabled"
         >
           {{ option.name }}
@@ -82,11 +137,16 @@ export default {
   data() {
     return {
       currentData: null,
+      isOpen: false,
+      searchQuery: "",
     };
   },
   computed: {
+    isDisabled() {
+      return this.options.readOnly !== undefined || this.options.disabled !== undefined;
+    },
     selectClass() {
-      const option = this.selectOptions.find((c) => c.value === (this.valueAsObject ? this.currentData?.value : this.currentData));
+      const option = this.selectOptions.find((c) => c.value === this.currentData);
       return option ? option.class : "";
     },
     userId() {
@@ -202,19 +262,68 @@ export default {
 
       return baseOptions;
     },
+    filteredSelectOptions() {
+      const query = this.searchQuery.trim().toLowerCase();
+      if (!query) {
+        return this.selectOptions;
+      }
+      return this.selectOptions.filter((option) =>
+        String(option.name).toLowerCase().includes(query)
+      );
+    },
+    hasSelection() {
+      return this.currentData !== null
+        && this.currentData !== undefined
+        && this.currentData !== -1
+        && this.currentData !== "";
+    },
+    selectedLabel() {
+      const selected = this.selectOptions.find((option) => option.value === this.currentData);
+      return selected?.name || this.options.placeholder || "Select...";
+    },
   },
   watch: {
-    currentData() {
-      this.$emit("update:modelValue", this.currentData);
+    currentData(newVal, oldVal) {
+      if (newVal === oldVal) return;
+      this.$emit("update:modelValue", this.emitValue(newVal));
     },
-    modelValue() {
+    modelValue(newVal) {
+      const next = this.resolveCurrent(newVal);
+      if (next === this.currentData && newVal !== -1) return;
       this.updateData();
+    },
+    isOpen(open) {
+      if (open) {
+        this.searchQuery = "";
+        this.$nextTick(() => this.$refs.searchInput?.focus());
+      } else {
+        this.searchQuery = "";
+      }
     },
   },
   mounted() {
     this.updateData();
+    document.addEventListener("mousedown", this.onDocumentClick);
+  },
+  beforeUnmount() {
+    document.removeEventListener("mousedown", this.onDocumentClick);
   },
   methods: {
+    // Native <select> must bind primitives. valueAsObject only affects the emitted/model shape.
+    resolveCurrent(modelValue) {
+      if (modelValue === -1) return -1;
+      if (this.valueAsObject && modelValue && typeof modelValue === "object") {
+        return modelValue.value;
+      }
+      return modelValue;
+    },
+    emitValue(current) {
+      if (!this.valueAsObject) return current;
+      if (current === -1 || current === null || current === undefined || current === "") {
+        return null;
+      }
+      return this.selectOptions.find((option) => option.value === current) || null;
+    },
     updateData() {
       // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
       if (this.modelValue === -1) {
@@ -226,12 +335,24 @@ export default {
             if (this.options.table) {
               this.currentData = this.selectOptions[0][this.options.options.value];
             } else {
-              this.currentData = this.valueAsObject ? this.selectOptions[0] : this.selectOptions[0].value;
+              this.currentData = this.selectOptions[0].value;
             }
           }
         }
       } else {
-        this.currentData = this.modelValue;
+        this.currentData = this.resolveCurrent(this.modelValue);
+      }
+    },
+    selectOption(option, blur) {
+      if (option.disabled) return;
+      this.currentData = option.value;
+      this.isOpen = false;
+      blur(this.currentData !== -1);
+    },
+    onDocumentClick(event) {
+      if (!this.isOpen) return;
+      if (!this.$refs.searchSelect?.contains(event.target)) {
+        this.isOpen = false;
       }
     },
     validate() {
@@ -241,4 +362,46 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.searchable-select {
+  position: relative;
+}
+
+.searchable-select-toggle {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  width: 100%;
+  background-color: var(--bs-body-bg, #fff);
+  cursor: pointer;
+}
+
+.searchable-select-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.searchable-select-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchable-select-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1050;
+  max-height: 16rem;
+  display: flex;
+  flex-direction: column;
+  padding-top: 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.searchable-select-options {
+  overflow-y: auto;
+  max-height: 12rem;
+}
+</style>

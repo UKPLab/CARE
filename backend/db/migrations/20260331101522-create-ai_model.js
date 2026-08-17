@@ -52,6 +52,11 @@ module.exports = {
         allowNull: false,
         defaultValue: true,
       },
+      freeModel: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       deleted: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

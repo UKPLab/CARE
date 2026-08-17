@@ -381,24 +381,17 @@ module.exports = (sequelize, DataTypes) => {
          *   - one study-level cap row per limitType (TOTAL/PER_SESSION/PER_USER)
          *   - one step-hook cap row per (studyStep, hook, limitType)
          *
-         * Budget shape in options.context.budgets:
-         *   {
-         *     study: { total?, perSession?, perUser? },
-         *     steps: [{ workflowStepId, hooks: [{ hookId, total?, perSession?, perUser? }] }]
-         *   }
-         *
          * @param {Object} study - Newly created study row.
          * @param {Object} options - Sequelize options bundle (transaction + context).
          * @param {Object} studyStepsMap - workflowStepId → study_step instance.
          */
         static async createBudgets(study, options, studyStepsMap) {
             const ctx = options.context || {};
-            const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../utils/aiBudgetLimitTypes");
             const Budget = sequelize.models.ai_budget;
+            const LT = Budget.limitTypes;
             const { transaction } = options;
 
-            // Each create runs in the same transaction that's writing the
-            // study and its steps. options.context is forwarded so the
+            // Each create runs in the same transaction that's writing the study and its steps. options.context is forwarded so the
             // ai_budget.validateOwner hook sees the caller's userId.
             const createCap = (rowData) =>
                 Budget.create(
@@ -439,7 +432,7 @@ module.exports = (sequelize, DataTypes) => {
                         if (Number.isFinite(value) && value > 0) {
                             await createCap({
                                 studyStepId: studyStep.id,
-                                hookId,
+                                aiHookId: hookId,
                                 limitType,
                                 costLimit: value,
                             });

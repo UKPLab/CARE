@@ -301,6 +301,17 @@ Passing an object:
         ]
     }
 
+Optional searchable mode (useful for long option lists):
+
+.. code-block:: javascript
+
+    {
+        type: "select",
+        search: true,          // enables type-to-filter combobox UI
+        placeholder: "Select...",
+        options: [ /* ... */ ]
+    }
+
 Using autotable:
 
 .. code-block:: javascript

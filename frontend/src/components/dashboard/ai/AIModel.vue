@@ -245,7 +245,7 @@ export default {
       if (!modelId) return null;
       const budgets = this.$store.getters["table/ai_budget/getFiltered"]
         ? this.$store.getters["table/ai_budget/getFiltered"](
-            (b) => !b.deleted && Number(b.modelId) === Number(modelId) && Number(b.limitType) === 0
+            (b) => !b.deleted && Number(b.aiModelId) === Number(modelId) && Number(b.limitType) === 0
           )
         : [];
       return budgets.length > 0 ? budgets[0] : null;
@@ -332,7 +332,7 @@ export default {
           const existing = this.findExistingCapRow(savedModelId);
           const capData = existing
             ? { id: existing.id, costLimit: costLimitValue }
-            : { modelId: Number(savedModelId), limitType: 0, costLimit: costLimitValue };
+            : { aiModelId: Number(savedModelId), limitType: 0, costLimit: costLimitValue };
           this.$socket.emit("appDataUpdate", { table: "ai_budget", data: capData }, (capResult) => {
             if (!capResult?.success) {
               this.toastError(capResult?.message || "Failed to save cost limit");

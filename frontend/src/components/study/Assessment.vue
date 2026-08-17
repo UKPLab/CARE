@@ -204,17 +204,9 @@ export default {
 
       return svc || null;
     },
-    nlpHookName() {
-      const svc = this.nlpService;
-      if (!svc?.hookId) return null;
-      return svc.hookName
-          || this.$store.getters["table/ai_hook/get"](svc.hookId)?.name
-          || null;
-    },
-
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
-      return getAssessmentResultKeyCandidates(svc, this.nlpHookName);
+      return getAssessmentResultKeyCandidates(svc);
     },
     preprocessedAssessmentRaw() {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {

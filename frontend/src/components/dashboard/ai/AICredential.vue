@@ -2,6 +2,7 @@
   <BasicModal
     ref="modal"
     name="aiCredentialModal"
+    size="lg"
     @hide="resetForm"
   >
     <template #title>
@@ -48,9 +49,26 @@ export default {
   data() {
     return {
       credentialForm: {},
+      providerOptions: [],
+      isLoadingProviders: false,
+      providerLookupError: "",
     };
   },
   computed: {
+    providerSelectOptions() {
+      if (this.isLoadingProviders) {
+        return [];
+      }
+
+      const options = new Set(this.providerOptions);
+      const current = this.credentialForm.provider?.trim().toLowerCase();
+      if (current) {
+        options.add(current);
+      }
+      return [...options]
+        .sort((a, b) => a.localeCompare(b))
+        .map((provider) => ({ value: provider, name: provider }));
+    },
     credentialFields() {
       return [
         {
@@ -75,11 +93,14 @@ export default {
         {
           key: "provider",
           label: "Provider",
-          type: "text",
+          type: "select",
           required: true,
           default: "",
-          placeholder: "Provider name, e.g. openai, anthropic, gemini",
-          help: "Provider name from where you got your API key, e.g. openai, anthropic, gemini. Required for loading available models.",
+          search: true,
+          placeholder: this.isLoadingProviders ? "Loading providers..." : "Select provider",
+          help: this.providerLookupError
+            || "Select the LiteLLM provider for your API key (e.g. openai, groq, openrouter).",
+          options: this.providerSelectOptions,
         },
         {
           key: "apiBaseUrl",
@@ -121,10 +142,46 @@ export default {
         };
       }
       this.$refs.modal.open();
+      this.loadProviders();
     },
     resetForm() {
       this.credentialForm = {};
+      this.providerOptions = [];
+      this.providerLookupError = "";
+      this.isLoadingProviders = false;
       this.eventBus.emit("resetFormField");
+    },
+    emitAiServiceCommand(command, data = {}) {
+      return new Promise((resolve, reject) => {
+        this.$socket.emit("serviceCommand", {
+          service: "AIService",
+          command,
+          data,
+        }, (result) => {
+          if (result?.success) {
+            resolve(result.data);
+          } else {
+            reject(new Error(result?.message || "AI service request failed"));
+          }
+        });
+      });
+    },
+    async loadProviders() {
+      this.isLoadingProviders = true;
+      this.providerLookupError = "";
+      try {
+        const result = await this.emitAiServiceCommand("getProviders");
+        this.providerOptions = Array.isArray(result?.providers) ? result.providers : [];
+        if (this.providerOptions.length === 0) {
+          this.providerLookupError = "No providers were returned from LiteLLM.";
+        }
+      } catch (error) {
+        this.providerOptions = [];
+        this.providerLookupError = error.message || "Failed to load providers";
+        this.toastError(this.providerLookupError);
+      } finally {
+        this.isLoadingProviders = false;
+      }
     },
     saveCredential() {
       if (!this.$refs.form.validate()) return;

@@ -187,7 +187,7 @@ export default {
       const { flagByValue } = this.statusMaps;
       const row = { ...item };
       const trigger = triggersById[item.triggerId];
-      row.triggerName = trigger ? trigger.name : `#${item.triggerId}`;
+      row.triggerName = trigger ? trigger.name : "<Deleted Trigger>";
 
       const statusFlags = flagByValue[item.status] || [];
       row.canRetry = statusFlags.includes("canRetry");
@@ -208,7 +208,7 @@ export default {
           if (res.success) {
             const d = res.data;
             this.errorFormData = {
-              summary: `${d.trigger?.name || `#${d.item.triggerId}`} - ${d.statusLabel}`,
+              summary: `${(!d.trigger?.deleted && d.trigger?.name) || "<Deleted Trigger>"} - ${d.statusLabel}`,
               errorMessage: d.item.errorMessage || "No error message recorded.",
             };
           } else {

@@ -1,8 +1,9 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
-const {inject} = require("../../utils/generic");
+const {inject} = require("../../utils/helper/generic");
 const _ = require("lodash");
-const { genPwdHash, genSalt } = require("../../utils/auth.js");
+const {Op} = require("sequelize");
+const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
 
@@ -284,6 +285,20 @@ class UserSocket extends Socket {
             this.socket.emit("progressUpdate", {
                 id: data["progressId"], current: users.indexOf(user) + 1, total: users.length,
             });
+        }
+
+        // Push created/updated users to subscribed clients once at the end
+        // so the Users table updates without a full page reload.
+        const userIds = createdUsers.map((u) => u.id).filter(Boolean);
+        if (userIds.length > 0) {
+            try {
+                const freshUsers = await this.models["user"].getAll({
+                    where: {id: {[Op.in]: userIds}, deleted: false},
+                });
+                await this.broadcastTable("user", freshUsers);
+            } catch (e) {
+                this.logger.error("Failed to broadcast bulk-created users: " + e.message);
+            }
         }
 
         return {createdUsers, errors};

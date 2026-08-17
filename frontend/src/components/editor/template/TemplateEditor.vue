@@ -57,16 +57,18 @@
           <div v-html="newLanguageModalMessage" />
         </template>
         <template #footer>
-          <BasicButton
-            class="btn btn-outline-primary"
-            text="Create Empty"
-            @click="chooseNewLanguageEmpty"
-          />
-          <BasicButton
-            class="btn btn-primary"
-            text="Copy Content"
-            @click="chooseNewLanguageCopied"
-          />
+          <div class="btn-group">
+            <BasicButton
+              class="btn btn-outline-primary"
+              text="Create Empty"
+              @click="chooseNewLanguageEmpty"
+            />
+            <BasicButton
+              class="btn btn-primary"
+              text="Copy Content"
+              @click="chooseNewLanguageCopied"
+            />
+          </div>
         </template>
       </BasicModal>
     </span>

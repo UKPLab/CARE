@@ -1,42 +1,45 @@
 'use strict';
 
 /**
- * AI budget cap rows. One row per cap; six entity kinds discriminated by
- * which FK column is non-null.
+ * AI budget cap rows. One row per cap; six entity kinds discriminated by which FK column is non-null.
  *
  * @author Mohammed Rawhani
  */
 const MetaModel = require('../MetaModel.js');
-const { AI_BUDGET_LIMIT_TYPES } = require('../../utils/aiBudgetLimitTypes.js');
+
+// Discriminates ai_budget.limitType. Caps on model / model_share / hook / hook_share are always TOTAL 
+const AI_BUDGET_LIMIT_TYPES = Object.freeze({
+    TOTAL: 0,
+    PER_SESSION: 1,
+    PER_USER: 2,
+});
 
 module.exports = (sequelize, DataTypes) => {
     class AiBudget extends MetaModel {
+        static limitTypes = AI_BUDGET_LIMIT_TYPES;
+
         // parentTables tells the framework to also load these parent rows
         // when ai_budget rows are sent. Same shape as study_session.autoTable.
         static autoTable = {
             parentTables: [
-                { table: "ai_model", by: "modelId" },
-                { table: "ai_model_share", by: "shareId" },
-                { table: "ai_hook", by: "hookId" },
-                { table: "ai_hook_share",  by: "hookShareId" },
+                { table: "ai_model", by: "aiModelId" },
+                { table: "ai_model_share", by: "aiModelShareId" },
+                { table: "ai_hook", by: "aiHookId" },
+                { table: "ai_hook_share",  by: "aiHookShareId" },
                 { table: "study", by: "studyId" },
                 { table: "study_step", by: "studyStepId" },
             ],
         };
-
-        static limitTypes = AI_BUDGET_LIMIT_TYPES;
-
-        // userId is denormalized on each row so visibility is a direct column
-        // filter — no FK-chain queries at read time.
+         // userId is denormalized on each row so visibility is a direct column filter — no FK-chain queries at read time.
         static async getUserFilter(userId) {
             return { userId };
         }
 
         static associate(models) {
-            AiBudget.belongsTo(models["ai_model"], { foreignKey: "modelId", as: "model" });
-            AiBudget.belongsTo(models["ai_model_share"], { foreignKey: "shareId", as: "share" });
-            AiBudget.belongsTo(models["ai_hook"], { foreignKey: "hookId", as: "hook" });
-            AiBudget.belongsTo(models["ai_hook_share"],  { foreignKey: "hookShareId", as: "hookShare" });
+            AiBudget.belongsTo(models["ai_model"], { foreignKey: "aiModelId", as: "model" });
+            AiBudget.belongsTo(models["ai_model_share"], { foreignKey: "aiModelShareId", as: "share" });
+            AiBudget.belongsTo(models["ai_hook"], { foreignKey: "aiHookId", as: "hook" });
+            AiBudget.belongsTo(models["ai_hook_share"],  { foreignKey: "aiHookShareId", as: "hookShare" });
             AiBudget.belongsTo(models["study"], { foreignKey: "studyId", as: "study" });
             AiBudget.belongsTo(models["study_step"], { foreignKey: "studyStepId", as: "studyStep" });
         }
@@ -44,37 +47,37 @@ module.exports = (sequelize, DataTypes) => {
         // Walk the FK chain to find which user owns the referenced entity.
         // Called once at create time to resolve + stamp userId on the new row.
         static async _resolveOwnerUserId(aiBudget, db, transaction) {
-            const modelId    = Number(aiBudget.modelId)    || null;
-            const shareId    = Number(aiBudget.shareId)    || null;
-            const hookId     = Number(aiBudget.hookId)     || null;
-            const hookShareId = Number(aiBudget.hookShareId) || null;
-            const studyId    = Number(aiBudget.studyId)    || null;
+            const aiModelId = Number(aiBudget.aiModelId) || null;
+            const aiModelShareId = Number(aiBudget.aiModelShareId) || null;
+            const aiHookId = Number(aiBudget.aiHookId) || null;
+            const aiHookShareId = Number(aiBudget.aiHookShareId) || null;
+            const studyId = Number(aiBudget.studyId) || null;
             const studyStepId = Number(aiBudget.studyStepId) || null;
 
-            if (modelId) {
-                const m = await db.ai_model.findByPk(modelId, { transaction, raw: true });
+            if (aiModelId) {
+                const m = await db.ai_model.findByPk(aiModelId, { transaction, raw: true });
                 return m ? Number(m.userId) : null;
             }
-            if (shareId) {
-                const s = await db.ai_model_share.findByPk(shareId, { transaction, raw: true });
+            if (aiModelShareId) {
+                const s = await db.ai_model_share.findByPk(aiModelShareId, { transaction, raw: true });
                 if (!s) return null;
                 const m = await db.ai_model.findByPk(s.aiModelId, { transaction, raw: true });
                 return m ? Number(m.userId) : null;
             }
-            if (hookShareId) {
-                const hs = await db.ai_hook_share.findByPk(hookShareId, { transaction, raw: true });
+            if (aiHookShareId) {
+                const hs = await db.ai_hook_share.findByPk(aiHookShareId, { transaction, raw: true });
                 if (!hs) return null;
                 const h = await db.ai_hook.findByPk(hs.aiHookId, { transaction, raw: true });
                 return h ? Number(h.userId) : null;
             }
-            if (studyStepId && hookId) {
+            if (studyStepId && aiHookId) {
                 const ss = await db.study_step.findByPk(studyStepId, { transaction, raw: true });
                 if (!ss) return null;
                 const s = await db.study.findByPk(ss.studyId, { transaction, raw: true });
                 return s ? Number(s.userId) : null;
             }
-            if (hookId) {
-                const h = await db.ai_hook.findByPk(hookId, { transaction, raw: true });
+            if (aiHookId) {
+                const h = await db.ai_hook.findByPk(aiHookId, { transaction, raw: true });
                 return h ? Number(h.userId) : null;
             }
             if (studyId) {
@@ -84,8 +87,7 @@ module.exports = (sequelize, DataTypes) => {
             return null;
         }
 
-        // On create: resolve the entity's owner, stamp it on the row, verify
-        // the caller matches. 
+        // On create: resolve the entity's owner, stamp it on the row, verify the caller matches. 
         static async validateCreate(aiBudget, options = {}) {
             const currentUserId = Number(options?.context?.currentUserId);
             if (!Number.isInteger(currentUserId) || currentUserId <= 0) return;
@@ -110,16 +112,16 @@ module.exports = (sequelize, DataTypes) => {
 
     AiBudget.init({
         userId: DataTypes.INTEGER,
-        modelId: DataTypes.INTEGER,
-        shareId: DataTypes.INTEGER,
-        hookId: DataTypes.INTEGER,
-        hookShareId: DataTypes.INTEGER,
+        aiModelId: DataTypes.INTEGER,
+        aiModelShareId: DataTypes.INTEGER,
+        aiHookId: DataTypes.INTEGER,
+        aiHookShareId: DataTypes.INTEGER,
         studyId: DataTypes.INTEGER,
         studyStepId: DataTypes.INTEGER,
         limitType: DataTypes.INTEGER,
         costLimit: DataTypes.DECIMAL(18, 6),
         resetAt: DataTypes.DATE,
-        deleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+        deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
@@ -139,3 +141,5 @@ module.exports = (sequelize, DataTypes) => {
 
     return AiBudget;
 };
+
+module.exports.AI_BUDGET_LIMIT_TYPES = AI_BUDGET_LIMIT_TYPES;

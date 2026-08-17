@@ -1,12 +1,5 @@
 'use strict';
 
-/**
- * Track the AI hook that triggered each ai_log row so hook-level budget caps
- * can be summed from the log.
- *
- * aiHookId — FK to ai_hook.id; null when the request was not triggered by a
- *            hook (e.g. test prompts, direct chat calls).
- */
 module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn(

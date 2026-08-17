@@ -1,5 +1,12 @@
 /**
- * Parse and format bracket-indexed template placeholder tokens (~key[N]{options}~).
+ * Parse and format placeholder tokens in template text (~key~, ~key[N]~, ~key[N]{options}~).
+ *
+ * Placeholders in a template are written as tilded tokens in the editor text, for example
+ * ~pdfText[1]~ or ~submissionFiles[2]{characterLimit:5000}~. That string is the placeholder
+ * token — it is not the placeholder definition row in the database.
+ *
+ * This module reads, builds, and substitutes those tokens in the template editor
+ * and during template resolution.
  *
  * @author Mohammad Elwan
  */

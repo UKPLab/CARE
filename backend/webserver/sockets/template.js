@@ -10,7 +10,7 @@ const {
   getDuplicatePlaceholderIds,
   getUsedPlaceholders,
   formatMissingPlaceholderError,
-} = require("../../utils/templateResolver");
+} = require("../../utils/helper/templateResolver");
 
 /**
  * Handle templates through websocket

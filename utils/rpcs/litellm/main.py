@@ -11,9 +11,9 @@ import logging
 import os
 import re
 import threading
-import socketio
+import socketio  # pyright: ignore[reportMissingImports]
 import litellm
-from json_repair import repair_json
+from json_repair import repair_json  # pyright: ignore[reportMissingImports]
 from litellm import Router
 
 OUTPUT_MODE_TEXT = 0
@@ -308,6 +308,35 @@ def create_app():
         finally:
             with active_requests_lock:
                 active_requests.pop(request_id, None)
+
+    @sio.on("getProviders")
+    def get_providers(sid, data=None):
+        """
+        Return LiteLLM's supported provider slugs for credential UI selection.
+        Drawn from the installed package catalog (not CARE-hardcoded).
+        """
+        logger.info(f"getProviders from {sid}")
+        try:
+            providers = set()
+
+            models_by_provider = getattr(litellm, "models_by_provider", None) or {}
+            if isinstance(models_by_provider, dict):
+                providers.update(str(key).strip() for key in models_by_provider.keys() if key)
+
+            provider_list = getattr(litellm, "provider_list", None) or []
+            for item in provider_list:
+                value = getattr(item, "value", item)
+                if value:
+                    providers.add(str(value).strip())
+
+            providers = sorted(
+                {p.lower() for p in providers if p and p.lower() not in {"", "none"}},
+                key=lambda p: p,
+            )
+            return {"success": True, "data": {"providers": providers}}
+        except Exception as e:
+            logger.error(f"getProviders error: {e}")
+            return {"success": False, "message": str(e)}
 
     @sio.on("getValidModels")
     def get_valid_models(sid, data):
