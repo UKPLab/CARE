@@ -10,10 +10,9 @@
     <template #title>
       <span>Bulk Import Users</span>
     </template>
-    <!-- Step1: Upload -->
-    <template #step-1>
+    <template #step="{ step }">
       <div class="file-upload-container">
-        <template v-if="importType === 'csv'">
+        <template v-if="step.key === 'source' && importType === 'csv'">
           <div
             class="drag-drop-area"
             @dragover.prevent
@@ -78,17 +77,25 @@
             </div>
           </template>
         </template>
-        <template v-else>
+        <template v-else-if="step.key === 'source'">
           <MoodleOptions
             ref="moodleOptionsForm"
             v-model="moodleOptions"
           />
         </template>
       </div>
-    </template>
-    <!-- Step2: Preview -->
-    <template #step-2>
-      <div class="preview-table-container">
+
+      <MoodleRoleMappingStep
+        v-if="step.key === 'roleMapping'"
+        v-model="roleMappings"
+        :users="users"
+        :system-roles="systemRoles"
+      />
+
+      <div
+        v-if="step.key === 'preview'"
+        class="preview-table-container"
+      >
         <BasicTable
           v-model="selectedUsers"
           :columns="columns"
@@ -97,10 +104,11 @@
           :max-table-height="400"
         />
       </div>
-    </template>
-    <!-- Step3: Confirm -->
-    <template #step-3>
-      <div class="confirm-container">
+
+      <div
+        v-if="step.key === 'confirm'"
+        class="confirm-container"
+      >
         <BasicIcon
           icon-name="person-fill-up"
           size="64"
@@ -110,10 +118,11 @@
           and overwrite <strong>{{ userCount.duplicate }}</strong> users?
         </p>
       </div>
-    </template>
-    <!-- Step3: Result -->
-    <template #step-4>
-      <div class="result-container">
+
+      <div
+        v-if="step.key === 'result'"
+        class="result-container"
+      >
         <div v-if="updatedUserCount">
           Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
           <div
@@ -161,6 +170,8 @@ import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
+import MoodleRoleMappingStep from "@/components/dashboard/users/MoodleRoleMappingStep.vue";
+import { buildInitialRoleMappings, getMoodleRoleRows } from "@/components/dashboard/users/moodleRoleMapping.js";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -168,7 +179,8 @@ import MoodleOptions from "@/basic/form/MoodleOptions.vue";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
+  components: { MoodleRoleMappingStep, MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
+  emits: ["updateUser"],
   data() {
     return {
       importType: "csv",
@@ -213,9 +225,21 @@ export default {
       updatedUserCount: null,
       createdUsers: [],
       createdErrors: [],
+      roleMappings: {},
     };
   },
   computed: {
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"] || [];
+    },
+    moodleRoleRows() {
+      return getMoodleRoleRows(this.users);
+    },
+    moodleCareRoleMap() {
+      return Object.fromEntries(
+        Object.entries(this.roleMappings).filter(([, careRole]) => careRole)
+      );
+    },
     userCount() {
       return {
         new: this.selectedUsers.filter((u) => !u.exists).length,
@@ -223,21 +247,31 @@ export default {
       };
     },
     steps() {
-      return [this.importType === "csv" ? { title: "Upload" } : { title: "Moodle" }, { title: "Preview" }, { title: "Confirm" }, { title: "Result" }];
+      const sourceStep = this.importType === "csv" ? { key: "source", title: "Upload" } : { key: "source", title: "Moodle" };
+      const commonSteps = [
+        { key: "preview", title: "Preview" },
+        { key: "confirm", title: "Confirm" },
+        { key: "result", title: "Result" },
+      ];
+      if (this.importType === "moodle") {
+        return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
+      }
+      return [sourceStep, ...commonSteps];
     },
     stepValid() {
-      let validStates = [];
       if (this.importType === "csv") {
-        validStates.push(this.file.name !== "" || this.file.errors.length < 1);
-      } else {
-        const { courseID, apiUrl, apiKey } = this.moodleOptions;
-        validStates.push(courseID && apiUrl && apiKey);
+        return [this.file.name !== "" && this.file.errors.length < 1, this.selectedUsers.length > 0, true, true];
       }
-      validStates = [...validStates, this.selectedUsers.length > 0, true, true];
-      return validStates;
+
+      const { courseID, apiUrl, apiKey } = this.moodleOptions;
+      const hasRoleMappings = this.moodleRoleRows.every((role) => Object.prototype.hasOwnProperty.call(this.roleMappings, role.raw));
+      return [courseID && apiUrl && apiKey, hasRoleMappings, this.selectedUsers.length > 0, true, true];
     },
   },
   methods: {
+    initializeRoleMappings() {
+      this.roleMappings = buildInitialRoleMappings(this.users, this.roleMappings);
+    },
     downloadFileAsCSV() {
       const filename = `users_${Date.now()}`;
       const users = this.createdUsers.map((user) => ({
@@ -259,7 +293,7 @@ export default {
           firstName: "Test",
           lastName: "User",
           email: "test.user@example.com",
-          roles: "Student*in",
+          roles: "student",
         },
       ];
       downloadObjectsAs(users, filename, "csv");
@@ -296,6 +330,7 @@ export default {
       };
       this.users = [];
       this.selectedUsers = [];
+      this.roleMappings = {};
       if (this.updatedUserCount) {
         this.updatedUserCount = null;
         this.createdUsers = [];
@@ -306,26 +341,37 @@ export default {
       }
     },
     handleStepChange(step) {
-      switch (step) {
-        case 1:
-          this.$refs.importStepper?.setWaiting(true);
+      const stepKey = this.steps[step]?.key;
+      switch (stepKey) {
+        case "roleMapping":
           this.prepareUserImport();
           break;
-        case 2:
+        case "preview":
+          if (this.importType === "csv") {
+            this.prepareUserImport();
+          } else {
+            this.$refs.importStepper?.setWaiting(false);
+          }
+          break;
+        case "confirm":
           this.$refs.importStepper?.setWaiting(false);
           break;
-        case 3:
+        case "result":
           this.executeUserImport();
           break;
       }
     },
     prepareUserImport() {
       if (this.importType === "moodle") {
-        if (!this.$refs.moodleOptionsForm?.validate()) return;
+        const { courseID, apiUrl, apiKey } = this.moodleOptions;
+        if (!courseID || !apiUrl || !apiKey || (this.$refs.moodleOptionsForm && !this.$refs.moodleOptionsForm.validate())) return;
+        this.$refs.importStepper?.setWaiting(true);
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.importStepper?.setWaiting(false);
           if (res.success) {
             this.users = res["data"];
+            this.selectedUsers = [];
+            this.initializeRoleMappings();
           } else {
             this.eventBus.emit("toast", {
               title: "Failed to get users from Moodle",
@@ -336,19 +382,14 @@ export default {
           }
         });
       } else {
+        this.$refs.importStepper?.setWaiting(true);
         this.checkDuplicateUsers();
       }
     },
     executeUserImport() {
       const userData = {
         users: this.selectedUsers,
-        // Moodle's role names are subject to change
-        moodleCareRoleMap: {
-          "Dozent*in": "teacher",
-          "Betreuer*in": "teacher",
-          "Tutor*in": "mentor",
-          "Student*in": "student",
-        },
+        moodleCareRoleMap: this.importType === "moodle" ? this.moodleCareRoleMap : null,
         progressId: this.$refs.importStepper.getProgressId(),
       };
       this.$refs.importStepper.startProgress();
