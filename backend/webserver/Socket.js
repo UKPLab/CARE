@@ -171,7 +171,6 @@ module.exports = class Socket {
         try {
             const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
             if (transaction && transaction.changes) {
-                // Group by table → operation so query-mode clients get granular Deltas
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
                         const tableName = entry.constructor.tableName;
@@ -191,9 +190,8 @@ module.exports = class Socket {
                 }, new Map());
 
                 for (const [table, byOp] of changesMap) {
-                    // Mixed operations in one txn → Stale for query-mode.
-                    // Same-op bulk (e.g. multi-delete) → keep operation so clients get per-row Deltas
-                    // (current/next page apply immediately; only prior-page changes banner).
+                    // Mixed ops in one txn (e.g. study create+update): pass null so query-mode gets Stale.
+                    // Same-op bulk (e.g. multi-delete): pass the operation so clients get per-row Deltas.
                     if (byOp.size > 1) {
                         const allRows = [...byOp.values()].flat();
                         this.broadcastTable(table, allRows, null);
@@ -954,7 +952,7 @@ module.exports = class Socket {
     /**
      * Broadcasts data to all clients that have permissions to see it.
      * Query-mode sockets (socket.currentQueries[table]) receive {table}Delta or {table}Stale
-     * instead of a full {table}Refresh (issue #88).
+     * instead of a full {table}Refresh
      * @param {string} tableName The name of table
      * @param {object|Array} data The data to broadcast
      * @param {string|null} [operation] create|update|delete — null means bulk/unknown → Stale for query-mode
@@ -964,6 +962,7 @@ module.exports = class Socket {
         const sockets = await this.io.fetchSockets();
         if (!sockets) return;
         const rows = Array.isArray(data) ? data : [data];
+        // Who committed: FE uses this on Delta/Stale (own tab applies now, others may banner).
         const originSocketId = this.socket?.id || null;
 
         for (const socket of sockets) {
@@ -972,7 +971,9 @@ module.exports = class Socket {
             }
 
             const isQueryMode = !!(socket.currentQueries && socket.currentQueries[tableName]);
+            // Helper: send this socket either Stale (mixed ops) or one Delta per row.
             const emitQueryMode = (filteredRows) => {
+                // No operation (e.g. mixed delete+update in one txn) → Stale, not stacked Deltas.
                 if (!operation) {
                     this.io.to(socket.id).emit(tableName + "Stale", {
                         originSocketId,
@@ -1018,7 +1019,7 @@ module.exports = class Socket {
             }
             let allFilter = {};
             let allAttributes = {};
-            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt);
+            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
             if (!filtersAndAttributes.accessAllowed) {
                 continue;
             }

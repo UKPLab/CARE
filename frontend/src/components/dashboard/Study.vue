@@ -149,9 +149,7 @@ export default {
         pagination: {
           serverSide: true,
           itemsPerPage: 10,
-          itemsPerPageList: [10, 25, 50, 100],
           total: 0,
-          showPages: 3,
         },
         search: true,
         sort: {column: "createdAt", order: "ASC"},
@@ -407,7 +405,6 @@ export default {
       return cols;
     },
     studiesTable() {
-      const sessionCounts = this.$store.getters["table/study_session/sessionCountByStudyId"];
       return this.studies
           .filter(study => !study.template)
           .filter(study => this.canViewAllStudies ||

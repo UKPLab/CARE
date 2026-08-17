@@ -715,14 +715,6 @@ export default {
         this.cleanupAllObserver();
       }
     },
-    search() {
-      if (!this.queryMode) return;
-      clearTimeout(this.searchDebounceTimer);
-      this.searchDebounceTimer = setTimeout(() => {
-        this.currentPage = 1;
-        this.fetchQueryPage();
-      }, 300);
-    },
     queryFilter: {
       handler() {
         if (this.queryMode) {
@@ -1222,7 +1214,7 @@ export default {
       return this.currentData.some(r => deepEqual(r, row));
     },
 
-    // --- queryTable / Delta (issue #88) ---
+    // --- queryTable / Delta ---
 
     setupQueryMode() {
       if (!this.table || !this.$socket) return;
@@ -1279,8 +1271,6 @@ export default {
           page,
           limit,
           sort,
-          search: this.search || "",
-          columnFilters: this.sequelizeFilter || {},
         },
       };
     },
@@ -1563,8 +1553,6 @@ export default {
             page: pageIndex,
             limit: this.currentQuery?.limit || this.limit,
             sort,
-            search: this.search || "",
-            columnFilters: this.sequelizeFilter || {},
           },
         };
         const t = setTimeout(() => reject(new Error("queryTable timeout")), 15000);

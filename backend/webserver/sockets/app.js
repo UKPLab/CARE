@@ -425,8 +425,8 @@ class AppSocket extends Socket {
     }
 
     /**
-     * Request-response page query for an autoTable (issue #88).
-     * Does not alter subscriptions. Stores params on socket.currentQueries[table]
+     * Request-response page query for an autoTable.
+     * Stores params on socket.currentQueries[table]
      * so broadcastTable can emit Delta/Stale instead of full Refresh.
      *
      * @socketEvent queryTable
@@ -437,8 +437,6 @@ class AppSocket extends Socket {
      * @param {number} [data.query.page] 0-based page index
      * @param {number} [data.query.limit]
      * @param {Object} [data.query.sort] { column, direction }
-     * @param {string} [data.query.search]
-     * @param {Object} [data.query.columnFilters] { col: [values] } or { col: { operator, value } }
      * @returns {Promise<{items: Array, meta: Object}>}
      */
     async queryTable(data) {
@@ -454,56 +452,16 @@ class AppSocket extends Socket {
         const attributes = model.getAttributes();
 
         let allFilter = {deleted: false};
-        const mergedClientFilter = mergeFilter([Array.isArray(filter) ? filter : []], attributes);
+        const mergedClientFilter = mergeFilter([(filter) ? filter : []], attributes);
         if (mergedClientFilter.length > 0) {
             allFilter[Op.or] = mergedClientFilter;
         }
 
-        // Column filters from Table.vue sequelizeFilter
-        const columnFilters = query.columnFilters || {};
-        for (const [col, colFilter] of Object.entries(columnFilters)) {
-            if (!(col in attributes)) continue;
-            if (Array.isArray(colFilter)) {
-                if (colFilter.length === 0) continue;
-                allFilter[col] = {[Op.in]: colFilter};
-            } else if (colFilter && typeof colFilter === "object" && colFilter.operator) {
-                const v = colFilter.value;
-                const opMap = {
-                    gt: Op.gt, lt: Op.lt, gte: Op.gte, lte: Op.lte, eq: Op.eq,
-                };
-                const sequelizeOp = opMap[colFilter.operator];
-                if (sequelizeOp) {
-                    allFilter[col] = {[sequelizeOp]: v};
-                }
-            }
-        }
-
-        // Text search across string-like columns (simple LIKE OR)
-        if (query.search && String(query.search).trim() !== "") {
-            const q = `%${String(query.search).trim()}%`;
-            const searchable = Object.entries(attributes)
-                .filter(([, def]) => {
-                    const t = def.type?.key || def.type?.constructor?.key;
-                    return t === "STRING" || t === "TEXT" || t === "CITEXT";
-                })
-                .map(([name]) => name);
-            // Always allow searching id as string
-            const searchOr = searchable.map((col) => ({
-                [col]: {[Op.iLike]: q},
-            }));
-            if ("id" in attributes) {
-                const asNum = Number(query.search);
-                if (!Number.isNaN(asNum)) {
-                    searchOr.push({id: asNum});
-                }
-            }
-            if (searchOr.length > 0) {
-                allFilter[Op.and] = [...(allFilter[Op.and] || []), {[Op.or]: searchOr}];
-            }
-        }
+        //TODO: search + column funnel filters on backend (client-side in BackendTable for now)
 
         const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
         let allAttributes = {exclude: defaultExcludes};
+        // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
         const filtersAndAttributes = await this.getFiltersAndAttributes(
             this.userId, allFilter, allAttributes, table, this.rolesUpdatedAt
         );
@@ -513,11 +471,11 @@ class AppSocket extends Socket {
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
 
-        const page = Number.isFinite(Number(query.page)) ? Math.max(0, Number(query.page)) : 0;
-        const limit = Number.isFinite(Number(query.limit)) && Number(query.limit) > 0
-            ? Number(query.limit)
-            : 10;
+        // Page index and limit (default 10 rows per page).
+        const page = Math.max(0, Number(query.page) || 0);
+        const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
 
+        // Options for the DB page fetch
         const queryOpts = {
             where: allFilter,
             attributes: allAttributes,
@@ -526,6 +484,7 @@ class AppSocket extends Socket {
             offset: page * limit,
         };
 
+        // sort by column if it exists, otherwise sort by id
         let sortColumn = query.sort?.column;
         let sortDirection = (query.sort?.direction || "ASC").toUpperCase();
         if (sortColumn && sortColumn in attributes) {
@@ -551,8 +510,6 @@ class AppSocket extends Socket {
             page,
             limit,
             sort: {column: sortColumn, direction: sortDirection},
-            search: query.search || "",
-            columnFilters,
             filter,
         };
 
