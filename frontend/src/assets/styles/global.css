@@ -36,6 +36,10 @@
 html[data-bs-theme="dark"] {
   --care-accent: #e3d5a8;
   --care-on-accent: #212529;
+  --care-accent-hover: #d5c795;
+  --care-accent-active: #c7b982;
+  --care-switch-knob: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e3d5a8'/%3e%3c/svg%3e");
+  --care-switch-knob-on: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
 }
 
 /* Tell the browser which theme is showing. Bootstrap declares
@@ -98,6 +102,9 @@ html[data-bs-theme="dark"] {
   --bs-btn-active-bg: var(--care-accent-active);
   --bs-btn-active-border-color: var(--care-accent-active);
   --bs-btn-active-color: var(--care-on-accent);
+  --bs-btn-disabled-bg: var(--care-accent);
+  --bs-btn-disabled-border-color: var(--care-accent);
+  --bs-btn-disabled-color: var(--care-on-accent);
 }
 
 
@@ -213,4 +220,10 @@ html[data-bs-theme="dark"] {
 
 .scrolling-page.pdf-dark .svg-highlight {
   opacity: 0.4 !important;
+}
+
+/* Dropdown items use their own active-state variables rather than --bs-primary. */
+[data-bs-theme="dark"] .dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--care-accent);
+  --bs-dropdown-link-active-color: var(--care-on-accent);
 }
