@@ -13,13 +13,7 @@ const {
     AI_MESSAGE_ROLES,
     AI_MESSAGE_STATUSES,
 } = require("../../../db/models/ai_message");
-
-const VISIBLE_MESSAGE_ROLES = [AI_MESSAGE_ROLES.USER, AI_MESSAGE_ROLES.ASSISTANT];
-const MODEL_ROLES = {
-    [AI_MESSAGE_ROLES.SYSTEM]: "system",
-    [AI_MESSAGE_ROLES.USER]: "user",
-    [AI_MESSAGE_ROLES.ASSISTANT]: "assistant",
-};
+const messages = require("./messages.js");
 
 /**
  * Validates the RPC client's numeric `userId`.
@@ -142,38 +136,6 @@ async function loadChatContext(
 }
 
 /**
- * Loads and validates a chat conversation owned by the authenticated user.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @param {number} userId - Authenticated user identifier.
- * @param {number} studySessionId - Expected study session identifier.
- * @param {Object} [options] - Sequelize query options.
- * @returns {Promise<Object>} Owned chat conversation.
- */
-async function loadConversation(
-    service,
-    conversationId,
-    userId,
-    studySessionId,
-    options = {},
-) {
-    const conversation = await service.server.db.models["ai_conversation"].getById(
-        requireId(conversationId, "conversationId"),
-        options,
-    );
-    if (
-        !conversation ||
-        Number(conversation.userId) !== userId ||
-        Number(conversation.studySessionId) !== Number(studySessionId) ||
-        Number(conversation.type) !== AI_CONVERSATION_TYPES.CHAT
-    ) {
-        throw new Error("AI conversation not found");
-    }
-    return conversation;
-}
-
-/**
  * Lists the enabled models configured for a hook.
  *
  * @param {Object} service - AIAssistantService runtime.
@@ -203,58 +165,6 @@ async function getHookModels(service, client, hookId) {
 }
 
 /**
- * Loads messages safe to display in the chat interface.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @returns {Promise<Object[]>} User and assistant messages ordered by id.
- */
-async function getVisibleMessages(service, conversationId) {
-    return service.server.db.models["ai_message"].findAll({
-        where: {
-            conversationId,
-            role: {[Op.in]: VISIBLE_MESSAGE_ROLES},
-            deleted: false,
-        },
-        attributes: [
-            "id",
-            "conversationId",
-            "studyStepId",
-            "aiModelId",
-            "role",
-            "content",
-            "status",
-            "createdAt",
-            "updatedAt",
-        ],
-        order: [["id", "ASC"]],
-        raw: true,
-    });
-}
-
-/**
- * Lists the steps whose system context is already stored in a conversation.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @returns {Promise<number[]>} Introduced study step identifiers.
- */
-async function getIntroducedStepIds(service, conversationId) {
-    const messages = await service.server.db.models["ai_message"].findAll({
-        where: {
-            conversationId,
-            role: AI_MESSAGE_ROLES.SYSTEM,
-            status: AI_MESSAGE_STATUSES.COMPLETED,
-            deleted: false,
-        },
-        attributes: ["studyStepId"],
-        order: [["id", "ASC"]],
-        raw: true,
-    });
-    return [...new Set(messages.map((message) => Number(message.studyStepId)).filter(Boolean))];
-}
-
-/**
  * Loads the chat snapshot for a study session.
  *
  * @param {Object} service - AIAssistantService runtime.
@@ -280,12 +190,17 @@ async function getConversation(service, client, data) {
         order: [["updatedAt", "DESC"], ["id", "DESC"]],
         raw: true,
     });
+    const titles = await messages.getConversationTitles(service, conversations.map((row) => row.id));
+    const conversationSummaries = conversations.map((conversation) => ({
+        ...conversation,
+        title: titles[conversation.id] || null,
+    }));
 
     const requestedConversationId = data?.conversationId
         ? requireId(data.conversationId, "conversationId")
         : null;
     const activeConversation = requestedConversationId
-        ? await loadConversation(
+        ? await messages.loadConversation(
             service,
             requestedConversationId,
             context.userId,
@@ -295,11 +210,11 @@ async function getConversation(service, client, data) {
     const models = await getHookModels(service, client, context.hookId);
 
     return {
-        conversations,
+        conversations: conversationSummaries,
         activeConversationId: activeConversation?.id || null,
-        messages: activeConversation ? await getVisibleMessages(service, activeConversation.id) : [],
+        messages: activeConversation ? await messages.getVisibleMessages(service, activeConversation.id) : [],
         introducedStepIds: activeConversation
-            ? await getIntroducedStepIds(service, activeConversation.id)
+            ? await messages.getIntroducedStepIds(service, activeConversation.id)
             : [],
         models,
         defaultModelId: models[0]?.id || null,
@@ -340,204 +255,6 @@ function buildPromptValues(inputMappings, suppliedValues) {
 }
 
 /**
- * Builds the completed model-visible history for a conversation.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @returns {Promise<Object[]>} LiteLLM-compatible messages ordered by id.
- */
-async function buildModelMessages(service, conversationId) {
-    const rows = await service.server.db.models["ai_message"].findAll({
-        where: {
-            conversationId,
-            role: {[Op.in]: Object.keys(MODEL_ROLES).map(Number)},
-            status: AI_MESSAGE_STATUSES.COMPLETED,
-            deleted: false,
-        },
-        attributes: ["role", "content"],
-        order: [["id", "ASC"]],
-        raw: true,
-    });
-    return rows.map((message) => ({
-        role: MODEL_ROLES[message.role],
-        content: message.content,
-    }));
-}
-
-/**
- * Rejects another chat request while one assistant response is pending in the session.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} userId - Authenticated user identifier.
- * @param {number} studySessionId - Study session identifier.
- * @param {Object} [options] - Sequelize query options.
- * @returns {Promise<void>}
- */
-async function requireNoPendingMessage(service, userId, studySessionId, options = {}) {
-    const models = service.server.db.models;
-    const pending = await models["ai_message"].findOne({
-        where: {
-            role: AI_MESSAGE_ROLES.ASSISTANT,
-            status: AI_MESSAGE_STATUSES.PENDING,
-            deleted: false,
-        },
-        include: [{
-            model: models["ai_conversation"],
-            as: "conversation",
-            where: {userId, studySessionId, deleted: false},
-            attributes: [],
-            required: true,
-        }],
-        attributes: ["id"],
-        ...options,
-    });
-    if (pending) {
-        throw new Error("You already have a pending AI request in this session");
-    }
-}
-
-/**
- * Returns the latest assistant message in a conversation.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @param {Object} [options] - Sequelize query options.
- * @returns {Promise<Object|null>} Latest assistant message.
- */
-async function getLatestAssistantMessage(service, conversationId, options = {}) {
-    return service.server.db.models["ai_message"].findOne({
-        where: {
-            conversationId,
-            role: AI_MESSAGE_ROLES.ASSISTANT,
-            deleted: false,
-        },
-        order: [["id", "DESC"]],
-        raw: true,
-        ...options,
-    });
-}
-
-/**
- * Creates one user turn and its pending assistant placeholder atomically.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {Object} context - Validated chat context.
- * @param {Object|null} conversation - Existing conversation, or null for a new one.
- * @param {string} content - User message content.
- * @param {Object} modelParams - Resolved hook model parameters.
- * @param {string|null} systemPrompt - System context needed for this step.
- * @returns {Promise<Object>} Conversation, user message, and assistant placeholder.
- */
-async function createTurn(service, context, conversation, content, modelParams, systemPrompt) {
-    const models = service.server.db.models;
-    return service.server.db.sequelize.transaction(async (transaction) => {
-        await requireNoPendingMessage(
-            service,
-            context.userId,
-            context.studySession.id,
-            {transaction},
-        );
-
-        let currentConversation = conversation;
-        if (currentConversation) {
-            currentConversation = await loadConversation(
-                service,
-                currentConversation.id,
-                context.userId,
-                context.studySession.id,
-                {transaction},
-            );
-            const latestAssistant = await getLatestAssistantMessage(
-                service,
-                currentConversation.id,
-                {transaction},
-            );
-            if (
-                latestAssistant &&
-                [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED]
-                    .includes(Number(latestAssistant.status))
-            ) {
-                throw new Error("Retry the previous AI response before sending another message");
-            }
-        } else {
-            currentConversation = await models["ai_conversation"].add({
-                userId: context.userId,
-                studySessionId: context.studySession.id,
-                type: AI_CONVERSATION_TYPES.CHAT,
-            }, {transaction});
-        }
-
-        const existingSystemMessage = await models["ai_message"].findOne({
-            where: {
-                conversationId: currentConversation.id,
-                studyStepId: context.studyStep.id,
-                role: AI_MESSAGE_ROLES.SYSTEM,
-                deleted: false,
-            },
-            attributes: ["id"],
-            transaction,
-        });
-        if (!existingSystemMessage) {
-            if (systemPrompt === null) {
-                throw new Error("AI Chat context is missing for this study step");
-            }
-            await models["ai_message"].add({
-                conversationId: currentConversation.id,
-                studyStepId: context.studyStep.id,
-                aiModelId: modelParams.aiModelId,
-                role: AI_MESSAGE_ROLES.SYSTEM,
-                content: systemPrompt,
-                status: AI_MESSAGE_STATUSES.COMPLETED,
-            }, {transaction});
-        }
-
-        const userMessage = await models["ai_message"].add({
-            conversationId: currentConversation.id,
-            studyStepId: context.studyStep.id,
-            aiModelId: modelParams.aiModelId,
-            role: AI_MESSAGE_ROLES.USER,
-            content,
-            status: AI_MESSAGE_STATUSES.COMPLETED,
-        }, {transaction});
-        const assistantMessage = await models["ai_message"].add({
-            conversationId: currentConversation.id,
-            studyStepId: context.studyStep.id,
-            aiModelId: modelParams.aiModelId,
-            role: AI_MESSAGE_ROLES.ASSISTANT,
-            content: "",
-            status: AI_MESSAGE_STATUSES.PENDING,
-        }, {transaction});
-        await models["ai_conversation"].updateById(
-            currentConversation.id,
-            {updatedAt: new Date()},
-            {transaction},
-        );
-
-        return {conversation: currentConversation, userMessage, assistantMessage};
-    });
-}
-
-/**
- * Marks an assistant placeholder failed only while it is still pending.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} assistantMessageId - Assistant message identifier.
- * @returns {Promise<void>}
- */
-async function failAssistantMessage(service, assistantMessageId) {
-    await service.server.db.models["ai_message"].update({
-        status: AI_MESSAGE_STATUSES.FAILED,
-        content: "",
-    }, {
-        where: {
-            id: assistantMessageId,
-            status: AI_MESSAGE_STATUSES.PENDING,
-            deleted: false,
-        },
-    });
-}
-
-/**
  * Runs LiteLLM for an existing pending assistant placeholder.
  *
  * @param {Object} service - AIAssistantService runtime.
@@ -562,7 +279,7 @@ async function runAssistantRequest(
 ) {
     const {additionalParameters, ...credentialParams} = modelParams;
     try {
-        const messages = await buildModelMessages(service, conversation.id);
+        const modelMessages = await messages.buildModelMessages(service, conversation.id);
         const result = await getAIService(service).call("chatCompletion", client, {
             ...additionalParameters,
             ...credentialParams,
@@ -572,11 +289,11 @@ async function runAssistantRequest(
             studyStepId: context.studyStep.id,
             documentId: context.studyStep.documentId,
             __requestId: requestId,
-            messages,
+            messages: modelMessages,
         }, {
             log: {
                 aiMessageId: assistantMessage.id,
-                input: serializeMessages(messages),
+                input: serializeMessages(modelMessages),
             },
         });
         const content = result.choices?.[0]?.message?.content;
@@ -599,7 +316,7 @@ async function runAssistantRequest(
             assistantMessage: await service.server.db.models["ai_message"].getById(assistantMessage.id),
         };
     } catch (error) {
-        await failAssistantMessage(service, assistantMessage.id);
+        await messages.failAssistantMessage(service, assistantMessage.id);
         throw error;
     }
 }
@@ -623,9 +340,10 @@ async function sendConversationMessage(service, client, data) {
     if (!content) {
         throw new Error("Message content is required");
     }
+    const userMetadata = messages.buildQuoteMetadata(context, data?.quote);
     const requestId = requireRequestId(data?.requestId);
     const conversation = data?.conversationId
-        ? await loadConversation(
+        ? await messages.loadConversation(
             service,
             data.conversationId,
             context.userId,
@@ -660,13 +378,14 @@ async function sendConversationMessage(service, client, data) {
         )).promptText;
     }
 
-    const turn = await createTurn(
+    const turn = await messages.createTurn(
         service,
         context,
         conversation,
         content,
         modelParams,
         systemPrompt,
+        userMetadata,
     );
     return runAssistantRequest(
         service,
@@ -708,13 +427,13 @@ async function retryConversationMessage(service, client, data) {
     if (!conversation) {
         throw new Error("AI conversation not found");
     }
-    await loadConversation(
+    await messages.loadConversation(
         service,
         conversation.id,
         userId,
         conversation.studySessionId,
     );
-    const latestAssistant = await getLatestAssistantMessage(service, conversation.id);
+    const latestAssistant = await messages.getLatestAssistantMessage(service, conversation.id);
     if (Number(latestAssistant?.id) !== assistantMessageId) {
         throw new Error("Only the latest AI response can be retried");
     }
@@ -733,7 +452,7 @@ async function retryConversationMessage(service, client, data) {
     );
 
     await service.server.db.sequelize.transaction(async (transaction) => {
-        await requireNoPendingMessage(
+        await messages.requireNoPendingMessage(
             service,
             context.userId,
             context.studySession.id,
@@ -801,7 +520,7 @@ async function abortConversationMessage(service, client, data) {
     if (!conversation) {
         return {aborted: false, message: "AI conversation not found"};
     }
-    await loadConversation(
+    await messages.loadConversation(
         service,
         conversation.id,
         userId,
@@ -841,5 +560,5 @@ module.exports = {
     sendConversationMessage,
     retryConversationMessage,
     abortConversationMessage,
-    buildModelMessages,
+    buildModelMessages: messages.buildModelMessages,
 };
