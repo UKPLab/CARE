@@ -144,10 +144,23 @@ async function chatCompletion(service, client, data, logOptions = {}) {
  * Best-effort abort for an in-flight chat completion identified by provider request id.
  *
  * @param {{ server: Object }} service AIService with RPC registry access.
+ * @param {{ userId?: number }} client Authenticated RPC client; must own the in-progress log.
  * @param {{ requestId?: string, reason?: string }} data Abort payload echoed to LiteLLM.
  * @returns {Promise<{aborted: boolean, message?: string}>}
  */
-async function abortChatCompletion(service, data) {
+async function abortChatCompletion(service, client, data) {
+    const log = await service.server.db.models.ai_log.findOne({
+        where: {
+            requestId: data?.requestId,
+            userId: client.userId,
+            status: "in_progress",
+        },
+        attributes: ["id"],
+    });
+    if (!log) {
+        return {aborted: false, message: "Request not found or not abortable"};
+    }
+
     const rpc = runtime.getRPC(service.server);
     if (!rpc || !(await rpc.isOnline())) {
         return {aborted: false, message: "LiteLLM service is not connected"};
