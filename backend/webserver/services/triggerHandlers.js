@@ -3,6 +3,7 @@
 const { resolveTemplate } = require("../../utils/helper/templateResolver");
 const {buildStudyHookKey} = require("../../utils/studyNlpDocumentData");
 const { QUEUE_STATUS } = require("../../utils/triggerQueueStatus");
+const { Op } = require("sequelize");
 const aiHook = require("./ai/hook");
 
 const HANDLERS = {
@@ -423,12 +424,20 @@ async function retryQueueItem(server, queueItemId, options = {}) {
         throw new Error("Maximum retries for this trigger have been reached.");
     }
 
-    const pendingItem = await updateQueueItem(server, item, {
+    const [updatedCount] = await server.db.models[QUEUE_TABLE].update({
         status: QUEUE_STATUS.PENDING,
         errorMessage: null,
         startedAt: null,
         completedAt: null,
-    }, options);
+    }, {
+        where: { id: item.id, status: { [Op.in]: retryableStatuses } },
+        transaction: options.transaction,
+    });
+    if (!updatedCount) {
+        throw new Error("Queue item is already being retried.");
+    }
+    const pendingItem = await getQueueItem(server, item.id, options);
+    await broadcastQueueItem(pendingItem, options);
 
     const eventContext = asObject(pendingItem.configuration).event || {};
     setImmediate(() => {
