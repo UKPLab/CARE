@@ -169,7 +169,7 @@ module.exports = class Socket {
      */
     async broadcastTransactionChanges(transaction) {
         try {
-            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
+            const defaultExcludes = ["deletedAt", "passwordHash", "salt", "apiKey"];
             if (transaction && transaction.changes) {
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
