@@ -7,28 +7,23 @@ const {
     replaceAuthorInZip,
     buildUserMapping,
     sanitizeFolderName,
-    getPrivateAwareName,
     getDisplayName,
     calculateSubmissionVersion,
-    parseAssessmentState,
-    getAssessmentConfigurationId,
-    resolveAssessmentConfigurationContent,
-    addCriteriaReferenceEntry,
-    buildGradeCsvRow,
-    loadGradeExportContext,
     getConsentedUserIds,
-    compareGradeRecords,
     appendStoredFileIfExists,
     resolveHasPrivateInfoRight,
     parseUserIds,
     loadExportRequestContext,
-    SUPPORTED_EXPORT_TYPES,
-    buildGradeRecords,
     attachTagNames,
     resolveIsAdmin,
     createJsonArrayStream,
     createCsvRowsStream
 } = require('../../utils/helper/export.js');
+const {
+    buildGradeCsvRow,
+    compareGradeRecords,
+    buildGradeRecords,
+} = require('../../utils/helper/exportGrades.js');
 const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
 // Stored files the study export ships per step, by document type: PDF and LaTeX ZIP.
