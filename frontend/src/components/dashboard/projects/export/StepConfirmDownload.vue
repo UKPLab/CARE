@@ -82,6 +82,7 @@ export default {
         grades: 'grades',
         documents: 'documents',
         studies: 'studies',
+        userBehaviour: 'user behaviour data',
       };
       return labels[this.exportType] || 'documents';
     },
