@@ -61,7 +61,7 @@ module.exports = function (server) {
         const normalizedBehaviourFileFormat = behaviourFileFormat === 'csv' ? 'csv' : 'json';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const parsedProjectId = Number(projectId);
-        const userIds = parseUserIds(rawUserIds);
+        const userIds = parseUserIds(server, rawUserIds);
 
         try {
             const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds });
@@ -79,7 +79,7 @@ module.exports = function (server) {
             res.attachment(exportFolderName);
             const archive = archiver('zip', { zlib: { level: 5 } });
             archive.on('error', function(err) {
-                console.error("Archiver Error:", err);
+                server.logger.error("Archiver Error:", err);
                 if (!res.headersSent) res.status(500).send({error: err.message});
             });
 
@@ -177,7 +177,7 @@ module.exports = function (server) {
             await archive.finalize();
 
         } catch (error) {
-            console.error("Export Error:", error);
+            server.logger.error("Export Error:", error);
             if (!res.headersSent) res.status(500).send("Export failed.");
             else res.end();
         }
@@ -266,14 +266,14 @@ module.exports = function (server) {
                             const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
                             archive.append(newZipBuffer, { name: destPathInArchive });
                         } catch (err) {
-                            console.error(`Failed to change names for zip ${doc.hash}:`, err);
+                            server.logger.error(`Failed to change names for zip ${doc.hash}:`, err);
                             archive.file(filePath, { name: destPathInArchive });
                         }
                     } else {
                         archive.file(filePath, { name: destPathInArchive });
                     }
                 } else {
-                    console.error(`[NOT FOUND] Looking for document: ${doc.hash} at ${filePath}`);
+                    server.logger.error(`[NOT FOUND] Looking for document: ${doc.hash} at ${filePath}`);
                 }
             }
         }
@@ -465,7 +465,7 @@ module.exports = function (server) {
                     archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
                 }
 
-                appendStoredFileIfExists(archive, doc.hash, '.pdf', `${docFolder}/document.pdf`, 'PDF');
+                appendStoredFileIfExists(server, archive, doc.hash, '.pdf', `${docFolder}/document.pdf`, 'PDF');
                 break;
             }
 
@@ -524,12 +524,12 @@ module.exports = function (server) {
             }
 
             case 4: { // ZIP
-                appendStoredFileIfExists(archive, doc.hash, '.zip', `${docFolder}/document.zip`, 'ZIP');
+                appendStoredFileIfExists(server, archive, doc.hash, '.zip', `${docFolder}/document.zip`, 'ZIP');
                 break;
             }
 
             default:
-                console.warn(`[DocumentExport] Unhandled document type ${doc.type} for document ${doc.hash}, skipping.`);
+                server.logger.warn(`[DocumentExport] Unhandled document type ${doc.type} for document ${doc.hash}, skipping.`);
         }
     }
 
@@ -550,7 +550,7 @@ module.exports = function (server) {
             documentTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes;
             if (!Array.isArray(documentTypes)) documentTypes = [0, 1, 2, 4];
         } catch (e) {
-            console.warn("Could not parse documentTypes:", documentTypes);
+            server.logger.warn("Could not parse documentTypes:", documentTypes);
             documentTypes = [0, 1, 2, 4];
         }
         
@@ -559,7 +559,7 @@ module.exports = function (server) {
         });
 
         if (docs.length === 0) {
-            console.warn(`[DocumentExport] No documents found for project ${projectId}`);
+            server.logger.warn(`[DocumentExport] No documents found for project ${projectId}`);
             return;
         }
 
@@ -568,7 +568,7 @@ module.exports = function (server) {
         );
 
         if (filteredDocs.length === 0) {
-            console.warn(`[DocumentExport] No documents matching selected types found for project ${projectId}`);
+            server.logger.warn(`[DocumentExport] No documents matching selected types found for project ${projectId}`);
             return;
         }
 
@@ -608,7 +608,7 @@ module.exports = function (server) {
         const studies = await server.db.models.study.findAll({ where: studyWhere });
 
         if (studies.length === 0) {
-            console.warn(`[StudyExport] No studies found for selected users in project ${projectId}`);
+            server.logger.warn(`[StudyExport] No studies found for selected users in project ${projectId}`);
             return;
         }
 
@@ -871,6 +871,7 @@ module.exports = function (server) {
                                 if (!extension || appendedExtensions.has(extension)) continue;
                                 appendedExtensions.add(extension);
                                 appendStoredFileIfExists(
+                                    server,
                                     archive,
                                     doc.hash,
                                     extension,

@@ -36,20 +36,20 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
         return { success: false, status: 400, message: "Unsupported grade format. Use json or csv." };
     }
     if (userIds.length === 0) {
-        console.warn("Export aborted: No valid users selected.");
+        server.logger.warn("Export aborted: No valid users selected.");
         return { success: false, status: 400, message: "No valid users selected." };
     }
 
     const project = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
     if (!project) {
-        console.warn(`${parsedProjectId} does not exist.`);
+        server.logger.warn(`${parsedProjectId} does not exist.`);
         return { success: false, status: 403, message: "The selected project does not exist." };
     }
 
     const { Op } = server.db.Sequelize;
     const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
     if (users.length === 0) {
-        console.warn("Export aborted: No existing users to export.");
+        server.logger.warn("Export aborted: No existing users to export.");
         return { success: false, status: 400, message: "No authorized users to export." };
     }
 
@@ -210,12 +210,12 @@ function calculateSubmissionVersion(submission, submissionMap) {
  * @param {string} rawAssessmentState - The raw JSON string from document_data.
  * @returns {Object} The parsed assessment state or an empty object on failure.
  */
-function parseAssessmentState(rawAssessmentState) {
+function parseAssessmentState(server, rawAssessmentState) {
     try {
         const parsed = JSON.parse(rawAssessmentState);
         return parsed && typeof parsed === "object" ? parsed : {};
     } catch (error) {
-        console.warn("Failed to parse assessment state:", error.message);
+        server.logger.warn("Failed to parse assessment state:", error.message);
         return {};
     }
 }
@@ -420,12 +420,12 @@ function compareGradeRecords(a, b) {
  * @param {string} typeLabel - Human-readable type label used in the warning log.
  * @returns {void}
  */
-function appendStoredFileIfExists(archive, hash, extension, archivePath, typeLabel) {
+function appendStoredFileIfExists(server, archive, hash, extension, archivePath, typeLabel) {
     const filePath = path.join(storageDir, `${hash}${extension}`);
     if (fs.existsSync(filePath)) {
         archive.file(filePath, { name: archivePath });
     } else {
-        console.warn(`[DocumentExport] ${typeLabel} not found for document ${hash}`);
+        server.logger.warn(`[DocumentExport] ${typeLabel} not found for document ${hash}`);
     }
 }
 
@@ -452,12 +452,12 @@ async function resolveHasPrivateInfoRight(server, userId) {
  * @param {*} rawUserIds - The raw value from req.body.userIds.
  * @returns {Array} Parsed array of user ids, or an empty array if parsing fails.
  */
-function parseUserIds(rawUserIds) {
+function parseUserIds(server, rawUserIds) {
     try {
         const parsed = typeof rawUserIds === 'string' ? JSON.parse(rawUserIds) : rawUserIds;
         return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-        console.warn("Could not parse userIds:", rawUserIds);
+        server.logger.warn("Could not parse userIds:", rawUserIds);
         return [];
     }
 }
@@ -528,7 +528,7 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
         const document = row.document;
         const ownerUser = usersById.get(document.userId);
         if (!ownerUser) {
-            console.warn("Skipping grade export row because the document owner could not be resolved.", {
+            server.logger.warn("Skipping grade export row because the document owner could not be resolved.", {
                 documentId: document.id,
                 documentUserId: document.userId,
                 studySessionId: row.studySessionId,
@@ -548,7 +548,7 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
         const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
 
         const scoreObject = row.value || {};
-        const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
+        const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(server, scoreObject) : scoreObject;
         const flatScores = buildScoresFromState(assessmentState);
         const assessmentConfig = resolveAssessmentConfigurationContent(
             studyStepConfiguration,
