@@ -39,7 +39,7 @@
 </template>
 
 <script>
-import { getRoleRows } from "./moodleRoleMapping.js";
+import { getRoleRows } from "./roleMapping.js";
 
 /**
  * Step for mapping external role labels to CARE roles during user import.
