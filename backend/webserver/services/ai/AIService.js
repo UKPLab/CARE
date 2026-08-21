@@ -8,7 +8,7 @@ const request = require("./request");
 /**
  * AIService — AI / LLM RPC handlers.
  *
- * Implementation is split under `./ai/` (`helpers`, `runtime`, `chat`, `hook`).
+ * Implementation is split under `./ai/` (`runtime`, `chat`, `hook`, `request`).
  *
  * @extends Service
  * @author Akash Gundapuneni, Mohammed Rawhani

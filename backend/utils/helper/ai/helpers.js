@@ -1,24 +1,51 @@
 "use strict";
 
 /**
- * Stateless helpers shared by AIService handlers (share UX, normalization, prompts).
+ * Shared helpers for AI service command handlers.
  *
- * @module webserver/services/ai/helpers
- * @author Akash Gundapuneni
+ * @module utils/helper/ai/helpers
+ * @author Mohammed Rawhani
  */
 
 /**
- * Validates the RPC client's numeric `userId` or throws — share flows require a hardened principal.
+ * Returns the authenticated user id from a service client.
  *
- * @param {{ userId?: number }} client Incoming RPC invocation context.
- * @returns {number} Positive finite user id suitable for Sequelize filters.
+ * @param {Object} client - Service client context.
+ * @returns {number} Authenticated user id.
  */
 function requireClientUserId(client) {
-    const id = Number(client?.userId);
-    if (!Number.isInteger(id) || id <= 0) {
+    if (!client || !client.userId) {
         throw new Error("Invalid user context");
     }
-    return id;
+    return client.userId;
+}
+
+/**
+ * Returns a required identifier or throws a request error.
+ *
+ * @param {unknown} value - Candidate identifier.
+ * @param {string} name - Field name used in the error.
+ * @returns {unknown} Valid identifier.
+ */
+function requireId(value, name) {
+    if (!value) {
+        throw new Error(`Missing or invalid ${name}`);
+    }
+    return value;
+}
+
+/**
+ * Returns a non-empty request identifier.
+ *
+ * @param {unknown} value - Candidate request identifier.
+ * @returns {string} Normalized request identifier.
+ */
+function requireRequestId(value) {
+    const requestId = typeof value === "string" ? value.trim() : "";
+    if (!requestId) {
+        throw new Error("Missing requestId");
+    }
+    return requestId;
 }
 
 /**
@@ -68,22 +95,11 @@ function extractInputText(messages) {
 /**
  * Serializes the exact OpenAI-compatible messages sent to the model.
  *
- * @param {unknown} messages Serialized chat history from client/RPC payloads.
- * @returns {string|null}
+ * @param {unknown} messages - Serialized chat history.
+ * @returns {string|null} Serialized messages.
  */
 function serializeMessages(messages) {
     return Array.isArray(messages) && messages.length ? JSON.stringify(messages) : null;
-}
-
-/**
- * Dedupes non-zero integer-ish ids after optional coercion.
- *
- * @param {Iterable<unknown>} values Source iterable.
- * @param {(value: unknown) => number} [pick=(value)=>Number(value)] Mapper applied before filtration.
- * @returns {number[]}
- */
-function uniquePositiveInts(values, pick = (x) => Number(x)) {
-    return [...new Set((values || []).map(pick).filter((n) => Number.isInteger(n) && n > 0))];
 }
 
 /**
@@ -110,9 +126,10 @@ function buildLiteLLMParams(credential, modelName) {
 }
 
 module.exports = {
-    requireClientUserId,
-    extractInputText,
-    serializeMessages,
-    uniquePositiveInts,
     buildLiteLLMParams,
+    extractInputText,
+    requireClientUserId,
+    requireId,
+    requireRequestId,
+    serializeMessages,
 };

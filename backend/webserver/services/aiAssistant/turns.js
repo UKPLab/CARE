@@ -1,9 +1,9 @@
 "use strict";
 
 /**
- * AI assistant conversation and message persistence helpers.
+ * AI assistant turn lifecycle helpers.
  *
- * @module webserver/services/aiAssistant/messages
+ * @module webserver/services/aiAssistant/turns
  * @author Mohammed Rawhani
  */
 
@@ -14,125 +14,11 @@ const {
     AI_MESSAGE_STATUSES,
 } = require("../../../db/models/ai_message");
 
-const VISIBLE_MESSAGE_ROLES = [AI_MESSAGE_ROLES.USER, AI_MESSAGE_ROLES.ASSISTANT];
 const MODEL_ROLES = {
     [AI_MESSAGE_ROLES.SYSTEM]: "system",
     [AI_MESSAGE_ROLES.USER]: "user",
     [AI_MESSAGE_ROLES.ASSISTANT]: "assistant",
 };
-
-/**
- * Loads and validates a chat conversation owned by the authenticated user.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @param {number} userId - Authenticated user identifier.
- * @param {number} studySessionId - Expected study session identifier.
- * @param {Object} [options] - Sequelize query options.
- * @returns {Promise<Object>} Owned chat conversation.
- */
-async function loadConversation(
-    service,
-    conversationId,
-    userId,
-    studySessionId,
-    options = {},
-) {
-    const conversation = await service.server.db.models["ai_conversation"].getById(
-        conversationId,
-        options,
-    );
-    if (
-        !conversation ||
-        Number(conversation.userId) !== userId ||
-        Number(conversation.studySessionId) !== Number(studySessionId) ||
-        Number(conversation.type) !== AI_CONVERSATION_TYPES.CHAT
-    ) {
-        throw new Error("AI conversation not found");
-    }
-    return conversation;
-}
-
-/**
- * Loads messages safe to display in the chat interface.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @returns {Promise<Object[]>} User and assistant messages ordered by id.
- */
-async function getVisibleMessages(service, conversationId) {
-    return service.server.db.models["ai_message"].findAll({
-        where: {
-            conversationId,
-            role: {[Op.in]: VISIBLE_MESSAGE_ROLES},
-            deleted: false,
-        },
-        attributes: [
-            "id",
-            "conversationId",
-            "studyStepId",
-            "aiModelId",
-            "role",
-            "content",
-            "metadata",
-            "status",
-            "createdAt",
-            "updatedAt",
-        ],
-        order: [["id", "ASC"]],
-        raw: true,
-    });
-}
-
-/**
- * Lists the steps whose system context is already stored in a conversation.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @returns {Promise<number[]>} Introduced study step identifiers.
- */
-async function getIntroducedStepIds(service, conversationId) {
-    const messages = await service.server.db.models["ai_message"].findAll({
-        where: {
-            conversationId,
-            role: AI_MESSAGE_ROLES.SYSTEM,
-            status: AI_MESSAGE_STATUSES.COMPLETED,
-            deleted: false,
-        },
-        attributes: ["studyStepId"],
-        order: [["id", "ASC"]],
-        raw: true,
-    });
-    return [...new Set(messages.map((message) => Number(message.studyStepId)).filter(Boolean))];
-}
-
-/**
- * Maps each conversation to its first surviving user message, used as a title.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number[]} conversationIds - Conversation identifiers.
- * @returns {Promise<Object>} Map of conversation id to title text.
- */
-async function getConversationTitles(service, conversationIds) {
-    if (!conversationIds.length) return {};
-    const rows = await service.server.db.models["ai_message"].findAll({
-        where: {
-            conversationId: {[Op.in]: conversationIds},
-            role: AI_MESSAGE_ROLES.USER,
-            deleted: false,
-        },
-        attributes: ["conversationId", "content"],
-        order: [["id", "ASC"]],
-        raw: true,
-    });
-    const titles = {};
-    for (const row of rows) {
-        if (titles[row.conversationId] === undefined) {
-            titles[row.conversationId] = row.content;
-        }
-    }
-    return titles;
-}
 
 /**
  * Builds the completed model-visible history for a conversation.
@@ -277,19 +163,12 @@ async function createTurn(service, context, conversation, content, modelParams, 
         );
 
         let currentConversation = conversation;
-        if (currentConversation) {
-            currentConversation = await loadConversation(
-                service,
-                currentConversation.id,
-                context.userId,
-                context.studySession.id,
-                {transaction},
-            );
-        } else {
+        if (!currentConversation) {
             currentConversation = await models["ai_conversation"].add({
                 userId: context.userId,
                 studySessionId: context.studySession.id,
                 type: AI_CONVERSATION_TYPES.CHAT,
+                title: content,
             }, {transaction});
         }
 
@@ -365,10 +244,6 @@ async function failAssistantMessage(service, assistantMessageId) {
 }
 
 module.exports = {
-    loadConversation,
-    getVisibleMessages,
-    getIntroducedStepIds,
-    getConversationTitles,
     buildModelMessages,
     requireNoPendingMessage,
     getLatestAssistantMessage,

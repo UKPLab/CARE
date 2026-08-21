@@ -9,7 +9,7 @@
  */
 
 const {randomUUID} = require("crypto");
-const helpers = require("./helpers");
+const helpers = require("../../../utils/helper/ai/helpers.js");
 const runtime = require("./runtime");
 const request = require("./request");
 
