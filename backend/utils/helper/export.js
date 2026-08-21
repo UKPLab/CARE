@@ -19,9 +19,10 @@ const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents", "s
  * @param {string} params.normalizedGradeFormat - The requested grade format, lowercased.
  * @param {Array} params.userIds - Parsed user ids to export.
  * @param {*} params.workflowIds - Raw workflowIds value from the request body, parsed here.
+ * @param {number} params.currentUserId - The id of the user making the export request.
  * @returns {Promise<{success: boolean, status?: number, message?: string, users?: Array, workflowIds?: Array}>}
  */
-async function loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds }) {
+async function loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds, currentUserId }) {
     if (!Number.isInteger(parsedProjectId)) {
         return { success: false, status: 400, message: "Missing projectId." };
     }
@@ -42,6 +43,13 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
     if (!project) {
         server.logger.warn(`${parsedProjectId} does not exist.`);
         return { success: false, status: 403, message: "The selected project does not exist." };
+    }
+
+    const isAdmin = await resolveIsAdmin(server, currentUserId);
+    const isSelfOnlyExport = userIds.every(id => Number(id) === Number(currentUserId));
+    if (!isAdmin && project.userId !== currentUserId && !isSelfOnlyExport) {
+        server.logger.warn(`User ${currentUserId} attempted to export project ${parsedProjectId} without access.`);
+        return { success: false, status: 403, message: "You don't have access to this project." };
     }
 
     const { Op } = server.db.Sequelize;

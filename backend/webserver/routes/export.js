@@ -59,7 +59,7 @@ module.exports = function (server) {
         const userIds = parseUserIds(server, rawUserIds);
 
         try {
-            const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds });
+            const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds, currentUserId });
             if (!context.success) {
                 return res.status(context.status).send(context.message);
             }
