@@ -561,6 +561,8 @@ export default {
   padding-bottom: 4.5rem;
   scroll-padding-bottom: 1.5rem;
   box-sizing: border-box;
+  /* Containing block for full-height sidebar panels. */
+  position: relative;
 }
 
 #sidepane {

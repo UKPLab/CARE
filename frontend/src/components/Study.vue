@@ -153,6 +153,21 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <SidebarTemplate icon="chat-dots" title="AI Chat">
+                  <template #content>
+                    <AiConversation
+                        :study-session-id="studySessionId"
+                        :study-step-id="step.id"
+                        :document-id="step.documentId"
+                        :service="getAiChatService(step)"
+                        :study-data="studyData"
+                        :ordered-study-steps="orderedStudySteps"
+                        :read-only="readOnlyComputed"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
             </Annotator>
 
             <Editor
@@ -172,6 +187,21 @@
                         :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <SidebarTemplate icon="chat-dots" title="AI Chat">
+                  <template #content>
+                    <AiConversation
+                        :study-session-id="studySessionId"
+                        :study-step-id="step.id"
+                        :document-id="step.documentId"
+                        :service="getAiChatService(step)"
+                        :study-data="studyData"
+                        :ordered-study-steps="orderedStudySteps"
+                        :read-only="readOnlyComputed"
                     />
                   </template>
                 </SidebarTemplate>
@@ -213,10 +243,12 @@ import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
+import AiConversation from "@/components/aiAssistant/AiConversation.vue";
 
 export default {
   name: "StudyRoute",
   components: {
+    AiConversation,
     SidebarTemplate,
     Assessment,
     LoadIcon,
@@ -502,6 +534,13 @@ export default {
      */
     handleLoadingError(errorData) {
       this.setStudyError(errorData.message, errorData.code);
+    },
+    getAiChatService(step) {
+      const services = step.configuration?.services || [];
+      return services.find(service => service.type === "aiChat") || null;
+    },
+    hasAiChat(step) {
+      return !!this.getAiChatService(step);
     },
     next() {
       const nextStep = this.nextStudyStep;
