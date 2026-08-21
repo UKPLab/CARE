@@ -69,11 +69,11 @@ export default {
   computed: {
     careRoleOptions() {
       return [
-        { value: "", label: "Do not assign additional role" },
         ...this.systemRoles.filter((role) => !role.deleted && role.name !== "admin").map((role) => ({
           value: role.name,
           label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
         })),
+        { value: "", label: "Do not assign additional role" }
       ];
     },
     roleRows() {

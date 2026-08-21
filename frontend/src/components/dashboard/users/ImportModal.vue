@@ -172,7 +172,7 @@ import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import RoleMappingStep from "@/components/dashboard/users/RoleMappingStep.vue";
-import { buildInitialRoleMappings, getRoleRows, normalizeImportUsers } from "@/components/dashboard/users/roleMapping.js";
+import { buildInitialRoleMappings, formatRoleList, getRoleRows, normalizeImportUsers } from "@/components/dashboard/users/roleMapping.js";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -280,7 +280,7 @@ export default {
         lastName: user.lastName,
         userName: user.userName,
         email: user.email,
-        roles: user.roles,
+        roles: formatRoleList(user.roles),
         password: user.initialPassword || "",
       }));
       downloadObjectsAs(users, filename, "csv");
