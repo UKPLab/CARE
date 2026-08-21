@@ -124,8 +124,13 @@
         v-if="step.key === 'result'"
         class="result-container"
       >
-        <div v-if="updatedUserCount">
-          Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
+        <div
+          v-if="updatedUserCount"
+          class="result-status"
+        >
+          <p class="result-summary">
+            Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
+          </p>
           <div
             v-if="createdErrors.length > 0"
             class="error-container"
@@ -139,6 +144,17 @@
             </ul>
           </div>
         </div>
+        <div
+          v-if="importType === 'moodle'"
+          class="moodle-publish-intro"
+        >
+          <h3>Send login credentials to Moodle</h3>
+          <p>
+            CARE generated usernames and initial passwords for the imported users.
+            Select the Moodle assignment where these credentials should be posted as feedback,
+            or download them as a CSV file.
+          </p>
+        </div>
         <MoodleOptions
           v-if="importType === 'moodle'"
           ref="moodleOptionsForm"
@@ -149,12 +165,12 @@
           <BasicButton
             v-if="importType === 'moodle'"
             class="btn btn-outline-info"
-            title="Upload to Moodle"
+            title="Send to Moodle"
             @click="uploadToMoodle"
           />
           <BasicButton
             class="btn btn-outline-primary"
-            title="Download Result CSV"
+            title="Download CSV"
             @click="downloadFileAsCSV"
           />
         </div>
@@ -617,6 +633,39 @@ export default {
   button:first-child {
     margin-right: 0.5rem;
   }
+}
+
+.result-status {
+  width: 100%;
+  text-align: center;
+}
+
+.result-summary {
+  margin-bottom: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.moodle-publish-intro {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+  text-align: left;
+}
+
+.moodle-publish-intro h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.moodle-publish-intro p {
+  margin-bottom: 0;
+  color: #555;
+  font-size: 0.925rem;
 }
 
 .error-container {
