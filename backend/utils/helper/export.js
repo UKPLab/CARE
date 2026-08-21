@@ -348,7 +348,7 @@ function createJsonArrayStream(fetchPage, mapRow = (row) => row, pageSize = 1000
     });
 }
 
-function createCsvRowsStream(fetchPage, mapRow, pageSize = 1000) {
+function createCsvRowsStream(fetchPage, mapRow, fields, pageSize = 1000) {
     let lastId = 0;
     let started = false;
     let finished = false;
@@ -363,7 +363,7 @@ function createCsvRowsStream(fetchPage, mapRow, pageSize = 1000) {
                 try {
                     const rows = await fetchPage(lastId, pageSize);
                     if (rows.length === 0) {
-                        if (!started) this.push(Papa.unparse([mapRow].length ? [] : []));
+                        if (!started) this.push(Papa.unparse({ fields, data: [] }));
                         this.push(null);
                         finished = true;
                         return;

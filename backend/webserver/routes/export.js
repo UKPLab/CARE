@@ -919,7 +919,7 @@ module.exports = function (server) {
         };
 
         const buildStream = (fetchPage) => behaviourFileFormat === 'csv'
-            ? createCsvRowsStream(fetchPage, toRecord)
+            ? createCsvRowsStream(fetchPage, toRecord, ['action', 'data', 'timestamp', 'user', 'username', 'userId', 'session'])
             : createJsonArrayStream(fetchPage, toRecord);
 
         if (behaviourOutputFormat === 'perUser') {
