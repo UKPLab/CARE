@@ -276,15 +276,17 @@ export default {
       return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
     },
     stepValid() {
-      const { courseID, apiUrl, apiKey } = this.moodleOptions;
       const sourceIsValid = this.importType === "csv"
         ? this.file.name !== "" && this.file.errors.length < 1
-        : courseID && apiUrl && apiKey;
+        : this.hasRequiredMoodleOptions(this.moodleOptions);
       const hasRoleMappings = this.roleRows.every((role) => Object.prototype.hasOwnProperty.call(this.roleMappings, role.raw));
       return [sourceIsValid, hasRoleMappings, this.selectedUsers.length > 0, true, true];
     },
   },
   methods: {
+    hasRequiredMoodleOptions({ courseID, apiUrl, apiKey } = {}) {
+      return [courseID, apiUrl, apiKey].every((value) => String(value ?? "").trim() !== "");
+    },
     initializeRoleMappings() {
       this.roleMappings = buildInitialRoleMappings(this.users, this.roleMappings);
     },
@@ -384,8 +386,7 @@ export default {
     },
     prepareUserImport() {
       if (this.importType === "moodle") {
-        const { courseID, apiUrl, apiKey } = this.moodleOptions;
-        if (!courseID || !apiUrl || !apiKey || (this.$refs.moodleOptionsForm && !this.$refs.moodleOptionsForm.validate())) return;
+        if (!this.hasRequiredMoodleOptions(this.moodleOptions) || (this.$refs.moodleOptionsForm && !this.$refs.moodleOptionsForm.validate())) return;
         this.$refs.importStepper?.setWaiting(true);
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.importStepper?.setWaiting(false);
