@@ -172,7 +172,7 @@ import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import RoleMappingStep from "@/components/dashboard/users/RoleMappingStep.vue";
-import { buildInitialRoleMappings, getRoleRows } from "@/components/dashboard/users/moodleRoleMapping.js";
+import { buildInitialRoleMappings, getRoleRows, normalizeImportUsers } from "@/components/dashboard/users/moodleRoleMapping.js";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -221,7 +221,7 @@ export default {
         { name: "First Name", key: "firstName" },
         { name: "Last Name", key: "lastName" },
         { name: "Email", key: "email" },
-        { name: "Roles", key: "roles" },
+        { name: "Roles", key: "displayRoles" },
       ],
       updatedUserCount: null,
       createdUsers: [],
@@ -374,7 +374,7 @@ export default {
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.importStepper?.setWaiting(false);
           if (res.success) {
-            this.users = res["data"];
+            this.users = normalizeImportUsers(res["data"]);
             this.selectedUsers = [];
             this.initializeRoleMappings();
           } else {
@@ -486,7 +486,7 @@ export default {
     async processFile(file) {
       if (file && file.name.endsWith(".csv")) {
         try {
-          const parsingResults = await this.validateCSV(file);
+          const parsingResults = normalizeImportUsers(await this.validateCSV(file));
           this.users = parsingResults;
           this.selectedUsers = [];
           this.roleMappings = buildInitialRoleMappings(parsingResults, this.roleMappings);
@@ -528,7 +528,7 @@ export default {
       this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
         this.$refs.importStepper?.setWaiting(false);
         if (res.success) {
-          this.users = res.data;
+          this.users = normalizeImportUsers(res.data);
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to check duplicate users",

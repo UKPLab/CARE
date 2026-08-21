@@ -26,6 +26,17 @@ export function getRoleRows(users) {
   })).sort((a, b) => a.label.localeCompare(b.label));
 }
 
+export function formatRoleList(roles) {
+  return splitExternalRoles(roles).map(formatExternalRole).join(", ");
+}
+
+export function normalizeImportUsers(users) {
+  return users.map((user) => ({
+    ...user,
+    displayRoles: formatRoleList(user.roles),
+  }));
+}
+
 export function buildInitialRoleMappings(users, currentMappings = {}) {
   return getRoleRows(users).reduce((mappings, role) => {
     if (Object.prototype.hasOwnProperty.call(currentMappings, role.raw)) {
