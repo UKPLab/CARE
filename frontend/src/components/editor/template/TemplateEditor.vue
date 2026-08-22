@@ -137,6 +137,9 @@
         languageSelectorClickOutside: null,
         newLanguageModalMessage: "",
         beforeUnloadHandler: null,
+        previewMode: false,
+        placeholderPreviewList: [],
+        lastEditorHtml: "",
       };
     },
     computed: {
