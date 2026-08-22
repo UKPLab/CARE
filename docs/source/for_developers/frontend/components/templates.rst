@@ -120,8 +120,8 @@ Prompt templates use the same Placeholders sidebar and ``placeholder`` table as 
 
 Location: ``backend/webserver/sockets/template.js`` (``templateResolve``)
 
-At edit time, TemplateEditor preview (types 1, 2, 3, 6, and 8) substitutes ``placeholderExample`` from the
-``placeholder`` row when set (sample text only; rows may be empty until examples are added).
+At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes ``placeholderExample`` from the
+``placeholder`` row (sample text only, not live data). Every current placeholder has an example.
 At runtime, ``buildPromptPlaceholderValues`` in ``backend/utils/templateResolver.js`` loads real values from
 ``context`` and the database. Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
 if they are missing, those tokens resolve to an empty string.
