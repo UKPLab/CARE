@@ -1,7 +1,6 @@
 "use strict";
 const Socket = require("../Socket.js");
-const triggerHandlers = require("../services/triggerHandlers.js");
-const { QUEUE_STATUS, queueStatusLabel } = require("../../utils/triggerQueueStatus");
+const { queueStatusLabel } = require("../../utils/triggerQueueStatus");
 
 /**
  * Handle trigger rules through websocket.
@@ -152,10 +151,7 @@ class TriggerSocket extends Socket {
             throw new Error("A queue item id is required.");
         }
 
-        return await triggerHandlers.retryQueueItem(this.server, data.id, {
-            ...options,
-            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
-        });
+        return await this.server.triggers.retryQueueItem(data.id, options);
     }
 
     /**
@@ -174,10 +170,7 @@ class TriggerSocket extends Socket {
             throw new Error("A queue item id is required.");
         }
 
-        return await triggerHandlers.rerunQueueItem(this.server, data.id, {
-            ...options,
-            broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
-        });
+        return await this.server.triggers.rerunQueueItem(data.id, options);
     }
 
     /**
@@ -196,24 +189,7 @@ class TriggerSocket extends Socket {
             throw new Error("A queue item id is required.");
         }
 
-        const item = await this.models["trigger_queue"].getById(data.id);
-        if (!item) {
-            throw new Error("Queue item not found.");
-        }
-
-        const cancellable = [QUEUE_STATUS.PENDING, QUEUE_STATUS.RUNNING];
-        if (!cancellable.includes(item.status)) {
-            throw new Error("Only pending or running queue items can be cancelled.");
-        }
-
-        return await this.models["trigger_queue"].updateById(
-            data.id,
-            {
-                status: QUEUE_STATUS.CANCELLED,
-                completedAt: new Date(),
-            },
-            { transaction: options.transaction }
-        );
+        return await this.server.triggers.cancelQueueItem(data.id, options);
     }
 
     init() {

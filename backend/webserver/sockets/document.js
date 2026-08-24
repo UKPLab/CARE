@@ -12,7 +12,6 @@ const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
 const {generateError} = require("../../utils/helper/generic.js");
 const {getEmailContent} = require("../../utils/helper/email.js");
-const {handleSubmissionUploaded} = require("../services/triggerHandlers.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -1264,17 +1263,15 @@ class DocumentSocket extends Socket {
                         }
 
                         try {
-                            await handleSubmissionUploaded(this.server, {
+                            await this.server.triggers.addEvent("submission.uploaded", {
                                 assignmentId,
                                 submissionId: submission.id,
                                 userId,
                                 projectId,
                                 timestamp: submission.createdAt,
-                            }, {
-                                broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
                             });
                         } catch (triggerError) {
-                            this.server.logger.error("Failed to run submission upload triggers:", triggerError);
+                            this.server.logger.error("Failed to queue submission upload triggers:", triggerError);
                         }
                     });
                 });
@@ -1417,17 +1414,15 @@ class DocumentSocket extends Socket {
                 }
 
                 try {
-                    await handleSubmissionUploaded(this.server, {
+                    await this.server.triggers.addEvent("submission.uploaded", {
                         assignmentId: assignment.id,
                         submissionId: newSubmission.id,
                         userId,
                         timestamp: newSubmission.createdAt,
                         eventType: "reupload",
-                    }, {
-                        broadcastQueueItem: async (item) => this.broadcastTable("trigger_queue", [item]),
                     });
                 } catch (triggerError) {
-                    this.server.logger.error("Failed to run submission reupload triggers:", triggerError);
+                    this.server.logger.error("Failed to queue submission reupload triggers:", triggerError);
                 }
             });
         });

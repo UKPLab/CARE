@@ -8,7 +8,7 @@
  */
 
 const chat = require("./chat");
-const helpers = require("./helpers");
+const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
 /**
