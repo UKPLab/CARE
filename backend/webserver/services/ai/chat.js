@@ -49,13 +49,42 @@ async function requireOwnedCredential(models, credentialId, userId) {
 }
 
 /**
+ * Loads provider parameters from the model's server-side credential.
+ *
+ * @param {{ server: Object }} service AIService runtime with DB access.
+ * @param {number} aiModelId Target model id.
+ * @returns {Promise<Object>} LiteLLM model and credential parameters.
+ */
+async function loadModelProviderParams(service, aiModelId) {
+    const models = service.server.db.models;
+    const aiModel = await models.ai_model.findByPk(aiModelId, {
+        attributes: ["id", "aiCredentialId", "model", "enabled", "deleted"],
+        raw: true,
+    });
+    if (!aiModel || aiModel.deleted || !aiModel.enabled) {
+        throw new Error("AI model is not available");
+    }
+
+    const credential = await models.ai_credential.findByPk(aiModel.aiCredentialId, {
+        attributes: ["provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
+        raw: true,
+    });
+    if (!credential || credential.deleted || !credential.enabled) {
+        throw new Error("AI model credential is not available");
+    }
+
+    return helpers.buildLiteLLMParams(credential, aiModel.model);
+}
+
+/**
  * Runs an OpenAI-style chat completion for the authenticated client, resolves `ai_model` linkage,
  * persists success/failure to `ai_log`, and returns trimmed choice metadata.
  *
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
- * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
- * @param {{ bypassChecks?: boolean, testLabel?: string }} [logOptions] `testLabel` is prepended to the
+ * @param {Object} data Completion fields plus CARE request metadata.
+ * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object }} [logOptions]
+ *   `providerParams` is reserved for server-side model tests. `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
@@ -74,18 +103,14 @@ async function chatCompletion(service, client, data, logOptions = {}) {
     const requestId = typeof data?.__requestId === "string" && data.__requestId.trim()
         ? data.__requestId.trim()
         : randomUUID();
-    const {
-        aiModelId: _aiModelId,
-        aiHookId: _aiHookId,
-        aiCredentialId: _aiCredentialId,
-        credentialId: _credentialId,
-        __requestId: _requestId,
-        studyId: _studyId,
-        studySessionId: _studySessionId,
-        studyStepId: _studyStepId,
-        documentId: _documentId,
-        ...completionParams
-    } = data || {};
+    const completionParams = {...data};
+    [
+        "aiModelId", "aiHookId", "aiCredentialId", "credentialId",
+        "model", "api_key", "api_base", "api_version", "custom_llm_provider",
+        "apiKey", "apiBaseUrl", "apiVersion",
+        "__requestId", "__timeoutMs",
+        "studyId", "studySessionId", "studyStepId", "documentId",
+    ].forEach((key) => delete completionParams[key]);
 
     const guard = await request.beginRequest(service, {
         userId: client?.userId,
@@ -106,8 +131,11 @@ async function chatCompletion(service, client, data, logOptions = {}) {
 
     let response;
     try {
+        const providerParams = logOptions.providerParams
+            || await loadModelProviderParams(service, aiModelId);
         response = await rpc.chatCompletion({
             ...completionParams,
+            ...providerParams,
             __requestId: requestId,
         });
     } catch (error) {
@@ -270,8 +298,9 @@ async function testModel(service, client, data) {
         client?.userId,
     );
 
+    const providerParams = helpers.buildLiteLLMParams(credential, model);
     const params = {
-        ...helpers.buildLiteLLMParams(credential, model),
+        ...providerParams,
         messages: [{role: "user", content: "ping"}],
         max_tokens: 16,
     };
@@ -304,6 +333,7 @@ async function testModel(service, client, data) {
     }, {
         bypassChecks: true,
         testLabel,
+        providerParams,
     });
 
     const content = result.choices?.[0]?.message?.content;

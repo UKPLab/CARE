@@ -17,6 +17,19 @@ module.exports = (sequelize, DataTypes) => {
             AiCredential.hasMany(models["ai_model"], { foreignKey: "aiCredentialId", as: "models" });
         }
 
+        static validateOwner(credential, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            const ownerUserId = Number(
+                credential._previousDataValues?.userId ?? credential.userId
+            );
+            if (ownerUserId !== currentUserId) {
+                throw new Error("You are not allowed to update this AI credential");
+            }
+        }
+
         /**
          * Soft-delete linked models (and their shares / budgets / hook links).
          *
@@ -120,6 +133,9 @@ module.exports = (sequelize, DataTypes) => {
         modelName: 'ai_credential',
         tableName: 'ai_credential',
         hooks: {
+            beforeUpdate: (credential, options) => {
+                AiCredential.validateOwner(credential, options);
+            },
             afterUpdate: async (credential, options) => {
                 if (credential.deleted && !credential._previousDataValues.deleted) {
                     await AiCredential.cascadeSoftDelete(credential, options);
