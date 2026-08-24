@@ -134,10 +134,10 @@ alone would leave the related Vuex stores empty until the user opens a modal.</p
 <p><strong>Examples</strong></p>
 <p>Minimal subscription (e.g., in <code class="docutils literal notranslate"><span class="pre">Documents.vue</span></code>):</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;document&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;study&quot;</span><span class="p">],</span>
+<span class="w">  </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"document"</span><span class="p">,</span><span class="w"> </span><span class="s2">"study"</span><span class="p">],</span>
 <span class="w">  </span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">documents</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/document/getAll&quot;</span><span class="p">];</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"table/document/getAll"</span><span class="p">];</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -147,29 +147,29 @@ alone would leave the related Vuex stores empty until the user opens a modal.</p
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;document&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;readyForReview&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}],</span>
+<span class="w">      </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">"document"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"readyForReview"</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}],</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">"user"</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">inject</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">        </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;study_session&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">by</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;userId&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;count&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="kr">as</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;studySessions&quot;</span>
+<span class="w">        </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">"study_session"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">by</span><span class="o">:</span><span class="w"> </span><span class="s2">"userId"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"count"</span><span class="p">,</span>
+<span class="w">        </span><span class="kr">as</span><span class="o">:</span><span class="w"> </span><span class="s2">"studySessions"</span>
 <span class="w">      </span><span class="p">}]</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;study&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;template&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}]</span>
+<span class="w">      </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">"study"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"template"</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">}]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
 <span class="w">  </span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">documents</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/document/getFiltered&quot;</span><span class="p">](</span><span class="nx">d</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">readyForReview</span><span class="p">);</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"table/document/getFiltered"</span><span class="p">](</span><span class="nx">d</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">d</span><span class="p">.</span><span class="nx">readyForReview</span><span class="p">);</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">reviewers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/user/getAll&quot;</span><span class="p">];</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"table/user/getAll"</span><span class="p">];</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>

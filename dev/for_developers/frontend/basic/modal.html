@@ -155,13 +155,13 @@ available immediately when the parent is open.</p>
 </ol>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
   <span class="cm">&lt;!-- button triggers the open method --&gt;</span>
-  <span class="p">&lt;</span><span class="nt">button</span> <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;openUploadModal&quot;</span><span class="p">&gt;</span>Upload<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">button</span> <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">"openUploadModal"</span><span class="p">&gt;</span>Upload<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
 
   <span class="cm">&lt;!-- modal mounts only when needed, unmounts on close --&gt;</span>
   <span class="p">&lt;</span><span class="nt">UploadModal</span>
-      <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;modals.upload&quot;</span>
-      <span class="na">ref</span><span class="o">=</span><span class="s">&quot;uploadModal&quot;</span>
-      <span class="err">@</span><span class="na">hide</span><span class="o">=</span><span class="s">&quot;modals.upload = false&quot;</span>
+      <span class="na">v-if</span><span class="o">=</span><span class="s">"modals.upload"</span>
+      <span class="na">ref</span><span class="o">=</span><span class="s">"uploadModal"</span>
+      <span class="err">@</span><span class="na">hide</span><span class="o">=</span><span class="s">"modals.upload = false"</span>
   <span class="p">/&gt;</span>
 <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 </pre></div>
@@ -205,43 +205,43 @@ with progress tracking and user feedback.</p>
 </div>
 <p><strong>Usage Example</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StepperModal</span>
-    <span class="na">ref</span><span class="o">=</span><span class="s">&quot;uploadStepper&quot;</span>
-    <span class="na">:steps</span><span class="o">=</span><span class="s">&quot;steps&quot;</span>
-    <span class="na">:validation</span><span class="o">=</span><span class="s">&quot;stepValid&quot;</span>
-    <span class="err">@</span><span class="na">submit</span><span class="o">=</span><span class="s">&quot;uploadDocument&quot;</span>
+    <span class="na">ref</span><span class="o">=</span><span class="s">"uploadStepper"</span>
+    <span class="na">:steps</span><span class="o">=</span><span class="s">"steps"</span>
+    <span class="na">:validation</span><span class="o">=</span><span class="s">"stepValid"</span>
+    <span class="err">@</span><span class="na">submit</span><span class="o">=</span><span class="s">"uploadDocument"</span>
 <span class="p">&gt;</span>
     <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">title</span><span class="p">&gt;</span>
-        <span class="p">&lt;</span><span class="nt">h5</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;modal-title&quot;</span><span class="p">&gt;</span>Upload Assignment<span class="p">&lt;/</span><span class="nt">h5</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nt">h5</span> <span class="na">class</span><span class="o">=</span><span class="s">"modal-title"</span><span class="p">&gt;</span>Upload Assignment<span class="p">&lt;/</span><span class="nt">h5</span><span class="p">&gt;</span>
     <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
     <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">step-1</span><span class="p">&gt;</span>
         <span class="p">&lt;</span><span class="nt">BasicTable</span>
-            <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;selectedUser&quot;</span>
-            <span class="na">:columns</span><span class="o">=</span><span class="s">&quot;selectionTable&quot;</span>
-            <span class="na">:options</span><span class="o">=</span><span class="s">&quot;selectionTableOptions&quot;</span>
-            <span class="na">:data</span><span class="o">=</span><span class="s">&quot;users&quot;</span> <span class="p">/&gt;</span>
+            <span class="na">v-model</span><span class="o">=</span><span class="s">"selectedUser"</span>
+            <span class="na">:columns</span><span class="o">=</span><span class="s">"selectionTable"</span>
+            <span class="na">:options</span><span class="o">=</span><span class="s">"selectionTableOptions"</span>
+            <span class="na">:data</span><span class="o">=</span><span class="s">"users"</span> <span class="p">/&gt;</span>
     <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
     <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">step-2</span><span class="p">&gt;</span>
         <span class="p">&lt;</span><span class="nt">BasicForm</span>
-            <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
-            <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fileFields&quot;</span> <span class="p">/&gt;</span>
+            <span class="na">v-model</span><span class="o">=</span><span class="s">"data"</span>
+            <span class="na">:fields</span><span class="o">=</span><span class="s">"fileFields"</span> <span class="p">/&gt;</span>
     <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">StepperModal</span><span class="p">&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">StepperModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/modal/StepperModal.vue&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">StepperModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@/basic/modal/StepperModal.vue'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ReviewUploadModal&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">'ReviewUploadModal'</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">StepperModal</span><span class="p">,</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">steps</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">                </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Select User&#39;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">                </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Upload File&#39;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">                </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">'Select User'</span><span class="w"> </span><span class="p">},</span>
+<span class="w">                </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">'Upload File'</span><span class="w"> </span><span class="p">},</span>
 <span class="w">            </span><span class="p">],</span>
 <span class="w">            </span><span class="nx">selectedUser</span><span class="o">:</span><span class="w"> </span><span class="p">[],</span>
 <span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span>
@@ -391,33 +391,33 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 </ul>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleStepOne</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">setWaiting</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;documentGetMoodleSubmissions&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">moodleOptions</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"documentGetMoodleSubmissions"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">moodleOptions</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">setWaiting</span><span class="p">(</span><span class="kc">false</span><span class="p">);</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">res</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
-<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Failed&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"toast"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">"Failed"</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">"danger"</span><span class="p">,</span>
 <span class="w">            </span><span class="p">});</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="p">}</span>
 
 <span class="nx">handleStepTwo</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;documentDownloadMoodleSubmissions&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"documentDownloadMoodleSubmissions"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">files</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">selectedAssignments</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">moodleOptions</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">progressId</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">startProgress</span><span class="p">(),</span>
 <span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">importStepper</span><span class="p">.</span><span class="nx">stopProgress</span><span class="p">();</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">importedAssignments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">res</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">];</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">importedAssignments</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">res</span><span class="p">[</span><span class="s2">"data"</span><span class="p">];</span>
 <span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Failed to import submission from Moodle&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"toast"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">"Failed to import submission from Moodle"</span><span class="p">,</span>
 <span class="w">                </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">res</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span>
-<span class="w">                </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
+<span class="w">                </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">"danger"</span><span class="p">,</span>
 <span class="w">            </span><span class="p">});</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">});</span>
@@ -454,15 +454,15 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 </ol>
 <p><strong>Usage Example</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfigurationModal</span>
-    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;configData&quot;</span>
-    <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;documentId&quot;</span>
-    <span class="na">:study-step-id</span><span class="o">=</span><span class="s">&quot;stepId&quot;</span>
-    <span class="na">:workflow-steps</span><span class="o">=</span><span class="s">&quot;steps&quot;</span>
-    <span class="na">ref</span><span class="o">=</span><span class="s">&quot;configModal&quot;</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">"configData"</span>
+    <span class="na">:document-id</span><span class="o">=</span><span class="s">"documentId"</span>
+    <span class="na">:study-step-id</span><span class="o">=</span><span class="s">"stepId"</span>
+    <span class="na">:workflow-steps</span><span class="o">=</span><span class="s">"steps"</span>
+    <span class="na">ref</span><span class="o">=</span><span class="s">"configModal"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">ConfigurationModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/modal/ConfigurationModal.vue&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">ConfigurationModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@/basic/modal/ConfigurationModal.vue'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ConfigurationModal</span><span class="w"> </span><span class="p">},</span>
@@ -505,11 +505,11 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 </ul>
 <p><strong>Usage Example</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfigurationPlaceholder</span>
-    <span class="na">:placeholder</span><span class="o">=</span><span class="s">&quot;placeholder&quot;</span>
-    <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fieldDefs&quot;</span>
-    <span class="na">:index</span><span class="o">=</span><span class="s">&quot;i&quot;</span>
-    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;formData[i]&quot;</span>
-    <span class="na">:placeholder-color</span><span class="o">=</span><span class="s">&quot;colors[i]&quot;</span>
+    <span class="na">:placeholder</span><span class="o">=</span><span class="s">"placeholder"</span>
+    <span class="na">:fields</span><span class="o">=</span><span class="s">"fieldDefs"</span>
+    <span class="na">:index</span><span class="o">=</span><span class="s">"i"</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">"formData[i]"</span>
+    <span class="na">:placeholder-color</span><span class="o">=</span><span class="s">"colors[i]"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -521,14 +521,14 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 <li><p><strong>Use it for:</strong> Destructive actions (delete, reset) or explicit user confirmation.</p></li>
 </ul>
 <p><strong>Usage Example</strong></p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;confirmModal&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"confirmModal"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">confirmModal</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span>
-<span class="w">    </span><span class="s2">&quot;Delete User&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;Are you sure you want to delete this user?&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;This action cannot be undone.&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Confirmed:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">res</span><span class="p">)</span>
+<span class="w">    </span><span class="s2">"Delete User"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"Are you sure you want to delete this user?"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"This action cannot be undone."</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Confirmed:"</span><span class="p">,</span><span class="w"> </span><span class="nx">res</span><span class="p">)</span>
 <span class="p">);</span>
 </pre></div>
 </div>
@@ -540,7 +540,7 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 <li><p><strong>Use it for:</strong> Asking users to confirm data sharing and statistics collection.</p></li>
 </ul>
 <p><strong>Usage Example</strong></p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConsentUpdateModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;consentModal&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ConsentUpdateModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"consentModal"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">consentModal</span><span class="p">.</span><span class="nx">open</span><span class="p">();</span>
@@ -553,10 +553,10 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 <li><p><strong>Use it for:</strong> Inspecting row details from a table, showing metadata, etc.</p></li>
 </ul>
 <p><strong>Usage Example</strong></p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">InformationModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;info&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">InformationModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"info"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">info</span><span class="p">.</span><span class="nx">open</span><span class="p">({</span><span class="w"> </span><span class="nx">username</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;admin&quot;</span><span class="w"> </span><span class="p">});</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">info</span><span class="p">.</span><span class="nx">open</span><span class="p">({</span><span class="w"> </span><span class="nx">username</span><span class="o">:</span><span class="w"> </span><span class="s2">"alice"</span><span class="p">,</span><span class="w"> </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s2">"admin"</span><span class="w"> </span><span class="p">});</span>
 </pre></div>
 </div>
 <p><strong>API:</strong> <code class="docutils literal notranslate"><span class="pre">open(data)</span></code>, <code class="docutils literal notranslate"><span class="pre">close()</span></code>.
@@ -568,7 +568,7 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 <li><p><strong>Use it for:</strong> Admin or account flows where a single field must be validated and submitted.</p></li>
 </ul>
 <p><strong>Usage Example</strong></p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">PasswordModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;pwdModal&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">PasswordModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"pwdModal"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">pwdModal</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="nx">userId</span><span class="p">);</span>

@@ -152,27 +152,27 @@ Use it for secondary actions injected via <code class="docutils literal notransl
 <p><strong>TopBarButton</strong> – A reusable button element for the top bar.
 Supports icons, emits click events, and integrates with statistics logging automatically.</p>
 <p>Example usage with <code class="docutils literal notranslate"><span class="pre">Teleport</span></code>:</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Teleport</span> <span class="na">to</span><span class="o">=</span><span class="s">&quot;#topbarCustomPlaceholder&quot;</span><span class="p">&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Teleport</span> <span class="na">to</span><span class="o">=</span><span class="s">"#topbarCustomPlaceholder"</span><span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">TopBarButton</span>
-    <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn btn-outline-primary me-3&quot;</span>
-    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Previous&quot;</span>
-    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;updateStep(currentStudyStep.studyStepPrevious)&quot;</span>
+    <span class="na">class</span><span class="o">=</span><span class="s">"btn btn-outline-primary me-3"</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">"Previous"</span>
+    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">"updateStep(currentStudyStep.studyStepPrevious)"</span>
   <span class="p">&gt;</span>
     Previous
   <span class="p">&lt;/</span><span class="nt">TopBarButton</span><span class="p">&gt;</span>
 
   <span class="p">&lt;</span><span class="nt">TopBarButton</span>
-    <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn btn-outline-secondary mx-3&quot;</span>
-    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Finish Study&quot;</span>
-    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;finish&quot;</span>
+    <span class="na">class</span><span class="o">=</span><span class="s">"btn btn-outline-secondary mx-3"</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">"Finish Study"</span>
+    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">"finish"</span>
   <span class="p">&gt;</span>
     Finish Study
   <span class="p">&lt;/</span><span class="nt">TopBarButton</span><span class="p">&gt;</span>
 
   <span class="p">&lt;</span><span class="nt">TopBarButton</span>
-    <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn btn-outline-primary ms-3&quot;</span>
-    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Next&quot;</span>
-    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;updateStep(nextStudyStep.id)&quot;</span>
+    <span class="na">class</span><span class="o">=</span><span class="s">"btn btn-outline-primary ms-3"</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">"Next"</span>
+    <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">"updateStep(nextStudyStep.id)"</span>
   <span class="p">&gt;</span>
     Next
   <span class="p">&lt;/</span><span class="nt">TopBarButton</span><span class="p">&gt;</span>

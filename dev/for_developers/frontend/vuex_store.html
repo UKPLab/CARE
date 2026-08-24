@@ -142,7 +142,7 @@ reloading of the data from the backend, see <a class="reference internal" href="
 <section id="accessing-the-store">
 <h2>Accessing the Store<a class="headerlink" href="#accessing-the-store" title="Link to this heading"></a></h2>
 <p>To access the store, you can simply use the following line of code within your component:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;table/&lt;auto_table_name&gt;/get&quot;</span><span class="p">](</span><span class="o">&lt;</span><span class="nx">id</span><span class="o">&gt;</span><span class="p">)</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"table/&lt;auto_table_name&gt;/get"</span><span class="p">](</span><span class="o">&lt;</span><span class="nx">id</span><span class="o">&gt;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Here the getter <code class="docutils literal notranslate"><span class="pre">get</span></code> of an auto table is loaded passing the id of the data entry. The resulting
@@ -170,8 +170,8 @@ Use the frontend plugin option <code class="docutils literal notranslate"><span 
 the plugin emits <code class="docutils literal notranslate"><span class="pre">subscribeAppData</span></code>; on unmount, it sends <code class="docutils literal notranslate"><span class="pre">unsubscribeAppData</span></code>. The backend
 then broadcasts <code class="docutils literal notranslate"><span class="pre">&lt;tableName&gt;Refresh</span></code> events that update the Vuex module.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;MyComponent&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;document&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;study&quot;</span><span class="p">],</span><span class="w">  </span><span class="c1">// keep this table live-synced</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"MyComponent"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">subscribeTable</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"document"</span><span class="p">,</span><span class="w"> </span><span class="s2">"study"</span><span class="p">],</span><span class="w">  </span><span class="c1">// keep this table live-synced</span>
 <span class="w">    </span><span class="c1">// ...</span>
 <span class="p">}</span>
 </pre></div>

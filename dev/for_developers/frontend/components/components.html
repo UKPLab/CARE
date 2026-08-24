@@ -136,15 +136,15 @@ These components orchestrate workflows like document annotation, study execution
 These are the components that are opened by the Vue routes defined in <code class="docutils literal notranslate"><span class="pre">frontend/src/router.js</span></code>, e.g.:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">routes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dashboard/:catchAll(.*)&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;dashboard&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">"/dashboard/:catchAll(.*)"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"dashboard"</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">props</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="s2">&quot;@/components/Dashboard.vue&quot;</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="s2">"@/components/Dashboard.vue"</span><span class="p">),</span>
 <span class="w">        </span><span class="nx">meta</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">requireAuth</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">toggleSidebar</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/document/:documentHash&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="s2">&quot;@/components/Document.vue&quot;</span><span class="p">),</span>
+<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">"/document/:documentHash"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="k">import</span><span class="p">(</span><span class="s2">"@/components/Document.vue"</span><span class="p">),</span>
 <span class="w">        </span><span class="nx">props</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">meta</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">requireAuth</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
@@ -221,9 +221,9 @@ It loads navigation entries from the store (<code class="docutils literal notran
 <li><p>The <strong>viewer</strong> dynamically loads the selected component (via <code class="docutils literal notranslate"><span class="pre">defineAsyncComponent</span></code>).</p></li>
 <li><p>Default modules can be configured via <code class="docutils literal notranslate"><span class="pre">dashboard.navigation.component.default</span></code> in the <a class="reference internal" href="../../examples/settings.html"><span class="doc">Settings</span></a>.</p></li>
 </ul>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;dashboard-wrapper&quot;</span><span class="p">&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">div</span> <span class="na">class</span><span class="o">=</span><span class="s">"dashboard-wrapper"</span><span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">Sidebar</span> <span class="p">/&gt;</span>
-  <span class="p">&lt;</span><span class="nt">component</span> <span class="na">:is</span><span class="o">=</span><span class="s">&quot;currentComponent&quot;</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nt">component</span> <span class="na">:is</span><span class="o">=</span><span class="s">"currentComponent"</span> <span class="p">/&gt;</span>
 <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
 </pre></div>
 </div>
@@ -238,8 +238,8 @@ based on the document type stored in Vuex.</p>
 <li><p><strong>Annotator</strong>: For document type 0 (DOC_TYPE_PDF).</p></li>
 <li><p><strong>Editor</strong>: For document types 1 (DOC_TYPE_HTML) and 2 (DOC_TYPE_MODAL).</p></li>
 </ul>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;doc.type === 1&quot;</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">v-else</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;id&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">"doc.type === 1"</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">"id"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">v-else</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">"id"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <p>This route provides the foundation for all document interactions outside of studies.</p>
@@ -263,9 +263,9 @@ It combines annotation, editing, and step-based tasks into a coherent workflow:<
 <li><p>Provides a <a class="reference internal" href="study.html#finish-modal"><span class="std std-ref">FinishModal</span></a> for submission and study closure.</p></li>
 </ul>
 <p><strong>Key integrations:</strong> Vuex (study, study_step, study_session tables), socket events, topbar controls.</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;step.type === 1&quot;</span> <span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;step.type === 2&quot;</span> <span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">StepModal</span> <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;step.type === 3&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">v-if</span><span class="o">=</span><span class="s">"step.type === 1"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">v-if</span><span class="o">=</span><span class="s">"step.type === 2"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">StepModal</span> <span class="na">v-if</span><span class="o">=</span><span class="s">"step.type === 3"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <p>The Study component is the <strong>core container for study mode</strong>, turning individual base components into a guided workflow.</p>
@@ -282,10 +282,10 @@ Its purpose is to <strong>resume existing sessions</strong> (via <code class="do
 <li><p>Ensures consistent state restoration when a user re-opens a session.</p></li>
 </ul>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Study</span>
-  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
-  <span class="na">:init-study-session-id</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
-  <span class="na">:read-only</span><span class="o">=</span><span class="s">&quot;readOnly&quot;</span>
-  <span class="na">:study-hash</span><span class="o">=</span><span class="s">&quot;studyHash&quot;</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">"studySessionId"</span>
+  <span class="na">:init-study-session-id</span><span class="o">=</span><span class="s">"studySessionId"</span>
+  <span class="na">:read-only</span><span class="o">=</span><span class="s">"readOnly"</span>
+  <span class="na">:study-hash</span><span class="o">=</span><span class="s">"studyHash"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -332,7 +332,7 @@ Templates are used for system emails (e.g. password reset, verification, registr
 <li><p>Placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) are resolved per type by the backend (<code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>).</p></li>
 <li><p>Content is stored per language in <code class="docutils literal notranslate"><span class="pre">template_language_content</span></code>; the Editor shows TemplateEditor and, for email types, a <strong>Placeholders</strong> sidebar (TemplateConfigurator) when editing a template (<code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided).</p></li>
 </ul>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;editor&quot;</span> <span class="na">:template-id</span><span class="o">=</span><span class="s">&quot;templateId&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">ref</span><span class="o">=</span><span class="s">"editor"</span> <span class="na">:template-id</span><span class="o">=</span><span class="s">"templateId"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <p>For full details on template types, placeholders, and where each type is used, see <a class="reference internal" href="templates.html"><span class="doc">Templates</span></a>.</p>

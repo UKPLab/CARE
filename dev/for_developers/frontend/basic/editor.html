@@ -137,10 +137,10 @@
 <p>The components in <code class="docutils literal notranslate"><span class="pre">frontend/src/basic/editor</span></code> provide utilities for rich-text editing (Quill), JSON viewing/editing, and service command testing. They encapsulate user interface and common behaviors (toolbars, history, toasts) for reuse in settings pages, modals, and dashboards.</p>
 <p><strong>BasicEditor</strong> – Quill-based rich-text editor for general content.
 Two-way binds a Quill Delta (string or object), supports read-only mode, and emits updates on change and blur.</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicEditor</span> <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;docDelta&quot;</span> <span class="na">:readOnly</span><span class="o">=</span><span class="s">&quot;false&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicEditor</span> <span class="na">v-model</span><span class="o">=</span><span class="s">"docDelta"</span> <span class="na">:readOnly</span><span class="o">=</span><span class="s">"false"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicEditor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/editor/Editor.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicEditor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/editor/Editor.vue"</span><span class="p">;</span>
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">BasicEditor</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">docDelta</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ops</span><span class="o">:</span><span class="w"> </span><span class="p">[]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">};</span>
 </pre></div>
 </div>
@@ -151,10 +151,10 @@ Two-way binds a Quill Delta (string or object), supports read-only mode, and emi
 <hr class="docutils" />
 <p><strong>EditorModal</strong> – Convenience wrapper that opens <strong>BasicEditor</strong> inside a modal.
 Use this when an “Edit …” action should open a modal without additional wiring.</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">EditorModal</span> <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;setting.value&quot;</span> <span class="na">:title</span><span class="o">=</span><span class="s">&quot;&#39;Edit &#39; + setting.key&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">EditorModal</span> <span class="na">v-model</span><span class="o">=</span><span class="s">"setting.value"</span> <span class="na">:title</span><span class="o">=</span><span class="s">"'Edit ' + setting.key"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">EditorModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/editor/Modal.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">EditorModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/editor/Modal.vue"</span><span class="p">;</span>
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">EditorModal</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">};</span>
 </pre></div>
 </div>
@@ -165,12 +165,12 @@ Use this when an “Edit …” action should open a modal without additional wi
 <hr class="docutils" />
 <p><strong>JsonEditor</strong> – JSON tree viewer with optional inline editing.
 Supports copy-to-clipboard and a read-only mode for safe inspection.</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">JsonEditor</span> <span class="na">v-model:content</span><span class="o">=</span><span class="s">&quot;jsonData&quot;</span> <span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">JsonEditor</span> <span class="na">:content</span><span class="o">=</span><span class="s">&quot;jsonData&quot;</span> <span class="na">readonly</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">JsonEditor</span> <span class="na">v-model:content</span><span class="o">=</span><span class="s">"jsonData"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">JsonEditor</span> <span class="na">:content</span><span class="o">=</span><span class="s">"jsonData"</span> <span class="na">readonly</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">JsonEditor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/editor/JsonEditor.vue&quot;</span><span class="p">;</span>
-<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">JsonEditor</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">jsonData</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">foo</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;bar&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">};</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">JsonEditor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/editor/JsonEditor.vue"</span><span class="p">;</span>
+<span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">JsonEditor</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">jsonData</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">foo</span><span class="o">:</span><span class="w"> </span><span class="s2">"bar"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">};</span>
 </pre></div>
 </div>
 <ul class="simple">
@@ -181,12 +181,12 @@ Supports copy-to-clipboard and a read-only mode for safe inspection.</p>
 <p><strong>CommandEditor</strong> – Send service <strong>requests</strong> (REQ) or <strong>commands</strong> (CMD) to a backend service and inspect the message history.
 Allows selecting a service and command, editing a JSON payload, and viewing incoming/outgoing messages with timestamps.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">CommandEditor</span>
-  <span class="na">service</span><span class="o">=</span><span class="s">&quot;NLPService&quot;</span>
-  <span class="na">:config</span><span class="o">=</span><span class="s">&quot;{ allowActionChange: true, allowServiceChange: true }&quot;</span>
-  <span class="na">:init-payload</span><span class="o">=</span><span class="s">&quot;{ text: &#39;Hello&#39; }&quot;</span> <span class="p">/&gt;</span>
+  <span class="na">service</span><span class="o">=</span><span class="s">"NLPService"</span>
+  <span class="na">:config</span><span class="o">=</span><span class="s">"{ allowActionChange: true, allowServiceChange: true }"</span>
+  <span class="na">:init-payload</span><span class="o">=</span><span class="s">"{ text: 'Hello' }"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">CommandEditor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/editor/CommandEditor.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">CommandEditor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/editor/CommandEditor.vue"</span><span class="p">;</span>
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">CommandEditor</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">};</span>
 </pre></div>
 </div>

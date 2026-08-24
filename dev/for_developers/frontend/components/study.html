@@ -184,27 +184,27 @@ Gatekeeper to a study: either <strong>start/join</strong> a session (collab or s
 <li><p>Optional stats: emits a <code class="docutils literal notranslate"><span class="pre">stats</span></code> event on session actions if <code class="docutils literal notranslate"><span class="pre">acceptStats</span></code> is provided via inject.</p></li>
 </ul>
 <p><strong>Usage</strong></p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyCoordinator&quot;</span><span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"studyCoordinator"</span><span class="p">/&gt;</span>
 </pre></div>
 </div>
 <p>In a dashboard list:</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyCoordinator&quot;</span><span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;deleteConf&quot;</span><span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">UploadModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;uploadModal&quot;</span><span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">CreateModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;createModal&quot;</span><span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">EditModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;editModal&quot;</span><span class="p">/&gt;</span>
-<span class="p">&lt;</span><span class="nt">DownloadPDFModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;pdfDownloadModal&quot;</span><span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"studyCoordinator"</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"deleteConf"</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">UploadModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"uploadModal"</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">CreateModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"createModal"</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">EditModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"editModal"</span><span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">DownloadPDFModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">"pdfDownloadModal"</span><span class="p">/&gt;</span>
 </pre></div>
 </div>
 <p>In a study route:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StudyModal</span>
-  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;studySessionId === 0 || (studySession &amp;&amp; studySession.start === null)&quot;</span>
-  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyModal&quot;</span>
-  <span class="na">:study-id</span><span class="o">=</span><span class="s">&quot;studyId&quot;</span>
-  <span class="na">:study-closed</span><span class="o">=</span><span class="s">&quot;studyClosed&quot;</span>
-  <span class="na">:study-session-id</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
-  <span class="err">@</span><span class="na">finish</span><span class="o">=</span><span class="s">&quot;finalFinish&quot;</span>
-  <span class="err">@</span><span class="na">start</span><span class="o">=</span><span class="s">&quot;start&quot;</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">"studySessionId === 0 || (studySession &amp;&amp; studySession.start === null)"</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">"studyModal"</span>
+  <span class="na">:study-id</span><span class="o">=</span><span class="s">"studyId"</span>
+  <span class="na">:study-closed</span><span class="o">=</span><span class="s">"studyClosed"</span>
+  <span class="na">:study-session-id</span><span class="o">=</span><span class="s">"studySessionId"</span>
+  <span class="err">@</span><span class="na">finish</span><span class="o">=</span><span class="s">"finalFinish"</span>
+  <span class="err">@</span><span class="na">start</span><span class="o">=</span><span class="s">"start"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -237,10 +237,10 @@ Confirm final submission of a study; show <em>time up</em> information when appl
 </ul>
 <p><strong>Usage</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">FinishModal</span>
-  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;studyFinishModal&quot;</span>
-  <span class="na">:study-session-id</span><span class="o">=</span><span class="s">&quot;studySessionId&quot;</span>
-  <span class="na">:show-time-up</span><span class="o">=</span><span class="s">&quot;timeUp&quot;</span>
-  <span class="err">@</span><span class="na">finish</span><span class="o">=</span><span class="s">&quot;finalFinish({ studySessionId: studySessionId })&quot;</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">"studyFinishModal"</span>
+  <span class="na">:study-session-id</span><span class="o">=</span><span class="s">"studySessionId"</span>
+  <span class="na">:show-time-up</span><span class="o">=</span><span class="s">"timeUp"</span>
+  <span class="err">@</span><span class="na">finish</span><span class="o">=</span><span class="s">"finalFinish({ studySessionId: studySessionId })"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>

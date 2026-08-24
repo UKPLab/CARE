@@ -152,7 +152,7 @@ Defaults to text.</p></li>
 <p><strong>Types</strong></p>
 <p><cite>Icon</cite>: Displays a field value as an icon.
 The value must be a valid icon name.</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableIcon</span> <span class="na">:value</span><span class="o">=</span><span class="s">&quot;row.typeIcon&quot;</span> <span class="na">:color</span><span class="o">=</span><span class="s">&quot;row.iconColor&quot;</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableIcon</span> <span class="na">:value</span><span class="o">=</span><span class="s">"row.typeIcon"</span> <span class="na">:color</span><span class="o">=</span><span class="s">"row.iconColor"</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <p>Props:</p>
@@ -164,12 +164,12 @@ The value must be a valid icon name.</p>
 <p><cite>Button</cite>: Displays a field value as a clickable button.
 Actions, icons, and titles can be defined and emitted on click.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableButton</span>
-    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Edit&quot;</span>
-    <span class="na">icon</span><span class="o">=</span><span class="s">&quot;pencil&quot;</span>
-    <span class="na">action</span><span class="o">=</span><span class="s">&quot;edit&quot;</span>
-    <span class="na">:params</span><span class="o">=</span><span class="s">&quot;row&quot;</span>
-    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;{ specifiers: &#39;btn-outline-primary btn-sm&#39; }&quot;</span>
-    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onRowAction&quot;</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">"Edit"</span>
+    <span class="na">icon</span><span class="o">=</span><span class="s">"pencil"</span>
+    <span class="na">action</span><span class="o">=</span><span class="s">"edit"</span>
+    <span class="na">:params</span><span class="o">=</span><span class="s">"row"</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">"{ specifiers: 'btn-outline-primary btn-sm' }"</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">"onRowAction"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -186,12 +186,12 @@ Actions, icons, and titles can be defined and emitted on click.</p>
 <p><cite>Button Group</cite>: Displays multiple buttons as a group.
 Each entry follows the same schema as a button.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ButtonGroup</span>
-    <span class="na">:buttons</span><span class="o">=</span><span class="s">&quot;[</span>
-<span class="s">      { title: &#39;Edit&#39;,   action: &#39;edit&#39;,   icon: &#39;pencil&#39; },</span>
-<span class="s">      { title: &#39;Delete&#39;, action: &#39;delete&#39;, icon: &#39;trash&#39;  }</span>
-<span class="s">    ]&quot;</span>
-    <span class="na">:params</span><span class="o">=</span><span class="s">&quot;row&quot;</span>
-    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onRowAction&quot;</span>
+    <span class="na">:buttons</span><span class="o">=</span><span class="s">"[</span>
+<span class="s">      { title: 'Edit',   action: 'edit',   icon: 'pencil' },</span>
+<span class="s">      { title: 'Delete', action: 'delete', icon: 'trash'  }</span>
+<span class="s">    ]"</span>
+    <span class="na">:params</span><span class="o">=</span><span class="s">"row"</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">"onRowAction"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -205,12 +205,12 @@ Each entry follows the same schema as a button.</p>
 <p><cite>Badge</cite>: Renders a colored badge with optional tooltip.
 Class and label mappings can be provided via <code class="docutils literal notranslate"><span class="pre">options</span></code>.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableColumnBadge</span>
-    <span class="na">:value</span><span class="o">=</span><span class="s">&quot;row.status&quot;</span>
-    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;{</span>
-<span class="s">      classMapping: { active:&#39;bg-success&#39;, pending:&#39;bg-warning&#39;, default:&#39;bg-secondary&#39; },</span>
-<span class="s">      keyMapping:   { active:&#39;Active&#39;,     pending:&#39;Pending&#39;,     default:&#39;Unknown&#39; },</span>
-<span class="s">      tooltip: &#39;Current status&#39;</span>
-<span class="s">    }&quot;</span>
+    <span class="na">:value</span><span class="o">=</span><span class="s">"row.status"</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">"{</span>
+<span class="s">      classMapping: { active:'bg-success', pending:'bg-warning', default:'bg-secondary' },</span>
+<span class="s">      keyMapping:   { active:'Active',     pending:'Pending',     default:'Unknown' },</span>
+<span class="s">      tooltip: 'Current status'</span>
+<span class="s">    }"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -223,11 +223,11 @@ Class and label mappings can be provided via <code class="docutils literal notra
 <p><cite>Toggle</cite>: Displays a boolean value as a switch input.
 Emits an action whenever the state changes.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">TableToggle</span>
-    <span class="na">title</span><span class="o">=</span><span class="s">&quot;Active&quot;</span>
-    <span class="na">action</span><span class="o">=</span><span class="s">&quot;toggle-active&quot;</span>
-    <span class="na">:value</span><span class="o">=</span><span class="s">&quot;row.active&quot;</span>
-    <span class="na">:params</span><span class="o">=</span><span class="s">&quot;row&quot;</span>
-    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;onRowAction&quot;</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">"Active"</span>
+    <span class="na">action</span><span class="o">=</span><span class="s">"toggle-active"</span>
+    <span class="na">:value</span><span class="o">=</span><span class="s">"row.active"</span>
+    <span class="na">:params</span><span class="o">=</span><span class="s">"row"</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">"onRowAction"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
@@ -261,13 +261,13 @@ The dictionary contains the following keys:</p>
 <p><strong>Pagination</strong></p>
 <p>Pagination is handled by the <code class="docutils literal notranslate"><span class="pre">BasicTablePagination</span></code> component.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicTablePagination</span>
-    <span class="na">:pages</span><span class="o">=</span><span class="s">&quot;pages&quot;</span>
-    <span class="na">:current-page</span><span class="o">=</span><span class="s">&quot;currentPage&quot;</span>
-    <span class="na">:items-per-page</span><span class="o">=</span><span class="s">&quot;limit&quot;</span>
-    <span class="na">:items-per-page-list</span><span class="o">=</span><span class="s">&quot;[10,25,50,100]&quot;</span>
-    <span class="na">:show-pages</span><span class="o">=</span><span class="s">&quot;3&quot;</span>
-    <span class="err">@</span><span class="na">updatePage</span><span class="o">=</span><span class="s">&quot;p =&gt; currentPage = p&quot;</span>
-    <span class="err">@</span><span class="na">updateItemsPerPage</span><span class="o">=</span><span class="s">&quot;n =&gt; limit = n&quot;</span>
+    <span class="na">:pages</span><span class="o">=</span><span class="s">"pages"</span>
+    <span class="na">:current-page</span><span class="o">=</span><span class="s">"currentPage"</span>
+    <span class="na">:items-per-page</span><span class="o">=</span><span class="s">"limit"</span>
+    <span class="na">:items-per-page-list</span><span class="o">=</span><span class="s">"[10,25,50,100]"</span>
+    <span class="na">:show-pages</span><span class="o">=</span><span class="s">"3"</span>
+    <span class="err">@</span><span class="na">updatePage</span><span class="o">=</span><span class="s">"p =&gt; currentPage = p"</span>
+    <span class="err">@</span><span class="na">updateItemsPerPage</span><span class="o">=</span><span class="s">"n =&gt; limit = n"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>

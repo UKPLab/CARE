@@ -128,16 +128,16 @@
 <h2>How to log<a class="headerlink" href="#how-to-log" title="Link to this heading"></a></h2>
 <p>Central entry point of each logging is the file in the backend <cite>./backend/utils/logger.js</cite>.
 This should generally be integrated into each file with adapting the <strong>service-field</strong> to allow an assignment of the log:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../utils/logger.js&quot;</span><span class="p">)(</span><span class="s2">&quot;service&quot;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../utils/logger.js"</span><span class="p">)(</span><span class="s2">"service"</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>Within the code all information can now be logged directly via the <em>logger</em> variable.
 The logging levels are based on the <a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc5424">RFC5424</a> standard and can be used as followed:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">logger</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;warn&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
-<span class="nx">logger</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
-<span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
-<span class="nx">logger</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
-<span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">&quot;127.0.0.1 - there&#39;s no place like home&quot;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">logger</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'warn'</span><span class="p">,</span><span class="w"> </span><span class="s2">"127.0.0.1 - there's no place like home"</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s2">"127.0.0.1 - there's no place like home"</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">"127.0.0.1 - there's no place like home"</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s2">"127.0.0.1 - there's no place like home"</span><span class="p">);</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">"127.0.0.1 - there's no place like home"</span><span class="p">);</span>
 </pre></div>
 </div>
 <p>See <a class="reference external" href="https://github.com/winstonjs/winston#using-logging-levels">Using Logging Levels</a> for more information.</p>
@@ -181,11 +181,11 @@ For this purpose the environment variables can be adjusted:</p>
 <p>Currently, the database also supports logging with user information already contained in the database.
 For this purpose, additional meta data must be added to the logger, for which there are two ways:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Adding meta data directly during logging</span>
-<span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">&quot;Just a info message with user information&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">uid</span><span class="o">&gt;</span><span class="w"> </span><span class="p">});</span>
+<span class="nx">logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">"Just a info message with user information"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">uid</span><span class="o">&gt;</span><span class="w"> </span><span class="p">});</span>
 
 <span class="c1">// or using a child logger</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">child_logger</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">logger</span><span class="p">.</span><span class="nx">child</span><span class="p">({</span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="o">&lt;</span><span class="nx">uid</span><span class="o">&gt;</span><span class="p">});</span>
-<span class="nx">child_logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">&quot;Just a info message with user information&quot;</span><span class="p">);</span>
+<span class="nx">child_logger</span><span class="p">.</span><span class="nx">info</span><span class="p">(</span><span class="s2">"Just a info message with user information"</span><span class="p">);</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -197,7 +197,7 @@ For this purpose, additional meta data must be added to the logger, for which th
 <h2>Logging through websocket<a class="headerlink" href="#logging-through-websocket" title="Link to this heading"></a></h2>
 <p>There is also the possibility to log information directly from the frontend through the websocket.
 After that, logs can be easily emitted to the websocket in each vue component with:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">level</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;info&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Just a info message from the frontend!&#39;</span><span class="p">})</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">'log'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">level</span><span class="o">:</span><span class="w"> </span><span class="s1">'info'</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s1">'Just a info message from the frontend!'</span><span class="p">})</span>
 </pre></div>
 </div>
 <div class="admonition note">

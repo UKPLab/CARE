@@ -162,29 +162,29 @@ migration functionality. Here, we only cover the necessary commands and code sni
 specific element again on <code class="docutils literal notranslate"><span class="pre">down</span></code>:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">navElements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;My Annotations&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">groupId</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Default&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;bookmark&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"My Annotations"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">groupId</span><span class="o">:</span><span class="w"> </span><span class="s2">"Default"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">'bookmark'</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">order</span><span class="o">:</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">admin</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;my_annotations&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;MyAnnotations&#39;</span>
+<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">"my_annotations"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="s1">'MyAnnotations'</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">];</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">up</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkInsert</span><span class="p">(</span><span class="s2">&quot;nav_element&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkInsert</span><span class="p">(</span><span class="s2">"nav_element"</span><span class="p">,</span>
 <span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">(</span><span class="nx">navElements</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="kd">const</span><span class="w"> </span><span class="nx">groupId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">rawSelect</span><span class="p">(</span><span class="s1">&#39;nav_group&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kd">const</span><span class="w"> </span><span class="nx">groupId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">rawSelect</span><span class="p">(</span><span class="s1">'nav_group'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                    </span><span class="nx">where</span><span class="o">:</span>
 <span class="w">                        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nx">groupId</span><span class="p">}</span>
 <span class="w">                    </span><span class="p">,</span>
-<span class="w">                </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]);</span>
+<span class="w">                </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="s1">'id'</span><span class="p">]);</span>
 
-<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;createdAt&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
-<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;updatedAt&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
-<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;groupId&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">groupId</span><span class="p">;</span>
+<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">'createdAt'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
+<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">'updatedAt'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
+<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">'groupId'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">groupId</span><span class="p">;</span>
 
 <span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nx">t</span><span class="p">;</span>
 <span class="w">            </span><span class="p">}),</span>
@@ -193,7 +193,7 @@ specific element again on <code class="docutils literal notranslate"><span class
 
 <span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">down</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">//delete nav elements first</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkDelete</span><span class="p">(</span><span class="s2">&quot;nav_element&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkDelete</span><span class="p">(</span><span class="s2">"nav_element"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="nx">navElements</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span>
 <span class="w">        </span><span class="p">},</span><span class="w"> </span><span class="p">{});</span>
 <span class="w">    </span><span class="p">}</span>

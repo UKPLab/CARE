@@ -138,7 +138,7 @@
 <p>The card component offers a simple bootstrap card with a title, body and footer. This is the go-to component
 if you want to add information to dashboard components or in the annotator’s sidebar.</p>
 <p>You can use it by simply importing it and inserting the headerElements, body and footer as template slots.</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicCard</span> <span class="na">title</span><span class="o">=</span><span class="s">&#39;Example&#39;</span><span class="p">&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicCard</span> <span class="na">title</span><span class="o">=</span><span class="s">'Example'</span><span class="p">&gt;</span>
     <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">headerElements</span><span class="p">&gt;</span>
     <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
     <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">body</span><span class="p">&gt;</span>
@@ -148,10 +148,10 @@ if you want to add information to dashboard components or in the annotator’s s
 <span class="p">&lt;/</span><span class="nt">BasicCard</span><span class="p">&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicCard</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/Card.vue&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicCard</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@/basic/Card.vue'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;CardExample&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">'CardExample'</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">BasicCard</span><span class="p">,</span>
 <span class="w">    </span><span class="p">},</span>
@@ -189,11 +189,11 @@ if you want to add information to dashboard components or in the annotator’s s
 <p>The coordinator wraps a <a class="reference internal" href="basic.html#form-section"><span class="std std-ref">Form</span></a> inside a modal to <strong>add/edit</strong> backend entries.
 It pulls field definitions from the Vuex store (<code class="docutils literal notranslate"><span class="pre">table/&lt;name&gt;/getFields</span></code>; see <a class="reference internal" href="../vuex_store.html"><span class="doc">Vuex Store</span></a>), applies optional read-only flags, and handles submit/save + success UI.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicCoordinator</span>
-  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;coordinator&quot;</span>
-  <span class="na">table</span><span class="o">=</span><span class="s">&quot;study&quot;</span>
-  <span class="na">title</span><span class="o">=</span><span class="s">&quot;Study&quot;</span>
-  <span class="err">@</span><span class="na">success</span><span class="o">=</span><span class="s">&quot;success&quot;</span>
-  <span class="err">@</span><span class="na">submit</span><span class="o">=</span><span class="s">&quot;submit&quot;</span><span class="p">&gt;</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">"coordinator"</span>
+  <span class="na">table</span><span class="o">=</span><span class="s">"study"</span>
+  <span class="na">title</span><span class="o">=</span><span class="s">"Study"</span>
+  <span class="err">@</span><span class="na">success</span><span class="o">=</span><span class="s">"success"</span>
+  <span class="err">@</span><span class="na">submit</span><span class="o">=</span><span class="s">"submit"</span><span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">title</span><span class="p">&gt;</span> <span class="cm">&lt;!-- optional custom title --&gt;</span> <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">success</span><span class="p">&gt;</span> <span class="cm">&lt;!-- overwrite success message --&gt;</span> <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">success-footer</span><span class="p">&gt;</span> <span class="cm">&lt;!-- footer after success --&gt;</span> <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
@@ -201,13 +201,13 @@ It pulls field definitions from the Vuex store (<code class="docutils literal no
 <span class="p">&lt;/</span><span class="nt">BasicCoordinator</span><span class="p">&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicCoordinator</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/Coordinator.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicCoordinator</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/Coordinator.vue"</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">BasicCoordinator</span><span class="w"> </span><span class="p">},</span>
 <span class="w">  </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">success</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Saved id:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">);</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="nx">submit</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Submit:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="nx">success</span><span class="p">(</span><span class="nx">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Saved id:"</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="p">);</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">submit</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Submit:"</span><span class="p">,</span><span class="w"> </span><span class="nx">data</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">};</span>
 </pre></div>

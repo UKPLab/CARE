@@ -125,26 +125,26 @@ This section shows how to define a new setting, what types are supported, and ho
 <h3>1. Add a migration<a class="headerlink" href="#add-a-migration" title="Link to this heading"></a></h3>
 <p>At first you need to add a new migration - please check out the <a class="reference internal" href="../backend/database.html"><span class="doc">Database</span></a> for the details.
 To add a new setting, define it similar to this example:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">'use strict'</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">settings</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;editor.document.enableComments&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Enable or disable comment functionality in the document editor&quot;</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"editor.document.enableComments"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">"true"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"boolean"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">"Enable or disable comment functionality in the document editor"</span>
 <span class="p">}];</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">up</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkInsert</span><span class="p">(</span><span class="s1">&#39;setting&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;createdAt&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
-<span class="w">            </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;updatedAt&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkInsert</span><span class="p">(</span><span class="s1">'setting'</span><span class="p">,</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nx">t</span><span class="p">[</span><span class="s1">'createdAt'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
+<span class="w">            </span><span class="nx">t</span><span class="p">[</span><span class="s1">'updatedAt'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
 <span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">t</span><span class="p">;</span>
 <span class="w">        </span><span class="p">}),</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">returning</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">});</span>
 <span class="w">    </span><span class="p">},</span>
 
 <span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">down</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkDelete</span><span class="p">(</span><span class="s2">&quot;setting&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkDelete</span><span class="p">(</span><span class="s2">"setting"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="nx">settings</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span>
 <span class="w">        </span><span class="p">},</span><span class="w"> </span><span class="p">{});</span>
 <span class="w">    </span><span class="p">}</span>
@@ -164,10 +164,10 @@ This ensures the new settings are correctly applied and available in the fronten
 <li><p><code class="docutils literal notranslate"><span class="pre">boolean</span></code>:
 Enables a checkbox or toggle in the UI.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;editor.document.enableComments&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Enable or disable comment functionality in the document editor&quot;</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"editor.document.enableComments"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">"true"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"boolean"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">"Enable or disable comment functionality in the document editor"</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -175,10 +175,10 @@ Enables a checkbox or toggle in the UI.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">number</span></code> or <code class="docutils literal notranslate"><span class="pre">integer</span></code>:
 Enables a numeric input field (as string or integer).</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;editor.edits.debounceTime&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;150&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Delay time in milliseconds before processing edits&quot;</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"editor.edits.debounceTime"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">"150"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"number"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">"Delay time in milliseconds before processing edits"</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -186,9 +186,9 @@ Enables a numeric input field (as string or integer).</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">string</span></code> (default):
 Basic text field input. If <code class="docutils literal notranslate"><span class="pre">type</span></code> is omitted, it is treated as string by default.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;dashboard.navigation.component.default&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Home&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;The default component to display in the dashboard&quot;</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"dashboard.navigation.component.default"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">"Home"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">"The default component to display in the dashboard"</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -196,10 +196,10 @@ Basic text field input. If <code class="docutils literal notranslate"><span clas
 <li><p><code class="docutils literal notranslate"><span class="pre">html</span></code>:
 Allows multi-line rich-text (HTML) input in the frontend, shown with a textarea.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;app.register.terms&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;html&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;p&gt;Please agree to the terms and conditions.&lt;/p&gt;&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Terms and conditions text shown during registration&quot;</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"app.register.terms"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"html"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">"&lt;p&gt;Please agree to the terms and conditions.&lt;/p&gt;"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s2">"Terms and conditions text shown during registration"</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -213,28 +213,28 @@ Allows multi-line rich-text (HTML) input in the frontend, shown with a textarea.
 <section id="use-your-settings-in-the-frontend">
 <h3>2. Use your Settings in the Frontend<a class="headerlink" href="#use-your-settings-in-the-frontend" title="Link to this heading"></a></h3>
 <p>You can access the setting value inside any component using Vuex:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;settings/getValue&quot;</span><span class="p">](</span><span class="s2">&quot;editor.document.enableComments&quot;</span><span class="p">)</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"settings/getValue"</span><span class="p">](</span><span class="s2">"editor.document.enableComments"</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Settings are always returned as strings, so their usage in components depends on the expected type.
 You must manually parse them as needed based on the setting’s <code class="docutils literal notranslate"><span class="pre">type</span></code>.</p>
 <p><strong>Type: Boolean</strong></p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>&lt;BasicButton
-    v-if=&quot;commentsEnabled&quot;
-    text=&quot;Add Comment&quot;
-    @click=&quot;addComment&quot;
+    v-if="commentsEnabled"
+    text="Add Comment"
+    @click="addComment"
 /&gt;
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">commentsEnabled</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;settings/getValue&quot;</span><span class="p">](</span><span class="s2">&quot;editor.document.enableComments&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s2">&quot;true&quot;</span><span class="p">;</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"settings/getValue"</span><span class="p">](</span><span class="s2">"editor.document.enableComments"</span><span class="p">)</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s2">"true"</span><span class="p">;</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">addComment</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Add comment clicked&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Add comment clicked"</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">};</span>
@@ -244,7 +244,7 @@ You must manually parse them as needed based on the setting’s <code class="doc
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">debounceTimeForEdits</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">parseInt</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;settings/getValue&quot;</span><span class="p">](</span><span class="s2">&quot;editor.edits.debounceTime&quot;</span><span class="p">),</span><span class="w"> </span><span class="mf">10</span><span class="p">);</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nb">parseInt</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"settings/getValue"</span><span class="p">](</span><span class="s2">"editor.edits.debounceTime"</span><span class="p">),</span><span class="w"> </span><span class="mf">10</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">};</span>

@@ -154,11 +154,11 @@ It outlines how PDFs are displayed, how annotations are anchored and highlighted
 The Annotator is typically used in document routes or in <strong>study steps</strong> (step type = 1).</p>
 <p><strong>Basic example in a document route:</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
-  <span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;documentId&quot;</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nt">Annotator</span> <span class="na">:document-id</span><span class="o">=</span><span class="s">"documentId"</span> <span class="p">/&gt;</span>
 <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">Annotator</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/components/annotator/Annotator.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">Annotator</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/components/annotator/Annotator.vue"</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">Annotator</span><span class="w"> </span><span class="p">},</span>
@@ -168,11 +168,11 @@ The Annotator is typically used in document routes or in <strong>study steps</st
 </div>
 <p><strong>Example in a study workflow:</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Annotator</span>
-  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;currentStep.stepType === 1&quot;</span>
-  <span class="na">:document-id</span><span class="o">=</span><span class="s">&quot;currentStep.documentId&quot;</span>
-  <span class="na">:study-step-id</span><span class="o">=</span><span class="s">&quot;currentStep.id&quot;</span>
-  <span class="na">:active</span><span class="o">=</span><span class="s">&quot;true&quot;</span>
-  <span class="err">@</span><span class="na">update:data</span><span class="o">=</span><span class="s">&quot;updateStudyData($event)&quot;</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">"currentStep.stepType === 1"</span>
+  <span class="na">:document-id</span><span class="o">=</span><span class="s">"currentStep.documentId"</span>
+  <span class="na">:study-step-id</span><span class="o">=</span><span class="s">"currentStep.id"</span>
+  <span class="na">:active</span><span class="o">=</span><span class="s">"true"</span>
+  <span class="err">@</span><span class="na">update:data</span><span class="o">=</span><span class="s">"updateStudyData($event)"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>

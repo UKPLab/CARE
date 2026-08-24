@@ -137,13 +137,13 @@
 <p>To build forms, you can use the form component. It offers a simple way to build forms in a consistent way only by passing a dictionary.
 Mainly it is used by the coordinator component, but it can also be used standalone.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicForm</span>
-    <span class="na">ref</span><span class="o">=</span><span class="s">&quot;form&quot;</span>
-    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
-    <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fields&quot;</span>
+    <span class="na">ref</span><span class="o">=</span><span class="s">"form"</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">"data"</span>
+    <span class="na">:fields</span><span class="o">=</span><span class="s">"fields"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicForm</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/Form.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">BasicForm</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/Form.vue"</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
@@ -418,9 +418,9 @@ There are three kinds of properties:</p>
 <li><p>unit — Optional unit label shown next to the current value.</p></li>
 <li><p>textMapping — Array that maps numeric values to display labels.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">textMapping</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Low&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Medium&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;High&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">"Low"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">"Medium"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="kr">from</span><span class="o">:</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="nx">to</span><span class="o">:</span><span class="w"> </span><span class="s2">"High"</span><span class="w"> </span><span class="p">}</span>
 <span class="p">]</span>
 </pre></div>
 </div>
@@ -432,12 +432,12 @@ There are three kinds of properties:</p>
 <p id="form-type-select"><cite>Select</cite>: There are two ways to define the options of a select field, either by passing an object or use data from a autotable in (<a class="reference internal" href="../vuex_store.html"><span class="doc">Vuex Store</span></a>).</p>
 <p>Passing an object:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="kd">class</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;border border-info&quot;</span>
+<span class="w">            </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="s2">"info"</span><span class="p">,</span>
+<span class="w">            </span><span class="kd">class</span><span class="o">:</span><span class="w"> </span><span class="s2">"border border-info"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="p">...</span>
 <span class="w">    </span><span class="p">]</span>
@@ -475,11 +475,11 @@ There are three kinds of properties:</p>
 <hr class="docutils" />
 <p id="form-type-table"><cite>Table</cite>: Tables are a bit more complex, example:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tags&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">label</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Tags:&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;table&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"tags"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">label</span><span class="o">:</span><span class="w"> </span><span class="s2">"Tags:"</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">"table"</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tag&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tagSetId&quot;</span>
+<span class="w">        </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">"tag"</span><span class="p">,</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s2">"tagSetId"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">required</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="p">}</span>
@@ -530,16 +530,16 @@ it’s important to understand that <strong>in the context of the Choice compone
 <p>To better understand how the <code class="docutils literal notranslate"><span class="pre">Choice</span></code> component fits into a workflow, here’s a minimal example of how workflows are structured in the backend (see <a class="reference internal" href="../../../for_researchers/study/study_basics.html"><span class="doc">What is a Study?</span></a> for further examples of study workflows):</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
 <span class="w">  </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Peer Review Workflow&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;steps&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepType&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;allowBackward&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Peer Review Workflow"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"steps"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepType"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"allowBackward"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">},</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;stepType&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;allowBackward&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;configuration&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;fields&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reviewLink&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;reviewText&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="nt">"stepType"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"allowBackward"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"configuration"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"fields"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reviewLink"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"reviewText"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">          </span><span class="p">]</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
@@ -561,26 +561,26 @@ and binding the results to your form via <code class="docutils literal notransla
 </div>
 <p>Example usage:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">FormChoice</span>
-    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;workflowSteps&quot;</span>
-    <span class="na">:options</span><span class="o">=</span><span class="s">&quot;{</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">"workflowSteps"</span>
+    <span class="na">:options</span><span class="o">=</span><span class="s">"{</span>
 <span class="s">        options: {</span>
-<span class="s">            table: &#39;workflow_step_assignment&#39;,</span>
+<span class="s">            table: 'workflow_step_assignment',</span>
 <span class="s">            choices: {</span>
-<span class="s">                table: &#39;workflow_step&#39;,</span>
+<span class="s">                table: 'workflow_step',</span>
 <span class="s">                filter: [</span>
-<span class="s">                    { type: &#39;formData&#39;, key: &#39;workflowId&#39;, value: &#39;workflowId&#39; }</span>
+<span class="s">                    { type: 'formData', key: 'workflowId', value: 'workflowId' }</span>
 <span class="s">                ]</span>
 <span class="s">            }</span>
 <span class="s">        }</span>
-<span class="s">    }&quot;</span>
-    <span class="err">@</span><span class="na">update:config-status</span><span class="o">=</span><span class="s">&quot;handleStatus&quot;</span>
+<span class="s">    }"</span>
+    <span class="err">@</span><span class="na">update:config-status</span><span class="o">=</span><span class="s">"handleStatus"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">FormChoice</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/basic/form/Choice.vue&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">FormChoice</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@/basic/form/Choice.vue'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ChoiceExample&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s1">'ChoiceExample'</span><span class="p">,</span>
 <span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">FormChoice</span><span class="w"> </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
@@ -589,7 +589,7 @@ and binding the results to your form via <code class="docutils literal notransla
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">handleStatus</span><span class="p">(</span><span class="nx">status</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Config status:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="p">);</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"Config status:"</span><span class="p">,</span><span class="w"> </span><span class="nx">status</span><span class="p">);</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="p">};</span>
@@ -677,8 +677,8 @@ For example it is used for <code class="docutils literal notranslate"><span clas
 <li><p>suffix — Optional action button inside the input. Provide an object like:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">    </span><span class="nx">suffix</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Go&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">tooltip</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Click to trigger&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="s2">"Go"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">tooltip</span><span class="o">:</span><span class="w"> </span><span class="s2">"Click to trigger"</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">onClick</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
@@ -699,8 +699,8 @@ Moodle connection parameters and, optionally, an assignment ID. It is used insid
 </ul>
 <p>Example usage:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">MoodleOptions</span>
-  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;moodleOptionsForm&quot;</span>
-  <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;moodleOptions&quot;</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">"moodleOptionsForm"</span>
+  <span class="na">v-model</span><span class="o">=</span><span class="s">"moodleOptions"</span>
   <span class="na">with-assignment-id</span>
 <span class="p">/&gt;</span>
 </pre></div>

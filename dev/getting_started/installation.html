@@ -171,7 +171,7 @@ Follow these steps to install postfix (we assume Ubuntu/Debian):</p>
 <p>The installer will prompt you to select a configuation, we recommend “Internet with Smarthost”.
 When prompted, set the host address and then the relay servers address.</p>
 <p>You can test if the postfix setup worked via the command line (might need to <code class="docutils literal notranslate"><span class="pre">apt</span> <span class="pre">install</span> <span class="pre">mailutils</span></code>):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="s2">&quot;Testing mailserver setup.&quot;</span> <span class="o">|</span> <span class="n">mail</span> <span class="o">-</span><span class="n">s</span> <span class="s2">&quot;Mail Test&quot;</span> <span class="n">ADDRESS</span><span class="nd">@SERVER</span><span class="o">.</span><span class="n">com</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">echo</span> <span class="s2">"Testing mailserver setup."</span> <span class="o">|</span> <span class="n">mail</span> <span class="o">-</span><span class="n">s</span> <span class="s2">"Mail Test"</span> <span class="n">ADDRESS</span><span class="nd">@SERVER</span><span class="o">.</span><span class="n">com</span>
 </pre></div>
 </div>
 <p>If the test fails, check <code class="docutils literal notranslate"><span class="pre">/var/mail/root</span></code> for the bounced mail response, or <code class="docutils literal notranslate"><span class="pre">/var/log/mail.log</span></code> for the hosts mail logs.</p>
@@ -216,7 +216,7 @@ git<span class="w"> </span>push<span class="w"> </span>--set-upstream<span class
 </pre></div>
 </div>
 <p>Then, rebuild the instance:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;your_keyword&quot;</span><span class="w">  </span><span class="c1"># Optional: locate container</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>ps<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"your_keyword"</span><span class="w">  </span><span class="c1"># Optional: locate container</span>
 make<span class="w"> </span><span class="nv">CONTAINER</span><span class="o">=</span>your_container_name<span class="w"> </span>backup_db<span class="w"> </span><span class="c1"># back up the db container for this instance</span>
 cat<span class="w"> </span>.env<span class="w"> </span><span class="c1"># check out the config file, make sure everything still looks right</span>
 make<span class="w"> </span>build<span class="w"> </span><span class="c1"># update the instance</span>
@@ -314,7 +314,7 @@ sudo<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"
 
 <span class="w">        </span><span class="kn">proxy_http_version</span><span class="w"> </span><span class="mi">1</span><span class="s">.1</span><span class="p">;</span>
 <span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Upgrade</span><span class="w"> </span><span class="nv">$http_upgrade</span><span class="p">;</span>
-<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Connection</span><span class="w"> </span><span class="s">&quot;upgrade&quot;</span><span class="p">;</span>
+<span class="w">        </span><span class="kn">proxy_set_header</span><span class="w"> </span><span class="s">Connection</span><span class="w"> </span><span class="s">"upgrade"</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>

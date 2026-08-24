@@ -137,16 +137,16 @@
 <p>The NLPService component is a wrapper around the NLP service. It offers a simple way to easily use the NLP services.</p>
 <p>Example usage:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">NLPService</span>
-    <span class="na">:data</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
-    <span class="na">skill</span><span class="o">=</span><span class="s">&quot;&lt;skillName&gt;&quot;</span>
-    <span class="na">icon-name</span><span class="o">=</span><span class="s">&quot;file-text&quot;</span>
-    <span class="na">title</span><span class="o">=</span><span class="s">&quot;&lt;Title&gt;&quot;</span>
-    <span class="na">type</span><span class="o">=</span><span class="s">&quot;button&quot;</span>
-    <span class="err">@</span><span class="na">response</span><span class="o">=</span><span class="s">&quot;response&quot;</span>
+    <span class="na">:data</span><span class="o">=</span><span class="s">"data"</span>
+    <span class="na">skill</span><span class="o">=</span><span class="s">"&lt;skillName&gt;"</span>
+    <span class="na">icon-name</span><span class="o">=</span><span class="s">"file-text"</span>
+    <span class="na">title</span><span class="o">=</span><span class="s">"&lt;Title&gt;"</span>
+    <span class="na">type</span><span class="o">=</span><span class="s">"button"</span>
+    <span class="err">@</span><span class="na">response</span><span class="o">=</span><span class="s">"response"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">NLPService</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/NLPService.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">NLPService</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/NLPService.vue"</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
@@ -155,14 +155,14 @@
 <span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="s2">&quot;text&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Hello world&quot;</span><span class="p">,</span>
-<span class="w">                </span><span class="s2">&quot;params&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">                </span><span class="s2">"text"</span><span class="o">:</span><span class="w"> </span><span class="s2">"Hello world"</span><span class="p">,</span>
+<span class="w">                </span><span class="s2">"params"</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">response</span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;NLP Service response&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">response</span><span class="p">);</span>
+<span class="w">            </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"NLP Service response"</span><span class="p">,</span><span class="w"> </span><span class="nx">response</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>

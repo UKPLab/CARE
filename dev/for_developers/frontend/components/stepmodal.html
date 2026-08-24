@@ -152,15 +152,15 @@ All intermediate and final values are persisted in <code class="docutils literal
 <h2>Implementing the StepModal<a class="headerlink" href="#implementing-the-stepmodal" title="Link to this heading"></a></h2>
 <p>To use StepModal in the study flow:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">StepModal</span>
-  <span class="na">v-if</span><span class="o">=</span><span class="s">&quot;currentStep.stepType === 3 &amp;&amp; studyTrajectory.includes(currentStep.id)&quot;</span>
-  <span class="na">:study-step-id</span><span class="o">=</span><span class="s">&quot;currentStep.id&quot;</span>
-  <span class="na">:is-last-step</span><span class="o">=</span><span class="s">&quot;currentStep.id === lastStep.id&quot;</span>
-  <span class="err">@</span><span class="na">close</span><span class="o">=</span><span class="s">&quot;handleModalClose&quot;</span>
-  <span class="err">@</span><span class="na">update:data</span><span class="o">=</span><span class="s">&quot;studyData[studySteps.findIndex(s =&gt; s.id === currentStep.id) + 1] = $event&quot;</span>
+  <span class="na">v-if</span><span class="o">=</span><span class="s">"currentStep.stepType === 3 &amp;&amp; studyTrajectory.includes(currentStep.id)"</span>
+  <span class="na">:study-step-id</span><span class="o">=</span><span class="s">"currentStep.id"</span>
+  <span class="na">:is-last-step</span><span class="o">=</span><span class="s">"currentStep.id === lastStep.id"</span>
+  <span class="err">@</span><span class="na">close</span><span class="o">=</span><span class="s">"handleModalClose"</span>
+  <span class="err">@</span><span class="na">update:data</span><span class="o">=</span><span class="s">"studyData[studySteps.findIndex(s =&gt; s.id === currentStep.id) + 1] = $event"</span>
 <span class="p">/&gt;</span>
 </pre></div>
 </div>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">StepModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/components/stepmodal/StepModal.vue&quot;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">StepModal</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/components/stepmodal/StepModal.vue"</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">StepModal</span><span class="w"> </span><span class="p">},</span>
@@ -183,16 +183,16 @@ The delta is rendered with Quill into HTML that may contain <strong>placeholders
 </ol>
 <p>Basic structure:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicModal</span>
-  <span class="na">ref</span><span class="o">=</span><span class="s">&quot;modal&quot;</span>
-  <span class="na">:name</span><span class="o">=</span><span class="s">&quot;studyStep?.configuration?.name || &#39;Modal&#39;&quot;</span>
-  <span class="na">:class</span><span class="o">=</span><span class="s">&quot;modalClasses&quot;</span>
-  <span class="na">:style</span><span class="o">=</span><span class="s">&quot;{ backgroundColor: studyStep?.configuration?.backgroundColor || &#39;&#39; }&quot;</span>
+  <span class="na">ref</span><span class="o">=</span><span class="s">"modal"</span>
+  <span class="na">:name</span><span class="o">=</span><span class="s">"studyStep?.configuration?.name || 'Modal'"</span>
+  <span class="na">:class</span><span class="o">=</span><span class="s">"modalClasses"</span>
+  <span class="na">:style</span><span class="o">=</span><span class="s">"{ backgroundColor: studyStep?.configuration?.backgroundColor || '' }"</span>
   <span class="na">disableKeyboard</span>
   <span class="na">removeClose</span>
 <span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">title</span><span class="p">&gt;</span>
-    <span class="p">&lt;</span><span class="nt">h5</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;modal-title&quot;</span> <span class="na">:class</span><span class="o">=</span><span class="s">&quot;studyStep?.configuration?.titleClass || &#39;text-primary&#39;&quot;</span><span class="p">&gt;</span>
-      {{ studyStep?.configuration?.title || &#39;Feedback&#39; }}
+    <span class="p">&lt;</span><span class="nt">h5</span> <span class="na">class</span><span class="o">=</span><span class="s">"modal-title"</span> <span class="na">:class</span><span class="o">=</span><span class="s">"studyStep?.configuration?.titleClass || 'text-primary'"</span><span class="p">&gt;</span>
+      {{ studyStep?.configuration?.title || 'Feedback' }}
     <span class="p">&lt;/</span><span class="nt">h5</span><span class="p">&gt;</span>
   <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 
@@ -234,20 +234,20 @@ Reads two inputs and renders a stacked bar chart to compare the two datasets.</p
 </ul>
 <p>Example placeholder configuration inside the step:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;placeholders&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;summary_text&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="nt">"placeholders"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepId"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">"dataSource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"summary_text"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;chart&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;frequency_chart&quot;</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Edits by Type&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="nt">"chart"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepId"</span><span class="p">:</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="nt">"dataSource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"frequency_chart"</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Edits by Type"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;comparison&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nt">"comparison"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;input&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revisionA&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;revisionB&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepId"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="nt">"dataSource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"revisionA"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepId"</span><span class="p">:</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nt">"dataSource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"revisionB"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;R1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;R2&quot;</span><span class="p">],</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Revisions Compared&quot;</span>
+<span class="w">        </span><span class="nt">"labels"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"R1"</span><span class="p">,</span><span class="w"> </span><span class="s2">"R2"</span><span class="p">],</span><span class="w"> </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Revisions Compared"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
@@ -268,14 +268,14 @@ Reads two inputs and renders a stacked bar chart to compare the two datasets.</p
 </ol>
 <p>Minimal example of a service entry in <code class="docutils literal notranslate"><span class="pre">studyStep.configuration</span></code>:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;services&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"services"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;nlpRequest&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;qualityCheck&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;skill&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quality_assessment&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;inputs&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;text&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;final_text&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">        </span><span class="nt">&quot;meta&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;stepId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;dataSource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;meta_info&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"nlpRequest"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"qualityCheck"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"skill"</span><span class="p">:</span><span class="w"> </span><span class="s2">"quality_assessment"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"inputs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepId"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"dataSource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"final_text"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">"meta"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"stepId"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="nt">"dataSource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"meta_info"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>

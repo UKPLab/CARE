@@ -195,9 +195,9 @@ with real-time progress monitoring.</p>
 <p><strong>Socket Integration:</strong></p>
 <p>Manages subscription to background task updates:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">mounted</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;serviceCommand&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">service</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;BackgroundTaskService&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">command</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;subscribeBackgroundTaskUpdates&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"serviceCommand"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nx">service</span><span class="o">:</span><span class="w"> </span><span class="s2">"BackgroundTaskService"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">command</span><span class="o">:</span><span class="w"> </span><span class="s2">"subscribeBackgroundTaskUpdates"</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="p">}</span>
@@ -320,7 +320,7 @@ which orchestrates the entire preprocessing workflow.</p>
 </ul>
 <p><strong>Result storage:</strong></p>
 <p>Results are stored in <code class="docutils literal notranslate"><span class="pre">document_data</span></code> with keys like:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>nlpRequest_sentiment-classification_sentiment: &quot;positive&quot;
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>nlpRequest_sentiment-classification_sentiment: "positive"
 nlpRequest_sentiment-classification_confidence: 0.92
 </pre></div>
 </div>

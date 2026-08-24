@@ -212,8 +212,8 @@ a singular lower-case term.</p></li>
 that exports a function for generating the model as an instance of a MetaModel from a given
 Sequelize object. This looks as follows for a table called <code class="docutils literal notranslate"><span class="pre">simpletable</span></code> (the name introduced in 2.):</p></li>
 </ol>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
-<span class="kd">const</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../MetaModel.js&quot;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">'use strict'</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../MetaModel.js"</span><span class="p">);</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">sequelize</span><span class="p">,</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="kd">class</span><span class="w"> </span><span class="nx">SimpleTable</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="p">{</span>
@@ -228,8 +228,8 @@ Sequelize object. This looks as follows for a table called <code class="docutils
 <span class="w">        </span><span class="nx">createdAt</span><span class="o">:</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">.</span><span class="nx">DATE</span>
 <span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">sequelize</span><span class="o">:</span><span class="w"> </span><span class="nx">sequelize</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">modelName</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;simpletable&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">tableName</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;simpletable&#39;</span>
+<span class="w">        </span><span class="nx">modelName</span><span class="o">:</span><span class="w"> </span><span class="s1">'simpletable'</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">tableName</span><span class="o">:</span><span class="w"> </span><span class="s1">'simpletable'</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">SimpleTable</span><span class="p">;</span>
 <span class="p">};</span>
@@ -241,7 +241,7 @@ the other migrations. For a very simple table <code class="docutils literal notr
 </ol>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="k">async</span><span class="w"> </span><span class="nx">up</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">createTable</span><span class="p">(</span><span class="s1">&#39;simpletable&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">createTable</span><span class="p">(</span><span class="s1">'simpletable'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">allowNull</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">autoIncrement</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">primaryKey</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">.</span><span class="nx">INTEGER</span>
 <span class="w">        </span><span class="p">},</span>
@@ -259,7 +259,7 @@ the other migrations. For a very simple table <code class="docutils literal notr
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="p">},</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="nx">down</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">dropTable</span><span class="p">(</span><span class="s1">&#39;simpletable&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">dropTable</span><span class="p">(</span><span class="s1">'simpletable'</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -275,11 +275,11 @@ the database interactions, the <code class="docutils literal notranslate"><span 
 respective table. For instance, getting a single row entry by a provided ID (<code class="docutils literal notranslate"><span class="pre">getById(id)</span></code>). Accessing the DB via
 these default functions is as simple as accessing the table model and executing the static method.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// usually, you just access the models loaded in the web server; for completeness we provide the imports here:</span>
-<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="nx">DataTypes</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sequelize&quot;</span><span class="p">)</span>
-<span class="kd">const</span><span class="w"> </span><span class="nx">db</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;./db/index.js&quot;</span><span class="p">)</span>
-<span class="kd">const</span><span class="w"> </span><span class="nx">SimpleTable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;./db/models/simpletable.js&quot;</span><span class="p">)(</span><span class="nx">db</span><span class="p">.</span><span class="nx">sequelize</span><span class="p">,</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">);</span>
+<span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="nx">DataTypes</span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"sequelize"</span><span class="p">)</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">db</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"./db/index.js"</span><span class="p">)</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">SimpleTable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"./db/models/simpletable.js"</span><span class="p">)(</span><span class="nx">db</span><span class="p">.</span><span class="nx">sequelize</span><span class="p">,</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">);</span>
 
-<span class="nx">SimpleTable</span><span class="p">.</span><span class="nx">getById</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">);</span>
+<span class="nx">SimpleTable</span><span class="p">.</span><span class="nx">getById</span><span class="p">(</span><span class="s2">"x"</span><span class="p">);</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -289,8 +289,8 @@ the web server object already holds the respective models in a class attribute. 
 <a class="reference internal" href="socket.html"><span class="doc">Sockets</span></a> for the details.</p>
 </div>
 <p>In case you need more specific functions, you may simply add static access methods to the new model class. For instance:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
-<span class="kd">const</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../MetaModel.js&quot;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">'use strict'</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../MetaModel.js"</span><span class="p">);</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">sequelize</span><span class="p">,</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="kd">class</span><span class="w"> </span><span class="nx">SimpleTable</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="p">{</span>
@@ -300,7 +300,7 @@ the web server object already holds the respective models in a class attribute. 
 <span class="w">        </span><span class="c1">// new access function specific to this model</span>
 <span class="w">        </span><span class="k">static</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="nx">getDefaultRow</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="c1">//do error management -- ommitted for brevity</span>
-<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">findOne</span><span class="p">({</span><span class="w"> </span><span class="nx">where</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="s1">&#39;id&#39;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;x&quot;</span><span class="p">},</span><span class="w"> </span><span class="nx">raw</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">});</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">findOne</span><span class="p">({</span><span class="w"> </span><span class="nx">where</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="s1">'id'</span><span class="o">:</span><span class="w"> </span><span class="s2">"x"</span><span class="p">},</span><span class="w"> </span><span class="nx">raw</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">});</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="c1">//... initialization etc.</span>

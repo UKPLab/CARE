@@ -176,7 +176,7 @@ Example: <code class="docutils literal notranslate"><span class="pre">backend/db
 validation schemas. It handles file downloads from Moodle, file categorization,
 and validation logic.</p>
 <p><strong>Constructor</strong></p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">Validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../../utils/validator.js&quot;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">Validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../../utils/validator.js"</span><span class="p">);</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Validator</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span><span class="w"> </span><span class="nx">models</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -202,7 +202,7 @@ validation schema, and either create the submission or abort with an error.</p>
 <li><p>On failure, abort the transaction and report the error to the user.</p></li>
 </ol>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">//  1) Instantiate the validator.</span>
-<span class="kd">const</span><span class="w"> </span><span class="nx">Validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../../utils/validator.js&quot;</span><span class="p">);</span><span class="w"> </span><span class="c1">// path shown is for reference only</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">Validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../../utils/validator.js"</span><span class="p">);</span><span class="w"> </span><span class="c1">// path shown is for reference only</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">validator</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Validator</span><span class="p">(</span><span class="nx">server</span><span class="p">,</span><span class="w"> </span><span class="nx">models</span><span class="p">);</span>
 
 <span class="k">async</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">handleSubmission</span><span class="p">(</span><span class="nx">submissionFiles</span><span class="p">,</span><span class="w"> </span><span class="nx">moodleOptions</span><span class="p">,</span><span class="w"> </span><span class="nx">configId</span><span class="p">,</span><span class="w"> </span><span class="nx">transaction</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>

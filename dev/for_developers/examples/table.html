@@ -131,12 +131,12 @@ The integration in CARE includes the following steps:</p>
 The migration should look like this:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="k">async</span><span class="w"> </span><span class="nx">up</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">createTable</span><span class="p">(</span><span class="s1">&#39;example_table&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">createTable</span><span class="p">(</span><span class="s1">'example_table'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">allowNull</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">autoIncrement</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">primaryKey</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">.</span><span class="nx">INTEGER</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">allowNull</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">.</span><span class="nx">INTEGER</span><span class="p">,</span><span class="w"> </span><span class="nx">references</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">model</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="nx">allowNull</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">.</span><span class="nx">INTEGER</span><span class="p">,</span><span class="w"> </span><span class="nx">references</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">model</span><span class="o">:</span><span class="w"> </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s1">'id'</span><span class="w"> </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nx">exampleText</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">allowNull</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">.</span><span class="nx">STRING</span>
@@ -155,7 +155,7 @@ The migration should look like this:</p>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="p">},</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="nx">down</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">dropTable</span><span class="p">(</span><span class="s1">&#39;example_table&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">dropTable</span><span class="p">(</span><span class="s1">'example_table'</span><span class="p">);</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -165,8 +165,8 @@ The migration should look like this:</p>
 <h2>2. Create Model<a class="headerlink" href="#create-model" title="Link to this heading"></a></h2>
 <p>The model should be created in the folder <code class="docutils literal notranslate"><span class="pre">./backend/db/models</span></code> with the same name as the table like <code class="docutils literal notranslate"><span class="pre">example_table.js</span></code>.
 This model should also extend the class <code class="docutils literal notranslate"><span class="pre">MetaModel</span></code> from the file <code class="docutils literal notranslate"><span class="pre">./backend/db/MetaModel.js</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
-<span class="kd">const</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../MetaModel.js&quot;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">'use strict'</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../MetaModel.js"</span><span class="p">);</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nx">sequelize</span><span class="p">,</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="kd">class</span><span class="w"> </span><span class="nx">ExampleTable</span><span class="w"> </span><span class="k">extends</span><span class="w"> </span><span class="nx">MetaModel</span><span class="w"> </span><span class="p">{</span>
@@ -185,8 +185,8 @@ This model should also extend the class <code class="docutils literal notranslat
 <span class="w">        </span><span class="nx">deletedAt</span><span class="o">:</span><span class="w"> </span><span class="nx">DataTypes</span><span class="p">.</span><span class="nx">DATE</span>
 <span class="w">    </span><span class="p">},</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">sequelize</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">modelName</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;example_table&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">tableName</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;example_table&#39;</span>
+<span class="w">        </span><span class="nx">modelName</span><span class="o">:</span><span class="w"> </span><span class="s1">'example_table'</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">tableName</span><span class="o">:</span><span class="w"> </span><span class="s1">'example_table'</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">ExampleTable</span><span class="p">;</span>
 <span class="p">};</span>
@@ -198,33 +198,33 @@ This model should also extend the class <code class="docutils literal notranslat
 <p>The next step is to create a new navigation entry. These are dynamically loaded from the database,
 such that we have to add a new migration to add the new entry to the database, like in the first step.
 The migration should look like this:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s1">'use strict'</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">navElements</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Example Table Data&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">groupId</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Default&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;table&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Example Table Data"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">groupId</span><span class="o">:</span><span class="w"> </span><span class="s2">"Default"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">icon</span><span class="o">:</span><span class="w"> </span><span class="s1">'table'</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">order</span><span class="o">:</span><span class="w"> </span><span class="mf">10</span><span class="p">,</span>
 <span class="w">        </span><span class="nx">admin</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;example_table&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ExampleTable&#39;</span>
+<span class="w">        </span><span class="nx">path</span><span class="o">:</span><span class="w"> </span><span class="s2">"example_table"</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">component</span><span class="o">:</span><span class="w"> </span><span class="s1">'ExampleTable'</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">];</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">up</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkInsert</span><span class="p">(</span><span class="s2">&quot;nav_element&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkInsert</span><span class="p">(</span><span class="s2">"nav_element"</span><span class="p">,</span>
 <span class="w">            </span><span class="k">await</span><span class="w"> </span><span class="nb">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">(</span><span class="nx">navElements</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="kd">const</span><span class="w"> </span><span class="nx">groupId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">rawSelect</span><span class="p">(</span><span class="s1">&#39;nav_group&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="kd">const</span><span class="w"> </span><span class="nx">groupId</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">rawSelect</span><span class="p">(</span><span class="s1">'nav_group'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                    </span><span class="nx">where</span><span class="o">:</span>
 <span class="w">                        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nx">groupId</span><span class="p">}</span>
 <span class="w">                    </span><span class="p">,</span>
-<span class="w">                </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]);</span>
+<span class="w">                </span><span class="p">},</span><span class="w"> </span><span class="p">[</span><span class="s1">'id'</span><span class="p">]);</span>
 
-<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;createdAt&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
-<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;updatedAt&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
-<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">&#39;groupId&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">groupId</span><span class="p">;</span>
+<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">'createdAt'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
+<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">'updatedAt'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nb">Date</span><span class="p">();</span>
+<span class="w">                </span><span class="nx">t</span><span class="p">[</span><span class="s1">'groupId'</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">groupId</span><span class="p">;</span>
 
 <span class="w">                </span><span class="k">return</span><span class="w"> </span><span class="nx">t</span><span class="p">;</span>
 <span class="w">            </span><span class="p">}),</span>
@@ -233,7 +233,7 @@ The migration should look like this:</p>
 
 <span class="w">    </span><span class="k">async</span><span class="w"> </span><span class="nx">down</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">,</span><span class="w"> </span><span class="nx">Sequelize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">//delete nav elements first</span>
-<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkDelete</span><span class="p">(</span><span class="s2">&quot;nav_element&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkDelete</span><span class="p">(</span><span class="s2">"nav_element"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="nx">navElements</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">t</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">t</span><span class="p">.</span><span class="nx">name</span><span class="p">)</span>
 <span class="w">        </span><span class="p">},</span><span class="w"> </span><span class="p">{});</span>
 <span class="w">    </span><span class="p">}</span>
@@ -247,12 +247,12 @@ The migration should look like this:</p>
 <p>The last step is to create a new vue dashboard component in the folder <code class="docutils literal notranslate"><span class="pre">./frontend/src/components/dashboard</span></code> with the same name we defined in the navigation entry <code class="docutils literal notranslate"><span class="pre">ExampleTable.vue</span></code>.
 We make use of several basic components, see <span class="xref std std-doc">../frontend/base_components</span> for more details.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
-  <span class="p">&lt;</span><span class="nt">Card</span> <span class="na">title</span><span class="o">=</span><span class="s">&quot;ExampleTable&quot;</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">Card</span> <span class="na">title</span><span class="o">=</span><span class="s">"ExampleTable"</span><span class="p">&gt;</span>
     <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">body</span><span class="p">&gt;</span>
       <span class="p">&lt;</span><span class="nt">Table</span>
-        <span class="na">:columns</span><span class="o">=</span><span class="s">&quot;columns&quot;</span>
-        <span class="na">:data</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
-        <span class="na">:options</span><span class="o">=</span><span class="s">&quot;options&quot;</span>
+        <span class="na">:columns</span><span class="o">=</span><span class="s">"columns"</span>
+        <span class="na">:data</span><span class="o">=</span><span class="s">"data"</span>
+        <span class="na">:options</span><span class="o">=</span><span class="s">"options"</span>
       <span class="p">/&gt;</span>
     <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
   <span class="p">&lt;/</span><span class="nt">Card</span><span class="p">&gt;</span>
@@ -260,11 +260,11 @@ We make use of several basic components, see <span class="xref std std-doc">../f
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="nx">script</span><span class="o">&gt;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">Table</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/table/Table.vue&quot;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">Card</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/Card.vue&quot;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">Table</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/table/Table.vue"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">Card</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/basic/Card.vue"</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Log&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Log"</span><span class="p">,</span>
 <span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">Card</span><span class="p">,</span><span class="w"> </span><span class="nx">Table</span><span class="p">},</span>
 <span class="w">  </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
@@ -277,16 +277,16 @@ We make use of several basic components, see <span class="xref std std-doc">../f
 <span class="w">        </span><span class="nx">pagination</span><span class="o">:</span><span class="w"> </span><span class="mf">30</span><span class="p">,</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="nx">columns</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;User&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;userId&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Username&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;creator_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;CreatedAt&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;createdAt&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Text&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;exampleText&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"userId"</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Username"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"creator_name"</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"CreatedAt"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"createdAt"</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Text"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"exampleText"</span><span class="p">},</span>
 <span class="w">      </span><span class="p">],</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">&quot;auto/example_table/getAll&quot;</span><span class="p">];</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$store</span><span class="p">.</span><span class="nx">getters</span><span class="p">[</span><span class="s2">"auto/example_table/getAll"</span><span class="p">];</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>

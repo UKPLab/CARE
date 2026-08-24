@@ -131,8 +131,8 @@ logging interface and how to log new interactions.</p>
 data object that specifies the parameters of the interaction (e.g. the page number that is moved into the viewport).
 Send these information over the websocket on the <code class="docutils literal notranslate"><span class="pre">stats</span></code> message type, to log them in the database.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">acceptStats</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&lt;action type&gt;&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"stats"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">"&lt;action type&gt;"</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{}</span><span class="w">                      </span><span class="c1">//add any data information into the object</span>
 <span class="w">    </span><span class="p">})</span>
 <span class="p">}</span>
@@ -173,15 +173,15 @@ Likewise, you can listen to component events (using a <code class="docutils lite
 messages).</p>
 <p>For our simple example, the code would look like this:</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
- <span class="p">&lt;</span><span class="nt">button</span> <span class="na">id</span><span class="o">=</span><span class="s">&quot;specialButton&quot;</span> <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;log&quot;</span><span class="p">&gt;</span>Hello!<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
+ <span class="p">&lt;</span><span class="nt">button</span> <span class="na">id</span><span class="o">=</span><span class="s">"specialButton"</span> <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">"log"</span><span class="p">&gt;</span>Hello!<span class="p">&lt;/</span><span class="nt">button</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">log</span><span class="p">(){</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">acceptStats</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">              </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;specialButtonClick&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"stats"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">"specialButtonClick"</span><span class="p">,</span>
 <span class="w">              </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()}</span>
 <span class="w">            </span><span class="p">})</span>
 <span class="w">        </span><span class="p">}</span>
@@ -213,12 +213,12 @@ components.</p>
 the key down logging function to log a new interaction when the user presses a specific key or key combination:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleKeyDown</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// Previous code ...</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="nx">event</span><span class="p">.</span><span class="nx">metaKey</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">ctrlKey</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">key</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;f&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">((</span><span class="nx">event</span><span class="p">.</span><span class="nx">metaKey</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">ctrlKey</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">event</span><span class="p">.</span><span class="nx">key</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">'f'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Search started</span>
 <span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">startSearch</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="c1">// New code ...</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">key</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;s&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">key</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">'s'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">this</span><span class="p">.</span><span class="nx">handleNewInteraction</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
@@ -227,8 +227,8 @@ the key down logging function to log a new interaction when the user presses a s
 <p>The <code class="docutils literal notranslate"><span class="pre">handleNewInteraction</span></code> function would then dictate the logic on how to interpret the event and send the log to
 the statistics table.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleNewInteraction</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;newInteraction&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"stats"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">"newInteraction"</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()}</span>
 <span class="w">    </span><span class="p">})</span>
 <span class="p">}</span>

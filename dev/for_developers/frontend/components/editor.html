@@ -152,8 +152,8 @@ It outlines the connections and configurations necessary for extending the edito
 The following sections describe the key aspects and present basic code examples.</p>
 <p><strong>Initialization and Configuration</strong></p>
 <p>The editor should be properly initialized and configured. This involves setting up the editor container, initializing the editor instance, and configuring toolbar options and themes.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">Editor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@/components/editor/Editor.vue&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">EditorStore</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./editorStore.js&#39;</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">Editor</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@/components/editor/Editor.vue'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">EditorStore</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'./editorStore.js'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
@@ -162,13 +162,13 @@ The following sections describe the key aspects and present basic code examples.
 <span class="w">    </span><span class="p">};</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nx">mounted</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">editorContainer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;&lt;editor-container-id&gt;&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">editorContainer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'&lt;editor-container-id&gt;'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">editorContainer</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="k">this</span><span class="p">.</span><span class="nx">editor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Editor</span><span class="p">(</span><span class="nx">editorContainer</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">modules</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nx">toolbar</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="nx">theme</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;snow&quot;</span>
+<span class="w">        </span><span class="nx">theme</span><span class="o">:</span><span class="w"> </span><span class="s2">"snow"</span>
 <span class="w">      </span><span class="p">});</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
@@ -333,7 +333,7 @@ However, when an edit is sent by the current user, the Vuex store immediately se
 <section id="backend-integration">
 <h3>Backend Integration<a class="headerlink" href="#backend-integration" title="Link to this heading"></a></h3>
 <p>Location: <code class="docutils literal notranslate"><span class="pre">utils/modules/editor-delta-conversion</span></code></p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">dbToDelta</span><span class="p">,</span><span class="w"> </span><span class="nx">deltaToDb</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;editor-delta-conversion&#39;</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">dbToDelta</span><span class="p">,</span><span class="w"> </span><span class="nx">deltaToDb</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">'editor-delta-conversion'</span><span class="p">);</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">delta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">dbToDelta</span><span class="p">(</span><span class="nx">databaseEdits</span><span class="p">);</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">dbEntries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">deltaToDb</span><span class="p">(</span><span class="nx">quillDelta</span><span class="p">,</span><span class="w"> </span><span class="nx">documentId</span><span class="p">,</span><span class="w"> </span><span class="nx">userId</span><span class="p">);</span>
 </pre></div>
