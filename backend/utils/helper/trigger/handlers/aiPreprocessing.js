@@ -77,8 +77,12 @@ async function runAiHookTrigger(server, trigger, context) {
     }
 
     const hook = await server.db.models["ai_hook"].getById(hookId);
+    // Soft-skip before runHook: deleted hooks never reach AIService, but must not fail the job.
     if (!hook || hook.deleted || !hook.name) {
-        throw new Error("AI hook trigger could not resolve its hook name.");
+        server.logger.warn(
+            `AI hook trigger soft-skip: hook ${hookId} unavailable`
+        );
+        return { choices: [], output: null };
     }
 
     let documentId = Number(baseMapping.documentId || context.documentId);
@@ -133,7 +137,7 @@ async function runAiHookTrigger(server, trigger, context) {
         studySessionId: null,
         studyStepId: null,
         key: buildStudyHookKey("nlpRequest", hook.name),
-        value: result.outputText ?? "",
+        value: result.output ?? "",
     });
 
     return { ...result, documentId };

@@ -119,7 +119,7 @@ export default {
                          * @param {object} params - { hookId, studyStepId, studySessionId }
                          * @param {object} [opts]
                          * @param {number} [opts.timeout] - override client-side timeout (ms)
-                         * @returns {Promise<{choices: object[], outputText: string}>}
+                         * @returns {Promise<{choices: object[], output: string|null}>}
                          */
                         runHook(params, opts = {}) {
                             return emitAiCommand(socket, "runHook", params, opts);
