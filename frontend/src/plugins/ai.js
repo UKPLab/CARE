@@ -1,16 +1,16 @@
 /**
- * AI plugin - exposes `this.$ai` to every Vue component.
+ * AI plugin - exposes AI service helpers to every Vue component.
  *
- * Lets any component send AI requests to the backend AIService without
+ * Lets any component send AI requests to the backend services without
  * mounting a dedicated component. Each call emits `serviceCommand` with
  * an ack callback and returns a Promise that resolves with the response
  * or rejects with an Error.
  *
  * Usage:
- *   const reply  = await this.$ai.chatCompletion({ model, messages });
- *   const status = await this.$ai.getStatus();
+ *   const reply = await this.$ai.chatCompletion({ model, messages });
+ *   const chat = await this.$aiAssistant.getConversation({ studySessionId, studyStepId });
  *
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohammed Rawhani
  */
 
 // LiteLLM server-side timeout is 120s. Keep a small buffer so the real
@@ -28,17 +28,20 @@ const createRequestId = () => {
  * Emit a `serviceCommand` and wrap the ack callback in a Promise.
  *
  * @param {object} socket    vue-3-socket.io $socket
- * @param {string} command   AIService command name
+ * @param {string} service   Service name
+ * @param {string} command   Service command name
  * @param {object} data      payload
  * @param {object} opts client-side options
  * @returns {Promise<*>}     resolves with response.data; rejects with Error
  */
-const emitAiCommand = (socket, command, data = {}, opts = {}) => {
+const emitServiceCommand = (socket, service, command, data = {}, opts = {}) => {
     const timeoutMs = opts.timeout || DEFAULT_TIMEOUT_MS;
-    const isAbortable = command === "chatCompletion";
-    const requestId = isAbortable ? createRequestId() : null;
-    const payload = isAbortable ? {
+    const abortCommand = opts.abortCommand || null;
+    const requestId = abortCommand ? (data?.requestId || createRequestId()) : null;
+    const hasRequestIdField = Object.prototype.hasOwnProperty.call(data || {}, "requestId");
+    const payload = abortCommand ? {
         ...data,
+        ...(hasRequestIdField ? {requestId} : {}),
         __requestId: requestId,
         __timeoutMs: timeoutMs,
     } : data;
@@ -48,10 +51,10 @@ const emitAiCommand = (socket, command, data = {}, opts = {}) => {
         let timer = null;
 
         const sendAbort = (reason) => {
-            if (!isAbortable) return;
+            if (!abortCommand) return;
             socket.emit("serviceCommand", {
-                service: "AIService",
-                command: "abortChatCompletion",
+                service,
+                command: abortCommand,
                 data: {requestId, reason},
             }, () => {});
         };
@@ -72,7 +75,7 @@ const emitAiCommand = (socket, command, data = {}, opts = {}) => {
         }, timeoutMs);
 
         socket.emit("serviceCommand", {
-            service: "AIService",
+            service,
             command,
             data: payload,
         }, (response) => {
@@ -81,16 +84,42 @@ const emitAiCommand = (socket, command, data = {}, opts = {}) => {
             clearTimer();
 
             if (!response) {
-                reject(new Error("No response received from AIService"));
+                reject(new Error(`No response received from ${service}`));
                 return;
             }
             if (response.success) {
                 resolve(response.data);
             } else {
-                reject(new Error(response.message || "AIService request failed"));
+                reject(new Error(response.message || `${service} request failed`));
             }
         });
     });
+};
+
+/**
+ * Emit one AIService command.
+ *
+ * @param {Object} socket - Vue socket instance.
+ * @param {string} command - AIService command name.
+ * @param {Object} data - Command payload.
+ * @param {Object} opts - Client-side options.
+ * @returns {Promise<*>} Service response data.
+ */
+const emitAiCommand = (socket, command, data = {}, opts = {}) => {
+    return emitServiceCommand(socket, "AIService", command, data, opts);
+};
+
+/**
+ * Emit one AIAssistantService command.
+ *
+ * @param {Object} socket - Vue socket instance.
+ * @param {string} command - AIAssistantService command name.
+ * @param {Object} data - Command payload.
+ * @param {Object} opts - Client-side options.
+ * @returns {Promise<*>} Service response data.
+ */
+const emitAssistantCommand = (socket, command, data = {}, opts = {}) => {
+    return emitServiceCommand(socket, "AIAssistantService", command, data, opts);
 };
 
 export default {
@@ -110,7 +139,12 @@ export default {
                          * @returns {Promise<object>}
                          */
                         chatCompletion(params, opts = {}) {
-                            return emitAiCommand(socket, "chatCompletion", params, opts);
+                            return emitAiCommand(
+                                socket,
+                                "chatCompletion",
+                                params,
+                                {...opts, abortCommand: "abortChatCompletion"},
+                            );
                         },
 
                         /**
@@ -131,6 +165,62 @@ export default {
                          */
                         getStatus() {
                             return emitAiCommand(socket, "getStatus", {}, {timeout: 10000});
+                        },
+                    };
+                },
+                // `this.$aiAssistant` binds the component's $socket to assistant workflow commands.
+                $aiAssistant() {
+                    const socket = this.$socket;
+                    return {
+                        /**
+                         * Creates a client-side request identifier for abortable assistant calls.
+                         * @returns {string}
+                         */
+                        createRequestId() {
+                            return createRequestId();
+                        },
+
+                        /**
+                         * Loads a study-session AI conversation snapshot.
+                         * @param {object} params
+                         * @returns {Promise<object>}
+                         */
+                        getConversation(params) {
+                            return emitAssistantCommand(socket, "getConversation", params, {timeout: 10000});
+                        },
+
+                        /**
+                         * Sends one user message and waits for the assistant response.
+                         * @param {object} params
+                         * @param {object} [opts]
+                         * @returns {Promise<object>}
+                         */
+                        sendConversationMessage(params, opts = {}) {
+                            return emitAssistantCommand(
+                                socket,
+                                "sendConversationMessage",
+                                params,
+                                {...opts, abortCommand: "abortConversationMessage"},
+                            );
+                        },
+
+                        /**
+                         * Retries one failed or aborted assistant response.
+                         * @param {object} params
+                         * @param {object} [opts]
+                         * @returns {Promise<object>}
+                         */
+                        retryConversationMessage(params, opts = {}) {
+                            return emitAssistantCommand(socket, "retryConversationMessage", params, opts);
+                        },
+
+                        /**
+                         * Aborts one pending assistant response.
+                         * @param {object} params
+                         * @returns {Promise<object>}
+                         */
+                        abortConversationMessage(params) {
+                            return emitAssistantCommand(socket, "abortConversationMessage", params, {timeout: 10000});
                         },
                     };
                 },
