@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
         userId: DataTypes.INTEGER,
         studySessionId: DataTypes.INTEGER,
         type: DataTypes.INTEGER,
+        title: DataTypes.TEXT,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,

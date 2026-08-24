@@ -28,6 +28,10 @@ module.exports = {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                title: {
+                    type: Sequelize.TEXT,
+                    allowNull: true,
+                },
                 deleted: {
                     type: Sequelize.BOOLEAN,
                     allowNull: false,
