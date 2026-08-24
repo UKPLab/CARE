@@ -94,7 +94,7 @@ export default {
       const unit = unitByExportType[this.exportType] || 'document(s)';
       return this.userSelection.map(row => ({
         userId: row.userId,
-        name: row.studentName || row.userName,
+        name: row.fullName || row.userName,
         suffix: ['grades', 'userBehaviour'].includes(this.exportType) ? null : `${row.count} ${unit}`,
       }));
     },
