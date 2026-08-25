@@ -165,7 +165,7 @@ async function resolveHookReferences(service, values) {
     return resolved;
 }
 
-/** Empty AI result so study/triggers continue when hook/model/credential is unavailable. */
+/** Empty AI result so study sessions continue when hook/model/credential is unavailable. */
 const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
 
 /**
@@ -173,14 +173,14 @@ const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
  * caller-supplied placeholder `values` (assembled in the frontend from the input mapping),
  * attaches the hook's primary model credential, and forwards through the shared chat path.
  *
- * Missing/disabled hook, model, or credential (and provider failures) soft-skip with
- * `{ choices: [], output: null }` so study sessions and assignment triggers are not blocked.
+ * For study sessions (studySessionId/studyStepId present), missing/disabled hook, model, or
+ * credential soft-skips with `{ choices: [], output: null }`. Triggers and other callers still fail hard.
  *
  * @param {Object} service - AIService runtime.
  * @param {Object} client - Authenticated RPC client triggering the hook.
  * @param {Object} data - Hook execution payload (hookId, values, studyId, studySessionId, studyStepId, documentId).
- * @returns {Promise<{choices: unknown[], output: string|null}>} Provider choices plus first-choice content (text or JSON string), or null on soft-skip.
- * @throws {Error} If the hook id is missing or invalid.
+ * @returns {Promise<{choices: unknown[], output: string|null}>} Provider choices plus first-choice content (text or JSON string), or null on study soft-skip.
+ * @throws {Error} If the hook id is invalid, or (for non-study callers) hook/model/credential is unavailable.
  */
 async function runHook(service, client, data) {
     const hookId = Number(data?.hookId);
@@ -219,11 +219,15 @@ async function runHook(service, client, data) {
 
         return { choices: result.choices, output };
     } catch (error) {
-        // Soft-skip: deleted/disabled creds, models, or hooks must not block study/triggers.
-        service.logger.warn(
-            `runHook soft-skip hookId=${hookId}: ${error.message || error}`
-        );
-        return NULL_HOOK_OUTPUT;
+        // Study only: deleted/disabled AI stack must not block the session.
+        const isStudyCall = Number(data?.studySessionId) > 0 || Number(data?.studyStepId) > 0;
+        if (isStudyCall) {
+            service.logger.warn(
+                `runHook soft-skip hookId=${hookId}: ${error.message || error}`
+            );
+            return NULL_HOOK_OUTPUT;
+        }
+        throw error;
     }
 }
 

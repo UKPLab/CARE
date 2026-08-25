@@ -77,12 +77,8 @@ async function runAiHookTrigger(server, trigger, context) {
     }
 
     const hook = await server.db.models["ai_hook"].getById(hookId);
-    // Soft-skip before runHook: deleted hooks never reach AIService, but must not fail the job.
     if (!hook || hook.deleted || !hook.name) {
-        server.logger.warn(
-            `AI hook trigger soft-skip: hook ${hookId} unavailable`
-        );
-        return { choices: [], output: null };
+        throw new Error("AI hook trigger could not resolve its hook name.");
     }
 
     let documentId = Number(baseMapping.documentId || context.documentId);
