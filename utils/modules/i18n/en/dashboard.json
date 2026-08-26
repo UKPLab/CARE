@@ -462,6 +462,48 @@
         },
         "fileLabel": "{format} File:"
     },
+    "adminTools": {
+        "title": "Admin Tools",
+        "description": "Administrative utilities for recovering and maintaining system files. Open a tool below to run a specific admin action.",
+        "replaceDocumentFile": {
+            "button": "Replace document file",
+            "buttonTitle": "Replace an existing PDF or ZIP file on disk",
+            "modalTitle": "Replace document file",
+            "replacing": "Replacing...",
+            "help": "Upload a new PDF or ZIP to overwrite the file stored for an existing document. The document keeps the same title, id, and links; only the file bytes change. The uploaded file type must match the document type. For PDFs, existing CARE annotations and comments on that document are removed.",
+            "typeLabel": "Type",
+            "typeAll": "All (PDF & ZIP)",
+            "typePdfOnly": "PDF only",
+            "typeZipOnly": "ZIP only",
+            "typePdf": "PDF",
+            "typeZip": "ZIP",
+            "typeUnknown": "Unknown",
+            "columns": {
+                "id": "ID",
+                "title": "Title",
+                "type": "Type"
+            },
+            "unnamed": "(unnamed)",
+            "selected": "Selected: {name} (#{id}, {type}).",
+            "selectHint": "Select one document in the table (10 per page; use search or next page for more).",
+            "fileLabel": "Replacement file",
+            "replaceButton": "Replace file",
+            "toasts": {
+                "typeMismatch": {
+                    "title": "Type mismatch",
+                    "message": "Document is {type}; please upload a {extension} file."
+                },
+                "success": {
+                    "title": "File replaced",
+                    "message": "Updated file for “{name}” (#{id})."
+                },
+                "failed": {
+                    "title": "Replace failed",
+                    "fallback": "Could not replace document file."
+                }
+            }
+        }
+    },
   "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",

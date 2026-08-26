@@ -726,7 +726,7 @@ User-facing error in a handler
 
 .. code-block:: javascript
 
-   const { TranslatableError } = require("../utils/TranslatableError");
+   const TranslatableError = require("../utils/TranslatableError");
 
    // Before — hardcoded English, wrong language in the UI:
    if (!user) {

@@ -151,10 +151,10 @@ export default {
       return Math.max(...userSubmissions.map((submission) => getDepth(submission)));
     },
     isRevisionLimitReached() {
-      if (this.isAdmin || this.maxRevisions === 0) {
+      if (this.isAdmin || this.maxRevisions === -1) {
         return false;
       }
-      return this.currentUserMaxRevisionDepth >= this.maxRevisions;
+      return this.currentUserMaxRevisionDepth >= this.maxRevisions + 1;
     },
     assignmentTitle() {
       return this.assignment?.title || this.$t("assignments.dashboard.submissionsModal.fallbackAssignmentTitle", { id: this.assignmentId });

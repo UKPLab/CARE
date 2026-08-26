@@ -98,7 +98,7 @@
       },
       "revisionLimitReached": {
         "title": "Revisionslimit erreicht",
-        "message": "Sie haben die maximale Anzahl an Revisionen ({count}) erreicht."
+        "message": "Sie haben die maximale Anzahl an Submissions für dieses Assignment erreicht ({count})."
       },
       "uploadNotAllowed": {
         "title": "Upload nicht erlaubt",
@@ -111,7 +111,10 @@
       "noActive": "Sie haben keine aktiven Assignments.",
       "closedTitle": "Geschlossene Assignments",
       "noClosed": "Sie haben keine geschlossenen Assignments.",
-      "noDueDate": "kein Fälligkeitsdatum"
+      "noDueDate": "kein Fälligkeitsdatum",
+      "unlimited": "Unbegrenzt",
+      "remainingLeft": "{count} Submission(s) übrig",
+      "overdueBy": "Überfällig seit {time}"
     },
     "modal": {
       "submitText": "Assignment speichern",

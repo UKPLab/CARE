@@ -360,13 +360,13 @@ export function getTimeDiffString(start, end) {
     const seconds = Math.floor(delta % 60);
 
     if (days > 0) {
-        return `${days} day${days > 1 ? "s" : ""}`;
+        return i18n.global.t("common.timeDiff.days", { count: days });
     } else if (hours > 0) {
-        return `${hours} hour${hours > 1 ? "s" : ""} and ${minutes} minute${minutes > 1 ? "s" : ""}`;
+        return i18n.global.t("common.timeDiff.hoursAndMinutes", { hours, minutes });
     } else if (minutes > 0) {
-        return `${minutes} minute${minutes > 1 ? "s" : ""}`;
+        return i18n.global.t("common.timeDiff.minutes", { count: minutes });
     } else {
-        return `${seconds} second${seconds > 1 ? "s" : ""}`;
+        return i18n.global.t("common.timeDiff.seconds", { count: seconds });
     }
 }
 

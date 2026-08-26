@@ -3,6 +3,7 @@
     ref="stepperModal"
     name="stepperModal"
     :size="size"
+    scrollable-body
     @hide="$emit('hide')"
     @close-requested="handleCloseRequest"
   >
@@ -191,15 +192,22 @@ export default {
 <style scoped>
 /* Stepper */
 .stepper {
+  --stepper-pad-top: 1.25rem;
+  --stepper-circle: 30px;
+  flex-shrink: 0;
+  position: relative;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
+  margin-bottom: 1.5rem;
+  background-color: var(--bs-body-bg, #fff);
+  padding-top: var(--stepper-pad-top);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 
   &:after {
     content: "";
     position: absolute;
-    top: 15px;
+    top: calc(var(--stepper-pad-top) + (var(--stepper-circle) / 2) - 1px);
     left: 0;
     right: 0;
     height: 2px;
@@ -213,12 +221,11 @@ export default {
   padding: 0 5px;
 
   &:before {
-    --dimension: 30px;
     content: attr(data-index);
     margin-right: 6px;
     display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
+    width: var(--stepper-circle);
+    height: var(--stepper-circle);
     border-radius: 50%;
     align-items: center;
     justify-content: center;
@@ -247,6 +254,9 @@ export default {
 
 
 .content-container {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>

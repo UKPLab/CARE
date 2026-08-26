@@ -35,10 +35,8 @@ module.exports = (sequelize, DataTypes) => {
                 return;
             }
 
-            const systemSetting = await Setting.findOne({
-                where: { key, deleted: false },
+            const systemSetting = await Setting.getByKey("key", key, {
                 attributes: ["key", "allowUserOverride"],
-                raw: true,
             });
 
             if (!systemSetting || systemSetting.allowUserOverride) {
@@ -75,25 +73,20 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<string>} value
          */
         static async set(key, value, userId, options = {}) {
-            try {
-                const dbObj = {
-                    userId: userId,
-                    key: key,
-                    value: value
-                };
+            const existing = await UserSetting.findOne({
+                where: {userId, key, deleted: false},
+                raw: true,
+            });
 
-                return await UserSetting.create(dbObj, options).then((msg) => {
-                    return msg;
-                }).catch(async (err) => {
-                    return await UserSetting.update({value: value}, {
-                        where: {[Op.and]: [{userId: userId}, {key: key}]},
-                        ...options,
-                        individualHooks: true,
-                    });
+            if (existing) {
+                return await UserSetting.update({value}, {
+                    where: {[Op.and]: [{userId}, {key}]},
+                    ...options,
+                    individualHooks: true,
                 });
-            } catch (e) {
-                console.log(e);
             }
+
+            return await UserSetting.create({userId, key, value}, options);
         }
     }
 

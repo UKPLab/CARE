@@ -152,7 +152,13 @@
     "exactTextNotFound": "Exakter Text \"{text}\" wurde im Dokumenttext nicht gefunden",
     "textPositionExtractionFailed": "Fehler beim Extrahieren von Textpositionen für Text \"{text}\".",
     "annotationAddFailed": "Fehler beim Hinzufügen der Annotation.",
-    "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen."
+    "automaticAnnotationExtractionFailed": "Das Dokument wurde hochgeladen, aber die automatische Annotationsextraktion ist fehlgeschlagen. Sie können das Dokument weiterhin verwenden, aber Annotationen können fehlen.",
+    "replaceFileNoPermission": "Sie haben keine Berechtigung, Dokumentdateien zu ersetzen.",
+    "replaceFileNameRequired": "Dateiname ist erforderlich",
+    "replaceOnlyPdfZip": "Mit diesem Tool können nur PDF- und ZIP-Dokumente ersetzt werden.",
+    "replaceTypeMismatch": "Dateityp stimmt nicht überein: Dokument erfordert {expected}, erhalten {actual}",
+    "replaceSuccess": "{extension}-Datei für Dokument #{documentId} ersetzt.",
+    "replacePromoteFailed": "Annotationen wurden aktualisiert, aber die Datei für Dokument #{documentId} konnte nicht ersetzt werden. Die neue Datei liegt unter {tempPath}; benennen Sie sie manuell in {target} um. {error}"
   },
   "documentMetadata": {
     "assignmentClosed": "Metadaten können nicht importiert werden, weil das Assignment geschlossen ist.",

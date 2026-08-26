@@ -37,6 +37,7 @@
         "templates": "Vorlagen",
         "workflows": "Workflows",
         "session_overview": "Sitzungsübersicht",
+        "admin_tools": "Admin-Tools",
         "groups": {
             "default": "Standard",
             "admin": "Administrator",
