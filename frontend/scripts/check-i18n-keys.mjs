@@ -1,20 +1,33 @@
 #!/usr/bin/env node
 /**
- * Frontend i18n checker (complements @intlify/vue-i18n/no-raw-text).
+ * Frontend i18n checker for `<script>` and `.js`
  *
- * 1. Literal $t / this.$t / keypath keys must exist in EN catalogs.
- * 2. Hardcoded user-facing English in title/message/label/text (Vue SFCs).
- *    Throws: only missing-key check when the message looks like an i18n key;
- *    plain English Error("…") is treated as internal.
- * 3. Unused catalog keys: unused only if referenced on neither frontend nor backend
- *    (including db/migrations meta / seeds).
+ * User-facing text in Vue templates is covered by ESLint rule
+ * `@intlify/vue-i18n/no-raw-text`. This script complements it for the script block:
  *
- * Catalogs: utils/modules/i18n/en/*.json (basename = namespace).
+ * 1. Literal $t / this.$t / i18n.global.t / keypath= — key must exist in EN catalogs.
+ * 2. Hardcoded English in object props title / message / label / text (data, methods, toasts, …).
+ * 3. Unused catalog keys: unused only if referenced on neither frontend nor backend.
+ *
+ * @author Andrii Nikitin
  */
 
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+/** Shared helpers */
+import {
+    catalogHasKey,
+    createLineIgnoreFilter,
+    lineAt,
+    loadCatalogKeys,
+    looksLikeEnglish,
+    looksLikeKey,
+    stripComments,
+    walkFiles,
+    walkSource,
+} from '../../scripts/i18n-lint-shared.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const FRONTEND_ROOT = path.resolve(__dirname, '..')
@@ -41,222 +54,37 @@ const USAGE_SKIP_DIR_NAMES = new Set([
     'tests',
 ])
 
-/** Namespaces that appear as the first segment of real keys. */
-const KNOWN_NAMESPACES = new Set()
-
-function flattenObject(obj, prefix = '', out = {}) {
-    for (const key of Object.keys(obj)) {
-        const value = obj[key]
-        const newKey = prefix ? `${prefix}.${key}` : key
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-            flattenObject(value, newKey, out)
-        } else {
-            out[newKey] = value
-        }
-    }
-    return out
-}
-
-function loadCatalogKeys() {
-    const flat = {}
-    for (const file of fs.readdirSync(EN_DIR)) {
-        if (!file.endsWith('.json')) continue
-        const ns = path.basename(file, '.json')
-        KNOWN_NAMESPACES.add(ns)
-        const data = JSON.parse(fs.readFileSync(path.join(EN_DIR, file), 'utf8'))
-        flattenObject(data, ns, flat)
-    }
-    return flat
-}
-
-function walkFiles(dir, { extensions, out = [] } = {}) {
-    if (!fs.existsSync(dir)) return out
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-        if (entry.name.startsWith('.')) continue
-        const full = path.join(dir, entry.name)
-        if (entry.isDirectory()) {
-            if (USAGE_SKIP_DIR_NAMES.has(entry.name)) continue
-            walkFiles(full, { extensions, out })
-            continue
-        }
-        if (extensions.some((ext) => entry.name.endsWith(ext))) out.push(full)
-    }
-    return out
-}
-
+/**
+ * True when `filePath` is excluded from missing-key / hardcoded checks
+ * (@see {@link HARDCODED_IGNORE_PARTS})
+ */
 function isHardcodedIgnored(filePath) {
     return HARDCODED_IGNORE_PARTS.some((part) => filePath.includes(part))
 }
 
-/**
- * True when `/` at `i` starts a regex literal rather than division / HTML (`</tag>`).
- * Needed so quotes inside `/"/g` do not derail the string walker for the rest of the file.
- */
-function isRegexLiteralStart(source, i) {
-    let k = i - 1
-    while (k >= 0 && /[ \t\n\r]/.test(source[k])) k -= 1
-    if (k < 0) return true
-    const prev = source[k]
-    if (prev === '<') return false
-    // After these, `/` is division (or a close-tag already handled above).
-    if (/[\w$)'"`\]]/.test(prev)) return false
-    return true
-}
-
-/**
- * Walk source: drop comments, keep code. Optionally collect string/template contents
- * (handles empty "" and escapes — unlike a naive [^'"`]+ regex).
- * Also skips JS regex literals so e.g. `.replace(/"/g, …)` does not swallow the file.
- */
-function walkSource(source, { onString } = {}) {
-    let out = ''
-    let i = 0
-    while (i < source.length) {
-        if (source.startsWith('<!--', i)) {
-            const end = source.indexOf('-->', i + 4)
-            i = end === -1 ? source.length : end + 3
-            continue
-        }
-        if (source.startsWith('/*', i)) {
-            const end = source.indexOf('*/', i + 2)
-            i = end === -1 ? source.length : end + 2
-            continue
-        }
-        if (source.startsWith('//', i)) {
-            const end = source.indexOf('\n', i)
-            i = end === -1 ? source.length : end
-            continue
-        }
-        if (
-            source[i] === '/' &&
-            !source.startsWith('//', i) &&
-            !source.startsWith('/*', i) &&
-            isRegexLiteralStart(source, i)
-        ) {
-            let j = i + 1
-            let inClass = false
-            while (j < source.length) {
-                const c = source[j]
-                if (c === '\\') {
-                    j += 2
-                    continue
-                }
-                if (c === '\n') break
-                if (inClass) {
-                    if (c === ']') inClass = false
-                    j += 1
-                    continue
-                }
-                if (c === '[') {
-                    inClass = true
-                    j += 1
-                    continue
-                }
-                if (c === '/') {
-                    j += 1
-                    break
-                }
-                j += 1
-            }
-            while (j < source.length && /[gimsuyvd]/.test(source[j])) j += 1
-            out += source.slice(i, j)
-            i = j
-            continue
-        }
-        const q = source[i]
-        if (q === '"' || q === "'" || q === '`') {
-            let j = i + 1
-            let value = ''
-            let dynamic = false
-            while (j < source.length) {
-                if (source[j] === '\\') {
-                    value += source.slice(j, j + 2)
-                    j += 2
-                    continue
-                }
-                if (source[j] === q) {
-                    j += 1
-                    break
-                }
-                if (q === '`' && source[j] === '$' && source[j + 1] === '{') {
-                    dynamic = true
-                    value += '${'
-                    let depth = 1
-                    j += 2
-                    while (j < source.length && depth > 0) {
-                        if (source[j] === '{') depth += 1
-                        else if (source[j] === '}') depth -= 1
-                        if (depth > 0) value += source[j]
-                        j += 1
-                    }
-                    value += '}'
-                    continue
-                }
-                value += source[j]
-                j += 1
-            }
-            if (onString) onString(value, dynamic)
-            out += source.slice(i, j)
-            i = j
-            continue
-        }
-        out += source[i]
-        i += 1
-    }
-    return out
-}
-
-function stripComments(source) {
-    return walkSource(source)
-}
-
-function lineAt(source, index) {
-    return source.slice(0, index).split('\n').length
-}
-
-function looksLikeKey(str) {
-    if (!str || typeof str !== 'string') return false
-    if (str.includes('${')) return false
-    if (!/^[a-zA-Z][\w-]*(\.[\w-]+)+$/.test(str)) return false
-    const ns = str.split('.')[0]
-    return KNOWN_NAMESPACES.has(ns)
-}
-
-/** Placeholders / punctuation that are not user-facing copy. */
-const IGNORE_RAW_LITERALS = new Set(['-', '–', '—', '•', '·'])
-
-function looksLikeEnglish(str) {
-    if (!str || typeof str !== 'string') return false
-    const trimmed = str.trim()
-    if (!trimmed || IGNORE_RAW_LITERALS.has(trimmed)) return false
-    if (trimmed.length < 2) return false
-    if (trimmed.includes('${')) return true
-    if (looksLikeKey(trimmed)) return false
-    if (/^[a-z][a-zA-Z0-9_]*$/.test(trimmed)) return false
-    if (/^[A-Z][A-Z0-9_]+$/.test(trimmed)) return false
-    if (/^https?:\/\//.test(trimmed)) return false
-    // Digits / punctuation only (incl. hyphen) — e.g. table empty cell "-".
-    if (/^[\d\s./\\:+#()&%|,;!?"'~*_`\-]+$/.test(trimmed)) return false
-    if (!/[A-Za-z]/.test(trimmed)) return false
-    if (/\s/.test(trimmed)) return true
-    if (/^[A-Z][a-z]+/.test(trimmed) && trimmed.length >= 3) return true
-    return false
-}
-
 const findings = []
+const isIgnoredLine = createLineIgnoreFilter()
+let ignoredCount = 0
 
+/** Record a finding unless the line has `i18n-lint-ignore`*/
 function report(file, line, message) {
+    if (isIgnoredLine(file, line)) {
+        ignoredCount += 1
+        return
+    }
     const rel = path.relative(REPO_ROOT, file)
     findings.push({ file: rel, line, message })
 }
 
 /**
- * Collect exact keys + dynamic prefixes (e.g. users.roles. from `users.roles.${x}`).
- * A catalog key is "used" if exact match or starts with a dynamic prefix.
+ * Find i18n keys referenced in a source file (for the unused-key pass only).
  *
- * Uses both:
- * - string-literal walk (models labels, throw Error("errors…"), etc.)
- * - call-site regex ($t in Vue attrs like :title="$t('key')" nest quotes)
+ * Walks string literals and `$t('…')` / `keypath="…"` call sites, then records:
+ * - exact keys in `usedExact` (e.g. `errors.common.accessDenied`)
+ * - prefixes in `usedPrefixes` when the key is built dynamically
+ *   (e.g. `users.roles.${role}` → prefix `users.roles.`)
+ *
+ * A catalog key counts as used when it matches exactly or starts with a recorded prefix.
  */
 function collectUsageFromSource(source, usedExact, usedPrefixes) {
     const mark = (raw) => {
@@ -278,10 +106,12 @@ function collectUsageFromSource(source, usedExact, usedPrefixes) {
         }
     }
 
+    // Every quoted string in the file: record it if it is (or contains) a key.
     walkSource(source, {
         onString(value) {
             mark(value)
-            // Vue/HTML attrs often wrap the whole call: "$t('ns.key')"
+            // Sometimes the whole $t('key') call sits inside one outer string, e.g.
+            // :title="'$t(\'sidebar.nav.home\')'" — pull the key out of that inner text.
             for (const m of value.matchAll(
                 /(?:\$te?|i18n\.global\.te?|\bhasKey|\bt)\(\s*(['"])([^'"]+)\1/g
             )) {
@@ -290,7 +120,7 @@ function collectUsageFromSource(source, usedExact, usedPrefixes) {
         },
     })
 
-    // Call sites in script + templates (covers :title="$t('…')" and keypath=).
+    // Normal $t('key') / this.$t('key') calls written directly in source
     const callRe =
         /(?:\$te?|this\.\$te?|i18n\.global\.te?|\bhasKey|\b(?:TranslatableError|generateError))\(\s*(?:[^'"`,()\n]+,\s*)?(['"`])([^'"`]*?)\1/g
     let m
@@ -298,12 +128,17 @@ function collectUsageFromSource(source, usedExact, usedPrefixes) {
         mark(m[2])
     }
 
+    // <i18n-t keypath="…"> in templates.
     const keypathRe = /keypath\s*=\s*(['"])([^'"]+)\1/g
     while ((m = keypathRe.exec(source)) !== null) {
         mark(m[2])
     }
 }
 
+/**
+ * True when a catalog key was seen in source — exact match or under a dynamic prefix
+ * (e.g. key `users.roles.admin` matches prefix `users.roles.` from `users.roles.${x}`).
+ */
 function isKeyUsed(key, usedExact, usedPrefixes) {
     if (usedExact.has(key)) return true
     for (const prefix of usedPrefixes) {
@@ -312,18 +147,27 @@ function isKeyUsed(key, usedExact, usedPrefixes) {
     return false
 }
 
+/**
+ * Missing-key and hardcoded checks for one frontend `.vue` or `.js` file.
+ *
+ * 1. Literal `$t` / `this.$t` / `i18n.global.t('…')` — key must exist in the catalog.
+ * 2. Literal `keypath="…"` on `<i18n-t>` — same.
+ * 3. Object props `title` / `message` / `label` / `text` in script — key must exist,
+ *    or English text is flagged as hardcoded
+ */
 function checkFileHardcodedAndMissing(filePath, catalog) {
     const raw = fs.readFileSync(filePath, 'utf8')
+    // Comments stripped so `// $t('ghost')` does not count; line numbers stay aligned.
     const source = stripComments(raw)
-    const isVue = filePath.endsWith('.vue')
 
+    // --- 1. $t('literal key') — only static keys; `$t(\`foo.${x}\`)` is skipped ---
     const tCallRe =
         /(?:\$t|this\.\$t|i18n\.global\.t)\(\s*(['"`])([^'"`]*?)\1/g
     let m
     while ((m = tCallRe.exec(source)) !== null) {
         const key = m[2]
         if (!key || key.includes('${')) continue
-        if (!Object.prototype.hasOwnProperty.call(catalog, key)) {
+        if (!catalogHasKey(catalog, key)) {
             report(
                 filePath,
                 lineAt(source, m.index),
@@ -332,11 +176,12 @@ function checkFileHardcodedAndMissing(filePath, catalog) {
         }
     }
 
+    // --- 2. <i18n-t keypath="…"> (often in template; same missing-key rule) ---
     const keypathRe = /keypath\s*=\s*(['"])([^'"]+)\1/g
     while ((m = keypathRe.exec(source)) !== null) {
         const key = m[2]
         if (!key || key.includes('${')) continue
-        if (!Object.prototype.hasOwnProperty.call(catalog, key)) {
+        if (!catalogHasKey(catalog, key)) {
             report(
                 filePath,
                 lineAt(source, m.index),
@@ -345,12 +190,14 @@ function checkFileHardcodedAndMissing(filePath, catalog) {
         }
     }
 
+    // --- 3. Script object props: { title: '…', message: '…', label: '…', text: '…' } ---
     const propRe =
         /(?:^|[{\n,;])\s*(title|message|label|text)\s*:\s*(['"`])([^'"`]+)\2/gm
     while ((m = propRe.exec(source)) !== null) {
         const value = m[3]
         if (value.includes('${')) {
-            if (looksLikeEnglish(value.replace(/\$\{[^}]+\}/g, 'X'))) {
+            // `Hello ${name}` — swap ${…} for X and see if the rest looks like English copy.
+            if (looksLikeEnglish(value.replace(/\$\{[^}]+\}/g, 'X'), { propName: m[1] })) {
                 report(
                     filePath,
                     lineAt(source, m.index),
@@ -360,7 +207,8 @@ function checkFileHardcodedAndMissing(filePath, catalog) {
             continue
         }
         if (looksLikeKey(value)) {
-            if (!Object.prototype.hasOwnProperty.call(catalog, value)) {
+            // Already a catalog key string, e.g. label: 'sidebar.nav.home' (not wrapped in $t).
+            if (!catalogHasKey(catalog, value)) {
                 report(
                     filePath,
                     lineAt(source, m.index),
@@ -369,33 +217,13 @@ function checkFileHardcodedAndMissing(filePath, catalog) {
             }
             continue
         }
-        if (looksLikeEnglish(value)) {
+        // Plain English, e.g. label: 'Cancel' or title: 'settings'.
+        if (looksLikeEnglish(value, { propName: m[1] })) {
             report(
                 filePath,
                 lineAt(source, m.index),
                 `hardcoded ${m[1]} (use $t / i18n key): ${JSON.stringify(value)}`
             )
-        }
-    }
-
-    // Throws: only validate i18n-key messages. Plain English Error("…") is treated as
-    // internal (console / control flow); user-facing errors should use catalog keys
-    // (or toast via $t / resolveApiMessage), not raw English in throw.
-    if (isVue) {
-        const throwRe =
-            /throw\s+new\s+\w*Error\s*\(\s*(['"`])([^'"`]+)\1/g
-        while ((m = throwRe.exec(source)) !== null) {
-            const value = m[2]
-            if (value.includes('${')) continue
-            if (looksLikeKey(value)) {
-                if (!Object.prototype.hasOwnProperty.call(catalog, value)) {
-                    report(
-                        filePath,
-                        lineAt(source, m.index),
-                        `missing i18n key in throw: ${value}`
-                    )
-                }
-            }
         }
     }
 }
@@ -406,12 +234,13 @@ function main() {
         process.exit(2)
     }
 
-    const catalog = loadCatalogKeys()
+    const catalog = loadCatalogKeys(EN_DIR)
 
-    const feFiles = walkFiles(SRC_ROOT, { extensions: ['.vue', '.js'] })
-    const beFiles = walkFiles(BACKEND_ROOT, { extensions: ['.js'] })
+    const walkOpts = { skipDirNames: USAGE_SKIP_DIR_NAMES }
+    const feFiles = walkFiles(SRC_ROOT, { extensions: ['.vue', '.js'], ...walkOpts })
+    const beFiles = walkFiles(BACKEND_ROOT, { extensions: ['.js'], ...walkOpts })
 
-    // Usage from FE + BE (wizard included so keys only used there are not "unused").
+    // Usage from FE + BE.
     const usedExact = new Set()
     const usedPrefixes = new Set()
     for (const file of [...feFiles, ...beFiles]) {
@@ -438,7 +267,7 @@ function main() {
 
     if (findings.length === 0) {
         console.log(
-            `i18n check: ok — missing=0 unused=0 hardcoded=0 (scanned ${feFiles.length} FE + ${beFiles.length} BE files, ${catalogKeys.length} catalog keys)`
+            `i18n check: ok — missing=0 unused=0 hardcoded=0 ignored=${ignoredCount} (scanned ${feFiles.length} FE + ${beFiles.length} BE files, ${catalogKeys.length} catalog keys)`
         )
         return
     }
@@ -453,7 +282,7 @@ function main() {
     }
 
     console.error(
-        `i18n check: ${findings.length} issue(s) — missing=${missing} unused=${unused} hardcoded=${hardcoded}\n`
+        `i18n check: ${findings.length} issue(s) — missing=${missing} unused=${unused} hardcoded=${hardcoded} ignored=${ignoredCount}\n`
     )
     for (const f of findings) {
         console.error(`${f.file}:${f.line}: ${f.message}`)
