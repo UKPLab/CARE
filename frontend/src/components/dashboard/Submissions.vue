@@ -119,9 +119,6 @@ export default {
   subscribeTable: ["assignment", "submission", "user", "document"],
   components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
   computed: {
-    isAdmin() {
-      return this.$store.getters["auth/isAdmin"];
-    },
     canUploadForOthers() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
     },
@@ -243,7 +240,6 @@ export default {
       return "bg-light text-dark border";
     },
     timeBadgeText(assignment) {
-      console.log(assignment)
       if (!assignment.end) return "no due date";
       return this.isAssignmentOverdue(assignment)
         ? `Overdue by ${this.assignmentTimes[assignment.id]}`

@@ -1208,7 +1208,7 @@ class DocumentSocket extends Socket {
                         currentId = submissionById.get(currentId).previousSubmissionId;
                     }
 
-                    if (chainDepth >= assignment.maxRevisions) {
+                    if (chainDepth >= assignment.maxRevisions + 1) {
                         throw new Error(
                             `Maximum revisions reached for this assignment submission`
                         );
