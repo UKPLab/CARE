@@ -20,7 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/helper/generic");
-const { flagDisconnectedRecording, recoverInterruptedRecordings } = require("../utils/recording-recovery");
+const { flagDisconnectedRecording, recoverInterruptedRecordings, scheduleOwnerAbandonCheck } = require("../utils/recording-recovery");
 
 /**
  * Defines Express Webserver of Content Server
@@ -433,6 +433,7 @@ module.exports = class Server {
                     }
 
                     await flagDisconnectedRecording(this, socket);
+                    scheduleOwnerAbandonCheck(this, socket);
 
                     delete this.availSockets[socket.id];
 
