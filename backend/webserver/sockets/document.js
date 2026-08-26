@@ -932,8 +932,8 @@ class DocumentSocket extends Socket {
                         transaction,
                     });
 
-                    // Check revision limit (0 = unlimited)
-                    if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
+                    // Check revision limit (-1 = unlimited)
+                    if (assignment && assignment.maxRevisions !== -1 && assignmentSubmissions.length >= assignment.maxRevisions + 1) {
                         throw new TranslatableError( "errors.assignment.revisionLimitReached", {
                             userId: submission.userId,
                             submissionCount: assignmentSubmissions.length,
@@ -1241,7 +1241,7 @@ class DocumentSocket extends Socket {
                     previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
                 }
 
-                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && previousSubmissionId) {
+                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && assignment.maxRevisions !== -1 && previousSubmissionId) {
                     let chainDepth = 0;
                     let currentId = previousSubmissionId;
                     const visited = new Set();
@@ -1252,7 +1252,7 @@ class DocumentSocket extends Socket {
                         currentId = submissionById.get(currentId).previousSubmissionId;
                     }
 
-                    if (chainDepth >= assignment.maxRevisions) {
+                    if (chainDepth >= assignment.maxRevisions + 1) {
                         throw new TranslatableError( "errors.assignment.maxRevisionsReached", {
                             currentCount: chainDepth,
                             maxRevisions: assignment.maxRevisions,
@@ -1660,6 +1660,171 @@ class DocumentSocket extends Socket {
 
 
     /**
+     * Replace the PDF or ZIP file of an existing document on disk.
+     *
+     * Keeps the same document id and hash. Used by admins to correct a wrong
+     * submission file without creating a new document. For PDFs, existing CARE
+     * annotations and comments on the document are removed.
+     *
+     * @author Mohammad Elwan
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.documentId - The ID of the document to replace
+     * @param {Buffer} data.file - The binary content of the replacement file
+     * @param {string} data.name - The original filename (used to check the extension)
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Object>}
+     * @throws {Error} - If the user is not an admin or the file type does not match the document
+     */
+    async replaceDocumentFile(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new Error("You do not have permission to replace document files.");
+        }
+
+        if (!data || !data.file) {
+            throw new Error("No file uploaded");
+        }
+
+        if (!data.documentId) {
+            throw new Error("documentId is required");
+        }
+
+        if (!data.name || typeof data.name !== "string") {
+            throw new Error("File name is required");
+        }
+
+        const document = await this.validateDocument(data.documentId, "id", false);
+        const extensionMap = {
+            [docTypes.DOC_TYPE_PDF]: ".pdf",
+            [docTypes.DOC_TYPE_ZIP]: ".zip",
+        };
+        const expectedExtension = extensionMap[document.type];
+
+        if (!expectedExtension) {
+            throw new Error("Only PDF and ZIP documents can be replaced with this tool.");
+        }
+
+        const fileExtension = data.name.substring(data.name.lastIndexOf(".")).toLowerCase();
+        if (fileExtension !== expectedExtension) {
+            throw new Error(
+                `File type mismatch: document requires ${expectedExtension}, got ${fileExtension || "(none)"}`
+            );
+        }
+
+        if (document.type === docTypes.DOC_TYPE_PDF) {
+            await this.clearDocumentAnnotations(document.id, options);
+        }
+
+        const target = path.join(UPLOAD_PATH, `${document.hash}${expectedExtension}`);
+        await this.writeReplacementFile(document, data.file, target, expectedExtension, options);
+
+        return {
+            documentId: document.id,
+            hash: document.hash,
+            message: `Replaced ${expectedExtension} file for document #${document.id}.`,
+        };
+    }
+
+    /**
+     * Soft-delete CARE annotations and comments for a document.
+     * Matches the cascade used when a PDF document is deleted.
+     *
+     * @author Mohammad Elwan
+     * @param {number} documentId - The document whose annotations should be removed
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     */
+    async clearDocumentAnnotations(documentId, options) {
+        const annotations = await this.models["annotation"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
+        const uniqueAnnotationIds = [...new Set((annotations || []).map((annotation) => annotation.id))];
+        for (const annotationId of uniqueAnnotationIds) {
+            await this.models["annotation"].deleteById(annotationId, {transaction: options.transaction});
+        }
+
+        const comments = await this.models["comment"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
+        const uniqueCommentIds = [...new Set((comments || []).map((comment) => comment.id))];
+        for (const commentId of uniqueCommentIds) {
+            await this.models["comment"].deleteById(commentId, {transaction: options.transaction});
+        }
+    }
+
+    /**
+     * Prepare replacement file bytes (best-effort PDFRPC strip for PDFs).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} expectedExtension - The expected file extension
+     * @returns {Promise<Buffer>} Bytes to write after the DB transaction commits
+     */
+    async prepareReplacementFileBytes(document, fileData, expectedExtension) {
+        if (expectedExtension !== ".pdf") {
+            return fileData;
+        }
+
+        try {
+            const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                file: fileData,
+                document,
+            });
+            if (!file) {
+                throw new Error("Couldn't delete original annotations");
+            }
+            return file;
+        } catch (annotationRpcErr) {
+            this.logger.error(
+                "Error deleting annotations during document file replace: " + annotationRpcErr.message
+            );
+            return fileData;
+        }
+    }
+
+    /**
+     * Write a replacement temp file, then rename onto the live hash path after commit.
+     * Temp write happens before commit (failure rolls back annotation deletes). Only the
+     * rename runs in afterCommit. If rename fails after commit, the socket callback fails
+     * so the admin is notified (temp file is left for manual recovery).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} target - The filesystem path to overwrite
+     * @param {string} expectedExtension - The expected file extension
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the temp file cannot be written, or if rename fails after commit
+     */
+    async writeReplacementFile(document, fileData, target, expectedExtension, options) {
+        const bytes = await this.prepareReplacementFileBytes(document, fileData, expectedExtension);
+        const tempPath = `${target}.replace-tmp`;
+        fs.writeFileSync(tempPath, bytes);
+
+        options.transaction.afterCommit(() => {
+            try {
+                fs.renameSync(tempPath, target);
+            } catch (err) {
+                this.logger.error(
+                    `Error promoting replacement file for document #${document.id}: ${err.message}`
+                );
+                throw new Error(
+                    `Annotations were updated but the file could not be replaced for document #${document.id}. ` +
+                    `The new file is at ${tempPath}; rename it to ${target} manually. ${err.message}`
+                );
+            }
+        });
+    }
+
+    /**
      * Subscribe the client's socket to a document-specific communication channel.
      *
      * @param {Object} data The data object containing the document identifier.
@@ -1721,6 +1886,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
+        this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);

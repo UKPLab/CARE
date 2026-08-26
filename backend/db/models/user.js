@@ -477,6 +477,14 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             }
+
+            // Role rows live on user_role_matching; User.findAll (via getAll) is cached.
+            // Clear after commit so the next dashboard load cannot serve a pre-commit cache entry.
+            options.transaction.afterCommit(() => {
+                if (User.cache) {
+                    User.cache.clear();
+                }
+            });
         }
 
         /**
@@ -587,6 +595,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
+    // NOTE: unique fields (email, userName, extId, orcidId, samlNameId) are unique
+    // only among non-deleted users, via a partial unique index, not a plain
+    // `unique: true` here. After adding a new unique column (and its migration
+    // that adds `unique: true`), add a follow-up migration that calls
+    // addPartialUniqueIndexes(queryInterface, "user", transaction) from
+    // utils/helper/softDeleteUniqueIndex.js (removePartialUniqueIndexes for its
+    // down()) — otherwise the field stays globally unique and can't be reused
+    // once its owner is soft-deleted.
     User.init(
         {
             firstName: DataTypes.STRING,

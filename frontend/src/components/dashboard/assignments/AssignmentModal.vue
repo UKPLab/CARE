@@ -214,6 +214,7 @@ export default {
 				delete this.formData.id;
 				this.formData.userId = this.currentUserId;
 				this.formData.closed = null;
+				this.formData.parentAssignmentId = assignmentId;
 			}
 
 			this.$refs.stepperModal.open();

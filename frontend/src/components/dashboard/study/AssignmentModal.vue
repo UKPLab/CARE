@@ -473,9 +473,8 @@ export default {
         if (res.success) {
           if (this.reviewerSelectionMode.mode === 'role') {
             const filename = "assignments";
-            const allUsers = this.reviewer;
             const returnData = Object.keys(res.data).map(assignmentId => {
-              const assignmentUser = allUsers.find(u => u.id === Number(assignmentId));
+              const assignmentUser = this.assignmentModalValue.find(u => u.id === Number(assignmentId));
               if (!assignmentUser) {
                 console.error(`Assignment with ID ${assignmentId} not found.`);
                 return null;
@@ -486,7 +485,7 @@ export default {
                 assignedToLastName: assignmentUser.lastName,
               };
               res.data[assignmentId].forEach((reviewerId, index) => {
-                const reviewerUser = allUsers.find(u => u.id === Number(reviewerId));
+                const reviewerUser = this.selectedReviewer.find(u => u.id === Number(reviewerId));
                 csv[`reviewer_${index + 1}`] = reviewerUser
                   ? `${reviewerUser.firstName} ${reviewerUser.lastName}` : '';
               });

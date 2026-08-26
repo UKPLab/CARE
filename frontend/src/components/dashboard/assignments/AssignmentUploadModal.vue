@@ -312,6 +312,7 @@ export default {
             title: this.$t("dashboard.uploadModal.failedUploadFile"),
             message: resolveApiMessage(res),
             variant: "danger",
+            delay: 10000,
           });
           this.$refs.uploadStepper.setWaiting(false);
         }

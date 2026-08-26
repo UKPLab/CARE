@@ -98,7 +98,7 @@
       },
       "revisionLimitReached": {
         "title": "Revision limit reached",
-        "message": "You have reached the maximum number of revisions ({count})."
+        "message": "You have reached the maximum number of submissions for this assignment ({count})."
       },
       "uploadNotAllowed": {
         "title": "Upload not allowed",
@@ -111,7 +111,10 @@
       "noActive": "You have no active assignments.",
       "closedTitle": "Closed Assignments",
       "noClosed": "You have no closed assignments.",
-      "noDueDate": "no due date"
+      "noDueDate": "no due date",
+      "unlimited": "Unlimited",
+      "remainingLeft": "{count} submission(s) left",
+      "overdueBy": "Overdue by {time}"
     },
     "modal": {
       "submitText": "Save Assignment",
