@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interface Language &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Applying NLP Skills to Documents" href="apply_skill_preprocessing.html" />
+    <link rel="prev" title="Basics" href="basics.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/contributing.html">Open-Source Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/i18n.html">Internationalization (i18n)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Interface Language</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#what-changes-when-you-switch-language">What changes when you switch language</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#what-does-not-change">What does <strong>not</strong> change</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#how-to-change-your-language">How to change your language</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#before-you-log-in">Before you log in</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#which-languages-are-available">Which languages are available?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#restricting-who-can-change-the-language">Restricting who can change the language</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_management.html">Workflow Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Interface Language</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/interface_language.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="interface-language">
+<h1>Interface Language<a class="headerlink" href="#interface-language" title="Link to this heading"></a></h1>
+<p>CARE can show menus, buttons, and messages in more than one language (for example <strong>English</strong> and <strong>German</strong>).
+This page explains what that setting does and how to use it.</p>
+<section id="what-changes-when-you-switch-language">
+<h2>What changes when you switch language<a class="headerlink" href="#what-changes-when-you-switch-language" title="Link to this heading"></a></h2>
+<p>When you choose a language in <strong>Preferences</strong>, CARE translates the parts of the app that are built in:</p>
+<ul class="simple">
+<li><p>Menu items and page titles</p></li>
+<li><p>Button labels (Save, Cancel, …)</p></li>
+<li><p>Form labels and placeholders</p></li>
+<li><p>Short messages such as success or error toasts</p></li>
+</ul>
+<p>Your choice is saved to your account, so you keep the same language the next time you log in.</p>
+</section>
+<section id="what-does-not-change">
+<h2>What does <strong>not</strong> change<a class="headerlink" href="#what-does-not-change" title="Link to this heading"></a></h2>
+<p>Switching the interface language does <strong>not</strong> translate content that you or others created:</p>
+<ul class="simple">
+<li><p>Study names, document titles, usernames, workflow names</p></li>
+<li><p>Text inside email or document <strong>templates</strong> (those have their own language versions)</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Interface language</strong> and <strong>template language</strong> are two different things.</p>
+<ul class="simple">
+<li><p><strong>Interface language</strong> — labels like “Settings” or “Save”.</p></li>
+<li><p><strong>Template language</strong> — the actual text of an email or document template (e.g. an English version and a German version).</p></li>
+</ul>
+<p>Changing your interface language to German does <strong>not</strong> automatically change which template text is sent.
+Template languages are managed separately under <strong>Dashboard → Templates</strong>.</p>
+</div>
+</section>
+<section id="how-to-change-your-language">
+<h2>How to change your language<a class="headerlink" href="#how-to-change-your-language" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Open <strong>Preferences</strong> (from the dashboard or your profile menu).</p></li>
+<li><p>In the <strong>Language</strong> section, choose <strong>English</strong>, <strong>Deutsch</strong>, or another language offered by your instance.</p></li>
+<li><p>Click <strong>Save</strong>.</p></li>
+</ol>
+<p>Most of the interface updates right away. If a label does not update immediately, try refreshing the page.</p>
+</section>
+<section id="before-you-log-in">
+<h2>Before you log in<a class="headerlink" href="#before-you-log-in" title="Link to this heading"></a></h2>
+<p>On the login, registration, and password-reset pages, CARE tries to match your <strong>browser language</strong>.
+If that language is not available, English is used.</p>
+<p>After you log in, your saved preference from <strong>Preferences</strong> takes over.</p>
+</section>
+<section id="which-languages-are-available">
+<h2>Which languages are available?<a class="headerlink" href="#which-languages-are-available" title="Link to this heading"></a></h2>
+<p>That depends on how your CARE instance was set up. Common options are <strong>English</strong> and <strong>German</strong>.
+If a translation for a particular label is missing, you may see English text or a short technical label as a fallback.</p>
+</section>
+<section id="restricting-who-can-change-the-language">
+<h2>Restricting who can change the language<a class="headerlink" href="#restricting-who-can-change-the-language" title="Link to this heading"></a></h2>
+<p>On most instances, every logged-in user can pick a language in <strong>Preferences</strong> (see above).</p>
+<p>Administrators can <strong>turn off the language switcher</strong> for selected roles by assigning a user right whose
+description is <strong>“disables the ability to change the UI language in preferences”</strong>.</p>
+<p><strong>What affected users see</strong></p>
+<ul class="simple">
+<li><p>The <strong>Language</strong> block in <strong>Preferences</strong> is hidden — there is no dropdown to switch English / Deutsch.</p></li>
+<li><p>They cannot save a different UI language themselves.</p></li>
+<li><p>The interface still appears in a language: the instance default, the browser language before login, or a
+language an administrator set for their account.</p></li>
+</ul>
+<p><strong>Why use this</strong></p>
+<ul class="simple">
+<li><p>Keep a study or course on <strong>one interface language</strong> so all participants see the same menu labels and buttons.</p></li>
+<li><p>Avoid confusion when template content is in one language but menus could be switched independently.</p></li>
+</ul>
+<p><strong>Who is affected by default</strong></p>
+<p>New installations often assign this right to the <strong>Guest</strong> role, so guest accounts cannot change the
+language. Other roles (e.g. teachers, reviewers) usually keep the switcher unless an administrator adds the
+same right to their role.</p>
+<p><strong>How administrators change it</strong></p>
+<ol class="arabic simple">
+<li><p>Open the <strong>Users</strong> area on the dashboard (admin access required).</p></li>
+<li><p>Manage <strong>roles</strong> and <strong>rights</strong> — add or remove the right above from the roles that should <em>not</em> be able
+to change language.</p></li>
+<li><p>Users need to open <strong>Preferences</strong> again (or refresh) for the change to take effect.</p></li>
+</ol>
+<p>Administrators can still set a user’s language when needed; the restriction applies to self-service changes
+in <strong>Preferences</strong>.</p>
+</section>
+<section id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="templates.html"><span class="doc">Email and Document Templates</span></a> — creating and managing email and document templates</p></li>
+<li><p><a class="reference internal" href="basics.html"><span class="doc">Basics</span></a> — getting started with CARE</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="basics.html" class="btn btn-neutral float-left" title="Basics" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="apply_skill_preprocessing.html" class="btn btn-neutral float-right" title="Applying NLP Skills to Documents" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
