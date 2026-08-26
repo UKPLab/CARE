@@ -37,6 +37,7 @@
         "templates": "Templates",
         "workflows": "Workflows",
         "session_overview": "Session Overview",
+        "admin_tools": "Admin Tools",
         "groups": {
             "default": "Default",
             "admin": "Admin",

@@ -152,7 +152,13 @@
         "exactTextNotFound": "Exact text \"{text}\" not found in document text",
         "textPositionExtractionFailed": "Error extracting text positions for text \"{text}\".",
         "annotationAddFailed": "Error adding annotation.",
-        "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing."
+        "automaticAnnotationExtractionFailed": "The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.",
+        "replaceFileNoPermission": "You do not have permission to replace document files.",
+        "replaceFileNameRequired": "File name is required",
+        "replaceOnlyPdfZip": "Only PDF and ZIP documents can be replaced with this tool.",
+        "replaceTypeMismatch": "File type mismatch: document requires {expected}, got {actual}",
+        "replaceSuccess": "Replaced {extension} file for document #{documentId}.",
+        "replacePromoteFailed": "Annotations were updated but the file could not be replaced for document #{documentId}. The new file is at {tempPath}; rename it to {target} manually. {error}"
     },
     "documentMetadata": {
         "assignmentClosed": "Cannot import metadata because the assignment is closed.",

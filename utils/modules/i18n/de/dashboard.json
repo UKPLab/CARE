@@ -462,6 +462,48 @@
     },
     "fileLabel": "{format}-Datei:"
   },
+  "adminTools": {
+    "title": "Admin-Tools",
+    "description": "Administrative Hilfsmittel zur Wiederherstellung und Pflege von Systemdateien. Öffnen Sie unten ein Tool für eine konkrete Admin-Aktion.",
+    "replaceDocumentFile": {
+      "button": "Dokumentdatei ersetzen",
+      "buttonTitle": "Vorhandene PDF- oder ZIP-Datei auf dem Datenträger ersetzen",
+      "modalTitle": "Dokumentdatei ersetzen",
+      "replacing": "Ersetzen...",
+      "help": "Laden Sie ein neues PDF oder ZIP hoch, um die gespeicherte Datei eines vorhandenen Dokuments zu überschreiben. Titel, ID und Verknüpfungen bleiben gleich; geändert werden nur die Dateibytes. Der Dateityp muss zum Dokumenttyp passen. Bei PDFs werden vorhandene CARE-Annotationen und Kommentare zu diesem Dokument entfernt.",
+      "typeLabel": "Typ",
+      "typeAll": "Alle (PDF & ZIP)",
+      "typePdfOnly": "Nur PDF",
+      "typeZipOnly": "Nur ZIP",
+      "typePdf": "PDF",
+      "typeZip": "ZIP",
+      "typeUnknown": "Unbekannt",
+      "columns": {
+        "id": "ID",
+        "title": "Titel",
+        "type": "Typ"
+      },
+      "unnamed": "(ohne Namen)",
+      "selected": "Ausgewählt: {name} (#{id}, {type}).",
+      "selectHint": "Wählen Sie ein Dokument in der Tabelle (10 pro Seite; Suche oder nächste Seite für mehr).",
+      "fileLabel": "Ersatzdatei",
+      "replaceButton": "Datei ersetzen",
+      "toasts": {
+        "typeMismatch": {
+          "title": "Typ stimmt nicht überein",
+          "message": "Das Dokument ist {type}; bitte laden Sie eine {extension}-Datei hoch."
+        },
+        "success": {
+          "title": "Datei ersetzt",
+          "message": "Datei für „{name}“ (#{id}) aktualisiert."
+        },
+        "failed": {
+          "title": "Ersetzen fehlgeschlagen",
+          "fallback": "Dokumentdatei konnte nicht ersetzt werden."
+        }
+      }
+    }
+  },
   "sessionOverview": {
     "title": "Übersicht der Studiensitzungen",
     "showOnlyOpenStudies": "Nur offene Studien anzeigen",

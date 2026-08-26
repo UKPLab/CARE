@@ -1678,19 +1678,19 @@ class DocumentSocket extends Socket {
      */
     async replaceDocumentFile(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to replace document files.");
+            throw new TranslatableError("errors.documents.replaceFileNoPermission");
         }
 
         if (!data || !data.file) {
-            throw new Error("No file uploaded");
+            throw new TranslatableError("errors.file.noFileUploaded");
         }
 
         if (!data.documentId) {
-            throw new Error("documentId is required");
+            throw new TranslatableError("errors.documents.idRequired");
         }
 
         if (!data.name || typeof data.name !== "string") {
-            throw new Error("File name is required");
+            throw new TranslatableError("errors.documents.replaceFileNameRequired");
         }
 
         const document = await this.validateDocument(data.documentId, "id", false);
@@ -1701,14 +1701,15 @@ class DocumentSocket extends Socket {
         const expectedExtension = extensionMap[document.type];
 
         if (!expectedExtension) {
-            throw new Error("Only PDF and ZIP documents can be replaced with this tool.");
+            throw new TranslatableError("errors.documents.replaceOnlyPdfZip");
         }
 
         const fileExtension = data.name.substring(data.name.lastIndexOf(".")).toLowerCase();
         if (fileExtension !== expectedExtension) {
-            throw new Error(
-                `File type mismatch: document requires ${expectedExtension}, got ${fileExtension || "(none)"}`
-            );
+            throw new TranslatableError("errors.documents.replaceTypeMismatch", {
+                expected: expectedExtension,
+                actual: fileExtension || "-",
+            });
         }
 
         if (document.type === docTypes.DOC_TYPE_PDF) {
@@ -1721,7 +1722,15 @@ class DocumentSocket extends Socket {
         return {
             documentId: document.id,
             hash: document.hash,
-            message: `Replaced ${expectedExtension} file for document #${document.id}.`,
+            message: i18n.translateMaybeKey("errors.documents.replaceSuccess", {
+                extension: expectedExtension,
+                documentId: document.id,
+            }),
+            key: "errors.documents.replaceSuccess",
+            params: {
+                extension: expectedExtension,
+                documentId: document.id,
+            },
         };
     }
 
@@ -1777,7 +1786,7 @@ class DocumentSocket extends Socket {
                 document,
             });
             if (!file) {
-                throw new Error("Couldn't delete original annotations");
+                throw new TranslatableError("errors.documents.annotationDeleteOriginalFailed");
             }
             return file;
         } catch (annotationRpcErr) {
@@ -1816,10 +1825,12 @@ class DocumentSocket extends Socket {
                 this.logger.error(
                     `Error promoting replacement file for document #${document.id}: ${err.message}`
                 );
-                throw new Error(
-                    `Annotations were updated but the file could not be replaced for document #${document.id}. ` +
-                    `The new file is at ${tempPath}; rename it to ${target} manually. ${err.message}`
-                );
+                throw new TranslatableError("errors.documents.replacePromoteFailed", {
+                    documentId: document.id,
+                    tempPath,
+                    target,
+                    error: err.message,
+                });
             }
         });
     }

@@ -91,6 +91,12 @@
         "hoursMinutesSeconds": "{h}h {min}m {sec}s",
         "lessThanMinutes": "<{min}min"
     },
+    "timeDiff": {
+        "days": "{count} day(s)",
+        "hoursAndMinutes": "{hours} hour(s) and {minutes} minute(s)",
+        "minutes": "{count} minute(s)",
+        "seconds": "{count} second(s)"
+    },
     "reply": "Reply",
     "showMore": "Show more",
     "showLess": "Show less",
