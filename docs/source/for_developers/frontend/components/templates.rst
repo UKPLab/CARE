@@ -147,7 +147,8 @@ Here is a concrete example for adding a new placeholder (e.g. ``studyEndDate`` f
 
    - If the new placeholder is tied to a new template type, also update:
 
-     - The template type dropdown in ``frontend/src/components/dashboard/templates/TemplateModal.vue``.
+     - ``emailTemplateTypes`` / ``otherTemplateTypes`` in ``backend/db/models/template.js``.
+     - The template type dropdown options in ``backend/db/models/template.js`` ``fields``.
      - ``getUserFilter`` in ``backend/db/models/template.js`` so that only the correct
        users (e.g. admins) see or can use that type.
 

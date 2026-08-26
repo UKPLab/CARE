@@ -379,7 +379,7 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
     if (!template) {
         throw new Error("Template not found");
     }
-    if (![1, 2, 3, 6, 7].includes(template.type)) {
+    if (!models["template"].emailTemplateTypes.includes(template.type)) {
         return;
     }
 
