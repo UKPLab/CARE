@@ -23,4 +23,4 @@ WORKDIR content-server
 RUN echo $ENV
 RUN make ENV=$ENV build-frontend
 
-CMD ["sh", "-c", "make ENV=$ENV NODE_ENV=production init dev-backend"]
+CMD ["sh", "-c", "make ENV=$ENV NODE_ENV=production init dev-backend-wizard"]

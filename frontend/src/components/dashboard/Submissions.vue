@@ -99,9 +99,6 @@ export default {
   subscribeTable: ["assignment", "submission", "user", "document"],
   components: { Card, BasicButton, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
   computed: {
-    isAdmin() {
-      return this.$store.getters["auth/isAdmin"];
-    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
