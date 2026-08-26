@@ -156,7 +156,7 @@ class RecorderSocket extends Socket {
         for (const socketId of participantSocketIds) {
             this.server.activeRecordings[socketId] = {
                 claimedAt: now,
-                ownerSocketId: this.socket.id,
+                ownerUserId: this.userId,
             };
         }
 
@@ -190,7 +190,7 @@ class RecorderSocket extends Socket {
             for (const s of started) {
                 this.server.activeRecordings[s.socketId] = {
                     recordingId: s.recordingId,
-                    ownerSocketId: this.socket.id,
+                    ownerUserId: this.userId,
                     excludeEvents,
                 };
                 s.recorder.attachListeners();
@@ -208,7 +208,8 @@ class RecorderSocket extends Socket {
      * Stop one or more active recordings and return each one's captured traces.
      * @param {Object} data - {socketId?: string, status?: string}; socketId stops
      *                        just that session, otherwise the caller's whole batch
-     * @param {Object} options - Handler options; options.internal bypasses the admin check
+     * @param {Object} options - Handler options; options.internal bypasses the
+     *                           admin check and the targeted-stop ownership check
      * @returns {Promise<{stopped: Array<Object>}>} Each stopped recording with its traces
      * @throws {Error} If the caller is not an admin (unless internal) or nothing is recording
      */
@@ -234,17 +235,25 @@ class RecorderSocket extends Socket {
         // - data.socketId given (e.g. disconnect path): stop only that socket.
         // - otherwise: stop every recording started by this caller (their batch),
         //   so one admin stopping doesn't end another admin's recordings.
-        // A claim (see startRecording) has an ownerSocketId but no recordingId
+        //   Ownership is keyed on userId, not socket id: a reloaded tab or a
+        //   second tab is a new socket but the same admin, and must still be
+        //   able to stop the batch it started.
+        // A claim (see startRecording) has an ownerUserId but no recordingId
         // yet, so it must never be treated as stoppable — its real entry lands
         // when the start transaction commits.
         const isStoppable = (sid) => Boolean(this.server.activeRecordings[sid]?.recordingId);
 
         let socketIdsToStop;
         if (data && data.socketId) {
-            socketIdsToStop = isStoppable(data.socketId) ? [data.socketId] : [];
+            // Internal callers (disconnect cleanup) stop a recording they don't
+            // own by design. A user-initiated targeted stop must not reach
+            // another admin's recording.
+            const owned = options?.internal
+                || this.server.activeRecordings[data.socketId]?.ownerUserId === this.userId;
+            socketIdsToStop = (isStoppable(data.socketId) && owned) ? [data.socketId] : [];
         } else {
             socketIdsToStop = Object.keys(this.server.activeRecordings)
-                .filter(sid => isStoppable(sid) && this.server.activeRecordings[sid].ownerSocketId === this.socket.id);
+                .filter(sid => isStoppable(sid) && this.server.activeRecordings[sid].ownerUserId === this.userId);
         }
 
         if (socketIdsToStop.length === 0) {

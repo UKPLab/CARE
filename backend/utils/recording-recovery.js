@@ -27,9 +27,14 @@ async function flagDisconnectedRecording(server, socket) {
             { internal: true }
         );
 
-        const ownerSocket = server.io.sockets.sockets.get(entry.ownerSocketId);
-        if (ownerSocket) {
-            ownerSocket.emit("toast", {
+        // The owning admin may have reloaded or opened a second tab since
+        // starting, so the socket that started the recording can be gone.
+        // Notify every socket that user currently holds instead.
+        for (const [sid, handlers] of Object.entries(server.availSockets)) {
+            if (handlers["RecorderSocket"]?.userId !== entry.ownerUserId) {
+                continue;
+            }
+            server.io.sockets.sockets.get(sid)?.emit("toast", {
                 title: "Recording stopped",
                 message: "A recorded participant disconnected — recording flagged as disconnected.",
                 variant: "warning",
