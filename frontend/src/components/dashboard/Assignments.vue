@@ -292,7 +292,7 @@ export default {
           canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
           submissionStatus: this.getSubmissionStatus(assignment),
           assignedRoles,
-          maxRevisions: assignment.maxRevisions ?? 1,
+          maxRevisions: assignment.maxRevisions === -1 ? "∞" : (assignment.maxRevisions ?? 1),
           disable: assignment.disable,
           start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
           end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
