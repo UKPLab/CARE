@@ -1,0 +1,151 @@
+{
+    "notAvailable": "{name} not available",
+    "skillDetails": "Skill Details",
+    "copyConfig": "Copy config",
+    "downloadConfig": "Download config",
+    "sendCommand": "Send command",
+    "configCopied": "Config copied",
+    "skillConfigCopied": "Skill configuration copied to clipboard!",
+    "downloadSuccess": "Download success",
+    "downloadedConfigMessage": "Downloaded {name} configuration",
+    "services": {
+        "availableServices": "Available Services",
+        "noServices": "No services configuration available for this step."
+    },
+    "inputConfirm": {
+        "confirmSelections": "Confirm Your Selections",
+        "selectedSkill": "Selected Skill:",
+        "inputMappings": "Input Mappings:",
+        "selectedFiles": "Selected Files:",
+        "baseFileSelections": "Base File Selections:",
+        "defaultConfiguration": "Configuration",
+        "unknownSelection": "Unknown"
+    },
+    "inputFiles": {
+        "filesSelectedFor": "Files selected for {param}: {count} file(s)",
+        "selectFilesFor": "Please select files for parameter: {param}",
+        "documents": "Documents",
+        "submissions": "Submissions"
+    },
+    "inputGroup": {
+        "validationConfiguration": "Validation Configuration {id}"
+    },
+    "skillSelector": {
+        "selectNlpSkill": "Select NLP Skill:"
+    },
+    "inputMap": {
+        "inputMapping": "Input Mapping",
+        "outputMapping": "Output Mapping",
+        "saveInDocumentData": "Save in Document Data",
+        "insertIntoEditor": "Insert into Editor",
+        "sources": {
+            "documents": "<Documents>",
+            "submissions": "<Submissions>",
+            "submission": "<Submission>",
+            "configuration": "<Configuration> {name}",
+            "document": "<Document> {name}",
+            "documentFallback": "Document {id}",
+            "submissionWithName": "<Submission> {name}",
+            "annotatorAnnotations": "<Annotator> Annotations (Workflow Step {step})",
+            "annotatorComments": "<Annotator> Comments (Workflow Step {step})",
+            "editorFirstVersion": "<Editor> First Version (Workflow Step {step})",
+            "editorCurrentVersion": "<Editor> Current Version (Workflow Step {step})",
+            "assessmentResults": "<Assessment> Results (Workflow Step {step})",
+            "serviceOutput": "<Service {service}> {skill}_{output} (Workflow Step {step})"
+        }
+    },
+    "preprocessing": {
+        "title": "Preprocess Grading",
+        "cancelButton": "Cancel Preprocess",
+        "submissionName": "Submission {id}",
+        "cancelApplySkills": "Cancel Apply Skills",
+        "toasts": {
+            "inProgressTitle": "Preprocessing In Progress",
+            "inProgressMsg": "Preprocessing is currently running. Showing progress...",
+            "cancelledTitle": "Preprocessing Cancelled",
+            "cancelledMsg": "Preprocessing has been cancelled.",
+            "cancellationFailedTitle": "Preprocessing Cancellation Failed",
+            "startedTitle": "Preprocessing Started",
+            "startedMsg": "Preprocessing has been initiated.",
+            "nowRunningMsg": "Preprocessing is now running. Progress shown in the modal.",
+            "completeTitle": "Preprocessing Complete",
+            "completeMsg": "Review the results below.",
+            "confirmationFailedTitle": "Confirmation Failed"
+        },
+        "setupStepper": {
+            "title": "Apply Skills",
+            "submit": "Apply Skills",
+            "steps": {
+                "selectSkill": "Select Skill",
+                "selectFiles": "Select Files",
+                "selectBaseFiles": "Select Base Files",
+                "confirmation": "Confirmation"
+            },
+            "closeModalTitle": "Close Modal",
+            "closeModalMessage": "Current selections will be lost if you close this modal. Are you sure you want to continue?"
+        },
+        "processStepper": {
+            "errors": {
+                "title": "Errors Encountered",
+                "errorLabel": "Error:",
+                "submissionId": "Submission ID",
+                "documentId": "Document ID"
+            },
+            "steps": {
+                "progress": "Processing Progress",
+                "confirmCancel": "Confirm Cancellation",
+                "complete": "Processing Complete"
+            },
+            "stats": {
+                "processed": "Processed:",
+                "currentRuntime": "Current request running time:",
+                "estimatedPerRequest": "Estimated time per request:",
+                "estimatedRemaining": "Estimated time remaining:",
+                "calculating": "Calculating...",
+                "almostDone": "Almost done...",
+                "takingLonger": "Taking longer than expected"
+            },
+            "queue": {
+                "title": "Submissions in Queue",
+                "empty": "No submissions in queue. Processing the last request...",
+                "columns": {
+                    "id": "ID",
+                    "submissionName": "Submission Name",
+                    "user": "User"
+                }
+            },
+            "cancel": {
+                "title": "Cancel Processing",
+                "message": "Are you sure you want to cancel the remaining requests?"
+            }
+        }
+    },
+    "skills": {
+        "title": "Skills",
+        "descriptions": {
+            "f1000_classification": "This is a classification task",
+            "generating_feedback_german": "This skill is used to generate feedback for the exposé based on the grading result",
+            "generating_feedback_english": "This skill is used to generate feedback for the exposé based on the grading result",
+            "grading_expose_german": "This skill is used to grade the exposé of a student",
+            "grading_expose_english": "This skill is used to grade the exposé of a student",
+            "skill_eic": "This is a skill for edit intent classification with the fine-tuned Leo-LM 13b model",
+            "summarization": "Summarize a text",
+            "sentiment_classification": "This classifies a given paragraph according to its sentiment returning a polarity estimate."
+        },
+        "status": {
+            "online": "ONLINE",
+            "offline": "OFFLINE",
+            "activating": "Activating"
+        },
+        "columns": {
+            "nodes": "# Nodes",
+            "activated": "Activated",
+            "fallback": "Fallback"
+        },
+        "toasts": {
+            "settingUpdatedTitle": "Setting Updated",
+            "settingUpdatedMessage": "Skill \"{name}\" activation updated.",
+            "updateFailedTitle": "Failed to Update Setting"
+        }
+    }
+}

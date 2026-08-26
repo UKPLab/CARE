@@ -1,23 +1,23 @@
 <template>
   <div class="p-3">
     <div class="alert alert-warning mb-3">
-      This import affects only the selected assignment. Existing metadata entries with the same `metaKey` will be overwritten.
+      {{ $t('assignments.metadata.preview.warning') }}
     </div>
     <div class="card">
       <div class="card-body bg-light">
-        <div><strong>Target type:</strong> {{ targetTypeLabel }}</div>
-        <div><strong>Assignment:</strong> {{ assignmentLabel }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.targetType') }}</strong> {{ targetTypeLabel }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.assignment') }}</strong> {{ assignmentLabel }}</div>
         <div>
-          <strong>Primary key mapping:</strong>
+          <strong>{{ $t('assignments.metadata.preview.primaryKeyMapping') }}</strong>
           {{ primaryKeyMapping.sourceField || "-" }} -> {{ primaryKeyMapping.targetField || "-" }}
         </div>
-        <div><strong>Mapped metadata fields:</strong> {{ selectedMappingsCount }}</div>
-        <div><strong>Will match rows:</strong> {{ preview.matchedRowCount }}</div>
-        <div><strong>Rows without submission match:</strong> {{ preview.unmatchedRowCount }}</div>
-        <div><strong>Will skip matched rows without documents:</strong> {{ preview.skippedRowCount }}</div>
-        <div><strong>Documents affected:</strong> {{ preview.documentCount }}</div>
-        <div><strong>Will write metadata entries:</strong> {{ preview.metadataEntryCount }}</div>
-        <div><strong>Will overwrite existing metadata entries:</strong> {{ preview.overwrittenEntryCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.mappedFields') }}</strong> {{ selectedMappingsCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.willMatchRows') }}</strong> {{ preview.matchedRowCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.rowsWithoutMatch') }}</strong> {{ preview.unmatchedRowCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.willSkipWithoutDocuments') }}</strong> {{ preview.skippedRowCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.documentsAffected') }}</strong> {{ preview.documentCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.willWriteEntries') }}</strong> {{ preview.metadataEntryCount }}</div>
+        <div><strong>{{ $t('assignments.metadata.preview.willOverwriteEntries') }}</strong> {{ preview.overwrittenEntryCount }}</div>
       </div>
     </div>
   </div>

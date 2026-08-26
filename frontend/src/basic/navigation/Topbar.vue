@@ -9,7 +9,7 @@
         <button
           id="backButton"
           class="btn"
-          title="Go back..."
+          :title="$t('navigation.topbar.goBack')"
           @click="toHome()"
         >
           <LoadIcon
@@ -26,6 +26,7 @@
             :height="30"
           />
         </a>
+
         <div id="topbarCustomPlaceholder"/>
         <div id="topbarCenterPlaceholder"/>
         <ul
@@ -62,10 +63,10 @@
             >
               <div
                 class="project-box"
-                :title="`Project: ${currentProjectName}`"
+                :title="$t('navigation.topbar.projectTitle', { name: currentProjectName })"
                 @click.stop="toggleProjectDropdown"
               >
-                <span class="project-text">Project: {{ currentProjectName }}</span>
+                <span class="project-text">{{ $t('navigation.topbar.projectTitle', { name: currentProjectName }) }}</span>
               </div>
               <div
                 v-if="showProjectDropdown"
@@ -105,35 +106,34 @@
                 class="dropdown-menu dropdown-menu-right"
               >
                 <a class="dropdown-item display-username">
-                  Signed in as {{ username }}
+                  {{ $t('navigation.topbar.signedInAs', { username }) }}
+                </a>
+                <a
+                  class="dropdown-item"
+                  href="#"
+                  @click="$refs.preferencesModal.open()"
+                >
+                  {{ $t('auth.preferences.title') }}
                 </a>
                 <a
                   class="dropdown-item"
                   href="#"
                   @click="$refs.twoFactorSettingsModal.open()"
                 >
-                  Configure 2FA
-                </a>
-                <a
-                  v-if="consentEnabled"
-                  class="dropdown-item"
-                  href="#"
-                  @click="$refs.consentModal.open()"
-                >
-                  Update consent
+                  {{ $t('auth.twoFactor.configure') }}
                 </a>
                 <a
                   class="dropdown-item"
                   href="#"
                   @click="$refs.passwordModal.open(userId)"
                 >
-                  Change password
+                  {{ $t('auth.changePassword') }}
                 </a>
                 <a
                   class="dropdown-item"
                   href="#"
                   @click="logout()"
-                >Logout</a>
+                >{{ $t('auth.logout') }}</a>
               </div>
             </div>
           </li>
@@ -142,7 +142,7 @@
     </nav>
   </div>
   <PasswordModal ref="passwordModal" />
-  <ConsentUpdateModal ref="consentModal" />
+  <PreferencesModal ref="preferencesModal" />
   <TwoFactorSettingsModal ref="twoFactorSettingsModal" />
 </template>
 
@@ -162,12 +162,12 @@ import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import ConsentUpdateModal from "@/basic/modal/ConsentUpdateModal.vue";
+import PreferencesModal from "@/basic/modal/PreferencesModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, ConsentUpdateModal, TwoFactorSettingsModal},
+  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal},
   data() {
     return {
       showProjectDropdown: false,
@@ -182,7 +182,7 @@ export default {
   }],
   computed: {
     allProjects() {
-    return this.$store.getters["table/project/getAll"] || [];
+      return this.$store.getters["table/project/getAll"] || [];
     },
     isProjectButtonHidden() {
       return this.$store.getters["settings/getValue"]("topBar.projects.hideProjectButton") === "true"
@@ -194,7 +194,11 @@ export default {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
     currentProjectName() {
-      return this.$store.getters["table/project/get"](this.currentProject)?.name;
+      const project = this.$store.getters["table/project/get"](this.currentProject);
+      if (!project) {
+        return "";
+      }
+      return project.name;
     },
     username() {
       return this.$store.getters['auth/getUsername'];
@@ -204,9 +208,6 @@ export default {
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
-    consentEnabled() {
-      return this.$store.getters["settings/getValue"]("app.config.consent.enabled") === "true";
     },
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];

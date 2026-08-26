@@ -1,0 +1,7 @@
+{
+  "name": "care-i18n",
+  "version": "1.0.0",
+  "description": "Shared i18n translations for CARE frontend and backend",
+  "main": "index.js",
+  "license": "Apache-2.0"
+}

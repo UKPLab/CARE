@@ -1,0 +1,116 @@
+{
+  "title": "Users",
+  "downloadUsers": "Download Users",
+  "uploadPassword": "Upload Password",
+  "importCsv": "Import CSV",
+  "importViaMoodle": "Import via Moodle",
+  "addUser": "Add User",
+  "editUser": "Edit User",
+  "viewRights": "View Rights",
+  "resetPassword": "Reset Password",
+  "deleteUser": "Delete User",
+  "columns": {
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "userName": "User",
+    "email": "Email",
+    "acceptTerms": "Accept Terms",
+    "acceptStats": "Accept Stats",
+    "acceptDataSharing": "Accept Data Sharing",
+    "verified": "Verified",
+    "lastLogin": "Last Login",
+    "roles": "Roles"
+  },
+  "messages": {
+    "deleteConfirm": "Are you sure you want to delete this user?",
+    "deleteTitle": "Delete User",
+    "userDeleted": "User deleted",
+    "userDeletedMessage": "User has been deleted"
+  },
+  "stats": {
+    "exportCsv": "Export as CSV",
+    "exportJson": "Export as JSON",
+    "userStatsTitle": "Stats for {count} User | Stats for {count} Users",
+    "columns": {
+      "user": "User",
+      "id": "ID",
+      "lastLogin": "Last Login",
+      "time": "Time",
+      "action": "Action",
+      "data": "Data"
+    },
+    "toasts": {
+      "exportFailedTitle": "Export Failed",
+      "exportFailedMessage": "Export failed."
+    }
+  },
+  "roles": {
+    "teacher": "teacher",
+    "mentor": "mentor",
+    "student": "student",
+    "guest": "guest",
+    "user": "user",
+    "admin": "admin",
+    "regular": "regular",
+    "maintainer": "maintainer",
+    "system": "system"
+  },
+  "liveSessions": "Live Sessions",
+  "viewSessions": "View Sessions",
+  "activeSessions": {
+      "title": "Active Sessions",
+      "filteredUser": "Filtered user:",
+      "activeUsers": "{count} active user(s)",
+      "socketId": "Socket ID",
+      "userId": "User ID",
+      "connectedAt": "Connected At",
+      "browser": "Browser"
+  },
+  "rights": {
+    "assignRights": "Assign Rights",
+    "managementTitle": "Rights Management",
+    "manageRightsFor": "Manage rights for",
+    "role": "role",
+    "selectRightsNote": "Select the rights for this role. Note: All users have basic {userRole} rights by default.",
+    "selectRole": "Select Role",
+    "manageRights": "Manage Rights",
+    "rightName": "Right Name",
+    "chooseRoleDescription": "Choose a role to assign to the user.",
+    "updatedTitle": "Role Rights Updated",
+    "updatedMessage": "Role rights have been successfully updated",
+    "errors": {
+      "loadAvailableRightsFailed": "Failed to load available rights",
+      "loadRoleRightsFailed": "Failed to load role rights",
+      "assignRoleRightsFailed": "Failed to assign role rights"
+    }
+  },
+  "roleManagement": {
+    "button": "Role Management",
+    "title": "Create Role",
+    "fields": {
+      "name": {
+        "label": "Role Name",
+        "placeholder": "Enter role name",
+        "description": "Create a new system role."
+      },
+      "description": {
+        "placeholder": "Optional role description"
+      }
+    },
+    "buttons": {
+      "create": "Create Role"
+    },
+    "toasts": {
+      "alreadyExists": {
+        "title": "Role already exists",
+        "message": "A role with this name already exists."
+      },
+      "createSuccess": {
+        "title": "Role created",
+        "message": "Role has been successfully created."
+      },
+      "createFailed": "Failed to create role"
+    }
+  }
+}
+
