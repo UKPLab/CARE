@@ -20,22 +20,32 @@
           collapsed
         >
           <template #headerElements>
-            <BasicButton
-              class="btn btn-primary btn-sm"
-              title="Upload Submission"
-              text="Upload Submission"
-              icon="file-earmark-arrow-up"
-              :disabled="!canUploadSubmissionForAssignment(assignment)"
-              @click="openUploadModalForAssignment(assignment)"
-            />
+            <div class="d-flex align-items-center gap-2">
+              <span
+                v-if="!canUploadForOthers"
+                :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', submissionsBadgeClass(assignment)]"
+              >
+                <LoadIcon icon-name="file-earmark-check" size="14" />
+                {{ remainingSubmissionsForAssignment(assignment) }} submission(s) left
+              </span>
+              <span :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', timeBadgeClass(assignment)]">
+                <LoadIcon icon-name="clock" size="14" />
+                {{ timeBadgeText(assignment) }}
+              </span>
+              <BasicButton
+                class="btn btn-primary btn-sm"
+                title="Upload Submission"
+                text="Upload Submission"
+                icon="file-earmark-arrow-up"
+                :disabled="!canUploadSubmissionForAssignment(assignment)"
+                @click="openUploadModalForAssignment(assignment)"
+              />
+            </div>
           </template>
           <template #body>
             <AssignmentSubmissionsTable
               :assignment-id="assignment.id"
             />
-          </template>
-          <template #footer>
-            <span>{{ assignment.end ? assignmentTimes[assignment.id] : "no due date" }}</span>
           </template>
         </Card>
         <hr>
@@ -61,15 +71,24 @@
           collapsable
           collapsed
         >
-          <template #headerButtons>
-            <BasicButton
-              class="btn btn-primary btn-sm"
-              title="Upload Submission"
-              text="Upload Submission"
-              icon="file-earmark-arrow-up"
-              :disabled="!canUploadSubmissionForAssignment(assignment)"
-              @click="openUploadModalForAssignment(assignment)"
-            />
+          <template #headerElements>
+            <div class="d-flex align-items-center gap-2">
+              <span
+                v-if="!canUploadForOthers"
+                :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', submissionsBadgeClass(assignment)]"
+              >
+                <LoadIcon icon-name="file-earmark-check" size="14" />
+                {{ remainingSubmissionsForAssignment(assignment) }} submission(s) left
+              </span>
+              <BasicButton
+                class="btn btn-primary btn-sm"
+                title="Upload Submission"
+                text="Upload Submission"
+                icon="file-earmark-arrow-up"
+                :disabled="!canUploadSubmissionForAssignment(assignment)"
+                @click="openUploadModalForAssignment(assignment)"
+              />
+            </div>
           </template>
           <template #body>
             <AssignmentSubmissionsTable
@@ -89,6 +108,7 @@
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -97,10 +117,10 @@ import { getTimeDiffString } from "@/assets/utils";
 export default {
   name: "DashboardSubmission",
   subscribeTable: ["assignment", "submission", "user", "document"],
-  components: { Card, BasicButton, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
   computed: {
-    isAdmin() {
-      return this.$store.getters["auth/isAdmin"];
+    canUploadForOthers() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
@@ -189,10 +209,41 @@ export default {
     },
     isRevisionLimitReachedForAssignment(assignment) {
       const maxRevisions = this.maxRevisionsForAssignment(assignment);
-      if (maxRevisions === 0) {
+      if (maxRevisions === -1) {
         return false;
       }
-      return this.currentUserMaxRevisionDepth(assignment.id) >= maxRevisions;
+      return this.currentUserMaxRevisionDepth(assignment.id) >= maxRevisions + 1;
+    },
+    remainingSubmissionsForAssignment(assignment) {
+      const maxRevisions = this.maxRevisionsForAssignment(assignment);
+      if (maxRevisions === -1) {
+        return "Unlimited";
+      }
+      return Math.max(maxRevisions + 1 - this.currentUserMaxRevisionDepth(assignment.id), 0);
+    },
+    submissionsBadgeClass(assignment) {
+      return this.remainingSubmissionsForAssignment(assignment) === 0
+        ? "bg-success text-white"
+        : "bg-light text-dark border";
+    },
+    isAssignmentOverdue(assignment) {
+      return !!assignment.end && new Date(assignment.end) < new Date();
+    },
+    isAssignmentClosingSoon(assignment) {
+      if (!assignment.end) return false;
+      const msLeft = new Date(assignment.end) - new Date();
+      return msLeft > 0 && msLeft <= 24 * 60 * 60 * 1000;
+    },
+    timeBadgeClass(assignment) {
+      if (this.isAssignmentOverdue(assignment)) return "bg-danger text-white";
+      if (this.isAssignmentClosingSoon(assignment)) return "bg-warning text-dark";
+      return "bg-light text-dark border";
+    },
+    timeBadgeText(assignment) {
+      if (!assignment.end) return "no due date";
+      return this.isAssignmentOverdue(assignment)
+        ? `Overdue by ${this.assignmentTimes[assignment.id]}`
+        : this.assignmentTimes[assignment.id];
     },
     canUploadSubmissionForAssignment(assignment) {
       const statusAllowsUpload = this.getAssignmentStatus(assignment) === "open";
@@ -202,7 +253,7 @@ export default {
       if (this.isRevisionLimitReachedForAssignment(assignment)) {
         this.eventBus.emit("toast", {
           title: "Revision limit reached",
-          message: `You have reached the maximum number of revisions (${this.maxRevisionsForAssignment(assignment)}).`,
+          message: `You have reached the maximum number of submissions for this assignment (${this.maxRevisionsForAssignment(assignment) + 1}).`,
           variant: "warning",
         });
         return;

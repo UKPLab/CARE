@@ -389,8 +389,15 @@ module.exports = (sequelize, DataTypes) => {
 
             const UserRoleMatching = User.sequelize.models["user_role_matching"];
 
+            const existingUser = await User.getById(userId, options);
+            if (!existingUser) {
+                throw new Error("User not found");
+            }
+
             const roleIdMap = await User.getRoleIdMap();
-            const [updatedRowsCount] = await User.update(
+            // Profile fields may be unchanged; Sequelize then reports 0 updated rows.
+            // Still continue so role matching runs.
+            await User.update(
                 {
                     firstName: userData.firstName,
                     lastName: userData.lastName,
@@ -403,11 +410,6 @@ module.exports = (sequelize, DataTypes) => {
                     transaction: options.transaction,
                 }
             );
-
-            if (updatedRowsCount === 0) {
-                console.error("Failed to update user: User not found");
-                return;
-            }
 
             // Get current roles
             const currentRoles = await UserRoleMatching.findAll({
@@ -444,6 +446,42 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 individualHooks: true,
                 transaction: options.transaction,
+            });
+
+            // Rebuild role ids and force a user broadcast that includes `roles`,
+            // so Vuex table/user (and the edit modal checkboxes) stay in sync.
+            const updatedRoleRows = await UserRoleMatching.findAll({
+                where: {userId, deleted: false},
+                attributes: ["userRoleId"],
+                transaction: options.transaction,
+                raw: true,
+            });
+            const roleIds = updatedRoleRows.map((row) => row.userRoleId);
+
+            // individualHooks so this update is queued on transaction.changes (for roles below).
+            await User.update(
+                {rolesUpdatedAt: new Date()},
+                {
+                    where: {id: userId},
+                    individualHooks: true,
+                    transaction: options.transaction,
+                }
+            );
+
+            if (options.transaction && Array.isArray(options.transaction.changes)) {
+                for (const entry of options.transaction.changes) {
+                    if (entry.constructor?.tableName === "user" && Number(entry.id) === Number(userId)) {
+                        entry.dataValues.roles = roleIds;
+                    }
+                }
+            }
+
+            // Role rows live on user_role_matching; User.findAll (via getAll) is cached.
+            // Clear after commit so the next dashboard load cannot serve a pre-commit cache entry.
+            options.transaction.afterCommit(() => {
+                if (User.cache) {
+                    User.cache.clear();
+                }
             });
         }
 
@@ -555,6 +593,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
+    // NOTE: unique fields (email, userName, extId, orcidId, samlNameId) are unique
+    // only among non-deleted users, via a partial unique index, not a plain
+    // `unique: true` here. After adding a new unique column (and its migration
+    // that adds `unique: true`), add a follow-up migration that calls
+    // addPartialUniqueIndexes(queryInterface, "user", transaction) from
+    // utils/helper/softDeleteUniqueIndex.js (removePartialUniqueIndexes for its
+    // down()) — otherwise the field stays globally unique and can't be reused
+    // once its owner is soft-deleted.
     User.init(
         {
             firstName: DataTypes.STRING,
