@@ -3,7 +3,7 @@
     <span v-if="type === 'button'">
       <button
         v-if="requestId === null"
-        :title="nlpAvailable ? title : `${title} not available`"
+        :title="nlpAvailable ? title : $t('nlp.notAvailable', { name: title })"
         class="btn btn-sm"
         data-placement="top"
         data-toggle="tooltip"
@@ -146,8 +146,8 @@ export default {
       setTimeout(() => {
         if (this.requestId) {
           this.eventBus.emit('toast', {
-            title: "NLP Service Request",
-            message: "Timeout in request for skill " + this.skill + " - Request failed!",
+            title: this.$t('common.nlp.serviceRequest'),
+            message: this.$t('errors.nlp.timeout', { skill: this.skill }),
             variant: "danger"
           });
           this.requestId = null;

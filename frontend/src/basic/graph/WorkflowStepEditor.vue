@@ -1,5 +1,11 @@
 <template>
-  <BasicCoordinator ref="coordinator" table="workflow_step" title="Workflow Step" no-success-message @success="success" />
+  <BasicCoordinator
+    ref="coordinator"
+    table="workflow_step"
+    :title="$t('basic.workflowStepEditor.title')"
+    no-success-message
+    @success="success"
+  />
 </template>
 
 <script>
@@ -67,7 +73,7 @@ export default {
             } else {
               this.eventBus.emit(
                 "notification",
-                "Error adding next node: " + response.error,
+                this.$t("basic.workflowStepEditor.errors.addNextNode", { error: response.error }),
                 "error"
               );
             }

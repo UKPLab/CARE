@@ -1,7 +1,7 @@
 <template>
   <div class="skill-selector">
     <div class="mb-3">
-      <label class="form-label">Select NLP Skill:</label>
+      <label class="form-label">{{ $t('nlp.skillSelector.selectNlpSkill') }}</label>
       <FormSelect
         :model-value="modelValue"
         :options="skillOptions"
