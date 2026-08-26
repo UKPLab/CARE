@@ -1,6 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
-const {Op} = require("sequelize");
+const {Op, UniqueConstraintError} = require("sequelize");
 const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
@@ -86,7 +86,21 @@ module.exports = (sequelize, DataTypes) => {
                 });
             }
 
-            return await UserSetting.create({userId, key, value}, options);
+            try {
+                return await UserSetting.create({userId, key, value}, options);
+            } catch (err) {
+                // Two concurrent set() calls for the same (userId, key) can both pass the
+                // findOne() check above; the losing create() then collides on the
+                // (key, userId) primary key. Fall back to update() instead of throwing.
+                if (err instanceof UniqueConstraintError) {
+                    return await UserSetting.update({value}, {
+                        where: {[Op.and]: [{userId}, {key}]},
+                        ...options,
+                        individualHooks: true,
+                    });
+                }
+                throw err;
+            }
         }
     }
 
