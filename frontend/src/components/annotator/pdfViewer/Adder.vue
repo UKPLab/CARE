@@ -11,7 +11,7 @@
       <input
         v-model="searchTerm"
         type="text"
-        placeholder="Search tags"
+        :placeholder="$t('editor.annotator.searchTags')"
         class="form-control"
         @mouseup.stop
       />
@@ -41,7 +41,7 @@
       v-if="shouldShowExtender"
       class="expand-btn"
       icon="three-dots"
-      tooltip="Expand Adder"
+      :title="$t('editor.annotator.expandAdder')"
       @click="isExtended=true"
     />
   </div>
@@ -57,6 +57,7 @@
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
+import { resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 export default {
@@ -331,8 +332,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Annotation Update Failed",
-            message: res.message,
+            title: this.$t('errors.annotator.annotationUpdateFailed'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -344,8 +345,8 @@ export default {
     async _onSelection(event) {
       if (this.assignableTags.length === 0) {
         this.eventBus.emit('toast', {
-          title: "Empty Tagset",
-          message: "No tagset or an empty tagset have been selected. Cannot make annotations.",
+          title: this.$t('errors.tags.emptyTagset.title'),
+          message: this.$t('errors.tags.emptyTagset.message'),
           variant: "danger"
         });
 

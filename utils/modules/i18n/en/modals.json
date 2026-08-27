@@ -1,0 +1,123 @@
+{
+    "confirm": "Confirm",
+    "confirmName": "Confirm {name}",
+    "pleaseConfirm": "Please confirm",
+    "sending": "Sending...",
+    "sendResetEmail": "Send Reset Email",
+    "passwordReset": "Password Reset",
+    "passwordUpdated": "Password Updated",
+    "passwordResetSuccess": "Password has been reset successfully.",
+    "closeModal": "Close",
+    "placeholders": {
+        "documentPreview": "Document Preview",
+        "placeholderLegend": "Placeholder Legend",
+        "configurePlaceholders": "Configure Placeholders",
+        "firstDataSource": "First Data Source:",
+        "secondDataSource": "Second Data Source:",
+        "dataSource": "Data Source:",
+        "selectFirstDataSource": "Select first data source...",
+        "selectSecondDataSource": "Select second data source...",
+        "selectDataSource": "Select data source...",
+        "noPlaceholders": "No placeholders found in the document.",
+        "documentError": "Document Error",
+        "invalidDocumentContent": "The document content is invalid or empty. Please try again.",
+        "failedToFetchDocument": "Failed to fetch the document.",
+        "addInformation": "Add here the information for the placeholder:",
+        "dataMissingOrInvalid": "~ Placeholder data missing or invalid ~",
+        "dataMissing": "~ Placeholder data missing ~",
+        "firstVersionStep": "First Version (Step {step})",
+        "currentVersionStep": "Current Version (Step {step})"
+    },
+    "noContentForThisStep": "No content available for this step.",
+    "finishStudy": "Finish Study",
+    "exportStudyData": "Export Study Data",
+    "returnToStudies": "'Return to Studies'",
+    "revisions": {
+        "revision": "Revision",
+        "revisionOne": "Revision 1",
+        "revisionTwo": "Revision 2"
+    },
+    "chart": "Chart",
+    "comparisonChart": "Comparison Chart",
+    "importExport": {
+        "export": {
+            "defaultTitle": "Export",
+            "success": {
+                "title": "Export Successful",
+                "single": "{table} exported successfully in {format} format",
+                "multiple": "{table} exported successfully in {format} format"
+            }
+        },
+        "import": {
+            "defaultTitle": "Import",
+            "selectFile": "Select file ({extensions}):",
+            "selectedFile": "Selected: {file}",
+            "selectItemsPrefix": "Select which items to import from",
+            "confirmQuestion": "Are you sure you want to import the following {table}?",
+            "genericItems": "items",
+            "childRecords": "— {count} child record(s)",
+            "fallbackItemLabel": "Item {index}",
+            "steps": {
+                "fileSelection": "File Selection",
+                "itemSelection": "{item} Selection",
+                "confirmation": "Confirmation",
+                "genericItem": "Item"
+            },
+            "errors": {
+                "unsupportedFileType": "Unsupported file type \"{ext}\"",
+                "parseFileFailed": "Failed to parse file: {message}",
+                "readFileFailed": "Failed to read file",
+                "importError": "Import Error",
+                "importChildFailed": "Failed to import child record: {message}",
+                "importItemFailed": "Failed to import \"{name}\": {message}"
+            },
+            "success": {
+                "title": "Import Successful",
+                "single": "{count} {table} imported successfully!",
+                "multiple": "{count} {table}s imported successfully!"
+            }
+        },
+        "formats": {
+            "csv": {
+                "label": "CSV Format",
+                "description": "Comma-separated values, compatible with spreadsheets"
+            },
+            "json": {
+                "label": "JSON Format",
+                "description": "Standard JSON format with proper formatting"
+            },
+            "txt": {
+                "label": "TXT Format",
+                "description": "Plain text with indented nested objects"
+            },
+            "yaml": {
+                "label": "YAML Format",
+                "description": "Human-readable YAML format"
+            }
+        },
+        "wiring": {
+            "configuration": {
+                "exportAllTooltip": "Export all configurations",
+                "importTitle": "Import Configuration",
+                "exportTitle": "Export Configuration"
+            },
+            "tags": {
+                "exportAllTooltip": "Export All Tag Sets",
+                "importTitle": "Import Tag Sets",
+                "exportTitle": "Export Tag Set"
+            },
+            "templates": {
+                "importTooltip": "Import Templates",
+                "exportAllTooltip": "Export All Templates",
+                "importTitle": "Import Templates",
+                "exportTitle": "Export Template"
+            },
+            "studyTemplates": {
+                "importTooltip": "Import Template",
+                "exportAllTooltip": "Export All Templates",
+                "importTitle": "Import Study Templates",
+                "exportTitle": "Export Study Template"
+            }
+        }
+    }
+}

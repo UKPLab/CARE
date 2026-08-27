@@ -11,6 +11,8 @@ const Validator = require("../../utils/Validator.js");
 const {Op} = require('sequelize');
 const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
 const {generateError} = require("../../utils/helper/generic.js");
+const TranslatableError = require("../../utils/TranslatableError");
+const i18n = require("../../utils/i18n.js");
 const {getEmailContent} = require("../../utils/helper/email.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
@@ -98,12 +100,12 @@ class DocumentSocket extends Socket {
 
         // Check if document exists in database (deleted or never existed)
         if (!document || document.deleted) {
-            throw generateError("DOCUMENT_NOT_FOUND", "The document does not exist or has been deleted.");
+            throw generateError("DOCUMENT_NOT_FOUND", "errors.documents.doesNotExistOrDeleted");
         }
 
         // Check user access permission
         if (!(await this.checkDocumentAccess(document.id))) {
-            throw generateError("ACCESS_DENIED", "You do not have access to this document.");
+            throw generateError("ACCESS_DENIED", "errors.documents.noAccess");
         }
 
         // Check if file exists on disk (optional, skip for metadata-only operations)
@@ -111,7 +113,7 @@ class DocumentSocket extends Socket {
             const filePath = `${UPLOAD_PATH}/${document.hash}.pdf`;
             const filename = filePath.split("/").pop();
             if (!fs.existsSync(filePath)) {
-                throw generateError("FILE_MISSING", `The document file ${filename} is missing from the server.`)
+                throw new TranslatableError("errors.documents.fileMissingFromServer", {filename}, "FILE_MISSING");
             }
         }
         return document;
@@ -140,16 +142,16 @@ class DocumentSocket extends Socket {
         let errors = [];
 
         if (!data['file']) {
-            throw new Error("No file uploaded");
+            throw new TranslatableError("errors.file.noFileUploaded");
         }
 
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
         if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
-            throw new Error("Invalid file type");
+            throw new TranslatableError("errors.file.invalidFileType");
         }
 
         if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
-            throw new Error("User does not have access to upload documents");
+            throw new TranslatableError("errors.documents.noUploadAccess");
         }
 
         if (fileType === ".delta") {
@@ -219,12 +221,23 @@ class DocumentSocket extends Socket {
                     document: doc
                 });
                 if (!file) {
-                    throw new Error("Couldn't delete original annotations");
+                    // Use TranslatableError so the catch below sees `.key` and does not embed this i18n key as a plain-text param.
+                    throw new TranslatableError( "errors.documents.annotationDeleteOriginalFailed");
                 }
 
                 fs.writeFileSync(target, file);
             } catch (annotationRpcErr) {
-                errors.push("Error deleting annotations: " + annotationRpcErr.message);
+                this.logger.warn("Failed to delete annotations from PDF", annotationRpcErr);
+                if (annotationRpcErr.key) {
+                    errors.push({
+                        message: annotationRpcErr.key,
+                        params: annotationRpcErr.params,
+                    });
+                } else if (typeof annotationRpcErr.message === "string" && i18n.hasKey(annotationRpcErr.message)) {
+                    errors.push({message: annotationRpcErr.message});
+                } else {
+                    errors.push({message: "errors.documents.annotationDeleteFailedGeneric"});
+                }
                 fs.writeFileSync(target, data.file);
             }
 
@@ -243,7 +256,17 @@ class DocumentSocket extends Socket {
                             try {
                                 textPositions = getTextPositions(extracted.text, data.wholeText);
                             } catch (error) {
-                                errors.push("Error extracting text positions for text " + extracted.text + ": " + error.message);
+                                if (TranslatableError.is(error)) {
+                                    errors.push({
+                                        message: error.key,
+                                        params: {text: extracted.text, ...(error.params || {})},
+                                    });
+                                    continue;
+                                }
+                                errors.push({
+                                    message: "errors.documents.textPositionExtractionFailed",
+                                    params: {text: extracted.text},
+                                });
                                 continue;
                             }
 
@@ -298,13 +321,22 @@ class DocumentSocket extends Socket {
                                 await this.models['comment'].add(newComment, {transaction: options.transaction});
 
                             } catch (annotationErr) {
-                                errors.push("Error adding annotation: " + annotationErr.message);
+                                if (annotationErr.key) {
+                                    errors.push({
+                                        message: annotationErr.key,
+                                        params: annotationErr.params,
+                                    });
+                                } else if (typeof annotationErr.message === "string" && i18n.hasKey(annotationErr.message)) {
+                                    errors.push({message: annotationErr.message});
+                                } else {
+                                    errors.push({message: "errors.documents.annotationAddFailed"});
+                                }
                                 continue;
                             }
                         }
                     }
                 } catch (annotationRpcErr) {
-                    errors.push("The document was uploaded, but automatic annotation extraction failed. You can still use the document, but annotations may be missing.");
+                    errors.push({message: "errors.documents.automaticAnnotationExtractionFailed"});
                 }
             }
         }
@@ -325,7 +357,7 @@ class DocumentSocket extends Socket {
     async updateDocument(data, options) {
         const doc = await this.models['document'].getById(data['id']);
         if (!(await this.checkUserAccess(doc.userId))) {
-            throw new Error("You are not allowed to update this document");
+            throw new TranslatableError("errors.documents.updateNotAllowed");
         }
 
         const newDocument = await this.models['document'].updateById(doc.id, data);
@@ -450,10 +482,10 @@ class DocumentSocket extends Socket {
                 this.socket.emit("documentFileMerged", {document: doc, deltas: delta});
                 return delta;
             } else {
-                throw new Error("Non-HTML/Modal documents are not supported for this operation");
+                throw new TranslatableError("errors.documents.nonHtmlModalUnsupported");
             }
         } else {
-            throw new Error("You do not have access to this document");
+            throw new TranslatableError("errors.documents.noAccess");
         }
 
     }
@@ -537,7 +569,7 @@ class DocumentSocket extends Socket {
 
             this.logger.info("Deltas file updated successfully.");
         } else {
-            throw new Error("Non-HTML/MODAL documents are not supported for this operation");
+            throw new TranslatableError("errors.documents.nonHtmlModalUnsupportedUppercase");
         }
     }
 
@@ -562,7 +594,7 @@ class DocumentSocket extends Socket {
      */
     async getData(data, options) {
         if (!data.documentId) {
-            throw new Error("Document ID is required.");
+            throw new TranslatableError("errors.documents.idRequired");
         }
         
         const document = await this.validateDocument(data.documentId, 'id', true);
@@ -722,7 +754,7 @@ class DocumentSocket extends Socket {
         if (await this.checkUserAccess(doc.userId)) {
             this.emit("documentRefresh", await this.models['document'].updateById(doc.id, {public: true}));
         } else {
-            throw new Error("You do not have access to this document");
+            throw new TranslatableError("errors.documents.noAccess");
         }
     }
 
@@ -868,7 +900,7 @@ class DocumentSocket extends Socket {
         if (assignmentId) {
             assignment = await this.models["assignment"].getById(assignmentId, {});
             if (!assignment) {
-                throw new Error(`Assignment with id ${assignmentId} not found`);
+                throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
             }
         }
 
@@ -885,7 +917,10 @@ class DocumentSocket extends Socket {
                 const validationResult = await this.validator.validateSubmissionFiles(tempFiles, data.validationConfigurationId? data.validationConfigurationId : (assignment ? assignment.validationConfigurationId : null));
 
                 if (!validationResult.success) {
-                    throw new Error(validationResult.message || "Validation failed");
+                    if (validationResult.params) {
+                        throw new TranslatableError( validationResult.message, validationResult.params);
+                    }
+                    throw new TranslatableError(validationResult.message || "errors.validation.validationFailedGeneric");
                 }
 
                 // 3. Determine previousSubmissionId
@@ -897,9 +932,13 @@ class DocumentSocket extends Socket {
                         transaction,
                     });
 
-                    // Check revision limit (0 = unlimited)
-                    if (assignment && assignment.maxRevisions > 0 && assignmentSubmissions.length >= assignment.maxRevisions) {
-                        throw new Error(`Revision limit reached: user ${submission.userId} already has ${assignmentSubmissions.length} submission(s) for this assignment (max: ${assignment.maxRevisions}).`);
+                    // Check revision limit (-1 = unlimited)
+                    if (assignment && assignment.maxRevisions !== -1 && assignmentSubmissions.length >= assignment.maxRevisions + 1) {
+                        throw new TranslatableError( "errors.assignment.revisionLimitReached", {
+                            userId: submission.userId,
+                            submissionCount: assignmentSubmissions.length,
+                            maxRevisions: assignment.maxRevisions,
+                        });
                     }
 
                     const childByParentId = new Map();
@@ -1010,7 +1049,9 @@ class DocumentSocket extends Socket {
                     userExtId: submission.userExtId,
                     firstName: submission.firstName,
                     lastName: submission.lastName,
-                    message: err.message,
+                    message: err.key
+                        || (typeof err.message === "string" && i18n.hasKey(err.message) ? err.message : "errors.server.unknownError"),
+                    params: err.params,
                 });
             }
 
@@ -1134,7 +1175,10 @@ class DocumentSocket extends Socket {
             const result = await this.validator.validateSubmissionFiles(files, validationConfigurationId);
 
             if (!result.success) {
-                throw new Error(result.message || "Validation failed");
+                if (result.params) {
+                    throw new TranslatableError( result.message, result.params);
+                }
+                throw new TranslatableError(result.message || "errors.validation.validationFailedGeneric");
             }
 
             if (assignmentId && submissionId) {
@@ -1160,7 +1204,7 @@ class DocumentSocket extends Socket {
             if (assignmentId) {
                 const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
                 if (!assignment) {
-                    throw new Error(`Assignment with id ${assignmentId} not found`);
+                    throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
                 }
                 resolvedProjectId = resolvedProjectId ?? assignment.projectId ?? null;
 
@@ -1197,7 +1241,7 @@ class DocumentSocket extends Socket {
                     previousSubmissionId = chainTails.sort((a, b) => b - a)[0];
                 }
 
-                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && previousSubmissionId) {
+                if (assignment.maxRevisions !== null && assignment.maxRevisions !== undefined && assignment.maxRevisions !== -1 && previousSubmissionId) {
                     let chainDepth = 0;
                     let currentId = previousSubmissionId;
                     const visited = new Set();
@@ -1208,10 +1252,11 @@ class DocumentSocket extends Socket {
                         currentId = submissionById.get(currentId).previousSubmissionId;
                     }
 
-                    if (chainDepth >= assignment.maxRevisions) {
-                        throw new Error(
-                            `Maximum revisions reached for this assignment (${chainDepth}/${assignment.maxRevisions})`
-                        );
+                    if (chainDepth >= assignment.maxRevisions + 1) {
+                        throw new TranslatableError( "errors.assignment.maxRevisionsReached", {
+                            currentCount: chainDepth,
+                            maxRevisions: assignment.maxRevisions,
+                        });
                     }
                 }
             } else {
@@ -1262,7 +1307,8 @@ class DocumentSocket extends Socket {
             }
         } catch (error) {
             this.logger.error(error);
-            throw new Error(error);
+            // Preserve i18n keys/params from the original error; wrapping it would turn keys into "Error: ...".
+            throw error;
         }
     }
 
@@ -1290,11 +1336,11 @@ class DocumentSocket extends Socket {
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction});
         if (!assignment) {
-            throw new Error(`Assignment with id ${assignmentId} not found`);
+            throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
         }
 
         if (assignment.closed) {
-            throw new Error("Cannot replace submission because the assignment is closed.");
+            throw new TranslatableError("errors.documents.replaceAssignmentClosed");
         }
 
         const oldSubmission = await this.models["submission"].findOne({
@@ -1309,14 +1355,14 @@ class DocumentSocket extends Socket {
         });
 
         if (!oldSubmission) {
-            throw new Error(`Submission with id ${submissionId} not found for this assignment`);
+            throw new TranslatableError( "errors.submission.notFoundForAssignment", {submissionId});
         }
         const resolvedProjectId = projectId ?? oldSubmission.projectId ?? assignment.projectId ?? null;
 
         const isOwner = this.userId === oldSubmission.userId;
         const hasRight = await this.hasAccess('frontend.dashboard.assignments.replaceDeleteSubmissions');
         if (!isOwner && !hasRight) {
-            throw new Error("You are not allowed to replace this submission.");
+            throw new TranslatableError("errors.documents.replaceNotAllowed");
         }
 
         const oldSubmissionDocuments = await this.models["document"].findAll({
@@ -1331,7 +1377,7 @@ class DocumentSocket extends Socket {
             (document) => Number(document.studyUsageCount || 0) > 0
         );
         if (hasStudyLinkedDocument) {
-            throw new Error("Cannot replace submission because one or more linked documents are used in studies.");
+            throw new TranslatableError("errors.documents.replaceDocumentsUsedInStudies");
         }
 
         const newSubmission = await this.models["submission"].add({
@@ -1486,7 +1532,7 @@ class DocumentSocket extends Socket {
             const filePath = `${UPLOAD_PATH}/${document.hash}${fileExtension}`;
 
             if (!fs.existsSync(filePath)) {
-                throw new Error(`File ${document.hash}${fileExtension} not found`);
+                throw new TranslatableError( "errors.documents.fileNotFoundByName", {fileName: `${document.hash}${fileExtension}`});
             }
 
             let file = fs.readFileSync(filePath); // Buffer
@@ -1604,7 +1650,7 @@ class DocumentSocket extends Socket {
      */
     async publishReviewLinks(data) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to upload review links");
+            throw new TranslatableError("errors.documents.noReviewLinkUploadPermission");
         }
         return await this.server.rpcs["MoodleRPC"].publishAssignmentTextFeedback({
             options: data.options,
@@ -1612,6 +1658,182 @@ class DocumentSocket extends Socket {
         });
     }
 
+
+    /**
+     * Replace the PDF or ZIP file of an existing document on disk.
+     *
+     * Keeps the same document id and hash. Used by admins to correct a wrong
+     * submission file without creating a new document. For PDFs, existing CARE
+     * annotations and comments on the document are removed.
+     *
+     * @author Mohammad Elwan
+     * @param {Object} data - The input data from the frontend
+     * @param {number} data.documentId - The ID of the document to replace
+     * @param {Buffer} data.file - The binary content of the replacement file
+     * @param {string} data.name - The original filename (used to check the extension)
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<Object>}
+     * @throws {Error} - If the user is not an admin or the file type does not match the document
+     */
+    async replaceDocumentFile(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.documents.replaceFileNoPermission");
+        }
+
+        if (!data || !data.file) {
+            throw new TranslatableError("errors.file.noFileUploaded");
+        }
+
+        if (!data.documentId) {
+            throw new TranslatableError("errors.documents.idRequired");
+        }
+
+        if (!data.name || typeof data.name !== "string") {
+            throw new TranslatableError("errors.documents.replaceFileNameRequired");
+        }
+
+        const document = await this.validateDocument(data.documentId, "id", false);
+        const extensionMap = {
+            [docTypes.DOC_TYPE_PDF]: ".pdf",
+            [docTypes.DOC_TYPE_ZIP]: ".zip",
+        };
+        const expectedExtension = extensionMap[document.type];
+
+        if (!expectedExtension) {
+            throw new TranslatableError("errors.documents.replaceOnlyPdfZip");
+        }
+
+        const fileExtension = data.name.substring(data.name.lastIndexOf(".")).toLowerCase();
+        if (fileExtension !== expectedExtension) {
+            throw new TranslatableError("errors.documents.replaceTypeMismatch", {
+                expected: expectedExtension,
+                actual: fileExtension || "-",
+            });
+        }
+
+        if (document.type === docTypes.DOC_TYPE_PDF) {
+            await this.clearDocumentAnnotations(document.id, options);
+        }
+
+        const target = path.join(UPLOAD_PATH, `${document.hash}${expectedExtension}`);
+        await this.writeReplacementFile(document, data.file, target, expectedExtension, options);
+
+        return {
+            documentId: document.id,
+            hash: document.hash,
+            message: i18n.translateMaybeKey("errors.documents.replaceSuccess", {
+                extension: expectedExtension,
+                documentId: document.id,
+            }),
+            key: "errors.documents.replaceSuccess",
+            params: {
+                extension: expectedExtension,
+                documentId: document.id,
+            },
+        };
+    }
+
+    /**
+     * Soft-delete CARE annotations and comments for a document.
+     * Matches the cascade used when a PDF document is deleted.
+     *
+     * @author Mohammad Elwan
+     * @param {number} documentId - The document whose annotations should be removed
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     */
+    async clearDocumentAnnotations(documentId, options) {
+        const annotations = await this.models["annotation"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
+        const uniqueAnnotationIds = [...new Set((annotations || []).map((annotation) => annotation.id))];
+        for (const annotationId of uniqueAnnotationIds) {
+            await this.models["annotation"].deleteById(annotationId, {transaction: options.transaction});
+        }
+
+        const comments = await this.models["comment"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
+        const uniqueCommentIds = [...new Set((comments || []).map((comment) => comment.id))];
+        for (const commentId of uniqueCommentIds) {
+            await this.models["comment"].deleteById(commentId, {transaction: options.transaction});
+        }
+    }
+
+    /**
+     * Prepare replacement file bytes (best-effort PDFRPC strip for PDFs).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} expectedExtension - The expected file extension
+     * @returns {Promise<Buffer>} Bytes to write after the DB transaction commits
+     */
+    async prepareReplacementFileBytes(document, fileData, expectedExtension) {
+        if (expectedExtension !== ".pdf") {
+            return fileData;
+        }
+
+        try {
+            const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                file: fileData,
+                document,
+            });
+            if (!file) {
+                throw new TranslatableError("errors.documents.annotationDeleteOriginalFailed");
+            }
+            return file;
+        } catch (annotationRpcErr) {
+            this.logger.error(
+                "Error deleting annotations during document file replace: " + annotationRpcErr.message
+            );
+            return fileData;
+        }
+    }
+
+    /**
+     * Write a replacement temp file, then rename onto the live hash path after commit.
+     * Temp write happens before commit (failure rolls back annotation deletes). Only the
+     * rename runs in afterCommit. If rename fails after commit, the socket callback fails
+     * so the admin is notified (temp file is left for manual recovery).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} target - The filesystem path to overwrite
+     * @param {string} expectedExtension - The expected file extension
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the temp file cannot be written, or if rename fails after commit
+     */
+    async writeReplacementFile(document, fileData, target, expectedExtension, options) {
+        const bytes = await this.prepareReplacementFileBytes(document, fileData, expectedExtension);
+        const tempPath = `${target}.replace-tmp`;
+        fs.writeFileSync(tempPath, bytes);
+
+        options.transaction.afterCommit(() => {
+            try {
+                fs.renameSync(tempPath, target);
+            } catch (err) {
+                this.logger.error(
+                    `Error promoting replacement file for document #${document.id}: ${err.message}`
+                );
+                throw new TranslatableError("errors.documents.replacePromoteFailed", {
+                    documentId: document.id,
+                    tempPath,
+                    target,
+                    error: err.message,
+                });
+            }
+        });
+    }
 
     /**
      * Subscribe the client's socket to a document-specific communication channel.
@@ -1675,6 +1897,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.addDocument, {}, true);
+        this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);
         this.createSocket("documentDownloadMoodleSubmissions", this.downloadMoodleSubmissions, {}, false);
