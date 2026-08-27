@@ -40,7 +40,6 @@ export default [
         settings: {
             'vue-i18n': {
                 // Catalogs are checked by scripts/check-i18n-keys.mjs (filename = namespace).
-                // localeDir is unused while no-missing-keys is off.
                 messageSyntaxVersion: '^9.0.0',
             },
         },
@@ -72,14 +71,13 @@ export default [
                     message: 'Always name caught errors `_error`.',
                 },
             ],
-            // Templates: ban hardcoded user-facing text.
             '@intlify/vue-i18n/no-raw-text': [
                 'error',
                 {
                     // Empty, non-Latin, single letter, tiny UI crumbs.
                     ignorePattern: '^$|^([^A-Za-z]+|[A-Za-z]|KB\\)?|\\(ID:)$',
                     ignoreText: ['CARE', 'ID', 'REQ', 'CMD', 'ORCID', 'LDAP', 'SSO', '-'],
-                    // CARE uses Vue props heavily (BasicButton text=, Modal title=, etc.).
+                    // Vue props
                     attributes: {
                         '/.+/': [
                             'text',
@@ -124,8 +122,8 @@ export default [
             'vue/no-restricted-html-elements': 'off',
         },
     },
-    // Out of scope for i18n lint: setup wizard, Settings mail-test UI,
-    // unused submission ReviewUpload/Publish modals (not imported).
+    // Out of scope for i18n lint: setup wizard, Settings,
+    // unused submission ReviewUpload/Publish modals.
     {
         files: [
             'src/auth/SetupWizard.vue',
