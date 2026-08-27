@@ -59,14 +59,14 @@
 					v-model="formData"
 					:fields="assignmentFields"
 				/>
-				<button
+				<BasicButton
 					type="button"
 					class="btn btn-outline-secondary mt-3"
 					:disabled="!submissionWarningPreview"
 					@click="previewSubmissionWarning"
 				>
 					Preview Submission Warning
-				</button>
+				</BasicButton>
 				<ConfirmModal ref="warningPreviewModal" />
 			</div>
 		</template>
@@ -77,6 +77,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
 /**
@@ -91,7 +92,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
  */
 export default {
 	name: "AssignmentModal",
-	components: { StepperModal, BasicForm, BasicTable, ConfirmModal },
+	components: { StepperModal, BasicForm, BasicTable, BasicButton, ConfirmModal },
 	subscribeTable: ["assignment", "user_role", "user", "assignment_share", "study", "workflow", "configuration"],
 	data() {
 		return {
