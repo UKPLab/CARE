@@ -62,8 +62,8 @@ async function flagDisconnectedRecording(server, socket) {
                 continue;
             }
             server.io.sockets.sockets.get(sid)?.emit("toast", {
-                title: "Recording stopped",
-                message: "A recorded participant disconnected — recording flagged as disconnected.",
+                titleKey: "errors.socketProfiler.recordingStoppedTitle",
+                key: "errors.socketProfiler.participantDisconnected",
                 variant: "warning",
             });
         }

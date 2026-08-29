@@ -428,7 +428,9 @@
     "peakConcurrencyExceeded": "Spitzenparallelität {peak} ({iterations} Iterationen x {sessions} Sitzungen) überschreitet das Limit von {limit}. Reduzieren Sie die Anzahl der Iterationen oder verwenden Sie weniger Aufzeichnungen.",
     "concurrencyOutOfRange": "Parallelität muss eine ganze Zahl zwischen 1 und {max} sein",
     "replayStopped": "Replay wurde vorzeitig beendet - Details finden Sie in den Ergebnissen",
-    "replayTitle": "Replay"
+    "replayTitle": "Replay",
+    "recordingStoppedTitle": "Aufzeichnung beendet",
+    "participantDisconnected": "Ein aufgezeichneter Teilnehmer hat die Verbindung getrennt - die Aufzeichnung wurde als getrennt markiert"
   },
   "common": {
     "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",

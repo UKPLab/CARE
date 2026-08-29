@@ -428,7 +428,9 @@
         "peakConcurrencyExceeded": "Peak concurrency {peak} ({iterations} iterations x {sessions} sessions) exceeds the limit of {limit}. Reduce the number of iterations or use fewer recordings.",
         "concurrencyOutOfRange": "Concurrency must be an integer between 1 and {max}",
         "replayStopped": "Replay stopped early - see the results for details",
-        "replayTitle": "Replay"
+        "replayTitle": "Replay",
+        "recordingStoppedTitle": "Recording stopped",
+        "participantDisconnected": "A recorded participant disconnected - the recording was flagged as disconnected"
     },
     "common": {
         "resourceNotFound": "The requested resource does not exist or has been deleted.",
