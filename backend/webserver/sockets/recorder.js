@@ -122,9 +122,9 @@ class RecorderSocket extends Socket {
 
         // Claim the sockets synchronously, before any await: two admins starting
         // at once would otherwise both pass this check and the second activation
-        // would orphan the first's recording. A claim that never becomes a real
-        // recording (its transaction rolled back) expires on its own, since
-        // Sequelize offers no rollback hook to release it explicitly.
+        // would orphan the first's recording. Claims expire on a timer (see
+        // below); the age check here is a fallback in case that timer was
+        // missed, e.g. across a server restart.
         const now = Date.now();
         const taken = participantSocketIds.filter(id => {
             const entry = this.server.activeRecordings[id];
@@ -155,9 +155,23 @@ class RecorderSocket extends Socket {
         }
 
         for (const socketId of participantSocketIds) {
+            // Sequelize has no rollback hook, so a claim whose transaction
+            // fails would otherwise sit here blocking the socket until someone
+            // happened to try recording it again. Expire it on a timer instead.
+            const claimTimer = setTimeout(() => {
+                const entry = this.server.activeRecordings[socketId];
+                if (entry && !entry.recordingId) {
+                    delete this.server.activeRecordings[socketId];
+                    this.logger.warn(`Released stale recording claim on socket ${socketId}`);
+                }
+            }, RECORDING_CLAIM_TIMEOUT_MS);
+            if (typeof claimTimer.unref === "function") {
+                claimTimer.unref();
+            }
             this.server.activeRecordings[socketId] = {
                 claimedAt: now,
                 ownerUserId: this.userId,
+                claimTimer,
             };
         }
 
@@ -189,6 +203,12 @@ class RecorderSocket extends Socket {
         // don't exist. This also replaces the claims above with real entries.
         const activate = () => {
             for (const s of started) {
+                // The claim became a real recording, so its expiry timer is
+                // no longer needed.
+                const claim = this.server.activeRecordings[s.socketId];
+                if (claim && claim.claimTimer) {
+                    clearTimeout(claim.claimTimer);
+                }
                 this.server.activeRecordings[s.socketId] = {
                     recordingId: s.recordingId,
                     ownerUserId: this.userId,
