@@ -5,14 +5,14 @@
       <span :style="{ color: placeholderColor, fontWeight: 'bold' }">
         #{{ index + 1 }}
       </span>
-      Add here the information for the placeholder:
+      {{ $t('modals.placeholders.addInformation') }}
     </h6>
 
     <!-- Input Fields -->
     <div v-if="fields.length">
       <div v-for="field in filteredFields" :key="field.name" class="mb-3">
         <label :for="'field-' + field.name + '-' + index" class="form-label">
-          {{ field.label }}
+          {{ translateMaybeKey(field.label) }}
         </label>
 
         <FormSelect
@@ -31,7 +31,7 @@
           :value="formData[field.name]"
           type="text"
           class="form-control"
-          :placeholder="field.placeholder"
+          :placeholder="translateMaybeKey(field.placeholder)"
           :required="field.required"
           @input="onFieldUpdate(field.name, $event.target.value)"
         />
@@ -42,6 +42,7 @@
 
 <script>
 import FormSelect from "@/basic/form/Select.vue"; // Import FormSelect
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Placeholder Component for configuration modal
@@ -85,7 +86,12 @@ export default {
       return skills && typeof skills === "object" ? Object.values(skills) : [];
     },
     skillMap() {
-      return { options: this.nlpSkills.map(skill => ({ value: skill.name, name: skill.name })) };
+      return {
+        options: this.nlpSkills.map((skill) => ({
+          value: skill.name,
+          name: skill.name,
+        })),
+      };
     },
     filteredFields() {
       return this.fields.filter(field => !(this.hasSkillName && (field.name === 'dataSource' || field.name === 'output')));
@@ -95,6 +101,7 @@ export default {
     }
   },
   methods: {
+    translateMaybeKey,
     onFieldUpdate(key, value) {
       this.$emit('update:formData', { ...this.formData, [key]: value });
     }

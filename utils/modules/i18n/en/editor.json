@@ -1,0 +1,25 @@
+{
+    "reqTitle": "Send a request",
+    "cmdTitle": "Send a command",
+    "cmdToSend": "the command to send",
+    "serviceToContact": "the service to contact",
+    "waitingForResponse": "Waiting for response",
+    "payload": "Payload",
+    "placeholders": "Placeholders",
+    "emptyMsgHistory": "No messages sent/received.",
+    "readOnlyMode": "Read-Only Mode",
+    "seePayload": "See Payload",
+    "request": "Request",
+    "copyJsonSuccess": {
+        "title": "JSON copied",
+        "message": "JSON copied to clipboard!"
+    },
+    "editJson": "Edit JSON",
+    "history": "History",
+    "configurator": "Configurator",
+    "downloadDocument": "Download document",
+    "annotator": {
+        "searchTags": "Search tags",
+        "expandAdder": "Expand Adder"
+    }
+}
