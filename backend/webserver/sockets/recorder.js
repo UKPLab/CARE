@@ -1,5 +1,6 @@
 const Socket = require("../Socket.js");
 const { snapshot } = require("../../db/stats.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 // How long a start-recording claim stays valid before another admin may take
 // the socket. Only reached when a start failed between claiming and committing,
@@ -8,7 +9,7 @@ const RECORDING_CLAIM_TIMEOUT_MS = 10000;
 
 // The recorder's own control events. These are recording machinery, not user
 // activity, so they're never captured — otherwise a recording would include
-// its own recorderStop, and replaying it fails with "No active recording".
+// its own recorderStop, and replaying it fails with errors.socketProfiler.noActiveRecording.
 const RECORDER_CONTROL_EVENTS = [
     "recorderStart",
     "recorderStop",
@@ -105,7 +106,7 @@ class RecorderSocket extends Socket {
      */
     async startRecording(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
         if (!this.server.activeRecordings) {
             this.server.activeRecordings = {};
@@ -116,7 +117,7 @@ class RecorderSocket extends Socket {
             : null;
 
         if (!participantSocketIds) {
-            throw new Error("At least one session must be selected");
+            throw new TranslatableError("errors.socketProfiler.noSessionsSelected");
         }
 
         // Claim the sockets synchronously, before any await: two admins starting
@@ -137,7 +138,7 @@ class RecorderSocket extends Socket {
             return true;
         });
         if (taken.length > 0) {
-            throw new Error("One or more selected sessions are already being recorded");
+            throw new TranslatableError("errors.socketProfiler.sessionsAlreadyRecorded");
         }
 
         // A socketId from a stale session list has no live socket to attach to,
@@ -150,7 +151,7 @@ class RecorderSocket extends Socket {
             && this.server.io.sockets.sockets.get(id)
         ));
         if (offline.length > 0) {
-            throw new Error("One or more selected sessions are no longer connected");
+            throw new TranslatableError("errors.socketProfiler.sessionsNoLongerConnected");
         }
 
         for (const socketId of participantSocketIds) {
@@ -219,7 +220,7 @@ class RecorderSocket extends Socket {
         // socket isn't an admin. User-initiated stops via recorderStop are
         // not internal and must be admin-gated.
         if (!(options && options.internal) && !(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
 
         if (!this.server.activeRecordings) {
@@ -257,7 +258,7 @@ class RecorderSocket extends Socket {
         }
 
         if (socketIdsToStop.length === 0) {
-            throw new Error("No active recording");
+            throw new TranslatableError("errors.socketProfiler.noActiveRecording");
         }
 
         const stopped = [];
@@ -338,9 +339,11 @@ class RecorderSocket extends Socket {
      */
     async getTraces(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
-        if (!data || !data.id) throw new Error("Recording ID required");
+        if (!data || !data.id) {
+            throw new TranslatableError("errors.socketProfiler.recordingIdRequired");
+        }
         return (await this.models["trace"].getAllByKey("recordingId", data.id, options))
             .sort((a, b) => a.id - b.id);
     }
@@ -356,7 +359,7 @@ class RecorderSocket extends Socket {
      */
     async getOnlineSessions(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
         const userIds = new Set();
         const sessions = [];
@@ -406,7 +409,7 @@ class RecorderSocket extends Socket {
      */
     async getPerfHealth(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
         const mem = process.memoryUsage();
         return {
@@ -430,7 +433,7 @@ class RecorderSocket extends Socket {
      */
     async getPerfStats(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
         return await snapshot(this.server.db.sequelize, this.logger);
     }
@@ -453,30 +456,30 @@ class RecorderSocket extends Socket {
      */
     async importRecording(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
 
         const source = data && data.recording;
         const traces = data && data.traces;
 
         if (!source || typeof source !== "object") {
-            throw new Error("Missing recording object");
+            throw new TranslatableError("errors.socketProfiler.missingRecordingObject");
         }
         if (!Array.isArray(traces)) {
-            throw new Error("Missing traces array");
+            throw new TranslatableError("errors.socketProfiler.missingTracesArray");
         }
 
         // The client validates too, for fast feedback before upload, but this
         // handler is reachable directly so the payload can't be trusted.
         for (const t of traces) {
             if (!t.action) {
-                throw new Error("A trace is missing 'action'");
+                throw new TranslatableError("errors.socketProfiler.traceMissingAction");
             }
             if (t.direction !== true && t.direction !== false) {
-                throw new Error("A trace is missing a valid 'direction'");
+                throw new TranslatableError("errors.socketProfiler.traceInvalidDirection");
             }
             if (!t.startTime) {
-                throw new Error("A trace is missing 'startTime'");
+                throw new TranslatableError("errors.socketProfiler.traceMissingStartTime");
             }
         }
 

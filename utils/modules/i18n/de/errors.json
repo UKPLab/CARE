@@ -408,6 +408,28 @@
     "firstStepNotSubmission": "Der ausgewählte erste Schritt ist keiner Einreichung zugeordnet.",
     "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden."
   },
+  "socketProfiler": {
+    "noSessionsSelected": "Es muss mindestens eine Sitzung ausgewählt werden",
+    "sessionsAlreadyRecorded": "Eine oder mehrere ausgewählte Sitzungen werden bereits aufgezeichnet",
+    "sessionsNoLongerConnected": "Eine oder mehrere ausgewählte Sitzungen sind nicht mehr verbunden",
+    "noActiveRecording": "Keine aktive Aufzeichnung",
+    "recordingIdRequired": "Aufzeichnungs-ID erforderlich",
+    "missingRecordingObject": "Aufzeichnungsobjekt fehlt",
+    "missingTracesArray": "Trace-Liste fehlt",
+    "traceMissingAction": "Bei einem Trace fehlt 'action'",
+    "traceInvalidDirection": "Bei einem Trace fehlt eine gültige 'direction'",
+    "traceMissingStartTime": "Bei einem Trace fehlt 'startTime'",
+    "provideEitherNotBoth": "Geben Sie entweder Aufzeichnungen oder Sitzungen an, nicht beides",
+    "provideRecordingsOrSessions": "Geben Sie Aufzeichnungen (DB-Replay) oder Sitzungen (Datei-Replay) an",
+    "singleLevelNotInteger": "Single Level muss eine ganze Zahl sein",
+    "singleLevelOutOfRange": "Single Level muss zwischen 1 und {max} liegen",
+    "maxIterationsOutOfRange": "Max. Iterationen muss eine ganze Zahl zwischen 1 und {max} sein",
+    "noReplayableSessions": "In den ausgewählten Aufzeichnungen wurden keine abspielbaren Sitzungen gefunden",
+    "peakConcurrencyExceeded": "Spitzenparallelität {peak} ({iterations} Iterationen x {sessions} Sitzungen) überschreitet das Limit von {limit}. Reduzieren Sie die Anzahl der Iterationen oder verwenden Sie weniger Aufzeichnungen.",
+    "concurrencyOutOfRange": "Parallelität muss eine ganze Zahl zwischen 1 und {max} sein",
+    "replayStopped": "Replay wurde vorzeitig beendet - Details finden Sie in den Ergebnissen",
+    "replayTitle": "Replay"
+  },
   "common": {
     "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",
     "accessDenied": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen."

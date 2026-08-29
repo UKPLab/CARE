@@ -4,6 +4,7 @@ const Socket = require('../Socket.js');
 const { replayUserTraces } = require('../../utils/replay-worker');
 const { groupTracesBySocket, buildActiveSessions, reviveBuffers, extractRecordedHashes} = require('../../utils/replay-sessions');
 const throttle = require('lodash/throttle');
+const TranslatableError = require('../../utils/TranslatableError');
 
 // Ceilings on caller-supplied load parameters. Replay opens real sockets
 // against this server, so an unbounded value is a self-inflicted outage rather
@@ -45,13 +46,14 @@ class ReplayerSocket extends Socket {
      * @param {string} [data.progressId=null] - Id to emit progressUpdate against; null disables progress
      * @param {number} [data.latencyThreshold=Infinity] - Stop if a level's p95 latency exceeds this (ms)
      * @param {number} [data.singleLevel=null] - Run one level at this concurrency instead of scaling
+     * @param {boolean} [data.notifyOnStop=true] - Send a toast when a run stops early; CLI callers pass false
      * @param {Object} options - Additional configuration parameter
      * @returns {Promise<Array<Object>|Object>} Iteration results, or one level's result when singleLevel is set
      * @throws {Error} If the caller is not an admin, if neither or both of recordingIds/sessions are given, if maxIterations is invalid, or if the pool is empty
      */
     async replayRun(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("Admin access required");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
         const {
             recordingIds,
@@ -64,24 +66,25 @@ class ReplayerSocket extends Socket {
             latencyThreshold = Infinity,
             singleLevel = null,
             sequential = false,
+            notifyOnStop = true,
         } = data;
 
         const hasIds = Array.isArray(recordingIds) && recordingIds.length > 0;
         const hasSessions = Array.isArray(sessions) && sessions.length > 0;
         if (hasIds && hasSessions) {
-            throw new Error('Provide either recordingIds or sessions, not both');
+            throw new TranslatableError("errors.socketProfiler.provideEitherNotBoth");
         }
         if (!hasIds && !hasSessions) {
-            throw new Error('Provide recordingIds (DB replay) or sessions (file replay)');
+            throw new TranslatableError("errors.socketProfiler.provideRecordingsOrSessions");
         }
         if (singleLevel !== null && !Number.isInteger(singleLevel)) {
-            throw new Error('singleLevel must be an integer');
+            throw new TranslatableError("errors.socketProfiler.singleLevelNotInteger");
         }
         if (Number.isInteger(singleLevel) && (singleLevel < 1 || singleLevel > MAX_CONCURRENCY)) {
-            throw new Error(`singleLevel must be between 1 and ${MAX_CONCURRENCY}`);
+            throw new TranslatableError("errors.socketProfiler.singleLevelOutOfRange", { max: MAX_CONCURRENCY });
         }
         if (singleLevel === null && (!Number.isInteger(maxIterations) || maxIterations < 1 || maxIterations > MAX_ITERATIONS)) {
-            throw new Error(`maxIterations must be an integer between 1 and ${MAX_ITERATIONS}`);
+            throw new TranslatableError("errors.socketProfiler.maxIterationsOutOfRange", { max: MAX_ITERATIONS });
         }
 
         // Pool from the DB (recordingIds) or straight from a file payload
@@ -91,7 +94,7 @@ class ReplayerSocket extends Socket {
             : await this.buildSessionPool(recordingIds);
 
         if (pool.sessions.length === 0) {
-            throw new Error('No replayable sessions found in selected recordings');
+            throw new TranslatableError("errors.socketProfiler.noReplayableSessions");
         }
 
         // The scaling path runs level * N concurrent sockets at its peak, so
@@ -101,9 +104,12 @@ class ReplayerSocket extends Socket {
         if (singleLevel === null) {
             const peakConcurrency = maxIterations * pool.sessions.length;
             if (peakConcurrency > MAX_CONCURRENCY) {
-                throw new Error(
-                    `Peak concurrency ${peakConcurrency} (${maxIterations} iterations x ${pool.sessions.length} sessions) exceeds the limit of ${MAX_CONCURRENCY}. Reduce --max-iterations or use fewer recordings.`
-                );
+                throw new TranslatableError("errors.socketProfiler.peakConcurrencyExceeded", {
+                    peak: peakConcurrency,
+                    iterations: maxIterations,
+                    sessions: pool.sessions.length,
+                    limit: MAX_CONCURRENCY,
+                });
             }
         }
 
@@ -358,7 +364,7 @@ class ReplayerSocket extends Socket {
         // replayRun validates this too, but runOneLevel is callable on its own
         // and opens `concurrency` real sockets, so it guards itself.
         if (!Number.isInteger(concurrency) || concurrency < 1 || concurrency > MAX_CONCURRENCY) {
-            throw new Error(`concurrency must be an integer between 1 and ${MAX_CONCURRENCY}`);
+            throw new TranslatableError('errors.socketProfiler.concurrencyOutOfRange', { max: MAX_CONCURRENCY });
         }
         const activeSessions = buildActiveSessions(pool, concurrency);
         // Sum the sessions actually picked: with wraparound over unequal session
@@ -444,10 +450,16 @@ class ReplayerSocket extends Socket {
                 const reason = levelFailed
                     ? 'trace failure'
                     : `p95 latency ${p95}ms exceeded threshold ${latencyThreshold}ms`;
-                // TODO: the perf CLI drives replayRun too and has no browser to
-                // show this, so the toast is emitted to a socket nobody watches.
-                // The CLI reads the same outcome from the returned results.
-                this.sendToast(`Replay stopped at iteration ${level} (${reason})`, 'Replay', 'danger');
+                // CLI callers pass notifyOnStop: false — they have no browser
+                // to show a toast and read the same outcome from the returned
+                // results instead.
+                if (notifyOnStop) {
+                    this.sendToast(
+                        'errors.socketProfiler.replayStopped',
+                        'errors.socketProfiler.replayTitle',
+                        'danger'
+                    );
+                }
                 break;
             }
         }
