@@ -53,7 +53,7 @@ import RecordingModal from "./socketprofiler/RecordingModal.vue";
 import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
 import StartReplayModal from "./socketprofiler/StartReplayModal.vue";
 import ReplayResultsModal from "./socketprofiler/ReplayResultsModal.vue";
-import { downloadObjectsAs } from "@/assets/utils";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils";
 import ImportRecordingModal from "./socketprofiler/ImportRecordingModal.vue";
 
 export default {
@@ -210,7 +210,7 @@ export default {
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to stop recording",
-            message: res.message,
+            message: resolveApiMessage(res, "errors.socketProfiler.noActiveRecording"),
             variant: "danger",
           });
         }

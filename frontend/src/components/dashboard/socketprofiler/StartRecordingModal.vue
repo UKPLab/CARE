@@ -93,6 +93,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StartRecordingModal",
@@ -237,7 +238,7 @@ export default {
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to start recording",
-            message: res.message,
+            message: resolveApiMessage(res, "errors.socketProfiler.sessionsAlreadyRecorded"),
             variant: "danger",
           });
         }

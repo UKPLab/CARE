@@ -53,6 +53,8 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
+
 
 export default {
   name: "RecordingModal",
@@ -175,7 +177,7 @@ export default {
         } else {
           this.eventBus.emit("toast", {
             title: "Failed to discard recording",
-            message: res.message,
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -192,7 +194,7 @@ export default {
           failed = true;
           this.eventBus.emit("toast", {
             title: "Failed to save recording",
-            message: `${opName}: ${res.message}`,
+            message: `${opName}: ${resolveApiMessage(res)}`,
             variant: "danger",
           });
         }
