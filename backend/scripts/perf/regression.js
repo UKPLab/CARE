@@ -44,6 +44,7 @@ async function runRegression(cfg, ctx) {
             progressId: 'regression',
             sequential: true,          // one story at a time so created rows get predictable ids
             ackTimeout: cfg.ackTimeout,
+            notifyOnStop: false,       // no browser here; the outcome comes back in the ack
         }, 0);
     } catch (err) {
         capture.stop();

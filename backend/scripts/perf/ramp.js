@@ -46,6 +46,7 @@ async function runRamp(cfg, ctx) {
             ackTimeout: cfg.ackTimeout,
             progressId,
             latencyThreshold: cfg.latencyThreshold,
+            notifyOnStop: false,       // no browser here; the outcome comes back in the ack
         }, 0);
     } finally {
         ctx.socket.off('progressUpdate', onProgress);

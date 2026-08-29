@@ -54,6 +54,7 @@ async function runSoak(cfg, ctx) {
                 ackTimeout: cfg.ackTimeout,
                 singleLevel: concurrency,
                 progressId,
+                notifyOnStop: false,   // no browser here; the outcome comes back in the ack
             }, 0);
         } finally {
             ctx.socket.off('progressUpdate', onProgress);
