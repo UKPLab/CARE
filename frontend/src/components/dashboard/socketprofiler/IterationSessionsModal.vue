@@ -7,7 +7,7 @@
     <template #title>
       Iteration Sessions
       <span v-if="iteration" class="fs-6" :class="iteration.passed ? 'text-success' : 'text-danger'">
-        — Iteration {{ iteration.level }} — {{ iteration.sessions }} session(s) — {{ iteration.passed ? 'PASSED' : 'FAILED' }}
+        — Iteration {{ iteration.level }} — {{ iteration.sessions }} session(s) — {{ iteration.passed ? $t('socketProfiler.replay.passed') : $t('socketProfiler.replay.failed') }}
       </span>
     </template>
     <template #body>

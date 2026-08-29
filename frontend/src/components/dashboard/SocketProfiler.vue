@@ -87,7 +87,7 @@ export default {
       tableColumns: [
         {name: "ID", key: "id"},
         {name: "Name", key: "name"},
-        {name: "Status", key: "status"},
+        {name: "Status", key: "statusDisplay"},
         {name: "Start Time", key: "startTime"},
         {name: "End Time", key: "endTime"},
         {name: "Created At", key: "createdAt"},
@@ -160,6 +160,9 @@ export default {
         startTime: r.startTime ? new Date(r.startTime).toLocaleString() : "-",
         endTime: r.endTime ? new Date(r.endTime).toLocaleString() : "-",
         createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString() : "-",
+        // Stored status values stay as-is (the backend compares against them);
+        // this is display only.
+        statusDisplay: this.$t("socketProfiler.status." + r.status),
       }));
     },
     /**

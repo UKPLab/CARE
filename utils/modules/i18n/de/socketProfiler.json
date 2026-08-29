@@ -1,0 +1,17 @@
+{
+  "status": {
+    "recording": "Aufzeichnung läuft",
+    "finished": "Abgeschlossen",
+    "disconnected": "Getrennt",
+    "interrupted": "Unterbrochen"
+  },
+  "replay": {
+    "passed": "BESTANDEN",
+    "failed": "FEHLGESCHLAGEN"
+  },
+  "trace": {
+    "toBackend": "→ Backend",
+    "toFrontend": "→ Frontend",
+    "hasDbChanges": "Ja"
+  }
+}

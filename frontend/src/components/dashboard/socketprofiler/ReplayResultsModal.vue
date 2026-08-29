@@ -131,7 +131,7 @@ export default {
           avgDisplay: o.avgLatency !== null ? o.avgLatency + "ms" : "-",
           maxDisplay: o.maxLatency !== null ? o.maxLatency + "ms" : "-",
           durationDisplay: this.formatDuration(o.duration),
-          statusDisplay: iteration.passed ? "PASSED" : "FAILED",
+          statusDisplay: iteration.passed ? this.$t("socketProfiler.replay.passed") : this.$t("socketProfiler.replay.failed"),
         };
       });
     },

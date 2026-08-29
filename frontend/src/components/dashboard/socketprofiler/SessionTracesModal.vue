@@ -109,7 +109,7 @@ export default {
           latencyDisplay: l.latency + "ms",
           message: "",
           dbChanges: l.dbChanges || [],
-          hasDbChanges: (l.dbChanges && l.dbChanges.length > 0) ? "Yes" : "",
+          hasDbChanges: (l.dbChanges && l.dbChanges.length > 0) ? this.$t("socketProfiler.trace.hasDbChanges") : "",
         });
       }
       for (const e of (this.session.errors || [])) {
@@ -120,7 +120,7 @@ export default {
           latencyDisplay: "-",
           message: e.message,
           dbChanges: e.dbChanges || [],
-          hasDbChanges: (e.dbChanges && e.dbChanges.length > 0) ? "Yes" : "",
+          hasDbChanges: (e.dbChanges && e.dbChanges.length > 0) ? this.$t("socketProfiler.trace.hasDbChanges") : "",
         });
       }
       all.sort((a, b) => a.id - b.id);
