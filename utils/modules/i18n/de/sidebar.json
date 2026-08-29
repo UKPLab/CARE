@@ -38,6 +38,7 @@
         "workflows": "Workflows",
         "session_overview": "Sitzungsübersicht",
         "admin_tools": "Admin-Tools",
+        "socket_profiler": "Socket-Profiler",
         "groups": {
             "default": "Standard",
             "admin": "Administrator",

@@ -7,7 +7,7 @@ const navElements = [
     icon: "record-circle",
     order: 16,
     admin: true,
-    path: "Socket_Profiler",
+    path: "socket_profiler",
     component: "SocketProfiler",
   }
 ];

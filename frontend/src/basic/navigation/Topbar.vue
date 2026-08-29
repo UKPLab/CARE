@@ -311,7 +311,7 @@ export default {
       // Admins jump to the Socket Profiler dashboard. Non-admin participants
       // can't go there (the page is admin-gated), so the click is a no-op for them.
       if (this.isAdmin) {
-        this.$router.push('/dashboard/Socket_Profiler');
+        this.$router.push('/dashboard/socket_profiler');
       }
     },
     toggleProfileDropdown() {
