@@ -8,14 +8,14 @@
     @hide="reset"
   >
     <template #title>
-      <h5 class="modal-title">Import Recording</h5>
+      <h5 class="modal-title">{{ $t('socketProfiler.import.title') }}</h5>
     </template>
 
     <!-- Step 1: File picker -->
     <template #step-1>
       <div class="form-field d-flex flex-column">
         <label class="form-label w-100 text-start mb-2">
-          Select recording file (JSON):
+          {{ $t('socketProfiler.import.selectFile') }}
         </label>
         <div class="w-100">
           <input
@@ -28,7 +28,7 @@
         </div>
       </div>
       <div v-if="selectedFile" class="mt-2">
-        <small class="text-muted">Selected: {{ selectedFile.name }}</small>
+        <small class="text-muted">{{ $t('socketProfiler.import.selected', { name: selectedFile.name }) }}</small>
       </div>
       <div v-if="parseError" class="mt-2 text-danger">
         <small>{{ parseError }}</small>
@@ -38,32 +38,32 @@
     <!-- Step 2: Preview -->
     <template #step-2>
       <p class="text-muted mb-3">
-        Import the following recording from <strong>{{ selectedFile && selectedFile.name }}</strong>?
+        {{ $t('socketProfiler.import.previewIntro') }} <strong>{{ selectedFile && selectedFile.name }}</strong>?
       </p>
       <table v-if="parsed" class="table table-sm">
         <tbody>
           <tr>
-            <th style="width: 200px">Name</th>
+            <th style="width: 200px">{{ $t('socketProfiler.columns.name') }}</th>
             <td>{{ parsed.recording.name }}</td>
           </tr>
           <tr>
-            <th>Status</th>
-            <td>{{ parsed.recording.status }}</td>
+            <th>{{ $t('socketProfiler.columns.status') }}</th>
+            <td>{{ $t('socketProfiler.status.' + parsed.recording.status) }}</td>
           </tr>
           <tr>
-            <th>Start Time</th>
+            <th>{{ $t('socketProfiler.columns.startTime') }}</th>
             <td>{{ formatTime(parsed.recording.startTime) }}</td>
           </tr>
           <tr>
-            <th>End Time</th>
+            <th>{{ $t('socketProfiler.columns.endTime') }}</th>
             <td>{{ formatTime(parsed.recording.endTime) }}</td>
           </tr>
           <tr>
-            <th>Trace Count</th>
+            <th>{{ $t('socketProfiler.import.traceCount') }}</th>
             <td>{{ parsed.traces.length }}</td>
           </tr>
           <tr>
-            <th>Exported At</th>
+            <th>{{ $t('socketProfiler.import.exportedAt') }}</th>
             <td>{{ formatTime(parsed.exportedAt) }}</td>
           </tr>
         </tbody>
@@ -72,14 +72,15 @@
 
     <!-- Step 3: Confirmation -->
     <template #step-3>
-      <p>The recording will be created under your user account. IDs and socket references from the source machine will not be carried over.</p>
-      <p>Importing <strong>{{ parsed && parsed.traces.length }}</strong> trace(s) one at a time can take a few seconds for large recordings.</p>
+      <p>{{ $t('socketProfiler.import.confirmOwnership') }}</p>
+      <p>{{ $t('socketProfiler.import.confirmDurationBefore') }} <strong>{{ parsed && parsed.traces.length }}</strong> {{ $t('socketProfiler.import.confirmDurationAfter') }}</p>
     </template>
   </StepperModal>
 </template>
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Stepper modal for importing a recording from a JSON file produced by
@@ -107,9 +108,9 @@ export default {
     },
     steps() {
       return [
-        { title: "File Selection" },
-        { title: "Preview" },
-        { title: "Confirmation" },
+        { title: this.$t('socketProfiler.import.steps.fileSelection') },
+        { title: this.$t('socketProfiler.import.steps.preview') },
+        { title: this.$t('socketProfiler.import.steps.confirmation') },
       ];
     },
     stepValid() {
@@ -155,7 +156,7 @@ export default {
         this.validatePayload(parsed);
         this.parsed = parsed;
       } catch (error) {
-        this.parseError = `Failed to parse file: ${error.message}`;
+        this.parseError = this.$t('socketProfiler.import.parseFailed', { message: error.message });
         this.selectedFile = null;
         this.parsed = null;
       }
@@ -164,7 +165,7 @@ export default {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.onerror = () => reject(new Error(this.$t('socketProfiler.import.readFailed')));
         reader.readAsText(file);
       });
     },
@@ -172,15 +173,17 @@ export default {
      * Validate the parsed import payload. Throws on any issue.
      */
     validatePayload(p) {
-      if (!p || typeof p !== "object") throw new Error("Not a valid JSON object");
+      if (!p || typeof p !== "object") {
+        throw new Error(this.$t('socketProfiler.import.errors.notJsonObject'));
+      }
       if (p.schemaVersion !== 1) {
-        throw new Error(`Unsupported schemaVersion: ${p.schemaVersion}. Expected 1.`);
+        throw new Error(this.$t('socketProfiler.import.errors.unsupportedSchema', { version: p.schemaVersion }));
       }
       if (!p.recording || typeof p.recording !== "object") {
-        throw new Error("Missing 'recording' object");
+        throw new Error(this.$t('socketProfiler.import.errors.missingRecording'));
       }
       if (!Array.isArray(p.traces)) {
-        throw new Error("Missing 'traces' array");
+        throw new Error(this.$t('socketProfiler.import.errors.missingTraces'));
       }
       // Validate every trace before import: the recording and its traces are
       // inserted as separate calls with no shared transaction, so a bad trace
@@ -189,13 +192,13 @@ export default {
       // non-null in the schema, so a missing one fails the insert.
       for (const t of p.traces) {
         if (!t || typeof t.action !== "string" || !t.action) {
-          throw new Error("A trace is missing a valid 'action'");
+          throw new Error(this.$t('socketProfiler.import.errors.traceAction'));
         }
         if (t.direction !== true && t.direction !== false) {
-          throw new Error("A trace is missing a valid 'direction'");
+          throw new Error(this.$t('socketProfiler.import.errors.traceDirection'));
         }
         if (!t.startTime) {
-          throw new Error("A trace is missing 'startTime'");
+          throw new Error(this.$t('socketProfiler.import.errors.traceStartTime'));
         }
       }
     },
@@ -218,8 +221,8 @@ export default {
       if (!importResult.success) {
         this.$refs.stepper.setWaiting(false);
         this.eventBus.emit("toast", {
-          title: "Import failed",
-          message: importResult.message || "Import failed",
+          title: this.$t("socketProfiler.import.toasts.failed"),
+          message: resolveApiMessage(importResult, "socketProfiler.import.toasts.failed"),
           variant: "danger",
         });
         return;
@@ -228,8 +231,8 @@ export default {
       this.$refs.stepper.setWaiting(false);
 
       this.eventBus.emit("toast", {
-        title: "Import successful",
-        message: `Imported recording with ${importResult.data.traceCount} trace(s)`,
+        title: this.$t("socketProfiler.import.toasts.success"),
+        message: this.$t("socketProfiler.import.toasts.successBody", { count: importResult.data.traceCount }),
         variant: "success",
       });
       this.close();

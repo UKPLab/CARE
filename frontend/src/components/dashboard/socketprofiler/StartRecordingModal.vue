@@ -6,15 +6,14 @@
     @hide="onHide"
   >
     <template #title>
-      Start Recording
+      {{ $t('socketProfiler.startRecording.title') }}
     </template>
     <template #body>
       
       <div class="mb-3">
-        <label class="form-label fw-bold">Select Sessions to Record</label>
+        <label class="form-label fw-bold">{{ $t('socketProfiler.startRecording.selectSessions') }}</label>
         <p class="text-muted small">
-          Each row is one active connection. Only the selected sessions will be recorded.
-          New connections that appear during recording are not auto-included.
+          {{ $t('socketProfiler.startRecording.selectSessionsHint') }}
         </p>
         <BasicTable
           v-model="selectedSessions"
@@ -25,9 +24,9 @@
         />
       </div>
       <div class="mb-3">
-        <label class="form-label fw-bold">Exclude Events</label>
+        <label class="form-label fw-bold">{{ $t('socketProfiler.startRecording.excludeEvents') }}</label>
         <p class="text-muted small">
-          Checked events will not be recorded. Uncheck to include them.
+          {{ $t('socketProfiler.startRecording.excludeEventsHint') }}
         </p>
         <div class="exclude-list">
           <div
@@ -52,12 +51,12 @@
             v-model="customExcludeEvent"
             type="text"
             class="form-control form-control-sm"
-            placeholder="Add custom event name to exclude"
+            :placeholder="$t('socketProfiler.startRecording.customEventPlaceholder')"
             @keyup.enter="addCustomExclude"
           />
           <BasicButton
             class="btn-outline-secondary btn-sm"
-            text="Add"
+            :text="$t('common.add')"
             @click="addCustomExclude"
           />
         </div>
@@ -76,7 +75,7 @@
     <template #footer>
       <BasicButton
         class="btn-secondary"
-        text="Cancel"
+        :text="$t('common.cancel')"
         @click="abort"
       />
       <BasicButton
@@ -138,20 +137,20 @@ export default {
         socketIdShort: s.socketId ? s.socketId.substring(0, 8) + "…" : "",
         connectedAtDisplay: s.connectedAt ? new Date(s.connectedAt).toLocaleTimeString() : "—",
         userNameDisplay: s.socketId === this.currentSocketId
-          ? `${s.userName} (this tab)`
+          ? `${s.userName} ${this.$t('socketProfiler.startRecording.thisTab')}`
           : s.userName,
       }));
     },
     sessionTableColumns() {
       return [
-        { name: "User ID", key: "userId", sortable: true },
-        { name: "Username", key: "userNameDisplay", sortable: true },
-        { name: "Session", key: "socketIdShort" },
-        { name: "Connected", key: "connectedAtDisplay" },
+        { name: this.$t('socketProfiler.startRecording.columns.userId'), key: "userId", sortable: true },
+        { name: this.$t('socketProfiler.startRecording.columns.username'), key: "userNameDisplay", sortable: true },
+        { name: this.$t('socketProfiler.startRecording.columns.session'), key: "socketIdShort" },
+        { name: this.$t('socketProfiler.startRecording.columns.connected'), key: "connectedAtDisplay" },
       ];
     },
     startButtonText() {
-      return "Record " + this.selectedSessions.length + " Session(s)";
+      return this.$t('socketProfiler.startRecording.recordButton', { count: this.selectedSessions.length });
     },
     allExcludeEvents() {
       return [...this.excludeEvents, ...this.customExcludes];
@@ -231,13 +230,16 @@ export default {
           this.isOpen = false;
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
-            title: "Recording started",
-            message: "Recording " + this.selectedSessions.length + " session(s), excluding " + this.allExcludeEvents.length + " event type(s)",
+            title: this.$t("socketProfiler.startRecording.toasts.started"),
+            message: this.$t("socketProfiler.startRecording.toasts.startedBody", {
+              sessions: this.selectedSessions.length,
+              events: this.allExcludeEvents.length,
+            }),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to start recording",
+            title: this.$t("socketProfiler.startRecording.toasts.startFailed"),
             message: resolveApiMessage(res, "errors.socketProfiler.sessionsAlreadyRecorded"),
             variant: "danger",
           });

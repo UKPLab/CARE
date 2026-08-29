@@ -5,9 +5,9 @@
     size="xl"
   >
     <template #title>
-      Iteration Sessions
+      {{ $t('socketProfiler.iterationSessions.title') }}
       <span v-if="iteration" class="fs-6" :class="iteration.passed ? 'text-success' : 'text-danger'">
-        — Iteration {{ iteration.level }} — {{ iteration.sessions }} session(s) — {{ iteration.passed ? $t('socketProfiler.replay.passed') : $t('socketProfiler.replay.failed') }}
+        — {{ $t('socketProfiler.iterationSessions.subtitle', { level: iteration.level, sessions: iteration.sessions }) }} — {{ iteration.passed ? $t('socketProfiler.replay.passed') : $t('socketProfiler.replay.failed') }}
       </span>
     </template>
     <template #body>
@@ -24,7 +24,7 @@
     <template #footer>
       <BasicButton
         class="btn-secondary"
-        text="Close"
+        :text="$t('common.close')"
         @click="close"
       />
     </template>
@@ -60,29 +60,43 @@ export default {
         small: true,
         search: false,
       },
-      sessionColumns: [
-        { name: "Session", key: "label", sortable: true },
-        { name: "Recording", key: "recordingName", sortable: true },
-        { name: "User", key: "userName", sortable: true },
-        { name: "Passed", key: "passedDisplay", sortable: true },
-        { name: "Failed", key: "failed", sortable: true },
-        { name: "Avg Latency", key: "avgDisplay", sortable: true },
-        { name: "Max Latency", key: "maxDisplay", sortable: true },
-      ],
-      sessionButtons: [
+    };
+  },
+  computed: {
+    /**
+     * Table column definitions. Computed rather than data so the header labels
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Column descriptors for BasicTable
+     */
+    sessionColumns() {
+      return [
+        { name: this.$t('socketProfiler.iterationSessions.columns.session'), key: "label", sortable: true },
+        { name: this.$t('socketProfiler.iterationSessions.columns.recording'), key: "recordingName", sortable: true },
+        { name: this.$t('socketProfiler.iterationSessions.columns.user'), key: "userName", sortable: true },
+        { name: this.$t('socketProfiler.iterationSessions.columns.passed'), key: "passedDisplay", sortable: true },
+        { name: this.$t('socketProfiler.iterationSessions.columns.failed'), key: "failed", sortable: true },
+        { name: this.$t('socketProfiler.iterationSessions.columns.avgLatency'), key: "avgDisplay", sortable: true },
+        { name: this.$t('socketProfiler.iterationSessions.columns.maxLatency'), key: "maxDisplay", sortable: true },
+      ];
+    },
+    /**
+     * Row action buttons. Computed rather than data so the tooltips
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Button descriptors for BasicTable
+     */
+    sessionButtons() {
+      return [
         {
           icon: "arrow-right-circle",
           options: {
             iconOnly: true,
             specifiers: { "btn-outline-primary": true },
           },
-          title: "View session traces",
+          title: this.$t('socketProfiler.iterationSessions.viewTraces'),
           action: "viewSession",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     /**
      * One row per session-instance in the open iteration, summarising that
      * single session's pass/fail and latency.
@@ -103,8 +117,8 @@ export default {
         const max = lat.length ? Math.max(...lat) : null;
         return {
           id: idx,
-          label: "Session " + (idx + 1) + " of " + it.results.length,
-          recordingName: r.recordingName || ("Recording " + r.recordingId),
+          label: this.$t('socketProfiler.iterationSessions.sessionLabel', { index: idx + 1, total: it.results.length }),
+          recordingName: r.recordingName || this.$t('socketProfiler.iterationSessions.recordingFallback', { id: r.recordingId }),
           userName: r.userName,
           passedDisplay: (r.passed || 0) + "/" + (r.total || 0),
           failed: r.failed || 0,

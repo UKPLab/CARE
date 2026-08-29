@@ -5,7 +5,7 @@
     size="lg"
   >
     <template #title>
-      Start Replay
+      {{ $t('socketProfiler.startReplay.title') }}
     </template>
     <template #body>
       <BasicForm
@@ -14,19 +14,18 @@
       />
 
       <div v-if="loadEstimate" class="text-muted small mt-1 mb-3">
-        Pool size: <span class="fw-bold">{{ loadEstimate.poolSize }}</span> session(s).
-        Peak: <span class="fw-bold">{{ loadEstimate.peak }}</span> parallel socket(s) at iteration {{ config.maxIterations }}.
-        Cumulative: <span class="fw-bold">{{ loadEstimate.cumulative }}</span> total socket-runs across the whole replay.
+        {{ $t('socketProfiler.startReplay.estimate.poolLabel') }} <span class="fw-bold">{{ loadEstimate.poolSize }}</span> {{ $t('socketProfiler.startReplay.estimate.poolUnit') }}
+        {{ $t('socketProfiler.startReplay.estimate.peakLabel') }} <span class="fw-bold">{{ loadEstimate.peak }}</span> {{ $t('socketProfiler.startReplay.estimate.peakUnit', { iteration: config.maxIterations }) }}
+        {{ $t('socketProfiler.startReplay.estimate.cumulativeLabel') }} <span class="fw-bold">{{ loadEstimate.cumulative }}</span> {{ $t('socketProfiler.startReplay.estimate.cumulativeUnit') }}
       </div>
       <div v-else-if="config.maxIterations !== null && config.maxIterations !== ''" class="text-danger small mt-1 mb-3">
-        Enter a positive integer for max iterations.
+        {{ $t('socketProfiler.startReplay.iterationsInvalid') }}
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-bold">Recordings to replay</label>
+        <label class="form-label fw-bold">{{ $t('socketProfiler.startReplay.recordingsLabel') }}</label>
         <p class="text-muted small">
-          The recording you clicked is pre-selected. Selected recordings' sessions are
-          combined into one pool — iteration K runs K full copies of that pool in parallel.
+          {{ $t('socketProfiler.startReplay.recordingsHint') }}
         </p>
         <BasicTable
           v-model="selectedRecordings"
@@ -40,7 +39,7 @@
     <template #footer>
       <BasicButton
         class="btn-secondary"
-        text="Cancel"
+        :text="$t('common.cancel')"
         @click="abort"
       />
       <BasicButton
@@ -91,46 +90,46 @@ export default {
       return [
         {
           key: "mode",
-          label: "Mode",
+          label: this.$t('socketProfiler.startReplay.fields.mode'),
           type: "select",
           default: "scaling",
           options: [
-            { value: "scaling", name: "Scaling — pool sessions, add one full pool per iteration" },
-            { value: "load", name: "Load mode (coming soon)", disabled: true },
+            { value: "scaling", name: this.$t('socketProfiler.startReplay.fields.modeScaling') },
+            { value: "load", name: this.$t('socketProfiler.startReplay.fields.modeLoad'), disabled: true },
           ],
         },
         {
           key: "timingMode",
-          label: "Speed",
+          label: this.$t('socketProfiler.startReplay.fields.speed'),
           type: "select",
           default: "fast",
           options: [
-            { value: "fast", name: "Fast — no delays between traces" },
-            { value: "realtime", name: "Realtime — preserve original timing within each session" },
+            { value: "fast", name: this.$t('socketProfiler.startReplay.fields.speedFast') },
+            { value: "realtime", name: this.$t('socketProfiler.startReplay.fields.speedRealtime') },
           ],
         },
         {
           key: "maxIterations",
-          label: "Max iterations",
+          label: this.$t('socketProfiler.startReplay.fields.maxIterations'),
           type: "number",
           min: 1,
           required: true,
-          placeholder: "Enter a positive integer (required)",
+          placeholder: this.$t('socketProfiler.startReplay.fields.maxIterationsPlaceholder'),
         },
         {
           key: "ackTimeout",
-          label: "Ack timeout (ms)",
+          label: this.$t('socketProfiler.startReplay.fields.ackTimeout'),
           type: "number",
           min: 100,
           default: 2000,
-          help: "How long the replay waits for the server to acknowledge each trace before counting it as failed (100–30000 ms).",
+          help: this.$t('socketProfiler.startReplay.fields.ackTimeoutHelp'),
         },
         {
           key: "continueOnFailure",
-          label: "Continue past failures",
+          label: this.$t('socketProfiler.startReplay.fields.continueOnFailure'),
           type: "switch",
           default: false,
-          help: "Run all scaling iterations even if some fail, instead of stopping at the first failed iteration.",
+          help: this.$t('socketProfiler.startReplay.fields.continueOnFailureHelp'),
         },
       ];
     },
@@ -150,11 +149,11 @@ export default {
     },
     recordingTableColumns() {
       return [
-        { name: "ID", key: "id", sortable: true },
-        { name: "Name", key: "name", sortable: true },
-        { name: "Sessions", key: "sessionCount", sortable: true },
-        { name: "Start Time", key: "startTimeDisplay" },
-        { name: "End Time", key: "endTimeDisplay" },
+        { name: this.$t('socketProfiler.columns.id'), key: "id", sortable: true },
+        { name: this.$t('socketProfiler.columns.name'), key: "name", sortable: true },
+        { name: this.$t('socketProfiler.startReplay.columns.sessions'), key: "sessionCount", sortable: true },
+        { name: this.$t('socketProfiler.columns.startTime'), key: "startTimeDisplay" },
+        { name: this.$t('socketProfiler.columns.endTime'), key: "endTimeDisplay" },
       ];
     },
     isMaxIterationsValid() {
@@ -191,7 +190,9 @@ export default {
     },
     startButtonText() {
       const n = this.selectedRecordings.length;
-      return n <= 1 ? "Start Replay" : `Start Replay (${n} recordings)`;
+      return n <= 1
+        ? this.$t('socketProfiler.startReplay.title')
+        : this.$t('socketProfiler.startReplay.startWithCount', { count: n });
     },
   },
   methods: {

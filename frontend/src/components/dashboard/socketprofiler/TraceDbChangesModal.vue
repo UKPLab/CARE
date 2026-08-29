@@ -5,7 +5,7 @@
     size="lg"
   >
     <template #title>
-      DB Changes — <code>{{ trace ? trace.action : '' }}</code>
+      {{ $t('socketProfiler.dbChanges.title') }} — <code>{{ trace ? trace.action : '' }}</code>
     </template>
     <template #body>
       <div v-if="dbChanges.length > 0">
@@ -17,13 +17,13 @@
         />
       </div>
       <p v-else class="text-muted mb-0">
-        No database changes for this trace.
+        {{ $t('socketProfiler.dbChanges.empty') }}
       </p>
     </template>
     <template #footer>
       <BasicButton
         class="btn-secondary"
-        text="Close"
+        :text="$t('common.close')"
         @click="close"
       />
     </template>
@@ -48,12 +48,6 @@ export default {
   data() {
     return {
       trace: null,
-      dbChangeColumns: [
-        { name: "Table", key: "table", sortable: true },
-        { name: "Record IDs", key: "recordIds" },
-        { name: "Fields Modified", key: "fields" },
-        { name: "Records", key: "recordCount", sortable: true },
-      ],
       dbChangeTableOptions: {
         striped: true,
         hover: true,
@@ -64,6 +58,19 @@ export default {
     };
   },
   computed: {
+    /**
+     * Table column definitions. Computed rather than data so the header labels
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Column descriptors for BasicTable
+     */
+    dbChangeColumns() {
+      return [
+        { name: this.$t('socketProfiler.dbChanges.columns.table'), key: "table", sortable: true },
+        { name: this.$t('socketProfiler.dbChanges.columns.recordIds'), key: "recordIds" },
+        { name: this.$t('socketProfiler.dbChanges.columns.fields'), key: "fields" },
+        { name: this.$t('socketProfiler.dbChanges.columns.records'), key: "recordCount", sortable: true },
+      ];
+    },
     /**
      * Flatten the selected trace's dbChanges into table rows.
      * @returns {Array<Object>}

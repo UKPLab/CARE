@@ -5,21 +5,21 @@
     size="lg"
   >
     <template #title>
-      Save Recording
+      {{ $t('socketProfiler.recording.title') }}
     </template>
     <template #body>
       <div class="mb-3">
-        <label class="form-label fw-bold">Recording Name</label>
+        <label class="form-label fw-bold">{{ $t('socketProfiler.recording.nameLabel') }}</label>
         <input
           v-model="recordingName"
           type="text"
           class="form-control"
-          placeholder="Enter a name for this recording"
+          :placeholder="$t('socketProfiler.recording.namePlaceholder')"
         />
       </div>
       <div class="mb-3">
-        <label class="form-label fw-bold">Trace Events</label>
-        <p class="text-muted small">Select events you want to remove. Unselected events will be kept.</p>
+        <label class="form-label fw-bold">{{ $t('socketProfiler.recording.traceEvents') }}</label>
+        <p class="text-muted small">{{ $t('socketProfiler.recording.traceEventsHint') }}</p>
         <BasicTable
           v-model="tracesToDelete"
           :columns="traceColumns"
@@ -32,17 +32,17 @@
     <template #footer>
       <BasicButton
         class="btn-outline-danger me-auto"
-        text="Discard Recording"
+        :text="$t('socketProfiler.recording.discard')"
         @click="discard"
       />
       <BasicButton
         class="btn-secondary"
-        text="Cancel"
+        :text="$t('common.cancel')"
         @click="abort"
       />
       <BasicButton
         class="btn-primary"
-        text="Save Recording"
+        :text="$t('socketProfiler.recording.save')"
         @click="confirm"
       />
     </template>
@@ -76,16 +76,23 @@ export default {
         search: true,
         pagination: 20,
       },
-      traceColumns: [
-        { name: "#", key: "sequence", sortable: true },
-        { name: "Action", key: "action", sortable: true },
-        { name: "Direction", key: "directionLabel" },
-        { name: "Time", key: "timeDisplay", sortable: true },
-        { name: "Elapsed", key: "elapsedDisplay", sortable: true },
-      ],
     };
   },
   computed: {
+    /**
+     * Table column definitions. Computed rather than data so the header labels
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Column descriptors for BasicTable
+     */
+    traceColumns() {
+      return [
+        { name: this.$t('socketProfiler.recording.columns.seq'), key: "sequence", sortable: true },
+        { name: this.$t('socketProfiler.recording.columns.action'), key: "action", sortable: true },
+        { name: this.$t('socketProfiler.recording.columns.direction'), key: "directionLabel" },
+        { name: this.$t('socketProfiler.recording.columns.time'), key: "timeDisplay", sortable: true },
+        { name: this.$t('socketProfiler.recording.columns.elapsed'), key: "elapsedDisplay", sortable: true },
+      ];
+    },
     /**
      * Look up the current recording row from the Vuex store so we can
      * read its startTime. The row is kept reactively up to date by the
@@ -170,13 +177,13 @@ export default {
         if (res.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
-            title: "Recording discarded",
-            message: "Recording has been deleted",
+            title: this.$t("socketProfiler.recording.toasts.discarded"),
+            message: this.$t("socketProfiler.recording.toasts.discardedBody"),
             variant: "warning",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to discard recording",
+            title: this.$t("socketProfiler.recording.toasts.discardFailed"),
             message: resolveApiMessage(res),
             variant: "danger",
           });
@@ -193,7 +200,7 @@ export default {
         if (!res.success && !failed) {
           failed = true;
           this.eventBus.emit("toast", {
-            title: "Failed to save recording",
+            title: this.$t("socketProfiler.recording.toasts.saveFailed"),
             message: `${opName}: ${resolveApiMessage(res)}`,
             variant: "danger",
           });
@@ -201,8 +208,8 @@ export default {
         if (pendingOps === 0 && !failed) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
-            title: "Recording saved",
-            message: "Recording has been saved successfully",
+            title: this.$t("socketProfiler.recording.toasts.saved"),
+            message: this.$t("socketProfiler.recording.toasts.savedBody"),
             variant: "success",
           });
         }
@@ -211,13 +218,13 @@ export default {
       this.$socket.emit("appDataUpdate", {
         table: "recording",
         data: { id: this.recordingId, name: this.recordingName }
-      }, (res) => onOpComplete(res, "rename"));
+      }, (res) => onOpComplete(res, this.$t("socketProfiler.recording.ops.rename")));
 
       this.tracesToDelete.forEach(t => {
         this.$socket.emit("appDataUpdate", {
           table: "trace",
           data: { id: t.id, deleted: true }
-        }, (res) => onOpComplete(res, `delete trace ${t.id}`));
+        }, (res) => onOpComplete(res, this.$t("socketProfiler.recording.ops.deleteTrace", { id: t.id })));
       });
     },
   },

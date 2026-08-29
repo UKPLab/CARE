@@ -1,26 +1,26 @@
 <template>
-  <Card title="Socket Profiler">
+  <Card :title="$t('socketProfiler.title')">
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
             class="btn-primary btn-sm"
-            text="Start Recording"
-            title="Start Recording"
+            :text="$t('socketProfiler.actions.startRecording')"
+            :title="$t('socketProfiler.actions.startRecording')"
             icon="record-circle"
             @click="openStartModal"
         />
         <BasicButton
             class="btn-danger btn-sm"
-            text="Stop Recording"
-            title="Stop Recording"
+            :text="$t('socketProfiler.actions.stopRecording')"
+            :title="$t('socketProfiler.actions.stopRecording')"
             icon="stop-circle"
             :disabled="!isRecording"
             @click="stopActiveRecording"
         />
         <BasicButton
             class="btn-outline-info btn-sm"
-            text="Import"
-            title="Import recording from JSON"
+            :text="$t('socketProfiler.actions.import')"
+            :title="$t('socketProfiler.actions.importTooltip')"
             icon="upload"
             @click="openImportModal"
         />
@@ -84,15 +84,31 @@ export default {
         pagination: 10,
         search: true,
       },
-      tableColumns: [
-        {name: "ID", key: "id"},
-        {name: "Name", key: "name"},
-        {name: "Status", key: "statusDisplay"},
-        {name: "Start Time", key: "startTime"},
-        {name: "End Time", key: "endTime"},
-        {name: "Created At", key: "createdAt"},
-      ],
-      tableButtons: [
+    };
+  },
+  computed: {
+    /**
+     * Table column definitions. Computed rather than data so the header labels
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Column descriptors for BasicTable
+     */
+    tableColumns() {
+      return [
+        {name: this.$t("socketProfiler.columns.id"), key: "id"},
+        {name: this.$t("socketProfiler.columns.name"), key: "name"},
+        {name: this.$t("socketProfiler.columns.status"), key: "statusDisplay"},
+        {name: this.$t("socketProfiler.columns.startTime"), key: "startTime"},
+        {name: this.$t("socketProfiler.columns.endTime"), key: "endTime"},
+        {name: this.$t("common.createdAt"), key: "createdAt"},
+      ];
+    },
+    /**
+     * Row action buttons. Computed rather than data so the tooltips
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Button descriptors for BasicTable
+     */
+    tableButtons() {
+      return [
         {
           icon: "play-circle",
           options: {
@@ -101,7 +117,7 @@ export default {
               "btn-outline-success": true,
             },
           },
-          title: "Replay recording",
+          title: this.$t("socketProfiler.actions.replayRecording"),
           action: "replayRecording",
         },
         {
@@ -112,7 +128,7 @@ export default {
               "btn-outline-info": true,
             },
           },
-          title: "Export recording",
+          title: this.$t("socketProfiler.actions.exportRecording"),
           action: "exportRecording",
         },
         {
@@ -123,7 +139,7 @@ export default {
               "btn-outline-primary": true,
             },
           },
-          title: "Edit recording",
+          title: this.$t("socketProfiler.actions.editRecording"),
           action: "editRecording",
         },
         {
@@ -134,13 +150,11 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Delete recording",
+          title: this.$t("socketProfiler.actions.deleteRecording"),
           action: "deleteRecording",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     /**
      * Raw recording rows straight from the store. Kept separate from
      * `recordings` so callers that need real values (export, filenames) don't
@@ -206,13 +220,13 @@ export default {
           const payload = res.data || res;
           const stopped = payload.stopped || [];
           this.eventBus.emit("toast", {
-            title: "Recording stopped",
-            message: `Stopped ${stopped.length} recording(s). Manage them in the table below.`,
+            title: this.$t("socketProfiler.toasts.stopped"),
+            message: this.$t("socketProfiler.toasts.stoppedBody", { count: stopped.length }),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to stop recording",
+            title: this.$t("socketProfiler.toasts.stopFailed"),
             message: resolveApiMessage(res, "errors.socketProfiler.noActiveRecording"),
             variant: "danger",
           });
@@ -235,8 +249,8 @@ export default {
       this.$socket.emit("recordingGetTraces", { id: row.id }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Export failed",
-            message: res.message,
+            title: this.$t("socketProfiler.toasts.exportFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
           return;
@@ -247,8 +261,8 @@ export default {
         const recordingRow = this.rawRecordings.find(r => r.id === row.id);
         if (!recordingRow) {
           this.eventBus.emit("toast", {
-            title: "Export failed",
-            message: "Recording not found in store",
+            title: this.$t("socketProfiler.toasts.exportFailed"),
+            message: this.$t("socketProfiler.toasts.exportNotFound"),
             variant: "danger",
           });
           return;
@@ -283,8 +297,8 @@ export default {
         if (dropped.length > 0) {
           const actions = [...new Set(dropped.map(p => p.original.action))].join(", ");
           this.eventBus.emit("toast", {
-            title: "Export aborted",
-            message: `Export would drop payloads for ${dropped.length} trace(s) (${actions}). Cancelled to avoid a broken file.`,
+            title: this.$t("socketProfiler.toasts.exportAborted"),
+            message: this.$t("socketProfiler.toasts.exportAbortedBody", { count: dropped.length, actions }),
             variant: "danger",
           });
           return;
@@ -305,8 +319,8 @@ export default {
           .replace(/^_+|_+$/g, "");
         downloadObjectsAs(payload, safeName || `recording_${row.id}`, "json");
         this.eventBus.emit("toast", {
-          title: "Export successful",
-          message: `Recording exported with ${traces.length} trace(s)`,
+          title: this.$t("socketProfiler.toasts.exportSuccess"),
+          message: this.$t("socketProfiler.toasts.exportSuccessBody", { count: traces.length }),
           variant: "success",
         });
       });
@@ -318,8 +332,8 @@ export default {
           this.$refs.recordingModal.openForEdit(row.id, row.name, traces);
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to load traces",
-            message: res.message,
+            title: this.$t("socketProfiler.toasts.loadTracesFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -330,8 +344,8 @@ export default {
     },
     onReplayStart({ recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout }) {
       this.eventBus.emit("toast", {
-        title: "Replay started",
-        message: `Replaying ${recordingIds.length} recording(s)`,
+        title: this.$t("socketProfiler.toasts.replayStarted"),
+        message: this.$t("socketProfiler.toasts.replayStartedBody", { count: recordingIds.length }),
         variant: "info",
       });
       // Open the results modal in progress mode first; its progress id is
@@ -348,8 +362,8 @@ export default {
         } else {
           this.$refs.replayResultsModal.close();
           this.eventBus.emit("toast", {
-            title: "Replay failed",
-            message: res.message,
+            title: this.$t("socketProfiler.toasts.replayFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -411,14 +425,14 @@ export default {
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Recording deleted",
-            message: "Recording has been deleted",
+            title: this.$t("socketProfiler.toasts.deleted"),
+            message: this.$t("socketProfiler.toasts.deletedBody"),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to delete recording",
-            message: res.message,
+            title: this.$t("socketProfiler.toasts.deleteFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

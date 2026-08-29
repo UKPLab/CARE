@@ -1,4 +1,216 @@
 {
+  "title": "Socket-Profiler",
+  "actions": {
+    "startRecording": "Aufzeichnung starten",
+    "stopRecording": "Aufzeichnung beenden",
+    "import": "Importieren",
+    "importTooltip": "Aufzeichnung aus JSON importieren",
+    "replayRecording": "Aufzeichnung abspielen",
+    "exportRecording": "Aufzeichnung exportieren",
+    "editRecording": "Aufzeichnung bearbeiten",
+    "deleteRecording": "Aufzeichnung löschen"
+  },
+  "import": {
+    "title": "Aufzeichnung importieren",
+    "selectFile": "Aufzeichnungsdatei auswählen (JSON):",
+    "selected": "Ausgewählt: {name}",
+    "previewIntro": "Die folgende Aufzeichnung importieren aus",
+    "traceCount": "Anzahl Traces",
+    "exportedAt": "Exportiert am",
+    "confirmOwnership": "Die Aufzeichnung wird unter Ihrem Benutzerkonto angelegt. IDs und Socket-Referenzen vom Quellrechner werden nicht übernommen.",
+    "confirmDurationBefore": "Der Import von",
+    "confirmDurationAfter": "Trace(s) einzeln kann bei großen Aufzeichnungen einige Sekunden dauern.",
+    "parseFailed": "Datei konnte nicht gelesen werden: {message}",
+    "readFailed": "Datei konnte nicht gelesen werden",
+    "steps": {
+      "fileSelection": "Dateiauswahl",
+      "preview": "Vorschau",
+      "confirmation": "Bestätigung"
+    },
+    "errors": {
+      "notJsonObject": "Kein gültiges JSON-Objekt",
+      "unsupportedSchema": "Nicht unterstützte schemaVersion: {version}. Erwartet: 1.",
+      "missingRecording": "'recording'-Objekt fehlt",
+      "missingTraces": "'traces'-Array fehlt",
+      "traceAction": "Bei einem Trace fehlt eine gültige 'action'",
+      "traceDirection": "Bei einem Trace fehlt eine gültige 'direction'",
+      "traceStartTime": "Bei einem Trace fehlt 'startTime'"
+    },
+    "toasts": {
+      "failed": "Import fehlgeschlagen",
+      "success": "Import erfolgreich",
+      "successBody": "Aufzeichnung mit {count} Trace(s) importiert"
+    }
+  },
+  "startReplay": {
+    "title": "Replay starten",
+    "startWithCount": "Replay starten ({count} Aufzeichnungen)",
+    "recordingsLabel": "Abzuspielende Aufzeichnungen",
+    "recordingsHint": "Die angeklickte Aufzeichnung ist vorausgewählt. Die Sitzungen der ausgewählten Aufzeichnungen werden zu einem Pool zusammengefasst — Iteration K führt K vollständige Kopien dieses Pools parallel aus.",
+    "iterationsInvalid": "Geben Sie eine positive ganze Zahl für die maximalen Iterationen ein.",
+    "estimate": {
+      "poolLabel": "Poolgröße:",
+      "poolUnit": "Sitzung(en).",
+      "peakLabel": "Spitze:",
+      "peakUnit": "parallele Socket(s) bei Iteration {iteration}.",
+      "cumulativeLabel": "Kumuliert:",
+      "cumulativeUnit": "Socket-Durchläufe insgesamt über das gesamte Replay."
+    },
+    "fields": {
+      "mode": "Modus",
+      "modeScaling": "Skalierung — Sitzungen bündeln, pro Iteration einen vollständigen Pool hinzufügen",
+      "modeLoad": "Lastmodus (in Kürze verfügbar)",
+      "speed": "Geschwindigkeit",
+      "speedFast": "Schnell — keine Verzögerungen zwischen Traces",
+      "speedRealtime": "Echtzeit — ursprüngliches Timing innerhalb jeder Sitzung beibehalten",
+      "maxIterations": "Max. Iterationen",
+      "maxIterationsPlaceholder": "Positive ganze Zahl eingeben (erforderlich)",
+      "ackTimeout": "Ack-Timeout (ms)",
+      "ackTimeoutHelp": "Wie lange das Replay auf die Bestätigung jedes Traces durch den Server wartet, bevor es als fehlgeschlagen gilt (100–30000 ms).",
+      "continueOnFailure": "Bei Fehlern fortfahren",
+      "continueOnFailureHelp": "Alle Skalierungsiterationen ausführen, auch wenn einige fehlschlagen, statt bei der ersten fehlgeschlagenen Iteration zu stoppen."
+    },
+    "columns": {
+      "sessions": "Sitzungen"
+    }
+  },
+  "replayResults": {
+    "title": "Replay-Ergebnisse",
+    "viewSessions": "Iterations-Sitzungen anzeigen",
+    "summary": {
+      "iterations": "Iterationen",
+      "totalTraces": "Traces gesamt",
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen"
+    },
+    "columns": {
+      "iteration": "Iteration",
+      "sessions": "Sitzungen",
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen",
+      "avgLatency": "Durchschn. Latenz",
+      "maxLatency": "Max. Latenz",
+      "duration": "Dauer",
+      "status": "Status"
+    }
+  },
+  "recording": {
+    "title": "Aufzeichnung speichern",
+    "nameLabel": "Name der Aufzeichnung",
+    "namePlaceholder": "Namen für diese Aufzeichnung eingeben",
+    "traceEvents": "Trace-Events",
+    "traceEventsHint": "Wählen Sie die Events aus, die entfernt werden sollen. Nicht ausgewählte Events bleiben erhalten.",
+    "discard": "Aufzeichnung verwerfen",
+    "save": "Aufzeichnung speichern",
+    "columns": {
+      "seq": "#",
+      "action": "Aktion",
+      "direction": "Richtung",
+      "time": "Zeit",
+      "elapsed": "Vergangen"
+    },
+    "ops": {
+      "rename": "Umbenennen",
+      "deleteTrace": "Trace {id} löschen"
+    },
+    "toasts": {
+      "discarded": "Aufzeichnung verworfen",
+      "discardedBody": "Die Aufzeichnung wurde gelöscht",
+      "discardFailed": "Aufzeichnung konnte nicht verworfen werden",
+      "saved": "Aufzeichnung gespeichert",
+      "savedBody": "Die Aufzeichnung wurde erfolgreich gespeichert",
+      "saveFailed": "Aufzeichnung konnte nicht gespeichert werden"
+    }
+  },
+  "sessionTraces": {
+    "title": "Sitzungs-Traces",
+    "passedCount": "{passed}/{total} bestanden",
+    "viewDbChanges": "DB-Änderungen anzeigen",
+    "columns": {
+      "seq": "#",
+      "action": "Aktion",
+      "status": "Status",
+      "latency": "Latenz (ms)",
+      "details": "Details",
+      "db": "DB"
+    },
+    "filters": {
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen"
+    }
+  },
+  "iterationSessions": {
+    "title": "Iterations-Sitzungen",
+    "subtitle": "Iteration {level} — {sessions} Sitzung(en)",
+    "sessionLabel": "Sitzung {index} von {total}",
+    "recordingFallback": "Aufzeichnung {id}",
+    "viewTraces": "Sitzungs-Traces anzeigen",
+    "columns": {
+      "session": "Sitzung",
+      "recording": "Aufzeichnung",
+      "user": "Benutzer",
+      "passed": "Bestanden",
+      "failed": "Fehlgeschlagen",
+      "avgLatency": "Durchschn. Latenz",
+      "maxLatency": "Max. Latenz"
+    }
+  },
+  "dbChanges": {
+    "title": "DB-Änderungen",
+    "empty": "Keine Datenbankänderungen für diesen Trace.",
+    "columns": {
+      "table": "Tabelle",
+      "recordIds": "Datensatz-IDs",
+      "fields": "Geänderte Felder",
+      "records": "Datensätze"
+    }
+  },
+  "startRecording": {
+    "title": "Aufzeichnung starten",
+    "selectSessions": "Aufzuzeichnende Sitzungen auswählen",
+    "selectSessionsHint": "Jede Zeile ist eine aktive Verbindung. Nur die ausgewählten Sitzungen werden aufgezeichnet. Neue Verbindungen, die während der Aufzeichnung entstehen, werden nicht automatisch einbezogen.",
+    "excludeEvents": "Events ausschließen",
+    "excludeEventsHint": "Angehakte Events werden nicht aufgezeichnet. Haken entfernen, um sie einzubeziehen.",
+    "customEventPlaceholder": "Eigenen Event-Namen zum Ausschließen hinzufügen",
+    "recordButton": "{count} Sitzung(en) aufzeichnen",
+    "thisTab": "(dieser Tab)",
+    "columns": {
+      "userId": "Benutzer-ID",
+      "username": "Benutzername",
+      "session": "Sitzung",
+      "connected": "Verbunden"
+    },
+    "toasts": {
+      "started": "Aufzeichnung gestartet",
+      "startedBody": "{sessions} Sitzung(en) werden aufgezeichnet, {events} Event-Typ(en) ausgeschlossen",
+      "startFailed": "Aufzeichnung konnte nicht gestartet werden"
+    }
+  },
+  "toasts": {
+    "stopped": "Aufzeichnung beendet",
+    "stoppedBody": "{count} Aufzeichnung(en) beendet. Verwalten Sie sie in der Tabelle unten.",
+    "stopFailed": "Aufzeichnung konnte nicht beendet werden",
+    "exportFailed": "Export fehlgeschlagen",
+    "exportNotFound": "Aufzeichnung im Speicher nicht gefunden",
+    "exportAborted": "Export abgebrochen",
+    "exportAbortedBody": "Der Export würde Payloads für {count} Trace(s) ({actions}) verlieren. Abgebrochen, um eine fehlerhafte Datei zu vermeiden.",
+    "exportSuccess": "Export erfolgreich",
+    "exportSuccessBody": "Aufzeichnung mit {count} Trace(s) exportiert",
+    "loadTracesFailed": "Traces konnten nicht geladen werden",
+    "replayStarted": "Replay gestartet",
+    "replayStartedBody": "{count} Aufzeichnung(en) werden abgespielt",
+    "replayFailed": "Replay fehlgeschlagen",
+    "deleted": "Aufzeichnung gelöscht",
+    "deletedBody": "Die Aufzeichnung wurde gelöscht",
+    "deleteFailed": "Aufzeichnung konnte nicht gelöscht werden"
+  },
+  "columns": {
+    "id": "ID",
+    "name": "Name",
+    "status": "Status",
+    "startTime": "Startzeit",
+    "endTime": "Endzeit"
+  },
   "status": {
     "recording": "Aufzeichnung läuft",
     "finished": "Abgeschlossen",

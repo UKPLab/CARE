@@ -5,10 +5,10 @@
     size="xl"
   >
     <template #title>
-      Session Traces
+      {{ $t('socketProfiler.sessionTraces.title') }}
       <span v-if="session" class="text-muted fs-6">
-        — {{ session.recordingName || ('Recording ' + session.recordingId) }}
-        ({{ session.userName }}) — {{ session.passed }}/{{ session.total }} passed
+        — {{ session.recordingName || $t('socketProfiler.iterationSessions.recordingFallback', { id: session.recordingId }) }}
+        ({{ session.userName }}) — {{ $t('socketProfiler.sessionTraces.passedCount', { passed: session.passed, total: session.total }) }}
       </span>
     </template>
     <template #body>
@@ -25,7 +25,7 @@
     <template #footer>
       <BasicButton
         class="btn-secondary"
-        text="Close"
+        :text="$t('common.close')"
         @click="close"
       />
     </template>
@@ -61,36 +61,50 @@ export default {
         pagination: 20,
         search: true,
       },
-      traceColumns: [
-        { name: "#", key: "seq", sortable: true },
-        { name: "Action", key: "action", sortable: true },
+    };
+  },
+  computed: {
+    /**
+     * Table column definitions. Computed rather than data so the header and
+     * filter labels re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Column descriptors for BasicTable
+     */
+    traceColumns() {
+      return [
+        { name: this.$t('socketProfiler.sessionTraces.columns.seq'), key: "seq", sortable: true },
+        { name: this.$t('socketProfiler.sessionTraces.columns.action'), key: "action", sortable: true },
         {
-          name: "Status",
+          name: this.$t('socketProfiler.sessionTraces.columns.status'),
           key: "status",
           sortable: true,
           filter: [
-            { key: "passed", name: "Passed" },
-            { key: "failed", name: "Failed" },
+            { key: "passed", name: this.$t('socketProfiler.sessionTraces.filters.passed') },
+            { key: "failed", name: this.$t('socketProfiler.sessionTraces.filters.failed') },
           ],
         },
-        { name: "Latency (ms)", key: "latencyDisplay", sortable: true },
-        { name: "Details", key: "message" },
-        { name: "DB", key: "hasDbChanges" },
-      ],
-      traceButtons: [
+        { name: this.$t('socketProfiler.sessionTraces.columns.latency'), key: "latencyDisplay", sortable: true },
+        { name: this.$t('socketProfiler.sessionTraces.columns.details'), key: "message" },
+        { name: this.$t('socketProfiler.sessionTraces.columns.db'), key: "hasDbChanges" },
+      ];
+    },
+    /**
+     * Row action buttons. Computed rather than data so the tooltips
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Button descriptors for BasicTable
+     */
+    traceButtons() {
+      return [
         {
           icon: "database",
           options: {
             iconOnly: true,
             specifiers: { "btn-outline-info": true },
           },
-          title: "View DB changes",
+          title: this.$t('socketProfiler.sessionTraces.viewDbChanges'),
           action: "viewDbChanges",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     /**
      * Merge the session's passing latencies and failing errors into one
      * ordered, sequence-numbered trace list.

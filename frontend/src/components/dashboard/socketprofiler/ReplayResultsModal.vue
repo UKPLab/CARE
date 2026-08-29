@@ -5,22 +5,22 @@
     size="xl"
   >
     <template #title>
-      Replay Results
+      {{ $t('socketProfiler.replayResults.title') }}
     </template>
     <template #body>
       <!-- Top-level summary -->
       <div class="d-flex gap-4 mb-3">
         <div>
-          <span class="fw-bold">Iterations:</span> {{ summary.iterations }}
+          <span class="fw-bold">{{ $t('socketProfiler.replayResults.summary.iterations') }}:</span> {{ summary.iterations }}
         </div>
         <div>
-          <span class="fw-bold">Total Traces:</span> {{ summary.total }}
+          <span class="fw-bold">{{ $t('socketProfiler.replayResults.summary.totalTraces') }}:</span> {{ summary.total }}
         </div>
         <div>
-          <span class="fw-bold text-success">Passed:</span> {{ summary.passed }}
+          <span class="fw-bold text-success">{{ $t('socketProfiler.replayResults.summary.passed') }}:</span> {{ summary.passed }}
         </div>
         <div>
-          <span class="fw-bold text-danger">Failed:</span> {{ summary.failed }}
+          <span class="fw-bold text-danger">{{ $t('socketProfiler.replayResults.summary.failed') }}:</span> {{ summary.failed }}
         </div>
       </div>
 
@@ -39,7 +39,7 @@
     <template #footer>
       <BasicButton
         class="btn-secondary"
-        text="Close"
+        :text="$t('common.close')"
         @click="close"
       />
     </template>
@@ -76,30 +76,44 @@ export default {
         pagination: 20,
         search: false,
       },
-      iterationColumns: [
-        { name: "Iteration", key: "level", sortable: true },
-        { name: "Sessions", key: "sessions", sortable: true },
-        { name: "Passed", key: "passedDisplay", sortable: true },
-        { name: "Failed", key: "failed", sortable: true },
-        { name: "Avg Latency", key: "avgDisplay", sortable: true },
-        { name: "Max Latency", key: "maxDisplay", sortable: true },
-        { name: "Duration", key: "durationDisplay", sortable: true },
-        { name: "Status", key: "statusDisplay", sortable: true },
-      ],
-      iterationButtons: [
+    };
+  },
+  computed: {
+    /**
+     * Table column definitions. Computed rather than data so the header labels
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Column descriptors for BasicTable
+     */
+    iterationColumns() {
+      return [
+        { name: this.$t('socketProfiler.replayResults.columns.iteration'), key: "level", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.sessions'), key: "sessions", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.passed'), key: "passedDisplay", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.failed'), key: "failed", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.avgLatency'), key: "avgDisplay", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.maxLatency'), key: "maxDisplay", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.duration'), key: "durationDisplay", sortable: true },
+        { name: this.$t('socketProfiler.replayResults.columns.status'), key: "statusDisplay", sortable: true },
+      ];
+    },
+    /**
+     * Row action buttons. Computed rather than data so the tooltips
+     * re-evaluate when the UI locale changes.
+     * @returns {Array<Object>} Button descriptors for BasicTable
+     */
+    iterationButtons() {
+      return [
         {
           icon: "arrow-right-circle",
           options: {
             iconOnly: true,
             specifiers: { "btn-outline-primary": true },
           },
-          title: "View iteration sessions",
+          title: this.$t('socketProfiler.replayResults.viewSessions'),
           action: "viewIteration",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     summary() {
       let total = 0;
       let passed = 0;
