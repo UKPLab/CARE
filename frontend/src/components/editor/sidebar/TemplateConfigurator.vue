@@ -640,14 +640,15 @@
           this.pendingOptionRowsByKey[placeholder.id] = [];
         }
       },
+      /**
+       * Sidebar icon for a placeholder row. Seeded types are `link` and `text`;
+       * only `link` has a dedicated icon, the rest use `bi-tag`.
+       *
+       * @param {string} placeholderType - Type from the placeholder row
+       * @returns {string}
+       */
       getPlaceholderIcon(placeholderType) {
-        const iconMap = {
-          "user": "bi bi-person",
-          "study_creator": "bi bi-person-badge",
-          "link": "bi bi-link-45deg",
-          "assignment": "bi bi-file-text",
-        };
-        return iconMap[placeholderType] || "bi bi-tag";
+        return placeholderType === "link" ? "bi bi-link-45deg" : "bi bi-tag";
       },
     },
   };
