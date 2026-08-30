@@ -1,16 +1,16 @@
 <template>
   <div class="p-3">
     <div class="mb-4">
-      <h6>Primary Key Mapping</h6>
+      <h6>{{ $t('assignments.metadata.mapping.primaryKeyHeading') }}</h6>
       <div class="row g-3 align-items-end">
         <div class="col-md-6">
-          <label class="form-label">Source key</label>
+          <label class="form-label">{{ $t('assignments.metadata.mapping.sourceKey') }}</label>
           <select
             :value="primaryKeyMapping.sourceField"
             class="form-select"
             @change="updatePrimaryKeyField('sourceField', $event.target.value)"
           >
-            <option disabled value="">Select a field</option>
+            <option disabled value="">{{ $t('assignments.metadata.mapping.selectField') }}</option>
             <option
               v-for="field in sourceFields"
               :key="`primary-source-${field}`"
@@ -21,7 +21,7 @@
           </select>
         </div>
         <div class="col-md-6">
-          <label class="form-label">Match against</label>
+          <label class="form-label">{{ $t('assignments.metadata.mapping.matchAgainst') }}</label>
           <select
             :value="primaryKeyMapping.targetField"
             class="form-select"
@@ -33,11 +33,11 @@
         </div>
       </div>
       <div class="form-text">
-        This mapping controls how CARE matches uploaded rows to submission owners in the selected assignment.
+        {{ $t('assignments.metadata.mapping.primaryKeyHelp') }}
       </div>
     </div>
 
-    <h6 class="mb-3">Metadata Mappings</h6>
+    <h6 class="mb-3">{{ $t('assignments.metadata.mapping.metadataHeading') }}</h6>
 
     <div v-if="mappingValidationMessages.length > 0" class="alert alert-warning">
       <div
@@ -51,13 +51,13 @@
     <div class="mapping-panel">
       <div class="mapping-panel-header">
         <div class="mapping-panel-title-row">
-          <div class="mapping-col-source">Source key</div>
-          <div class="mapping-col-target">Target metaKey</div>
-          <div class="mapping-col-action">Action</div>
+          <div class="mapping-col-source">{{ $t('assignments.metadata.mapping.sourceKey') }}</div>
+          <div class="mapping-col-target">{{ $t('assignments.metadata.mapping.targetMetaKey') }}</div>
+          <div class="mapping-col-action">{{ $t('assignments.metadata.mapping.action') }}</div>
         </div>
         <BasicButton
           class="btn btn-outline-primary btn-sm"
-          title="Add Mapping"
+          :title="$t('assignments.metadata.mapping.addMapping')"
           @click="$emit('add-mapping')"
         />
       </div>
@@ -66,7 +66,7 @@
         v-if="metadataMappings.length === 0"
         class="text-muted small"
       >
-        No metadata mappings configured yet.
+        {{ $t('assignments.metadata.mapping.empty') }}
       </div>
 
       <div
@@ -80,7 +80,7 @@
             class="form-select"
             @change="updateMappingField(index, 'sourceField', $event.target.value)"
           >
-            <option disabled value="">Select a field</option>
+            <option disabled value="">{{ $t('assignments.metadata.mapping.selectField') }}</option>
             <option
               v-for="field in sourceFields"
               :key="`mapping-source-${mapping.id}-${field}`"
@@ -96,7 +96,7 @@
             :value="mapping.metaKey"
             class="form-control"
             list="metadata-key-presets"
-            placeholder="topic"
+            :placeholder="$t('assignments.metadata.mapping.metaKeyPlaceholder')"
             type="text"
             @input="updateMappingField(index, 'metaKey', $event.target.value)"
           >
@@ -104,7 +104,7 @@
         <div class="mapping-col-action">
           <BasicButton
             class="btn btn-outline-danger btn-sm"
-            title="Remove"
+            :title="$t('assignments.metadata.mapping.remove')"
             :disabled="metadataMappings.length === 1"
             @click="$emit('remove-mapping', index)"
           />

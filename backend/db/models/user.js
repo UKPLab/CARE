@@ -1,4 +1,6 @@
 "use strict";
+
+const TranslatableError = require("../../utils/TranslatableError");
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 const {genSalt, genPwdHash, genPwd} = require("../../webserver/auth/utils.js");
@@ -363,7 +365,7 @@ module.exports = (sequelize, DataTypes) => {
                 });
 
                 if (!user) {
-                    throw new Error("User not found");
+                    throw new TranslatableError("errors.users.userNotFound");
                 }
                 const userDetails = user.get({plain: true});
                 userDetails.roles = userDetails.roles.map((role) => {
@@ -492,16 +494,16 @@ module.exports = (sequelize, DataTypes) => {
          */
         static validatePasswordContent(pwd) {
             if (typeof pwd !== "string" || pwd.length < 8) {
-                throw new Error("Password must be at least 8 characters.");
+                throw new TranslatableError("errors.validation.auth.passwordMinLengthNoLong");
             }
             if (/^\s*$/.test(pwd)) {
-                throw new Error("Password cannot be only spaces or whitespace.");
+                throw new TranslatableError("errors.validation.auth.passwordWhitespaceOnly");
             }
             if (/[\x00-\x1F\x7F]/.test(pwd)) {
-                throw new Error("Password cannot contain control or non-printable characters.");
+                throw new TranslatableError("errors.validation.auth.passwordControlChars");
             }
             if ([...pwd].some((c) => (c.codePointAt(0) || 0) > 0xFFFF)) {
-                throw new Error("Password cannot contain emojis or special symbols. Use letters, numbers, and standard punctuation.");
+                throw new TranslatableError("errors.validation.auth.passwordUnsupportedCharacters");
             }
         }
 
@@ -525,7 +527,7 @@ module.exports = (sequelize, DataTypes) => {
                 );
 
                 if (updatedRowsCount === 0) {
-                    throw new Error("Failed to update user: User not found");
+                    throw new TranslatableError("errors.users.failedToUpdateUser");
                 }
                 // clear the user cache so the updated pwd is loaded immediately
                 if (User.cache){
@@ -593,6 +595,14 @@ module.exports = (sequelize, DataTypes) => {
         }
     }
 
+    // NOTE: unique fields (email, userName, extId, orcidId, samlNameId) are unique
+    // only among non-deleted users, via a partial unique index, not a plain
+    // `unique: true` here. After adding a new unique column (and its migration
+    // that adds `unique: true`), add a follow-up migration that calls
+    // addPartialUniqueIndexes(queryInterface, "user", transaction) from
+    // utils/helper/softDeleteUniqueIndex.js (removePartialUniqueIndexes for its
+    // down()) — otherwise the field stays globally unique and can't be reused
+    // once its owner is soft-deleted.
     User.init(
         {
             firstName: DataTypes.STRING,

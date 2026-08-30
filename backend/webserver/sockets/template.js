@@ -11,6 +11,7 @@ const {
   getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/helper/templateResolver");
+const TranslatableError = require("../../utils/TranslatableError");
 
 /**
  * Handle templates through websocket
@@ -94,10 +95,10 @@ class TemplateSocket extends Socket {
    */
   async createTemplate(data, options) {
     if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
-        throw new Error("Missing required fields: name, description, type, content");
+        throw new TranslatableError("errors.templates.missingCreateFields");
     }
     if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(data.type)) {
-      throw new Error("Access denied: Only administrators can create email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
     }
 
     const defaultLanguage = data.defaultLanguage || "en";
@@ -140,19 +141,19 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}            
    */
   async getContent(data, options){
-    if (!data.templateId) throw new Error("Template ID is required");
-    if (!data.language) throw new Error("Language is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
+    if (!data.language) throw new TranslatableError("errors.templates.languageRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
     
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
     
     if (!isOwner && !isPublicFromOthers) {
-      throw new Error("You can only view templates that you own or public templates from others");
+      throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
 
     const langRow = await this.models["template_content"].findOne({
@@ -231,25 +232,25 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async editContent(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
-    if (!data.language) throw new Error("Language is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
+    if (!data.language) throw new TranslatableError("errors.templates.languageRequired");
     if (!data.ops || !Array.isArray(data.ops)) {
-      throw new Error("Delta operations are required");
+      throw new TranslatableError("errors.templates.deltaOperationsRequired");
     }
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
 
     // Check ownership: users (including admins) can only edit content of their own templates
     if (template.userId !== this.userId) {
-      throw new Error("You can only edit content of templates that you own");
+      throw new TranslatableError("errors.templates.editOwnContentOnly");
     }
 
     // Copied templates cannot be edited
     if (template.sourceId) {
-      throw new Error("Copied templates cannot be edited");
+      throw new TranslatableError("errors.templates.copiedCannotBeEdited");
     }
 
     const bulkEdits = data.ops.map((op, idx) => ({
@@ -276,7 +277,7 @@ class TemplateSocket extends Socket {
    * @param {Object} data                   The data object
    * @param {number} data.templateType      Template type (required, 1-8)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
-   * @param {string} data.placeholderLabel  Placeholder label (required, e.g., "Username")
+   * @param {string} data.placeholderLabel  i18n key for label (required, e.g. "templates.placeholders.labels.emailGeneral.username")
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
    * @param {boolean} [data.required=false] Whether placeholder is required
    * @param {Object} options
@@ -284,12 +285,12 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async addPlaceholder(data, options) {
-    if (!(await this.isAdmin())) throw new Error("Access denied");
+    if (!(await this.isAdmin())) throw new TranslatableError("errors.templates.accessDenied");
     if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7, 8].includes(data.templateType)) {
-      throw new Error("Template type is required and must be 1-8");
+      throw new TranslatableError("errors.templates.typeRequired");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
-      throw new Error("Missing required fields: placeholderKey, placeholderLabel, placeholderType");
+      throw new TranslatableError("errors.templates.missingPlaceholderFields");
     }
 
     const payload = {
@@ -320,16 +321,16 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async updatePlaceholder(data, options) {
-    if (!(await this.isAdmin())) throw new Error("Access denied");
-    if (!data.id) throw new Error("Placeholder ID is required");
-    
+    if (!(await this.isAdmin())) throw new TranslatableError("errors.templates.accessDenied");
+    if (!data.id) throw new TranslatableError("errors.templates.placeholderIdRequired");
+
     const updateData = {};
     if (data.placeholderLabel !== undefined) updateData.placeholderLabel = data.placeholderLabel;
     if (data.placeholderType !== undefined) updateData.placeholderType = data.placeholderType;
     if (data.required !== undefined) updateData.required = data.required;
 
     if (Object.keys(updateData).length === 0) {
-      throw new Error("No fields to update");
+      throw new TranslatableError("errors.templates.noFieldsToUpdate");
     }
 
     return await this.models["placeholder"].updateById(
@@ -351,11 +352,11 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Array>}
    */
   async getAllPlaceholders(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
     
     // Check access: users (including admins) can view placeholders for their own templates or public templates from others
@@ -363,7 +364,7 @@ class TemplateSocket extends Socket {
     const isPublicFromOthers = template.public === true && !isOwner;
     
     if (!isOwner && !isPublicFromOthers) {
-      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+      throw new TranslatableError("errors.templates.viewPlaceholdersOwnOrPublicOnly");
     }
 
     return await this.models["placeholder"].getAllByKey(
@@ -415,16 +416,16 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Array<string>>}
    */
   async getLanguages(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
     if (!isOwner && !isPublicFromOthers) {
-      throw new Error("You can only view templates that you own or public templates from others");
+      throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
 
     const rows = await this.models["template_content"].findAll({
@@ -455,15 +456,15 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async addContent(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
-    if (!data.language) throw new Error("Language is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
+    if (!data.language) throw new TranslatableError("errors.templates.languageRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
     if (template.userId !== this.userId) {
-      throw new Error("You can only add language content to templates that you own");
+      throw new TranslatableError("errors.templates.addLanguageOwnOnly");
     }
 
     const templateContentModel = this.models["template_content"];
@@ -519,13 +520,13 @@ class TemplateSocket extends Socket {
    * @returns {Promise<string|Object>} 
    */
   async resolveTemplatePlaceholders(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
     if (!data.context || typeof data.context !== 'object') {
-      throw new Error("Context object is required");
+      throw new TranslatableError("errors.templates.contextObjectRequired");
     }
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
     const isAdmin = await this.isAdmin();
     const isEmailTemplate = [1, 2, 3, 6].includes(template.type);
@@ -533,10 +534,10 @@ class TemplateSocket extends Socket {
     const isPublicFromOthers = template.public === true && !isOwner;
 
     if (!isAdmin && isEmailTemplate) {
-      throw new Error("Access denied");
+      throw new TranslatableError("errors.templates.accessDenied");
     }
     if (!isAdmin && !isOwner && !isPublicFromOthers) {
-      throw new Error("Access denied");
+      throw new TranslatableError("errors.templates.accessDenied");
     }
     if (!isAdmin) {
       await this.validateResolveContextAccess(data.context, options);
@@ -640,7 +641,8 @@ class TemplateSocket extends Socket {
           options
         );
         if (missing.length > 0) {
-          throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
+          const { key, params } = formatMissingPlaceholderError(missing, { action: "saving" });
+          throw new TranslatableError(key, params);
         }
       }
       await this.assertNoDuplicatePlaceholders(
@@ -674,7 +676,8 @@ class TemplateSocket extends Socket {
         options
       );
       if (missing.length > 0) {
-        throw new Error(formatMissingPlaceholderError(missing, { action: "saving" }));
+        const { key, params } = formatMissingPlaceholderError(missing, { action: "saving" });
+        throw new TranslatableError(key, params);
       }
     }
 
@@ -729,8 +732,8 @@ class TemplateSocket extends Socket {
    * @returns {Promise<void>}
    */
   async closeTemplate(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
-    if (!data.language) throw new Error("Language is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
+    if (!data.language) throw new TranslatableError("errors.templates.languageRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) return;
@@ -754,8 +757,8 @@ class TemplateSocket extends Socket {
    * @returns {Promise<void>}
    */
   async discardDrafts(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
-    if (!data.language) throw new Error("Language is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
+    if (!data.language) throw new TranslatableError("errors.templates.languageRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) return;
@@ -788,12 +791,12 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async detachTemplate(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const copy = await this.models["template"].getById(data.templateId);
-    if (!copy) throw new Error("Template not found");
-    if (copy.userId !== this.userId) throw new Error("You can only detach your own copies");
-    if (!copy.sourceId) throw new Error("Template is not a copy");
+    if (!copy) throw new TranslatableError("errors.templates.notFound");
+    if (copy.userId !== this.userId) throw new TranslatableError("errors.templates.detachOwnCopiesOnly");
+    if (!copy.sourceId) throw new TranslatableError("errors.templates.notACopy");
 
     return await this.models["template"].detach(
       data.templateId,
@@ -814,11 +817,11 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async copyTemplate(data, options) {
-    if (!data.sourceTemplateId) throw new Error("Source template ID is required");
+    if (!data.sourceTemplateId) throw new TranslatableError("errors.templates.sourceTemplateIdRequired");
 
     const source = await this.models["template"].getById(data.sourceTemplateId);
     if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(source?.type)) {
-      throw new Error("Access denied: Only administrators can copy email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCopy");
     }
 
     const copiedTemplate = await this.models["template"].copyTemplate(
@@ -852,11 +855,11 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async updateFromSource(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const copy = await this.models["template"].getById(data.templateId);
-    if (!copy) throw new Error("Template not found");
-    if (copy.userId !== this.userId) throw new Error("You can only update your own copies");
+    if (!copy) throw new TranslatableError("errors.templates.notFound");
+    if (copy.userId !== this.userId) throw new TranslatableError("errors.templates.updateOwnCopiesOnly");
 
     return await this.models["template"].updateFromSource(
       data.templateId,
@@ -875,19 +878,19 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}
    */
   async deleteTemplate(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const template = await this.models["template"].getById(data.templateId, {transaction: options.transaction});
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
 
     if (template.userId !== this.userId) {
-      throw new Error("You can only delete templates that you own");
+      throw new TranslatableError("errors.templates.deleteOwnOnly");
     }
 
     if (template.public && [1, 2, 3, 6, 7].includes(template.type)) {
-      throw new Error("Public email templates cannot be deleted");
+      throw new TranslatableError("errors.templates.publicEmailCannotDelete");
     }
 
     if ([1, 2, 3, 6, 7].includes(template.type)) {
@@ -901,7 +904,7 @@ class TemplateSocket extends Socket {
       });
       if (usedBySettings.length > 0) {
         const settingNames = usedBySettings.map(s => s.key.replace("email.template.", "")).join(", ");
-        throw new Error(`Template is currently assigned as an email template (${settingNames}). Please unassign it in Settings before deleting.`);
+        throw new TranslatableError( "errors.templates.assignedEmailTemplate", {settingNames});
       }
     }
 

@@ -18,8 +18,8 @@
           class="form-select searchable-select-toggle"
           :class="selectClass"
           :disabled="isDisabled"
-          :placeholder="options.placeholder || 'Search...'"
-          aria-label="Search options"
+          :placeholder="options.placeholder || $t('common.search')"
+          :aria-label="$t('common.searchOptions')"
           @keydown.escape.prevent="isOpen = false"
         >
         <button
@@ -51,13 +51,13 @@
               :disabled="option.disabled"
               @mousedown.prevent="selectOption(option, blur)"
             >
-              {{ option.name }}
+              {{ translateMaybeKey(option.name) }}
             </button>
             <div
               v-if="filteredSelectOptions.length === 0"
               class="dropdown-item text-muted disabled"
             >
-              No matches
+              {{ $t('common.noMatches') }}
             </div>
           </div>
         </div>
@@ -76,7 +76,7 @@
           :value="option.value"
           :disabled="option.disabled"
         >
-          {{ option.name }}
+          {{ translateMaybeKey(option.name) }}
         </option>
       </select>
       <select
@@ -90,7 +90,7 @@
           :key="option.id"
           :value="option[options.options.value]"
         >
-          {{ option[options.options.name] }}
+          {{ translateMaybeKey(option[options.options.name]) }}
         </option>
       </select>
     </template>
@@ -99,6 +99,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "FormSelect",
@@ -203,7 +204,7 @@ export default {
       if ((this.options.options?.prependNone || this.options.prependNone) && this.options.options?.table) {
         const valueKey = this.options.options.value || 'id';
         const nameKey = this.options.options.name || 'name';
-        baseOptions = [{ [valueKey]: null, [nameKey]: 'None' }, ...baseOptions];
+        baseOptions = [{ [valueKey]: null, [nameKey]: this.$t('common.none') }, ...baseOptions];
       }
 
       // Filter according to additional Options and add to baseOptions
@@ -233,7 +234,7 @@ export default {
       }
 
       if (this.formData?.isTemplateMode && this.options.options.table === 'document' && this.parentValue?.stepType === 1) {
-        baseOptions = [{ id: null, name: '<Document>' }, ...baseOptions];
+        baseOptions = [{ id: null, name: this.$t('basic.form.placeholders.documentBracket') }, ...baseOptions];
       }
 
       // Add document templates (Type 5) to document dropdown for Editor steps in study creation
@@ -250,9 +251,9 @@ export default {
             const nameKey = this.options.options.name || 'name';
             return {
               [valueKey]: `template:${t.id}`,
-              [nameKey]: `${t.name} (document template)`,
+              [nameKey]: `${t.name} ${this.$t('basic.form.placeholders.documentTemplateSuffix')}`,
               id: `template:${t.id}`,
-              name: `${t.name} (document template)`,
+              name: `${t.name} ${this.$t('basic.form.placeholders.documentTemplateSuffix')}`,
               value: `template:${t.id}`,
               isTemplateOption: true,
               templateId: t.id,
@@ -326,6 +327,7 @@ export default {
       }
       return this.selectOptions.find((option) => option.value === current) || null;
     },
+    translateMaybeKey,
     updateData() {
       // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
       if (this.modelValue === -1) {
