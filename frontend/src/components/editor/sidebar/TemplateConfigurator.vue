@@ -2,11 +2,12 @@
     <div>
       <!-- Warning banner for invalid placeholders -->
       <div v-if="invalidPlaceholders.length > 0" class="alert alert-warning mb-3">
-        <strong>Warning:</strong> The following placeholders are not valid for {{ templateTypeName }} templates:
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.invalidPlaceholdersMessage", { templateType: templateTypeName }) }}
         <ul class="mb-0 mt-2">
           <li v-for="ph in invalidPlaceholders" :key="ph">{{ ph }}</li>
         </ul>
-        These placeholders will be ignored when the template is used.
+        {{ $t("templates.placeholders.invalidPlaceholdersIgnored") }}
       </div>
 
       <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
@@ -27,7 +28,7 @@
   
       <div class="card shadow mb-0 configurator">
         <div class="card-header bg-white">
-          <h3 class="card-title fw-bold mb-0">Placeholders</h3>
+          <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
@@ -43,7 +44,7 @@
                   </div>
                   <div class="d-flex flex-column flex-grow-1">
                     <div class="d-flex align-items-center">
-                      <h5 class="mb-0 me-1">{{ placeholder.label }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
+                      <h5 class="mb-0 me-1">{{ translateMaybeKey(placeholder.label) }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
                       <FormHelp
                         v-if="placeholder.description"
                         :help="getPlaceholderHelp(placeholder)"
@@ -53,7 +54,7 @@
                       v-if="placeholder.description"
                       class="mb-0 text-muted"
                     >
-                      {{ placeholder.description }}
+                      {{ translateMaybeKey(placeholder.description) }}
                     </p>
                     <div
                       v-if="hasPlaceholderOptions(placeholder)"
@@ -124,7 +125,7 @@
                   <BasicButton
                     class="btn btn-primary btn-sm d-flex align-items-center"
                     icon="plus-lg"
-                    text="Add"
+                    :text="$t('common.add')"
                     @click="handlePlaceholderClick(placeholder)"
                   />
                 </div>
@@ -138,6 +139,7 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
+  import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
   import BasicButton from "@/basic/Button.vue";
   import {
     countPlaceholdersByKey,
@@ -203,18 +205,18 @@
         return this.template?.type || null;
       },
       templateTypeName() {
-        if (!this.templateType) return "Unknown";
+        if (!this.templateType) return this.$t("common.unknown");
         const types = {
-          1: "Email - General",
-          2: "Email - Study Session",
-          3: "Email - Assignment",
-          4: "Document - General",
-          5: "Document - Study",
-          6: "Email - Study Close",
-          7: "Email - Submission upload",
-          8: "Prompt",
+          1: this.$t("templates.types.emailGeneral"),
+          2: this.$t("templates.types.emailStudySession"),
+          3: this.$t("templates.types.emailAssignment"),
+          4: this.$t("templates.types.documentGeneral"),
+          5: this.$t("templates.types.documentStudy"),
+          6: this.$t("templates.types.emailStudyClose"),
+          7: this.$t("templates.types.emailSubmissionUpload"),
+          8: this.$t("templates.types.prompt"),
         };
-        return types[this.templateType] || "Unknown";
+        return types[this.templateType] || this.$t("common.unknown");
       },
       availablePlaceholders() {
         if (!this.templateType || !this.placeholderConfigs[this.templateType]) {
@@ -268,8 +270,8 @@
             }
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to load placeholders",
-              message: result.message || "Unknown error",
+              title: this.$t("templates.placeholders.failedToLoad"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -467,87 +469,29 @@
 
         return errors;
       },
+      translateMaybeKey,
       /**
-       * Tooltip text from `longDescriptions` for this template type and key, or `placeholder.description`.
+       * Tooltip from templates.json (`templates.placeholders.help.<typeSlug>.<key>`), or translated description.
        *
        * @param {Object} placeholder - Sidebar placeholder
        * @returns {string}
        */
       getPlaceholderHelp(placeholder) {
-        const type = this.templateType;
-        const key = placeholder.id;
-
-        const longDescriptions = {
-          1: { // Email - General
-            username: "The username of the person receiving the email. For password reset, verification, or registration emails this is the user whose account the email is about.",
-            firstName: "The first name of the person receiving the email.",
-            lastName: "The last name of the person receiving the email.",
-            link: "The URL included in the email (e.g. password reset, verification, or registration).",
-          },
-          2: { // Email - Study Session
-            username: "The person receiving this email. For session start and session finish notifications this is always the submission owner.",
-            link: "The URL to open the review (read-only). Used for session start and session finish.",
-          },
-          3: { // Email - Assignment
-            username: "The username of the reviewer who is assigned to the task.",
-            assignmentType: "How the work is assigned: \"document\" (review by document) or \"submission\" (review by submission).",
-            assignmentName: "The name of the assignment or study the reviewer is assigned to.",
-            link: "The URL for the reviewer to open and start their review session. They must use this link to begin the assigned task.",
-          },
-          6: { // Email - Study Close
-            username: "The username of the session owner who had an open session when the study was closed.",
-            studyName: "The name of the study that was closed.",
-          },
-          7: { // Email - Submission upload
-            username: "The person receiving this email (assignment owner or submitter).",
-            assignmentName: "The title of the assignment.",
-            eventType: "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
-            assignmentId: "Internal assignment ID.",
-            submissionId: "Internal submission ID.",
-            timestamp: "When the submission was uploaded.",
-          },
-          8: { // Prompt
-            pdfText:
-              "Add inserts ~pdfText[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Full text extracted from a PDF. Optional Word range and Page range can be used together: pages are applied first, then words. " +
-              "One number means first N units (page 2 only is From 2 To 2). Leave empty for the full extract.",
-            editorText:
-              "Add inserts ~editorText[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Latest plain text from an HTML/modal editor document (delta plus unsaved draft edits). " +
-              "Optional Word range limits retrieved text for that token only; leave it empty for the full extract. " +
-              "When resolving during step load in the same pass as NLP insertIntoEditor, pass context.editorText explicitly so the value matches what the user sees.",
-            assessmentResult:
-              "Add inserts ~assessmentResult[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Rubric saved in the Assessment sidebar (JSON: criterion → score and comment). " +
-              "Empty when no assessment has been saved.",
-            inlineComments:
-              "Add inserts ~inlineComments[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Structured PDF annotator comments (page, quote, comment, tag). " +
-              "Empty when there are no comments.",
-            nlpAssessmentSuggestion:
-              "Add inserts ~nlpAssessmentSuggestion[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Draft rubric from the NLP service (document_data), not the saved assessment_result. " +
-              "Empty when NLP has not run or produced no draft.",
-            previousAssessmentResult:
-              "Add inserts ~previousAssessmentResult[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Saved assessment_result from a prior study step when carry-over is configured. Same JSON shape as Assessment result. " +
-              "Empty when there is no prior step or carry-over is disabled.",
-            assessmentConfiguration:
-              "Add inserts ~assessmentConfiguration[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Assessment configuration JSON (rubrics, criteria, max points) from linked configuration or inline settings. " +
-              "Use when the prompt needs the rubric definition, not filled scores.",
-            submissionFiles:
-              "Add inserts ~submissionFiles[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Text extracted from a mapped submission file (PDF, TeX, etc.). Optional Word range and Page range can be used together: pages first, then words. " +
-              "Page range uses PDF.js pages when the mapped file is a PDF; a TeX/zip file is treated as one page.",
-            studyContext:
-              "Add inserts ~studyContext[N]~ with the next index (gaps are kept after deletes). Map each index in the hook configuration. " +
-              "Study, step, and document metadata. " +
-              "Useful for grounding prompts without embedding full document text.",
-          },
-        };
-
-        return (longDescriptions[type] && longDescriptions[type][key]) || placeholder.description;
+        const typeSlug = {
+          1: "emailGeneral",
+          2: "emailStudySession",
+          3: "emailAssignment",
+          6: "emailStudyClose",
+          7: "emailSubmissionUpload",
+          8: "prompt",
+        }[this.templateType];
+        if (typeSlug && placeholder.id) {
+          const helpKey = `templates.placeholders.help.${typeSlug}.${placeholder.id}`;
+          if (this.$te(helpKey)) {
+            return this.$t(helpKey);
+          }
+        }
+        return translateMaybeKey(placeholder.description);
       },
       /**
        * Reset per-placeholder insert counts to 0.

@@ -3,7 +3,7 @@
     ref="stepperModal"
     :steps="steps"
     :validation="stepValidation"
-    submit-text="Save Assignment"
+    :submit-text="$t('assignments.dashboard.modal.submitText')"
     @submit="submit"
   >
     <template #title>
@@ -13,7 +13,7 @@
 	<template #step-1>
       <div class="p-3">
         <div class="d-flex align-items-center gap-3 mb-3">
-          <span :class="assignByRole ? 'fw-bold' : 'text-muted'">Roles</span>
+          <span :class="assignByRole ? 'fw-bold' : 'text-muted'">{{ $t('assignments.dashboard.modal.assignMode.roles') }}</span>
           <div class="form-check form-switch mb-0">
             <input
               id="assignModeSwitch"
@@ -25,11 +25,11 @@
             />
             <label class="form-check-label" for="assignModeSwitch" />
           </div>
-          <span :class="assignByUser ? 'fw-bold' : 'text-muted'">Users</span>
+          <span :class="assignByUser ? 'fw-bold' : 'text-muted'">{{ $t('assignments.dashboard.modal.assignMode.users') }}</span>
         </div>
 
         <div v-if="!assignByUser">
-          <p class="text-muted mb-2">Select one or more roles allowed for this assignment.</p>
+          <p class="text-muted mb-2">{{ $t('assignments.dashboard.modal.step1.rolesHint') }}</p>
           <BasicTable
             v-model="selectedRoles"
             :columns="roleColumns"
@@ -40,7 +40,7 @@
         </div>
 
         <div v-else>
-          <p class="text-muted mb-2">Select one or more users allowed for this assignment.</p>
+          <p class="text-muted mb-2">{{ $t('assignments.dashboard.modal.step1.usersHint') }}</p>
           <BasicTable
             v-model="selectedUsers"
             :columns="userColumns"
@@ -68,6 +68,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Multi-step modal for creating and editing assignments.
@@ -90,20 +91,6 @@ export default {
 			formData: {},
 			selectedRoles: [],
 			selectedUsers: [],
-			steps: [
-				{ title: "User Roles" },
-				{ title: "Assignment" },
-			],
-			roleColumns: [
-				{ name: "ID", key: "id", sortable: true },
-				{ name: "Role", key: "name", sortable: true },
-			],
-			userColumns: [
-				{ name: "ID", key: "id", sortable: true },
-				{ name: "Username", key: "userName", sortable: true },
-				{ name: "First Name", key: "firstName", sortable: true },
-				{ name: "Last Name", key: "lastName", sortable: true },
-			],
 			selectionTableOptions: {
 				striped: true,
 				hover: true,
@@ -118,6 +105,26 @@ export default {
 		};
 	},
 	computed: {
+		steps() {
+			return [
+				{ title: this.$t("assignments.dashboard.modal.steps.userRoles") },
+				{ title: this.$t("assignments.dashboard.modal.steps.assignment") },
+			];
+		},
+		roleColumns() {
+			return [
+				{ name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
+				{ name: this.$t("assignments.dashboard.modal.columns.role"), key: "name", sortable: true },
+			];
+		},
+		userColumns() {
+			return [
+				{ name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
+				{ name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName", sortable: true },
+				{ name: this.$t("dashboard.uploadModal.columns.firstName"), key: "firstName", sortable: true },
+				{ name: this.$t("dashboard.uploadModal.columns.lastName"), key: "lastName", sortable: true },
+			];
+		},
 		projectId() {
 		return this.$store.getters["settings/getValueAsInt"]("projects.default");
 		},
@@ -154,8 +161,10 @@ export default {
 				});
 		},
 		modalTitle() {
-			if (this.isCopy) return "Copy Assignment";
-			return this.assignmentId !== 0 ? "Edit Assignment" : "New Assignment";
+			if (this.isCopy) return this.$t("assignments.dashboard.modal.titles.copy");
+			return this.assignmentId !== 0
+				? this.$t("assignments.dashboard.modal.titles.edit")
+				: this.$t("assignments.dashboard.modal.titles.new");
 		},
 	},
 	methods: {
@@ -205,6 +214,7 @@ export default {
 				delete this.formData.id;
 				this.formData.userId = this.currentUserId;
 				this.formData.closed = null;
+				this.formData.parentAssignmentId = assignmentId;
 			}
 
 			this.$refs.stepperModal.open();
@@ -229,8 +239,8 @@ export default {
 				if (!assignmentResult.success) {
 					this.$refs.stepperModal.setWaiting(false);
 					this.eventBus.emit("toast", {
-						title: "Could not save assignment",
-						message: assignmentResult.message,
+						title: this.$t("assignments.dashboard.modal.toasts.saveFailed"),
+						message: resolveApiMessage(assignmentResult),
 						variant: "danger",
 					});
 					return;
@@ -265,8 +275,10 @@ export default {
 				this.$refs.stepperModal.setWaiting(false);
 				this.assignmentId = savedAssignmentId;
 				this.eventBus.emit("toast", {
-					title: "Assignment saved",
-					message: `Assignment has been successfully ${payload.id ? "updated" : "created"}.`,
+					title: this.$t("assignments.dashboard.modal.toasts.saveSuccess.title"),
+					message: payload.id
+						? this.$t("assignments.dashboard.modal.toasts.saveSuccess.messageUpdated")
+						: this.$t("assignments.dashboard.modal.toasts.saveSuccess.messageCreated"),
 					variant: "success",
 				});
 				this.$refs.stepperModal.close();

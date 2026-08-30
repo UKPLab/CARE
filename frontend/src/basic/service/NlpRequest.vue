@@ -211,8 +211,10 @@ export default {
       this.timeoutId = setTimeout(() => {
         if (this.status === 'pending') {
           this.eventBus.emit('toast', {
-            title: "NLP Service Request",
-            message: "Timeout in request for skill: " + this.skill,
+            title: this.$t('common.nlp.serviceRequest'),
+            message: this.$t('errors.nlp.timeout', { 
+              skill: this.skill 
+            }),
             variant: "danger"
           });
           this.status = 'timeout';
@@ -331,11 +333,11 @@ export default {
     /**
      * Persists a hook's single completion to document_data under the service name alone (skill takes multi key).
      *
-     * @param {{ outputText?: string }} response
+     * @param {{ output?: string|null }} response
      * @returns {void}
      */
     saveHookResult(response) {
-      let value = response?.outputText ?? "";
+      let value = response?.output ?? "";
       if (typeof value === "string") {
         try {
           value = JSON.parse(value);

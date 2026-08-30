@@ -1467,6 +1467,64 @@ Anonymise Author in ZIP Export
 
 -----
 
+AI and Automation
+~~~~~~~~~~~~~~~~~
+
+-----
+
+Manage AI Credentials and Models
+--------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to configure AI provider credentials and models, so that
+     I can use approved models in CARE.
+
+   :Acceptance:
+     - I can create, edit, disable, and delete my credentials and models.
+     - I can test a model before using it and share a model with users or roles.
+     - Only the owner can change a credential, model, or its sharing.
+
+-----
+
+Configure and Monitor AI Use
+----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to configure AI hooks and spending limits and inspect AI
+     usage, so that model calls are controlled and auditable.
+
+   :Acceptance:
+     - I can create a hook from a prompt template, choose ordered models, and set its output
+       type.
+     - I can manage cost limits for models, hooks, studies, and study steps.
+     - The AI log shows request status, token usage, and cost.
+     - A hook cannot be saved without a prompt template and at least one model.
+
+-----
+
+Automate Events with Triggers
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to run configured actions when CARE events occur, so that
+     recurring work can be automated.
+
+   :Acceptance:
+     - I can create, edit, enable, disable, and delete a trigger by selecting an event and
+       action.
+     - Trigger Logs shows each run, its status, attempts, and any error message.
+     - I can cancel pending or running jobs, retry failed or cancelled jobs, and re-run
+       completed jobs.
+     - Non-admin users cannot manage triggers or trigger logs.
+
+-----
+
 Admin Features
 ~~~~~~~~~~~~~~
 
@@ -1719,6 +1777,34 @@ Manage Configurations
        (type 0) and validation configurations (type 1).
      - Configurations are immediately available for selection in study steps and submission
        assignments after creation.
+
+-----
+
+Replace Document File from Admin Tools
+--------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to replace the PDF or ZIP file of an existing document from
+     Admin Tools, so that I can correct a wrong submission file without creating a new
+     document or breaking existing links that use the same document id and hash.
+
+   :Acceptance:
+     - From Settings → Admin Tools, I can open the replace-document-file tool.
+     - I can filter and search documents, select one PDF or ZIP document, and upload a
+       replacement file of the same type.
+     - After a successful replace, the document keeps the same id and hash; only the file
+       bytes on disk change.
+     - When I replace a PDF, existing CARE annotations and comments on that document are
+       removed.
+
+     **Negative cases:**
+
+     - When I am not an admin, I cannot use Admin Tools or the replace socket.
+     - When the uploaded file extension does not match the selected document type, the
+       replace is rejected and the stored file is unchanged.
+     - When the selected document is not a PDF or ZIP, the tool does not allow replace.
 
 -----
 

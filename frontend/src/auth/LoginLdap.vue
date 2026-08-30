@@ -9,10 +9,10 @@
           <div
             class="card-header d-flex justify-content-between align-items-center"
           >
-            Institutional Login (LDAP)
+            {{ $t('auth.ldap.institutionalLogin') }}
             <BasicButton
               class="btn btn-sm btn-outline-secondary"
-              text="Back"
+              :title="$t('common.back')"
               @click="backToPasswordLogin"
             />
           </div>
@@ -27,7 +27,7 @@
                 class="col-md-4 col-form-label text-md-right"
                 for="ldapUsername"
               >
-                Institutional Username
+                {{ $t('auth.ldap.institutionalUsername') }}
               </label>
               <div class="col-md-6">
                 <input
@@ -36,7 +36,7 @@
                   autocomplete="username"
                   autofocus
                   class="form-control"
-                  placeholder="Enter your institutional username"
+                  :placeholder="$t('auth.ldap.institutionalUsernamePlaceholder')"
                   required
                   type="text"
                   @blur="checkVal('username')"
@@ -45,7 +45,7 @@
                   class="feedback-invalid"
                   :class="{ invalid: validity['username'] && !validUsername }"
                 >
-                  Please enter your institutional username.
+                  {{ $t('errors.validation.auth.provideInstitutionalUsername') }}
                 </div>
               </div>
             </div>
@@ -54,7 +54,7 @@
                 class="col-md-4 col-form-label text-md-right"
                 for="ldapPassword"
               >
-                Institutional Password
+                {{ $t('auth.ldap.institutionalPassword') }}
               </label>
               <div class="col-md-6">
                 <input
@@ -62,7 +62,7 @@
                   v-model="formData.password"
                   autocomplete="current-password"
                   class="form-control"
-                  placeholder="Enter your institutional password"
+                  :placeholder="$t('auth.ldap.institutionalPasswordPlaceholder')"
                   required
                   type="password"
                   @blur="checkVal('password')"
@@ -71,7 +71,7 @@
                   class="feedback-invalid"
                   :class="{ invalid: validity['password'] && !validPassword }"
                 >
-                  Please enter your institutional password.
+                  {{ $t('errors.validation.auth.provideInstitutionalPassword') }}
                 </div>
               </div>
             </div>
@@ -80,14 +80,14 @@
                 class="btn btn-primary btn-block"
                 type="submit"
                 :loading="isSubmitting"
-                :text="isSubmitting ? 'Signing in...' : 'Login with LDAP'"
+                :text="isSubmitting ? $t('auth.signingIn') : $t('auth.ldap.loginWithLdap')"
               />
             </div>
             <div class="text-center text-muted small">
               <p class="mb-0">
                 <i class="bi bi-shield-lock"></i>
-                Your institutional password is not stored in CARE <br />
-                and is only used for authentication against your institution.
+                {{ $t('auth.ldap.passwordNotStoredLine1') }} <br />
+                {{ $t('auth.ldap.passwordNotStoredLine2') }}
               </p>
             </div>
           </div>
@@ -106,6 +106,7 @@ import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthLoginLdap",
@@ -190,9 +191,10 @@ export default {
 
         if (response.status === 400 || response.status === 401) {
           this.showError = true;
-          this.errorMessage =
-            response.data.message ||
-            "Invalid institutional credentials. Please try again.";
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "errors.auth.invalidInstitutionalCredentials",
+          );
           return false;
         }
 
@@ -232,7 +234,7 @@ export default {
             }
 
             this.showError = true;
-            this.errorMessage = "Unsupported 2FA method returned from server.";
+            this.errorMessage = this.$t("errors.auth.unsupported2FAMethod");
             return false;
           }
 
@@ -243,9 +245,10 @@ export default {
         return false;
       } catch (error) {
         this.showError = true;
-        this.errorMessage =
-          error.response?.data?.message ||
-          "LDAP login failed. Please try again.";
+        this.errorMessage = resolveApiMessage(
+          error.response?.data,
+          "errors.auth.ldapLoginFailed",
+        );
         return false;
       } finally {
         this.isSubmitting = false;

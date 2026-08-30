@@ -1,17 +1,18 @@
 "use strict";
 
 /**
- * Stateless helpers shared by AIService handlers (share UX, normalization, prompts).
+ * Stateless helpers shared by AI handlers.
  *
- * @module webserver/services/ai/helpers
+ * @module utils/helper/ai/helpers
  * @author Akash Gundapuneni
  */
 
 /**
- * Validates the RPC client's numeric `userId` or throws — share flows require a hardened principal.
+ * Validates the RPC client's numeric `userId`.
  *
  * @param {{ userId?: number }} client Incoming RPC invocation context.
- * @returns {number} Positive finite user id suitable for Sequelize filters.
+ * @returns {number} Positive finite user id.
+ * @throws {Error} If the client has no valid user id.
  */
 function requireClientUserId(client) {
     const id = Number(client?.userId);
@@ -22,9 +23,9 @@ function requireClientUserId(client) {
 }
 
 /**
- * Flattens OpenAI-compatible `messages` into a condensed multi-line auditing string while retaining role labels.
+ * Flattens OpenAI-compatible messages into text while retaining role labels.
  *
- * @param {unknown} messages Serialized chat history from client/RPC payloads.
+ * @param {unknown} messages Serialized chat history.
  * @returns {string|null}
  */
 function extractInputText(messages) {
@@ -41,7 +42,9 @@ function extractInputText(messages) {
             } else if (Array.isArray(content)) {
                 normalizedContent = content
                     .map((part) => {
-                        if (typeof part === "string") return part;
+                        if (typeof part === "string") {
+                            return part;
+                        }
                         if (part && typeof part === "object" && typeof part.text === "string") {
                             return part.text;
                         }
@@ -66,36 +69,42 @@ function extractInputText(messages) {
 }
 
 /**
- * Dedupes non-zero integer-ish ids after optional coercion.
+ * Deduplicates positive integer values after optional coercion.
  *
  * @param {Iterable<unknown>} values Source iterable.
- * @param {(value: unknown) => number} [pick=(value)=>Number(value)] Mapper applied before filtration.
+ * @param {(value: unknown) => number} [pick] Mapper applied before filtering.
  * @returns {number[]}
  */
-function uniquePositiveInts(values, pick = (x) => Number(x)) {
-    return [...new Set((values || []).map(pick).filter((n) => Number.isInteger(n) && n > 0))];
+function uniquePositiveInts(values, pick = (value) => Number(value)) {
+    return [...new Set((values || []).map(pick).filter((number) => (
+        Number.isInteger(number) && number > 0
+    )))];
 }
 
 /**
- * Builds the params object passed directly to LiteLLM's completion() call from a credential row and a model name.
+ * Builds parameters for a LiteLLM completion call.
  *
- * @param {Object} credential - Credential row supplying provider auth.
- * @param {string} [credential.provider] - Provider key (e.g. "openai", "ollama").
- * @param {string} [credential.apiKey] - Provider API key.
- * @param {string} [credential.apiBaseUrl] - Optional provider base URL override.
- * @param {string} [credential.apiVersion] - Optional provider API version override.
- * @param {string} modelName - Raw model name as stored in ai_model.model.
- * @returns {Object} Params object accepted by LiteLLM's completion() call.
+ * @param {Object} credential Credential row supplying provider authentication.
+ * @param {string} modelName Raw model name.
+ * @returns {Object} LiteLLM completion parameters.
  */
 function buildLiteLLMParams(credential, modelName) {
-    const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
-    const model = provider && !modelName.startsWith(provider + "/")
+    const provider = typeof credential.provider === "string"
+        ? credential.provider.trim().toLowerCase()
+        : "";
+    const model = provider && !modelName.startsWith(`${provider}/`)
         ? `${provider}/${modelName}`
         : modelName;
     const params = { model, api_key: credential.apiKey };
-    if (provider) params.custom_llm_provider = provider;
-    if (credential.apiBaseUrl) params.api_base = credential.apiBaseUrl;
-    if (credential.apiVersion) params.api_version = credential.apiVersion;
+    if (provider) {
+        params.custom_llm_provider = provider;
+    }
+    if (credential.apiBaseUrl) {
+        params.api_base = credential.apiBaseUrl;
+    }
+    if (credential.apiVersion) {
+        params.api_version = credential.apiVersion;
+    }
     return params;
 }
 

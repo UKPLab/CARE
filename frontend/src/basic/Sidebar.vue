@@ -25,7 +25,7 @@
                 }"
                   :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                   :title="config.title || ''"
-                  :aria-label="config.title || 'Sidebar section'"
+                  :aria-label="config.title || $t('navigation.sidebar.sidebarSection')"
                   :tabindex="isSingleConfig ? '-1' : '0'"
                   :aria-disabled="isSingleConfig ? 'true' : 'false'"
                   :disabled="isSingleConfig"
@@ -68,7 +68,7 @@
                     class="btn btn-sm sidebar-action-button dropdown-toggle"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
-                    title="More actions"
+                    :title="$t('navigation.sidebar.moreActions')"
                 >
                   <LoadIcon
                       icon-name="three-dots-vertical"
@@ -115,7 +115,7 @@
       <li v-if="isShown" class="nav-item">
         <TopBarButton
             :show="isShown"
-            :title="isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'"
+            :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
             class="btn rounded-circle"
             :class="{ 'sidebar-highlight': sidebarIconHighlight }"
             @click="toggleSidebar"
@@ -205,6 +205,11 @@ export default {
       required: false,
       default: true
     },
+    defaultVisible: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
   },
   emits: ['sidebar-change', 'sidebar-action', 'resize', 'sidebar-visibility-change', 'copy'],
   data() {
@@ -214,7 +219,7 @@ export default {
       minWidth: 200,
       maxWidth: 800,
       sidebarWidth: 400,
-      isSidebarVisible: true,
+      isSidebarVisible: this.defaultVisible,
       sidebarIconHighlight: false,
       numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
       isFixed: false,
@@ -325,9 +330,12 @@ export default {
     this.originalWidth = this.width;
     this.internalActiveSlot = this.activeSideBar || null;
 
+    if (window.innerWidth <= 900) {
+      this.isSidebarVisible = false;
+    }
+
     this.initDragController();
     this.initHoverController();
-    this.onResize();
     window.addEventListener('resize', this.onResize);
 
     // Emit the current active sidebar view after mount

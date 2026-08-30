@@ -11,7 +11,14 @@
     remove-close
   >
     <template #title>
-      <span> Study Sessions of {{ studyName }} </span>
+      <i18n-t
+        keypath="dashboard.study.studySessionsOf"
+        tag="span"
+      >
+        <template #name>
+          {{ studyName }}
+        </template>
+      </i18n-t>
     </template>
     <template #body>
       <StudySessionTable
@@ -27,14 +34,14 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          title="Close"
+          :title="$t('common.close')"
           @click="close"
         />
       </span>
       <BasicButton
         v-if="isAdmin"
         class="btn btn-primary"
-        title="Add"
+        :title="$t('common.add')"
         @click="addSingleAssignment"
       />
     </template>
@@ -75,7 +82,7 @@ export default {
       return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
     },
     studyName() {
-      return this.study ? this.study.name : "unknown";
+      return this.study ? this.study.name : this.$t('common.unknown');
     },
     canAddSingleAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.addSingleAssignments");

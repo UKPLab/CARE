@@ -60,8 +60,8 @@ export default {
     exportDownloaded(downloadedObj) {
       if (!downloadedObj.success){
         this.eventBus.emit('toast', {
-          title: "Export Failed",
-          message: "Export failed for " + downloadedObj.id + ".",
+          title: this.$t('errors.download.exportFailedTitle'),
+          message: this.$t('errors.download.exportFailedMessage', { id: downloadedObj.id }),
           variant: "danger"
         });
         return;
@@ -72,8 +72,8 @@ export default {
       downloadObjectsAs(toExport, `${this.name}`, this.outputType);
 
       this.eventBus.emit('toast', {
-          title: "Export Success",
-          message: `Exported ${downloadedObj.id}`,
+          title: this.$t('basic.export.successTitle'),
+          message: this.$t('basic.export.successMessage', { id: downloadedObj.id }),
           variant: "success"
         });
     },

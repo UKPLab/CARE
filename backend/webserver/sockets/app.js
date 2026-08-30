@@ -5,6 +5,7 @@ const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/helper/data.js");
 const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 /**
  * Send data for building the frontend app
@@ -84,13 +85,13 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            // Some tables use userId as a business field (e.g. share recipient) rather than ownership. 
+            // Some tables use userId as a business field (e.g. share recipient) rather than ownership.
             // Such models expose a static validateForeignUserId that performs its own ownership check.
             const model = this.models[data.table];
             const bypassAllowed = typeof model.validateForeignUserId === "function"
                 && await model.validateForeignUserId(data.data, this.userId, transaction);
             if (!bypassAllowed) {
-                throw new Error("You are not allowed to update the table " + data.table + " for another user!");
+                throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table}, "ACCESS_DENIED");
             }
         }
 
@@ -102,9 +103,7 @@ class AppSocket extends Socket {
                     data.data[field.key] === null ||
                     data.data[field.key] === ""
                 ) {
-                    {
-                        throw new Error("Required field missing: " + field.key);
-                    }
+                    throw new TranslatableError("errors.validation.requiredFieldMissing", {fieldKey: field.key}, "VALIDATION_ERROR");
                 }
             }
             // defaults
@@ -137,7 +136,7 @@ class AppSocket extends Socket {
         }
 
         if (!newEntry) {
-            throw new Error("Failed to update data");
+            throw generateError("UPDATE_FAILED", "errors.database.failedToUpdateData");
         }
 
         // check if table has a field with table options
@@ -317,7 +316,7 @@ class AppSocket extends Socket {
 
         if (!record) {
             // Record doesn't exist or was deleted
-            throw generateError("NOT_FOUND", "The requested resource does not exist or has been deleted.");
+            throw generateError("NOT_FOUND", "errors.common.resourceNotFound");
         }
 
         // Now check permissions by attempting to send via filtered sendTable
@@ -328,7 +327,7 @@ class AppSocket extends Socket {
 
         if (result.length === 0) {
             // Record exists but user doesn't have permission
-            throw generateError("ACCESS_DENIED", "You do not have rights to access this data.");
+            throw generateError("ACCESS_DENIED", "errors.common.accessDenied");
         }
     }
 
@@ -351,7 +350,7 @@ class AppSocket extends Socket {
      */
     async subscribeAppData(data, options) {
         if (!data.table) {
-            throw new Error("Table name is required");
+            throw generateError("VALIDATION_ERROR", "errors.validation.tableNameRequired");
         }
 
         // add subscription to the list
@@ -446,13 +445,25 @@ class AppSocket extends Socket {
      */
     async sendOverallSetting(data, options) {
         const { key, value } = data;
+
+        // Users with disableLanguageSelection cannot save app.locale as a user preference
+        if (
+            key === "app.locale"
+            && !(await this.isAdmin())
+            && await this.hasAccess("frontend.preferences.disableLanguageSelection")
+        ) {
+            throw new TranslatableError("errors.settings.cannotChangeLanguage");
+        }
+
         // Admin can set settings for other users (single or bulk)
         if (Array.isArray(data.userIds) && data.userIds.length > 0 && await this.isAdmin()) {
             for (const uid of data.userIds) {
-                await this.models["user_setting"].set(key, value, uid);
+                // Admin may assign any key; skip allowUserOverride guard in user_setting hooks
+                await this.models["user_setting"].set(key, value, uid, { bypassSystemSettingCheck: true });
             }
         } else if (data.userId && await this.isAdmin()) {
-            await this.models["user_setting"].set(key, value, data.userId);
+            // Admin may assign any key; skip allowUserOverride guard in user_setting hooks
+            await this.models["user_setting"].set(key, value, data.userId, { bypassSystemSettingCheck: true });
         } else {
             // Default: set for current user and refresh their settings
             console.log(`Setting ${key} for user ${this.userId} to ${value}`);

@@ -5,26 +5,26 @@
         v-model="templateSelection"
         :fields="templateSelectionFields"
     />
-    <div class="mt-3"><strong>Workflow Steps:</strong></div>
+    <div class="mt-3"><strong>{{ $t('dashboard.study.workflowSteps') }}</strong></div>
     <ul class="list-group">
       <li
           v-for="(workflowStep, index) in workflowSteps"
           :key="workflowStep.id"
           class="list-group-item"
           :class="workflowStep.workflowStepDocument !== null ? 'disabled' : 'list-group-item-primary'">
-        Workflow Step {{ index + 1 }}:
-        {{ workflowStep.stepType === 1 ? 'Annotator' : workflowStep.stepType === 2 ? 'Editor' : 'Unknown' }}
+        {{ $t('dashboard.study.workflowStepWithIndex', { index: index + 1 }) }}
+        {{ getStepTypeName(workflowStep.stepType) }}
       </li>
     </ul>
     <div class="mt-3">
-      <label class="form-label"><strong>Assignment should be based on:</strong></label>
+      <label class="form-label"><strong>{{ $t('dashboard.study.assignmentBase') }}</strong></label>
       <FormSelect v-model="assignmentTypeSelection.type" :options="assignmentTypeFields" />
     </div>
     <div class="mt-3">
       <div class="form-check">
         <input id="emailNotifyCheck" v-model="enableEmailNotification" type="checkbox" class="form-check-input" />
         <label class="form-check-label" for="emailNotifyCheck">
-          <strong>Send email notification to reviewer</strong>
+          <strong>{{ $t('dashboard.study.sendEmailNotificationToReviewer') }}</strong>
         </label>
       </div>
     </div>
@@ -94,7 +94,7 @@ export default {
       return [
         {
           key: "template",
-          label: "Template",
+          label: this.$t("studies.template"),
           type: "select",
           options: this.templates.map(template => ({
             name: template.name,
@@ -107,9 +107,9 @@ export default {
     assignmentTypeFields() {
       return {
         options: [
-          { value: 'document', name: 'Documents' },
-          { value: 'submission', name: 'Submissions' },
-          { value: 'study_session', name: 'Study Sessions' },
+          { value: 'document', name: this.$t("dashboard.study.basedOnDocuments") },
+          { value: 'submission', name: this.$t("dashboard.study.basedOnSubmissions") },
+          { value: 'study_session', name: this.$t("dashboard.study.studySessions") },
         ],
       };
     },
@@ -161,6 +161,11 @@ export default {
     }
   },
   methods: {
+    getStepTypeName(stepType) {
+      if (stepType === 1) return this.$t("dashboard.study.annotator");
+      if (stepType === 2) return this.$t("dashboard.study.editor");
+      return this.$t("common.unknown");
+    },
     reset() {
       this.templateSelection = {};
       this.assignmentTypeSelection = {};

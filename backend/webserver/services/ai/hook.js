@@ -8,7 +8,7 @@
  */
 
 const chat = require("./chat");
-const helpers = require("./helpers");
+const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
 /**
@@ -166,16 +166,22 @@ async function resolveHookReferences(service, values) {
     return resolved;
 }
 
+/** Empty AI result so study sessions continue when hook/model/credential is unavailable. */
+const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
+
 /**
  * Executes an AI hook for the calling client: fills the hook's prompt template from the
  * caller-supplied placeholder `values` (assembled in the frontend from the input mapping),
  * attaches the hook's primary model credential, and forwards through the shared chat path.
  *
+ * For study sessions (studySessionId/studyStepId present), missing/disabled hook, model, or
+ * credential soft-skips with `{ choices: [], output: null }`. Triggers and other callers still fail hard.
+ *
  * @param {Object} service - AIService runtime.
  * @param {Object} client - Authenticated RPC client triggering the hook.
  * @param {Object} data - Hook execution payload (hookId, values, studyId, studySessionId, studyStepId, documentId).
- * @returns {Promise<{choices: unknown[], outputText: string}>} Provider choices plus first-choice text.
- * @throws {Error} If the hook id is invalid or any required model/credential/template is missing.
+ * @returns {Promise<{choices: unknown[], output: string|null}>} Provider choices plus first-choice content (text or JSON string), or null on study soft-skip.
+ * @throws {Error} If the hook id is invalid, or (for non-study callers) hook/model/credential is unavailable.
  */
 async function runHook(service, client, data) {
     const hookId = Number(data?.hookId);
@@ -183,35 +189,47 @@ async function runHook(service, client, data) {
         throw new Error("Missing or invalid hookId");
     }
 
-    const hook = await loadEnabledHook(service, hookId);
-    const modelParams = await resolveHookModelParams(service, hookId);
-    const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
-    const values = await resolveHookReferences(service, rawValues);
-    const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
-    
-    const { additionalParameters, ...credentialParams } = modelParams;
-    const completionData = {
-        ...additionalParameters,
-        ...credentialParams,
-        aiHookId: hookId,
-        messages: [{ role: "user", content: promptText }],
-        outputMode: hook.outputMode,
-        studyId: data?.studyId,
-        studySessionId: data?.studySessionId,
-        studyStepId: data?.studyStepId,
-        documentId: data?.documentId,
-    };
+    try {
+        const hook = await loadEnabledHook(service, hookId);
+        const modelParams = await resolveHookModelParams(service, hookId);
+        const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
+        const values = await resolveHookReferences(service, rawValues);
+        const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
 
-    service.logger.info(
-        `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
-        `aiModelId=${modelParams.aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
-    );
+        const { additionalParameters, ...credentialParams } = modelParams;
+        const completionData = {
+            ...additionalParameters,
+            ...credentialParams,
+            aiHookId: hookId,
+            messages: [{ role: "user", content: promptText }],
+            outputMode: hook.outputMode,
+            studyId: data?.studyId,
+            studySessionId: data?.studySessionId,
+            studyStepId: data?.studyStepId,
+            documentId: data?.documentId,
+        };
 
-    const result = await chat.chatCompletion(service, client, completionData);
-    const content = result.choices?.[0]?.message?.content;
-    const outputText = typeof content === "string" ? content : "";
+        service.logger.info(
+            `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
+            `aiModelId=${modelParams.aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
+        );
 
-    return { choices: result.choices, outputText };
+        const result = await chat.chatCompletion(service, client, completionData);
+        const content = result.choices?.[0]?.message?.content;
+        const output = typeof content === "string" ? content : "";
+
+        return { choices: result.choices, output };
+    } catch (error) {
+        // Study only: deleted/disabled AI stack must not block the session.
+        const isStudyCall = Number(data?.studySessionId) > 0 || Number(data?.studyStepId) > 0;
+        if (isStudyCall) {
+            service.logger.warn(
+                `runHook soft-skip hookId=${hookId}: ${error.message || error}`
+            );
+            return NULL_HOOK_OUTPUT;
+        }
+        throw error;
+    }
 }
 
 module.exports = {

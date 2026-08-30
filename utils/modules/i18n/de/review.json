@@ -1,0 +1,9 @@
+{
+    "evaluateSession": "Diese Sitzung bewerten",
+    "sessionNotFinishedYet": "Diese  Sitzung ist noch nicht beendet. Bitte warten Sie, bis sie geschlossen wurde!",
+    "thankYouForEvaluating": "Vielen Dank für Ihre Bewertung dieser Sitzung!",
+    "sessionAlreadyEvaluated": "Diese Sitzung wurde bereits bewertet.",
+    "makeDecision": "Treffen Sie eine Entscheidung auf Basis dieser Sitzung.",
+    "comment": "Kommentar",
+    "acceptance": "Akzeptanz"
+}

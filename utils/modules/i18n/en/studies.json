@@ -1,0 +1,253 @@
+{
+  "title": "Studies",
+  "study": "Study",
+  "template": "Template",
+  "savedTemplates": "Saved Templates",
+  "manageStudies": "Manage Studies",
+  "addBulkAssignments": "Add Bulk Assignments",
+  "addSingleAssignment": "Add Single Assignment",
+  "editStudy": "Edit study",
+  "deleteStudy": "Delete study",
+  "openStudy": "Open study",
+  "restartStudy": "Restart study",
+  "closeStudy": "Close study",
+  "copyLink": "Copy link to study",
+  "inspectSessions": "Inspect sessions",
+  "saveAsTemplate": "Save as Template",
+  "showInformation": "Show information",
+  "finishStudy": "Finish Study",
+  "finishStudyAgain": "Finish Study Again",
+  "returnToDashboard": "Return to dashboard",
+  "backToDashboard": "Back to Dashboard",
+  "openSessionsBig": "Open Sessions",
+  "openSessionsSmall": "open Sessions",
+  "openSessionsForStudy": "Open sessions for {name}",
+  "resumeSession": "Resume session",
+  "startSession": "Start session",
+  "joinStudy": "Join study",
+  "startStudy": "Start study",
+  "finishSession": "Finish session",
+  "sessionNotStarted": "Session has not started yet",
+  "timeLeft": "Time Left",
+  "notStartedYet": "The study has not started yet!",
+  "noMoreSessions": "No more sessions available for this study.",
+  "clickToStart": "Click \"Start User Study\" to start the user study.",
+  "collaborativeNote": "This is a {collaborative} user study, so everyone can join and proceed with this study simultaneously!",
+  "collaborativeEmphasis": "collaborative",
+  "thankYouParticipation": "Thank you for your participation :-)",
+  "canCloseBrowser": "You can close the browser now!",
+  "thankYouJoining": "Thank you for joining!",
+  "clickFinishToSubmit": "With a click on the finish button, you can submit your results.",
+  "timeExpired": "The time has expired, no more changes are possible.",
+  "foreignUnstartedSession": "This study session has not been started yet and belongs to another user.",
+  "cannotResumeSession": "You cannot start or resume this session.",
+  "columns": {
+    "status": "Status",
+    "created": "Created",
+    "sessions": "Sessions",
+    "started": "Started",
+    "finished": "Finished",
+    "sessionLimit": "Session Limit",
+    "sessionLimitPerUser": "Session Limit per User",
+    "resumable": "Resumable",
+    "collaborative": "Collaborative",
+    "multipleSubmissions": "Multiple Submissions",
+    "sessionStartFinishEmails": "Session Start/Finish Emails",
+    "parentSessionId": "Parent Session ID"
+  },
+  "status": {
+    "notStarted": "Not started",
+    "running": "Running",
+    "closed": "Closed",
+    "ended": "Ended"
+  },
+  "messages": {
+    "studyStarted": "Study started",
+    "enjoy": "Enjoy!",
+    "studyPublishedSuccess": "Study published successfully!",
+    "participantsCanJoin": "Participants can join using the following link:",
+    "studyDeleted": "Study deleted",
+    "studyDeletedMessage": "The study has been deleted",
+    "studyRestarted": "Study restarted",
+    "studyRestartedMessage": "The study has been restarted",
+    "linkCopied": "Link copied",
+    "linkCopiedMessage": "Study link copied to clipboard!",
+    "templateCreatedSuccess": "Template created successfully!",
+    "templateCreated": "Template Created",
+    "templateCreatedMessage": "The template has been created.",
+    "templateSaved": "Template Saved",
+    "templateSavedMessage": "This study has been saved as a template.",
+    "deleteConfirm": "Are you sure you want to delete the study?",
+    "deleteTitle": "Delete Study",
+    "saveAsTemplateConfirm": "Are you sure you want to save this study as a template?",
+    "saveAsTemplateTitle": "Save Study as Template",
+    "studyFinished": "This study has finished on {date}",
+    "studyStartDate": "Start: {date}",
+    "timeLimitNote": "Please note that there is a time limitation of {minutes} min for this study!",
+    "sessionsLeft": "You have {sessions} left for this study.",
+    "sessionsLeftEmphasis": "{count} sessions",
+    "sessionWarning": "There are currently {count} study sessions existing for this study. Deleting it will delete the study sessions!",
+    "sessionFinished": "Session Finished",
+    "sessionFinishedMessage": "Your session has been submitted successfully.",
+    "studySessionErrorTitle": "Study Session Error",
+    "cannotFinishSession": "Cannot finish session",
+    "studyClosedAutoTerminated": "The study has been closed. Sessions are automatically terminated when a study is closed."
+  },
+  "loading": {
+    "title": "Loading Study Step",
+    "nlpError": "An error occurred while processing NLP results. Please try again or skip NLP support.",
+    "serviceError": "An error occurred while processing service results. Please try again or skip service support.",
+    "generalError": "An error occurred while loading the study step. Please try again later.",
+    "buttons": {
+      "tryAgain": "Try Again",
+      "skip": "Skip NLP Support",
+      "skipService": "Skip Service Support"
+    },
+    "messages": [
+      "Thinking through your request...",
+      "Almost there, just refining the details...",
+      "Gathering the best possible answer...",
+      "Just a few more moments, precision takes time...",
+      "Working on something smart for you...",
+      "One moment... I'm thinking faster than it looks...",
+      "Just aligning a few neurons...",
+      "Spinning up some linguistic magic...",
+      "Your request is traveling through a billion neurons...",
+      "Looking around corners for edge cases...",
+      "Running a quick plausibility pass...",
+      "Consulting the wisdom of the crowd...",
+      "Almost ready..."
+    ],
+    "errorTitle": "Error Loading Study Step",
+    "processingTitle": "Processing NLP Requests",
+    "failedTitle": "NLP Requests Failed",
+    "processingServiceTitle": "Processing Service Requests",
+    "failedServiceTitle": "Service Requests Failed",
+    "readyTitle": "Study Step Ready"
+  },
+  "dashboard": {
+    "activeSessions": {
+      "title": "Active Study Sessions",
+      "noSessions": "You have no active study sessions. Enter a study by clicking on the study link or create your own study."
+    },
+    "closedSessions": {
+      "title": "Closed Study Sessions",
+      "noSessions": "You have no closed study sessions."
+    },
+    "studyTitle": "Study: {name}",
+    "studyTitleWithAuthor": "Study: {name} (from {author})",
+    "noName": "<no name>",
+    "noDueDate": "no due date"
+  },
+  "modalTitle": {
+    "createTemplate": "Create Template",
+    "editTemplate": "Edit Template",
+    "newTemplate": "New Template",
+    "createStudy": "Create Study",
+    "editStudy": "Edit Study",
+    "newStudy": "New Study"
+  },
+  "assignUserSession": {
+    "title": "Assign Users to Study Session",
+    "noSessionSelected": "No study session selected!",
+    "selectSessionToProceed": "Please select a study session to proceed.",
+    "selectUsers": "Select Users",
+    "selectUsersDescription": "Select the users you want to assign to this study session.",
+    "confirmCopy": "Are you sure you want to copy this study session for the following users?",
+    "studySessionId": "Study Session ID:",
+    "originalUser": "Original User:",
+    "selectedUsers": "Selected Users:",
+    "usersAssignedToCopy": "Users assigned to study session copy:",
+    "steps": {
+      "userSelection": "User Selection",
+      "confirmation": "Confirmation"
+    },
+    "toasts": {
+      "copiedTitle": "Study sessions copied",
+      "copiedMessage": "Successfully copied study session to {count} user(s).",
+      "copyFailed": "Copy failed"
+    }
+  },
+  "closeModal": {
+    "title": "Close Study",
+    "confirm": "Are you sure you want to close the study {name}?",
+    "notifySessions": "Send email notification to participants with open sessions",
+    "closeStudy": "Close study",
+    "success": {
+      "title": "Study closed",
+      "message": "The study has been closed"
+    },
+    "errors": {
+      "title": "Study closing failed"
+    }
+  },
+  "fields": {
+    "name": {
+      "label": "Name of the study:",
+      "placeholder": "My user study"
+    },
+    "workflowId": {
+      "label": "Select Workflow for Study:",
+      "help": "Choose a workflow template for the study steps."
+    },
+    "tagSetId": {
+      "label": "Tag set for the study:",
+      "help": "Select a tag set to use in the study."
+    },
+    "stepDocuments": {
+      "label": "Assign Documents to Workflow Steps:"
+    },
+    "description": {
+      "label": "Description of the study:",
+      "help": "This text will be displayed at the beginning of the user study!"
+    },
+    "enableEmailNotifications": {
+      "label": "Send email notification on session start/finish",
+      "help": "When enabled, the study owner receives an email each time a participant starts or finishes a session."
+    },
+    "timeLimit": {
+      "label": "How much time does a participant have for the study?",
+      "help": "0 = disable time limitation"
+    },
+    "limitSessions": {
+      "label": "Limit the number of sessions for the study:",
+      "help": "Set the maximum number of times participants can start or resume the study. Each attempt to complete the study is called a session. 0 = unlimited number of sessions."
+    },
+    "limitSessionsPerUser": {
+      "label": "Limit the number of sessions per user for the study:",
+      "help": "Set the maximum number of times each participant can start or resume the study. Each attempt to complete the study is called a session. 0 = unlimited number of sessions per user."
+    },
+    "start": {
+      "label": "Study sessions can't start before"
+    },
+    "end": {
+      "label": "Study sessions can't start after:"
+    },
+    "collab": {
+      "label": "Should the study be collaborative?"
+    },
+    "anonymize": {
+      "label": "Should the comments be anonymized?"
+    },
+    "resumable": {
+      "label": "Should the study be resumable?"
+    },
+    "multipleSubmit": {
+      "label": "Allow multiple submissions?",
+      "help": "Specify whether participants can submit their study multiple times."
+    },
+    "step": {
+      "documentId": {
+        "label": "Select Document",
+        "newEmptyDoc": "New Empty Document"
+      }
+    }
+  },
+  "units": {
+    "minutes": "min",
+    "sessions": "Session(s)"
+  },
+  "values": {
+    "unlimited": "unlimited"
+  }
+}

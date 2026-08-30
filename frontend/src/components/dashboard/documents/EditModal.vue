@@ -1,21 +1,22 @@
 <template>
   <BasicCoordinator
     ref="coord"
-    title="Document"
-    text-add="Add"
-    text-update="Change"
-    text-cancel="Abort"
+    :title="$t('documents.document')"
+    :text-add="$t('common.add')"
+    :text-update="$t('common.change')"
+    :text-cancel="$t('common.abort')"
     table="document"
     :read-only-fields="readOnlyFields"
     @submit="update"
   >
     <template #success>
-      The document has been successfully edited.
+      {{ $t('documents.messages.documentEdited') }}
     </template>
   </BasicCoordinator>
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils";
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 
 /* EditModal.vue - modal for editing a document
@@ -53,14 +54,14 @@ export default {
           this.$refs.coord.waiting = false;
 
           this.eventBus.emit('toast', {
-            title: "Document edited",
-            message: "Successfully edited document!",
+            title: this.$t('documents.messages.documentEditedTitle'),
+            message: this.$t('documents.messages.documentEditedMessage'),
             variant: "success"
           });
         } else {
           this.eventBus.emit('toast', {
-            title: "Document edit failed",
-            message: result.message,
+            title: this.$t('errors.documents.documentEditFailed'),
+            message: resolveApiMessage(result),
             variant: "danger"
           });
         }

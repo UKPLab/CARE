@@ -93,6 +93,29 @@ const promptPlaceholders = [
   },
 ];
 
+const emailExamples = [
+  { type: 1, placeholderKey: "username", placeholderExample: "jane.doe" },
+  { type: 1, placeholderKey: "firstName", placeholderExample: "Jane" },
+  { type: 1, placeholderKey: "lastName", placeholderExample: "Doe" },
+  { type: 1, placeholderKey: "link", placeholderExample: "http://localhost:3000/…?token=exampleToken" },
+  { type: 1, placeholderKey: "otp", placeholderExample: "482193" },
+  { type: 1, placeholderKey: "tokenExpiry", placeholderExample: "24" },
+  { type: 2, placeholderKey: "username", placeholderExample: "jane.doe" },
+  { type: 2, placeholderKey: "link", placeholderExample: "http://localhost:3000/review/exampleSessionHash" },
+  { type: 3, placeholderKey: "username", placeholderExample: "jane.doe" },
+  { type: 3, placeholderKey: "assignmentType", placeholderExample: "document" },
+  { type: 3, placeholderKey: "assignmentName", placeholderExample: "Peer Review Pilot" },
+  { type: 3, placeholderKey: "link", placeholderExample: "http://localhost:3000/session/exampleSessionHash" },
+  { type: 6, placeholderKey: "username", placeholderExample: "jane.doe" },
+  { type: 6, placeholderKey: "studyName", placeholderExample: "Peer Review Pilot" },
+  { type: 7, placeholderKey: "username", placeholderExample: "jane.doe" },
+  { type: 7, placeholderKey: "assignmentName", placeholderExample: "Peer Review Pilot" },
+  { type: 7, placeholderKey: "eventType", placeholderExample: "uploaded" },
+  { type: 7, placeholderKey: "assignmentId", placeholderExample: "12" },
+  { type: 7, placeholderKey: "submissionId", placeholderExample: "34" },
+  { type: 7, placeholderKey: "timestamp", placeholderExample: "22 August 2026, 14:29" },
+];
+
 module.exports = {
   async up (queryInterface, Sequelize) {
     await queryInterface.addColumn("placeholder", "placeholderExample", {
@@ -112,6 +135,14 @@ module.exports = {
       })),
       {}
     );
+
+    for (const row of emailExamples) {
+      await queryInterface.bulkUpdate(
+        "placeholder",
+        { placeholderExample: row.placeholderExample, updatedAt: new Date() },
+        { type: row.type, placeholderKey: row.placeholderKey }
+      );
+    }
   },
 
   async down (queryInterface, Sequelize) {

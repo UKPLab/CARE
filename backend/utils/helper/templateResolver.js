@@ -25,6 +25,7 @@ const {
     buildPromptPlaceholderValues,
     resolveEditorText,
 } = require("./templatePromptValues");
+const TranslatableError = require("../TranslatableError");
 
 /**
  * Extract plain text from Quill Delta operations
@@ -284,16 +285,16 @@ async function getTemplateContentForLanguage(templateId, language, models, optio
  */
 async function resolveTemplate(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("Template ID is required");
+        throw new TranslatableError("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("Models object is required");
+        throw new TranslatableError("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Template with ID ${templateId} not found`);
+        throw new TranslatableError( "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {
@@ -353,16 +354,16 @@ async function resolveTemplate(templateId, context, models, options = {}) {
  */
 async function resolveTemplateToDelta(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("Template ID is required");
+        throw new TranslatableError("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("Models object is required");
+        throw new TranslatableError("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Template with ID ${templateId} not found`);
+        throw new TranslatableError( "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {
@@ -575,12 +576,34 @@ async function getUsedPlaceholders(templateId, models, options = {}) {
         });
 }
 
+/**
+ * Build i18n key and params for a missing-placeholder validation failure.
+ *
+ * @param {string[]} missing placeholder keys still required
+ * @param {Object} [options]
+ * @param {string} [options.action="saving"] saving | publishing | assigning
+ * @param {string} [options.language] template_content language code, when checking one locale
+ * @returns {{ key: string, params: Object }} i18n key + params (tokens; language if set) for the caller to throw
+ */
 function formatMissingPlaceholderError(missing, { action = "saving", language } = {}) {
     const tokens = missing.map((k) => `~${k}~`).join(", ");
+    const inLanguageKeys = {
+        publishing: "errors.templates.missingRequiredPlaceholdersInLanguagePublishing",
+        assigning: "errors.templates.missingRequiredPlaceholdersInLanguageAssigning",
+    };
+    const plainKeys = {
+        saving: "errors.templates.missingRequiredPlaceholders",
+        publishing: "errors.templates.missingRequiredPlaceholdersPublishing",
+        assigning: "errors.templates.missingRequiredPlaceholdersAssigning",
+    };
+
     if (language) {
-        return `This email template must include the required placeholder(s): ${tokens} in ${language} before ${action}. Add them from the toolbar in the template editor.`;
+        const key = inLanguageKeys[action] || inLanguageKeys.publishing;
+        return { key, params: { tokens, language } };
     }
-    return `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before ${action}.`;
+
+    const key = plainKeys[action] || plainKeys.saving;
+    return { key, params: { tokens } };
 }
 
 /**
@@ -597,7 +620,7 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
     const action = options.action || "publishing";
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error("Template not found");
+        throw new TranslatableError("errors.templates.notFound");
     }
     if (![1, 2, 3, 6, 7].includes(template.type)) {
         return;
@@ -612,7 +635,8 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
     if (!rows || rows.length === 0) {
         const missing = await getMissingRequiredPlaceholders({ ops: [] }, template.type, models, options);
         if (missing.length > 0) {
-            throw new Error(formatMissingPlaceholderError(missing, { action }));
+            const { key, params } = formatMissingPlaceholderError(missing, { action });
+            throw new TranslatableError(key, params);
         }
         return;
     }
@@ -621,7 +645,8 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
         const content = row.content && row.content.ops ? { ops: row.content.ops } : { ops: [] };
         const missing = await getMissingRequiredPlaceholders(content, template.type, models, options);
         if (missing.length > 0) {
-            throw new Error(formatMissingPlaceholderError(missing, { action, language: row.language }));
+            const { key, params } = formatMissingPlaceholderError(missing, { action, language: row.language });
+            throw new TranslatableError(key, params);
         }
     }
 }

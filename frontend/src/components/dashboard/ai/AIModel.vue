@@ -95,7 +95,7 @@ export default {
     },
     modelFields() {
       const labelButton = {
-        text: this.isLoadingModels ? "Loading..." : "Load Models",
+        text: this.isLoadingModels ? this.$t("common.loading") : this.$t("dashboard.ai.loadModels"),
         disabled: !this.canLoadModelOptions || this.isLoadingModels,
         class: "btn-outline-secondary btn-sm",
         action: "loadModelOptions",
