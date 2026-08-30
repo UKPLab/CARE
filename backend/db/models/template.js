@@ -66,6 +66,24 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Bump updatedAt without changing any column, so copies see "Update available"
+         * after their source content changes.
+         *
+         * Uses an instance save because neither Model.update() nor updateById() persists
+         * updatedAt on its own.
+         *
+         * @param {number} id
+         * @param {Object} [options]
+         * @returns {Promise<void>}
+         */
+        static async touch(id, options = {}) {
+            const instance = await this.findByPk(id, {transaction: options.transaction});
+            if (!instance) return;
+            instance.changed('updatedAt', true);
+            await instance.save({fields: ['updatedAt'], transaction: options.transaction});
+        }
+
+        /**
          * Override getAutoTable to apply custom filtering for templates:
          * - All users (including admins): own templates OR public templates from others
          * - Non-admins: exclude email templates (types 1, 2, 3, 6, 7) - admin-only
