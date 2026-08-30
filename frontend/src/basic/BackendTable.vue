@@ -725,6 +725,14 @@ export default {
       },
       deep: true,
     },
+    search() {
+      if (!this.queryMode) return;
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = setTimeout(() => {
+        this.currentPage = 1;
+        this.fetchQueryPage({nav: {}});
+      }, 300);
+    },
   },
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
@@ -1317,6 +1325,8 @@ export default {
         ? {column: this.sortColumn, direction: this.sortDirection}
         : {column: "id", direction: "ASC"};
       const query = {limit, sort};
+      const search = (this.search || "").trim();
+      if (search) query.search = search;
       // Keyset navigation: absence of all three → first page.
       if (nav.after) query.after = nav.after;
       if (nav.before) query.before = nav.before;
@@ -1345,6 +1355,7 @@ export default {
         after: requestedNav.after || null,
         before: requestedNav.before || null,
         fromEnd: !!requestedNav.fromEnd,
+        search: (this.search || "").trim() || null,
       };
       this.pendingInserts = 0;
       this.anchorDisplacement = 0;
@@ -1504,17 +1515,62 @@ export default {
       }
       return true;
     },
+    /** Coerce sort values so ISO strings / Date / epoch compare consistently. */
+    normalizeSortValue(value) {
+      if (value == null || value === "") return null;
+      if (value instanceof Date) {
+        const t = value.getTime();
+        return Number.isNaN(t) ? null : t;
+      }
+      if (typeof value === "number" && Number.isFinite(value)) return value;
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        // Datetime-like (ISO or "YYYY-MM-DD HH:mm:ss+00")
+        if (/^\d{4}-\d{2}-\d{2}/.test(trimmed) || /^[A-Z][a-z]{2}\s/.test(trimmed)) {
+          const t = Date.parse(trimmed);
+          if (!Number.isNaN(t)) return t;
+        }
+        return trimmed;
+      }
+      return value;
+    },
     compareSort(a, b, direction) {
-      if (a === b) return 0;
-      if (a == null) return 1;
-      if (b == null) return -1;
-      if (a > b) return direction === "ASC" ? 1 : -1;
+      const av = this.normalizeSortValue(a);
+      const bv = this.normalizeSortValue(b);
+      if (av === bv) return 0;
+      // Missing sort key: treat as unknown, not "after the page"
+      if (av == null) return 0;
+      if (bv == null) return 0;
+      if (av > bv) return direction === "ASC" ? 1 : -1;
       return direction === "ASC" ? -1 : 1;
+    },
+    /** Keep queryItems in current sort order (needed after delete backfill merge). */
+    sortRowsByCurrentQuery(rows) {
+      const sort = this.currentQuery?.sort;
+      if (!sort?.column || !rows?.length) return rows || [];
+      const dir = sort.direction || "ASC";
+      return [...rows].sort((ra, rb) => {
+        const cmp = this.compareSort(ra[sort.column], rb[sort.column], dir);
+        if (cmp !== 0) return cmp;
+        // Backend keyset always ties on id ASC (see queryTable forwardOrder)
+        return this.compareSort(ra.id, rb.id, "ASC");
+      });
+    },
+    /**
+     * First/last row of the loaded page in *sort* order (not array index).
+     * Array order can differ after delete-backfill (fills append at bottom).
+     */
+    pageWindowEdge(which) {
+      const sorted = this.sortRowsByCurrentQuery(this.queryItems);
+      if (!sorted.length) return null;
+      return which === "start" ? sorted[0] : sorted[sorted.length - 1];
     },
     isAfterCurrentPage(row) {
       const sort = this.currentQuery?.sort;
       if (!sort || this.queryItems.length === 0) return false;
-      const ref = this.queryItems[this.queryItems.length - 1];
+      if (row[sort.column] == null && row[sort.column] !== 0) return false;
+      const ref = this.pageWindowEdge("end");
+      if (!ref) return false;
       const cmp = this.compareSort(row[sort.column], ref[sort.column], sort.direction);
       if (cmp === 0) {
         return this.compareSort(row.id, ref.id, "ASC") > 0;
@@ -1524,7 +1580,9 @@ export default {
     isBeforeAnchor(row) {
       const sort = this.currentQuery?.sort;
       if (!sort || this.queryItems.length === 0) return false;
-      const anchor = this.queryItems[0];
+      if (row[sort.column] == null && row[sort.column] !== 0) return false;
+      const anchor = this.pageWindowEdge("start");
+      if (!anchor) return false;
       const cmp = this.compareSort(row[sort.column], anchor[sort.column], sort.direction);
       if (cmp === 0) {
         return this.compareSort(row.id, anchor.id, "ASC") < 0;
@@ -1594,21 +1652,41 @@ export default {
       this._backfillBusy = true;
       try {
         const visibleIds = new Set(remaining.map((i) => i.id));
-        // Re-query the SAME keyset window: with rows gone, the server slides the
-        // following rows up into this cursor page. Refresh cursors from the result.
-        const {items: pageItems, meta} = await this.fetchCurrentPageItems();
-        if (meta) {
-          this.queryMeta.startCursor = meta.startCursor;
-          this.queryMeta.endCursor = meta.endCursor;
-          this.queryMeta.hasNext = meta.hasNext;
-          this.queryMeta.hasPrev = meta.hasPrev;
-        }
-        const bottomFill = pageItems
+        // Fill from the *next* page (after current endCursor), not by re-sorting the
+        // same keyset window — mid-window replacements would jump in at the top for DESC.
+        const endCursor = this.queryMeta?.endCursor;
+        const nextPayload = endCursor
+          ? this.buildQueryPayload({after: endCursor})
+          : this.buildQueryPayload(this.currentNav());
+        const {items: nextItems, meta} = await new Promise((resolve, reject) => {
+          if (!this.$socket?.connected) {
+            reject(new Error("socket not connected"));
+            return;
+          }
+          const t = setTimeout(() => reject(new Error("queryTable timeout")), 15000);
+          this.$socket.emit("queryTable", nextPayload, (response) => {
+            clearTimeout(t);
+            if (!response?.success) {
+              reject(new Error(response?.message || "queryTable failed"));
+              return;
+            }
+            const items = (response.data?.items || []).map((row) => this.applyEnrich(row));
+            resolve({items, meta: response.data?.meta || null});
+          });
+        });
+        const bottomFill = nextItems
           .filter((row) => !visibleIds.has(row.id))
           .slice(0, need);
 
-        // Atomic swap: drop placeholders, append next-page rows at bottom
+        // Remaining shift up; new rows always append at the bottom (enter-from-bottom).
         this.queryItems = [...remaining, ...bottomFill].slice(0, pageSize);
+        if (meta) {
+          this.queryMeta.hasNext = meta.hasNext;
+          if (meta.hasPrev != null) this.queryMeta.hasPrev = meta.hasPrev;
+          if (bottomFill.length && meta.endCursor) {
+            this.queryMeta.endCursor = meta.endCursor;
+          }
+        }
         this.placeholderIds = new Set();
         this.enteringIds = [];
         this.enteringTopIds = [];

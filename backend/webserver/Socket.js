@@ -189,7 +189,14 @@ module.exports = class Socket {
                     return acc;
                 }, new Map());
 
+                const companionBroadcasts = [];
                 for (const [table, byOp] of changesMap) {
+                    const model = this.models[table];
+                    if (typeof model?.getCompanionBroadcasts === "function") {
+                        for (const [operation, rows] of byOp) {
+                            companionBroadcasts.push(...model.getCompanionBroadcasts(rows, operation));
+                        }
+                    }
                     // Mixed ops in one txn (e.g. study create+update): pass null so query-mode gets Stale.
                     // Same-op bulk (e.g. multi-delete): pass the operation so clients get per-row Deltas.
                     if (byOp.size > 1) {
@@ -200,6 +207,17 @@ module.exports = class Socket {
                             this.broadcastTable(table, rows, operation);
                         }
                     }
+                }
+                for (const {table, rows, operation} of companionBroadcasts) {
+                    let payload = rows;
+                    // Companion rows are often {id} stubs — load full rows so ACL filters work.
+                    if (payload.length && payload.every((r) => r?.id != null && Object.keys(r).length === 1)) {
+                        const ids = payload.map((r) => r.id);
+                        payload = await this.models[table].getAll({
+                            where: {id: {[Op.in]: ids}, deleted: false},
+                        });
+                    }
+                    await this.broadcastTable(table, payload, operation);
                 }
             }
         } catch (e) {
@@ -593,27 +611,106 @@ module.exports = class Socket {
     }
 
     /**
-     * Handles injections of type count by executing COUNT queries and attaching the result to the data
+     * Resolve queryTable inject specs for a model and viewer.
+     * Models may define static getQueryTableInjects(ctx) or autoTable.queryInjects.
+     * @param {Object} model Sequelize model
+     * @param {number} userId
+     * @param {Date} rolesUpdatedAt
+     * @returns {Promise<Array<Object>>}
+     */
+    async resolveQueryTableInjects(model, userId, rolesUpdatedAt) {
+        if (typeof model.getQueryTableInjects === "function") {
+            return model.getQueryTableInjects({
+                userId,
+                rolesUpdatedAt,
+                hasAccess: (right) => this.hasAccess(right, userId, rolesUpdatedAt),
+            });
+        }
+        const fromAutoTable = model.autoTable?.queryInjects;
+        return fromAutoTable ? [...fromAutoTable] : [];
+    }
+
+    /**
+     * Attach related-table fields to queryTable / query-mode delta rows.
+     * @param {string} tableName autoTable name
+     * @param {Object[]} items rows to enrich
+     * @param {number} userId viewer
+     * @param {Date} rolesUpdatedAt
+     * @returns {Promise<Object[]>}
+     */
+    async enrichQueryTableItems(tableName, items, userId, rolesUpdatedAt) {
+        if (!items?.length) {
+            return items || [];
+        }
+        const model = this.models[tableName];
+        const injects = await this.resolveQueryTableInjects(model, userId, rolesUpdatedAt);
+        if (!injects.length) {
+            return items;
+        }
+        return this.handleInjections(injects, items.map((row) => ({...row})));
+    }
+
+    /**
+     * Handles injections for queryTable rows and legacy sendTable snapshots.
+     * Supports count (related row counts) and parent (flatten parent columns onto each row).
      * @param {Object} injects Instructions on what to inject
      * @param {Object} data Data to query and extend
-     * @returns {Object} data with attached COUNT results
+     * @returns {Object} data with attached COUNT / parent-field results
      */
     async handleInjections(injects, data) {
+        if (!data?.length) {
+            return data || [];
+        }
         for (const injection of injects) {
             if (injection.type === "count") {
-                const count = await this.models[injection.table].findAll({
-                    attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
-                    where: {
-                        [injection.by]: {
-                            [Op.in]: data.map((d) => d.id)
-                        },
-                    },
+                const sourceKey = injection.on || "id";
+                const fkValues = [...new Set(data.map((d) => d[sourceKey]).filter((id) => id != null))];
+                if (!fkValues.length) {
+                    continue;
+                }
+                const injectModel = this.models[injection.table];
+                const where = {
+                    [injection.by]: {[Op.in]: fkValues},
+                };
+                if (injection.where) {
+                    Object.assign(where, injection.where);
+                } else if (injectModel && "deleted" in injectModel.getAttributes()) {
+                    where.deleted = false;
+                }
+                const count = await injectModel.findAll({
+                    attributes: [injection.by, [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]],
+                    where,
                     group: injection.by,
-                    raw: true
+                    raw: true,
                 });
-                // inject in data
                 data = data.map((d) => {
-                    d[injection.as] = Number(count.find((c) => c[injection.by] === d.id)?.count) || 0;
+                    d[injection.as] = Number(count.find((c) => c[injection.by] === d[sourceKey])?.count) || 0;
+                    return d;
+                });
+            } else if (injection.type === "parent") {
+                const parentIds = [...new Set(data.map((d) => d[injection.by]).filter((id) => id != null))];
+                if (!parentIds.length) {
+                    continue;
+                }
+                const parentModel = this.models[injection.table];
+                const parentWhere = {id: {[Op.in]: parentIds}, deleted: false};
+                const parentAttrs = injection.fields?.length
+                    ? injection.fields
+                    : {exclude: ["deleted", "deletedAt", "passwordHash", "salt", "initialPassword"]};
+                const parents = await parentModel.findAll({
+                    where: parentWhere,
+                    attributes: parentAttrs,
+                    raw: true,
+                });
+                const byId = Object.fromEntries(parents.map((p) => [p.id, p]));
+                const fields = injection.fields || Object.keys(parents[0] || {});
+                data = data.map((d) => {
+                    const parent = byId[d[injection.by]];
+                    if (parent) {
+                        for (const field of fields) {
+                            d[field] = parent[field];
+                        }
+                    }
                     return d;
                 });
             }
@@ -966,13 +1063,15 @@ module.exports = class Socket {
         const originSocketId = this.socket?.id || null;
 
         for (const socket of sockets) {
-            if (!(tableName in socket.appDataSubscriptions.tables)) {
+            const isQueryMode = !!(socket.currentQueries && socket.currentQueries[tableName]);
+            if (!(tableName in socket.appDataSubscriptions.tables) && !isQueryMode) {
                 continue;
             }
 
-            const isQueryMode = !!(socket.currentQueries && socket.currentQueries[tableName]);
+            const userId = socket.user.id;
+            const rolesUpdatedAt = socket.user.rolesUpdatedAt;
             // Helper: send this socket either Stale (mixed ops) or one Delta per row.
-            const emitQueryMode = (filteredRows) => {
+            const emitQueryMode = async (filteredRows) => {
                 // No operation (e.g. mixed delete+update in one txn) → Stale, not stacked Deltas.
                 if (!operation) {
                     this.io.to(socket.id).emit(tableName + "Stale", {
@@ -980,9 +1079,12 @@ module.exports = class Socket {
                     });
                     return;
                 }
+                const enrichedRows = await this.enrichQueryTableItems(
+                    tableName, filteredRows, userId, rolesUpdatedAt
+                );
                 // One Delta per row so bulk same-op (multi-delete) can animate / bump
                 // immediately for on-page and next-page rows without a Stale banner.
-                for (const row of filteredRows) {
+                for (const row of enrichedRows) {
                     this.io.to(socket.id).emit(tableName + "Delta", {
                         operation,
                         row,
@@ -991,12 +1093,10 @@ module.exports = class Socket {
                 }
             };
 
-            const userId = socket.user.id;
-            const rolesUpdatedAt = socket.user.rolesUpdatedAt;
             // Same user (any tab): still respect query-mode vs legacy
             if (socket.user.id === this.userId) {
                 if (isQueryMode) {
-                    emitQueryMode(rows);
+                    await emitQueryMode(rows);
                 } else {
                     this.io.to(socket.id).emit(tableName + "Refresh", rows);
                 }
@@ -1011,7 +1111,7 @@ module.exports = class Socket {
             // if socket is admin or table is public, also just send (unless model requires per-user filtering/expansion)
             if (!hasModelUserFilter && !hasBroadcastExpander && (isAdmin || isPublicTable)) {
                 if (isQueryMode) {
-                    emitQueryMode(rows);
+                    await emitQueryMode(rows);
                 } else {
                     this.io.to(socket.id).emit(tableName + "Refresh", rows);
                 }
@@ -1036,7 +1136,7 @@ module.exports = class Socket {
                 continue;
             }
             if (isQueryMode) {
-                emitQueryMode(filteredData);
+                await emitQueryMode(filteredData);
             } else {
                 this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
             }

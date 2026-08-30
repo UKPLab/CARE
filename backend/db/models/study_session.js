@@ -24,6 +24,23 @@ module.exports = (sequelize, DataTypes) => {
         ];
 
         /**
+         * When sessions change, refresh session counts on study rows in query-mode tables.
+         * @param {Object[]} rows changed study_session rows
+         * @returns {Array<{table: string, rows: Object[], operation: string}>}
+         */
+        static getCompanionBroadcasts(rows) {
+            const studyIds = [...new Set(rows.map((row) => row.studyId).filter((id) => id != null))];
+            if (!studyIds.length) {
+                return [];
+            }
+            return [{
+                table: "study",
+                rows: studyIds.map((id) => ({id})),
+                operation: "update",
+            }];
+        }
+
+        /**
          * Check if a new session can be created for a study
          * if not, throw an error
          * @param studyId

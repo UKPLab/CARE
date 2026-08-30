@@ -5,6 +5,7 @@ const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/helper/data.js");
 const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
+const {buildQueryTableSearch, MAX_SEARCH_LENGTH} = require("../../utils/helper/queryTableSearch.js");
 const {Op} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
 
@@ -439,6 +440,7 @@ class AppSocket extends Socket {
      * @param {Object} [data.query]
      * @param {number} [data.query.limit]
      * @param {Object} [data.query.sort] { column, direction }
+     * @param {string} [data.query.search] case-insensitive substring across visible + injected columns
      * @param {string} [data.query.after] endCursor of previous result → next page
      * @param {string} [data.query.before] startCursor of previous result → previous page
      * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
@@ -462,7 +464,7 @@ class AppSocket extends Socket {
             allFilter[Op.or] = mergedClientFilter;
         }
 
-        //TODO: search + column funnel filters on backend (client-side in BackendTable for now)
+        // Column funnel filters stay client-side for now; search is applied below.
 
         const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
         let allAttributes = {exclude: defaultExcludes};
@@ -475,6 +477,34 @@ class AppSocket extends Socket {
         }
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
+
+        const search = typeof query.search === "string"
+            ? query.search.trim().slice(0, MAX_SEARCH_LENGTH)
+            : "";
+        if (search) {
+            const allowedAttributeNames = Array.isArray(allAttributes)
+                ? allAttributes
+                : Object.keys(attributes).filter((name) => !(allAttributes.exclude || []).includes(name));
+            const injectCtx = {
+                userId: this.userId,
+                rolesUpdatedAt: this.rolesUpdatedAt,
+                hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
+            };
+            const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
+            const searchColumns = typeof model.getQueryTableSearchColumns === "function"
+                ? await model.getQueryTableSearchColumns(injectCtx)
+                : null;
+            const searchWhere = buildQueryTableSearch({
+                model,
+                search,
+                allowedAttributeNames,
+                injects,
+                searchColumns,
+            });
+            if (searchWhere) {
+                allFilter = {[Op.and]: [allFilter, searchWhere]};
+            }
+        }
 
         // Rows per page (default 10).
         const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
@@ -530,10 +560,11 @@ class AppSocket extends Socket {
             edges = backward ? edges.slice(edges.length - limit) : edges.slice(0, limit);
         }
 
-        const items = edges.map((edge) => {
+        let items = edges.map((edge) => {
             const node = edge.node;
             return (node && typeof node.get === "function") ? node.get({plain: true}) : node;
         });
+        items = await this.enrichQueryTableItems(table, items, this.userId, this.rolesUpdatedAt);
         const startCursor = edges.length ? edges[0].cursor : null;
         const endCursor = edges.length ? edges[edges.length - 1].cursor : null;
 
@@ -564,6 +595,7 @@ class AppSocket extends Socket {
             before,
             fromEnd,
             filter,
+            search: search || null,
         };
 
         return {

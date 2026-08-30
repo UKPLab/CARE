@@ -12,6 +12,13 @@ module.exports = class MetaModel extends Model {
     static accessMap = [];
 
     /**
+     * Optional queryTable hooks (on autoTable models):
+     * - static getQueryTableInjects(ctx) → inject specs for handleInjections (count, parent, …)
+     * - static getCompanionBroadcasts(rows, operation) → related table deltas after txn commit
+     * - static getQueryTableSearchConditions(needle) → extra OR clauses for search (computed columns)
+     */
+
+    /**
      * Fields for frontend
      * @type {[]}
      */

@@ -119,15 +119,9 @@ export default {
   },
   props: {},
   subscribeTable: [
-    {
-      table: 'study',
-      include: [
-        {table: "user", by: "userId"}
-      ]
-    },
-    "user",
-    'document',
-    'study_session', 'workflow', 'workflow_step', 'study_step', 'template'],
+    "study",
+    "document",
+    "study_session", "workflow", "workflow_step", "study_step", "template"],
   data() {
     return {
       modals: {
@@ -432,18 +426,8 @@ export default {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.canManageStudies");
     },
   },
-  watch: {
-    // Session counts live in Vuex via subscribeTable — re-enrich current page rows
-    "$store.state.table.study_session.data": {
-      deep: true,
-      handler() {
-        this.$refs.studiesBackendTable?.reEnrichItems?.();
-      },
-    },
-  },
   methods: {
     enrichStudyRow(st) {
-      const sessionCounts = this.$store.getters["table/study_session/sessionCountByStudyId"];
       let study = {...st};
 
       if (study.start !== null && new Date(study.start) > new Date()) {
@@ -457,17 +441,6 @@ export default {
       } else {
         study.state = study.closed ? "closed" : "running";
       }
-
-      if (this.canReadPrivateInformation) {
-        const user = this.$store.getters["table/user/get"](study.userId);
-        if (user) {
-          study.firstName = user.firstName;
-          study.lastName = user.lastName;
-        }
-      }
-
-      // Keep raw createdAt for backend sort / delta position checks
-      study.sessions = sessionCounts[study.id] ?? 0;
 
       study.showEditButton = (this.isAdmin || study.userId === this.userId) && !study.closed;
       study.showDeleteButton = this.isAdmin || study.userId === this.userId;

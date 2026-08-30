@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const {Op, where, fn, literal} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -384,6 +385,60 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "projectId",
                 as: "project"
             });
+        }
+
+        /**
+         * Related fields to attach in queryTable / query-mode deltas.
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<Array<Object>>}
+         */
+        static async getQueryTableInjects(ctx) {
+            const injects = [
+                {type: "count", table: "study_session", by: "studyId", as: "sessions"},
+            ];
+            if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                injects.push({
+                    type: "parent",
+                    table: "user",
+                    by: "userId",
+                    fields: ["firstName", "lastName"],
+                });
+            }
+            return injects;
+        }
+
+        /**
+         * Searchable keys aligned with visible Studies dashboard columns (not every DB field).
+         * Virtual keys: sessions (count inject), state (SQL CASE), firstName/lastName (parent inject).
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<string[]>}
+         */
+        static async getQueryTableSearchColumns(ctx) {
+            const columns = ["id", "name", "sessions", "state"];
+            if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                columns.push("firstName", "lastName");
+            }
+            return columns;
+        }
+
+        /**
+         * Search computed `state` the same way Study.vue derives it for the Status column.
+         * @param {string} needle already lowercased search term
+         * @returns {Object}
+         */
+        static getQueryTableSearchConditions(needle) {
+            const stateSql = `CASE
+                WHEN "study"."start" IS NOT NULL AND "study"."start" > NOW() THEN 'not started'
+                WHEN "study"."end" IS NOT NULL AND "study"."end" < NOW() THEN
+                    CASE WHEN "study"."multipleSubmit"
+                        THEN CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
+                        ELSE 'ended'
+                    END
+                ELSE CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
+            END`;
+            return where(fn("STRPOS", fn("LOWER", literal(stateSql)), needle), {[Op.gt]: 0});
         }
 
     }
