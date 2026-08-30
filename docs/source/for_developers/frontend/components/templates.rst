@@ -29,7 +29,8 @@ Backend storage:
 - **template_edit** — draft edits per template and language.  
 - **placeholder** — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).
 
-Location: ``backend/utils/helper/templateResolver.js``
+Location: ``backend/utils/helper/templateResolver.js`` (apply replacements; HTML/Delta output).
+Type 8 value collection: ``backend/utils/helper/templatePromptValues.js``.
 
 Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).  
 Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only keys allowed for ``context.templateType``.
@@ -51,6 +52,7 @@ Location: ``utils/modules/placeholder-tokens``
 This logic is used in:
 
 - ``backend/utils/helper/templateResolver.js`` – placeholder resolution, duplicate checks, and used-index reporting
+- ``backend/utils/helper/templatePromptValues.js`` – type 8 values from context and the database
 - ``backend/webserver/sockets/template.js`` – save validation via the resolver
 
 Frontend Integration
@@ -164,7 +166,7 @@ AI hook runtime: ``backend/webserver/services/ai/hook.js`` (``resolveTemplateWit
 
 At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes ``placeholderExample`` from the
 ``placeholder`` row when set (sample text only; rows may be empty until examples are added).
-``templateResolve`` uses ``buildPromptPlaceholderValues`` in ``backend/utils/helper/templateResolver.js`` for real values from
+``templateResolve`` uses ``buildPromptPlaceholderValues`` in ``backend/utils/helper/templatePromptValues.js`` for real values from
 ``context`` and the database. AI hooks instead pass a value map from the frontend input mapping.
 Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
 if they are missing, those tokens resolve to an empty string.
@@ -174,7 +176,7 @@ Assessment sidebar pre-fill), not the saved rubric in ``assessment_result`` (use
 Resolution is implemented in ``backend/utils/studyNlpDocumentData.js``.
 
 ``~editorText~`` is plain text from the HTML or modal document (``resolveEditorText`` in
-``backend/utils/helper/templateResolver.js``): base ``.delta`` plus session draft edits, including earlier steps in the same
+``backend/utils/helper/templatePromptValues.js``): base ``.delta`` plus session draft edits, including earlier steps in the same
 session. Pass ``context.editorText`` on ``templateResolve`` to override. There is no silent character cap;
 optional ``wordRange`` on the token limits retrieved text. Call
 ``templateResolve`` after step loading (``loadingReady``) or on user action—not in the same pass as NLP
@@ -219,7 +221,8 @@ Adding a New Template Type or Placeholder
    in ``backend/utils/helper/templateResolver.js``.
 
 Email placeholders (types 1, 2, 3, 6) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
-Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` (often from ``document_data`` or
+Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` in
+``backend/utils/helper/templatePromptValues.js`` (often from ``document_data`` or
 ``study_step``). For type 8, new keys must also be listed in the ``promptKeys`` array in ``buildReplacementMap`` so
 that function is invoked.
 
