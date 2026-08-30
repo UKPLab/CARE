@@ -388,6 +388,21 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Row visibility for non-admin / non-fullAccess users.
+         * (createdByUserId IS NULL AND userId = me) OR (createdByUserId = me).
+         * @param {number} userId
+         * @returns {Promise<Object>}
+         */
+        static async getUserFilter(userId) {
+            return {
+                [Op.or]: [
+                    {[Op.and]: [{createdByUserId: null}, {userId}]},
+                    {createdByUserId: userId},
+                ],
+            };
+        }
+
+        /**
          * Related fields to attach in queryTable / query-mode deltas.
          * @param {Object} ctx
          * @param {function(string): Promise<boolean>} ctx.hasAccess

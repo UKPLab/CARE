@@ -157,15 +157,11 @@ export default {
       );
     },
     studyQueryFilter() {
-      const filters = [
+      // Ownership (userId / createdByUserId) is applied server-side via study.getUserFilter.
+      return [
         {key: "projectId", value: this.projectId},
         {key: "template", value: false},
       ];
-      // Approximate ownership filter for users without fullAccess (ACL also applies server-side)
-      if (!this.canViewAllStudies) {
-        filters.push({key: "userId", value: this.userId});
-      }
-      return filters;
     },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");

@@ -543,8 +543,8 @@ module.exports = class Socket {
         let fullRowAccess = isPublicOrAdmin;
 
         if (!fullRowAccess) {
-            // --- Ownership: user always sees their own rows when table has userId ---
-            if (hasUserIdAttribute) {
+            // Skip default userId when the model has its own visibility rule (e.g. study creator/owner).
+            if (hasUserIdAttribute && !hasModelUserFilter) {
                 rowVisibilityConditions.push({userId});
             }
 
