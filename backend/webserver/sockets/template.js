@@ -45,11 +45,24 @@ class TemplateSocket extends Socket {
       if (!studyStep) {
         throw new Error("Study step not found");
       }
-      if (studyStep.documentId && !(await this.checkDocumentAccess(studyStep.documentId))) {
-        throw new Error("Access denied");
-      }
-      if (context.documentId && studyStep.documentId && studyStep.documentId !== context.documentId) {
-        throw new Error("Study step does not match document");
+      if (studyStep.documentId) {
+        if (!(await this.checkDocumentAccess(studyStep.documentId))) {
+          throw new Error("Access denied");
+        }
+        if (context.documentId && studyStep.documentId !== context.documentId) {
+          throw new Error("Study step does not match document");
+        }
+      } else if (!context.studySessionId) {
+        // add() can leave documentId null for editor/modal steps; there is no document ACL then,
+        // so fall back to the study. A studySessionId is checked below and covers participants.
+        let hasStepAccess = await this.hasAccess("frontend.dashboard.studies.fullAccess");
+        if (!hasStepAccess) {
+          const study = await this.models["study"].getById(studyStep.studyId, options);
+          hasStepAccess = !!study && (await this.checkUserAccess(study.userId));
+        }
+        if (!hasStepAccess) {
+          throw new Error("Access denied");
+        }
       }
     }
 
@@ -156,11 +169,11 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
 
-    const langRow = await this.models["template_content"].findOne({
-      where: { templateId: data.templateId, language: data.language, deleted: false },
-      raw: true,
-      ...options,
-    });
+    const langRow = await this.models["template_content"].getByTemplateIdAndLanguage(
+      data.templateId,
+      data.language,
+      options
+    );
 
     let delta = new Delta();
     if (langRow && langRow.content && langRow.content.ops) {
@@ -168,15 +181,11 @@ class TemplateSocket extends Socket {
     }
 
     if (isOwner) {
-      const draftEdits = await this.models["template_edit"].findAll({
-        where: { templateId: data.templateId, language: data.language, draft: true, deleted: false },
-        order: [
-          ["createdAt", "ASC"],
-          ["order", "ASC"],
-        ],
-        raw: true,
-        ...options,
-      });
+      const draftEdits = await this.models["template_edit"].getDrafts(
+        data.templateId,
+        data.language,
+        options
+      );
 
       if (draftEdits.length > 0) {
         const draftDelta = new Delta(dbToDelta(draftEdits));
@@ -198,12 +207,10 @@ class TemplateSocket extends Socket {
         }
 
         if (composedIsInvalid) {
-          await this.models["template_edit"].update(
-            { deleted: true, deletedAt: new Date() },
-            {
-              where: { templateId: data.templateId, language: data.language, draft: true, deleted: false },
-              transaction: options.transaction,
-            }
+          await this.models["template_edit"].discardDrafts(
+            data.templateId,
+            data.language,
+            options
           );
         } else {
           delta = composed;
@@ -428,13 +435,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
 
-    const rows = await this.models["template_content"].findAll({
-      where: { templateId: data.templateId, deleted: false },
-      attributes: ["language"],
-      raw: true,
-      ...options,
-    });
-    const languages = rows.map((r) => r.language).sort();
+    const languages = await this.models["template_content"].getLanguages(data.templateId, options);
     return { languages, defaultLanguage: template.defaultLanguage || "en" };
   }
 
@@ -468,11 +469,11 @@ class TemplateSocket extends Socket {
     }
 
     const templateContentModel = this.models["template_content"];
-    const existing = await templateContentModel.findOne({
-      where: { templateId: data.templateId, language: data.language, deleted: false },
-      raw: true,
-      ...options,
-    });
+    const existing = await templateContentModel.getByTemplateIdAndLanguage(
+      data.templateId,
+      data.language,
+      options
+    );
     if (existing) {
       return { success: true, existing: true };
     }
@@ -612,27 +613,20 @@ class TemplateSocket extends Socket {
       return;
     }
 
-    const edits = await this.models["template_edit"].findAll({
-      where: { templateId, language, draft: true, deleted: false },
-      order: [
-        ["createdAt", "ASC"],
-        ["order", "ASC"],
-      ],
-      raw: true,
-      ...options,
-    });
+    const edits = await this.models["template_edit"].getDrafts(templateId, language, options);
+
+    const templateContentModel = this.models["template_content"];
+    const langRow = await templateContentModel.getByTemplateIdAndLanguage(
+      templateId,
+      language,
+      options
+    );
+    let baseContent = new Delta();
+    if (langRow && langRow.content && langRow.content.ops) {
+      baseContent = new Delta(langRow.content.ops);
+    }
 
     if (edits.length === 0) {
-      const templateContentModel = this.models["template_content"];
-      const langRow = await templateContentModel.findOne({
-        where: { templateId, language, deleted: false },
-        raw: true,
-        ...options,
-      });
-      let baseContent = new Delta();
-      if (langRow && langRow.content && langRow.content.ops) {
-        baseContent = new Delta(langRow.content.ops);
-      }
       if ([1, 2, 3, 6, 7].includes(template.type)) {
         const missing = await getMissingRequiredPlaceholders(
           { ops: baseContent.ops },
@@ -653,17 +647,6 @@ class TemplateSocket extends Socket {
       return;
     }
 
-    const templateContentModel = this.models["template_content"];
-    const langRow = await templateContentModel.findOne({
-      where: { templateId, language, deleted: false },
-      raw: true,
-      ...options,
-    });
-
-    let baseContent = new Delta();
-    if (langRow && langRow.content && langRow.content.ops) {
-      baseContent = new Delta(langRow.content.ops);
-    }
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
@@ -689,10 +672,7 @@ class TemplateSocket extends Socket {
 
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {
-      await templateContentModel.update(contentPayload, {
-        where: { id: langRow.id },
-        transaction: options.transaction,
-      });
+      await templateContentModel.updateById(langRow.id, contentPayload, options);
     } else {
       await templateContentModel.add(
         { templateId, language, content: contentPayload.content },
@@ -700,20 +680,10 @@ class TemplateSocket extends Socket {
       );
     }
 
-    // Mark edits as draft:false
-    await this.models["template_edit"].update(
-      { draft: false },
-      {
-        where: { id: edits.map((e) => e.id) },
-        transaction: options.transaction,
-      }
-    );
+    await this.models["template_edit"].markMerged(edits.map((e) => e.id), options);
 
-    // Touch template.updatedAt so "Update available" works for copies when source content changes
-    // NOTE: Must use instance-level save — Model.update() and updateById both fail to persist updatedAt
-    const templateInstance = await this.models["template"].findByPk(templateId, { transaction: options.transaction });
-    templateInstance.changed('updatedAt', true);
-    await templateInstance.save({ fields: ['updatedAt'], transaction: options.transaction });
+    // Copies show "Update available" off the source's updatedAt
+    await this.models["template"].touch(templateId, options);
 
     this.logger.info(`Template saved successfully.`);
   }
@@ -764,17 +734,10 @@ class TemplateSocket extends Socket {
     if (!template) return;
 
     if (template.userId === this.userId) {
-      await this.models["template_edit"].update(
-        { deleted: true, deletedAt: new Date() },
-        {
-          where: {
-            templateId: data.templateId,
-            language: data.language,
-            draft: true,
-            deleted: false,
-          },
-          transaction: options.transaction,
-        }
+      await this.models["template_edit"].discardDrafts(
+        data.templateId,
+        data.language,
+        options
       );
     }
   }
