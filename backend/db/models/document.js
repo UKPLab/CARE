@@ -376,18 +376,20 @@ module.exports = (sequelize, DataTypes) => {
                 afterUpdate: async (document, options) => {
                     // If the document is deleted, we should also delete the associated db columns
                     if (document.deleted && !document._previousDataValues.deleted) {
+                        const txn = {transaction: options.transaction};
+
                         // delete associated studies
-                        const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id);
+                        const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id, txn);
                         const uniqueStudyIds = [...new Set(study_steps.map(study => study.studyId))];
 
                         for (const studyId of uniqueStudyIds) {
-                            await sequelize.models["study"].deleteById(studyId);
+                            await sequelize.models["study"].deleteById(studyId, txn);
                         }
 
                         // delete associated document_data
-                        const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id);
+                        const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id, txn);
                         for (const documentDataRow of documentDataRows) {
-                            await sequelize.models["document_data"].deleteById(documentDataRow.id);
+                            await sequelize.models["document_data"].deleteById(documentDataRow.id, txn);
                         }
 
                         // delete associated annotations and comments
@@ -395,29 +397,31 @@ module.exports = (sequelize, DataTypes) => {
                             // get document edits
                             const documentEdits = await sequelize.models.document_edit.getAllByKey(
                                 "documentId",
-                                document.id
+                                document.id,
+                                txn
                             );
                             const uniqueDocumentEditIds = [
                                 ...new Set(documentEdits.map((documentEdit) => documentEdit.id)),
                             ];
                             for (const documentEditId of uniqueDocumentEditIds) {
-                                await sequelize.models["document_edit"].deleteById(documentEditId);
+                                await sequelize.models["document_edit"].deleteById(documentEditId, txn);
                             }
                         } else if (document.type === Document.docTypes.DOC_TYPE_PDF) {
                             // get unique annotations and comments ids
                             const annotations = await sequelize.models.annotation.getAllByKey(
                                 "documentId",
-                                document.id
+                                document.id,
+                                txn
                             );
                             const uniqueAnnotationIds = [...new Set(annotations.map((annotation) => annotation.id))];
                             for (const annotationId of uniqueAnnotationIds) {
-                                await sequelize.models["annotation"].deleteById(annotationId);
+                                await sequelize.models["annotation"].deleteById(annotationId, txn);
                             }
 
-                            const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id);
+                            const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id, txn);
                             const uniqueCommentIds = [...new Set(comments.map((comment) => comment.id))];
                             for (const commentId of uniqueCommentIds) {
-                                await sequelize.models["comment"].deleteById(commentId);
+                                await sequelize.models["comment"].deleteById(commentId, txn);
                             }
                         }
                     }
