@@ -146,7 +146,7 @@ export default {
           total: 0,
         },
         search: true,
-        sort: {column: "createdAt", order: "ASC"},
+        sort: {column: "createdAt", order: "DESC"},
       },
     }
   },
@@ -489,7 +489,7 @@ export default {
       } else if (data.action === "openStudy") {
         this.$router.push("/study/" + data.params.hash);
       } else if (data.action === "copyStudyLink") {
-        this.copyLink(data.params.id);
+        this.copyLink(data.params);
       } else if (data.action === "restartStudy") {
         this.$socket.emit("appDataUpdate", {
           table: "study",
@@ -523,9 +523,8 @@ export default {
         this.openInformationModal(filteredParams);
       }
     },
-    async copyLink(studyId) {
-      const study = this.$store.getters["table/study/get"](studyId);
-      if (!study) {
+    async copyLink(row) {
+      if (!row?.hash) {
         this.eventBus.emit('toast', {
           title: "Link not copied",
           message: "Failed to retrieve URL. Try again later.",
@@ -534,7 +533,7 @@ export default {
         return;
       }
 
-      const link = window.location.origin + "/study/" + study.hash;
+      const link = window.location.origin + "/study/" + row.hash;
       try {
         await navigator.clipboard.writeText(link);
         this.eventBus.emit('toast', {
@@ -595,16 +594,15 @@ export default {
       );
     },
     async deleteStudy(row) {
-      const studySessions = this.$store.getters["table/study_session/getFiltered"](
-          (e) => e.studyId === row.id
-      );
+      // Session count from queryTable enrich (row.sessions), not Vuex study_session.
+      const sessionCount = Number(row.sessions) || 0;
       let warning;
-      if (studySessions && studySessions.length > 0) {
-        warning = ` There ${studySessions.length !== 1 ? "are" : "is"} currently ${
-            studySessions.length
-        } ${studySessions.length !== 1 ? "study session" : "study sessions"}
+      if (sessionCount > 0) {
+        warning = ` There ${sessionCount !== 1 ? "are" : "is"} currently ${
+            sessionCount
+        } ${sessionCount !== 1 ? "study session" : "study sessions"}
          existing for this study. Deleting it will delete the ${
-            studySessions.length !== 1 ? "study session" : "study sessions"
+            sessionCount !== 1 ? "study session" : "study sessions"
         }!`;
       } else {
         warning = "";
