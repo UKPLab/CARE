@@ -545,12 +545,17 @@ module.exports = (sequelize, DataTypes) => {
         },
         indexes: [
             {
-            unique: false,
-            fields: ["userId", "template"]
+                unique: false,
+                fields: ["userId", "template"]
             },
             {
-            unique: true,
-            fields: ["id"]
+                unique: false,
+                name: "study_project_list_created",
+                fields: ["projectId", "deleted", "template", "createdAt", "id"]
+            },
+            {
+                unique: true,
+                fields: ["id"]
             }
         ]
     });

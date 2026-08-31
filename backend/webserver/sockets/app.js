@@ -509,7 +509,8 @@ class AppSocket extends Socket {
         // Rows per page (default 10).
         const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
 
-        // Sort column (fallback to id). id is always the tie-breaker so the cursor is stable.
+        // Sort column (fallback to id). id is the tie-breaker so the cursor is stable;
+        // same direction as sortColumn so btree can be scanned forward or backward without a mismatched ORDER BY.
         let sortColumn = query.sort?.column;
         let sortDirection = (query.sort?.direction || "ASC").toUpperCase();
         if (sortDirection !== "ASC" && sortDirection !== "DESC") {
@@ -523,7 +524,7 @@ class AppSocket extends Socket {
         // between first / after / before / fromEnd. Cursor payload = [sortColumn, id].
         const forwardOrder = sortColumn === "id"
             ? [["id", sortDirection]]
-            : [[sortColumn, sortDirection], ["id", "ASC"]];
+            : [[sortColumn, sortDirection], ["id", sortDirection]];
         const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
 
         // Same simple cache as getById/findAll: identical page query (same where/order/
