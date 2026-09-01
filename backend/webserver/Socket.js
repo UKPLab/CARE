@@ -694,8 +694,10 @@ module.exports = class Socket {
                 }
                 const parentModel = this.models[injection.table];
                 const parentWhere = {id: {[Op.in]: parentIds}, deleted: false};
+                // Always include id — Sequelize attributes arrays do not auto-add PK,
+                // and without it byId lookup below fails (firstName/lastName never attached).
                 const parentAttrs = injection.fields?.length
-                    ? injection.fields
+                    ? ["id", ...injection.fields.filter((f) => f !== "id")]
                     : {exclude: ["deleted", "deletedAt", "passwordHash", "salt", "initialPassword"]};
                 const parents = await parentModel.findAll({
                     where: parentWhere,
@@ -703,13 +705,12 @@ module.exports = class Socket {
                     raw: true,
                 });
                 const byId = Object.fromEntries(parents.map((p) => [p.id, p]));
-                const fields = injection.fields || Object.keys(parents[0] || {});
+                const fields = injection.fields || Object.keys(parents[0] || {}).filter((k) => k !== "id");
                 data = data.map((d) => {
                     const parent = byId[d[injection.by]];
-                    if (parent) {
-                        for (const field of fields) {
-                            d[field] = parent[field];
-                        }
+                    for (const field of fields) {
+                        // Always set the key so FE visibleColumns (hasOwnProperty) keeps the column
+                        d[field] = parent ? parent[field] : null;
                     }
                     return d;
                 });

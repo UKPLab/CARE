@@ -389,8 +389,8 @@ export default {
         },
       ];
       if (this.canReadPrivateInformation) {
-        cols.splice(3, 0, {name: "FirstName", key: "firstName"});
-        cols.splice(4, 0, {name: "LastName", key: "lastName"});
+        cols.splice(3, 0, {name: "First Name", key: "firstName"});
+        cols.splice(4, 0, {name: "Last Name", key: "lastName"});
       }
       return cols;
     },
