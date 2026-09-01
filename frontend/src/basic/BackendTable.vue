@@ -185,7 +185,6 @@
             'row-deleting': isDeletingRow(r.id),
             'row-placeholder': isPlaceholderRow(r.id),
             'row-updated': isUpdatedRow(r.id),
-            'row-stale': staleIds && staleIds.has(r.id),
             'row-entering': isEnteringRow(r.id),
             'row-entering-top': isEnteringTopRow(r.id),
             'row-entering-bottom': isEnteringBottomRow(r.id),
@@ -481,7 +480,6 @@ export default {
       deletingIds: new Set(),
       placeholderIds: new Set(),
       updatedIds: [],
-      staleIds: new Set(),
       enteringIds: [],
       enteringTopIds: [],
       enteringBottomIds: [],
@@ -1360,7 +1358,6 @@ export default {
       this.pendingInserts = 0;
       this.anchorDisplacement = 0;
       this.pendingStructural = false;
-      this.staleIds = new Set();
       this.updatedIds = [];
       this.placeholderIds = new Set();
       if (highlightNewFrom) {
@@ -1722,11 +1719,6 @@ export default {
         });
       });
     },
-    markRowStale(id) {
-      const next = new Set(this.staleIds);
-      next.add(id);
-      this.staleIds = next;
-    },
     replaceRow(updatedRow) {
       const enriched = this.applyEnrich(updatedRow);
       const idx = this.queryItems.findIndex((i) => i.id === enriched.id);
@@ -1811,14 +1803,9 @@ export default {
         if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
         if (!this.passesCurrentFilter(row)) {
           if (currentIds.has(row.id)) {
-            this.markRowStale(row.id);
-            // Filtered out of current view (e.g. column filter no longer matches)
-            if (own) {
-              this.markRowDeleted(row.id);
-              this.bumpTotal(-1);
-            } else {
-              this.pendingStructural = true;
-            }
+            // No longer matches current query (filter, search, rights) — remove immediately
+            this.markRowDeleted(row.id);
+            this.bumpTotal(-1);
           }
           return;
         }
@@ -2181,11 +2168,6 @@ export default {
     background-color: var(--bs-body-bg, #fff);
     box-shadow: inset 0 0 0 transparent;
   }
-}
-
-.row-stale {
-  background: rgba(108, 117, 125, 0.18) !important;
-  opacity: 0.7;
 }
 
 .row-entering td,
