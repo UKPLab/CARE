@@ -9,6 +9,6 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "cross-env": "^7.0.3",
-    "jest": "^30.3.0"
+    "jest": "^30.5.0"
   }
 }
