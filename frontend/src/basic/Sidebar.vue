@@ -220,7 +220,8 @@ export default {
       isFixed: false,
       isDragging: false,
       sidebarContainerDom: undefined,
-      originalWidth: undefined
+      originalWidth: undefined,
+      activeSlotStartedAt: null
     };
   },
   computed: {
@@ -336,16 +337,19 @@ export default {
 
   },
   beforeUnmount() {
+    this.trackSidebarSlotDuration();
     window.removeEventListener('resize', this.onResize);
   },
   methods: {
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
+      this.trackSidebarSlotDuration();
       const newSlot = slotName;
       this.internalActiveSlot = newSlot;
 
       // Emit slot change for parent component handling
       this.$emit('sidebar-change', newSlot);
+      this.startSidebarSlotTimer();
     },
     toggleSidebar() {
       this.isSidebarVisible = !this.isSidebarVisible;
@@ -486,6 +490,11 @@ export default {
       this.logResize();
     },
     visibilityChange() {
+      if (this.isSidebarVisible) {
+        this.startSidebarSlotTimer();
+      } else {
+        this.trackSidebarSlotDuration();
+      }
       this.$emit('sidebar-visibility-change', this.isSidebarVisible);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
@@ -498,6 +507,37 @@ export default {
           }
         });
       }
+    },
+    /**
+     * Starts measuring time spent on the active sidebar slot.
+     *
+     * @returns {void}
+     */
+    startSidebarSlotTimer() {
+      this.activeSlotStartedAt = this.isSidebarVisible && this.resolvedActiveSlot
+          ? Date.now()
+          : null;
+    },
+    /**
+     * Logs time spent on the active sidebar slot.
+     *
+     * @returns {void}
+     */
+    trackSidebarSlotDuration() {
+      if (!this.acceptStats || !this.activeSlotStartedAt || !this.resolvedActiveSlot) return;
+      const durationMs = Date.now() - this.activeSlotStartedAt;
+      this.activeSlotStartedAt = null;
+      if (durationMs <= 0) return;
+      this.$socket.emit("stats", {
+        action: "sidebarSlotDuration",
+        data: {
+          slotName: this.resolvedActiveSlot,
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          durationMs,
+        }
+      });
     },
     logResize: debounce(function () {
         if (this.acceptStats) {

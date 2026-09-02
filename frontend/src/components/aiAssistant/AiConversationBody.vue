@@ -31,6 +31,7 @@
           :retryable="retryableMessageId === Number(message.id)"
           :busy="busy"
           @retry="$emit('retry', $event)"
+          @copy="$emit('copy', $event)"
       />
     </template>
   </div>
@@ -69,7 +70,7 @@ export default {
       default: null,
     },
   },
-  emits: ["retry"],
+  emits: ["retry", "copy"],
   methods: {
     /**
      * Scrolls to the newest visible message.

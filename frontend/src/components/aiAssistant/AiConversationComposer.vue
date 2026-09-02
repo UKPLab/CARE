@@ -24,6 +24,7 @@
           placeholder="Ask about this study..."
           :disabled="disabled"
           @input="onInput"
+          @paste="onPaste"
           @keydown.enter.exact.prevent="$emit('send')"
       />
 
@@ -149,7 +150,7 @@ export default {
       default: null,
     },
   },
-  emits: ["update:modelValue", "update:selectedModelId", "send", "abort", "clear-quote"],
+  emits: ["update:modelValue", "update:selectedModelId", "send", "abort", "clear-quote", "paste"],
   computed: {
     disabled() {
       return this.busy || this.readOnly || this.models.length === 0;
@@ -185,6 +186,16 @@ export default {
     onInput(event) {
       this.$emit("update:modelValue", event.target.value);
       this.autoGrow();
+    },
+    /**
+     * Emits pasted text.
+     *
+     * @param {ClipboardEvent} event - Paste event.
+     * @returns {void}
+     */
+    onPaste(event) {
+      const text = event.clipboardData?.getData("text") || "";
+      if (text) this.$emit("paste", {pastedText: text});
     },
     /**
      * Grows the textarea with its content up to a fixed maximum height.

@@ -16,6 +16,7 @@
         :busy="isBusy"
         :retryable-message-id="retryableMessageId"
         @retry="retryMessage"
+        @copy="trackAssistantCopy"
     />
 
     <AiConversationComposer
@@ -32,6 +33,7 @@
         @send="sendMessage"
         @abort="abortMessage"
         @clear-quote="clearQuote"
+        @paste="trackInputPaste"
     />
 
     <AiAssistantRequest
@@ -234,6 +236,25 @@ export default {
       };
     },
     /**
+     * Logs one AI chat behavior event through CARE statistics.
+     *
+     * @param {string} action - Statistic action name.
+     * @param {Object} data - Event metadata.
+     * @returns {void}
+     */
+    trackChatEvent(action, data = {}) {
+      this.$socket.emit("stats", {
+        action,
+        data: {
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          documentId: this.documentId,
+          conversationId: this.activeConversationId,
+          ...data,
+        },
+      });
+    },
+    /**
      * Loads the latest conversation snapshot for the current study step.
      *
      * @returns {Promise<void>}
@@ -313,6 +334,10 @@ export default {
      */
     selectConversation(conversationId) {
       if (this.isBusy || conversationId === this.activeConversationId) return;
+      this.trackChatEvent("aiChatConversationSwitch", {
+        fromConversationId: this.activeConversationId,
+        toConversationId: Number(conversationId),
+      });
       this.setConversationSnapshot({activeConversationId: conversationId});
       this.loadConversation();
     },
@@ -343,6 +368,31 @@ export default {
       if (Number(studyStepId) !== Number(this.studyStepId)) return;
       const quoteText = (text || "").trim();
       this.quote = quoteText ? {text: quoteText, studyStepId, documentId, selectors} : null;
+      if (this.quote) {
+        this.trackChatEvent("aiChatQuoteCreate", {
+          sourceStudyStepId: studyStepId,
+          sourceDocumentId: documentId,
+          length: quoteText.length,
+        });
+      }
+    },
+    /**
+     * Logs pasted chat input text.
+     *
+     * @param {Object} data - Paste metadata.
+     * @returns {void}
+     */
+    trackInputPaste(data) {
+      this.trackChatEvent("aiChatInputPaste", data);
+    },
+    /**
+     * Logs copied assistant text.
+     *
+     * @param {Object} data - Copy metadata.
+     * @returns {void}
+     */
+    trackAssistantCopy(data) {
+      this.trackChatEvent("aiChatAssistantCopy", data);
     },
     /**
      * Clears the pending quote.
@@ -394,6 +444,9 @@ export default {
     async retryMessage(message) {
       this.errorMessage = "";
       const requestId = this.$aiAssistant.createRequestId();
+      this.trackChatEvent("aiChatRetryClick", {
+        assistantMessageId: message.id,
+      });
       this.activeRequest = {
         type: "retry",
         requestId,
@@ -409,6 +462,9 @@ export default {
       if (!this.activeRequest) return;
       this.aborting = true;
       try {
+        this.trackChatEvent("aiChatAbortClick", {
+          requestId: this.activeRequest.requestId,
+        });
         const request = this.$refs.aiAssistantRequest;
         if (!request) return;
         await request.abortRequest();

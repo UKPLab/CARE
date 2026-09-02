@@ -380,12 +380,6 @@ export default {
           target: rangeSelectors.map(selector => ({selector})),
         },
       };
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "aiChatQuote",
-          data: quote,
-        });
-      }
       this.eventBus.emit("aiChatQuote", quote);
       this.eventBus.emit("toast", {
         title: "Quoted to AI chat",

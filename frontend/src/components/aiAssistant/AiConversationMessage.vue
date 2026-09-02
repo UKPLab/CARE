@@ -30,7 +30,7 @@
     </div>
 
     <!-- Completed assistant reply: plain rendered markdown, no bubble. -->
-    <div v-else class="assistant-message">
+    <div v-else class="assistant-message" @copy="onCopy">
       <AiMessageMarkdown :text="displayContent" />
     </div>
   </div>
@@ -82,7 +82,7 @@ export default {
       default: false,
     },
   },
-  emits: ["retry"],
+  emits: ["retry", "copy"],
   computed: {
     role() {
       return Number(this.message.role);
@@ -106,6 +106,21 @@ export default {
       if (this.status === MESSAGE_STATUSES.FAILED) return "Response failed.";
       if (this.status === MESSAGE_STATUSES.ABORTED) return "Response stopped.";
       return this.message.content || "";
+    },
+  },
+  methods: {
+    /**
+     * Emits copied assistant text.
+     *
+     * @returns {void}
+     */
+    onCopy() {
+      const text = window.getSelection ? window.getSelection().toString() : "";
+      if (!text) return;
+      this.$emit("copy", {
+        messageId: this.message.id,
+        copiedText: text,
+      });
     },
   },
 };
