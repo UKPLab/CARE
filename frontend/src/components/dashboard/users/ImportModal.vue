@@ -236,6 +236,7 @@ export default {
       updatedUserCount: null,
       createdUsers: [],
       createdErrors: [],
+      roleMappings: {},
     };
   },
   computed: {
@@ -260,14 +261,8 @@ export default {
         { name: this.$t('common.lastName'), key: "lastName" },
         { name: this.$t('users.columns.email'), key: "email" },
         { name: this.$t('dashboard.projects.roles'), key: "roles" },
-      ],
-      updatedUserCount: null,
-      createdUsers: [],
-      createdErrors: [],
-      roleMappings: {},
-    };
-  },
-  computed: {
+      ];
+    },
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"] || [];
     },
