@@ -110,8 +110,23 @@ async function resolveServiceInput(service, input) {
 
             const parts = [];
 
-            if (selectedFiles.includes("pdf") && pdfText) {
-                parts.push(pdfText);
+            if (selectedFiles.includes("pdf")) {
+                let text = pdfText;
+                if (!text) {
+                    const pdfDoc = await service.server.db.models["document"].findOne({
+                        where: {submissionId, type: 0, deleted: false},
+                        raw: true,
+                    });
+                    const buffer = pdfDoc && await service.server.db.models["document"]
+                        .readDocumentFile(pdfDoc, ".pdf");
+                    if (buffer) {
+                        const pdfRpc = service.server.rpcs["PDFRPC"];
+                        await pdfRpc.wait(500, pdfRpc.timeout);
+                        const extracted = await pdfRpc.getAnnotations({file: buffer});
+                        text = extracted.wholeText;
+                    }
+                }
+                if (text) parts.push(text);
             }
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
