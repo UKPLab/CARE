@@ -72,7 +72,7 @@ test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
 
 .PHONY: lint
-lint: frontend/node_modules/.uptodate
+lint: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-lint
 
 .PHONY: docker
@@ -97,7 +97,7 @@ dev-wizard: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTI
 	cd frontend && npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-frontend
-dev-frontend: frontend/node_modules/.uptodate
+dev-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev
 
 .PHONY: dev-build
@@ -119,7 +119,7 @@ dev-backend-watch: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run start:watch
 
 .PHONY: dev-build-frontend
-dev-build-frontend: frontend/node_modules/.uptodate
+dev-build-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev-build
 
 .PHONY: build
@@ -127,7 +127,7 @@ build:
 	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
 .PHONY: build-frontend
-build-frontend: frontend/node_modules/.uptodate
+build-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-build
 
 .PHONY: rpc_moodle_build
