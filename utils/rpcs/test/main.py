@@ -15,10 +15,10 @@ def create_app():
     def connect(sid, environ, auth):
         logger.info(f"Connection established with {sid}")
 
-    @sio.on("call")
-    def call(sid, data):
-        logger.info(f"Received call: {data} from {sid}")
-        return "World!"
+    @sio.on("healthy")
+    def healthy(sid, data):
+        logger.info(f"Health check from {sid}")
+        return {"success": True, "data": "World!"}
 
 
     logger.info("Creating App...")

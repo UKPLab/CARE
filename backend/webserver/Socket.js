@@ -214,7 +214,7 @@ module.exports = class Socket {
      */
     async broadcastTransactionChanges(transaction) {
         try {
-            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
+            const defaultExcludes = ["deletedAt", "passwordHash", "salt", "apiKey"];
             if (transaction && transaction.changes) {
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
@@ -761,7 +761,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt","apiKey"];
         let allAttributes = {
             exclude: defaultExcludes,
         };

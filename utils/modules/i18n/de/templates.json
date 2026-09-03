@@ -98,6 +98,17 @@
         "assignmentId": "Interne Assignment-ID.",
         "submissionId": "Interne Submission-ID.",
         "timestamp": "Zeitpunkt, zu dem die Submission hochgeladen wurde."
+      },
+      "prompt": {
+        "pdfText": "Text aus dem PDF im aktuellen Kontext.",
+        "editorText": "Aktueller Klartext aus dem HTML-/Modal-Dokument der Study. Beim Laden eines Schritts sollte context.editorText explizit übergeben werden, wenn in demselben Durchlauf wie NLP insertIntoEditor aufgelöst wird.",
+        "assessmentResult": "Die gespeicherte Rubrik aus der Assessment-Sidebar für dieses Dokument und diesen Schritt.",
+        "inlineComments": "Strukturierte Kommentare und Annotationen für dieses Dokument und diesen Schritt.",
+        "nlpAssessmentSuggestion": "NLP-Entwurf der Bewertung für diesen Studienschritt (aus den NLP-document_data des Schritts, nicht aus dem gespeicherten assessment_result). Leer, wenn NLP noch nicht gelaufen ist.",
+        "previousAssessmentResult": "Die gespeicherte Rubrik aus dem vorherigen Schritt, wenn eine Übernahme konfiguriert ist.",
+        "assessmentConfiguration": "Die Assessment-Rubrik-Konfiguration, die in diesem Schritt verwendet wird.",
+        "submissionFiles": "Jedes Hinzufügen fügt ~submissionFiles[N]~ mit dem nächsten freien N ein (höchstes vorhandenes + 1). Lücken bleiben nach dem Löschen erhalten. Ordnen Sie jeden Index in der AI-Hook-Schrittkonfiguration einer bestimmten Submission-Datei zu.",
+        "studyContext": "Grundlegende Metadaten aus dem aktuellen Study-, Schritt- und Dokumentkontext."
       }
     }
   },
@@ -108,7 +119,8 @@
     "documentGeneral": "Dokument - Allgemein",
     "documentStudy": "Dokument - Study",
     "emailStudyClose": "E-Mail - Studienabschluss",
-    "emailSubmissionUpload": "E-Mail - Submission-Upload"
+    "emailSubmissionUpload": "E-Mail - Submission-Upload",
+    "prompt": "Prompt"
   },
   "editor": {
     "newLanguage": "Neue Sprache",
@@ -245,7 +257,8 @@
         "emailStudyClose": "E-Mail - Studienabschluss",
         "emailSubmissionUpload": "E-Mail - Submission-Upload",
         "documentGeneral": "Dokument - Allgemein",
-        "documentStudy": "Dokument - Studie"
+        "documentStudy": "Dokument - Studie",
+        "prompt": "Prompt"
       }
     },
     "defaultLanguage": {

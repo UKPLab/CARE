@@ -154,7 +154,6 @@ module.exports = (sequelize, DataTypes) => {
         sequelize: sequelize, modelName: 'study_session', tableName: 'study_session', hooks: {
             beforeCreate: async (studySession, options) => {
 
-                
                 if(studySession.parentStudySessionId === null){
                     // check for study session availability
                     await StudySession.checkSessionAvailability(studySession.studyId, studySession.userId, options);

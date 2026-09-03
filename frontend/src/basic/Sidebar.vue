@@ -563,14 +563,19 @@ export default {
 }
 
 .sidebar-content {
-  height: 100%;
-  overflow-y: scroll;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 4.5rem;
+  scroll-padding-bottom: 1.5rem;
+  box-sizing: border-box;
 }
 
 #sidepane {
   background-color: #e6e6e6;
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }

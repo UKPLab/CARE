@@ -146,6 +146,30 @@ Admins can do everything, so they are not listed separately in each row.
      - ``frontend.dashboard.my_sessions.view``
      - guest, user
 
+   * - View AI Log dashboard
+     - ``frontend.dashboard.ai_log.view``
+     - user
+
+   * - View AI Models and Credentials dashboard
+     - ``frontend.dashboard.ai_models.view``
+     - user
+
+   * - View AI Hooks dashboard
+     - ``frontend.dashboard.ai_hooks.view``
+     - user
+
+   * - View AI Budget dashboard
+     - ``frontend.dashboard.ai_budget.view``
+     - user
+
+   * - Manage Triggers
+     - ``frontend.dashboard.triggers.view``
+     - None (admin only)
+
+   * - View Trigger Logs
+     - ``frontend.dashboard.trigger_logs.view``
+     - None (admin only)
+
    * - View Studies
      - ``frontend.dashboard.studies.view``
      - guest, user, mentor, teacher
