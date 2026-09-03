@@ -8,6 +8,7 @@ const {
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
   getDuplicatePlaceholderIds,
+  getDuplicatePlaceholderOptionTokens,
   getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/helper/templateResolver");
@@ -570,7 +571,7 @@ class TemplateSocket extends Socket {
   }
 
   /**
-   * Reject save when merged content contains duplicate placeholder ids.
+   * Reject save when merged content contains duplicate placeholder ids or duplicate option names.
    *
    * @param {Object} content - Delta content with ops
    * @param {number} templateType - Template type
@@ -589,6 +590,13 @@ class TemplateSocket extends Socket {
       throw new Error(
         `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
         `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
+      );
+    }
+    const optionDuplicates = getDuplicatePlaceholderOptionTokens(content);
+    if (optionDuplicates.length > 0) {
+      throw new Error(
+        `This template has duplicate options on one placeholder: ${optionDuplicates.join(", ")}. ` +
+        `Each option name (e.g. wordRange) may appear at most once inside {...}.`
       );
     }
   }

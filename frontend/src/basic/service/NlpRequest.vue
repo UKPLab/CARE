@@ -6,7 +6,7 @@
 import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
-import {extractTextFromPDF} from "@/assets/utils";
+import {extractPdfPages} from "@/assets/utils";
 import {
   buildHookResultKey,
   buildServiceSkillKey,
@@ -286,7 +286,7 @@ export default {
       if (!spec || typeof spec !== 'object') return null;
       switch (spec.type) {
         case 'document':
-          // PDF text extracted in the browser and sent as a value.
+          // PDF `{ pages, pageCount }` extracted in the browser and sent as a value.
           return this.extractDocumentText(spec.documentId || this.documentId);
         case 'configuration':
           return {type: "serviceReplacement", input: spec};
@@ -309,13 +309,14 @@ export default {
       }
     },
     /**
-     * Extracts plain text from a document's PDF in the browser via pdf.js.
+     * Extracts per-page text from a document's PDF in the browser via pdf.js.
      *
-     * @param {number} documentId
-     * @returns {Promise<string>}
+     * @param {number} [documentId] - Document id; `{ pages: [], pageCount: 0 }` when missing
+     * @returns {Promise<Object>} `{ pages, pageCount }` from `extractPdfPages`, or empty pages when `documentId` is missing
+     * @throws {Error} When `documentGet` fails
      */
     async extractDocumentText(documentId) {
-      if (!documentId) return "";
+      if (!documentId) return { pages: [], pageCount: 0 };
       const file = await new Promise((resolve, reject) => {
         this.$socket.emit("documentGet", {
           documentId,
@@ -327,7 +328,7 @@ export default {
         });
       });
       const pdf = await pdfjsLib.getDocument(file).promise;
-      return extractTextFromPDF(pdf);
+      return extractPdfPages(pdf);
     },
     /**
      * Persists a hook's single completion to document_data under the service name alone (skill takes multi key).

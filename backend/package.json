@@ -49,6 +49,7 @@
     "passport-ldapauth": "^3.0.1",
     "passport-local": "^1.0.0",
     "passport-orcid": "^0.0.4",
+    "placeholder-tokens": "file:../utils/modules/placeholder-tokens",
     "pg-promise": "^12.7.1",
     "quill-delta": "^5.1.0",
     "sequelize": "^6.37.8",

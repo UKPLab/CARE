@@ -5,7 +5,7 @@
  * @author Mohammad Elwan
  */
 
-import { applyPlaceholderReplacements } from "@/components/editor/template/placeholderTokens.js";
+import { applyPlaceholderReplacements } from "placeholder-tokens";
 
 /**
  * Map API rows to the minimal shape needed for example preview substitution.

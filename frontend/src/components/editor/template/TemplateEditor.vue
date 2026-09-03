@@ -139,8 +139,8 @@
         newLanguageModalMessage: "",
         beforeUnloadHandler: null,
         previewMode: false,
-        placeholderPreviewList: [],
         lastEditorHtml: "",
+        placeholderPreviewList: [],
       };
     },
     computed: {

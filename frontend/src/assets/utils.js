@@ -480,27 +480,39 @@ export function getContrastColor(hexColor) {
 }
 
 /**
- * Extracts text content from a PDF document using PDF.js
+ * Extracts per-page text from a PDF document using PDF.js.
+ * pageCount comes from PDF.js numPages.
+ *
  * @param {Object} pdfDocument - The PDF.js document object
- * @returns {Promise<string>} A promise that resolves to the extracted text
+ * @returns {Promise<Object>} Object with `pages` (string array) and `pageCount` (PDF.js numPages)
  */
-export async function extractTextFromPDF(pdfDocument) {
-    let fullText = '';
-    
-    // Loop through all pages
-    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+export async function extractPdfPages(pdfDocument) {
+    const pages = [];
+    const pageCount = pdfDocument.numPages || 0;
+
+    for (let pageNum = 1; pageNum <= pageCount; pageNum++) {
         const page = await pdfDocument.getPage(pageNum);
         const textContent = await page.getTextContent();
-        
-        // Extract text from the page and normalize whitespace
         const pageText = textContent.items
             .map(item => item.str)
             .join(' ')
-            .replace(/\s+/g, ' ') // Normalize whitespace
+            .replace(/\s+/g, ' ')
             .trim();
-            
-        fullText += pageText + '\n';
+        pages.push(pageText);
     }
-    
-    return fullText;
+
+    return { pages, pageCount };
+}
+
+/**
+ * Extracts text content from a PDF document using PDF.js (`extractPdfPages` joined with newlines).
+ * @param {Object} pdfDocument - The PDF.js document object
+ * @returns {Promise<string>} Joined page text, or `''` when there are no pages
+ */
+export async function extractTextFromPDF(pdfDocument) {
+    const { pages } = await extractPdfPages(pdfDocument);
+    if (pages.length === 0) {
+        return '';
+    }
+    return pages.join('\n') + '\n';
 }

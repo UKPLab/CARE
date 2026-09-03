@@ -71,6 +71,7 @@ test-rpc: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/editor-delta-conversion && npm run test:module -- tests/editor-delta-conversion.test.js
 	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
+	cd utils/modules/placeholder-tokens && npm run test:module -- tests/placeholder-tokens.test.js
 
 .PHONY: lint
 lint: frontend/node_modules/.uptodate
@@ -245,6 +246,7 @@ ifeq ($(OS),Windows_NT)
 	@if exist "backend\node_modules" rmdir /S /Q "backend\node_modules"
 	@if exist "utils\modules\editor-delta-conversion\node_modules" rmdir /S /Q "utils\modules\editor-delta-conversion\node_modules"
 	@if exist "utils\modules\assessment-score\node_modules" rmdir /S /Q "utils\modules\assessment-score\node_modules"
+	@if exist "utils\modules\placeholder-tokens\node_modules" rmdir /S /Q "utils\modules\placeholder-tokens\node_modules"
 	@if exist "dist" rmdir /S /Q "dist"
 	@for %%F in (files*) do if "%%~nxF" neq "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" del "%%F"
 else
@@ -252,6 +254,7 @@ else
 	rm -rf backend/node_modules
 	rm -rf care/utils/modules/editor-delta-conversion/node_modules
 	rm -rf care/utils/modules/assessment-score/node_modules
+	rm -rf care/utils/modules/placeholder-tokens/node_modules
 	rm -rf dist
 	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
 endif
@@ -309,10 +312,10 @@ modules: install-utils-modules
 # All three audits run even if one fails; exit 1 if any failed (npm.cmd avoids PowerShell execution policy on npm.ps1).
 ifeq ($(OS),Windows_NT)
 audit:
-	@powershell -NoProfile -Command "$$e=0; foreach ($$p in @('frontend','backend','utils/modules/editor-delta-conversion','utils/modules/assessment-score')) { Write-Host ''; Write-Host ('=== npm audit: ' + $$p + ' ==='); npm.cmd audit --prefix (Join-Path '$(CURDIR)' $$p); if ($$LASTEXITCODE -ne 0) { $$e=1 } }; exit $$e"
+	@powershell -NoProfile -Command "$$e=0; foreach ($$p in @('frontend','backend','utils/modules/editor-delta-conversion','utils/modules/assessment-score','utils/modules/placeholder-tokens')) { Write-Host ''; Write-Host ('=== npm audit: ' + $$p + ' ==='); npm.cmd audit --prefix (Join-Path '$(CURDIR)' $$p); if ($$LASTEXITCODE -ne 0) { $$e=1 } }; exit $$e"
 else
 audit:
-	@st=0; for d in frontend backend utils/modules/editor-delta-conversion utils/modules/assessment-score; do \
+	@st=0; for d in frontend backend utils/modules/editor-delta-conversion utils/modules/assessment-score utils/modules/placeholder-tokens; do \
 		echo ""; echo "=== npm audit: $$d ==="; \
 		npm audit --prefix $$d || st=1; \
 	done; exit $$st
