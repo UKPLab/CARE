@@ -4,15 +4,19 @@
     name="study-close-modal"
   >
     <template #title>
-      <span>Close Study</span>
+      <span>{{ $t("studies.closeModal.title") }}</span>
     </template>
     <template #body>
       <div>
-        <p>
-          Are you sure you want to close the study
-          <strong v-if="studyName">"{{ studyName }}"</strong>
-          <span v-else>?</span>
-        </p>
+        <i18n-t
+          keypath="studies.closeModal.confirm"
+          tag="p"
+        >
+          <template #name>
+            <strong v-if="studyName">"{{ studyName }}"</strong>
+            <span v-else>?</span>
+          </template>
+        </i18n-t>
         <div class="form-check mt-3">
           <input
             id="notifySessionsCheckbox"
@@ -24,7 +28,7 @@
             class="form-check-label"
             for="notifySessionsCheckbox"
           >
-            Send email notification to participants with open sessions
+            {{ $t("studies.closeModal.notifySessions") }}
           </label>
         </div>
       </div>
@@ -34,12 +38,12 @@
       <div class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('common.cancel')"
           @click="onCancel"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Close study"
+          :text="$t('studies.closeModal.closeStudy')"
           @click="onConfirm"
         />
       </div>
@@ -49,6 +53,7 @@
 
 <script>
 import BasicModal from "@/basic/Modal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 export default {
@@ -85,15 +90,15 @@ export default {
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Study closed",
-              message: "The study has been closed",
+              title: this.$t("studies.closeModal.success.title"),
+              message: this.$t("studies.closeModal.success.message"),
               variant: "success",
             });
             this.$refs.closeModal.close();
           } else {
             this.eventBus.emit("toast", {
-              title: "Study closing failed",
-              message: result.message,
+              title: this.$t("studies.closeModal.errors.title"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }

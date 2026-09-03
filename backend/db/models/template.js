@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const TranslatableError = require("../../utils/TranslatableError");
 const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
 const emailTemplateTypes = Object.freeze([1, 2, 3, 6, 7]);
@@ -77,6 +78,24 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Bump updatedAt without changing any column, so copies see "Update available"
+         * after their source content changes.
+         *
+         * Uses an instance save because neither Model.update() nor updateById() persists
+         * updatedAt on its own.
+         *
+         * @param {number} id
+         * @param {Object} [options]
+         * @returns {Promise<void>}
+         */
+        static async touch(id, options = {}) {
+            const instance = await this.findByPk(id, {transaction: options.transaction});
+            if (!instance) return;
+            instance.changed('updatedAt', true);
+            await instance.save({fields: ['updatedAt'], transaction: options.transaction});
+        }
+
+        /**
          * Override getAutoTable to apply custom filtering for templates:
          * - All users (including admins): own templates OR public templates from others
          * - Non-admins: exclude email templates (emailTemplateTypes) - admin-only
@@ -124,61 +143,65 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name",
+                label: "common.name", 
                 type: "text",
                 required: true,
             },
             {
                 key: "description",
-                label: "Description",
+                label: "common.description",
                 type: "textarea",
                 required: true
             },
             // Published field is excluded from form (handled via table action buttons only)
             {
                 key: "type",
-                label: "Type",
+                label: "common.type",
                 type: "select",
                 required: true,
                 options: [
                     {
-                        name: "Choose type", 
+                        name: "templates.fields.type.options.chooseType",
                         value: null, 
                         disabled: true
                     },
                     {
-                        name: "Email - General", 
+                        name: "templates.fields.type.options.emailGeneral",
                         value: 1
                     },
                     {
-                        name: "Email - Study Session", 
+                        name: "templates.fields.type.options.emailStudySession",
                         value: 2
                     },
                     {
-                        name: "Email - Assignment", 
+                        name: "templates.fields.type.options.emailAssignment",
                         value: 3
                     },
                     {
-                        name: "Email - Study Close", 
+                        name: "templates.fields.type.options.emailStudyClose",
                         value: 6
                     },
                     {
-                        name: "Email - Submission upload",
+                        name: "templates.fields.type.options.emailSubmissionUpload",
                         value: 7
                     },
                     {
-                        name: "Document - General", 
+                        name: "templates.fields.type.options.documentGeneral", 
                         value: 4
                     },
                     {
-                        name: "Document - Study", 
+                        name: "templates.fields.type.options.documentStudy",
                         value: 5
+                    },
+                    {
+                        name: "templates.fields.type.options.prompt",
+                        value: 8
                     }
                 ],
             },
             {
                 key: "defaultLanguage",
-                label: "Default language",
+                label: "templates.fields.defaultLanguage.label",
                 type: "select",
                 required: true,
                 options: [
@@ -204,13 +227,13 @@ module.exports = (sequelize, DataTypes) => {
 
             const source = await Template.findByPk(sourceTemplateId, { transaction });
             if (!source) {
-                throw new Error(`Template with id ${sourceTemplateId} not found`);
+                throw new TranslatableError("errors.templates.withIdNotFound", {sourceTemplateId});
             }
             if (!source.public) {
-                throw new Error("Only public templates can be copied");
+                throw new TranslatableError("errors.templates.onlyPublicCanBeCopied");
             }
             if (source.userId === userId) {
-                throw new Error("Cannot copy your own template");
+                throw new TranslatableError("errors.templates.cannotCopyOwn");
             }
 
             // Prevent duplicate copy (unless overrides.force is true)
@@ -220,7 +243,7 @@ module.exports = (sequelize, DataTypes) => {
                     transaction,
                 });
                 if (existing) {
-                    throw new Error("You have already copied this template");
+                    throw new TranslatableError("errors.templates.alreadyCopied");
                 }
             }
 
@@ -348,12 +371,12 @@ module.exports = (sequelize, DataTypes) => {
 
             const copy = await Template.findByPk(copyId, { transaction });
             if (!copy || !copy.sourceId) {
-                throw new Error("Template is not a copy or does not exist");
+                throw new TranslatableError("errors.templates.notCopyOrDoesNotExist");
             }
 
             const source = await Template.findByPk(copy.sourceId, { transaction });
             if (!source || source.deleted) {
-                throw new Error("Source template is no longer available");
+                throw new TranslatableError("errors.templates.sourceNoLongerAvailable");
             }
 
             // 1. Get all source language content
@@ -434,10 +457,10 @@ module.exports = (sequelize, DataTypes) => {
         static async detach(copyId, options = {}) {
             const copy = await Template.findByPk(copyId, { transaction: options.transaction });
             if (!copy) {
-                throw new Error("Template not found");
+                throw new TranslatableError("errors.templates.notFound");
             }
             if (!copy.sourceId) {
-                throw new Error("Template is not a copy");
+                throw new TranslatableError("errors.templates.notACopy");
             }
             await copy.update({ sourceId: null }, { transaction: options.transaction });
             return await Template.findByPk(copyId, { transaction: options.transaction });
@@ -480,8 +503,7 @@ module.exports = (sequelize, DataTypes) => {
                         template._previousDataValues.public === true &&
                         template.public === false
                     ) {
-                        throw new Error(
-                            "Cannot make a template non-public once it has been made public"
+                        throw new TranslatableError("errors.templates.cannotMakeNonPublic"
                         );
                     }
 
@@ -524,7 +546,7 @@ module.exports = (sequelize, DataTypes) => {
                         prevSourceId != null &&
                         nextSourceId != null
                     ) {
-                        throw new Error("Copied templates cannot be edited");
+                        throw new TranslatableError("errors.templates.copiedCannotBeEdited");
                     }
                 }
             }

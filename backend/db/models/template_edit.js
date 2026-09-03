@@ -25,6 +25,58 @@ module.exports = (sequelize, DataTypes) => {
         as: "template",
       });
     }
+
+    /**
+     * Unmerged draft edits for a template language, in the order they must be composed.
+     *
+     * @param {number} templateId
+     * @param {string} language
+     * @param {Object} [options]
+     * @returns {Promise<Array<Object>>}
+     */
+    static async getDrafts(templateId, language, options = {}) {
+      return await this.findAll({
+        where: { templateId, language, draft: true, deleted: false },
+        order: [
+          ["createdAt", "ASC"],
+          ["order", "ASC"],
+        ],
+        raw: true,
+        ...options,
+      });
+    }
+
+    /**
+     * Soft-delete every draft edit for a template language without merging it.
+     *
+     * @param {number} templateId
+     * @param {string} language
+     * @param {Object} [options]
+     * @returns {Promise<*>}
+     */
+    static async discardDrafts(templateId, language, options = {}) {
+      return await this.update(
+        { deleted: true, deletedAt: new Date() },
+        {
+          where: { templateId, language, draft: true, deleted: false },
+          transaction: options.transaction,
+        }
+      );
+    }
+
+    /**
+     * Clear the draft flag on edits that have been merged into template_content.
+     *
+     * @param {Array<number>} ids
+     * @param {Object} [options]
+     * @returns {Promise<*>}
+     */
+    static async markMerged(ids, options = {}) {
+      return await this.update(
+        { draft: false },
+        { where: { id: ids }, transaction: options.transaction }
+      );
+    }
   }
 
   TemplateEdit.init(

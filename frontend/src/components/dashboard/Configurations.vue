@@ -1,11 +1,11 @@
 <template>
-  <Card title="Configuration Files">
+  <Card :title="$t('basic.configuration.filesTitle')">
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
             class="btn btn-secondary btn-sm"
-            text="Import Configuration"
-            title="Import configuration file"
+            :text="$t('basic.configuration.uploadButton')"
+            :title="$t('basic.configuration.uploadTooltip')"
             icon="upload"
             @click="$refs.importFormatModal.open('configuration', null, {
               socket:{
@@ -15,8 +15,8 @@
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            text="Export All"
-            title="Export all configurations"
+            :text="$t('common.exportAll')"
+            :title="$t('modals.importExport.wiring.configuration.exportAllTooltip')"
             icon="download"
             @click="$refs.exportFormatModal.open(null, 'configuration')"
         />
@@ -35,15 +35,15 @@
   </Card>
 
   <!-- Upload Modal for JSON configuration files -->
-  <ImportFormatModal ref="importFormatModal" title="Import Configuration" />
-  <ExportFormatModal ref="exportFormatModal" title="Export Configuration" />
+  <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.configuration.importTitle')" />
+  <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.configuration.exportTitle')" />
 
   <ConfirmModal ref="deleteModal"/>
 
   <!-- JSON Configuration Viewer Modal -->
   <Modal ref="viewModal" name="json-viewer" size="xl">
     <template #title>
-      Configuration: {{ selectedConfig?.name }}
+      {{ $t('basic.configuration.viewer.title', { name: selectedConfig?.name }) }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-viewer-container">
@@ -55,7 +55,7 @@
   <!-- JSON Configuration Editor Modal -->
   <Modal ref="editModal" name="json-editor" size="xl">
     <template #title>
-      Edit Configuration: {{ selectedConfig?.name }}
+      {{ $t('basic.configuration.editor.title', { name: selectedConfig?.name }) }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-editor-container">
@@ -69,13 +69,14 @@
       <div class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('common.cancel')"
           data-bs-dismiss="modal"
           @click="$refs.editModal.close()"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Save"
+          :text="$t('common.save')"
+          :loading="saving"
           :disabled="saving"
           @click="saveConfiguration"
         />
@@ -93,6 +94,7 @@ import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
 import {Editor} from "@/components/editor/editorStore.js";
+import {resolveApiMessage} from "@/assets/utils";
 
 /**
  * Configuration Files Dashboard Component
@@ -128,20 +130,26 @@ export default {
         pagination: 10,
         search: true,
       },
-      columns: [
-        {name: "Name", key: "name", sortable: true},
-        {name: "Created", key: "createdAt", sortable: true, type: "datetime"},
-        {name: "Updated", key: "updatedAt", sortable: true, type: "datetime"},
-        {name: "Type", key: "typeName", sortable: true},
-      ],
-      buttons: [
+    };
+  },
+  computed: {
+    columns() {
+      return [
+        {name: this.$t('common.name'), key: "name", sortable: true},
+        {name: this.$t('common.created'), key: "createdAt", sortable: true, type: "datetime"},
+        {name: this.$t('common.updated'), key: "updatedAt", sortable: true, type: "datetime"},
+        {name: this.$t('common.type'), key: "typeName", sortable: true},
+      ];
+    },
+    buttons() {
+      return [
         {
           icon: "eye",
           options: {
             iconOnly: true,
             specifiers: {"btn-outline-secondary": true},
           },
-          title: "View configuration",
+          title: this.$t('basic.configuration.tooltips.view'),
           action: "view",
         },
         {
@@ -150,7 +158,7 @@ export default {
             iconOnly: true,
             specifiers: {"btn-outline-primary": true},
           },
-          title: "Edit configuration",
+          title: this.$t('basic.configuration.tooltips.edit'),
           action: "edit",
         },
         {
@@ -159,7 +167,7 @@ export default {
             iconOnly: true,
             specifiers: {"btn-outline-secondary": true},
           },
-          title: "Export configuration",
+          title: this.$t('basic.configuration.tooltips.export'),
           action: "export",
         },
         {
@@ -168,17 +176,15 @@ export default {
             iconOnly: true,
             specifiers: {"btn-outline-danger": true},
           },
-          title: "Delete configuration",
+          title: this.$t('basic.configuration.tooltips.delete'),
           action: "delete",
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     configurationsTable() {
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.typeName = cfg.type === 0 ? "Assessment" : "Validation";
+        newC.typeName = cfg.type === 0 ? this.$t('basic.configuration.types.assessment') : this.$t('basic.configuration.types.validation');
         return newC;
       });
     },
@@ -217,15 +223,15 @@ export default {
 
       try {
         if (!config || !config.content) {
-          throw new Error("No configuration content available");
+          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
         }
         const jsonContent = config.content;
         this.configContent = JSON.stringify(jsonContent, null, 2);
         this.$refs.viewModal.openModal();
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "Failed to load configuration content: " + error.message,
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.loadErrorMessage', { error: error.message }),
           variant: "danger",
         });
       }
@@ -236,7 +242,7 @@ export default {
 
       try {
         if (!config || !config.content) {
-          throw new Error("No configuration content available");
+          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
         }
         this.editableConfigContent = JSON.stringify(config.content, null, 2);
         this.$refs.editModal.openModal();
@@ -247,8 +253,8 @@ export default {
         });
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "Failed to load configuration content: " + error.message,
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.loadErrorMessage', { error: error.message }),
           variant: "danger",
         });
       }
@@ -261,7 +267,7 @@ export default {
           modules: {
             toolbar: false // No toolbar for JSON editing
           },
-          placeholder: "Edit JSON content here..."
+          placeholder: this.$t('basic.configuration.editor.placeholder')
         });
 
         // Set the formatted JSON content
@@ -272,8 +278,8 @@ export default {
     saveConfiguration() {
       if (!this.quillEditor) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "Editor not initialized",
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.editorNotInit'),
           variant: "danger",
         });
         return;
@@ -284,8 +290,8 @@ export default {
 
       if (!editorContent) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "No configuration content to save",
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.noContent'),
           variant: "danger",
         });
         return;
@@ -296,8 +302,8 @@ export default {
         JSON.parse(editorContent);
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Invalid JSON",
-          message: "Please check your JSON syntax: " + error.message,
+          title: this.$t('basic.configuration.toasts.invalidJsonTitle'),
+          message: this.$t('basic.configuration.toasts.invalidJsonMessage', { error: error.message }),
           variant: "danger",
         });
         return;
@@ -315,18 +321,17 @@ export default {
 
             if (response && response.success) {
               this.eventBus.emit("toast", {
-                title: "Configuration Updated",
-                message: "Configuration file has been successfully updated",
+                title: this.$t('basic.configuration.toasts.updatedTitle'),
+                message: this.$t('basic.configuration.toasts.updatedMessage'),
                 variant: "success",
               });
               setTimeout(() => {
                 this.$refs.editModal.close();
               }, 100);
             } else {
-              const errorMessage = response && response.message ? response.message : "Failed to update configuration";
               this.eventBus.emit("toast", {
-                title: "Configuration Update Error",
-                message: errorMessage,
+                title: this.$t('basic.configuration.toasts.updateErrorTitle'),
+                message: resolveApiMessage(response, 'errors.documents.documentEditFailed'),
                 variant: "danger",
               });
             }
@@ -336,8 +341,8 @@ export default {
 
     deleteConfiguration(config) {
       this.$refs.deleteModal.open(
-          "Delete Configuration",
-          `Are you sure you want to delete "${config.name}"?`,
+          this.$t('basic.configuration.delete.title'),
+          this.$t('basic.configuration.delete.message', { name: config.name }),
           null,
           (confirmed) => {
             if (confirmed) {
@@ -353,8 +358,8 @@ export default {
                   (result) => {
                     if (!result.success) {
                       this.eventBus.emit("toast", {
-                        title: "Configuration delete failed",
-                        message: result.message,
+                        title: this.$t('basic.configuration.toasts.deleteFailedTitle'),
+                        message: resolveApiMessage(result),
                         variant: "danger",
                       });
                     }

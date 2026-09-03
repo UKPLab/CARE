@@ -9,12 +9,12 @@
     <ApplySkillProcessStepper
         v-else
         ref="processStepper"
-        title="Preprocess Grading"
+        :title="$t('nlp.preprocessing.title')"
         :preprocess="preprocess"
         :input-files="inputFiles"
         :current-step="currentStep"
         :show-close="true"
-        cancel-next-text="Cancel Preprocess"
+        :cancel-next-text="$t('nlp.preprocessing.cancelButton')"
         @cancel="cancelProcessing"
         @confirm="confirmCompletion"
     />
@@ -24,6 +24,7 @@
 <script>
 import ApplySkillSetupStepper from "@/basic/modal/ApplySkillSetupStepper.vue";
 import ApplySkillProcessStepper from "@/basic/modal/ApplySkillProcessStepper.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "ApplySkillModal",
@@ -45,10 +46,10 @@ export default {
     inputFiles() {
       return (this.submissions || []).map(submission => ({
         id: submission.id,
-        name: submission.name || `Submission ${submission.id}`,
+        name: submission.name || this.$t('nlp.preprocessing.submissionName', { id: submission.id }),
         group: submission.group,
         userName: submission.userName,
-        data_existing: (submission.data_existing || false) ? 'Yes' : 'No',
+        data_existing: (submission.data_existing || false) ? this.$t('common.yes') : this.$t('common.no'),
       }));
     },
     submissions() {
@@ -59,7 +60,7 @@ export default {
         const user = this.$store.getters["table/user/get"](submission.userId);
         return {
           ...submission,
-          userName: user ? user.userName : "N/A",
+          userName: user ? user.userName : this.$t('common.na'),
           data_existing: dataExists
         }
       });
@@ -110,8 +111,12 @@ export default {
         this.$refs.applySkillSetupStepper.open();
       } else {
         this.eventBus.emit("toast", {
-          title: this.isCompleted ? "Preprocessing Complete" : "Preprocessing In Progress",
-          message: this.isCompleted ? "Review the results below." : "Preprocessing is currently running. Showing progress...",
+          title: this.isCompleted
+              ? this.$t('nlp.preprocessing.toasts.completeTitle')
+              : this.$t('nlp.preprocessing.toasts.inProgressTitle'),
+          message: this.isCompleted
+              ? this.$t('nlp.preprocessing.toasts.completeMsg')
+              : this.$t('nlp.preprocessing.toasts.inProgressMsg'),
           variant: "info",
         });
         this.$refs.processStepper.open();
@@ -138,14 +143,14 @@ export default {
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Preprocessing Cancelled",
-            message: "Preprocessing has been cancelled.",
+            title: this.$t('nlp.preprocessing.toasts.cancelledTitle'),
+            message: this.$t('nlp.preprocessing.toasts.cancelledMsg'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Preprocessing Cancellation Failed",
-            message: res.message,
+            title: this.$t('nlp.preprocessing.toasts.cancellationFailedTitle'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -163,8 +168,8 @@ export default {
       });
 
       this.eventBus.emit("toast", {
-        title: "Preprocessing Started",
-        message: "Preprocessing has been initiated.",
+        title: this.$t('nlp.preprocessing.toasts.startedTitle'),
+        message: this.$t('nlp.preprocessing.toasts.startedMsg'),
         variant: "info",
         autohide: true,
         delay: 5000
@@ -190,8 +195,8 @@ export default {
       this.$refs.processStepper.open();
 
       this.eventBus.emit("toast", {
-        title: "Preprocesing In Progress",
-        message: "Preprocessing is now running. Progress shown in the modal.",
+        title: this.$t('nlp.preprocessing.toasts.inProgressTitle'),
+        message: this.$t('nlp.preprocessing.toasts.nowRunningMsg'),
         variant: "success",
       });
     },
@@ -213,8 +218,8 @@ export default {
           this.$refs.processStepper.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Confirmation Failed",
-            message: res.message,
+            title: this.$t('nlp.preprocessing.toasts.confirmationFailedTitle'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
     class StudySession extends MetaModel {
@@ -35,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
         static async checkSessionAvailability(studyId, userId, options) {
             const study = await sequelize.models.study.getById(studyId, {transaction: options.transaction});
             if (!study) {
-                throw new Error('Study not found');
+                throw new TranslatableError('errors.studies.studyNotFound');
             }
             // Check for limited study sessions
             if (study.limitSessions !== null && study.limitSessions > 0) {
@@ -43,7 +44,7 @@ module.exports = (sequelize, DataTypes) => {
                     where: {studyId: studyId}
                 }, {transaction: options.transaction});
                 if (totalExistingSessionCount >= study.limitSessions) {
-                    throw new Error(`Cannot create more than ${study.limitSessions} sessions for this study.`);
+                    throw new TranslatableError('errors.studies.sessionLimitExceeded', {limit: study.limitSessions});
                 }
             }
             // Check for limited study sessions per user
@@ -52,15 +53,15 @@ module.exports = (sequelize, DataTypes) => {
                     where: {studyId: studyId, userId: userId}
                 }, {transaction: options.transaction});
                 if (existingSessionCountPerUser >= study.limitSessionsPerUser) {
-                    throw new Error(`Cannot create more than ${study.limitSessionsPerUser} sessions for this user.`);
+                    throw new TranslatableError('errors.studies.sessionLimitPerUserExceeded', {limit: study.limitSessionsPerUser});
                 }
             }
             // Check for study closed or end date and start date
             if (study.closed && Date.now() > new Date(study.end)) {
-                throw new Error('This study is closed');
+                throw new TranslatableError('errors.studies.studyClosed');
             }
             if (study.start !== null && new Date() < new Date(study.start)) {
-                throw new Error('This study has not started yet');
+                throw new TranslatableError('errors.studies.studyNotStarted');
             }
         }
 
@@ -76,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
         static async duplicateStudySession(studySessionId, overrides= {}, options) {
             const studySession = await this.getById(studySessionId, {transaction: options.transaction});
             if (!studySession) {
-                throw new Error('Study session not found');
+                throw new TranslatableError('errors.studies.studySession.notFound');
             }
             let data = {
                 studyId: studySession.studyId,
@@ -153,7 +154,6 @@ module.exports = (sequelize, DataTypes) => {
         sequelize: sequelize, modelName: 'study_session', tableName: 'study_session', hooks: {
             beforeCreate: async (studySession, options) => {
 
-                
                 if(studySession.parentStudySessionId === null){
                     // check for study session availability
                     await StudySession.checkSessionAvailability(studySession.studyId, studySession.userId, options);
