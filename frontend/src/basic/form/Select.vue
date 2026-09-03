@@ -5,8 +5,65 @@
     :options="options"
   >
     <template #element="{ blur }">
+      <div
+        v-if="options.search"
+        ref="searchSelect"
+        class="searchable-select w-100"
+      >
+        <input
+          v-if="isOpen"
+          ref="searchInput"
+          v-model="searchQuery"
+          type="text"
+          class="form-select searchable-select-toggle"
+          :class="selectClass"
+          :disabled="isDisabled"
+          :placeholder="options.placeholder || $t('common.search')"
+          :aria-label="$t('common.searchOptions')"
+          @keydown.escape.prevent="isOpen = false"
+        >
+        <button
+          v-else
+          type="button"
+          class="form-select text-start searchable-select-toggle"
+          :class="selectClass"
+          :disabled="isDisabled"
+          @click="isOpen = true"
+        >
+          <span
+            class="searchable-select-label"
+            :class="{ 'text-muted': !hasSelection }"
+          >
+            {{ selectedLabel }}
+          </span>
+        </button>
+        <div
+          v-if="isOpen"
+          class="dropdown-menu show searchable-select-menu w-100"
+        >
+          <div class="searchable-select-options">
+            <button
+              v-for="option in filteredSelectOptions"
+              :key="option.value"
+              type="button"
+              class="dropdown-item"
+              :class="[option.class, { active: currentData === option.value }]"
+              :disabled="option.disabled"
+              @mousedown.prevent="selectOption(option, blur)"
+            >
+              {{ translateMaybeKey(option.name) }}
+            </button>
+            <div
+              v-if="filteredSelectOptions.length === 0"
+              class="dropdown-item text-muted disabled"
+            >
+              {{ $t('common.noMatches') }}
+            </div>
+          </div>
+        </div>
+      </div>
       <select
-        v-if="Array.isArray(options.options)"
+        v-else-if="Array.isArray(options.options)"
         v-model="currentData"
         :class="selectClass"
         class="form-select"
@@ -16,10 +73,10 @@
           v-for="option in selectOptions"
           :key="option.value"
           :class="option.class"
-          :value="valueAsObject ? option : option.value"
+          :value="option.value"
           :disabled="option.disabled"
         >
-          {{ option.name }}
+          {{ translateMaybeKey(option.name) }}
         </option>
       </select>
       <select
@@ -33,7 +90,7 @@
           :key="option.id"
           :value="option[options.options.value]"
         >
-          {{ option[options.options.name] }}
+          {{ translateMaybeKey(option[options.options.name]) }}
         </option>
       </select>
     </template>
@@ -42,6 +99,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "FormSelect",
@@ -82,11 +140,16 @@ export default {
   data() {
     return {
       currentData: null,
+      isOpen: false,
+      searchQuery: "",
     };
   },
   computed: {
+    isDisabled() {
+      return this.options.readOnly !== undefined || this.options.disabled !== undefined;
+    },
     selectClass() {
-      const option = this.selectOptions.find((c) => c.value === (this.valueAsObject ? this.currentData?.value : this.currentData));
+      const option = this.selectOptions.find((c) => c.value === this.currentData);
       return option ? option.class : "";
     },
     userId() {
@@ -141,7 +204,7 @@ export default {
       if ((this.options.options?.prependNone || this.options.prependNone) && this.options.options?.table) {
         const valueKey = this.options.options.value || 'id';
         const nameKey = this.options.options.name || 'name';
-        baseOptions = [{ [valueKey]: null, [nameKey]: 'None' }, ...baseOptions];
+        baseOptions = [{ [valueKey]: null, [nameKey]: this.$t('common.none') }, ...baseOptions];
       }
 
       // Filter according to additional Options and add to baseOptions
@@ -171,7 +234,7 @@ export default {
       }
 
       if (this.formData?.isTemplateMode && this.options.options.table === 'document' && this.parentValue?.stepType === 1) {
-        baseOptions = [{ id: null, name: '<Document>' }, ...baseOptions];
+        baseOptions = [{ id: null, name: this.$t('basic.form.placeholders.documentBracket') }, ...baseOptions];
       }
 
       // Add document templates (Type 5) to document dropdown for Editor steps in study creation
@@ -188,9 +251,9 @@ export default {
             const nameKey = this.options.options.name || 'name';
             return {
               [valueKey]: `template:${t.id}`,
-              [nameKey]: `${t.name} (document template)`,
+              [nameKey]: `${t.name} ${this.$t('basic.form.placeholders.documentTemplateSuffix')}`,
               id: `template:${t.id}`,
-              name: `${t.name} (document template)`,
+              name: `${t.name} ${this.$t('basic.form.placeholders.documentTemplateSuffix')}`,
               value: `template:${t.id}`,
               isTemplateOption: true,
               templateId: t.id,
@@ -202,19 +265,69 @@ export default {
 
       return baseOptions;
     },
+    filteredSelectOptions() {
+      const query = this.searchQuery.trim().toLowerCase();
+      if (!query) {
+        return this.selectOptions;
+      }
+      return this.selectOptions.filter((option) =>
+        String(option.name).toLowerCase().includes(query)
+      );
+    },
+    hasSelection() {
+      return this.currentData !== null
+        && this.currentData !== undefined
+        && this.currentData !== -1
+        && this.currentData !== "";
+    },
+    selectedLabel() {
+      const selected = this.selectOptions.find((option) => option.value === this.currentData);
+      return selected?.name || this.options.placeholder || "Select...";
+    },
   },
   watch: {
-    currentData() {
-      this.$emit("update:modelValue", this.currentData);
+    currentData(newVal, oldVal) {
+      if (newVal === oldVal) return;
+      this.$emit("update:modelValue", this.emitValue(newVal));
     },
-    modelValue() {
+    modelValue(newVal) {
+      const next = this.resolveCurrent(newVal);
+      if (next === this.currentData && newVal !== -1) return;
       this.updateData();
+    },
+    isOpen(open) {
+      if (open) {
+        this.searchQuery = "";
+        this.$nextTick(() => this.$refs.searchInput?.focus());
+      } else {
+        this.searchQuery = "";
+      }
     },
   },
   mounted() {
     this.updateData();
+    document.addEventListener("mousedown", this.onDocumentClick);
+  },
+  beforeUnmount() {
+    document.removeEventListener("mousedown", this.onDocumentClick);
   },
   methods: {
+    // Native <select> must bind primitives. valueAsObject only affects the emitted/model shape.
+    resolveCurrent(modelValue) {
+      if (modelValue === -1) return -1;
+      if (this.valueAsObject && modelValue && typeof modelValue === "object") {
+        return modelValue.value;
+      }
+      return modelValue;
+    },
+    emitValue(current) {
+      if (!this.valueAsObject) return current;
+      if (current === -1 || current === null || current === undefined || current === "") {
+        return null;
+      }
+      return this.selectOptions.find((option) => option.value === current) || null;
+    },
+    translateMaybeKey,
     updateData() {
       // Preserve explicit null selections (e.g., "New Empty Document") instead of auto-selecting the first option.
       if (this.modelValue === -1) {
@@ -226,12 +339,24 @@ export default {
             if (this.options.table) {
               this.currentData = this.selectOptions[0][this.options.options.value];
             } else {
-              this.currentData = this.valueAsObject ? this.selectOptions[0] : this.selectOptions[0].value;
+              this.currentData = this.selectOptions[0].value;
             }
           }
         }
       } else {
-        this.currentData = this.modelValue;
+        this.currentData = this.resolveCurrent(this.modelValue);
+      }
+    },
+    selectOption(option, blur) {
+      if (option.disabled) return;
+      this.currentData = option.value;
+      this.isOpen = false;
+      blur(this.currentData !== -1);
+    },
+    onDocumentClick(event) {
+      if (!this.isOpen) return;
+      if (!this.$refs.searchSelect?.contains(event.target)) {
+        this.isOpen = false;
       }
     },
     validate() {
@@ -241,4 +366,53 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style scoped>
+.searchable-select {
+  position: relative;
+}
+
+.searchable-select-toggle {
+  width: 100%;
+  background-color: var(--bs-body-bg, #fff);
+}
+
+button.searchable-select-toggle {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+input.searchable-select-toggle {
+  cursor: text;
+}
+
+.searchable-select-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.searchable-select-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchable-select-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1050;
+  max-height: 16rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0;
+  margin-top: 0.125rem;
+}
+
+.searchable-select-options {
+  overflow-y: auto;
+  max-height: 16rem;
+}
+</style>

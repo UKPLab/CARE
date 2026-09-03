@@ -1,13 +1,33 @@
 const archiver = require('archiver');
 const path = require('path');
 const fs = require('fs');
-const { faker } = require('@faker-js/faker');
-const JSZip = require('jszip');
-const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
-const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
+const { dbToDelta, deltaToPlainText, deltaToHtml } = require('editor-delta-conversion');
+const {
+    replaceAuthorInZip,
+    buildUserMapping,
+    sanitizeFolderName,
+    getDisplayName,
+    calculateSubmissionVersion,
+    getConsentedUserIds,
+    appendStoredFileIfExists,
+    resolveHasPrivateInfoRight,
+    parseUserIds,
+    loadExportRequestContext,
+    attachTagNames,
+    resolveIsAdmin,
+    createJsonArrayStream,
+    createCsvRowsStream
+} = require('../../utils/helper/export.js');
+const {
+    buildGradeCsvRow,
+    compareGradeRecords,
+    buildGradeRecords,
+} = require('../../utils/helper/exportGrades.js');
+const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
-const ASSESSMENT_RESULT_KEY = "assessment_result";
+// Stored files the study export ships per step, by document type: PDF and LaTeX ZIP.
+const STUDY_DOCUMENT_EXTENSIONS = { 0: '.pdf', 4: '.zip' };
 
 module.exports = function (server) {
 
@@ -16,80 +36,45 @@ module.exports = function (server) {
         // Auth checking
         const currentUserId = req.user?.id;
         if (!currentUserId) return res.status(401).send("Log in required");
-
         const currentUser = await server.db.models.user.findByPk(currentUserId);
         if (!currentUser) return res.status(401).send("User not found");
+        const hasPrivateInfoRight = await resolveHasPrivateInfoRight(server, currentUserId);
 
-        // check if user has right to see full names
-        let hasPrivateInfoRight = false;
-
-        const roleIds = await server.db.models["user_role_matching"].getUserRolesById(currentUserId);
-        const isAdmin = await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
-        if (isAdmin) {
-            // override, admin has all rights
-            hasPrivateInfoRight = true;
-        } else {
-            const userRightsObj = await server.db.models.user.getUserRights(currentUserId);  
-            
-            if (userRightsObj) {
-                const allRights = Object.values(userRightsObj).flat();
-                hasPrivateInfoRight = allRights.includes('frontend.dashboard.studies.view.userPrivateInfo');
-            }
-        }
 
         // Input parsing
-        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles } = req.body;
-        let { userIds = [] } = req.body;
+        const { projectId, exportType, generateAliases, fakerSeed, gradeFormat, mergeCsvFiles, excludeNonConsentingEdits, excludeNonConsentingAnnotations, includeEmptyStudies, includeDocumentFiles, includeGrades, includeAiScores, behaviourOutputFormat, behaviourFileFormat } = req.body;
+        let { userIds: rawUserIds = [], documentTypes = [0, 1, 2, 4], workflowIds = [] } = req.body;
         const shouldGenerateAliases = String(generateAliases) === 'true';
         const shouldMergeCsvFiles = String(mergeCsvFiles) === "true";
+        const shouldExcludeNonConsentingEdits = String(excludeNonConsentingEdits) === 'true';
+        const shouldExcludeNonConsentingAnnotations = String(excludeNonConsentingAnnotations) === 'true';
+        const shouldIncludeEmptyStudies = String(includeEmptyStudies) === 'true';
+        const shouldIncludeDocumentFiles = String(includeDocumentFiles) === 'true';
+        const shouldIncludeGrades = String(includeGrades) === 'true';
+        const shouldIncludeAiScores = includeAiScores === undefined ? true : String(includeAiScores) === 'true';
+        const normalizedBehaviourOutputFormat = behaviourOutputFormat === 'perUser' ? 'perUser' : 'single';
+        const normalizedBehaviourFileFormat = behaviourFileFormat === 'csv' ? 'csv' : 'json';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
-        const supportedExportTypes = new Set(["submissions", "grades"]);
-        const { Op } = server.db.Sequelize;
         const parsedProjectId = Number(projectId);
+        const userIds = parseUserIds(server, rawUserIds);
 
         try {
-            userIds = typeof userIds === 'string' ? JSON.parse(userIds) : userIds;
-            if (!Array.isArray(userIds)) userIds = [];
-        } catch (e) {
-            console.warn("Could not parse userIds:", userIds);
-            userIds = [];
-        }
-
-        try {
-            if (!Number.isInteger(parsedProjectId)) return res.status(400).send("Missing projectId.");
-            if (!supportedExportTypes.has(exportType)) {
-                return res.status(400).send("Unsupported export type.");
+            const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds, currentUserId });
+            if (!context.success) {
+                return res.status(context.status).send(context.message);
             }
-            if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
-                return res.status(400).send("Unsupported grade format. Use json or csv.");
-            }
-            if (userIds.length === 0) {
-                console.warn("Export aborted: No valid users selected.");
-                return res.status(400).send("No valid users selected.");
-            }
-
-            // check if the project is valid
-            const projectCheck = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
-            if (!projectCheck) {
-                console.warn(`${parsedProjectId} does not exist.`);
-                return res.status(403).send("The selected project does not exist.");
-            }
-
-            const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
-            if (users.length === 0) {
-                console.warn("Export aborted: No existing users to export.");
-                return res.status(400).send("No authorized users to export.");
-            }
+            const { users, workflowIds: parsedWorkflowIds } = context;
 
             // build user mapping for aliases
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
 
             // archiver stream setup
-            const exportFolderName = `${exportType}_${Date.now()}.zip`;
+            const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
+            const exportFolderName = `${timestamp}_${exportType}.zip`;
             res.attachment(exportFolderName);
             const archive = archiver('zip', { zlib: { level: 5 } });
             archive.on('error', function(err) {
-                console.error("Archiver Error:", err);
+                server.logger.error("Archiver Error:", err);
                 if (!res.headersSent) res.status(500).send({error: err.message});
             });
 
@@ -98,6 +83,8 @@ module.exports = function (server) {
             if (shouldGenerateAliases) {
                 archive.append(mappingCsv, { name: 'aliases_mapping.csv' });
             }
+
+            const baseFolderName = exportFolderName.split('.')[0];
 
             // process based on type
             switch (exportType) {
@@ -110,7 +97,7 @@ module.exports = function (server) {
                         shouldGenerateAliases,
                         hasPrivateInfoRight,
                         userMapping,
-                        exportFolderName.split('.')[0],
+                        baseFolderName,
                         archive
                     );
                     break;
@@ -128,6 +115,56 @@ module.exports = function (server) {
                         archive
                     );
                     break;
+                case 'documents':
+                    await processDocumentBasedExport(
+                        server,
+                        parsedProjectId,
+                        userIds,
+                        documentTypes,
+                        shouldExcludeNonConsentingEdits,
+                        shouldExcludeNonConsentingAnnotations,
+                        baseFolderName,
+                        archive
+                    );
+                    break;
+                case 'studies':
+                    await processStudyBasedExport(
+                        server,
+                        parsedProjectId,
+                        userIds,
+                        users,
+                        shouldGenerateAliases,
+                        hasPrivateInfoRight,
+                        userMapping,
+                        parsedWorkflowIds,
+                        shouldIncludeEmptyStudies,
+                        shouldExcludeNonConsentingEdits,
+                        shouldExcludeNonConsentingAnnotations,
+                        shouldIncludeDocumentFiles,
+                        shouldIncludeGrades,
+                        shouldIncludeAiScores,
+                        baseFolderName,
+                        archive
+                    );
+                    break;
+                case 'userBehaviour': {
+                    const isAdmin = await resolveIsAdmin(server, currentUserId);
+                    if (!isAdmin) {
+                        return res.status(403).send("Admin rights required for this export.");
+                    }
+                    await processUserBehaviourExport(
+                        server,
+                        users,
+                        shouldGenerateAliases,
+                        hasPrivateInfoRight,
+                        userMapping,
+                        normalizedBehaviourOutputFormat,
+                        normalizedBehaviourFileFormat,
+                        baseFolderName,
+                        archive
+                    );
+                    break;
+                }
                 default:
                     return res.status(400).send("Unsupported export type.");
             }
@@ -135,98 +172,11 @@ module.exports = function (server) {
             await archive.finalize();
 
         } catch (error) {
-            console.error("Export Error:", error);
+            server.logger.error("Export Error:", error);
             if (!res.headersSent) res.status(500).send("Export failed.");
             else res.end();
         }
     });
-
-    // HELPER FUNCTIONS
-
-    /**
-     * Opens a zip file, replaces the student's real name with a fake name in all .tex files,
-     * and returns the modified zip as a Buffer.
-     * @param {string} filePath - Path to the original zip file on disk
-     * @param {string} realName - The student's real name to search for
-     * @param {string} fakeName - The generated fake name to insert
-     * @returns {Promise<Buffer>} - The newly generated zip file buffer
-     */
-    async function replaceAuthorInZip(filePath, realName, fakeName) {
-        const fileData = fs.readFileSync(filePath);
-        const zip = await JSZip.loadAsync(fileData);
-        const getFirstAndLastNameTokens = (name) => {
-            const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
-            if (parts.length === 0) return ["", ""];
-            if (parts.length === 1) return [parts[0], ""];
-            return [parts[0], parts[parts.length - 1]];
-        };
-        const [realFirstName, realLastName] = getFirstAndLastNameTokens(realName);
-        const [fakeFirstName, fakeLastName] = getFirstAndLastNameTokens(fakeName);
-
-        const authorRegex = /\\author\s*\{[^}]*\}/g;
-
-        for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
-            if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.tex')) {
-                let text = await zipEntry.async("string");
-                text = text.replace(authorRegex, `\\author{${fakeName}}`);
-                if (realFirstName && fakeFirstName) text = text.replace(realFirstName, fakeFirstName);
-                if (realLastName && fakeLastName) text = text.replace(realLastName, fakeLastName);
-                
-                zip.file(relativePath, text); 
-            }
-        }
-
-        return await zip.generateAsync({ 
-            type: "nodebuffer", 
-            compression: "DEFLATE" 
-        });
-    }
-
-    /**
-     * Constructs a mapping of user IDs to aliases and generates a 
-     * corresponding CSV string.
-     * @param {Array<Object>} users - Array of user objects from the database.
-     * @param {boolean} shouldGenerateAliases - Whether the export should use fake names.
-     * @param {boolean} hasPrivateInfoRight - Whether the current user is allowed to see/export full names.
-     * @param {number|string} fakerSeed - The base integer seed (from the form input).
-     * @param {string} salt - The hex-encoded salt string from the user's database record.
-     * @returns {Object} An object containing:
-     * - userMapping: An object mapping user IDs to their generated fake names.
-     * - mappingCsv: A CSV-formatted string containing the mapping (conditionally includes real names).
-     */
-    function buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, salt) {
-        let userMapping = {};
-        let csvRows = [];
-
-        if (shouldGenerateAliases) {
-            if (fakerSeed && !isNaN(parseInt(fakerSeed, 10))) {
-                const derivedFakerSeed = deriveUserSeed(parseInt(fakerSeed, 10), salt);
-                faker.seed(derivedFakerSeed);
-            }
-
-            const sortedUsers = [...users].sort((a, b) => Number(a.id) - Number(b.id));
-            sortedUsers.forEach(u => {
-                const realUsername = u.userName;
-                const realName = `${u.firstName} ${u.lastName}`;
-                const fakeName = `${faker.person.firstName()} ${faker.person.lastName()}`;
-                
-                userMapping[u.id] = fakeName;
-
-                let rowData = {
-                    "Username": realUsername
-                };
-                if (hasPrivateInfoRight) {
-                    rowData["Real Name"] = realName;
-                }
-
-                rowData["Generated Alias"] = fakeName;
-
-                csvRows.push(rowData);
-            });
-        }
-        const mappingCsv = csvRows.length > 0 ? Papa.unparse(csvRows) : "";
-        return { userMapping, mappingCsv };
-    }
 
     /**
      * Does the fetching, filtering, and archiving of student submissions for a specific project.
@@ -274,7 +224,6 @@ module.exports = function (server) {
             1: ".html",
             4: ".zip"
         };
-        const storageDir = path.join(__dirname, "..", "..", "..", "files");
 
         for (const submission of submissions) {
             const student = usersById.get(submission.userId);
@@ -312,246 +261,17 @@ module.exports = function (server) {
                             const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
                             archive.append(newZipBuffer, { name: destPathInArchive });
                         } catch (err) {
-                            console.error(`Failed to change names for zip ${doc.hash}:`, err);
+                            server.logger.error(`Failed to change names for zip ${doc.hash}:`, err);
                             archive.file(filePath, { name: destPathInArchive });
                         }
                     } else {
                         archive.file(filePath, { name: destPathInArchive });
                     }
                 } else {
-                    console.error(`[NOT FOUND] Looking for document: ${doc.hash} at ${filePath}`);
+                    server.logger.error(`[NOT FOUND] Looking for document: ${doc.hash} at ${filePath}`);
                 }
             }
         }
-    }
-
-    /**
-     * Normalizes a folder name so it can be used as a ZIP path segment without
-     * accidentally introducing invalid filename characters or nested paths.
-     *
-     * @param {string|number|null|undefined} value - The raw folder name.
-     * @returns {string} A sanitized folder name with reserved characters replaced.
-     */
-    function sanitizeFolderName(value) {
-        return String(value || "unknown") 
-            .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
-    /**
-     * Parses an assessment state payload when it is stored as JSON text.
-     *
-     * @param {string} rawAssessmentState - The raw JSON string from document_data.
-     * @returns {Object} The parsed assessment state or an empty object on failure.
-     */
-    function parseAssessmentState(rawAssessmentState) {
-        try {
-            const parsed = JSON.parse(rawAssessmentState);
-            return parsed && typeof parsed === "object" ? parsed : {};
-        } catch (error) {
-            console.warn("Failed to parse assessment state:", error.message);
-            return {};
-        }
-    }
-
-    /**
-     * Resolves the assessment rubric configuration referenced by a study step.
-     * Study steps are expected to store only a configurationId; rubric content
-     * is loaded from the configuration table.
-     *
-     * @param {Object|null|undefined} studyStepConfiguration - The study step's configuration JSON.
-     * @param {Map<number, Object>} configurationsById - Loaded configuration records by id.
-     * @returns {Object|null} Assessment config content (with rubrics) or null.
-     */
-    function resolveAssessmentConfigurationContent(studyStepConfiguration, configurationsById) {
-        const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
-        if (configurationId === null) return null;
-
-        const configuration = configurationsById.get(configurationId);
-        return configuration?.content ?? null;
-    }
-
-    /**
-     * Reads the rubric configuration id from a study step configuration payload.
-     *
-     * @param {Object|null|undefined} studyStepConfiguration - The study step's configuration object.
-     * @returns {number|null} The referenced configuration id or null when unavailable.
-     */
-    function getAssessmentConfigurationId(studyStepConfiguration) {
-        if (!studyStepConfiguration || typeof studyStepConfiguration !== "object") return null;
-        const rawId =
-            studyStepConfiguration.settings?.configurationId ??
-            studyStepConfiguration.configurationId ??
-            null;
-        const parsedId = Number(rawId);
-        return Number.isInteger(parsedId) ? parsedId : null;
-    }
-
-    /**
-     * Captures the single assessment configuration used by the current grade
-     * export for inclusion in the shared criteria_reference.json sidecar file.
-     *
-     * The first valid configuration becomes the export reference. If another
-     * different configuration is encountered later, the export aborts because
-     * grade exports are expected to use exactly one configuration.
-     *
-     * @param {{ key: string|null, reference: Object|null }} referenceState - Mutable single-reference state.
-     * @param {number|null} configurationId - Resolved persisted configuration id.
-     * @param {Object|null} assessmentConfig - Resolved assessment configuration content.
-     * @returns {void}
-     */
-    function addCriteriaReferenceEntry(referenceState, configurationId, assessmentConfig) {
-        if (!assessmentConfig || typeof assessmentConfig !== "object") return;
-
-        const referenceKey = Number.isInteger(configurationId) ? `configuration:${configurationId}` : null;
-        if (!referenceKey) return;
-
-        if (!referenceState.reference) {
-            referenceState.key = referenceKey;
-            referenceState.reference = {
-                configurationId: Number.isInteger(configurationId) ? configurationId : null,
-                ...assessmentConfig
-            };
-            return;
-        }
-
-        if (referenceState.key !== referenceKey) {
-            throw new Error("Expected exactly one assessment configuration for grade export, found multiple.");
-        }
-    }
-
-    /**
-     * Returns a user's display name based on private info permissions.
-     *
-     * @param {Object|null} user - The user record.
-     * @param {boolean} hasPrivateInfoRight - Whether real names are allowed.
-     * @returns {string|null} Full name or username depending on permissions.
-     */
-    function getPrivateAwareName(user, hasPrivateInfoRight) {
-        if (!user) return null;
-        if (hasPrivateInfoRight) return `${user.firstName} ${user.lastName}`.trim();
-        // Usernames are considered anonymous-enough for exports when real names are restricted.
-        return user.userName ?? null;
-    }
-
-    /**
-     * Builds a flat CSV row for a grade export record.
-     * The row contains backend export metadata columns followed by
-     * one column per assessment criterion score.
-     *
-     * @param {Object} record - Prepared grade export record.
-     * @returns {Object} A flat object suitable for Papa.unparse.
-     */
-    function buildGradeCsvRow(record) {
-        const criterionScores = record.scores && typeof record.scores === "object" ? record.scores : {};
-        return {
-            projectId: record.projectId,
-            userId: record.userId,
-            userExtId: record.userExtId,
-            userName: record.userName,
-            displayName: record.displayName,
-            submissionId: record.submissionId,
-            submissionExtId: record.submissionExtId,
-            studySessionId: record.studySessionId,
-            studyName: record.studyName,
-            studyStepId: record.studyStepId,
-            studyStepType: record.studyStepType,
-            configurationId: record.configurationId,
-            studyOwner: record.studyOwner,
-            sessionOwner: record.sessionOwner,
-            author: record.author,
-            totalPoints: record.totalPoints,
-            createdAt: record.createdAt,
-            ...criterionScores
-        };
-    }
-
-    /**
-     * Resolves the display name for a user based on the current export settings.
-     * This wraps getPrivateAwareName with alias support for anonymized exports.
-     *
-     * @param {Object} user - The user record to display.
-     * @param {boolean} shouldGenerateAliases - Whether aliases should replace real names.
-     * @param {boolean} hasPrivateInfoRight - Whether the current user may export real names.
-     * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
-     * @returns {string} The display name to write into the export.
-     */
-    function getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping) {
-        if (shouldGenerateAliases) return userMapping[user.id];
-        return getPrivateAwareName(user, hasPrivateInfoRight);
-    }
-
-    /**
-     * Loads the related entities needed to turn raw assessment_result rows into
-     * export-ready grade records. 
-     *
-     * @param {Object} server - The server instance with Sequelize models.
-     * @param {Array<Object>} gradeRows - Assessment result rows with attached documents.
-     * @param {Array<Object>} users - The selected document owners for the export.
-     * @returns {Promise<Object>} Lookup maps for related grade-export entities.
-     */
-    async function loadGradeExportContext(server, gradeRows, users) {
-        const { Op } = server.db.Sequelize;
-
-        const sessionIds = [...new Set(gradeRows.map((row) => row.studySessionId).filter(Boolean))];
-        const studySessions = sessionIds.length > 0
-            ? await server.db.models.study_session.findAll({
-                where: { id: { [Op.in]: sessionIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const sessionsById = new Map(studySessions.map((session) => [session.id, session]));
-
-        const studyIds = [...new Set(studySessions.map((session) => session.studyId).filter(Boolean))];
-        const studies = studyIds.length > 0
-            ? await server.db.models.study.findAll({
-                where: { id: { [Op.in]: studyIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const studiesById = new Map(studies.map((study) => [study.id, study]));
-
-        const studyStepIds = [...new Set(gradeRows.map((row) => row.studyStepId).filter(Boolean))];
-        const studySteps = studyStepIds.length > 0
-            ? await server.db.models.study_step.findAll({
-                where: { id: { [Op.in]: studyStepIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const studyStepsById = new Map(studySteps.map((studyStep) => [studyStep.id, studyStep]));
-
-        const configurationIds = [...new Set(
-            studySteps
-                .map((studyStep) => getAssessmentConfigurationId(studyStep.configuration))
-                .filter((id) => id !== null)
-        )];
-        const configurations = configurationIds.length > 0
-            ? await server.db.models.configuration.findAll({
-                where: { id: { [Op.in]: configurationIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const configurationsById = new Map(configurations.map((configuration) => [configuration.id, configuration]));
-
-        // The export references study/session owners in addition to the selected document owners.
-        const relatedUserIds = [...new Set([
-            ...users.map((user) => user.id),
-            ...studySessions.map((session) => session.userId),
-            ...studies.map((study) => study.userId)
-        ].filter(Boolean))];
-        const relatedUsers = relatedUserIds.length > 0
-            ? await server.db.models.user.findAll({ where: { id: { [Op.in]: relatedUserIds } }, raw: true })
-            : [];
-        const usersById = new Map(relatedUsers.map((user) => [user.id, user]));
-
-        return {
-            sessionsById,
-            studiesById,
-            studyStepsById,
-            configurationsById,
-            usersById
-        };
     }
 
     /**
@@ -582,116 +302,26 @@ module.exports = function (server) {
         mergeCsvFiles,
         archive
     ) {
-        const { Op } = server.db.Sequelize;
-        const gradeRows = await server.db.models.document_data.findAll({
-            where: {
-                key: ASSESSMENT_RESULT_KEY,
-                deleted: false,
-                studySessionId: { [Op.ne]: null }
-            },
-            include: [{
-                model: server.db.models.document,
-                as: "document",
-                // required: true turns this include into an inner join.
-                required: true,
-                where: {
-                    projectId,
-                    userId: { [Op.in]: userIds },
-                    deleted: false
-                },
-                include: [{
-                    model: server.db.models.submission,
-                    as: "submission",
-                    required: false
-                }]
-            }],
-            // Sort by session first, then step within the session, then creation time within the step.
-            order: [["studySessionId", "ASC"], ["studyStepId", "ASC"], ["createdAt", "ASC"]]
-        });
-
-        const {
-            sessionsById,
-            studiesById,
-            studyStepsById,
-            configurationsById,
-            usersById
-        } = await loadGradeExportContext(server, gradeRows, users);
+        const { records, criteriaReferencesByConfigId } = await buildGradeRecords(
+            server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping
+        );
 
         const recordsByUser = new Map();
-        // Grade export currently assumes that all exported rows point to one assessment config.
-        const criteriaReferenceState = {
-            key: null,
-            reference: null
-        };
-        for (const row of gradeRows) {
-            const document = row.document;
-            const ownerUser = usersById.get(document.userId);
-            if (!ownerUser) {
-                console.warn("Skipping grade export row because the document owner could not be resolved.", {
-                    documentId: document.id,
-                    documentUserId: document.userId,
-                    studySessionId: row.studySessionId,
-                    studyStepId: row.studyStepId
-                });
-                continue;
-            }
-            const session = sessionsById.get(row.studySessionId);
-            const reviewerUser = session ? usersById.get(session.userId) : null;
-            const study = session ? studiesById.get(session.studyId) : null;
-            const graderUser = study ? usersById.get(study.userId) : null;
-            const studyStep = studyStepsById.get(row.studyStepId);
-            const submission = document.submission;
-            const studyStepConfiguration = studyStep?.configuration;
-            // configurationId is exported as metadata; assessmentConfig is the rubric content
-            // needed for score calculation and criteria_reference.json.
-            const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
-            const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
-
-            const scoreObject = row.value || {};
-            const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
-            const flatScores = buildScoresFromState(assessmentState);
-            const assessmentConfig = resolveAssessmentConfigurationContent(
-                studyStepConfiguration,
-                configurationsById
-            );
-            addCriteriaReferenceEntry(
-                criteriaReferenceState,
-                configurationId,
-                assessmentConfig
-            );
-            const assessmentScore = calculateAssessmentScore(assessmentConfig, flatScores);
-            const totalPoints = assessmentScore.achieved_points;
-
-            const record = {
-                projectId,
-                userId: ownerUser.id,
-                userExtId: ownerUser.extId ?? null,
-                userName: ownerUser.userName ?? "",
-                displayName: getDisplayName(ownerUser, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
-                submissionId: submission?.id ?? document.submissionId ?? null,
-                submissionExtId: submission?.extId ?? null,
-                studySessionId: row.studySessionId ?? null,
-                studyStepId: row.studyStepId ?? null,
-                configurationId,
-                studyName,
-                sessionHash: session?.hash ?? null,
-                studyOwner: getPrivateAwareName(graderUser, hasPrivateInfoRight),
-                sessionOwner: getPrivateAwareName(reviewerUser, hasPrivateInfoRight),
-                author: getPrivateAwareName(ownerUser, hasPrivateInfoRight),
-                scores: flatScores,
-                totalPoints,
-                createdAt: row.createdAt ? new Date(row.createdAt).toISOString() : null,
-                studyStepType: studyStep?.stepType ?? null
-            };
-
-            if (!recordsByUser.has(ownerUser.id)) recordsByUser.set(ownerUser.id, []);
-            recordsByUser.get(ownerUser.id).push(record);
+        for (const record of records) {
+            if (!recordsByUser.has(record.userId)) recordsByUser.set(record.userId, []);
+            recordsByUser.get(record.userId).push(record);
         }
 
-        archive.append(
-            JSON.stringify(criteriaReferenceState.reference || {}, null, 2),
-            { name: "grades/criteria_reference.json" }
-        );
+        if (criteriaReferencesByConfigId.size > 0) {
+            for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
+                archive.append(
+                    JSON.stringify(reference, null, 2),
+                    { name: `grades/criteria_reference_${configurationId}.json` }
+                );
+            }
+        } else {
+            archive.append(JSON.stringify({}, null, 2), { name: "grades/criteria_reference.json" });
+        }
 
         const usedFolderNames = new Set();
         const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
@@ -722,15 +352,7 @@ module.exports = function (server) {
             }
 
             for (const [groupKey, groupRecords] of mergedGroups.entries()) {
-                const sortedRecords = [...groupRecords].sort((a, b) => {
-                    const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                    return (
-                        (a.studySessionId || 0) - (b.studySessionId || 0) ||
-                        (a.studyStepId || 0) - (b.studyStepId || 0) ||
-                        createdA - createdB
-                    );
-                });
+                const sortedRecords = [...groupRecords].sort(compareGradeRecords);
 
                 const csvRows = sortedRecords.map((record) => buildGradeCsvRow(record));
 
@@ -742,18 +364,10 @@ module.exports = function (server) {
         }
 
         for (const user of users) {
-            const records = (recordsByUser.get(user.id) || []).sort((a, b) => {
-                const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                return (
-                    (a.studySessionId || 0) - (b.studySessionId || 0) ||
-                    (a.studyStepId || 0) - (b.studyStepId || 0) ||
-                    createdA - createdB
-                );
-            });
+            const userRecords = (recordsByUser.get(user.id) || []).sort(compareGradeRecords);
 
             const recordsByHash = new Map();
-            for (const record of records) {
+            for (const record of userRecords) {
                 const hashKey = record.sessionHash || null;
                 if (!recordsByHash.has(hashKey)) recordsByHash.set(hashKey, []);
                 recordsByHash.get(hashKey).push(record);
@@ -775,22 +389,558 @@ module.exports = function (server) {
     }
 
     /**
-     * Calculates the version number of a submission by traversing backwards 
-     * through the chain of previous submissions.
-     * @param {Object} submission - The current submission object to start from.
-     * @param {Map<number|string, Object>} submissionMap - A Map containing all related 
-     * submissions for quick lookup by ID.
-     * @returns {number} - The calculated version number (starting at 1 for the original).
+     * Exports a single document to the archive based on its type.
+     * - Type 0 (PDF): exports annotations, comments (with votes), document_data, and the PDF file.
+     * - Type 1 (HTML) / Type 2 (Modal): exports edits, plain text, HTML, and document_data.
+     * - Type 4 (ZIP): exports the zip file and document_data.
+     * @param {Object} server - The server instance providing database models.
+     * @param {Object} doc - The document record from the database.
+     * @param {string} docFolder - The target folder path inside the archive.
+     * @param {Object} archive - The archiver instance to append files to.
+     * @returns {Promise<void>}
      */
-    function calculateSubmissionVersion(submission, submissionMap) {
-        let version = 1;
-        let currentSub = submission;
-        while (currentSub && currentSub.previousSubmissionId) {
-            const prevSub = submissionMap.get(currentSub.previousSubmissionId);
-            if (!prevSub) break;
-            version++;
-            currentSub = prevSub;
+    async function processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive) {
+        // document_data for all types, at the doc level.
+        const documentData = await server.db.models.document_data.findAll({
+            where: { documentId: doc.id, deleted: false },
+            raw: true,
+        });
+        if (documentData.length > 0) {
+            archive.append(JSON.stringify(documentData, null, 2), { name: `${docFolder}/document_data.json` });
         }
-        return version;
+
+        const docMeta = {
+            ...doc.toJSON(),
+            userRoles: docUserRoles,
+        };
+        archive.append(JSON.stringify(docMeta, null, 2), { name: `${docFolder}/meta.json` });
+
+        switch (doc.type) {
+            case 0: { // PDF
+                // Annotations live on study-session copies (parentDocumentId = doc.id),
+                // not on the root document. Collect all copy IDs and query across them.
+                const copies = await server.db.models.document.findAll({
+                    where: { parentDocumentId: doc.id },
+                    attributes: ['id'],
+                    raw: true,
+                });
+                const allDocIds = [doc.id, ...copies.map(c => c.id)];
+
+                let [annotations, comments] = await Promise.all([
+                    server.db.models.annotation.findAll({ where: { documentId: allDocIds }, raw: true }),
+                    server.db.models.comment.findAll({ where: { documentId: allDocIds }, raw: true }),
+                ]);
+
+                annotations = await attachTagNames(server, annotations);
+
+                if (shouldExcludeNonConsentingAnnotations) {
+                    const allUserIds = [...new Set([
+                        ...annotations.map(a => a.userId),
+                        ...comments.map(c => c.userId),
+                    ].filter(Boolean))];
+                    const consentedUserIds = await getConsentedUserIds(server, allUserIds);
+                    annotations = annotations.filter(a => !a.userId || consentedUserIds.has(a.userId));
+                    comments = comments.filter(c => !c.userId || consentedUserIds.has(c.userId));
+                }
+
+                const commentVotes = await server.db.models.comment_vote.findAll({
+                    where: { commentId: comments.map(c => c.id), deleted: false },
+                    raw: true,
+                });
+                const commentsWithVotes = comments.map(c => ({
+                    ...c,
+                    votes: commentVotes.filter(v => v.commentId === c.id),
+                }));
+
+                // All annotations and comments go into one file each.
+                if (annotations.length > 0) {
+                    archive.append(JSON.stringify(annotations, null, 2), { name: `${docFolder}/annotations.json` });
+                }
+                if (commentsWithVotes.length > 0) {
+                    archive.append(JSON.stringify(commentsWithVotes, null, 2), { name: `${docFolder}/comments.json` });
+                }
+
+                appendStoredFileIfExists(server, archive, doc.hash, '.pdf', `${docFolder}/document.pdf`, 'PDF');
+                break;
+            }
+
+            case 1: // HTML
+            case 2: { // MODAL
+                // fetch all edits for this document, ordered chronologically
+                let allEdits = await server.db.models.document_edit.findAll({
+                    where: { documentId: doc.id, deleted: false },
+                    order: [['createdAt', 'ASC']],
+                    raw: true,
+                });
+
+                // filter by consent unless the option is enabled
+                if (shouldExcludeNonConsentingEdits) {
+                    const editorUserIds = [...new Set(allEdits.map(e => e.userId).filter(Boolean))];
+                    const consentedUserIds = await getConsentedUserIds(server, editorUserIds);
+                    allEdits = allEdits.filter(e => !e.userId || consentedUserIds.has(e.userId));
+                }
+
+                // group edits by studySessionId (null = template)
+                const sessionGroups = new Map();
+                for (const edit of allEdits) {
+                    const key = edit.studySessionId ?? '__template__';
+                    if (!sessionGroups.has(key)) sessionGroups.set(key, []);
+                    sessionGroups.get(key).push(edit);
+                }
+
+                // fetch study sessions to resolve hashes
+                const sessionIds = [...sessionGroups.keys()].filter(k => k !== '__template__');
+                const sessions = sessionIds.length > 0
+                    ? await server.db.models.study_session.findAll({
+                        where: { id: sessionIds },
+                        attributes: ['id', 'hash'],
+                        raw: true,
+                    })
+                    : [];
+                const sessionHashMap = new Map(sessions.map(s => [s.id, s.hash]));
+
+                for (const [key, edits] of sessionGroups.entries()) {
+                    const isTemplate = key === '__template__';
+                    const delta = dbToDelta(edits);
+
+                    // skip empty content
+                    const text = deltaToPlainText(delta);
+                    if (!text.trim()) continue;
+
+                    const subFolder = isTemplate
+                        ? `${docFolder}/template`
+                        : `${docFolder}/${sessionHashMap.get(key) ?? key}`;
+
+                    archive.append(text,                                  { name: `${subFolder}/text.txt` });
+                    archive.append(deltaToHtml(delta),                    { name: `${subFolder}/html.html` });
+                    archive.append(JSON.stringify(edits, null, 2),        { name: `${subFolder}/edits.json` });
+                }
+                break;
+            }
+
+            case 4: { // ZIP
+                appendStoredFileIfExists(server, archive, doc.hash, '.zip', `${docFolder}/document.zip`, 'ZIP');
+                break;
+            }
+
+            default:
+                server.logger.warn(`[DocumentExport] Unhandled document type ${doc.type} for document ${doc.hash}, skipping.`);
+        }
+    }
+
+    /**
+     * Main export function for the "documents" export type.
+     * Fetches all studies and steps for a project, collects unique documents,
+     * filters by owner data sharing consent, and exports each document to the archive.
+     * @param {Object} server - The server instance providing database models.
+     * @param {number|string} projectId - The ID of the project to export.
+     * @param {string} baseFolderName - The root folder name inside the ZIP archive.
+     * @param {Object} archive - The archiver instance to append files to.
+     * @param {Array<number>} userIds - List of user IDs to filter documents by.
+     * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
+     * @returns {Promise<void>}
+     */
+    async function processDocumentBasedExport(server, projectId, userIds, documentTypes, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, baseFolderName, archive) {
+        try {
+            documentTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes;
+            if (!Array.isArray(documentTypes)) documentTypes = [0, 1, 2, 4];
+        } catch (e) {
+            server.logger.warn("Could not parse documentTypes:", documentTypes);
+            documentTypes = [0, 1, 2, 4];
+        }
+        
+        const docs = await server.db.models.document.findAll({
+            where: { projectId, userId: userIds, deleted: false, parentDocumentId: null },
+        });
+
+        if (docs.length === 0) {
+            server.logger.warn(`[DocumentExport] No documents found for project ${projectId}`);
+            return;
+        }
+
+        const filteredDocs = docs.filter(doc =>
+            documentTypes.includes(doc.type) || documentTypes.includes(String(doc.type))
+        );
+
+        if (filteredDocs.length === 0) {
+            server.logger.warn(`[DocumentExport] No documents matching selected types found for project ${projectId}`);
+            return;
+        }
+
+        const uniqueUserIds = [...new Set(filteredDocs.map(doc => doc.userId).filter(Boolean))];
+
+        const userRoleRows = await server.db.models.user_role_matching.findAll({
+            where: { userId: uniqueUserIds },
+            raw: true,
+        });
+        
+        const rolesMap = {};
+        for (const row of userRoleRows) {
+            if (!rolesMap[row.userId]) rolesMap[row.userId] = [];
+            rolesMap[row.userId].push(row.userRoleId);
+        }
+
+        for (const doc of filteredDocs) {
+            const docFolder = `${baseFolderName}/${doc.hash}`;
+            const docUserRoles = rolesMap[doc.userId] || [];
+            await processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive);
+        }
+    }
+
+    function sortSteps(items, prevKey) {
+        const sorted = [];
+        let current = items.find(item => item[prevKey] === null);
+        while (current) {
+            sorted.push(current);
+            current = items.find(item => item[prevKey] === current.id);
+        }
+        return sorted;
+    }
+
+    async function processStudyBasedExport(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, workflowIds, shouldIncludeEmptyStudies, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, shouldIncludeDocumentFiles, shouldIncludeGrades, shouldIncludeAiScores, baseFolderName, archive) {
+        const studyWhere = { userId: userIds, projectId, deleted: false, workflowId: workflowIds };
+
+        const studies = await server.db.models.study.findAll({ where: studyWhere });
+
+        if (studies.length === 0) {
+            server.logger.warn(`[StudyExport] No studies found for selected users in project ${projectId}`);
+            return;
+        }
+
+        const writtenCriteriaReferenceIds = new Set();
+
+        for (const study of studies) {
+            const studyFolder = `${baseFolderName}/${study.hash}`;
+
+            const allSteps = await server.db.models.study_step.findAll({
+                where: { studyId: study.id, deleted: false }
+            });
+            const sortedSteps = sortSteps(allSteps, 'studyStepPrevious');
+
+            const stepDocumentsById = new Map();
+            // A step references one document, but PDF and LaTeX ZIP are separate documents
+            // of the same submission, each with its own hash.
+            const submissionDocumentsBySubmissionId = new Map();
+            if (shouldIncludeDocumentFiles) {
+                const stepDocumentIds = [...new Set(sortedSteps.map(step => step.documentId).filter(Boolean))];
+                const stepDocuments = stepDocumentIds.length > 0
+                    ? await server.db.models.document.findAll({ where: { id: stepDocumentIds }, raw: true })
+                    : [];
+                for (const doc of stepDocuments) stepDocumentsById.set(doc.id, doc);
+
+                const submissionIds = [...new Set(stepDocuments.map(doc => doc.submissionId).filter(Boolean))];
+                const submissionDocuments = submissionIds.length > 0
+                    ? await server.db.models.document.findAll({
+                        where: { submissionId: submissionIds, deleted: false },
+                        raw: true,
+                    })
+                    : [];
+                for (const doc of submissionDocuments) {
+                    if (!submissionDocumentsBySubmissionId.has(doc.submissionId)) {
+                        submissionDocumentsBySubmissionId.set(doc.submissionId, []);
+                    }
+                    submissionDocumentsBySubmissionId.get(doc.submissionId).push(doc);
+                }
+            }
+
+            const sessions = await server.db.models.study_session.findAll({
+                where: { studyId: study.id, deleted: false },
+                raw: true,
+            });
+
+            const sessionResults = [];
+            for (const session of sessions) {
+                const stepResults = [];
+                let sessionHasContent = false;
+
+                for (let i = 0; i < sortedSteps.length; i++) {
+                    const step = sortedSteps[i];
+                    const files = [];
+
+                    switch (step.stepType) {
+                        case 1: { // Annotator
+                            let annotations = await server.db.models.annotation.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+
+                            annotations = await attachTagNames(server, annotations);
+
+                            let comments = await server.db.models.comment.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+
+                            if (shouldExcludeNonConsentingAnnotations) {
+                                const allUserIds = [...new Set([
+                                    ...annotations.map(a => a.userId),
+                                    ...comments.map(c => c.userId)
+                                ].filter(Boolean))];
+                                const consentedUsers = await server.db.models.user.findAll({
+                                    where: { id: allUserIds },
+                                    attributes: ['id', 'acceptDataSharing'],
+                                    raw: true,
+                                });
+                                const consentedIds = new Set(consentedUsers.filter(u => u.acceptDataSharing).map(u => u.id));
+                                annotations = annotations.filter(a => !a.userId || consentedIds.has(a.userId));
+                                comments = comments.filter(c => !c.userId || consentedIds.has(c.userId));
+                            }
+
+                            if (annotations.length > 0) {
+                                files.push({ name: 'annotations.json', content: JSON.stringify(annotations, null, 2) });
+                                sessionHasContent = true;
+                            }
+
+                            if (comments.length > 0) {
+                                const commentVotes = await server.db.models.comment_vote.findAll({
+                                    where: { commentId: comments.map(c => c.id), deleted: false },
+                                    raw: true,
+                                });
+                                files.push({
+                                    name: 'comments.json',
+                                    content: JSON.stringify(
+                                        comments.map(c => ({ ...c, votes: commentVotes.filter(v => v.commentId === c.id) })),
+                                        null, 2
+                                    )
+                                });
+                                sessionHasContent = true;
+                            }
+
+                            // Assessments live on the annotator step, so without this the whole
+                            // document_data of an assessment workflow never leaves the database.
+                            const annotatorData = await server.db.models.document_data.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+                            if (annotatorData.length > 0) {
+                                files.push({ name: 'document_data.json', content: JSON.stringify(annotatorData, null, 2) });
+                                sessionHasContent = true;
+                            }
+                            break;
+                        }
+
+                        case 2: // Editor
+                        case 3: { // Modal
+                            const [templateEdits, sessionEdits] = await Promise.all([
+                                server.db.models.document_edit.findAll({
+                                    where: { documentId: step.documentId, studySessionId: null, studyStepId: null, deleted: false },
+                                    order: [['createdAt', 'ASC']],
+                                    raw: true,
+                                }),
+                                server.db.models.document_edit.findAll({
+                                    where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                    order: [['createdAt', 'ASC']],
+                                    raw: true,
+                                }),
+                            ]);
+
+                            let edits = [...templateEdits, ...sessionEdits].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+                            if (shouldExcludeNonConsentingEdits) {
+                                const editorUserIds = [...new Set(edits.map(e => e.userId).filter(Boolean))];
+                                const editorUsers = await server.db.models.user.findAll({
+                                    where: { id: editorUserIds },
+                                    attributes: ['id', 'acceptDataSharing'],
+                                    raw: true,
+                                });
+                                const consentedIds = new Set(editorUsers.filter(u => u.acceptDataSharing).map(u => u.id));
+                                edits = edits.filter(e => !e.userId || consentedIds.has(e.userId));
+                            }
+
+                            if (edits.length > 0) {
+                                const delta = dbToDelta(edits);
+                                const text = deltaToPlainText(delta);
+                                if (text.trim()) {
+                                    files.push({ name: 'edits.json', content: JSON.stringify(edits, null, 2) });
+                                    files.push({ name: 'text.txt', content: text });
+                                    files.push({ name: 'html.html', content: deltaToHtml(delta) });
+                                    sessionHasContent = true;
+                                }
+                            }
+
+                            const documentData = await server.db.models.document_data.findAll({
+                                where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                                raw: true,
+                            });
+                            if (documentData.length > 0) {
+                                files.push({ name: 'document_data.json', content: JSON.stringify(documentData, null, 2) });
+                            }
+                            break;
+                        }
+                    }
+
+                    stepResults.push({ stepIndex: i, files });
+
+                }
+
+                sessionResults.push({ session, stepResults, hasContent: sessionHasContent });
+            }
+
+            const includedSessions = shouldIncludeEmptyStudies
+                ? sessionResults
+                : sessionResults.filter(s => s.hasContent);
+
+            if (!shouldIncludeEmptyStudies && includedSessions.length === 0) continue;
+
+            const studyMeta = {
+                id: study.id,
+                name: study.name,
+                userId: study.userId,
+                workflowId: study.workflowId,
+                sessions: includedSessions.map(({ session }) => ({
+                    hash: session.hash,
+                    id: session.id,
+                    userId: session.userId,
+                    numberSteps: session.numberSteps,
+                    steps: sortedSteps.map((step, i) => ({
+                        id: step.id,
+                        stepNumber: i + 1,
+                        stepType: step.stepType,
+                        configuration: step.configuration,
+                    }))
+                }))
+            };
+
+            archive.append(JSON.stringify(studyMeta, null, 2), { name: `${studyFolder}/meta.json` });
+
+            let gradeRecordsBySessionId = new Map();
+            if (shouldIncludeGrades) {
+                // Scope by this study's sessions, not by the study owner: review assessments are
+                // stored on a document owned by the reviewed author, so an owner-scoped lookup
+                // finds none of them. See buildGradeRecords().
+                const { records: ownerGradeRecords, criteriaReferencesByConfigId } = await buildGradeRecords(
+                    server, projectId, [study.userId], users, shouldGenerateAliases, hasPrivateInfoRight, userMapping,
+                    { sessionIds: sessions.map(s => s.id) }
+                );
+
+                for (const [configurationId, reference] of criteriaReferencesByConfigId.entries()) {
+                    if (writtenCriteriaReferenceIds.has(configurationId)) continue;
+                    writtenCriteriaReferenceIds.add(configurationId);
+                    archive.append(
+                        JSON.stringify(reference, null, 2),
+                        { name: `${baseFolderName}/criteria_reference_${configurationId}.json` }
+                    );
+                }
+
+                for (const record of ownerGradeRecords) {
+                    if (!gradeRecordsBySessionId.has(record.studySessionId)) gradeRecordsBySessionId.set(record.studySessionId, []);
+                    gradeRecordsBySessionId.get(record.studySessionId).push(record);
+                }
+            }
+
+            for (const { session, stepResults } of includedSessions) {
+                const sessionFolder = `${studyFolder}/${session.hash}`;
+
+                if (shouldIncludeGrades) {
+                    const allSessionGrades = (gradeRecordsBySessionId.get(session.id) || []).sort(compareGradeRecords);
+
+                    const humanGrades = allSessionGrades.filter(r => !r.isAiGraded).map(({ sessionHash, isAiGraded, ...rest }) => rest);
+                    const aiGrades = allSessionGrades.filter(r => r.isAiGraded).map(({ sessionHash, isAiGraded, ...rest }) => rest);
+
+                    if (humanGrades.length > 0) {
+                        archive.append(JSON.stringify(humanGrades, null, 2), { name: `${sessionFolder}/scores.json` });
+                    }
+                    if (shouldIncludeAiScores && aiGrades.length > 0) {
+                        archive.append(JSON.stringify(aiGrades, null, 2), { name: `${sessionFolder}/scores_ai.json` });
+                    }
+                }
+
+                for (const { stepIndex, files } of stepResults) {
+                    const stepFolder = `${sessionFolder}/step_${stepIndex + 1}`;
+
+                    if (shouldIncludeDocumentFiles) {
+                        const step = sortedSteps[stepIndex];
+                        const stepDocument = stepDocumentsById.get(step.documentId);
+                        if (stepDocument) {
+                            const submissionSiblings = stepDocument.submissionId
+                                ? (submissionDocumentsBySubmissionId.get(stepDocument.submissionId) || [])
+                                : [];
+                            const candidates = [
+                                stepDocument,
+                                ...submissionSiblings.filter(doc => doc.id !== stepDocument.id),
+                            ];
+
+                            const appendedExtensions = new Set();
+                            for (const doc of candidates) {
+                                const extension = STUDY_DOCUMENT_EXTENSIONS[doc.type];
+                                if (!extension || appendedExtensions.has(extension)) continue;
+                                appendedExtensions.add(extension);
+                                appendStoredFileIfExists(
+                                    server,
+                                    archive,
+                                    doc.hash,
+                                    extension,
+                                    `${stepFolder}/document${extension}`,
+                                    extension.slice(1).toUpperCase(),
+                                );
+                            }
+                        }
+                    }
+
+                    for (const file of files) {
+                        archive.append(file.content, { name: `${stepFolder}/${file.name}` });
+                    }
+                }
+            }
+        }
+    }
+    /**
+     * Exports usage statistics for the selected users, respecting each user's acceptStats consent.
+     * @param {string} behaviourOutputFormat - 'single' for one combined file, 'perUser' for one file per user.
+     */
+    async function processUserBehaviourExport(server, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, behaviourOutputFormat, behaviourFileFormat, baseFolderName, archive) {
+        const { Op } = server.db.Sequelize;
+
+        const consentedUsers = users.filter(u => u.acceptStats);
+        if (consentedUsers.length === 0) return;
+        const usersById = new Map(consentedUsers.map(u => [u.id, u]));
+        const consentedUserIds = consentedUsers.map(u => u.id);
+        const extension = behaviourFileFormat === 'csv' ? 'csv' : 'json';
+
+        const parseStatData = (raw) => {
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                return raw;
+            }
+        };
+
+        const toRecord = (stat) => {
+            const user = usersById.get(stat.userId);
+            return {
+                action: stat.action,
+                data: behaviourFileFormat === 'csv' ? stat.data : parseStatData(stat.data),
+                timestamp: stat.timestamp instanceof Date ? stat.timestamp.toISOString() : stat.timestamp,
+                user: getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping),
+                username: user?.userName ?? null,
+                userId: stat.userId,
+                session: stat.session,
+            };
+        };
+
+        const buildStream = (fetchPage) => behaviourFileFormat === 'csv'
+            ? createCsvRowsStream(fetchPage, toRecord, ['action', 'data', 'timestamp', 'user', 'username', 'userId', 'session'])
+            : createJsonArrayStream(fetchPage, toRecord);
+
+        if (behaviourOutputFormat === 'perUser') {
+            for (const user of consentedUsers) {
+                const folderName = sanitizeFolderName(getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping));
+                const fetchPage = (lastId, limit) => server.db.models.statistic.findAll({
+                    where: { userId: user.id, deleted: false, id: { [Op.gt]: lastId } },
+                    order: [['id', 'ASC']],
+                    limit,
+                    raw: true,
+                });
+                archive.append(buildStream(fetchPage), { name: `${baseFolderName}/${folderName}/behaviour_data.${extension}` });
+            }
+        } else {
+            const fetchPage = (lastId, limit) => server.db.models.statistic.findAll({
+                where: { userId: { [Op.in]: consentedUserIds }, deleted: false, id: { [Op.gt]: lastId } },
+                order: [['id', 'ASC']],
+                limit,
+                raw: true,
+            });
+            archive.append(buildStream(fetchPage), { name: `${baseFolderName}/behaviour_data.${extension}` });
+        }
     }
 };

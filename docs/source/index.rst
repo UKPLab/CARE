@@ -24,6 +24,7 @@ For a live demo, visit https://demo.care.ukp.informatik.tu-darmstadt.de. Join ou
    for_developers/contributing
    for_developers/before_you_start
    for_developers/basics/basics
+   for_developers/i18n
 
    for_developers/frontend/frontend
    for_developers/backend/backend
@@ -36,6 +37,9 @@ For a live demo, visit https://demo.care.ukp.informatik.tu-darmstadt.de. Join ou
    :caption: For Researchers
 
    for_researchers/basics
+   for_researchers/interface_language
+   for_researchers/ai_features
+   for_researchers/triggers
    for_researchers/apply_skill_preprocessing
    for_researchers/exporting
    for_researchers/study/study

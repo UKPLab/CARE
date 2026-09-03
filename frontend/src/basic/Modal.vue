@@ -22,7 +22,7 @@
             </h5>
             <button
                 v-if="!removeClose"
-                aria-label="Close"
+                :aria-label="$t('modals.closeModal')"
                 class="btn-close"
                 type="button"
                 @click="handleCloseClick"
@@ -35,7 +35,7 @@
                 role="status"
             >
               <div class="spinner-border m-5">
-                <span class="visually-hidden">Loading...</span>
+                <span class="visually-hidden">{{ $t('common.loading') }}</span>
               </div>
             </div>
             <div

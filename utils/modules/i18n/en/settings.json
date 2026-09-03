@@ -1,0 +1,21 @@
+{
+  "title": "Settings",
+  "changeUserSettings": "Change User Settings",
+  "exportJson": "Export JSON",
+  "importJson": "Import JSON",
+  "saveSettings": "Save Settings",
+  "saveSettingsUnsaved": "Save Settings (Unsaved changes)",
+  "importSettings": "Import Settings",
+  "importDescription": "Select a previous downloaded settings file. Only existing keys will be updated.",
+  "messages": {
+    "settingsLoaded": "Settings Loaded",
+    "settingsLoadedMessage": "Settings have been successfully loaded.",
+    "settingsSavedSuccessfully": "Settings saved successfully.",
+    "settingsImported": "Settings imported",
+    "updatedSettings": "Updated {count} existing setting(s).",
+    "unsavedChangesWarning": "You have unsaved changes in your settings. Are you sure you want to leave without saving?"
+  },
+  "rememberToSave": "Remember to click {save} after making changes.",
+  "noneUseDefaultEmail": "None (use default email)",
+  "pickColor": "Pick a color"
+}
