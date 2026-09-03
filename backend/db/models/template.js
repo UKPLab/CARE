@@ -3,6 +3,10 @@ const MetaModel = require("../MetaModel.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
+const emailTemplateTypes = Object.freeze([1, 2, 3, 6, 7]);
+const otherTemplateTypes = Object.freeze([4, 5]);
+const allTemplateTypes = Object.freeze([...emailTemplateTypes, ...otherTemplateTypes]);
+
 module.exports = (sequelize, DataTypes) => {
     /**
    * Template model
@@ -10,6 +14,9 @@ module.exports = (sequelize, DataTypes) => {
    */
     class Template extends MetaModel {
         static autoTable = true;
+        static emailTemplateTypes = emailTemplateTypes;
+        static otherTemplateTypes = otherTemplateTypes;
+        static allTemplateTypes = allTemplateTypes;
 
         /**
          * Get the user filter for templates based on userId and admin status
@@ -25,12 +32,12 @@ module.exports = (sequelize, DataTypes) => {
                 // Admins: own templates (all types) OR public templates from others
                 return {[Op.or]: [{userId: userId}, {public: true}]};
             } else {
-                // Non-admins: own templates (types 4, 5, 8 only) OR public templates from others (types 4, 5, 8 only)
-                // Email templates (types 1, 2, 3, 6, 7) are admin-only
+                // Non-admins: own templates (otherTemplateTypes only) OR public templates from others (otherTemplateTypes only)
+                // Email templates (emailTemplateTypes) are admin-only
                 return {
                     [Op.or]: [
-                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: [4, 5, 8]}}]},
-                        {[Op.and]: [{public: true}, {type: {[Op.in]: [4, 5, 8]}}]}
+                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: otherTemplateTypes}}]},
+                        {[Op.and]: [{public: true}, {type: {[Op.in]: otherTemplateTypes}}]}
                     ]
                 };
             }
@@ -52,7 +59,12 @@ module.exports = (sequelize, DataTypes) => {
                 return baseFilter;
             }
             const copies = await Template.findAll({
-                where: { userId, sourceId: { [Op.ne]: null }, deleted: false },
+                where: {
+                    userId,
+                    sourceId: { [Op.ne]: null },
+                    deleted: false,
+                    type: { [Op.in]: otherTemplateTypes },
+                },
                 attributes: ["sourceId"],
                 raw: true,
             });
@@ -86,7 +98,7 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Override getAutoTable to apply custom filtering for templates:
          * - All users (including admins): own templates OR public templates from others
-         * - Non-admins: exclude email templates (types 1, 2, 3, 6, 7) - admin-only
+         * - Non-admins: exclude email templates (emailTemplateTypes) - admin-only
          */
         static async getAutoTable(filterList = [], userId = null, attributes = null) {
             const {Op} = require("sequelize");
@@ -499,7 +511,7 @@ module.exports = (sequelize, DataTypes) => {
                     if (
                         template.public === true &&
                         template._previousDataValues?.public !== true &&
-                        [1, 2, 3, 6, 7].includes(template.type)
+                        emailTemplateTypes.includes(template.type)
                     ) {
                         await assertStableEmailTemplateContent(template.id, sequelize.models, {
                             transaction: options.transaction,
@@ -507,14 +519,24 @@ module.exports = (sequelize, DataTypes) => {
                         });
                     }
 
-                    // appDataUpdate / updateData passes callerUserId so hooks can enforce ownership
-                    if (options.callerUserId === undefined) {
+                    // appDataUpdate / updateData passes the caller as context.currentUserId
+                    const callerUserId = options.context?.currentUserId;
+                    if (callerUserId === undefined) {
                         return;
                     }
 
-                    if (template.userId !== options.callerUserId) {
-                        throw new TranslatableError("errors.templates.updateOwnOnly"
+                    if (template.userId !== callerUserId) {
+                        throw new Error(
+                            "You can only update templates that you own"
                         );
+                    }
+
+                    if (emailTemplateTypes.includes(template.type)) {
+                        const roleIds = await sequelize.models.user_role_matching.getUserRolesById(callerUserId);
+                        const isAdmin = await sequelize.models.user_role_matching.isAdminInUserRoles(roleIds);
+                        if (!isAdmin) {
+                            throw new Error("Access denied: Only administrators can update email templates");
+                        }
                     }
 
                     const prevSourceId = template._previousDataValues?.sourceId;
