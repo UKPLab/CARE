@@ -30,24 +30,17 @@ def create_app():
         """
         logger.info(f"Connection established with {sid}")
 
-    @sio.on("call")
-    def call(sid, data):
+    @sio.on("healthy")
+    def healthy(sid, data):
         """
-        Handles a generic 'call' event for testing connectivity.
-        Args:
-            sid: Session ID.
-            data: Incoming data.
-        Returns:
-            A simple hello world response.
+        Liveness probe. Reports that the PDF RPC process is up and responsive.
         """
-        logger.info(f"Received call: {data} from {sid}")
+        logger.info(f"Health check from {sid}")
         try:
-            response = {"success": True, "data": "Hello World!"}
-            return response
+            return {"success": True, "data": {"status": "ok"}}
         except Exception as e:
-            logger.error(f"Error: {e}")
-            response = {"success": False, "message": "error: " + str(e)}
-            return response
+            logger.error(f"Health check error: {e}")
+            return {"success": False, "message": str(e)}
 
     @sio.on("test")
     def test(sid, data):

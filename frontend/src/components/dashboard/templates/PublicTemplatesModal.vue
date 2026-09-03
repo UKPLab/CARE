@@ -73,8 +73,11 @@ export default {
         .filter(t => t.userId === this.userId && !t.deleted);
     },
     publicTemplates() {
+      const importableTypes = [4, 5];
+      const isAdmin = this.$store.getters["auth/isAdmin"];
       return this.$store.getters["table/template/getAll"]
         .filter(t => t.public && t.userId !== this.userId && !t.deleted)
+        .filter(t => isAdmin || importableTypes.includes(t.type))
         .map(t => {
           const alreadyCopied = this.ownTemplates.some(
             own => own.sourceId === t.id
@@ -145,6 +148,7 @@ export default {
         case 5: return this.$t("templates.types.documentStudy");
         case 6: return this.$t("templates.types.emailStudyClose");
         case 7: return this.$t("templates.types.emailSubmissionUpload");
+        case 8: return this.$t("templates.types.prompt");
         default: return this.$t("common.unknown");
       }
     },

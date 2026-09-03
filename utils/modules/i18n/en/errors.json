@@ -236,7 +236,7 @@
         "editOwnContentOnly": "You can only edit content of templates that you own",
         "copiedCannotBeEdited": "Copied templates cannot be edited",
         "accessDenied": "Access denied",
-        "typeRequired": "Template type is required and must be 1-6",
+        "typeRequired": "Template type is required and must be 1-8",
         "missingPlaceholderFields": "Missing required fields: placeholderKey, placeholderLabel, placeholderType",
         "placeholderIdRequired": "Placeholder ID is required",
         "noFieldsToUpdate": "No fields to update",
