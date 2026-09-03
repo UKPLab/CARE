@@ -92,12 +92,12 @@ module.exports = (sequelize, DataTypes) => {
 			},
 			{
 				key: "submissionWarning",
-				label: "Submission Warning:",
+				label: "assignments.fields.submissionWarning.label",
 				placeholder: "e.g. This assignment must be submitted in German.",
 				type: "textarea",
 				required: false,
 				default: "",
-				help: "Shown to users as a confirmation prompt when they submit to this assignment. Leave empty for no warning.",
+				help: "assignments.fields.submissionWarning.help",
 			},
 		];
 
