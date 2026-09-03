@@ -7,6 +7,8 @@ const {
   resolveTemplate,
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
+  getDuplicatePlaceholderIds,
+  getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/helper/templateResolver");
 const TranslatableError = require("../../utils/TranslatableError");
@@ -19,6 +21,75 @@ const TranslatableError = require("../../utils/TranslatableError");
  * @class TemplateSocket
  */
 class TemplateSocket extends Socket {
+
+  /**
+   * Validate access to prompt-resolution context data for non-admin users.
+   *
+   * @param {Object} context                  Resolver context
+   * @param {number} [context.documentId]     Document ID
+   * @param {number} [context.studySessionId] Study session ID
+   * @param {number} [context.studyStepId]    Study step ID
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<void>}
+   */
+  async validateResolveContextAccess(context, options = {}) {
+    let studyStep = null;
+
+    if (context.documentId && !(await this.checkDocumentAccess(context.documentId))) {
+      throw new Error("Access denied");
+    }
+
+    if (context.studyStepId) {
+      studyStep = await this.models["study_step"].getById(context.studyStepId, options);
+      if (!studyStep) {
+        throw new Error("Study step not found");
+      }
+      if (studyStep.documentId) {
+        if (!(await this.checkDocumentAccess(studyStep.documentId))) {
+          throw new Error("Access denied");
+        }
+        if (context.documentId && studyStep.documentId !== context.documentId) {
+          throw new Error("Study step does not match document");
+        }
+      } else if (!context.studySessionId) {
+        // add() can leave documentId null for editor/modal steps; there is no document ACL then,
+        // so fall back to the study. A studySessionId is checked below and covers participants.
+        let hasStepAccess = await this.hasAccess("frontend.dashboard.studies.fullAccess");
+        if (!hasStepAccess) {
+          const study = await this.models["study"].getById(studyStep.studyId, options);
+          hasStepAccess = !!study && (await this.checkUserAccess(study.userId));
+        }
+        if (!hasStepAccess) {
+          throw new Error("Access denied");
+        }
+      }
+    }
+
+    if (context.studySessionId) {
+      const studySession = await this.models["study_session"].getById(context.studySessionId, options);
+      if (!studySession) {
+        throw new Error("Study session not found");
+      }
+
+      let hasSessionAccess =
+        studySession.userId === this.userId ||
+        (await this.hasAccess("frontend.dashboard.studies.fullAccess"));
+
+      if (!hasSessionAccess) {
+        const study = await this.models["study"].getById(studySession.studyId, options);
+        hasSessionAccess = !!study && (await this.checkUserAccess(study.userId));
+      }
+
+      if (!hasSessionAccess) {
+        throw new Error("Access denied");
+      }
+
+      if (studyStep?.studyId && studySession.studyId !== studyStep.studyId) {
+        throw new Error("Study session does not match study step");
+      }
+    }
+  }
 
   /**
    * Create a template
@@ -98,11 +169,11 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
 
-    const langRow = await this.models["template_content"].findOne({
-      where: { templateId: data.templateId, language: data.language, deleted: false },
-      raw: true,
-      ...options,
-    });
+    const langRow = await this.models["template_content"].getByTemplateIdAndLanguage(
+      data.templateId,
+      data.language,
+      options
+    );
 
     let delta = new Delta();
     if (langRow && langRow.content && langRow.content.ops) {
@@ -110,15 +181,11 @@ class TemplateSocket extends Socket {
     }
 
     if (isOwner) {
-      const draftEdits = await this.models["template_edit"].findAll({
-        where: { templateId: data.templateId, language: data.language, draft: true, deleted: false },
-        order: [
-          ["createdAt", "ASC"],
-          ["order", "ASC"],
-        ],
-        raw: true,
-        ...options,
-      });
+      const draftEdits = await this.models["template_edit"].getDrafts(
+        data.templateId,
+        data.language,
+        options
+      );
 
       if (draftEdits.length > 0) {
         const draftDelta = new Delta(dbToDelta(draftEdits));
@@ -140,12 +207,10 @@ class TemplateSocket extends Socket {
         }
 
         if (composedIsInvalid) {
-          await this.models["template_edit"].update(
-            { deleted: true, deletedAt: new Date() },
-            {
-              where: { templateId: data.templateId, language: data.language, draft: true, deleted: false },
-              transaction: options.transaction,
-            }
+          await this.models["template_edit"].discardDrafts(
+            data.templateId,
+            data.language,
+            options
           );
         } else {
           delta = composed;
@@ -217,7 +282,7 @@ class TemplateSocket extends Socket {
    *
    * @socketEvent templatePlaceholderAdd
    * @param {Object} data                   The data object
-   * @param {number} data.templateType      Template type (required, 1-5)
+   * @param {number} data.templateType      Template type (required, 1-8)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
    * @param {string} data.placeholderLabel  i18n key for label (required, e.g. "templates.placeholders.labels.emailGeneral.username")
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
@@ -228,7 +293,7 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new TranslatableError("errors.templates.accessDenied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7].includes(data.templateType)) {
+    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7, 8].includes(data.templateType)) {
       throw new TranslatableError("errors.templates.typeRequired");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
@@ -316,6 +381,36 @@ class TemplateSocket extends Socket {
     );
   }
 
+  /**
+   * Get the placeholders a specific template actually uses (tokens present in its content).
+   *
+   * Placeholders are defined per template type, not per template, so "used" is derived from the
+   * template's content. Returns the same row shape as {@link getAllPlaceholders}.
+   *
+   * @socketEvent templatePlaceholderGetUsed
+   * @param {Object} data            The data object
+   * @param {number} data.templateId Template ID (required)
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Array>}
+   */
+  async getUsedPlaceholders(data, options) {
+    if (!data.templateId) throw new Error("Template ID is required");
+
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new Error("Template not found");
+    }
+
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+    if (!isOwner && !isPublicFromOthers) {
+      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+    }
+
+    return await getUsedPlaceholders(data.templateId, this.models, { transaction: options.transaction });
+  }
+
 
   /**
    * Get list of language codes that have content for a template
@@ -340,13 +435,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
 
-    const rows = await this.models["template_content"].findAll({
-      where: { templateId: data.templateId, deleted: false },
-      attributes: ["language"],
-      raw: true,
-      ...options,
-    });
-    const languages = rows.map((r) => r.language).sort();
+    const languages = await this.models["template_content"].getLanguages(data.templateId, options);
     return { languages, defaultLanguage: template.defaultLanguage || "en" };
   }
 
@@ -380,11 +469,11 @@ class TemplateSocket extends Socket {
     }
 
     const templateContentModel = this.models["template_content"];
-    const existing = await templateContentModel.findOne({
-      where: { templateId: data.templateId, language: data.language, deleted: false },
-      raw: true,
-      ...options,
-    });
+    const existing = await templateContentModel.getByTemplateIdAndLanguage(
+      data.templateId,
+      data.language,
+      options
+    );
     if (existing) {
       return { success: true, existing: true };
     }
@@ -415,6 +504,12 @@ class TemplateSocket extends Socket {
    * @param {number} [data.context.creatorId]        Study creator ID
    * @param {number} [data.context.studyId]          Study ID (for anonymization check)
    * @param {number} [data.context.studySessionId]   Study session ID
+   * @param {number} [data.context.studyStepId]     Study step ID (prompt placeholders, editor resolution)
+   * @param {number} [data.context.documentId]      Document ID (prompt placeholders)
+   * @param {string} [data.context.pdfText]         Extracted text for the current PDF (`~pdfText~`; caller-supplied)
+   * @param {Object} [data.context.submissionPdfTexts] Optional map documentId -> string for submission PDF text extraction
+   * @param {Object} [data.context.placeholderMapping] Per-key index maps for bracket tokens (e.g. submissionFiles: { 1: documentId, 3: documentId })
+   * @param {string} [data.context.editorText]      Optional editor plain-text override (`~editorText~`)
    * @param {string} [data.context.studySessionHash] Study session hash (for link)
    * @param {string} [data.context.baseUrl]          Base URL for generating links
    * @param {string} [data.context.assignmentType]   Assignment type
@@ -426,10 +521,27 @@ class TemplateSocket extends Socket {
    * @returns {Promise<string|Object>} 
    */
   async resolveTemplatePlaceholders(data, options) {
-    if (!(await this.isAdmin())) throw new TranslatableError("errors.templates.accessDenied");
     if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
     if (!data.context || typeof data.context !== 'object') {
       throw new TranslatableError("errors.templates.contextObjectRequired");
+    }
+    const template = await this.models["template"].getById(data.templateId);
+    if (!template) {
+      throw new TranslatableError("errors.templates.notFound");
+    }
+    const isAdmin = await this.isAdmin();
+    const isEmailTemplate = [1, 2, 3, 6].includes(template.type);
+    const isOwner = template.userId === this.userId;
+    const isPublicFromOthers = template.public === true && !isOwner;
+
+    if (!isAdmin && isEmailTemplate) {
+      throw new TranslatableError("errors.templates.accessDenied");
+    }
+    if (!isAdmin && !isOwner && !isPublicFromOthers) {
+      throw new TranslatableError("errors.templates.accessDenied");
+    }
+    if (!isAdmin) {
+      await this.validateResolveContextAccess(data.context, options);
     }
 
     // Get baseUrl from settings if not provided in context
@@ -458,6 +570,30 @@ class TemplateSocket extends Socket {
   }
 
   /**
+   * Reject save when merged content contains duplicate placeholder ids.
+   *
+   * @param {Object} content - Delta content with ops
+   * @param {number} templateType - Template type
+   * @param {Object} options - Sequelize options
+   * @returns {Promise<void>}
+   * @throws {Error}
+   */
+  async assertNoDuplicatePlaceholders(content, templateType, options = {}) {
+    const duplicates = await getDuplicatePlaceholderIds(
+      content,
+      templateType,
+      this.models,
+      options
+    );
+    if (duplicates.length > 0) {
+      throw new Error(
+        `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
+        `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
+      );
+    }
+  }
+
+  /**
    * Save template by merging draft edits into template_content for the given language
    *
    * Merges all draft edits (draft=true) from template_edit for (templateId, language) into
@@ -477,28 +613,21 @@ class TemplateSocket extends Socket {
       return;
     }
 
-    const edits = await this.models["template_edit"].findAll({
-      where: { templateId, language, draft: true, deleted: false },
-      order: [
-        ["createdAt", "ASC"],
-        ["order", "ASC"],
-      ],
-      raw: true,
-      ...options,
-    });
+    const edits = await this.models["template_edit"].getDrafts(templateId, language, options);
+
+    const templateContentModel = this.models["template_content"];
+    const langRow = await templateContentModel.getByTemplateIdAndLanguage(
+      templateId,
+      language,
+      options
+    );
+    let baseContent = new Delta();
+    if (langRow && langRow.content && langRow.content.ops) {
+      baseContent = new Delta(langRow.content.ops);
+    }
 
     if (edits.length === 0) {
       if ([1, 2, 3, 6, 7].includes(template.type)) {
-        const templateContentModel = this.models["template_content"];
-        const langRow = await templateContentModel.findOne({
-          where: { templateId, language, deleted: false },
-          raw: true,
-          ...options,
-        });
-        let baseContent = new Delta();
-        if (langRow && langRow.content && langRow.content.ops) {
-          baseContent = new Delta(langRow.content.ops);
-        }
         const missing = await getMissingRequiredPlaceholders(
           { ops: baseContent.ops },
           template.type,
@@ -510,20 +639,14 @@ class TemplateSocket extends Socket {
           throw new TranslatableError(key, params);
         }
       }
+      await this.assertNoDuplicatePlaceholders(
+        { ops: baseContent.ops },
+        template.type,
+        options
+      );
       return;
     }
 
-    const templateContentModel = this.models["template_content"];
-    const langRow = await templateContentModel.findOne({
-      where: { templateId, language, deleted: false },
-      raw: true,
-      ...options,
-    });
-
-    let baseContent = new Delta();
-    if (langRow && langRow.content && langRow.content.ops) {
-      baseContent = new Delta(langRow.content.ops);
-    }
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
@@ -541,12 +664,15 @@ class TemplateSocket extends Socket {
       }
     }
 
+    await this.assertNoDuplicatePlaceholders(
+      { ops: mergedDelta.ops },
+      template.type,
+      options
+    );
+
     const contentPayload = { content: { ops: mergedDelta.ops } };
     if (langRow) {
-      await templateContentModel.update(contentPayload, {
-        where: { id: langRow.id },
-        transaction: options.transaction,
-      });
+      await templateContentModel.updateById(langRow.id, contentPayload, options);
     } else {
       await templateContentModel.add(
         { templateId, language, content: contentPayload.content },
@@ -554,20 +680,10 @@ class TemplateSocket extends Socket {
       );
     }
 
-    // Mark edits as draft:false
-    await this.models["template_edit"].update(
-      { draft: false },
-      {
-        where: { id: edits.map((e) => e.id) },
-        transaction: options.transaction,
-      }
-    );
+    await this.models["template_edit"].markMerged(edits.map((e) => e.id), options);
 
-    // Touch template.updatedAt so "Update available" works for copies when source content changes
-    // NOTE: Must use instance-level save — Model.update() and updateById both fail to persist updatedAt
-    const templateInstance = await this.models["template"].findByPk(templateId, { transaction: options.transaction });
-    templateInstance.changed('updatedAt', true);
-    await templateInstance.save({ fields: ['updatedAt'], transaction: options.transaction });
+    // Copies show "Update available" off the source's updatedAt
+    await this.models["template"].touch(templateId, options);
 
     this.logger.info(`Template saved successfully.`);
   }
@@ -618,17 +734,10 @@ class TemplateSocket extends Socket {
     if (!template) return;
 
     if (template.userId === this.userId) {
-      await this.models["template_edit"].update(
-        { deleted: true, deletedAt: new Date() },
-        {
-          where: {
-            templateId: data.templateId,
-            language: data.language,
-            draft: true,
-            deleted: false,
-          },
-          transaction: options.transaction,
-        }
+      await this.models["template_edit"].discardDrafts(
+        data.templateId,
+        data.language,
+        options
       );
     }
   }
@@ -776,6 +885,7 @@ class TemplateSocket extends Socket {
     this.createSocket("templatePlaceholderAdd", this.addPlaceholder, {}, true);
     this.createSocket("templatePlaceholderUpdate", this.updatePlaceholder, {}, true);
     this.createSocket("templatePlaceholderGetAll", this.getAllPlaceholders, {}, false);
+    this.createSocket("templatePlaceholderGetUsed", this.getUsedPlaceholders, {}, false);
     this.createSocket("templateResolve", this.resolveTemplatePlaceholders, {}, false);
     this.createSocket("templateCopy", this.copyTemplate, {}, true);
     this.createSocket("templateDetach", this.detachTemplate, {}, true);

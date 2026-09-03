@@ -31,7 +31,8 @@
     "validationConfiguration": "Validierungskonfiguration {id}"
   },
   "skillSelector": {
-    "selectNlpSkill": "Bitte wählen Sie einen NLP-Skill aus:"
+    "selectNlpSkill": "Bitte wählen Sie einen NLP-Skill aus:",
+    "selectSkill": "Bitte wählen Sie einen Skill aus:"
   },
   "inputMap": {
     "inputMapping": "Input-Zuordnung",

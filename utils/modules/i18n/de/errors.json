@@ -236,7 +236,7 @@
     "editOwnContentOnly": "Sie können nur Inhalte von Vorlagen bearbeiten, die Ihnen gehören",
     "copiedCannotBeEdited": "Kopierte Vorlagen können nicht bearbeitet werden",
     "accessDenied": "Zugriff verweigert",
-    "typeRequired": "Vorlagentyp ist erforderlich und muss 1-6 sein",
+    "typeRequired": "Vorlagentyp ist erforderlich und muss 1-8 sein",
     "missingPlaceholderFields": "Erforderliche Felder fehlen: placeholderKey, placeholderLabel, placeholderType",
     "placeholderIdRequired": "Platzhalter-ID ist erforderlich",
     "noFieldsToUpdate": "Keine Felder zum Aktualisieren",

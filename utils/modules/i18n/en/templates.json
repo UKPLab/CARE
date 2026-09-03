@@ -98,6 +98,17 @@
         "assignmentId": "Internal assignment ID.",
         "submissionId": "Internal submission ID.",
         "timestamp": "When the submission was uploaded."
+      },
+      "prompt": {
+        "pdfText": "Text from the PDF in the current context.",
+        "editorText": "Latest plain text from the study HTML/modal document. During step loading, callers should pass context.editorText explicitly if resolving in the same pass as NLP insertIntoEditor.",
+        "assessmentResult": "The saved rubric from the Assessment sidebar for this document and step.",
+        "inlineComments": "Structured comments and annotations for this document and step.",
+        "nlpAssessmentSuggestion": "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",
+        "previousAssessmentResult": "The saved rubric from the previous step when carry-over is configured.",
+        "assessmentConfiguration": "The assessment rubric configuration used in this step.",
+        "submissionFiles": "Each Add inserts ~submissionFiles[N]~ with the next available N (highest existing + 1). Gaps are kept after deletes. Map each index to a specific submission file in the AI hook step configuration.",
+        "studyContext": "Basic metadata from the current study, step, and document context."
       }
     }
   },
@@ -108,7 +119,8 @@
     "documentGeneral": "Document - General",
     "documentStudy": "Document - Study",
     "emailStudyClose": "Email - Study Close",
-    "emailSubmissionUpload": "Email - Submission upload"
+    "emailSubmissionUpload": "Email - Submission upload",
+    "prompt": "Prompt"
   },
   "editor": {
     "newLanguage": "New language",
@@ -245,7 +257,8 @@
         "emailStudyClose": "Email - Study Close",
         "emailSubmissionUpload": "Email - Submission upload",
         "documentGeneral": "Document - General",
-        "documentStudy": "Document - Study"
+        "documentStudy": "Document - Study",
+        "prompt": "Prompt"
       }
     },
     "defaultLanguage": {

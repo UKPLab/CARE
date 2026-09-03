@@ -308,14 +308,14 @@ class AssignmentSocket extends Socket {
 
                                         // remove the swappable assignment from the other user and add it to the current user
                                         roleSelection[roleId]['assignments'][otherUser.id] = otherAssignments.filter(
-                                            (assignedId) => assignedId !== swappableAssignment.id
+                                            (assignedId) => assignedId !== swappableAssignment
                                         );
 
                                         // instead adding the other user's new assignment
                                         roleSelection[roleId]['assignments'][otherUser.id].push(otherUserNewAssignment.id);
 
                                         // add the swappable assignment to the current user
-                                        roleSelection[roleId]['assignments'][user.id].push(swappableAssignment.id);
+                                        roleSelection[roleId]['assignments'][user.id].push(swappableAssignment);
 
                                         // update the counters
                                         assignmentCounter[otherUserNewAssignment.id]++;
@@ -361,7 +361,12 @@ class AssignmentSocket extends Socket {
             let currentAssignment = 0;
 
             for (const [assignmentId, reviewerIds] of assignmentEntries) {
-                const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
+                const assignment = shuffledAssignments.find(
+                    (a) => String(a.id) === String(assignmentId)
+                );
+                if (!assignment) {
+                    throw new Error(`Selected assignment ${assignmentId} could not be resolved.`);
+                }
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
                 const assignmentData = {
                     assignment: assignment,
@@ -517,7 +522,12 @@ class AssignmentSocket extends Socket {
             let currentAssignment = 0;
             for (const [reviewerId, assignmentIds] of Object.entries(finalAssignments)) {
                 for (const assignmentId of assignmentIds) {
-                    const assignment = shuffledAssignments.find((a) => a.id === Number(assignmentId));
+                    const assignment = shuffledAssignments.find(
+                        (a) => String(a.id) === String(assignmentId)
+                    );
+                    if (!assignment) {
+                        throw new Error(`Selected assignment ${assignmentId} could not be resolved.`);
+                    }
                     const reviewer = data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId));
                     
                     const assignmentData = {
@@ -599,7 +609,7 @@ class AssignmentSocket extends Socket {
 
         const result = {};
         for (const [key, value] of Object.entries(config)) {
-            if (value.isTemplate) {
+            if (value?.isTemplate) {
                 switch (context.assignmentType) {
                     case 'submission':
                         result[key] = { ...value, submissionId: context.submissionId };

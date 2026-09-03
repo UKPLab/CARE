@@ -140,5 +140,8 @@
     "finished": "Finished",
     "nlp": {
         "serviceRequest": "NLP Service Request"
-    }
+    },
+    "search": "Search...",
+    "searchOptions": "Search options",
+    "noMatches": "No matches"
 }
