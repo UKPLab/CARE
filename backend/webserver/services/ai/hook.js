@@ -108,9 +108,25 @@ async function resolveServiceInput(service, input) {
             const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
             if (!submissionId || !selectedFiles.length) return "";
 
-            // Keep PDF.js `{ pages, pageCount }` until `applyTextRangeLimit` in the resolver.
+            const parts = [];
+
             if (selectedFiles.includes("pdf")) {
-                return pdfText || "";
+                let text = pdfText;
+                if (!text) {
+                    const pdfDoc = await service.server.db.models["document"].findOne({
+                        where: {submissionId, type: 0, deleted: false},
+                        raw: true,
+                    });
+                    const buffer = pdfDoc && await service.server.db.models["document"]
+                        .readDocumentFile(pdfDoc, ".pdf");
+                    if (buffer) {
+                        const pdfRpc = service.server.rpcs["PDFRPC"];
+                        await pdfRpc.wait(500, pdfRpc.timeout);
+                        const extracted = await pdfRpc.getAnnotations({file: buffer});
+                        text = extracted.wholeText;
+                    }
+                }
+                if (text) parts.push(text);
             }
 
             const parts = [];

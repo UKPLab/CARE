@@ -304,7 +304,7 @@ export default {
       }
 
       // Emit editor-insertions for any output marked insertIntoEditor. Skills key by
-      // `${name}_${skill}_${outputKey}`; hooks (single output) key by the service name alone.
+      // `${name}_${skill}_${outputKey}`; hooks key by their id.
       this.nlpServices.forEach(service => {
         if (!service.outputs || typeof service.outputs !== 'object') {
           return;
