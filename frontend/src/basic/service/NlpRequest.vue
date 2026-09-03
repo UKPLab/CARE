@@ -94,15 +94,12 @@ export default {
     },
     resultKeyBase() {
       return this.isHook
-        ? buildHookResultKey(this.serviceName)
+        ? buildHookResultKey(this.service.hookId)
         : this.skillKey;
     },
     resultKeyCandidates() {
       if (!this.isHook) return [this.resultKeyBase].filter(Boolean);
-      return getHookResultKeyCandidates(
-        this.serviceName,
-        this.service?.type
-      );
+      return getHookResultKeyCandidates(this.service.hookId);
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -330,7 +327,7 @@ export default {
       return extractTextFromPDF(pdf);
     },
     /**
-     * Persists a hook's single completion to document_data under the service name alone (skill takes multi key).
+     * Persists a hook's single completion to document_data under its hook id key.
      *
      * @param {{ output?: string|null }} response
      * @returns {void}
