@@ -129,7 +129,6 @@ async function resolveServiceInput(service, input) {
                 if (text) parts.push(text);
             }
 
-            const parts = [];
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
             // filePatterns maps logical name → validation-config regex (e.g. "expose" → "Expose\\.tex$").
