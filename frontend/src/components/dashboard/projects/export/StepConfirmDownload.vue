@@ -30,14 +30,14 @@
         <strong>{{ $t('dashboard.projects.export.summary') }}</strong><br />
         <i18n-t keypath="dashboard.projects.export.downloadSummary" tag="span">
           <template #count>
-            <strong>{{ submissionSelection.length }}</strong>
+            <strong>{{ userSelection.length }}</strong>
           </template>
         </i18n-t>
       </div>
 
       <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
         <ul class="mb-0 pl-3">
-          <li v-for="row in submissionSelection" :key="row.userId">
+          <li v-for="row in userSelectionDisplay" :key="row.userId">
             {{ row.studentName || row.userName }} ({{ $t('dashboard.projects.export.fileCount', { count: row.fileCount }) }})
           </li>
         </ul>
@@ -54,13 +54,12 @@ import BasicLoading from "@/basic/Loading.vue";
  *
  * The final confirmation step within the ExportModal. 
  * This component provides a summary of the selected 
- * submissions intended for download, as well as some
+ * data intended for download, as well as some
  * warnings for the user, if they selected generate aliases
  * or students who didn't accept data sharing.
  *
  * @author Mélissa Loew
  */
-
 export default {
   name: "StepConfirmDownload",
   components: { BasicLoading },
@@ -73,15 +72,41 @@ export default {
       type: Boolean,
       default: false
     },
-    submissionSelection: {
+    userSelection: {
       type: Array,
       required: true
+    },
+    exportType: {
+      type: String,
+      default: 'submissions'
     }
   },
   computed: {
     hasDeclinedSharingSelected() {
-      return this.submissionSelection.some(row => row.acceptDataSharing === false);
-    }
+      return this.userSelection.some(row => row.acceptDataSharing === 'No');
+    },
+    exportTypeLabel() {
+      const labels = {
+        submissions: 'submissions',
+        grades: 'grades',
+        documents: 'documents',
+        studies: 'studies',
+        userBehaviour: 'user behaviour data',
+      };
+      return labels[this.exportType] || 'documents';
+    },
+    userSelectionDisplay() {
+      const unitByExportType = {
+        submissions: 'submission(s)',
+        studies: 'study(ies)',
+      };
+      const unit = unitByExportType[this.exportType] || 'document(s)';
+      return this.userSelection.map(row => ({
+        userId: row.userId,
+        name: row.fullName || row.userName,
+        suffix: ['grades', 'userBehaviour'].includes(this.exportType) ? null : `${row.count} ${unit}`,
+      }));
+    },
   }
 }
 </script>

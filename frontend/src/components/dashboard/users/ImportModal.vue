@@ -10,10 +10,9 @@
     <template #title>
       <span>{{$t('dashboard.users.bulkImportUsers')}}</span>
     </template>
-    <!-- Step1: Upload -->
-    <template #step-1>
+    <template #step="{ step }">
       <div class="file-upload-container">
-        <template v-if="importType === 'csv'">
+        <template v-if="step.key === 'source' && importType === 'csv'">
           <div
             class="drag-drop-area"
             @dragover.prevent
@@ -77,17 +76,26 @@
             </div>
           </template>
         </template>
-        <template v-else>
+        <template v-else-if="step.key === 'source'">
           <MoodleOptions
             ref="moodleOptionsForm"
             v-model="moodleOptions"
           />
         </template>
       </div>
-    </template>
-    <!-- Step2: Preview -->
-    <template #step-2>
-      <div class="preview-table-container">
+
+      <RoleMappingStep
+        v-if="step.key === 'roleMapping'"
+        v-model="roleMappings"
+        :users="users"
+        :system-roles="systemRoles"
+        :source-label="importSourceLabel"
+      />
+
+      <div
+        v-if="step.key === 'preview'"
+        class="preview-table-container"
+      >
         <BasicTable
           v-model="selectedUsers"
           :columns="columns"
@@ -96,10 +104,11 @@
           :max-table-height="400"
         />
       </div>
-    </template>
-    <!-- Step3: Confirm -->
-    <template #step-3>
-      <div class="confirm-container">
+
+      <div
+        v-if="step.key === 'confirm'"
+        class="confirm-container"
+      >
         <BasicIcon
           icon-name="person-fill-up"
           size="64"
@@ -118,11 +127,15 @@
           </template>
         </i18n-t>
       </div>
-    </template>
-    <!-- Step3: Result -->
-    <template #step-4>
-      <div class="result-container">
-        <div v-if="updatedUserCount">
+
+      <div
+        v-if="step.key === 'result'"
+        class="result-container"
+      >
+        <div
+          v-if="updatedUserCount"
+          class="result-status"
+        >
           <i18n-t keypath="dashboard.users.resultSummary" tag="div">
             <template #newCount>
               <strong>{{ updatedUserCount.new }}</strong>
@@ -131,15 +144,29 @@
               <strong>{{ updatedUserCount.updated }}</strong>
             </template>
           </i18n-t>
-
-          <div v-if="createdErrors.length > 0" class="error-container">
+          <div
+            v-if="createdErrors.length > 0"
+            class="error-container"
+          >
             {{ $t('dashboard.users.failedListTitle') }}
-            <ul v-for="(error, index) in createdErrors" :key="index">
-              <li>
-                {{ $t('dashboard.users.userCannotBeAdded', { extId: error.extId, message: resolveApiMessage(error) }) }}
-              </li>
+            <ul
+              v-for="(error, index) in createdErrors"
+              :key="index"
+            >
+              <li>{{ $t('dashboard.users.userCannotBeAdded', { extId: error.extId, message: resolveApiMessage(error) }) }}</li>
             </ul>
           </div>
+        </div>
+        <div
+          v-if="importType === 'moodle'"
+          class="moodle-publish-intro"
+        >
+          <h3>Send login credentials to Moodle</h3>
+          <p>
+            CARE generated usernames and initial passwords for the imported users.
+            Select the Moodle assignment where these credentials should be posted as feedback,
+            or download them as a CSV file.
+          </p>
         </div>
         <MoodleOptions
           v-if="importType === 'moodle'"
@@ -173,6 +200,8 @@ import BasicTable from "@/basic/Table.vue";
 import Papa from "papaparse";
 import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
+import RoleMappingStep from "@/components/dashboard/users/RoleMappingStep.vue";
+import { buildInitialRoleMappings, formatRoleList, getRoleRows, normalizeImportUsers } from "@/components/dashboard/users/roleMapping.js";
 
 /**
  * Modal for bulk creating users through csv file and Moodle API
@@ -180,7 +209,8 @@ import MoodleOptions from "@/basic/form/MoodleOptions.vue";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
+  components: { RoleMappingStep, MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
+  emits: ["updateUser"],
   data() {
     return {
       importType: "csv",
@@ -230,7 +260,27 @@ export default {
         { name: this.$t('common.lastName'), key: "lastName" },
         { name: this.$t('users.columns.email'), key: "email" },
         { name: this.$t('dashboard.projects.roles'), key: "roles" },
-      ];
+      ],
+      updatedUserCount: null,
+      createdUsers: [],
+      createdErrors: [],
+      roleMappings: {},
+    };
+  },
+  computed: {
+    systemRoles() {
+      return this.$store.getters["admin/getSystemRoles"] || [];
+    },
+    importSourceLabel() {
+      return this.importType === "csv" ? "CSV" : "Moodle";
+    },
+    roleRows() {
+      return getRoleRows(this.users);
+    },
+    careRoleMap() {
+      return Object.fromEntries(
+        Object.entries(this.roleMappings).filter(([, careRole]) => careRole)
+      );
     },
     userCount() {
       return {
@@ -239,21 +289,29 @@ export default {
       };
     },
     steps() {
-      return [this.importType === "csv" ? { title: this.$t('common.upload') } : { title: this.$t('dashboard.users.moodle') }, { title: this.$t('dashboard.users.preview') }, { title: this.$t('common.confirm') }, { title: this.$t('dashboard.users.result') }];
+      const sourceStep = this.importType === "csv" ? { key: "source", title: this.$t('common.upload') } : { key: "source", title: this.$t('dashboard.users.moodle') };
+      const commonSteps = [
+        { key: "preview", title: this.$t('dashboard.users.preview') },
+        { key: "confirm", title: this.$t('common.confirm') },
+        { key: "result", title: this.$t('dashboard.users.result') },
+      ];
+      return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
     },
     stepValid() {
-      let validStates = [];
-      if (this.importType === "csv") {
-        validStates.push(this.file.name !== "" || this.file.errors.length < 1);
-      } else {
-        const { courseID, apiUrl, apiKey } = this.moodleOptions;
-        validStates.push(courseID && apiUrl && apiKey);
-      }
-      validStates = [...validStates, this.selectedUsers.length > 0, true, true];
-      return validStates;
+      const sourceIsValid = this.importType === "csv"
+        ? this.file.name !== "" && this.file.errors.length < 1
+        : this.hasRequiredMoodleOptions(this.moodleOptions);
+      const hasRoleMappings = this.roleRows.every((role) => Object.prototype.hasOwnProperty.call(this.roleMappings, role.raw));
+      return [sourceIsValid, hasRoleMappings, this.selectedUsers.length > 0, true, true];
     },
   },
   methods: {
+    hasRequiredMoodleOptions({ courseID, apiUrl, apiKey } = {}) {
+      return [courseID, apiUrl, apiKey].every((value) => String(value ?? "").trim() !== "");
+    },
+    initializeRoleMappings() {
+      this.roleMappings = buildInitialRoleMappings(this.users, this.roleMappings);
+    },
     resolveApiMessage,
     downloadFileAsCSV() {
       const filename = `users_${Date.now()}`;
@@ -263,7 +321,7 @@ export default {
         lastName: user.lastName,
         userName: user.userName,
         email: user.email,
-        roles: user.roles,
+        roles: formatRoleList(user.roles),
         password: user.initialPassword || "",
       }));
       downloadObjectsAs(users, filename, "csv");
@@ -276,7 +334,7 @@ export default {
           firstName: "Test",
           lastName: "User",
           email: "test.user@example.com",
-          roles: "Student*in",
+          roles: "student",
         },
       ];
       downloadObjectsAs(users, filename, "csv");
@@ -313,6 +371,7 @@ export default {
       };
       this.users = [];
       this.selectedUsers = [];
+      this.roleMappings = {};
       if (this.updatedUserCount) {
         this.updatedUserCount = null;
         this.createdUsers = [];
@@ -323,26 +382,41 @@ export default {
       }
     },
     handleStepChange(step) {
-      switch (step) {
-        case 1:
-          this.$refs.importStepper?.setWaiting(true);
-          this.prepareUserImport();
+      const stepKey = this.steps[step]?.key;
+      switch (stepKey) {
+        case "roleMapping":
+          if (this.importType === "moodle") {
+            this.prepareUserImport();
+          } else {
+            this.initializeRoleMappings();
+            this.$refs.importStepper?.setWaiting(false);
+          }
           break;
-        case 2:
+        case "preview":
+          if (this.importType === "csv") {
+            this.prepareUserImport();
+          } else {
+            this.$refs.importStepper?.setWaiting(false);
+          }
+          break;
+        case "confirm":
           this.$refs.importStepper?.setWaiting(false);
           break;
-        case 3:
+        case "result":
           this.executeUserImport();
           break;
       }
     },
     prepareUserImport() {
       if (this.importType === "moodle") {
-        if (!this.$refs.moodleOptionsForm?.validate()) return;
+        if (!this.hasRequiredMoodleOptions(this.moodleOptions) || (this.$refs.moodleOptionsForm && !this.$refs.moodleOptionsForm.validate())) return;
+        this.$refs.importStepper?.setWaiting(true);
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.importStepper?.setWaiting(false);
           if (res.success) {
-            this.users = res["data"];
+            this.users = normalizeImportUsers(res["data"]);
+            this.selectedUsers = [];
+            this.initializeRoleMappings();
           } else {
             this.eventBus.emit("toast", {
               title: this.$t('errors.users.failedToGetUsersFromMoodle'),
@@ -353,19 +427,14 @@ export default {
           }
         });
       } else {
+        this.$refs.importStepper?.setWaiting(true);
         this.checkDuplicateUsers();
       }
     },
     executeUserImport() {
       const userData = {
         users: this.selectedUsers,
-        // Moodle's role names are subject to change
-        moodleCareRoleMap: {
-          "Dozent*in": "teacher",
-          "Betreuer*in": "teacher",
-          "Tutor*in": "mentor",
-          "Student*in": "student",
-        },
+        roleMap: this.careRoleMap,
         progressId: this.$refs.importStepper.getProgressId(),
       };
       this.$refs.importStepper.startProgress();
@@ -462,8 +531,10 @@ export default {
     async processFile(file) {
       if (file && file.name.endsWith(".csv")) {
         try {
-          const parsingResults = await this.validateCSV(file);
+          const parsingResults = normalizeImportUsers(await this.validateCSV(file));
           this.users = parsingResults;
+          this.selectedUsers = [];
+          this.roleMappings = buildInitialRoleMappings(parsingResults, this.roleMappings);
           this.file = {
             state: 1,
             name: file.name,
@@ -490,14 +561,19 @@ export default {
         state: 0,
         name: "",
         size: 0,
+        errors: [],
       };
+      this.users = [];
+      this.selectedUsers = [];
+      this.roleMappings = {};
       this.$refs.fileInput.value = "";
     },
     checkDuplicateUsers() {
+      this.selectedUsers = [];
       this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
         this.$refs.importStepper?.setWaiting(false);
         if (res.success) {
-          this.users = res.data;
+          this.users = normalizeImportUsers(res.data);
         } else {
           this.eventBus.emit("toast", {
             title: this.$t('errors.users.failedToCheckDuplicateUsers'),
@@ -586,6 +662,39 @@ export default {
   button:first-child {
     margin-right: 0.5rem;
   }
+}
+
+.result-status {
+  width: 100%;
+  text-align: center;
+}
+
+.result-summary {
+  margin-bottom: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.moodle-publish-intro {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
+  padding-top: 1rem;
+  border-top: 1px solid #dee2e6;
+  text-align: left;
+}
+
+.moodle-publish-intro h3 {
+  margin-bottom: 0.35rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.moodle-publish-intro p {
+  margin-bottom: 0;
+  color: #555;
+  font-size: 0.925rem;
 }
 
 .error-container {

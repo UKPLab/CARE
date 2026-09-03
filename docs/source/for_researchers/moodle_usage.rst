@@ -77,13 +77,19 @@ Before using this feature, make sure Moodle API access is configured as describe
 User data can be imported from Moodle using the course ID:
 
 1. In the Dashboard navigate to ``Users > Import via Moodle``
-2. CARE will match users by email address
+2. After CARE retrieves the Moodle users, review the role mapping step
+3. Map each Moodle role label to the corresponding CARE role, or choose ``Do not assign additional role`` if the role should not grant additional CARE permissions
+4. CARE will match users by email address
 
 CARE handles three scenarios:
 
 - New users are created if not found
 - Duplicate users are merged based on email match
 - Conflicts (e.g., mismatched emails) require manual correction
+
+Moodle role labels can vary by Moodle instance and may include multilingual markup such as ``{mlang de}Lehrende{mlang}{mlang other}Lecturer{mlang}``. CARE hides this markup in the mapping step while keeping the original Moodle role string for the import.
+
+CSV user import also includes a role mapping step. CARE reads the distinct values from the CSV ``roles`` column and asks you to map each value to a CARE role before previewing the import. Multiple roles in one CSV cell should be separated by commas.
 
 .. warning::
 
