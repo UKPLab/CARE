@@ -1,0 +1,652 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Socket Profiler &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/sphinx_js.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Tests" href="testing.html" />
+    <link rel="prev" title="Sockets" href="socket.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Open-Source Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../i18n.html">Internationalization (i18n)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="backend.html">Backend Development</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="anonymize_dump.html">Anonymized Database Dump</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data_transfer.html">Data Transfer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="database.html">Database</a></li>
+<li class="toctree-l2"><a class="reference internal" href="logging.html">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="right_management.html">Right Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
+<li class="toctree-l2"><a class="reference internal" href="service.html">Services</a></li>
+<li class="toctree-l2"><a class="reference internal" href="socket.html">Sockets</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Socket Profiler</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#recording">Recording</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#starting-a-recording">Starting a recording</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#stopping-a-recording">Stopping a recording</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#exporting-and-importing">Exporting and importing</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#what-a-trace-contains">What a trace contains</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#the-command-line-tool">The command line tool</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#authentication">Authentication</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#choosing-what-to-replay">Choosing what to replay</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#modes">Modes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#option-reference">Option reference</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#reading-the-output">Reading the output</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#saved-results">Saved results</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#the-regression-suite">The regression suite</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#rules-for-a-replayable-story">Rules for a replayable story</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#adding-a-story">Adding a story</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#architecture">Architecture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#limitations">Limitations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html">Tests</a></li>
+<li class="toctree-l2"><a class="reference internal" href="validation.html">Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rpcs/moodle.html">Moodle API</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="backend.html">Backend Development</a></li>
+      <li class="breadcrumb-item active">Socket Profiler</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/for_developers/backend/socket_profiler.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="socket-profiler">
+<h1>Socket Profiler<a class="headerlink" href="#socket-profiler" title="Link to this heading"></a></h1>
+<p>The Socket Profiler records the WebSocket traffic of a live CARE session and replays it later against
+a running server. It exists to answer two questions that otherwise require manual clicking:</p>
+<ul class="simple">
+<li><p><strong>Does this build still work?</strong> Replay a suite of recorded user stories and see which ones break.</p></li>
+<li><p><strong>How does the server behave under load?</strong> Replay the same sessions repeatedly and concurrently,
+and observe latency, memory, the database connection pool and Postgres counters.</p></li>
+</ul>
+<p>The feature has two halves: an admin dashboard page for capturing and managing recordings, and a
+command line tool for replaying them.</p>
+<p>Recordings are stored in the database and can be exported to JSON, which makes them portable between
+installations and suitable for checking into the repository as regression fixtures.</p>
+<section id="recording">
+<h2>Recording<a class="headerlink" href="#recording" title="Link to this heading"></a></h2>
+<section id="starting-a-recording">
+<h3>Starting a recording<a class="headerlink" href="#starting-a-recording" title="Link to this heading"></a></h3>
+<p>The Socket Profiler page is located in the admin section of the dashboard. Recording is server-wide:
+the recorder attaches catch-all listeners across sockets rather than to a single connection.</p>
+<p>To capture a session, the administrator opens the Socket Profiler page, starts a recording, names it
+and selects the active session to capture. A recording bar is displayed across the dashboard for as
+long as the capture runs.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Because capture is server-wide, the administrator normally works in two browser tabs: one driving
+the application, one holding the Socket Profiler page. The session selected in the dialog is the
+one whose traffic is captured, not the tab the profiler is open in.</p>
+</div>
+</section>
+<section id="stopping-a-recording">
+<h3>Stopping a recording<a class="headerlink" href="#stopping-a-recording" title="Link to this heading"></a></h3>
+<p>Stopping the capture opens a review dialog. The recording is already stopped at that point — the
+dialog is a review and naming step, not a confirmation step.</p>
+<p>In the dialog the administrator can rename the recording and deselect individual traces, which
+soft-deletes them. The <em>recorderStart</em> and <em>recorderStop</em> traces are deselected by default, since
+they are artefacts of the recording process rather than application behaviour.</p>
+</section>
+<section id="exporting-and-importing">
+<h3>Exporting and importing<a class="headerlink" href="#exporting-and-importing" title="Link to this heading"></a></h3>
+<p>A recording can be exported to a JSON file from the recordings table. The exported file contains the
+full trace list, including any file bytes uploaded during the session. This makes each recording
+self-contained, at the cost of size: a story containing a PDF upload can reach several megabytes.</p>
+<p>Import is handled by the <em>recorderImport</em> socket event, which runs inside a transaction so that a
+partially imported recording cannot be left behind.</p>
+</section>
+<section id="what-a-trace-contains">
+<h3>What a trace contains<a class="headerlink" href="#what-a-trace-contains" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>action</strong></p></td>
+<td><p>The socket event name, for example <em>documentAdd</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>payload</strong></p></td>
+<td><p>The event payload, stored as JSONB</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>direction</strong></p></td>
+<td><p><em>true</em> for frontend to backend, <em>false</em> for backend to frontend</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>startTime</strong> / <strong>endTime</strong></p></td>
+<td><p>Capture timestamps</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>recordingId</strong></p></td>
+<td><p>The owning recording</p></td>
+</tr>
+</tbody>
+</table>
+<p>Only incoming traces are replayed. Outgoing traces are captured for diagnosis — they are what makes
+it possible to observe, for example, that a view tears down subscriptions it never established.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Buffers do not survive a JSON round trip intact. The <em>reviveBuffers</em> helper in
+<code class="docutils literal notranslate"><span class="pre">backend/utils/replay-sessions.js</span></code> restores them before replay, which is what makes recorded
+file uploads replayable.</p>
+</div>
+</section>
+</section>
+<section id="the-command-line-tool">
+<h2>The command line tool<a class="headerlink" href="#the-command-line-tool" title="Link to this heading"></a></h2>
+<p>The tool is run from the <code class="docutils literal notranslate"><span class="pre">backend</span></code> directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>&lt;mode&gt;<span class="w"> </span>&lt;source&gt;<span class="w"> </span><span class="o">[</span>options<span class="o">]</span>
+</pre></div>
+</div>
+<p>Everything after <code class="docutils literal notranslate"><span class="pre">--</span></code> is passed to <code class="docutils literal notranslate"><span class="pre">backend/scripts/perf/cli.js</span></code>.</p>
+<section id="authentication">
+<h3>Authentication<a class="headerlink" href="#authentication" title="Link to this heading"></a></h3>
+<p>The tool logs in as an administrator over HTTP, then opens a Socket.IO connection using the resulting
+session cookie. A password is mandatory; the run aborts before contacting the server if none is
+found. The password is resolved from <code class="docutils literal notranslate"><span class="pre">--password</span></code>, then <em>PERF_ADMIN_PASSWORD</em>, then <em>ADMIN_PWD</em>.</p>
+<p>The user defaults to <em>admin</em> and can be overridden with <code class="docutils literal notranslate"><span class="pre">--user</span></code> or <em>PERF_ADMIN_USER</em>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In a standard local setup <em>ADMIN_PWD</em> is already present in the <strong>.env</strong> file in the root
+directory, so no additional configuration is required.</p>
+</div>
+</section>
+<section id="choosing-what-to-replay">
+<h3>Choosing what to replay<a class="headerlink" href="#choosing-what-to-replay" title="Link to this heading"></a></h3>
+<p>Every run requires at least one source:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Source</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--recordings</span> <span class="pre">12,15</span></code></p></td>
+<td><p>Recordings already present in the target database, by id</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--files</span> <span class="pre">a.json,b.json</span></code></p></td>
+<td><p>Exported JSON files, by path</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--dir</span> <span class="pre">stories/</span></code></p></td>
+<td><p>Every JSON file in a folder</p></td>
+</tr>
+</tbody>
+</table>
+<p>File-based sources are read directly and do not need to be imported into the database first.</p>
+<p>When replaying files, each session is executed as the user who was recorded, resolved against the
+target database — not as the administrator running the tool. A session whose recorded user cannot be
+found in the target database is reported as a failure rather than silently skipped.</p>
+</section>
+<section id="modes">
+<h3>Modes<a class="headerlink" href="#modes" title="Link to this heading"></a></h3>
+<p>Five modes are available, selected with <code class="docutils literal notranslate"><span class="pre">--mode</span></code>. The default is <em>ramp</em>.</p>
+<p><strong>regression</strong> replays each session once, sequentially, and requires every trace to succeed. This is
+the mode used before a deployment.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>regression<span class="w"> </span>--dir<span class="w"> </span>tests/regression_stories/
+</pre></div>
+</div>
+<p>Sequential replay is what makes the ids assigned during a run deterministic, so that a story creating
+a document and a later story referencing it remain consistent.</p>
+<p>Results are grouped per story, followed by a trace breakdown across the whole run. Traces that
+received no acknowledgement are reported separately from traces the server actively rejected; the two
+are indistinguishable at the socket level but mean very different things.</p>
+<p><strong>inspect</strong> reads recordings without replaying them and reports what they contain. Nothing is emitted
+to the server and no database state changes.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>inspect<span class="w"> </span>--files<span class="w"> </span>tests/regression_stories/030-upload-document.json
+</pre></div>
+</div>
+<p>The distribution is reported plainly over every action present. No trace type is filtered out and the
+mode reaches no verdict about whether a recording is useful — that judgement belongs to the developer
+reading it.</p>
+<p>The distinction that matters when reviewing a newly captured story is incoming against outgoing. Only
+incoming traces are replayed; a recording whose incoming traces consist solely of telemetry and
+subscription events contains no behaviour and should not be added to the regression suite.</p>
+<p><strong>ramp</strong> replays the sessions repeatedly with increasing concurrency and reports latency, memory,
+database pool and Postgres statistics at each step.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>ramp<span class="w"> </span>--recordings<span class="w"> </span><span class="m">12</span>,15<span class="w"> </span>--max-iterations<span class="w"> </span><span class="m">30</span>
+</pre></div>
+</div>
+<p><strong>ceiling</strong> increases concurrency until a stop condition trips, then reports the highest concurrency
+the server sustained.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>ceiling<span class="w"> </span>--recordings<span class="w"> </span><span class="m">12</span><span class="w"> </span>--step<span class="w"> </span><span class="m">5</span><span class="w"> </span>--latency-threshold<span class="w"> </span><span class="m">1000</span>
+</pre></div>
+</div>
+<p><strong>soak</strong> holds a fixed concurrency for a fixed duration and watches for drift: memory growth, pool
+exhaustion, rising latency.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>soak<span class="w"> </span>--recordings<span class="w"> </span><span class="m">12</span><span class="w"> </span>--concurrency<span class="w"> </span><span class="m">10</span><span class="w"> </span>--duration<span class="w"> </span>30m
+</pre></div>
+</div>
+<p>Soak additionally correlates memory growth against the trace types active in each sampling window.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The memory correlation is a lead, not proof. True per-trace memory attribution requires heap
+snapshots, which distort the measurement they are taken from.</p>
+</div>
+</section>
+<section id="option-reference">
+<h3>Option reference<a class="headerlink" href="#option-reference" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Option</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Modes</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--mode</span></code></p></td>
+<td><p><em>ramp</em></p></td>
+<td><p>all</p></td>
+<td><p>One of <em>ramp</em>, <em>ceiling</em>, <em>soak</em>, <em>regression</em>, <em>inspect</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--recordings</span></code></p></td>
+<td><p>—</p></td>
+<td><p>all</p></td>
+<td><p>Comma-separated recording ids from the database</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--files</span></code></p></td>
+<td><p>—</p></td>
+<td><p>all</p></td>
+<td><p>Comma-separated paths to exported JSON files</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--dir</span></code></p></td>
+<td><p>—</p></td>
+<td><p>all</p></td>
+<td><p>Folder of exported JSON files</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--server</span></code></p></td>
+<td><p><em>http://localhost:3001</em></p></td>
+<td><p>all</p></td>
+<td><p>Target server</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--user</span></code></p></td>
+<td><p><em>admin</em></p></td>
+<td><p>all</p></td>
+<td><p>Administrator login</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--password</span></code></p></td>
+<td><p>—</p></td>
+<td><p>all</p></td>
+<td><p>Administrator password</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--timing-mode</span></code></p></td>
+<td><p><em>fast</em></p></td>
+<td><p>all</p></td>
+<td><p><em>fast</em> replays without the original gaps, <em>realtime</em> preserves them</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--ack-timeout</span></code></p></td>
+<td><p><em>2000</em></p></td>
+<td><p>ramp, ceiling, soak, regression</p></td>
+<td><p>Milliseconds to wait for a trace acknowledgement</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--latency-threshold</span></code></p></td>
+<td><p><em>1000</em></p></td>
+<td><p>ramp, ceiling</p></td>
+<td><p>Latency in ms treated as a breach</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--max-iterations</span></code></p></td>
+<td><p><em>10</em></p></td>
+<td><p>ramp, ceiling</p></td>
+<td><p>Iteration limit</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--continue-on-failure</span></code></p></td>
+<td><p><em>false</em></p></td>
+<td><p>ramp</p></td>
+<td><p>Keep replaying after a failing trace</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--step</span></code></p></td>
+<td><p><em>5</em></p></td>
+<td><p>ceiling</p></td>
+<td><p>Concurrency increment per level</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--max-failures</span></code></p></td>
+<td><p><em>0</em></p></td>
+<td><p>ceiling</p></td>
+<td><p>Absolute failure count tolerated per level</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--fail-threshold</span></code></p></td>
+<td><p><em>5</em></p></td>
+<td><p>ceiling</p></td>
+<td><p>Failure percentage tolerated per level</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--concurrency</span></code></p></td>
+<td><p><em>10</em></p></td>
+<td><p>soak</p></td>
+<td><p>Sessions replayed in parallel</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--duration</span></code></p></td>
+<td><p><em>60s</em></p></td>
+<td><p>soak</p></td>
+<td><p>Run length, accepts <em>30s</em>, <em>5m</em>, <em>1h</em></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--sample-interval</span></code></p></td>
+<td><p><em>0</em></p></td>
+<td><p>soak</p></td>
+<td><p>Gap between iterations, <em>0</em> means back-to-back</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <em>inspect</em> mode reads no options beyond the source flags, since it does not replay.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <em>regression</em> mode always replays every story and reports each result rather than stopping at
+the first failure. This is deliberate and not configurable: a run that aborts early reports one
+broken story and says nothing about the rest.</p>
+</div>
+<p>Ceiling has two failure conditions that work together. <code class="docutils literal notranslate"><span class="pre">--max-failures</span></code> is an absolute count and
+<code class="docutils literal notranslate"><span class="pre">--fail-threshold</span></code> a percentage; a level trips if either is exceeded. With the default
+<code class="docutils literal notranslate"><span class="pre">--max-failures</span> <span class="pre">0</span></code> any failure stops the run, so the percentage never applies. The rate condition
+becomes meaningful once some failures are tolerated, for example <code class="docutils literal notranslate"><span class="pre">--max-failures</span> <span class="pre">5</span>
+<span class="pre">--fail-threshold</span> <span class="pre">2</span></code>, which allows up to five failures per level but stops early if more than two
+percent of traces fail.</p>
+</section>
+<section id="reading-the-output">
+<h3>Reading the output<a class="headerlink" href="#reading-the-output" title="Link to this heading"></a></h3>
+<p>Every run prints a per-action breakdown:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>action          count  fail  ok%  minMs  p50  avgMs  p95Ms  maxMs  totalMs  dbW
+</pre></div>
+</div>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>action</strong></p></td>
+<td><p>Socket event name</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>count</strong></p></td>
+<td><p>Times this action was replayed</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>fail</strong></p></td>
+<td><p>How many of those failed</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>ok%</strong></p></td>
+<td><p>Success percentage</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>minMs, p50, avgMs, p95Ms, maxMs</strong></p></td>
+<td><p>Latency distribution</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>totalMs</strong></p></td>
+<td><p>Cumulative time spent in this action</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>dbW</strong></p></td>
+<td><p>Database writes attributed to this action</p></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The 95th percentile is usually more informative than the average. An average hides a small number
+of very slow calls, which are exactly the ones users notice.</p>
+</div>
+</section>
+<section id="saved-results">
+<h3>Saved results<a class="headerlink" href="#saved-results" title="Link to this heading"></a></h3>
+<p>Each run writes two files to <code class="docutils literal notranslate"><span class="pre">backend/logs/perf/</span></code>: a timestamped <strong>.json</strong> file containing raw
+machine-readable data, and a <strong>.txt</strong> file containing the terminal output verbatim. The text file is
+byte-identical to what appeared on screen, so a run can be attached to an issue without repeating it.</p>
+</section>
+</section>
+<section id="the-regression-suite">
+<h2>The regression suite<a class="headerlink" href="#the-regression-suite" title="Link to this heading"></a></h2>
+<p>The suite is a folder of exported recordings, one per user story, located at
+<code class="docutils literal notranslate"><span class="pre">backend/tests/regression_stories/</span></code> and replayed in order:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>regression<span class="w"> </span>--dir<span class="w"> </span>tests/regression_stories/
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The stories are stored alongside CARE’s Jest tests but are not part of them. The <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">test</span></code>
+target matches <code class="docutils literal notranslate"><span class="pre">*.test.js</span></code> and recreates its own test database; it neither reads nor runs these
+files. The suite is a separate pre-deployment check against a running server.</p>
+</div>
+<p>Each file is named so that alphabetical order is replay order, numbered in tens so that further
+stories can be inserted without renaming the whole set:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>010-...                 first
+020-...
+...
+990-delete-document     last
+</pre></div>
+</div>
+<section id="rules-for-a-replayable-story">
+<h3>Rules for a replayable story<a class="headerlink" href="#rules-for-a-replayable-story" title="Link to this heading"></a></h3>
+<p><strong>Self-contained.</strong> A story should create whatever it needs rather than referencing something an
+earlier story produced, wherever that is practical. Cross-story dependencies work but are fragile.</p>
+<p><strong>Fresh database.</strong> The suite is single-use per database. Stories create rows; replaying them a
+second time produces unique constraint violations, revision limits and “already exists” errors. The
+database is rebuilt before each run with <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> followed by <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">init</span></code>.</p>
+<p><strong>Stable references only.</strong> Only seeded ids are safe to reference:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Entity</p></th>
+<th class="head"><p>Id</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Bot, guest and admin users</p></td>
+<td><p>2, 3, 4</p></td>
+</tr>
+<tr class="row-odd"><td><p>Showcase Document</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p>Workflows</p></td>
+<td><p>1 to 8</p></td>
+</tr>
+<tr class="row-odd"><td><p>Workflow steps</p></td>
+<td><p>1 to 19</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Destructive stories sort last.</strong> A story that deletes a record is numbered so that it runs after
+everything depending on that record.</p>
+<p><strong>Record against the state the story will replay into.</strong> The most common cause of a story that passes
+when recorded and fails on replay is that it was captured against a database holding far more rows
+than a replay produces. Recording against a freshly replayed database avoids this.</p>
+</section>
+<section id="adding-a-story">
+<h3>Adding a story<a class="headerlink" href="#adding-a-story" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Rebuild the database and replay the existing suite, so that the state matches what the new story
+will encounter at its position in the run.</p></li>
+<li><p>Record the story through the dashboard.</p></li>
+<li><p>Inspect it and confirm it contains a real mutation.</p></li>
+<li><p>Place it in the suite folder with a number that positions it correctly.</p></li>
+<li><p>Rebuild the database and run the whole suite.</p></li>
+</ol>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Component</p></th>
+<th class="head"><p>Path</p></th>
+<th class="head"><p>Role</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Recorder socket</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/recorder.js</span></code></p></td>
+<td><p>Catch-all listeners, writes traces</p></td>
+</tr>
+<tr class="row-odd"><td><p>Replayer socket</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/replayer.js</span></code></p></td>
+<td><p>Drives replay from the server side</p></td>
+</tr>
+<tr class="row-even"><td><p>Replay authentication</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/utils/replay-auth.js</span></code></p></td>
+<td><p>Establishes a session for the recorded user</p></td>
+</tr>
+<tr class="row-odd"><td><p>Session helpers</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/utils/replay-sessions.js</span></code></p></td>
+<td><p>Trace grouping, session building, buffer revival</p></td>
+</tr>
+<tr class="row-even"><td><p>Replay worker</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/utils/replay-worker.js</span></code></p></td>
+<td><p>Emits traces and collects acknowledgements</p></td>
+</tr>
+<tr class="row-odd"><td><p>Command line entry point</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/scripts/perf/cli.js</span></code></p></td>
+<td><p>Argument parsing, configuration validation, mode dispatch</p></td>
+</tr>
+<tr class="row-even"><td><p>Mode handlers</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/scripts/perf/</span></code></p></td>
+<td><p>One file per mode</p></td>
+</tr>
+<tr class="row-odd"><td><p>Shared helpers</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">backend/scripts/perf/utils/</span></code></p></td>
+<td><p>Metric sampling, reporting, trace statistics</p></td>
+</tr>
+<tr class="row-even"><td><p>Dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/dashboard/socketprofiler/</span></code></p></td>
+<td><p>Recording and replay interface</p></td>
+</tr>
+</tbody>
+</table>
+<p>Recording uses the Socket.IO <em>onAny</em> and <em>onAnyOutgoing</em> hooks, which is why capture is server-wide
+rather than per-connection.</p>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<p><strong>Hashes are regenerated on insert.</strong> <code class="docutils literal notranslate"><span class="pre">MetaModel.add</span></code> assigns a fresh UUID hash to every inserted
+row, so a trace referencing a hash captured during recording will not locate the same row on replay.
+The replayer remaps hashes observed during a run, but a story that writes a recorded hash back — a
+rename, for example — can still overwrite a valid pointer with a stale value.</p>
+<p><strong>Numeric ids are not remapped.</strong> Unlike hashes, ids contained in a payload are replayed as captured.
+A story referencing a document by id only succeeds if that id exists at that point in the run.</p>
+<p><strong>Recording is server-wide.</strong> One recording is active at a time across the whole server. If any
+participating socket disconnects, the recording stops and is flagged as disconnected.</p>
+<p><strong>Recording ownership is not tracked.</strong> The recording table stores the recorded user, not the
+administrator who started the capture.</p>
+<p><strong>Some events are never acknowledged.</strong> A frontend event with no corresponding backend handler
+produces no acknowledgement and is reported in a separate category rather than as a failure.</p>
+<p><strong>Stories carrying dates have a limited lifetime.</strong> A story that sets a deadline embeds that date, and
+may begin failing once it passes for reasons unrelated to the platform.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="socket.html" class="btn btn-neutral float-left" title="Sockets" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="testing.html" class="btn btn-neutral float-right" title="Tests" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
