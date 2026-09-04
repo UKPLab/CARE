@@ -25,11 +25,12 @@ services:
       args:
         ENV: ${ENV}
     volumes:
-      - ./docs/build:/content-server/docs/build
-      - ./docs/api:/content-server/docs/api
-      - ./files:/content-server/files
-      - ./logs:/content-server/backend/logs
-      - ./msmtprc:/etc/msmtprc:ro
+     - ./docs/build:/content-server/docs/build
+     - ./docs/api:/content-server/docs/api
+     - ./files:/content-server/files
+     - ./logs:/content-server/backend/logs
+     - ./msmtprc:/etc/msmtprc:ro
+     - ./encryption.key:/content-server/encryption.key
     depends_on:
       - postgres
     ports:

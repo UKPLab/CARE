@@ -28,7 +28,8 @@ help:
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
-	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
+	@echo "make backup CONTAINER=<name/id>      Create full backup (DB dump + .env + encryptionkey + files)"
+	@echo "make backup_db CONTAINER=<name/id>	Backup the database (prompts whether to decrypt before dumping)"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
@@ -37,6 +38,7 @@ help:
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 	@echo "make audit            				npm audit for frontend, backend, and utils/modules packages"
+	@echo "make change_encryption_key NEW_KEY=<64-char hex>	Re-encrypt all user fields with a new encryption key"
 
 .PHONY: doc
 doc: doc_sphinx
@@ -142,10 +144,28 @@ build-clean:
 	@docker network rm ${PROJECT_NAME}_default || echo "IGNORING ERROR"
 
 .PHONY: backup_db
-backup_db:
-	@echo "Backing up database"
-	mkdir -p db_dumps
-	@docker exec -t $${CONTAINER} pg_dumpall -c -U postgres > db_dumps/dump_`date +%d-%m-%Y"_"%H_%M_%S`.sql
+backup_db: backend/node_modules/.uptodate
+ifndef CONTAINER
+	$(error CONTAINER is not set. Usage: make backup_db CONTAINER=<name/id>)
+endif
+	@echo "Backing up database"; \
+	mkdir -p db_dumps; \
+	printf "Decrypt DB before backup? [y/N] "; \
+	read DECRYPT_ANSWER; \
+	OUTFILE="db_dumps/dump_$$(date +%d-%m-%Y_%H_%M_%S).sql"; \
+	if [ "$$DECRYPT_ANSWER" = "y" ] || [ "$$DECRYPT_ANSWER" = "Y" ]; then \
+		SIDECAR="$(POSTGRES_CAREDB)_backup_$$(date +%s)"; \
+		echo "[backup] Cloning live DB into $$SIDECAR..."; \
+		docker exec $(CONTAINER) psql -q -U postgres -c "CREATE DATABASE $$SIDECAR TEMPLATE $(POSTGRES_CAREDB)"; \
+		echo "[backup] Decrypting clone (live DB stays encrypted)..."; \
+		(cd backend && POSTGRES_CAREDB=$$SIDECAR npm run --silent decrypt-db); \
+		echo "[backup] Dumping plaintext clone..."; \
+		docker exec -t $(CONTAINER) pg_dump -c -C -U postgres $$SIDECAR > $$OUTFILE; \
+		docker exec $(CONTAINER) psql -q -U postgres -c "DROP DATABASE $$SIDECAR"; \
+		echo "[backup] Done - plaintext dump: $$OUTFILE"; \
+	else \
+		docker exec -t $(CONTAINER) pg_dumpall -c -U postgres > $$OUTFILE; \
+	fi
 
 .PHONY: recover_db
 recover_db:
@@ -157,6 +177,22 @@ ifeq ($(OS),Windows_NT)
 else
 	@cat "db_dumps/$${DUMP}" | docker exec -i $${CONTAINER} psql -U postgres
 endif
+
+.PHONY: backup
+backup: backup_db
+ifndef CONTAINER
+	$(error CONTAINER is not set. Usage: make backup CONTAINER=<name/id>)
+endif
+	@echo "Creating full backup archive"
+	@mkdir -p backups
+	@LATEST_DUMP=$$(ls -t db_dumps/*.sql | head -n 1); \
+	TIMESTAMP=$$(date +%d-%m-%Y_%H_%M_%S); \
+	tar -czf "backups/backup_$$TIMESTAMP.tar.gz" \
+		"$$LATEST_DUMP" \
+		.env \
+		backend/encryption.key \
+		files; \
+	echo "Backup created: backups/backup_$$TIMESTAMP.tar.gz"
 
 # Internal target: zip document files from a live DB. Requires DB and FILEZIP to be set.
 .PHONY: _export_document_files
@@ -219,6 +255,11 @@ export_dump_files:
 	    docker exec -i $${CONTAINER} psql -q -U postgres -d $$SIDECAR > /dev/null; \
 	$(MAKE) _export_document_files CONTAINER=$${CONTAINER} DB=$$SIDECAR FILEZIP=$$FILEZIP; \
 	docker exec $${CONTAINER} psql -q -U postgres -c "DROP DATABASE $$SIDECAR" > /dev/null
+
+.PHONY: change_encryption_key
+change_encryption_key: backend/node_modules/.uptodate
+	@echo "Changing encryption key..."
+	@cd backend && npm run --silent change-encryption-key
 
 .PHONY: admin-password
 admin-password: backend/node_modules/.uptodate
