@@ -111,7 +111,7 @@
     },
     "ops": {
       "rename": "rename",
-      "deleteTrace": "delete trace {id}"
+      "deleteTraces": "delete traces"
     },
     "toasts": {
       "discarded": "Recording discarded",

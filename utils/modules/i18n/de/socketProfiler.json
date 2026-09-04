@@ -111,7 +111,7 @@
     },
     "ops": {
       "rename": "Umbenennen",
-      "deleteTrace": "Trace {id} löschen"
+      "deleteTraces": "Traces löschen"
     },
     "toasts": {
       "discarded": "Aufzeichnung verworfen",

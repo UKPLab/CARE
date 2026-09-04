@@ -220,12 +220,12 @@ export default {
         data: { id: this.recordingId, name: this.recordingName }
       }, (res) => onOpComplete(res, this.$t("socketProfiler.recording.ops.rename")));
 
-      this.tracesToDelete.forEach(t => {
-        this.$socket.emit("appDataUpdate", {
-          table: "trace",
-          data: { id: t.id, deleted: true }
-        }, (res) => onOpComplete(res, this.$t("socketProfiler.recording.ops.deleteTrace", { id: t.id })));
-      });
+      if (this.tracesToDelete.length > 0) {
+        this.$socket.emit("recorderDelete", {
+          recordingId: this.recordingId,
+          traceIds: this.tracesToDelete.map(t => t.id)
+        }, (res) => onOpComplete(res, this.$t("socketProfiler.recording.ops.deleteTraces")));
+      }
     },
   },
 };

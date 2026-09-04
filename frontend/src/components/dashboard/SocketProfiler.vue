@@ -419,9 +419,8 @@ export default {
       downloadObjectsAs(payload, filename, "json");
     },
     deleteRecording(row) {
-      this.$socket.emit("appDataUpdate", {
-        table: "recording",
-        data: { id: row.id, deleted: true }
+      this.$socket.emit("recorderDelete", {
+        recordingId: row.id
       }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {

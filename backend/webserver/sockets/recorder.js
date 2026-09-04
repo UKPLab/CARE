@@ -459,6 +459,43 @@ class RecorderSocket extends Socket {
     }
 
     /**
+     * Delete a recording, or specific traces within it.
+     *
+     * @socketEvent recorderDelete
+     * @param {Object} data The delete request
+     * @param {Number} data.recordingId The recording to delete, or the one owning the traces
+     * @param {Number[]} [data.traceIds] When present, only these traces are deleted
+     * @param {Object} options Managed transaction from createSocket
+     * @returns {Promise<Object>} The recording id and how many traces were removed
+     * @throws {TranslatableError} If the caller is not an admin, or the payload is invalid
+     */
+    async removeRecording(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+
+        const recordingId = data && data.recordingId;
+        if (!recordingId) {
+            throw new TranslatableError("errors.socketProfiler.missingRecordingId");
+        }
+
+        const traceIds = data && data.traceIds;
+        if (traceIds !== undefined && !Array.isArray(traceIds)) {
+            throw new TranslatableError("errors.socketProfiler.invalidTraceIds");
+        }
+
+        if (Array.isArray(traceIds)) {
+            for (const id of traceIds) {
+                await this.models['trace'].deleteById(id, options);
+            }
+            return {recordingId, deletedTraces: traceIds.length};
+        }
+
+        await this.models['recording'].deleteById(recordingId, options);
+        return {recordingId, deletedTraces: 0};
+    }
+
+    /**
      * Import a previously exported recording and all of its traces in one
      * transaction. Replaces the frontend's per-trace appDataUpdate loop: one
      * round trip instead of N, and a mid-import failure rolls the whole thing
@@ -547,6 +584,7 @@ class RecorderSocket extends Socket {
         this.createSocket("recordingGetPerfHealth", this.getPerfHealth, {}, false);
         this.createSocket("recordingGetPerfStats", this.getPerfStats, {}, false);
         this.createSocket("recorderImport", this.importRecording, {}, true);
+        this.createSocket("recorderDelete", this.removeRecording, {}, true);
     }
 }
 

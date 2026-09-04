@@ -415,6 +415,8 @@
     "noActiveRecording": "Keine aktive Aufzeichnung",
     "recordingIdRequired": "Aufzeichnungs-ID erforderlich",
     "missingRecordingObject": "Aufzeichnungsobjekt fehlt",
+    "missingRecordingId": "Keine Aufnahme-ID angegeben.",
+    "invalidTraceIds": "Trace-IDs müssen eine Liste sein.",
     "missingTracesArray": "Trace-Liste fehlt",
     "traceMissingAction": "Bei einem Trace fehlt 'action'",
     "traceInvalidDirection": "Bei einem Trace fehlt eine gültige 'direction'",
