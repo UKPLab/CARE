@@ -33,6 +33,13 @@
    3. Quill, the PDF viewer and bootstrap-vue-3 come from other libraries and
       do not follow the theme at all. */
 
+/* Colours that differ between themes but are read from JavaScript rather than
+   CSS, so they need a value in both. */
+:root {
+  --care-nlp-active: #097969;
+  --care-nlp-idle: #777777;
+}
+
 html[data-bs-theme="dark"] {
   --care-accent: #e3d5a8;
   --care-on-accent: #212529;
@@ -40,6 +47,8 @@ html[data-bs-theme="dark"] {
   --care-accent-active: #c7b982;
   --care-switch-knob: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e3d5a8'/%3e%3c/svg%3e");
   --care-switch-knob-on: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
+  --care-nlp-active: #12a085;
+  --care-nlp-idle: #9aa3b0;
 }
 
 /* Tell the browser which theme is showing. Bootstrap declares
