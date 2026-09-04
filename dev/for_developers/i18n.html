@@ -92,6 +92,10 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#adding-a-new-ui-language">5. Adding a new UI language</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#test-it-out">6. Test it out</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#linter-information">7. Linter information</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#what-is-checked">What is checked</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#see-also">See also</a></li>
 </ul>
 </li>
@@ -216,6 +220,7 @@
 <div class="line"><a class="reference internal" href="#i18n-backend"><span class="std std-ref">4. Backend</span></a> — <code class="docutils literal notranslate"><span class="pre">TranslatableError</span></code>, backend <code class="docutils literal notranslate"><span class="pre">translateMaybeKey</span></code>, …</div>
 <div class="line"><a class="reference internal" href="#i18n-add-language"><span class="std std-ref">5. Adding a new UI language</span></a> — new UI language</div>
 <div class="line"><a class="reference internal" href="#i18n-test"><span class="std std-ref">6. Test it out</span></a> — verify in the UI and logs</div>
+<div class="line"><a class="reference internal" href="#i18n-linter"><span class="std std-ref">7. Linter information</span></a> — automated i18n checks</div>
 </div>
 </section>
 <section id="adding-a-key">
@@ -797,20 +802,17 @@ failed), throw a <strong>TranslatableError</strong> instead of a hardcoded Engli
 browser translates with <code class="docutils literal notranslate"><span class="pre">resolveApiMessage</span></code>. Logging and legacy English <code class="docutils literal notranslate"><span class="pre">message</span></code> in socket callbacks are
 handled in <code class="docutils literal notranslate"><span class="pre">Socket.js</span></code> — see <a class="reference internal" href="#logging-i18n"><span class="std std-ref">Backend English output (translateMaybeKey)</span></a>.</p>
 <p><strong>Why a dedicated class</strong>:</p>
-<p>Keys alone can travel in a plain <code class="docutils literal notranslate"><span class="pre">Error</span></code> message — that works for simple cases. <code class="docutils literal notranslate"><span class="pre">TranslatableError</span></code> is for
-when you need a <strong>structured, intentional</strong> user-facing error:</p>
 <ul class="simple">
-<li><p><strong>Structured payload</strong> — not just a string. Carries the i18n <strong>key</strong>, optional <strong>params</strong> for placeholders
-(e.g. <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">validationLimit:</span> <span class="pre">10</span> <span class="pre">}</span></code>), and an optional machine-readable <strong>code</strong> for the socket/HTTP response.
-A standard <code class="docutils literal notranslate"><span class="pre">Error</span></code> only has <code class="docutils literal notranslate"><span class="pre">message</span></code>; attaching <code class="docutils literal notranslate"><span class="pre">params</span></code> and <code class="docutils literal notranslate"><span class="pre">code</span></code> to arbitrary errors is fragile
-and easy to get wrong in catch handlers.</p></li>
-<li><p><strong>Error filtering (security boundary)</strong> — <code class="docutils literal notranslate"><span class="pre">isTranslatable</span></code> marks errors the transport layer may expose to
-the client. In <code class="docutils literal notranslate"><span class="pre">Socket.js</span></code>, only errors with a known i18n key (<code class="docutils literal notranslate"><span class="pre">TranslatableError</span></code>, <code class="docutils literal notranslate"><span class="pre">generateError</span></code>,
-or <code class="docutils literal notranslate"><span class="pre">Error(&quot;errors.*&quot;)</span></code>) become <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">key,</span> <span class="pre">params,</span> <span class="pre">code</span> <span class="pre">}</span></code> in the callback. Raw database or system
-exceptions fall through to a generic <code class="docutils literal notranslate"><span class="pre">errors.server.unexpectedError</span></code> — full detail stays in the logs.</p></li>
+<li><p><strong>Structured payload</strong> — carries the i18n <strong>key</strong>, optional <strong>params</strong> for placeholders
+(e.g. <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">validationLimit:</span> <span class="pre">10</span> <span class="pre">}</span></code>), and an optional machine-readable <a href="#id1"><span class="problematic" id="id2">**</span></a>code``. A plain <code class="docutils literal notranslate"><span class="pre">Error</span></code>
+only has <code class="docutils literal notranslate"><span class="pre">message</span></code>; bolting <code class="docutils literal notranslate"><span class="pre">params</span></code> / <code class="docutils literal notranslate"><span class="pre">code</span></code> onto arbitrary errors is fragile in catch handlers.</p></li>
+<li><p><strong>Security boundary</strong> — in <code class="docutils literal notranslate"><span class="pre">Socket.js</span></code>, only errors with a known i18n key
+(<code class="docutils literal notranslate"><span class="pre">TranslatableError</span></code>, <code class="docutils literal notranslate"><span class="pre">generateError</span></code>, or legacy <code class="docutils literal notranslate"><span class="pre">Error(&quot;errors.*&quot;)</span></code>) become
+<code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">key,</span> <span class="pre">params,</span> <span class="pre">code</span> <span class="pre">}</span></code> in the client callback. Anything else (DB failures, bugs, plain English
+<code class="docutils literal notranslate"><span class="pre">Error</span></code>) is logged in full and mapped to <code class="docutils literal notranslate"><span class="pre">errors.server.unexpectedError</span></code> for the user.</p></li>
 </ul>
-<p>You can also use <code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">Error(&quot;errors.*&quot;)</span></code> or <code class="docutils literal notranslate"><span class="pre">generateError(code,</span> <span class="pre">key)</span></code> for simpler cases. The
-table below lists all patterns.</p>
+<p><strong>Rule of thumb:</strong> user-facing → <code class="docutils literal notranslate"><span class="pre">TranslatableError</span></code> or <code class="docutils literal notranslate"><span class="pre">generateError</span></code>; internal / unexpected →
+plain <code class="docutils literal notranslate"><span class="pre">Error</span></code> (not for UI text). Patterns:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 35.0%" />
@@ -822,20 +824,20 @@ table below lists all patterns.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">Error(&quot;errors.namespace.key&quot;)</span></code></p></td>
-<td><p>Simple error, no placeholders</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">TranslatableError(&quot;errors.namespace.key&quot;)</span></code></p></td>
+<td><p>error, key only</p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">TranslatableError(&quot;errors.namespace.key&quot;)</span></code></p></td>
-<td><p>Same as above, explicit translatable type</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">TranslatableError(&quot;errors.namespace.key&quot;,</span> <span class="pre">{</span> <span class="pre">name</span> <span class="pre">})</span></code></p></td>
+<td><p>error with <code class="docutils literal notranslate"><span class="pre">{placeholder}</span></code> values</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">TranslatableError(&quot;errors.namespace.key&quot;,</span> <span class="pre">{</span> <span class="pre">name</span> <span class="pre">})</span></code></p></td>
-<td><p>Error with <code class="docutils literal notranslate"><span class="pre">{placeholder}</span></code> values in the message</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">TranslatableError(&quot;errors.namespace.key&quot;,</span> <span class="pre">{</span> <span class="pre">count:</span> <span class="pre">5</span> <span class="pre">},</span> <span class="pre">&quot;SOME_CODE&quot;)</span></code></p></td>
+<td><p>key + params + machine-readable <code class="docutils literal notranslate"><span class="pre">code</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">TranslatableError(&quot;errors.namespace.key&quot;,</span> <span class="pre">{</span> <span class="pre">count:</span> <span class="pre">5</span> <span class="pre">},</span> <span class="pre">&quot;SOME_CODE&quot;)</span></code></p></td>
-<td><p>Key + params + machine-readable <code class="docutils literal notranslate"><span class="pre">code</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">generateError(&quot;SOME_CODE&quot;,</span> <span class="pre">&quot;errors.namespace.key&quot;)</span></code></p></td>
+<td><p>machine <code class="docutils literal notranslate"><span class="pre">code</span></code> + key, <strong>no</strong> params</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">generateError(&quot;SOME_CODE&quot;,</span> <span class="pre">&quot;errors.namespace.key&quot;)</span></code></p></td>
-<td><p>Machine <code class="docutils literal notranslate"><span class="pre">code</span></code> + key, <strong>no</strong> params</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">throw</span> <span class="pre">new</span> <span class="pre">Error(&quot;...&quot;)</span></code></p></td>
+<td><p><strong>Internal only</strong> — not for user-facing UI text</p></td>
 </tr>
 </tbody>
 </table>
@@ -1016,6 +1018,33 @@ utils/modules/i18n/en/errors.json   →  utils/modules/i18n/fr/errors.json
 <li><p>If you added backend logging or socket errors, confirm English output uses <code class="docutils literal notranslate"><span class="pre">translateMaybeKey</span></code> where needed</p></li>
 <li><p>If you added new keys, repeat steps 1–3 in each supported locale (<code class="docutils literal notranslate"><span class="pre">en</span></code>, <code class="docutils literal notranslate"><span class="pre">de</span></code>, …)</p></li>
 </ol>
+</section>
+<section id="linter-information">
+<span id="i18n-linter"></span><h2>7. Linter information<a class="headerlink" href="#linter-information" title="Link to this heading"></a></h2>
+<section id="what-is-checked">
+<h3>What is checked<a class="headerlink" href="#what-is-checked" title="Link to this heading"></a></h3>
+<p><strong>Frontend (ESLint +</strong> <code class="docutils literal notranslate"><span class="pre">frontend/scripts/check-i18n-keys.mjs</span></code> <strong>)</strong></p>
+<ul class="simple">
+<li><p><strong>Vue templates</strong> — <code class="docutils literal notranslate"><span class="pre">&#64;intlify/vue-i18n/no-raw-text</span></code> flags hardcoded English in template text.</p></li>
+<li><p><strong>Missing keys</strong></p></li>
+<li><p><strong>Hardcoded English in script</strong> — string props such as <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code>, <code class="docutils literal notranslate"><span class="pre">label</span></code>, <code class="docutils literal notranslate"><span class="pre">text</span></code>
+in <code class="docutils literal notranslate"><span class="pre">&lt;script&gt;</span></code> / <code class="docutils literal notranslate"><span class="pre">.js</span></code> that look like user-facing English.</p></li>
+<li><p><strong>Unused catalog keys</strong> — keys present in JSON that are referenced on <strong>neither</strong> frontend nor
+backend.</p></li>
+</ul>
+<p><strong>Backend (</strong> <code class="docutils literal notranslate"><span class="pre">backend/scripts/check-i18n-keys.mjs</span></code> <strong>)</strong></p>
+<ul class="simple">
+<li><p><strong>User-facing errors</strong> — <code class="docutils literal notranslate"><span class="pre">TranslatableError</span></code> and <code class="docutils literal notranslate"><span class="pre">generateError(code,</span> <span class="pre">key)</span></code>: the key must exist
+in the catalog; leftover English in those helpers is flagged.</p></li>
+<li><p><strong>Model / migration UI strings</strong> — props such as <code class="docutils literal notranslate"><span class="pre">label</span></code>, <code class="docutils literal notranslate"><span class="pre">placeholder</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code>,
+<code class="docutils literal notranslate"><span class="pre">text</span></code> (and option <code class="docutils literal notranslate"><span class="pre">name</span></code> where applicable): if the value looks like an i18n key, it must exist
+in EN; models also flag leftover English on those props.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>To ignore certain lines, add <code class="docutils literal notranslate"><span class="pre">//</span> <span class="pre">i18n-lint-ignore</span></code> on that line.</p>
+</div>
+</section>
 </section>
 <section id="see-also">
 <h2>See also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
