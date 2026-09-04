@@ -50,10 +50,18 @@ export function normalizeLocale(locale) {
 /**
  * Reads the locale saved in the browser.
  *
- * @returns {string|null} Normalized code from `localStorage`, or `null` if unset or unsupported
+ * Called at app boot (before mount), so a blocked `localStorage` (e.g. an embedded
+ * iframe with storage restrictions) must not throw here — that would stop the app
+ * from mounting at all.
+ *
+ * @returns {string|null} Normalized code from `localStorage`, or `null` if unset, unsupported, or unreadable
  */
 export function getStoredLocale() {
-    return normalizeLocale(localStorage.getItem(STORAGE_KEY));
+    try {
+        return normalizeLocale(localStorage.getItem(STORAGE_KEY));
+    } catch {
+        return null;
+    }
 }
 
 /**
