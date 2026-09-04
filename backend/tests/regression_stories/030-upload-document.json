@@ -1,49 +1,49 @@
 {
   "schemaVersion": 1,
-  "exportedAt": "2026-09-04T08:22:06.470Z",
-  "traceCount": 14,
+  "exportedAt": "2026-09-04T08:31:55.524Z",
+  "traceCount": 17,
   "recording": {
     "name": "030-upload-document",
     "status": "finished",
-    "startTime": "2026-09-04T08:20:55.933Z",
+    "startTime": "2026-09-04T08:31:15.916Z",
     "userId": 4,
     "participantSocketIds": [
-      "66IPoveRUMGBXZ7_AAAd"
+      "p1doBO9u2HzmFQjOAAAI"
     ],
     "excludeEvents": null,
-    "endTime": "2026-09-04T08:21:14.626Z"
+    "endTime": "2026-09-04T08:31:40.652Z"
   },
   "traces": [
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "recordingRefresh",
       "payload": [
         {
-          "id": 2,
-          "name": "Recording 9/4/2026, 10:20:55 AM",
+          "id": 1,
+          "name": "Recording 9/4/2026, 10:31:15 AM",
           "status": "recording",
           "userId": 4,
           "deleted": false,
           "endTime": null,
-          "createdAt": "2026-09-04T08:20:55.934Z",
-          "startTime": "2026-09-04T08:20:55.933Z",
-          "updatedAt": "2026-09-04T08:20:55.934Z",
+          "createdAt": "2026-09-04T08:31:15.917Z",
+          "startTime": "2026-09-04T08:31:15.916Z",
+          "updatedAt": "2026-09-04T08:31:15.917Z",
           "excludeEvents": null,
           "participantSocketIds": [
-            "66IPoveRUMGBXZ7_AAAd"
+            "p1doBO9u2HzmFQjOAAAI"
           ]
         }
       ],
       "direction": false,
-      "startTime": "2026-09-04T08:20:55.955Z",
-      "endTime": "2026-09-04T08:20:55.955Z"
+      "startTime": "2026-09-04T08:31:15.946Z",
+      "endTime": "2026-09-04T08:31:15.946Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
@@ -52,31 +52,61 @@
         "action": "tabVisibilityChange"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:20:58.030Z",
-      "endTime": "2026-09-04T08:20:58.030Z"
+      "startTime": "2026-09-04T08:31:17.091Z",
+      "endTime": "2026-09-04T08:31:17.091Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
-          "clientX": 1156,
-          "clientY": 6,
+          "clientX": 1048,
+          "clientY": 307,
           "scrollX": 0,
           "scrollY": 0
         },
         "action": "mouseMove"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:20:58.986Z",
-      "endTime": "2026-09-04T08:20:58.986Z"
+      "startTime": "2026-09-04T08:31:17.830Z",
+      "endTime": "2026-09-04T08:31:17.830Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-09-04T08:31:19.065Z",
+      "endTime": "2026-09-04T08:31:19.065Z"
+    },
+    {
+      "recordingId": 1,
+      "userId": 4,
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-09-04T08:31:24.714Z",
+      "endTime": "2026-09-04T08:31:24.714Z"
+    },
+    {
+      "recordingId": 1,
+      "userId": 4,
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
@@ -86,13 +116,13 @@
         "action": "clickCardButton"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:20:59.689Z",
-      "endTime": "2026-09-04T08:20:59.689Z"
+      "startTime": "2026-09-04T08:31:26.131Z",
+      "endTime": "2026-09-04T08:31:26.131Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
@@ -102,62 +132,62 @@
         "action": "showModal"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:00.167Z",
-      "endTime": "2026-09-04T08:21:00.167Z"
+      "startTime": "2026-09-04T08:31:26.596Z",
+      "endTime": "2026-09-04T08:31:26.596Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
-          "clientX": 800,
-          "clientY": 146,
+          "clientX": 729,
+          "clientY": 127,
           "scrollX": 0,
           "scrollY": 0
         },
         "action": "mouseMove"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:01.014Z",
-      "endTime": "2026-09-04T08:21:01.014Z"
+      "startTime": "2026-09-04T08:31:27.331Z",
+      "endTime": "2026-09-04T08:31:27.331Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {},
         "action": "clickCardButton"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:10.347Z",
-      "endTime": "2026-09-04T08:21:10.347Z"
+      "startTime": "2026-09-04T08:31:31.962Z",
+      "endTime": "2026-09-04T08:31:31.962Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
-          "clientX": 932,
-          "clientY": 257,
+          "clientX": 898,
+          "clientY": 244,
           "scrollX": 0,
           "scrollY": 0
         },
         "action": "mouseMove"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:10.661Z",
-      "endTime": "2026-09-04T08:21:10.661Z"
+      "startTime": "2026-09-04T08:31:32.095Z",
+      "endTime": "2026-09-04T08:31:32.095Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "documentAdd",
       "payload": {
         "file": {
@@ -14292,26 +14322,26 @@
         "importAnnotations": false
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:10.811Z",
-      "endTime": "2026-09-04T08:21:10.811Z"
+      "startTime": "2026-09-04T08:31:32.555Z",
+      "endTime": "2026-09-04T08:31:32.555Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "documentRefresh",
       "payload": [
         {
           "id": 2,
-          "hash": "976e9dfe-2c29-4af4-9507-d6d289d317cd",
+          "hash": "91637be9-29df-4af2-b249-722841694d82",
           "name": "care-test-doc",
           "type": 0,
           "public": false,
           "userId": 4,
           "deleted": false,
-          "createdAt": "2026-09-04T08:21:10.817Z",
+          "createdAt": "2026-09-04T08:31:32.562Z",
           "projectId": 1,
-          "updatedAt": "2026-09-04T08:21:10.817Z",
+          "updatedAt": "2026-09-04T08:31:32.562Z",
           "submissionId": null,
           "hideInFrontend": false,
           "readyForReview": false,
@@ -14322,27 +14352,27 @@
         }
       ],
       "direction": false,
-      "startTime": "2026-09-04T08:21:11.123Z",
-      "endTime": "2026-09-04T08:21:11.123Z"
+      "startTime": "2026-09-04T08:31:32.738Z",
+      "endTime": "2026-09-04T08:31:32.738Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "documentRefresh",
       "payload": [
         {
           "id": 2,
-          "hash": "976e9dfe-2c29-4af4-9507-d6d289d317cd",
+          "hash": "91637be9-29df-4af2-b249-722841694d82",
           "name": "care-test-doc",
           "type": 0,
           "public": false,
           "userId": 4,
           "deleted": false,
-          "createdAt": "2026-09-04T08:21:10.817Z",
+          "createdAt": "2026-09-04T08:31:32.562Z",
           "deletedAt": null,
           "projectId": 1,
-          "updatedAt": "2026-09-04T08:21:10.817Z",
+          "updatedAt": "2026-09-04T08:31:32.562Z",
           "creator_name": "admin",
           "submissionId": null,
           "hideInFrontend": false,
@@ -14354,13 +14384,13 @@
         }
       ],
       "direction": false,
-      "startTime": "2026-09-04T08:21:11.123Z",
-      "endTime": "2026-09-04T08:21:11.123Z"
+      "startTime": "2026-09-04T08:31:32.738Z",
+      "endTime": "2026-09-04T08:31:32.738Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
@@ -14370,31 +14400,13 @@
         "action": "hideModal"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:11.502Z",
-      "endTime": "2026-09-04T08:21:11.502Z"
+      "startTime": "2026-09-04T08:31:33.090Z",
+      "endTime": "2026-09-04T08:31:33.090Z"
     },
     {
-      "recordingId": 2,
+      "recordingId": 1,
       "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
-      "action": "stats",
-      "payload": {
-        "data": {
-          "clientX": 1008,
-          "clientY": 35,
-          "scrollX": 0,
-          "scrollY": 0
-        },
-        "action": "mouseMove"
-      },
-      "direction": true,
-      "startTime": "2026-09-04T08:21:13.463Z",
-      "endTime": "2026-09-04T08:21:13.463Z"
-    },
-    {
-      "recordingId": 2,
-      "userId": 4,
-      "socketId": "66IPoveRUMGBXZ7_AAAd",
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
       "action": "stats",
       "payload": {
         "data": {
@@ -14403,8 +14415,38 @@
         "action": "tabVisibilityChange"
       },
       "direction": true,
-      "startTime": "2026-09-04T08:21:13.545Z",
-      "endTime": "2026-09-04T08:21:13.545Z"
+      "startTime": "2026-09-04T08:31:36.120Z",
+      "endTime": "2026-09-04T08:31:36.120Z"
+    },
+    {
+      "recordingId": 1,
+      "userId": 4,
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-09-04T08:31:38.307Z",
+      "endTime": "2026-09-04T08:31:38.307Z"
+    },
+    {
+      "recordingId": 1,
+      "userId": 4,
+      "socketId": "p1doBO9u2HzmFQjOAAAI",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-09-04T08:31:39.540Z",
+      "endTime": "2026-09-04T08:31:39.540Z"
     }
   ]
 }

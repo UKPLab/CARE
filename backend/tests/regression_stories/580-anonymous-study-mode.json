@@ -5644,7 +5644,7 @@
         {
           "id": 2,
           "hash": "97309c5c-7717-4f26-a55f-572c2566d04b",
-          "name": "Shrek_Script_renamed",
+          "name": "care-test-doc_renamed",
           "type": 0,
           "public": true,
           "userId": 4,
@@ -5656,7 +5656,7 @@
           "hideInFrontend": false,
           "readyForReview": false,
           "studyUsageCount": 3,
-          "originalFilename": "Shrek_Script.pdf",
+          "originalFilename": "care-test-doc.pdf",
           "parentDocumentId": null,
           "uploadedByUserId": 4
         },
