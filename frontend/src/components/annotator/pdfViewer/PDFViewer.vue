@@ -138,7 +138,8 @@ export default {
     },
   },
   watch: {
-    appTheme(newVal) {
+    appTheme(newVal, oldVal) {
+      if (oldVal === undefined) return;
       this.pdfDarkMode = newVal === "dark";
       localStorage.removeItem("care.pdfDark");
     },
