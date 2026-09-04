@@ -72,8 +72,18 @@ test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
 
 .PHONY: lint
-lint: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
-	cd frontend && npm run frontend-lint
+lint: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
+	@set +e; \
+	(cd frontend && npm run frontend-lint); s1=$$?; \
+	echo ''; echo '=== Frontend i18n ==='; \
+	(cd frontend && npm run frontend-i18n-check); s2=$$?; \
+	echo ''; echo '=== Backend i18n ==='; \
+	(cd backend && npm run backend-i18n-check); s3=$$?; \
+	echo ''; echo '=== Lint summary ==='; \
+	echo "frontend eslint+i18n exit=$$s1/$$s2  backend i18n exit=$$s3"; \
+	if [ $$s1 -ne 0 ]; then exit $$s1; fi; \
+	if [ $$s2 -ne 0 ]; then exit $$s2; fi; \
+	exit $$s3
 
 .PHONY: docker
 docker:

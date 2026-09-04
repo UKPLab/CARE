@@ -10,7 +10,8 @@
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
-    "frontend-lint": "eslint src; s1=$?; echo ''; echo '=== Frontend i18n ==='; node scripts/check-i18n-keys.mjs; s2=$?; echo ''; echo '=== Backend i18n ==='; node ../backend/scripts/check-i18n-keys.mjs; s3=$?; echo ''; echo \"=== Lint summary ===\"; echo \"frontend eslint+i18n exit=$s1/$s2  backend i18n exit=$s3\"; exit $((s1!=0?s1:(s2!=0?s2:s3)))"
+    "frontend-lint": "eslint src",
+    "frontend-i18n-check": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
     "@pgrabovets/json-view": "^2.8.1",
