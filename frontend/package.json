@@ -10,7 +10,8 @@
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
-    "frontend-lint": "eslint src"
+    "frontend-lint": "eslint src",
+    "frontend-i18n-check": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
     "@pgrabovets/json-view": "^2.8.1",
@@ -60,6 +61,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
     "@eslint/js": "^10.0.1",
+    "@intlify/eslint-plugin-vue-i18n": "^4.5.1",
     "@testing-library/vue": "^8.1.0",
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
