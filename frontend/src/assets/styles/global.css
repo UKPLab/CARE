@@ -121,7 +121,7 @@ html[data-bs-theme="dark"] {
 
 [data-bs-theme="dark"] .form-check-input:focus {
   border-color: var(--care-accent);
-  box-shadow: 0 0 0 0.25rem rgba(227, 213, 168, 0.25);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-accent) 25%, transparent);
 }
 
 /* The switch knob is a background image, so each state needs its own SVG. Both
