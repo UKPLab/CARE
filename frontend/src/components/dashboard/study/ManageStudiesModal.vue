@@ -122,7 +122,6 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import { resolveApiMessage } from "@/assets/utils";
@@ -136,7 +135,6 @@ export default {
   subscribeTable: ["user_role", "user_role_matching", "user", "workflow", "study"],
   components: {
     StepperModal,
-    BasicButton,
     BasicTable,
     BasicForm,
     ConfirmModal,
