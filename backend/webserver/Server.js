@@ -20,6 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/helper/generic");
+const { flagDisconnectedRecording, recoverInterruptedRecordings, scheduleOwnerAbandonCheck } = require("../utils/recording-recovery");
 
 /**
  * Defines Express Webserver of Content Server
@@ -377,11 +378,33 @@ module.exports = class Server {
             this.logger.debug("Socket connect: " + socket.id);
 
           
-            Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
-                this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
+            await Promise.all(
+                Object.entries(this.sockets).map(async ([socketName, socketClass]) => {
+                    this.availSockets[socket.id][socketName] = new socketClass(this, this.io, socket);
+                    await this.availSockets[socket.id][socketName].init();
+                })
+            );
 
-                await this.availSockets[socket.id][socketName].init();
-            })
+            // All per-socket handlers are now initialized and listening, so it's
+            // safe for clients (including replay clients) to start emitting events.
+            socket.emit("ready");
+
+            // Session-change notifications are admin-only: broadcasting them to
+            // every client would leak platform-wide connect/disconnect activity
+            // (who is online, when, how many) to any logged-in user. Admins join
+            // a room once at connect so the broadcast stays cheap.
+            const recorderSocket = this.availSockets[socket.id]["RecorderSocket"];
+            if (recorderSocket && await recorderSocket.isAdmin()) {
+                socket.join("admins");
+            }
+            // Notify admins (e.g. an open recording session picker) that the
+            // set of online sessions changed, so they can refresh live.
+            this.io.to("admins").emit("sessionsChanged");
+
+            // (Removed) Uncaptured-connection warning: with per-socket recordings
+            // there is no single active batch a new connection is "outside" of,
+            // so the warning no longer has a clear meaning. New connections are
+            // simply not recorded unless explicitly selected.
 
             socket.on("disconnect", async (reason) => {
                 try {
@@ -409,7 +432,15 @@ module.exports = class Server {
                         this.logger.warn("Failed to broadcast user monitor stats on disconnect: " + e);
                     }
 
+                    await flagDisconnectedRecording(this, socket);
+                    scheduleOwnerAbandonCheck(this, socket);
+
                     delete this.availSockets[socket.id];
+
+                    // Notify admins that the online-session set changed so an
+                    // open recording session picker can refresh live. Admin-only
+                    // to avoid leaking connect/disconnect activity to all clients.
+                    this.io.to("admins").emit("sessionsChanged");
                 } catch (err) {
                     this.logger.error("Error on socket disconnect: " + err);
                 }
@@ -490,6 +521,10 @@ module.exports = class Server {
         } catch (e) {
             this.logger.warn('Failed to start DB stats scheduler: ' + e.message);
         }
+        // Recover any recordings interrupted by the previous server shutdown
+        recoverInterruptedRecordings(this).catch((e) => {
+            this.logger.warn("recoverInterruptedRecordings failed: " + e);
+        });
         return this.http;
     }
 
@@ -506,8 +541,8 @@ module.exports = class Server {
         }
         if (this._statsScheduler) {
             this._statsScheduler.stop(this.logger);
-            }
         }
+    }
 
     /**
      * Flush statistics buffers for all connected sockets.
@@ -529,5 +564,4 @@ module.exports = class Server {
             this.logger.error("flushAllStats encountered an error: " + e);
         }
     }
-
 }

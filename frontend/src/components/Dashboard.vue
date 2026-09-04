@@ -14,10 +14,11 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll"
         >
+         
           <component
             :is="currentComponent"
             :key="$route.path"
-          />
+          />  
         </div>
       </div>
     </div>
@@ -37,6 +38,7 @@ import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
+
 
 const dashboardModules = import.meta.glob("./dashboard/*.vue");
 

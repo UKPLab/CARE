@@ -1,0 +1,783 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:35:58.331Z",
+  "traceCount": 34,
+  "recording": {
+    "name": "230-add-comment",
+    "status": "finished",
+    "startTime": "2026-08-10T23:25:56.184Z",
+    "userId": 3,
+    "participantSocketIds": [
+      "o2D2-TTZMejvegnsAAAR"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:26:19.391Z"
+  },
+  "traces": [
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 13,
+          "name": "Recording 8/11/2026, 1:25:56 AM",
+          "status": "recording",
+          "userId": 3,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:25:56.185Z",
+          "startTime": "2026-08-10T23:25:56.184Z",
+          "updatedAt": "2026-08-10T23:25:56.185Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "o2D2-TTZMejvegnsAAAR"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:56.202Z",
+      "endTime": "2026-08-10T23:25:56.202Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:58.203Z",
+      "endTime": "2026-08-10T23:25:58.203Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1244,
+          "clientY": 7,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:01.040Z",
+      "endTime": "2026-08-10T23:26:01.040Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 737,
+          "clientY": 328,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:04.740Z",
+      "endTime": "2026-08-10T23:26:04.740Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "text": "t, the lack of data and key in-sights limits the NLP progress ",
+          "documentId": 1,
+          "studyStepId": null,
+          "eventClientX": 669,
+          "eventClientY": 315,
+          "studySessionId": null
+        },
+        "action": "onTextSelect"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:06.280Z",
+      "endTime": "2026-08-10T23:26:06.280Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 669,
+          "clientY": 315,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:06.390Z",
+      "endTime": "2026-08-10T23:26:06.390Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Strength",
+          "documentId": 1
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.097Z",
+      "endTime": "2026-08-10T23:26:08.097Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 2,
+        "anonymous": false,
+        "selectors": {
+          "target": [
+            {
+              "selector": [
+                {
+                  "end": 2954,
+                  "type": "TextPositionSelector",
+                  "start": 2892
+                },
+                {
+                  "type": "TextQuoteSelector",
+                  "exact": "t, the lack of data and key in-sights limits the NLP progress ",
+                  "prefix": "on the high-lighted passages. Ye",
+                  "suffix": "in this area: from thefoundation"
+                },
+                {
+                  "type": "PagePositionSelector",
+                  "number": 1
+                }
+              ]
+            }
+          ]
+        },
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.099Z",
+      "endTime": "2026-08-10T23:26:08.099Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "text": "t, the lack of data and key in-sights limits the NLP progress ",
+          "draft": true,
+          "tagId": 2,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.104Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2954,
+                    "type": "TextPositionSelector",
+                    "start": 2892
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "t, the lack of data and key in-sights limits the NLP progress ",
+                    "prefix": "on the high-lighted passages. Ye",
+                    "suffix": "in this area: from thefoundation"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:08.104Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:08.115Z",
+      "endTime": "2026-08-10T23:26:08.115Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.110Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:26:08.110Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 3,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:08.114Z",
+      "endTime": "2026-08-10T23:26:08.114Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "text": "t, the lack of data and key in-sights limits the NLP progress ",
+          "draft": true,
+          "tagId": 2,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.104Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2954,
+                    "type": "TextPositionSelector",
+                    "start": 2892
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "t, the lack of data and key in-sights limits the NLP progress ",
+                    "prefix": "on the high-lighted passages. Ye",
+                    "suffix": "in this area: from thefoundation"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:08.104Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:08.117Z",
+      "endTime": "2026-08-10T23:26:08.117Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.110Z",
+          "updatedAt": "2026-08-10T23:26:08.110Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 3,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:08.118Z",
+      "endTime": "2026-08-10T23:26:08.118Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.122Z",
+      "endTime": "2026-08-10T23:26:08.122Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.121Z",
+      "endTime": "2026-08-10T23:26:08.121Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.122Z",
+      "endTime": "2026-08-10T23:26:08.122Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 743,
+          "clientY": 228,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.240Z",
+      "endTime": "2026-08-10T23:26:08.240Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 843,
+          "clientY": 344,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:08.974Z",
+      "endTime": "2026-08-10T23:26:08.974Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:10.238Z",
+      "endTime": "2026-08-10T23:26:10.238Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:11.077Z",
+      "endTime": "2026-08-10T23:26:11.077Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1118,
+          "clientY": 642,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:12.590Z",
+      "endTime": "2026-08-10T23:26:12.590Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1207,
+          "clientY": 680,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:14.823Z",
+      "endTime": "2026-08-10T23:26:14.823Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 2,
+        "annotationId": 3
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:15.732Z",
+      "endTime": "2026-08-10T23:26:15.732Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRequest",
+      "payload": {
+        "data": {
+          "id": 3,
+          "data": {
+            "text": "hihi"
+          },
+          "name": "sentiment_classification"
+        },
+        "service": "NLPService"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:15.735Z",
+      "endTime": "2026-08-10T23:26:15.735Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "floppy-fill",
+          "props": {
+            "commentId": 3
+          },
+          "title": "Save"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:15.735Z",
+      "endTime": "2026-08-10T23:26:15.735Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRefresh",
+      "payload": {
+        "data": {
+          "id": 3,
+          "data": {
+            "label": "pos",
+            "score": 0.9
+          },
+          "fallback": true
+        },
+        "type": "skillResults",
+        "service": "NLPService"
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:26:15.739Z",
+      "endTime": "2026-08-10T23:26:15.739Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentUpdate",
+      "payload": {
+        "tags": "[]",
+        "text": "hihi",
+        "commentId": 3
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:15.735Z",
+      "endTime": "2026-08-10T23:26:15.735Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "text": "t, the lack of data and key in-sights limits the NLP progress ",
+          "draft": false,
+          "tagId": 2,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.104Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2954,
+                    "type": "TextPositionSelector",
+                    "start": 2892
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "t, the lack of data and key in-sights limits the NLP progress ",
+                    "prefix": "on the high-lighted passages. Ye",
+                    "suffix": "in this area: from thefoundation"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:15.752Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:15.759Z",
+      "endTime": "2026-08-10T23:26:15.759Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "text": "t, the lack of data and key in-sights limits the NLP progress ",
+          "draft": false,
+          "tagId": 2,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.104Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2954,
+                    "type": "TextPositionSelector",
+                    "start": 2892
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "t, the lack of data and key in-sights limits the NLP progress ",
+                    "prefix": "on the high-lighted passages. Ye",
+                    "suffix": "in this area: from thefoundation"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:15.752Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:15.760Z",
+      "endTime": "2026-08-10T23:26:15.760Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "tags": "[]",
+          "text": "hihi",
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.110Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:26:15.758Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 3,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:15.764Z",
+      "endTime": "2026-08-10T23:26:15.764Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "tags": "[]",
+          "text": "hihi",
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:08.110Z",
+          "updatedAt": "2026-08-10T23:26:15.758Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 3,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:15.765Z",
+      "endTime": "2026-08-10T23:26:15.765Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_vote"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:15.772Z",
+      "endTime": "2026-08-10T23:26:15.772Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1361,
+          "clientY": 733,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:16.058Z",
+      "endTime": "2026-08-10T23:26:16.058Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1080,
+          "clientY": 0,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:18.241Z",
+      "endTime": "2026-08-10T23:26:18.241Z"
+    },
+    {
+      "recordingId": 13,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:18.388Z",
+      "endTime": "2026-08-10T23:26:18.388Z"
+    }
+  ]
+}

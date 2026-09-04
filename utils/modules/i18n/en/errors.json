@@ -408,6 +408,32 @@
         "firstStepNotSubmission": "First step selected does not map to a submission.",
         "latestSubmissionNotFound": "The latest version of the chosen submission could not be found."
     },
+    "socketProfiler": {
+        "noSessionsSelected": "At least one session must be selected",
+        "sessionsAlreadyRecorded": "One or more selected sessions are already being recorded",
+        "sessionsNoLongerConnected": "One or more selected sessions are no longer connected",
+        "noActiveRecording": "No active recording",
+        "recordingIdRequired": "Recording ID required",
+        "missingRecordingObject": "Missing recording object",
+        "missingRecordingId": "No recording id given.",
+        "invalidTraceIds": "Trace ids must be a list.",
+        "missingTracesArray": "Missing traces array",
+        "traceMissingAction": "A trace is missing 'action'",
+        "traceInvalidDirection": "A trace is missing a valid 'direction'",
+        "traceMissingStartTime": "A trace is missing 'startTime'",
+        "provideEitherNotBoth": "Provide either recordings or sessions, not both",
+        "provideRecordingsOrSessions": "Provide recordings (DB replay) or sessions (file replay)",
+        "singleLevelNotInteger": "Single level must be an integer",
+        "singleLevelOutOfRange": "Single level must be between 1 and {max}",
+        "maxIterationsOutOfRange": "Max iterations must be an integer between 1 and {max}",
+        "noReplayableSessions": "No replayable sessions found in the selected recordings",
+        "peakConcurrencyExceeded": "Peak concurrency {peak} ({iterations} iterations x {sessions} sessions) exceeds the limit of {limit}. Reduce the number of iterations or use fewer recordings.",
+        "concurrencyOutOfRange": "Concurrency must be an integer between 1 and {max}",
+        "replayStopped": "Replay stopped early - see the results for details",
+        "replayTitle": "Replay",
+        "recordingStoppedTitle": "Recording stopped",
+        "participantDisconnected": "A recorded participant disconnected - the recording was flagged as disconnected"
+    },
     "common": {
         "resourceNotFound": "The requested resource does not exist or has been deleted.",
         "accessDenied": "You do not have rights to access this data."

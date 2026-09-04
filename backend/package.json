@@ -17,6 +17,7 @@
     "pretest": "cross-env NODE_ENV=test npm run db_migrate:reset",
     "set-admin-password": "node scripts/setAdminPassword.js",
     "anonymize": "node scripts/anonymize.js",
+    "perf": "node scripts/perf/cli.js",
     "backend-i18n-check": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
@@ -41,6 +42,7 @@
     "express-session": "^1.19.0",
     "js-yaml": "^4.3.2",
     "jszip": "^3.10.1",
+    "lodash": "^4.18.1",
     "mustache-express": "^1.3.2",
     "nodemailer": "^9.1.0",
     "objects-to-csv": "^1.3.6",
