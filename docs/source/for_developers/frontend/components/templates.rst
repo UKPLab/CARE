@@ -112,45 +112,31 @@ Adding a New Template Type or Placeholder
    fails on editor save, publish, or Settings assignment until it is added. The set of
    required placeholders is defined in the ``placeholder`` table (``required: true``) and
    enforced via ``getMissingRequiredPlaceholders`` and ``assertStableEmailTemplateContent``
-   in ``backend/utils/templateResolver.js``.
+   in ``backend/utils/helper/templateResolver.js``.
 
-Here is a concrete example for adding a new placeholder (e.g. ``studyEndDate`` for type 6):
+Adding a placeholder
+~~~~~~~~~~~~~~~~~~~~
 
-1. **Backend (DB + resolver):**
+For an existing type (example: ``studyEndDate`` on type 6):
 
-   - Add a row to the ``placeholder`` table via a migration:
+- Add a ``placeholder`` row in a migration (``type``, ``placeholderKey``, label, required, etc.).
+- Fill ``~studyEndDate~`` in ``buildReplacementMap`` in
+  ``backend/utils/helper/templateResolver.js``. The call site (e.g.
+  ``sendStudyClosedEmails`` in ``study.js``) must pass the value in the resolver context.
+- Optional sidebar help: ``longDescriptions`` in
+  ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``.
 
-     - ``type``: ``6`` (Email - Study Close)
-     - ``placeholderKey``: ``studyEndDate``
-     - other metadata as needed (label, required, etc.)
+The Placeholders sidebar loads keys from the ``placeholder`` table.
 
-   - Update ``PLACEHOLDERS_BY_TYPE`` / ``buildReplacementMap`` in
-     ``backend/utils/templateResolver.js`` to fill ``studyEndDate`` from context, for example:
+Adding a template type
+~~~~~~~~~~~~~~~~~~~~~~
 
-     - In the resolver, when ``context.templateType === 6``, set
-       ``replacements["~studyEndDate~"] = <value from study or session>``.
-
-   - If the new placeholder is driven by a specific feature (e.g. study close emails),
-     ensure the call site (e.g. ``sendStudyClosedEmails`` in ``study.js``) passes
-     whatever additional data is needed into the resolver context.
-
-2. **Frontend (editor + sidebar):**
-
-   - Add the placeholder to the template configurator configuration so it appears in the
-     Placeholders sidebar with a name/description (e.g. update
-     ``placeholderConfigs`` / ``longDescriptions`` in
-     ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``).
-
-
-
-3. **Access / type visibility:**
-
-   - If the new placeholder is tied to a new template type, also update:
-
-     - ``emailTemplateTypes`` / ``otherTemplateTypes`` in ``backend/db/models/template.js``.
-     - The template type dropdown options in ``backend/db/models/template.js`` ``fields``.
-     - ``getUserFilter`` in ``backend/db/models/template.js`` so that only the correct
-       users (e.g. admins) see or can use that type.
+- Add the option to ``fields`` on ``backend/db/models/template.js``.
+- Put the type in ``emailTemplateTypes`` or ``otherTemplateTypes`` there.
+- If non-admins should create it, add it to the filter in
+  ``frontend/src/components/dashboard/templates/TemplateModal.vue``.
+- Add an empty ``placeholderConfigs`` entry in ``TemplateConfigurator.vue``
+  so the sidebar can load keys for that type.
 
 Settings
 --------
