@@ -10,10 +10,21 @@
 const settings = [
   {
     key: "theme.dark.accentColor",
+    allowUserOverride: true,
     value: "#e3d5a8",
     type: "color",
     description: "Accent colour for buttons and controls in dark mode",
     displayName: "Dark mode accent colour",
+    displayGroup: "Interface",
+    displaySubsection: "Branding",
+  },
+  {
+    key: "app.theme.mode",
+    allowUserOverride: true,
+    value: "light",
+    type: "text",
+    description: "Default colour theme for the interface",
+    displayName: "Default theme",
     displayGroup: "Interface",
     displaySubsection: "Branding",
   },
