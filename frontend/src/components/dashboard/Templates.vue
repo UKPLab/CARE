@@ -62,6 +62,7 @@
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
   import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
   import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+  import { emailTemplateTypes } from "@/assets/templateTypes";
   /**
    * Templates dashboard component
    *
@@ -119,7 +120,7 @@
               ...t,
               typeName: this.typeName(t.type),
               // Public email templates (types 1, 2, 3, 6, 7) cannot be deleted
-              canDelete: !(t.public && [1, 2, 3, 6, 7].includes(t.type)),
+              canDelete: !(t.public && emailTemplateTypes.includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,

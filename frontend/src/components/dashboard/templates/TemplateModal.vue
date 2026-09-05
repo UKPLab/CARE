@@ -11,6 +11,7 @@
   
   <script>
   import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
+  import { otherTemplateTypes } from "@/assets/templateTypes";
   
   /**
    * Template Modal Component
@@ -57,7 +58,7 @@
           if (f.key === "type" && !this.isAdmin) {
             if (Array.isArray(f.options)) {
               f.options = f.options.filter(
-                (opt) => opt.value === null || [4, 5].includes(opt.value)
+                (opt) => opt.value === null || otherTemplateTypes.includes(opt.value)
               );
             }
           }
