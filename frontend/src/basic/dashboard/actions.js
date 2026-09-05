@@ -1,3 +1,5 @@
+import { resolveApiMessage } from "@/assets/utils";
+
 /**
  * Shared icons, button styles, and badge colors for dashboard tables.
  *
@@ -280,7 +282,7 @@ export function confirmSoftDelete(deps, options) {
         if (!result.success) {
           eventBus.emit("toast", {
             title: failTitle,
-            message: result.message,
+            message: resolveApiMessage(result),
             variant: "danger",
           });
           if (typeof onFailure === "function") {
