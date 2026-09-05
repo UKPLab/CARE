@@ -116,7 +116,7 @@ specialized.
 
     <template>
       <DashboardListPage
-        title="Tag Sets"
+        :title="$t('tags.title')"
         :columns="columns"
         :data="tagSets"
         :buttons="buttons"
@@ -125,7 +125,7 @@ specialized.
         <template #headerActions>
           <BasicButton
             class="btn-primary btn-sm"
-            title="Add"
+            :title="$t('tags.addNewTagSet')"
             icon="plus"
             @click="$refs.tagSetModal.open(0)"
           />
@@ -137,10 +137,15 @@ specialized.
 
 ``DashboardListPage`` already applies ``DEFAULT_DASHBOARD_TABLE_OPTIONS`` and
 ``DASHBOARD_TABLE_HEIGHT`` (see ``ListPage.vue``). Pass ``:table-options="withSearch()"``
-only when the table needs search. Put page modals as siblings of ``DashboardListPage``,
+only when the table needs search. Extra options passed to ``withSearch()`` are added on top
+of the defaults, they do not replace them. Put page modals as siblings of ``DashboardListPage``,
 as ``Tags.vue`` and ``Projects.vue`` do. Extra UI under the table goes in ``#afterTable``
 (``Documents.vue``). Register ``BasicButton``, ``ConfirmModal``, and the page modal the same
 way ``Tags.vue`` does.
+
+Column names and row-button titles that use ``$t`` belong in ``computed``, not ``data``,
+so they update when the locale changes. Header buttons pass ``:title="$t(...)"`` (see
+:doc:`../../i18n`).
 
 **Script imports**
 
@@ -183,7 +188,7 @@ private row (``public === false``) and on your already-public row (``userId`` ma
 .. code-block:: javascript
 
     dashboardRowAction("share", {
-      title: "Share tag set",
+      title: this.$t('tags.shareTagSet'),
       action: "publishTagSet",
       filter: [
         { key: "public", value: false },
@@ -209,9 +214,9 @@ If the row is removed with ``appDataUpdate`` and ``deleted: true``, call ``confi
       {
         table: "tag_set",
         id: row.id,
-        title: "Delete Tagset",
-        message: "Do you really want to delete the Tagset?",
-        failTitle: "TagSet delete failed",
+        title: this.$t('tags.messages.deleteTitle'),
+        message: this.$t('tags.messages.deleteConfirm'),
+        failTitle: this.$t('errors.tags.tagSetDeleteFailed'),
       }
     );
 

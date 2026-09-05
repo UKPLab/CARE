@@ -144,15 +144,17 @@ To apply the migration, we have to run the command ``make init``.
 The last step is to create a new vue dashboard component in the folder ``./frontend/src/components/dashboard`` with the same name we defined in the navigation entry ``ExampleTable.vue``.
 
 For a card + table list page, use ``DashboardListPage``. Do not build a raw ``Card`` + ``BasicTable``
-shell. Table options and height come from the list page. Full recipe (row buttons, filters, soft
-delete): :doc:`../frontend/components/dashboard`. The shell itself is documented in
+shell. Pass ``:title="$t('…')"`` for the card heading and put ``$t`` column names and row-button
+titles in ``computed`` so they follow the locale (see :doc:`../i18n`). Table options and height come
+from the list page. Full recipe (row buttons, filters, soft delete):
+:doc:`../frontend/components/dashboard`. The shell itself is documented in
 :doc:`../frontend/basic/dashboard`.
 
 .. code-block:: html
 
     <template>
       <DashboardListPage
-        title="Example Table Data"
+        :title="$t('…')"
         :columns="columns"
         :data="data"
         :buttons="buttons"
@@ -170,24 +172,22 @@ delete): :doc:`../frontend/components/dashboard`. The shell itself is documented
       name: "ExampleTable",
       subscribeTable: ["example_table"],
       components: { DashboardListPage },
-      data() {
-        return {
-          columns: [
-            { name: "User", key: "userId", sortable: true },
-            { name: "Username", key: "creator_name", sortable: true },
-            { name: "CreatedAt", key: "createdAt", sortable: true },
-            { name: "Text", key: "exampleText" },
-          ],
-        };
-      },
       computed: {
+        columns() {
+          return [
+            { name: this.$t('…'), key: "userId", sortable: true },
+            { name: this.$t('…'), key: "creator_name", sortable: true },
+            { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
+            { name: this.$t('…'), key: "exampleText" },
+          ];
+        },
         data() {
           return this.$store.getters["table/example_table/getAll"];
         },
         buttons() {
           return [
             dashboardRowAction("edit", {
-              title: "Edit",
+              title: this.$t('common.edit'),
               action: "edit",
             }),
           ];

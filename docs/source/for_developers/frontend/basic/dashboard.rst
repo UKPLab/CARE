@@ -60,7 +60,7 @@ on a dashboard page: :doc:`../components/dashboard`.
 .. code-block:: html
 
     <DashboardListPage
-      title="Tag Sets"
+      :title="$t('tags.title')"
       :columns="columns"
       :data="tagSets"
       :buttons="buttons"
@@ -89,7 +89,7 @@ on a dashboard page: :doc:`../components/dashboard`.
      - Type
      - Required
    * - title
-     - Card title
+     - Card title. Pass ``$t('…')`` (see :doc:`../../i18n`)
      - None
      - String
      - True
@@ -136,7 +136,8 @@ on a dashboard page: :doc:`../components/dashboard`.
      - Extra UI under the table, inside the card body (``Documents.vue``)
 
 Row-button helpers and ``confirmSoftDelete`` live in ``frontend/src/basic/dashboard/actions.js``.
-``withSearch()`` lives in ``constants.js``.
+``withSearch(options)`` lives in ``constants.js``. It returns the default table options with
+``search: true``. Extra ``options`` are merged on top of the defaults, they do not replace them.
 
 **Coordinator**
 
@@ -148,7 +149,7 @@ It pulls field definitions from the Vuex store (``table/<name>/getFields``; see 
     <BasicCoordinator
       ref="coordinator"
       table="study"
-      title="Study"
+      :title="$t('studies.study')"
       @success="success"
       @submit="submit">
       <template #title> <!-- optional custom title --> </template>
@@ -183,7 +184,7 @@ It pulls field definitions from the Vuex store (``table/<name>/getFields``; see 
      - String
      - True
    * - title
-     - Modal title (shown as *New/Edit + title*)
+     - Used as ``{item}`` in the New/Edit heading (``$t('common.newItem')`` / ``$t('common.editItem')``)
      - None
      - String
      - True
@@ -198,18 +199,18 @@ It pulls field definitions from the Vuex store (``table/<name>/getFields``; see 
      - Array
      - False
    * - textAdd
-     - Label for add button
-     - ``"Add"``
+     - Add-button label. Leave empty to use ``$t('common.add')``
+     - ``""``
      - String
      - False
    * - textUpdate
-     - Label for update button
-     - ``"Update"``
+     - Update-button label. Leave empty to use ``$t('common.update')``
+     - ``""``
      - String
      - False
    * - textCancel
-     - Label for cancel button
-     - ``"Cancel"``
+     - Cancel-button label. Leave empty to use ``$t('common.cancel')``
+     - ``""``
      - String
      - False
 
