@@ -1,19 +1,19 @@
 <template>
   <Teleport to="#topbarCenterPlaceholder">
-    <div
-      v-show="templateId && readOnlyOverwrite"
-      title="Read-only"
-    >
-      <span :style="{ color: '#800000', fontWeight: 'bold' }">
-        Read-only
-      </span>
-      <LoadIcon
-        :size="22"
-        :color="'#800000'"
-        icon-name="lock-fill"
-      />
-    </div>
-  </Teleport>
+  <div
+    v-show="templateId && readOnlyOverwrite"
+    :title="$t('common.readOnly')"
+  >
+    <span :style="{ color: '#800000', fontWeight: 'bold' }">
+      {{ $t('common.readOnly') }}
+    </span>
+    <LoadIcon
+      :size="22"
+      :color="'#800000'"
+      icon-name="lock-fill"
+    />
+  </div>
+</Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
@@ -34,21 +34,21 @@
           @sidebar-visibility-change="handleSidebarVisibilityChange"
           @sidebar-action="handleSidebarAction">
         <template v-if="showHistory && !withoutHistory" #history>
-          <SidebarTemplate icon="clock-history" title="History">
+          <SidebarTemplate icon="clock-history" :title="$t('editor.history')">
             <template #content>
               <SidebarHistory/>
             </template>
           </SidebarTemplate>
         </template>
         <template v-if="document && document.type === 2" #configurator>
-          <SidebarTemplate icon="gear-fill" title="Configurator">
+          <SidebarTemplate icon="gear-fill" :title="$t('editor.configurator')">
             <template #content>
               <SidebarConfigurator/>
             </template>
           </SidebarTemplate>
         </template>
         <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
-          <SidebarTemplate icon="gear-fill" title="Placeholders">
+          <SidebarTemplate icon="gear-fill" :title="$t('editor.placeholders')">
             <template #content>
               <TemplateConfigurator/>
             </template>
@@ -82,6 +82,7 @@ import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
 import { emailTemplateTypes } from "@/assets/templateTypes";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "EditorView",
@@ -110,15 +111,15 @@ export default {
       required: false,
       default: false,
     },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
     currentStudyStep: {
       type: Object,
       required: false,
       default: null
+    },
+    studySessionId: {
+      type: Number,
+      required: false,
+      default: null,
     },
   },
   props: {
@@ -186,7 +187,7 @@ export default {
         {
           id: 'download-html',
           icon: 'download',
-          title: 'Download document',
+          title: this.$t('editor.downloadDocument'),
           action: 'downloadHTML',
           isGeneral: true,
           disabled: !this.showHTMLDownloadButton
@@ -300,15 +301,15 @@ export default {
             (res) => {
               if (!res.success) {
                 this.eventBus.emit("toast", {
-                  title: "Failed retrieving edit history",
-                  message: res.message,
+                  title: this.$t('errors.editor.editHistoryRetrievalFailed'),
+                  message: resolveApiMessage(res),
                   variant: "danger",
                 });
               }
             }
         );
       }
-    }
+    },
   },
 };
 </script>

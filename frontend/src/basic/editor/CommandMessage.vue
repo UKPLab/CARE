@@ -5,7 +5,7 @@
         <LoadIcon :class="'text-' + (incoming ? 'success' : 'danger')" :icon-name="incoming ? 'arrow-down' : 'arrow-up'" />
       </div>
       <div class="col-2 ms-1">
-        <span>{{(new Date(timeString)).toLocaleTimeString()}}</span>
+        <span>{{ formatLocalizedTime(timeString) }}</span>
       </div>
       <div class="col-3">
         <div v-if="type" class="badge bg-secondary">
@@ -16,7 +16,7 @@
         {{service}}
       </div>
       <div class="col-1">
-        <button class="btn text-secondary" title="See payload" :disabled="!data || !data.data || Object.entries(data.data).length === 0" @click="showPayload = !showPayload">
+        <button class="btn text-secondary" :title="$t('editor.seePayload')" :disabled="!data || !data.data || Object.entries(data.data).length === 0" @click="showPayload = !showPayload">
           <LoadIcon icon-name="envelope" />
         </button>
       </div>
@@ -30,6 +30,7 @@
 <script>
 import LoadIcon from "@/basic/Icon.vue";
 import JsonEditor from "@/basic/editor/JsonEditor.vue";
+import { formatLocalizedTime } from "@/assets/utils";
 
 export default {
   name: "MessageItem",
@@ -64,11 +65,14 @@ export default {
         if(this.data.type){
           return this.data.type
         } else {
-          return this.data.command ? this.data.command : "request"
+          return this.data.command ? this.data.command : this.$t('editor.request')
         }
       }
       return null;
     }
+  },
+  methods: {
+    formatLocalizedTime,
   }
 }
 </script>
