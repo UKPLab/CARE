@@ -19,13 +19,14 @@ export const DEFAULT_DASHBOARD_TABLE_OPTIONS = Object.freeze({
 });
 
 /**
- * Same as the default options, but with search turned on.
+ * Default table options with search turned on.
+ * Extra options are added on top of the defaults, they do not replace them.
  *
- * @param {Object} [options] - Options to start from
- * @returns {Object} A new options object with search: true
+ * @param {Object} [options] - Extra table options
+ * @returns {Object} A new options object with search enabled
  */
-export function withSearch(options = DEFAULT_DASHBOARD_TABLE_OPTIONS) {
-  return { ...options, search: true };
+export function withSearch(options = {}) {
+  return { ...DEFAULT_DASHBOARD_TABLE_OPTIONS, ...options, search: true };
 }
 
 /**
