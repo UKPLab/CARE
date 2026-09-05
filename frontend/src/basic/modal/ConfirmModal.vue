@@ -17,16 +17,18 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-secondary"
-        :title="$t('common.abort')"
-        @click="abort()"
-      />
-      <BasicButton
-        class="btn btn-primary"
-        :title="$t('common.confirm')"
-        @click="confirm()"
-      />
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :title="$t('common.abort')"
+          @click="abort()"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :title="$t('common.confirm')"
+          @click="confirm()"
+        />
+      </span>
     </template>
   </Modal>
 </template>

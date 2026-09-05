@@ -42,22 +42,21 @@
           />
         </slot>
       </span>
-      <span
-        v-else
-        class="btn-group"
-      >
+      <span v-else>
         <slot name="footer">
-          <slot name="buttons" />
-          <BasicButton
-            class="btn btn-secondary"
-            :title="textCancel || $t('common.cancel')"
-            @click="$refs.coordinatorModal.close()"
-          />
-          <BasicButton
-            class="btn btn-primary me-2"
-            :title="data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add'))"
-            @click="submit"
-          />
+          <span class="btn-group">
+            <slot name="buttons" />
+            <BasicButton
+              class="btn btn-secondary"
+              :title="textCancel || $t('common.cancel')"
+              @click="$refs.coordinatorModal.close()"
+            />
+            <BasicButton
+              class="btn btn-primary me-2"
+              :title="data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add'))"
+              @click="submit"
+            />
+          </span>
         </slot>
       </span>
     </template>
