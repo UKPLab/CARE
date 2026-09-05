@@ -513,7 +513,7 @@ export default {
 
 #wrapper {
   height: 100%;
-  background-color: #f2f2f2;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
 }
 
 #sidebar-wrapper {
@@ -618,11 +618,11 @@ export default {
   text-overflow: ellipsis;
   overflow: hidden;
   border: none;
-  background-color: #f2f2f2;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
 }
 
 .list-group-item:hover {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .sidebar-icon {
@@ -656,13 +656,13 @@ export default {
   cursor: pointer;
   font-weight: 400;
   border: none;
-  background-color: #f2f2f2;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
   border-radius: 0;
   padding-right: 2.75rem !important;
 }
 
 .sidebar-subgroup-heading:hover {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .subgroup-title {
@@ -691,8 +691,8 @@ export default {
 
 .default-subitem.router-link-active,
 .default-subitem.router-link-exact-active {
-  background-color: #e0e0e0 !important;
-  box-shadow: inset 2px 0 0 #222;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
+  box-shadow: inset 2px 0 0 var(--bs-emphasis-color, #222);
 }
 
 .submenu-enter-active,
@@ -717,7 +717,7 @@ export default {
 
 .submenu-preview-inner {
   min-width: 220px;
-  background: #ebebeb;
+  background: var(--bs-tertiary-bg, #ebebeb);
   color: inherit;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -732,7 +732,7 @@ export default {
   padding: 0.95rem 1rem 0.75rem;
   font-size: 1rem;
   font-weight: 600;
-  background: #f2f2f2;
+  background: var(--bs-tertiary-bg, #f2f2f2);
   color: inherit;
 }
 
@@ -755,18 +755,18 @@ export default {
 }
 
 .submenu-preview .list-group-item-custom {
-  background-color: #f2f2f2 !important;
+  background-color: var(--bs-tertiary-bg, #f2f2f2) !important;
   color: inherit;
 }
 
 .submenu-preview .list-group-item-custom:hover {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .submenu-preview .preview-subitem.router-link-active,
 .submenu-preview .preview-subitem.router-link-exact-active {
-  background-color: #e0e0e0 !important;
-  box-shadow: inset 2px 0 0 #222;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
+  box-shadow: inset 2px 0 0 var(--bs-emphasis-color, #222);
 }
 
 /* ========================================
@@ -821,7 +821,7 @@ export default {
 
 #sidebar-wrapper.collapsed .collapsed-group-icon-active {
   position: relative;
-  background-color: #e0e0e0 !important;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
 }
 
 #sidebar-wrapper.collapsed .collapsed-group-icon-active::before {
@@ -837,7 +837,7 @@ export default {
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active {
   position: relative;
-  background-color: #e0e0e0 !important;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
 }
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active::before {
@@ -852,12 +852,12 @@ export default {
 }
 
 .sidebar-subgroup-heading.preview-group-active {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active.preview-group-active,
 #sidebar-wrapper.collapsed .collapsed-group-icon-active.preview-group-active {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .arrow-toggle {

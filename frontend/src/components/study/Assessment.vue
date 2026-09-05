@@ -630,7 +630,7 @@ export default {
 
 /* Criteria Groups */
 .criteria-group-card {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
 }
 
@@ -654,12 +654,12 @@ export default {
 }
 
 .assessment-text strong {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
 .assessment-text p {
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   margin-top: 4px;
 }
 

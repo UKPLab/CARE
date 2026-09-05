@@ -35,7 +35,7 @@
         </i18n-t>
       </div>
 
-      <div class="card card-body bg-light" style="max-height: 150px; overflow-y: auto;">
+      <div class="card card-body bg-body-tertiary" style="max-height: 150px; overflow-y: auto;">
         <ul class="mb-0 pl-3">
           <li v-for="row in submissionSelection" :key="row.userId">
             {{ row.studentName || row.userName }} ({{ $t('dashboard.projects.export.fileCount', { count: row.fileCount }) }})

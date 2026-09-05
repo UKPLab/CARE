@@ -194,7 +194,7 @@ export default {
 <style scoped>
 .filters-container {
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
 }
 </style>

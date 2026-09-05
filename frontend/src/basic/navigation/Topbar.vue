@@ -4,7 +4,7 @@
     ref="topbar"
     class="nav-container"
   >
-    <nav class="navbar fixed-top navbar-expand-lg navbar-light bg-light border-bottom">
+    <nav class="navbar fixed-top navbar-expand-lg bg-body-tertiary border-bottom">
       <div class="container-fluid">
         <button
           id="backButton"
@@ -51,9 +51,8 @@
               <span v-if="recordingElapsed" class="recording-timer">{{ recordingElapsed }}</span>
             </span>
           </li>
-          <li class="nav-item me-3">
+          <li v-if="!isProjectButtonHidden && isInDashboard" class="nav-item me-3">
             <div
-              v-if="!isProjectButtonHidden && isInDashboard"
               style="
                 position: relative;
                 display: flex;
@@ -132,6 +131,11 @@
                 <a
                   class="dropdown-item"
                   href="#"
+                  @click.prevent="toggleTheme()"
+                >{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</a>
+                <a
+                  class="dropdown-item"
+                  href="#"
                   @click="logout()"
                 >{{ $t('auth.logout') }}</a>
               </div>
@@ -158,6 +162,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
+import { applyTheme, resolveTheme } from "@/assets/utils";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -250,6 +255,9 @@ export default {
       }
       return "You're being recorded for testing purposes";
     },
+    isDarkMode() {
+      return resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")) === "dark";
+    },
   },
   mounted() {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
@@ -284,6 +292,11 @@ export default {
     selectProject(projectId) {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
       this.showProjectDropdown = false;
+    },
+    toggleTheme() {
+      const next = this.isDarkMode ? "light" : "dark";
+      applyTheme(next);
+      this.$socket.emit("appSettingSet", {key: "app.theme.mode", value: next});
     },
     handleClickOutside(event) {
         if (!this.$el.contains(event.target)) {
@@ -383,7 +396,7 @@ body.sidebar-exists #backButton {
   display: flex;
   align-items: center;
   padding: 2px 10px;
-  background: #f5f5f5;
+  background: var(--bs-tertiary-bg, #f5f5f5);
   border: 1px solid darkblue;
   color: darkblue;
   border-radius: 4px;
@@ -403,6 +416,21 @@ body.sidebar-exists #backButton {
 .project-box:hover {
   background-color: darkblue;
   color: white;
+}
+
+[data-bs-theme="dark"] #dropdownMenuButton {
+  background: var(--care-accent);
+  color: var(--care-on-accent);
+}
+
+[data-bs-theme="dark"] .project-box {
+  background: var(--care-accent);
+  border-color: var(--care-accent);
+  color: var(--care-on-accent);
+}
+
+[data-bs-theme="dark"] .project-box:hover {
+  background: var(--care-accent-hover);
 }
 
 .recording-icon {

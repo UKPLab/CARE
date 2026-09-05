@@ -11,7 +11,7 @@
       </div>
   
       <div class="card shadow mb-4 configurator">
-        <div class="card-header bg-white">
+        <div class="card-header bg-body">
           <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
@@ -265,7 +265,7 @@
   
   <style scoped>
   .configurator {
-    --bg-color: rgb(219, 234, 254);
+    --bg-color: var(--bs-secondary-bg, rgb(219, 234, 254));
     --icon-container-size: 36px;
   }
   
@@ -280,12 +280,12 @@
     margin-right: 0.625rem;
     align-items: center;
     justify-content: center;
-    color: var(--text-color);
+    color: var(--bs-body-color);
     background-color: var(--bg-color);
   }
   
   .list-group-item:hover {
-    background-color: #f8f9fa;
+    background-color: var(--bs-tertiary-bg, #f8f9fa);
   }
   
   .badge {

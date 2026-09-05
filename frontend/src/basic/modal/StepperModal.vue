@@ -211,13 +211,13 @@ export default {
     left: 0;
     right: 0;
     height: 2px;
-    background-color: #ccc;
+    background-color: var(--bs-secondary-bg, #ccc);
   }
 }
 
 .stepper div {
   z-index: 1;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   padding: 0 5px;
 
   &:before {
@@ -229,7 +229,7 @@ export default {
     border-radius: 50%;
     align-items: center;
     justify-content: center;
-    border: 1px solid #6c6b6b;
+    border: 1px solid var(--bs-border-color, #6c6b6b);
   }
 
   &:first-child {
@@ -242,7 +242,7 @@ export default {
 }
 
 .stepper div.active {
-  --btn-color: #0d6efd;
+  --btn-color: var(--bs-primary, #0d6efd);
   border-color: var(--btn-color);
 
   &:before {

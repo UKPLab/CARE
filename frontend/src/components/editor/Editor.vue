@@ -1,19 +1,19 @@
 <template>
   <Teleport to="#topbarCenterPlaceholder">
-  <div
-    v-show="templateId && readOnlyOverwrite"
-    :title="$t('common.readOnly')"
-  >
-    <span :style="{ color: '#800000', fontWeight: 'bold' }">
-      {{ $t('common.readOnly') }}
-    </span>
-    <LoadIcon
-      :size="22"
-      :color="'#800000'"
-      icon-name="lock-fill"
-    />
-  </div>
-</Teleport>
+    <div
+      v-show="templateId && readOnlyOverwrite"
+      :title="$t('common.readOnly')"
+    >
+      <span :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }">
+        {{ $t('common.readOnly') }}
+      </span>
+      <LoadIcon
+        :size="22"
+        :color="'var(--bs-danger-text-emphasis)'"
+        icon-name="lock-fill"
+      />
+    </div>
+  </Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">

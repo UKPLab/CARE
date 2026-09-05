@@ -131,7 +131,7 @@ th,
 td {
   padding: 10px;
   text-align: left;
-  border: 1px solid #ddd;
+  border: 1px solid var(--bs-border-color, #ddd);
 }
 th:first-child,
 td:first-child {

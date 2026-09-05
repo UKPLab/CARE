@@ -14,6 +14,8 @@
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
       :is-zooming="isZooming"
+      :pdf-dark-mode="pdfDarkMode"
+      @toggle-pdf-theme="togglePdfTheme"
       @update:zoom-form-data="zoomFormData = $event"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
@@ -25,7 +27,7 @@
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
-      :class="'scrolling-page'"
+      :class="['scrolling-page', { 'pdf-dark': pdfDarkMode }]"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
@@ -114,9 +116,15 @@ export default {
       zoomFormData: {
         zoom: 1.0,
       },
+      pdfDarkMode: localStorage.getItem("care.pdfDark") !== null
+        ? localStorage.getItem("care.pdfDark") === "true"
+        : document.documentElement.getAttribute("data-bs-theme") === "dark",
     }
   },
   computed: {
+    appTheme() {
+      return this.$store.getters["settings/getValue"]("app.theme.mode");
+    },
     renderCheck() {
       let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
@@ -131,6 +139,11 @@ export default {
     },
   },
   watch: {
+    appTheme(newVal, oldVal) {
+      if (oldVal === undefined) return;
+      this.pdfDarkMode = newVal === "dark";
+      localStorage.removeItem("care.pdfDark");
+    },
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
@@ -194,6 +207,10 @@ export default {
     this.pdf = null;
   },
   methods: {
+    togglePdfTheme() {
+      this.pdfDarkMode = !this.pdfDarkMode;
+      localStorage.setItem("care.pdfDark", this.pdfDarkMode);
+    },
     zoomIn() {
       if (this.isZooming) return;
       this.isZooming = true;
@@ -250,7 +267,7 @@ export default {
       this.$emit('copy', event);
     },
   },
-
+  
 }
 </script>
 

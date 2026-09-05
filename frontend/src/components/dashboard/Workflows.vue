@@ -364,9 +364,9 @@ export default {
 
 .graph-container {
   height: 500px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .workflow-network-graph {

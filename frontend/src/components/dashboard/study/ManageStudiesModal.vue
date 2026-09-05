@@ -505,9 +505,9 @@ export default {
 
 .confirmation-content .form-check {
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .confirmation-content .form-check-input {
@@ -534,21 +534,21 @@ export default {
 }
 
 .confirmation-content .alert-warning {
-  background-color: #fff8e1;
-  border-color: #ffc107;
-  color: #856404;
+  background-color: var(--bs-warning-bg-subtle);
+  border-color: var(--bs-warning-border-subtle);
+  color: var(--bs-warning-text-emphasis);
 }
 
 .confirmation-content .alert-danger {
-  background-color: #f8d7da;
-  border-color: #f5c6cb;
-  color: #721c24;
+  background-color: var(--bs-danger-bg-subtle);
+  border-color: var(--bs-danger-border-subtle);
+  color: var(--bs-danger-text-emphasis);
 }
 
 .confirmation-content .alert-info {
-  background-color: #d1ecf1;
-  border-color: #bee5eb;
-  color: #0c5460;
+  background-color: var(--bs-info-bg-subtle);
+  border-color: var(--bs-info-border-subtle);
+  color: var(--bs-info-text-emphasis);
 }
 
 .confirmation-content .alert strong {
@@ -561,7 +561,7 @@ export default {
 }
 
 .danger-banner {
-  background-color: #f8d7da !important;
+  background-color: var(--bs-danger-bg-subtle) !important;
   border: 2px solid #dc3545 !important;
   border-radius: 0.5rem;
   padding: 1.25rem !important;
@@ -573,7 +573,7 @@ export default {
 
 .confirm-checkbox-container {
   padding: 1.25rem;
-  background-color: #fff3cd;
+  background-color: var(--bs-warning-bg-subtle);
   border-radius: 0.375rem;
   border: 1px solid #ffc107;
 }
@@ -598,9 +598,9 @@ export default {
 
 .filters-container {
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
-  border-left: 3px solid #6c757d;
+  border-left: 3px solid var(--bs-secondary-color, #6c757d);
 }
 
 .confirmation-container {
@@ -608,17 +608,17 @@ export default {
 }
 
 .confirmation-content {
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background: var(--bs-body-bg, #ffffff);
   border-radius: 0.5rem;
   padding: 1.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .confirmation-content h6 {
   margin-bottom: 1.25rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--bs-body-color, #212529);
   font-size: 1.1rem;
 }
 
@@ -630,10 +630,10 @@ export default {
 
 .confirmation-content .text-muted strong {
   font-weight: 700;
-  background-color: #e7f3ff;
+  background-color: var(--bs-primary-bg-subtle, #e7f3ff);
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
-  color: #0056b3;
+  color: var(--bs-primary-text-emphasis, #0056b3);
 }
 
 .confirmation-content .alert {
@@ -644,13 +644,13 @@ export default {
 
 .mode-selection-container {
   padding: 1.5rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
   border-left: 4px solid #007bff;
 }
 
 .mode-selection-container h5 {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
@@ -668,21 +668,21 @@ export default {
 .selected-items-list {
   max-height: 350px;
   overflow-y: auto;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 1rem;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   margin-bottom: 1.5rem;
   list-style: none;
 }
 
 .selected-items-list li {
   padding: 0.75rem 0.875rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bs-border-color, #f0f0f0);
   font-size: 0.95rem;
   border-left: 3px solid #0d6efd;
   margin-bottom: 0.5rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
 }
 
@@ -697,16 +697,16 @@ export default {
 }
 
 .selected-items-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bs-tertiary-bg, #f1f1f1);
 }
 
 .selected-items-list::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--bs-secondary-color, #888);
   border-radius: 3px;
 }
 
 .selected-items-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--bs-body-color, #555);
 }
 
 .alert-sm {

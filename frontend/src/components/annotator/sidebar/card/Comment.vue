@@ -91,14 +91,14 @@
             <SidebarButton
               :loading="false"
               :props="$props"
-              icon="save-fill"
+              icon="floppy"
               :title="$t('components.comment.saveCommand')"
               @click="save"
             />
             <SidebarButton
               :loading="false"
               :props="$props"
-              icon="x-square-fill"
+              icon="x-square"
               :title="$t('common.cancel')"
               @click="cancel"
             />
@@ -115,7 +115,7 @@
               v-if="settingResponse && !readOnly"
               :loading="false"
               :props="$props"
-              icon="reply-fill"
+              icon="reply"
               :title="$t('common.reply')"
               @click="reply(); maxComments = numChildComments+1"
             />
@@ -515,9 +515,8 @@ export default {
 
 <style scoped>
 .comment {
-  color: #666666;
+  color: var(--bs-secondary-color, #666666);
   font-style: normal;
-  box-shadow: 2px, 3px lightgrey;
 }
 
 .blockquote {

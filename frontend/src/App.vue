@@ -41,6 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
+import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -210,6 +211,26 @@ export default {
     }
   },
   watch: {
+    "$store.state.settings": {
+      handler() {
+        const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
+        if (saved) {
+          applyTheme(saved);
+        }
+        const accent = this.$store.getters["settings/getValue"]("theme.dark.accentColor");
+        if (accent) {
+          document.documentElement.style.setProperty("--care-accent", accent);
+          document.documentElement.style.setProperty("--care-on-accent", getContrastColor(accent));
+          document.documentElement.style.setProperty("--care-accent-hover", shadeColor(accent, 0.12));
+          document.documentElement.style.setProperty("--care-accent-active", shadeColor(accent, 0.2));
+          const knob = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23${accent.replace('#','')}'/%3e%3c/svg%3e")`;
+          document.documentElement.style.setProperty("--care-switch-knob", knob);
+          const knobOn = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23${getContrastColor(accent).replace('#','')}'/%3e%3c/svg%3e")`;
+          document.documentElement.style.setProperty("--care-switch-knob-on", knobOn);
+        }
+      },
+      deep: true,
+    },
     $route: {
       handler(to, from) {
         this.syncLocaleForRoute(to);
@@ -255,6 +276,7 @@ export default {
     this.connect();
   },
   async mounted() {
+    this.initTheme();
     if (this.$route.meta.checkLogin) {
       await this.runCheckLoginFlow();
     }
@@ -265,6 +287,9 @@ export default {
     }
   },
   methods: {
+    initTheme() {
+      applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
+    },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {
         withCredentials: true,

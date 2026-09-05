@@ -4,7 +4,7 @@
       {{ $t('assignments.metadata.preview.warning') }}
     </div>
     <div class="card">
-      <div class="card-body bg-light">
+      <div class="card-body bg-body-tertiary">
         <div><strong>{{ $t('assignments.metadata.preview.targetType') }}</strong> {{ targetTypeLabel }}</div>
         <div><strong>{{ $t('assignments.metadata.preview.assignment') }}</strong> {{ assignmentLabel }}</div>
         <div>
