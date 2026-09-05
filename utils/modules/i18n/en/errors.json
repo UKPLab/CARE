@@ -227,6 +227,10 @@
     "templates": {
         "missingCreateFields": "Missing required fields: name, description, type, content",
         "adminOnlyEmailTemplateCreate": "Access denied: Only administrators can create email templates",
+        "adminOnlyEmailTemplateView": "Access denied: Only administrators can view email templates",
+        "adminOnlyEmailTemplateEdit": "Access denied: Only administrators can edit email templates",
+        "adminOnlyEmailTemplateUpdate": "Access denied: Only administrators can update email templates",
+        "adminOnlyEmailTemplateUpdateFromSource": "Access denied: Only administrators can update email templates from source",
         "templateIdRequired": "Template ID is required",
         "modelsObjectRequired": "Models object is required",
         "languageRequired": "Language is required",

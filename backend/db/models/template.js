@@ -511,7 +511,7 @@ module.exports = (sequelize, DataTypes) => {
                         const roleIds = await sequelize.models.user_role_matching.getUserRolesById(callerUserId);
                         const isAdmin = await sequelize.models.user_role_matching.isAdminInUserRoles(roleIds);
                         if (!isAdmin) {
-                            throw new Error("Access denied: Only administrators can update email templates");
+                            throw new TranslatableError("errors.templates.adminOnlyEmailTemplateUpdate");
                         }
                     }
 

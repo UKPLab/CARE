@@ -227,6 +227,10 @@
   "templates": {
     "missingCreateFields": "Erforderliche Felder fehlen: Name, Beschreibung, Typ, Inhalt",
     "adminOnlyEmailTemplateCreate": "Zugriff verweigert: Nur Administratoren können E-Mail-Vorlagen erstellen",
+    "adminOnlyEmailTemplateView": "Zugriff verweigert: Nur Administratoren können E-Mail-Vorlagen anzeigen",
+    "adminOnlyEmailTemplateEdit": "Zugriff verweigert: Nur Administratoren können E-Mail-Vorlagen bearbeiten",
+    "adminOnlyEmailTemplateUpdate": "Zugriff verweigert: Nur Administratoren können E-Mail-Vorlagen aktualisieren",
+    "adminOnlyEmailTemplateUpdateFromSource": "Zugriff verweigert: Nur Administratoren können E-Mail-Vorlagen aus der Quelle aktualisieren",
     "templateIdRequired": "Vorlagen-ID ist erforderlich",
     "modelsObjectRequired": "Models-Objekt ist erforderlich",
     "languageRequired": "Sprache ist erforderlich",

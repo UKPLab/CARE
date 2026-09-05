@@ -104,7 +104,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
     if (!isAdmin && isEmailType) {
-      throw new Error("Access denied: Only administrators can view email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateView");
     }
 
     const langRow = await this.models["template_content"].findOne({
@@ -205,7 +205,7 @@ class TemplateSocket extends Socket {
     }
 
     if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
-      throw new Error("Access denied: Only administrators can edit email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateEdit");
     }
 
     const bulkEdits = data.ops.map((op, idx) => ({
@@ -322,7 +322,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewPlaceholdersOwnOrPublicOnly");
     }
     if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
-      throw new Error("Access denied: Only administrators can view email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateView");
     }
 
     return await this.models["placeholder"].getAllByKey(
@@ -356,7 +356,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
     }
     if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
-      throw new Error("Access denied: Only administrators can view email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateView");
     }
 
     const rows = await this.models["template_content"].findAll({
@@ -398,7 +398,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.addLanguageOwnOnly");
     }
     if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
-      throw new Error("Access denied: Only administrators can edit email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateEdit");
     }
 
     const templateContentModel = this.models["template_content"];
@@ -615,7 +615,7 @@ class TemplateSocket extends Socket {
     if (!template) return;
 
     if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
-      throw new Error("Access denied: Only administrators can edit email templates");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateEdit");
     }
 
     if (template.userId === this.userId) {
@@ -741,7 +741,7 @@ class TemplateSocket extends Socket {
     if (!copy) throw new TranslatableError("errors.templates.notFound");
     if (copy.userId !== this.userId) throw new TranslatableError("errors.templates.updateOwnCopiesOnly");
     if (this.models["template"].emailTemplateTypes.includes(copy.type) && !(await this.isAdmin())) {
-      throw new Error("Access denied: Only administrators can update email templates from source");
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateUpdateFromSource");
     }
 
     return await this.models["template"].updateFromSource(
