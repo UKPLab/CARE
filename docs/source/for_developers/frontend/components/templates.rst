@@ -1,12 +1,12 @@
 Templates
 =========
 
-The **Templates** system provides email and document content templates that can be used for system emails, session and assignment notifications, study-closed emails, and pre-filled document content.  
-Templates are edited in the same Quill-based Editor as documents; placeholder resolution is done by the backend when the template is used.
+The **Templates** system provides email and document content templates that can be used for system emails, session and assignment notifications, study-closed emails, submission-upload emails, and pre-filled document content.
+Templates are edited in the same Quill-based Editor as documents. The backend fills placeholders when the template is used.
 
 Key features include:
 
-  - **Template types** with fixed placeholder sets and usage locations (see table below).
+  - **Template types** with per-type placeholder sets and usage locations (see table below).
   - **Multi-language content** stored in ``template_content``; default language on the ``template`` row.
   - **TemplateEditor** and **TemplateConfigurator** (Placeholders sidebar) shown when the Editor is opened with a template (``templateId`` provided).
   - **Toolbar and editor behavior** controlled by the same settings as the document editor (see :ref:`Editor Settings <editor-settings-ref>`).
@@ -18,7 +18,7 @@ Templates are listed and created from **Dashboard → Templates**. See the :doc:
 
 Location: ``frontend/src/components/dashboard/Templates.vue``
 
-When you open a template for editing, the Editor loads with ``templateId`` provided; it renders the :doc:`editor` (TemplateEditor) for the main content and, for email types (1, 2, 3, 6), a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~``) into the text.
+When you open a template for editing, the Editor loads with ``templateId`` provided. It renders the :doc:`editor` (TemplateEditor) for the main content. For email types (1, 2, 3, 6, 7) it also shows a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~``).
 
 Location: ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
 
@@ -29,10 +29,10 @@ Backend storage:
 - **template_edit** — draft edits per template and language.  
 - **placeholder** — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).
 
-Location: ``backend/utils/templateResolver.js``
+Location: ``backend/utils/helper/templateResolver.js``
 
-Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).  
-Only placeholders listed in ``PLACEHOLDERS_BY_TYPE`` for the template's type are substituted at runtime.
+Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).
+Only keys stored in the ``placeholder`` table for that type are substituted at runtime.
 
 Implementing the Template Editor
 ---------------------------------
@@ -63,7 +63,7 @@ Templates use the same debounced autosave as documents (see :ref:`Debounce Behav
 
 **Save-on-leave:** In-app navigation (topbar back, dashboard links) runs ``beforeRouteLeave`` in ``frontend/src/components/Template.vue``. The guard calls ``flushPendingEdits`` on ``TemplateEditor`` (cancels debounce and sends buffered ops), then emits ``templateClose``, which calls ``saveTemplate`` in ``backend/webserver/sockets/template.js`` to merge drafts into ``template_content``.
 
-**Required placeholders:** For email types (1, 2, 3, 6, 7), stable ``template_content`` in every language must include all required placeholders (``getMissingRequiredPlaceholders`` in ``backend/utils/templateResolver.js``). Enforcement points:
+**Required placeholders:** For email types (1, 2, 3, 6, 7), stable ``template_content`` in every language must include all required placeholders (``getMissingRequiredPlaceholders`` in ``backend/utils/helper/templateResolver.js``). Enforcement points:
 
 - **Editor save:** ``saveTemplate`` rejects merges that omit required placeholders. The user may confirm discard; ``templateDiscardDrafts`` soft-deletes draft rows without updating ``template_content``.
 - **Publish:** The ``template`` model ``beforeUpdate`` hook calls ``assertStableEmailTemplateContent`` when ``public`` becomes ``true``.
@@ -76,31 +76,49 @@ Template Types, Placeholders, and Usage
 
 At resolution time, only the placeholder keys listed in the following table are substituted.
 
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Template type            | Value  | Placeholders                         | Where used                                                 |
-+==========================+========+======================================+============================================================+
-| Email - General          | 1      | ``username``, ``firstName``,        | Auth/system emails: settings                               |
-|                          |        | ``lastName``, ``link``\*            | ``email.template.passwordReset``,                          |
-|                          |        |                                      | ``email.template.verification``,                           |
-|                          |        |                                      | ``email.template.registration`` in ``auth.js``.            |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Email - Study Session    | 2      | ``username``, ``link``\*            | Session start/finish emails: settings                      |
-|                          |        |                                      | ``email.template.sessionStart``,                           |
-|                          |        |                                      | ``email.template.sessionFinish`` in ``study_session.js``.  |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Email - Assignment       | 3      | ``username``, ``assignmentType``,   | Assignment emails: setting ``email.template.assignment``   |
-|                          |        | ``assignmentName``, ``link``\*      | in ``assignment.js``.                                      |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Document - General       | 4      | none                                 | Pre-fill document content when creating a document with    |
-|                          |        |                                      | ``templateId`` in ``document.js``.                         |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Document - Study         | 5      | none                                 | Document templates for study steps (create from template)  |
-|                          |        |                                      | in ``study_step.js``.                                      |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Email - Study Close      | 6      | ``username``, ``studyName``\*        | Study-closed emails: setting                               |
-|                          |        |                                      | ``email.template.studyClosed`` (``sendStudyClosedEmails``) |
-|                          |        |                                      | in ``study.js``.                                           |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 8 30 42
+
+   * - Template type
+     - Value
+     - Placeholders
+     - Where used
+   * - Email - General
+     - 1
+     - ``username``, ``firstName``, ``lastName``, ``link``\*
+     - Auth/system emails: settings ``email.template.passwordReset``,
+       ``email.template.verification``, ``email.template.registration``,
+       ``email.template.twoFactorOtp``, ``email.template.passwordResetSuccess``.
+   * - Email - Study Session
+     - 2
+     - ``username``, ``link``\*
+     - Session start/finish emails: settings ``email.template.sessionStart``,
+       ``email.template.sessionFinish`` in ``study_session.js``.
+   * - Email - Assignment
+     - 3
+     - ``username``, ``assignmentType``, ``assignmentName``, ``link``\*
+     - Assignment emails: setting ``email.template.assignment`` in ``assignment.js``.
+   * - Document - General
+     - 4
+     - none
+     - Pre-fill document content when creating a document with ``templateId`` in ``document.js``.
+   * - Document - Study
+     - 5
+     - none
+     - Study workflow editor steps: type 5 templates in
+       ``frontend/src/basic/form/Select.vue`` (document dropdown when ``stepType`` is 2).
+   * - Email - Study Close
+     - 6
+     - ``username``, ``studyName``\*
+     - Study-closed emails: setting ``email.template.studyClosed``
+       (``sendStudyClosedEmails``) in ``study.js``.
+   * - Email - Submission upload
+     - 7
+     - ``username``, ``assignmentName``\*, ``eventType``, ``assignmentId``,
+       ``submissionId``, ``timestamp``
+     - Submission upload emails: settings ``email.template.submissionUpload``,
+       ``email.template.submissionUploadConfirmation`` in ``document.js``.
 
 Adding a New Template Type or Placeholder
 -----------------------------------------
@@ -109,10 +127,8 @@ Adding a New Template Type or Placeholder
 
    Placeholders marked with ``*`` in the table above are **required** for that type.
    If a required placeholder is missing from stable content in any language, validation
-   fails on editor save, publish, or Settings assignment until it is added. The set of
-   required placeholders is defined in the ``placeholder`` table (``required: true``) and
-   enforced via ``getMissingRequiredPlaceholders`` and ``assertStableEmailTemplateContent``
-   in ``backend/utils/helper/templateResolver.js``.
+   fails on editor save, publish, or Settings assignment until it is added. Required
+   keys are rows in the ``placeholder`` table with ``required: true``.
 
 Adding a placeholder
 ~~~~~~~~~~~~~~~~~~~~
@@ -132,11 +148,12 @@ Adding a template type
 ~~~~~~~~~~~~~~~~~~~~~~
 
 - Add the option to ``fields`` on ``backend/db/models/template.js``.
-- Put the type in ``emailTemplateTypes`` or ``otherTemplateTypes`` there.
-- If non-admins should create it, add it to the filter in
-  ``frontend/src/components/dashboard/templates/TemplateModal.vue``.
+- Put the type in ``emailTemplateTypes`` or ``otherTemplateTypes`` in
+  ``backend/db/models/template.js`` and ``frontend/src/assets/templateTypes.js``.
 - Add an empty ``placeholderConfigs`` entry in ``TemplateConfigurator.vue``
   so the sidebar can load keys for that type.
+- Add the label in the ``typeName`` maps in ``Templates.vue``,
+  ``PublicTemplatesModal.vue``, and ``TemplateConfigurator.vue``.
 
 Settings
 --------
