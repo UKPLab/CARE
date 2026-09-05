@@ -518,7 +518,3 @@ module.exports = (sequelize, DataTypes) => {
     );
     return Template;
 }
-
-module.exports.emailTemplateTypes = emailTemplateTypes;
-module.exports.otherTemplateTypes = otherTemplateTypes;
-module.exports.allTemplateTypes = allTemplateTypes;
