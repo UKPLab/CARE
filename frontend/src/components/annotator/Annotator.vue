@@ -702,11 +702,6 @@ export default {
 
 <style scoped>
 
-
-IconBoostrap[disabled] {
-  background-color: darkgrey;
-}
-
 .sidebar-highlight {
   border: 2px solid #ff9800 !important;
   box-shadow: 0 0 8px #ff9800;
