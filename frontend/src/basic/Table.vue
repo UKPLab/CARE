@@ -1148,7 +1148,7 @@ export default {
   pointer-events: initial;
   opacity: 0.5;
   background-color: var(--bs-secondary-bg, #d8d8d8);
-  border: 1px solid gray;
+  border: 1px solid var(--bs-border-color, gray);
 }
 
 .pointer {

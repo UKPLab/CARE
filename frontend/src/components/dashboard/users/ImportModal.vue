@@ -521,7 +521,7 @@ export default {
 
 .drag-drop-area {
   margin-bottom: 0.5rem;
-  border: 2px dashed #ccc;
+  border: 2px dashed var(--bs-border-color, #ccc);
   border-radius: 4px;
   padding: 1.25rem;
   text-align: center;

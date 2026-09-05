@@ -169,7 +169,7 @@ export default {
 
 <style scoped>
 .mapping-panel {
-  border: 1px dashed #b9b9b9;
+  border: 1px dashed var(--bs-border-color, #b9b9b9);
   border-radius: 0.5rem;
   padding: 0.9rem;
   background: var(--bs-tertiary-bg, #fafafa);
