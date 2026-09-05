@@ -125,6 +125,7 @@ import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
+import { emailTemplateTypes } from "@/assets/templateTypes";
 import { DEFAULT_LOCALE, LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/locale.js";
 
 /**
@@ -148,7 +149,7 @@ export default {
     emailTemplates() {
       // Show only the user's own templates (copies count, since copies have userId === currentUser).
       return this.$store.getters["table/template/getAll"]
-        .filter(t => !t.deleted && [1, 2, 3, 6, 7].includes(t.type) && t.userId === this.user?.id)
+        .filter(t => !t.deleted && emailTemplateTypes.includes(t.type) && t.userId === this.user?.id)
         .map(t => ({ id: t.id, name: t.name, type: t.type }));
     },
     isEmailTemplateSetting() {
