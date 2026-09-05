@@ -49,16 +49,26 @@ exports.inject = async function inject(data, func, targetName, key = null) {
     );
 }
 
+const { hasKey } = require('../i18n');
+
 /**
- * Create an Error object with a machine-readable code.
+ * Create an Error with a machine-readable code and an i18n key (no interpolation params).
  *
- * @param {string} code Error code for frontend handling
- * @param {string} message Human-readable error message
+ * Use when the frontend needs both `code` (branching) and `key` (translation), e.g.
+ * `generateError('DOCUMENT_NOT_FOUND', 'errors.documents.doesNotExistOrDeleted')`.
+ *
+ * For key + params, or key + params + code, use TranslatableError instead.
+ *
+ * @param {string} code Machine-readable error code for frontend handling
+ * @param {string} message i18n key (must exist in en locale JSON)
  * @returns {Error}
  */
 exports.generateError = function generateError(code, message) {
     const error = new Error(message);
     error.code = code;
+    if (hasKey(message)) {
+        error.key = message;
+    }
     return error;
 }
 

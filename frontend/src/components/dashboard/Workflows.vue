@@ -1,6 +1,6 @@
 <template>
   <DashboardListPage
-    title="Workflows"
+    :title="$t('workflow.dashboard.title')"
     :columns="columns"
     :data="workflows"
     :buttons="buttons"
@@ -10,21 +10,21 @@
     <template #headerActions>
       <BasicButton
         class="btn btn-primary btn-sm"
-        title="Add Workflow"
-        text="Add Workflow"
+        :title="$t('workflow.dashboard.addWorkflow')"
+        :text="$t('workflow.dashboard.addWorkflow')"
         @click="$refs.workflowCreateModal.open()"
       />
       <BasicButton
         class="btn btn-secondary btn-sm ms-2"
-        title="Export Workflows"
-        text="Export All"
+        :title="$t('workflow.dashboard.exportWorkflows')"
+        :text="$t('workflow.dashboard.exportAll')"
         icon="download"
         @click="exportWorkflows"
       />
       <BasicButton
         class="btn btn-secondary btn-sm ms-2"
-        title="import Workflows"
-        text="Import"
+        :title="$t('workflow.dashboard.importWorkflows')"
+        :text="$t('common.import')"
         icon="upload"
         @click="importWorkflows"
       />
@@ -45,10 +45,11 @@
   />
   <ExportFormatModal
     ref="exportFormatModal"
+    :title="$t('workflow.exportFormatModal.title')"
   />
   <ImportFormatModal
     ref="importFormatModal"
-    title="Import Workflows"
+    :title="$t('workflow.importFormatModal.title')"
   />
   <ConfirmModal ref="confirmModal" />
 </template>
@@ -66,6 +67,7 @@ import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import { dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Workflows dashboard component
@@ -97,25 +99,30 @@ export default {
           order: "ASC",
         },
       }),
-      columns: [
-        { name: "ID", key: "id", sortable: true },
-        { name: "Name", key: "name", sortable: true },
-        {
-          name: "Type",
-          key: "workflowType",
-          type: "badge",
-          typeOptions: {
-            keyMapping: { system: "System", user: "User" },
-            classMapping: { system: "bg-info", user: "bg-secondary" },
-          },
-        },
-        { name: "Hidden", key: "hidden", type: "badge" },
-        { name: "Created", key: "createdAt", sortable: true },
-        { name: "Last Update", key: "updatedAt", sortable: true},
-      ],
     };
   },
   computed: {
+    columns() {
+      return [
+        { name: this.$t("common.id"), key: "id", sortable: true },
+        { name: this.$t("common.name"), key: "name", sortable: true },
+        {
+          name: this.$t("common.type"),
+          key: "workflowType",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {
+              system: this.$t("workflow.dashboard.types.system"),
+              user: this.$t("workflow.dashboard.types.user"),
+            },
+            classMapping: { system: "bg-info", user: "bg-secondary" },
+          },
+        },
+        { name: this.$t("workflow.dashboard.columns.hidden"), key: "hidden", type: "badge" },
+        { name: this.$t("common.createdAt"), key: "createdAt", sortable: true },
+        { name: this.$t("common.updatedAt"), key: "updatedAt", sortable: true},
+      ];
+    },
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
           (workflow) => workflow.userId === null || workflow.userId === this.userId
@@ -124,7 +131,7 @@ export default {
           workflowType: workflow.userId === null ? "system" : "user",
           isEditable: this.isAdmin || workflow.userId === this.userId,
           hidden: {
-            text: workflow.hideInFrontend ? "Yes" : "No",
+            text: workflow.hideInFrontend ? this.$t("common.yes") : this.$t("common.no"),
             class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
           }
         }));
@@ -138,7 +145,7 @@ export default {
     buttons() {
       return [
         dashboardRowAction("copy", {
-          title: "Copy Workflow",
+          title: this.$t("workflow.dashboard.actions.copyWorkflow"),
           action: "copyWorkflow",
           stats: { workflowId: "id" },
           filter: [
@@ -146,12 +153,12 @@ export default {
           ],
         }),
         dashboardRowButton("diagram-3", {
-          title: "Edit Workflow",
+          title: this.$t("workflow.dashboard.actions.editWorkflow"),
           action: "editWorkflow",
           stats: { workflowId: "id" },
         }),
         dashboardRowButton("fonts", {
-          title: "Rename Workflow",
+          title: this.$t("workflow.dashboard.actions.renameWorkflow"),
           action: "renameWorkflow",
           stats: { workflowId: "id" },
           filter: [
@@ -159,12 +166,12 @@ export default {
           ],
         }),
         dashboardRowAction("download", {
-          title: "Export Workflow",
+          title: this.$t("workflow.dashboard.actions.exportWorkflow"),
           action: "exportWorkflow",
           stats: { workflowId: "id" },
         }),
         dashboardRowAction("hide", {
-          title: "Hide workflow",
+          title: this.$t("workflow.dashboard.actions.toggleHidden"),
           action: "toggleHidden",
           stats: { workflowId: "id" },
           filter: [
@@ -174,7 +181,7 @@ export default {
           filterMode: "and",
         }),
         dashboardRowAction("show", {
-          title: "Show workflow",
+          title: this.$t("workflow.dashboard.actions.toggleHidden"),
           action: "toggleHidden",
           stats: { workflowId: "id" },
           filter: [
@@ -184,7 +191,7 @@ export default {
           filterMode: "and",
         }),
         dashboardRowAction("delete", {
-          title: "Delete Workflow",
+          title: this.$t("workflow.dashboard.actions.deleteWorkflow"),
           action: "deleteWorkflow",
           stats: { workflowId: "id" },
           filter: [
@@ -252,14 +259,16 @@ export default {
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Workflow Updated",
-              message: `Workflow is now ${newHiddenState ? 'hidden' : 'visible'} in frontend`,
+              title: this.$t("workflow.dashboard.toasts.workflowUpdated.title"),
+              message: this.$t("workflow.dashboard.toasts.workflowUpdated.message", {
+                state: newHiddenState ? this.$t("workflow.dashboard.visibility.hidden") : this.$t("workflow.dashboard.visibility.visible"),
+              }),
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Update Failed",
-              message: result.message,
+              title: this.$t("workflow.dashboard.toasts.updateFailed"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -279,14 +288,14 @@ export default {
         {
           table: "workflow",
           id: params.id,
-          title: "Delete Workflow",
-          message: `Are you sure you want to delete the workflow "${workflow.name}"?`,
-          warning: "This action cannot be undone.",
-          failTitle: "Delete Failed",
+          title: this.$t("workflow.dashboard.confirmDelete.title"),
+          message: this.$t("workflow.dashboard.confirmDelete.message", { name: workflow.name }),
+          warning: this.$t("workflow.dashboard.confirmDelete.warning"),
+          failTitle: this.$t("workflow.dashboard.toasts.deleteFailed"),
           onSuccess: () => {
             this.eventBus.emit("toast", {
-              title: "Workflow Deleted",
-              message: "Workflow has been deleted",
+              title: this.$t("workflow.dashboard.toasts.workflowDeleted.title"),
+              message: this.$t("workflow.dashboard.toasts.workflowDeleted.message"),
               variant: "success",
             });
           },

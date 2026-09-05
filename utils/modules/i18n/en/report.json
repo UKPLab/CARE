@@ -1,0 +1,10 @@
+{
+    "noText": "(no text)",
+    "ref": "(ref. {citation})",
+    "show": "(show)",
+    "reviewReport": "Review Report",
+    "emptyReport": "Empty report -- no annotations or comments found.",
+    "generalComments": "General Comments",
+    "noComments": "No comments.",
+    "tip": "*Tip: Hover over a reference to see the referenced text or click to view the annotation in the PDF."
+}

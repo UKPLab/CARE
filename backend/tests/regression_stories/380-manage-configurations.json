@@ -1,0 +1,456 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:47:33.561Z",
+  "traceCount": 22,
+  "recording": {
+    "name": "380-manage-configurations",
+    "status": "finished",
+    "startTime": "2026-08-10T23:42:35.518Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "90oWDZwTlp-h7ZFKAAAZ"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:42:53.089Z"
+  },
+  "traces": [
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 23,
+          "name": "Recording 8/11/2026, 1:42:35 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:42:35.519Z",
+          "startTime": "2026-08-10T23:42:35.518Z",
+          "updatedAt": "2026-08-10T23:42:35.519Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "90oWDZwTlp-h7ZFKAAAZ"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:42:35.528Z",
+      "endTime": "2026-08-10T23:42:35.528Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:36.833Z",
+      "endTime": "2026-08-10T23:42:36.833Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/configurations",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.208Z",
+      "endTime": "2026-08-10T23:42:40.208Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "ce833b55-3a1e-46d8-aa5a-36d4c3b181d3",
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.226Z",
+      "endTime": "2026-08-10T23:42:40.226Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "da0261d4-c806-427b-a60f-eba8dc38085d",
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.234Z",
+      "endTime": "2026-08-10T23:42:40.234Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "afdebb08-c715-4ef5-b3d6-638f79e9965f",
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.235Z",
+      "endTime": "2026-08-10T23:42:40.235Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "1cc22030-6aaa-4f21-b26e-508cfd37f143",
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.235Z",
+      "endTime": "2026-08-10T23:42:40.235Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "configuration"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.246Z",
+      "endTime": "2026-08-10T23:42:40.246Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "d6726a07-27f5-4a32-8817-4cffb612f8cf",
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.235Z",
+      "endTime": "2026-08-10T23:42:40.235Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "974b1ec8-6e10-498f-bac9-5d0ec619bc45",
+      "direction": true,
+      "startTime": "2026-08-10T23:42:40.235Z",
+      "endTime": "2026-08-10T23:42:40.235Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "upload",
+          "title": "Import configuration file"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:42.201Z",
+      "endTime": "2026-08-10T23:42:42.201Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:42.652Z",
+      "endTime": "2026-08-10T23:42:42.652Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 861,
+          "clientY": 193,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:43.502Z",
+      "endTime": "2026-08-10T23:42:43.502Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:47.128Z",
+      "endTime": "2026-08-10T23:42:47.128Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:48.445Z",
+      "endTime": "2026-08-10T23:42:48.445Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "configurationAdd",
+      "payload": {
+        "name": "UKP Exposé Submission Validator",
+        "type": 1,
+        "userId": 4,
+        "content": {
+          "name": "UKP Exposé Submission Validator",
+          "type": "validation",
+          "rules": {
+            "requiredFiles": [
+              {
+                "name": "PDF",
+                "pattern": ".*\\.pdf$",
+                "required": true,
+                "description": "Main PDF of the Exposé"
+              },
+              {
+                "name": "ZIP",
+                "pattern": ".*\\.zip$",
+                "required": true,
+                "description": "Raw Latex Files for the Exposé",
+                "includeFiles": [
+                  {
+                    "name": "expose",
+                    "pattern": "Expose\\.tex$",
+                    "required": true,
+                    "maxMatches": 1,
+                    "description": "Main expose LaTeX document"
+                  },
+                  {
+                    "name": "bibliography",
+                    "pattern": "ExposeBibliography\\.bib$",
+                    "required": true,
+                    "maxMatches": 1,
+                    "description": "Bibliography file for the exposé"
+                  },
+                  {
+                    "name": "config",
+                    "pattern": "tudathesis\\.cfg$",
+                    "required": true,
+                    "maxMatches": 1,
+                    "description": "TUDa thesis configuration file"
+                  }
+                ],
+                "allowAdditionalFiles": [
+                  "jpeg",
+                  "jpg",
+                  "png",
+                  "pdf",
+                  "bst",
+                  "cls"
+                ]
+              }
+            ],
+            "additionalFilesAreAllowed": false
+          },
+          "version": "0.0.1",
+          "description": "Validation schema for UKP Exposé LaTeX submissions"
+        },
+        "description": "Validation schema for UKP Exposé LaTeX submissions",
+        "creator_name": "admin",
+        "hideInFrontend": false
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:49.345Z",
+      "endTime": "2026-08-10T23:42:49.345Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Submit"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:49.348Z",
+      "endTime": "2026-08-10T23:42:49.348Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "configurationRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "name": "UKP Exposé Submission Validator",
+          "type": 1,
+          "userId": 4,
+          "content": {
+            "name": "UKP Exposé Submission Validator",
+            "type": "validation",
+            "rules": {
+              "requiredFiles": [
+                {
+                  "name": "PDF",
+                  "pattern": ".*\\.pdf$",
+                  "required": true,
+                  "description": "Main PDF of the Exposé"
+                },
+                {
+                  "name": "ZIP",
+                  "pattern": ".*\\.zip$",
+                  "required": true,
+                  "description": "Raw Latex Files for the Exposé",
+                  "includeFiles": [
+                    {
+                      "name": "expose",
+                      "pattern": "Expose\\.tex$",
+                      "required": true,
+                      "maxMatches": 1,
+                      "description": "Main expose LaTeX document"
+                    },
+                    {
+                      "name": "bibliography",
+                      "pattern": "ExposeBibliography\\.bib$",
+                      "required": true,
+                      "maxMatches": 1,
+                      "description": "Bibliography file for the exposé"
+                    },
+                    {
+                      "name": "config",
+                      "pattern": "tudathesis\\.cfg$",
+                      "required": true,
+                      "maxMatches": 1,
+                      "description": "TUDa thesis configuration file"
+                    }
+                  ],
+                  "allowAdditionalFiles": [
+                    "jpeg",
+                    "jpg",
+                    "png",
+                    "pdf",
+                    "bst",
+                    "cls"
+                  ]
+                }
+              ],
+              "additionalFilesAreAllowed": false
+            },
+            "version": "0.0.1",
+            "description": "Validation schema for UKP Exposé LaTeX submissions"
+          },
+          "deleted": false,
+          "createdAt": "2026-08-10T23:42:49.364Z",
+          "updatedAt": "2026-08-10T23:42:49.364Z",
+          "description": "Validation schema for UKP Exposé LaTeX submissions",
+          "hideInFrontend": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:42:49.372Z",
+      "endTime": "2026-08-10T23:42:49.372Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:49.380Z",
+      "endTime": "2026-08-10T23:42:49.380Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 939,
+          "clientY": 488,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:50.220Z",
+      "endTime": "2026-08-10T23:42:50.220Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:52.147Z",
+      "endTime": "2026-08-10T23:42:52.147Z"
+    },
+    {
+      "recordingId": 23,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1066,
+          "clientY": 71,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:42:52.659Z",
+      "endTime": "2026-08-10T23:42:52.659Z"
+    }
+  ]
+}

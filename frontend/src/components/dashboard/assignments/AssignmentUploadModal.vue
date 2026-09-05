@@ -6,13 +6,13 @@
     @submit="uploadSubmission"
   >
     <template #title>
-      <h5 class="modal-title">Upload Submission</h5>
+      <h5 class="modal-title">{{ $t('dashboard.uploadModal.title') }}</h5>
     </template>
 
     <!-- Step 1: Assignment info + metadata (always shown) -->
     <template #step-1>
       <div class="p-3 pb-0">
-        <h6 class="mb-1">Assignment Description</h6>
+        <h6 class="mb-1">{{ $t('assignments.dashboard.uploadModal.assignmentDescriptionHeading') }}</h6>
         <p class="text-muted mb-3">
           {{ assignmentDescription }}
         </p>
@@ -38,6 +38,15 @@
         v-model="files"
         :fields="fileFields"
       />
+      <!--
+        Declared here (and identically in step-3 below) inside the step's own slot content,
+        not as a sibling of StepperModal, so it renders as a genuine descendant of the
+        stepper's BasicModal — BasicModal's own parentModal/nested-suspended mechanism then
+        greys out the stepper automatically while this dialog is open. Whichever step is
+        actually last for the current user (step-2 here, or step-3 for an admin selecting
+        someone else's user) is the one mounted when uploadSubmission() needs it.
+      -->
+      <ConfirmModal ref="warningModal" />
     </template>
 
     <!-- Step 3 (admins without preselected user only): file upload -->
@@ -46,6 +55,7 @@
         v-model="files"
         :fields="fileFields"
       />
+      <ConfirmModal ref="warningModal" />
     </template>
   </StepperModal>
 </template>
@@ -54,6 +64,8 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Assignment-specific submission upload modal.
@@ -63,7 +75,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "AssignmentUploadModal",
-  components: { BasicForm, BasicTable, StepperModal },
+  components: { BasicForm, BasicTable, StepperModal, ConfirmModal },
   subscribeTable: ["user", "assignment", "configuration"],
   data() {
     return {
@@ -78,13 +90,6 @@ export default {
       assignmentId: null,
       replacementSubmissionId: null,
       userPreselected: false,
-      selectionTable: [
-        { name: "ID", key: "id", sortable: true },
-        { name: "extId", key: "extId", sortable: true },
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Username", key: "userName", sortable: true },
-      ],
       selectionTableOptions: {
         striped: true,
         hover: true,
@@ -100,6 +105,15 @@ export default {
     };
   },
   computed: {
+    selectionTable() {
+      return [
+        { name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.extId"), key: "extId", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.firstName"), key: "firstName", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.lastName"), key: "lastName", sortable: true },
+        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName", sortable: true },
+      ];
+    },
     canUploadForOthers() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
     },
@@ -119,7 +133,10 @@ export default {
       return this.assignment?.validationConfigurationId || 0;
     },
     assignmentDescription() {
-      return this.assignment?.description || "No description provided.";
+      return this.assignment?.description || this.$t("assignments.dashboard.uploadModal.noDescription");
+    },
+    submissionWarning() {
+      return this.assignment?.submissionWarning?.trim() || null;
     },
     projectId() {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
@@ -127,15 +144,15 @@ export default {
     steps() {
       if (this.canUploadForOthers && !this.userPreselected) {
         return [
-          { title: "Assignment" },
-          { title: "Select User" },
-          { title: "Upload File" },
+          { title: this.$t("assignments.dashboard.uploadModal.steps.assignment") },
+          { title: this.$t("dashboard.uploadModal.stepSelectUser") },
+          { title: this.$t("dashboard.uploadModal.stepUploadFile") },
         ];
       }
 
       return [
-        { title: "Assignment" },
-        { title: "Upload File" },
+        { title: this.$t("assignments.dashboard.uploadModal.steps.assignment") },
+        { title: this.$t("dashboard.uploadModal.stepUploadFile") },
       ];
     },
     stepValid() {
@@ -161,7 +178,7 @@ export default {
         const format = fileFormat.toLowerCase();
         return {
           key: format,
-          label: `${format.toUpperCase()} File:`,
+          label: this.$t("dashboard.uploadModal.fileLabel", { format: format.toUpperCase() }),
           type: "file",
           accept: `.${format}`,
           class: "form-control",
@@ -173,17 +190,17 @@ export default {
       return [
         {
           key: "name",
-          label: "Submission Name",
+          label: this.$t("assignments.dashboard.uploadModal.fields.name.label"),
           type: "text",
-          placeholder: "Enter a submission name",
+          placeholder: this.$t("assignments.dashboard.uploadModal.fields.name.placeholder"),
           class: "form-control",
           default: "",
         },
         {
           key: "description",
-          label: "Submission Description",
+          label: this.$t("assignments.dashboard.uploadModal.fields.description.label"),
           type: "textarea",
-          placeholder: "Add a short description",
+          placeholder: this.$t("assignments.dashboard.uploadModal.fields.description.placeholder"),
           class: "form-control",
           default: "",
         },
@@ -204,7 +221,6 @@ export default {
         description: submission?.description
       };
 
-      console.log("submission", submission);
       // Preselect assignment validator, if available.
       const assignment = assignmentId
         ? this.$store.getters["table/assignment/get"](assignmentId)
@@ -258,11 +274,34 @@ export default {
         return this.files[format] && this.files[format] instanceof File;
       });
     },
+    /**
+     * Handles the stepper's submit event. If the assignment defines a submission warning,
+     * shows a confirmation dialog before uploading; otherwise uploads immediately.
+     */
     uploadSubmission() {
+      if (!this.submissionWarning) {
+        this.doUpload();
+        return;
+      }
+
+      // Warning text is instructor-authored — pass it as the `warning` slot, which escapes
+      // it. The `message` slot renders with v-html and would be a stored XSS vector.
+      this.$refs.warningModal.open(
+        "Submission",
+        "Please confirm before uploading:",
+        this.submissionWarning,
+        (confirmed) => { if (confirmed) this.doUpload(); }
+      );
+    },
+    /**
+     * Validates the selected files and target user, then emits the submission upload to the
+     * server and closes the stepper on success.
+     */
+    doUpload() {
       if (!this.files) {
         this.eventBus.emit("toast", {
-          title: "Invalid file(s)",
-          message: "Please upload all required files.",
+          title: this.$t("dashboard.uploadModal.invalidFiles"),
+          message: this.$t("dashboard.uploadModal.pleaseUploadFiles"),
           variant: "danger",
         });
         return;
@@ -273,8 +312,8 @@ export default {
         : this.currentUserId;
       if (!selectedUserId) {
         this.eventBus.emit("toast", {
-          title: "Missing user",
-          message: "No user selected for this submission.",
+          title: this.$t("assignments.dashboard.uploadModal.toasts.missingUser.title"),
+          message: this.$t("assignments.dashboard.uploadModal.toasts.missingUser.message"),
           variant: "danger",
         });
         return;
@@ -298,16 +337,16 @@ export default {
       this.$socket.emit("documentUploadSingleSubmission", singleSubmission, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Uploaded file",
-            message: "File successfully uploaded!",
+            title: this.$t("dashboard.uploadModal.uploadedFile"),
+            message: this.$t("dashboard.uploadModal.fileSuccessfullyUploaded"),
             variant: "success",
           });
           this.$refs.uploadStepper.close();
         } else {
           this.files = null;
           this.eventBus.emit("toast", {
-            title: "Failed to upload the file",
-            message: res.message,
+            title: this.$t("dashboard.uploadModal.failedUploadFile"),
+            message: resolveApiMessage(res),
             variant: "danger",
             delay: 10000,
           });
