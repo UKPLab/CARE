@@ -517,7 +517,6 @@ export default {
 .comment {
   color: var(--bs-secondary-color, #666666);
   font-style: normal;
-  box-shadow: 2px, 3px lightgrey;
 }
 
 .blockquote {
