@@ -2,21 +2,21 @@
   <BasicModal ref="modal" name="workflowStepInspectModal" size="lg">
     <template #title>
       <BasicIcon icon-name="info-circle" :size="16" class="me-2" />
-      Inspect Step: {{ step?.name || '—' }}
+      {{ $t('workflow.inspectStep') }}: {{ step?.name || '—' }}
     </template>
     <template #body>
       <div v-if="step" class="inspect-body">
 
         <!-- Identity -->
-        <div class="section-title">General</div>
+        <div class="section-title">{{ $t('workflow.general') }}</div>
         <dl class="info-grid">
           <dt>ID</dt>
           <dd><code>{{ step.id }}</code></dd>
 
-          <dt>Name</dt>
+          <dt>{{ $t('common.name') }}</dt>
           <dd>{{ step.name || '—' }}</dd>
 
-          <dt>Step Type</dt>
+          <dt>{{ $t('workflow.stepType') }}</dt>
           <dd>
             <span class="badge" :class="stepTypeBadgeClass">
               <BasicIcon :icon-name="stepTypeIcon" :size="12" color="#fff" class="me-1" />
@@ -26,46 +26,46 @@
         </dl>
 
         <!-- Navigation -->
-        <div class="section-title mt-3">Navigation</div>
+        <div class="section-title mt-3">{{ $t('workflow.navigation') }}</div>
         <dl class="info-grid">
-          <dt>Previous Step</dt>
+          <dt>{{ $t('workflow.previousStep') }}</dt>
           <dd>
             <span v-if="step.workflowStepPrevious">
               <code>{{ step.workflowStepPrevious }}</code>
               <span class="text-muted ms-1">({{ previousStepName }})</span>
             </span>
-            <span v-else class="text-muted">First step</span>
+            <span v-else class="text-muted">{{ $t('workflow.firstStep') }}</span>
           </dd>
 
-          <dt>Allow Backward</dt>
+          <dt>{{ $t('workflow.allowBackward') }}</dt>
           <dd>
             <span class="badge" :class="step.allowBackward ? 'text-bg-success' : 'text-bg-secondary'">
               <BasicIcon :icon-name="step.allowBackward ? 'check-circle' : 'x-circle'" :size="12" color="#fff" class="me-1" />
-              {{ step.allowBackward ? 'Yes' : 'No' }}
+              {{ step.allowBackward ? $t('common.yes') : $t('common.no') }}
             </span>
           </dd>
 
-          <dt>Document Reference</dt>
+          <dt>{{ $t('workflow.documentReference') }}</dt>
           <dd>
             <span v-if="step.workflowStepDocument">
               <code>{{ step.workflowStepDocument }}</code>
               <span class="text-muted ms-1">({{ documentStepName }})</span>
             </span>
-            <span v-else class="text-muted">None</span>
+            <span v-else class="text-muted">{{ $t('common.none') }}</span>
           </dd>
         </dl>
 
         <!-- Configuration -->
-        <div class="section-title mt-3">Configuration</div>
+        <div class="section-title mt-3">{{ $t('workflow.configuration') }}</div>
         <div v-if="hasConfiguration">
           <pre class="config-block">{{ formattedConfiguration }}</pre>
         </div>
-        <p v-else class="text-muted small mb-0">No configuration defined.</p>
+        <p v-else class="text-muted small mb-0">{{ $t('workflow.noConfigurationDefined') }}</p>
 
       </div>
     </template>
     <template #footer>
-      <BasicButton text="Close" class="btn btn-secondary" @click="close" />
+      <BasicButton :text="$t('common.close')" class="btn btn-secondary" @click="close" />
     </template>
   </BasicModal>
 </template>
@@ -94,10 +94,10 @@ export default {
   computed: {
     stepTypeLabel() {
       switch (this.step?.stepType) {
-        case 1: return "Annotator";
-        case 2: return "Editor";
-        case 3: return "Modal";
-        default: return "Unknown";
+        case 1: return this.$t('workflow.stepTypes.annotator');
+        case 2: return this.$t('workflow.stepTypes.editor');
+        case 3: return this.$t('workflow.stepTypes.modal');
+        default: return this.$t('common.unknown');
       }
     },
     stepTypeBadgeClass() {

@@ -14,7 +14,7 @@
         <div class="col" style="display: flex; align-items: center;">
           <div 
             v-if="!editedByMyself"
-            :title="collapsed ? 'Marked as checked - Click to uncheck' : 'Click to mark as checked'"
+            :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
             style="display: inline-flex; margin-right: 8px;"
             @click.stop="handleCheckIconClick"
           >
@@ -36,10 +36,10 @@
         </div>
         <div class="col text-end">
           <span v-if="annotation">
-            {{ new Date(annotation.updatedAt).toLocaleDateString() }}
+            {{ formatLocalizedDate(annotation.updatedAt) }}
           </span>
           <span v-else>
-            {{ new Date(comment.updatedAt).toLocaleDateString() }}
+            {{ formatLocalizedDate(comment.updatedAt) }}
           </span>
         </div>
       </div>
@@ -66,7 +66,7 @@
                   :loading="false"
                   :props="$props"
                   icon="x-square"
-                  title="Cancel"
+                  :title="$t('common.cancel')"
                   @click="editingTag = false"
           />
         </div>
@@ -101,14 +101,14 @@
                   :loading="false"
                   :props="$props"
                   icon="floppy"
-                  title="Save"
+                  :title="$t('common.save')"
                   @click="save"
               />
               <SidebarButton
                   :loading="false"
                   :props="$props"
                   icon="x-square"
-                  title="Cancel"
+                  :title="$t('common.cancel')"
                   @click="cancel"
               />
             </div>
@@ -123,8 +123,10 @@
                   class="btn btn-light btn-sm"
                   data-placement="top"
                   data-toggle="tooltip"
-                  title="Reply"
-                  :text="`${showReplies ? 'Hide' : 'Show'} Replies (${numberReplies})`"
+                  :title="$t('common.reply')"
+                  :text="showReplies
+                    ? $t('common.hideRepliesCount', { count: numberReplies })
+                    : $t('common.showReplies', { count: numberReplies })"
                   @click="showReplies = !showReplies; maxComments = defaultNumComments"
               />
             </div>
@@ -136,7 +138,7 @@
                   :loading="false"
                   :props="$props"
                   icon="reply"
-                  title="Reply"
+                  :title="$t('common.reply')"
                   @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
               />
               <NLPService
@@ -144,7 +146,7 @@
                   :data="summarizationRequestData"
                   :skill="summarizationSkillName"
                   icon-name="file-text"
-                  title="Summarize"
+                  :title="$t('common.summarize')"
                   type="button"
                   @response="summarizeResponse"
               />
@@ -154,7 +156,7 @@
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
-                  title="Edit"
+                  :title="$t('common.edit')"
                   @click="edit"
               />
               <SidebarButton
@@ -162,7 +164,7 @@
                 :loading="false"
                 :props="$props"
                 icon="tag"
-                title="Edit main tag"
+                :title="$t('tags.editMainTag')"
                 @click="toggleEditTag"
             />
               <SidebarButton
@@ -170,7 +172,7 @@
                   :loading="false"
                   :props="$props"
                   icon="trash3"
-                  title="Delete"
+                  :title="$t('common.delete')"
                   @click="remove"
               />
             </div>
@@ -196,19 +198,19 @@
             <BasicButton
             v-if="showExtenderButton"
             class="btn btn-light btn-sm"
-            text="Show more"
+            :text="$t('common.showMore')"
             @click="maxComments+=5"
             />
             <BasicButton
             v-if="!showExtenderButton && numChildComments > defaultNumComments"
             class="btn btn-light btn-sm"
-            text="Show less"
+            :text="$t('common.showLess')"
             @click="maxComments=defaultNumComments"
             />
             <BasicButton
             v-if="maxComments > defaultNumComments"
             class="btn btn-light btn-sm"
-            text="Hide replies"
+            :text="$t('common.hideReplies')"
             @click="maxComments=defaultNumComments; showReplies = !showReplies"
             />
           </div>
@@ -226,6 +228,7 @@ import SidebarButton from "./Button.vue"
 import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /** Annotation elements
@@ -457,6 +460,7 @@ export default {
     }
   },
   methods: {
+    formatLocalizedDate,
     getColor(tagId) {
       if (tagId) {
         const tag = this.$store.getters['table/tag/get'](tagId);
@@ -526,8 +530,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Annotation Update Failed",
-              message: res.message,
+              title: this.$t('errors.annotator.annotationUpdateFailed'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
             return //to ensure we dont save the comment if the annotation update fails
@@ -549,8 +553,8 @@ export default {
           }, (result) => {
             if (!result.success) {
               this.eventBus.emit("toast", {
-                title: "Annotation not retrieved",
-                message: result.message,
+                title: this.$t('errors.annotator.annotationNotRetrieved'),
+                message: resolveApiMessage(result),
                 variant: "danger",
               });
 
@@ -566,8 +570,8 @@ export default {
           }, (res) => {
             if (!res.success) {
               this.eventBus.emit("toast", {
-                title: "Comments not retrieved",
-                message: res.message,
+                title: this.$t('errors.annotator.commentsNotRetrieved'),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }
@@ -598,8 +602,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Tag Update Failed",
-              message: res.message,
+              title: this.$t('errors.tags.tagUpdateFailed'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -616,8 +620,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Annotation Update Failed",
-              message: res.message,
+              title: this.$t('errors.annotator.annotationUpdateFailed'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -629,8 +633,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Comment not updated",
-              message: res.message,
+              title: this.$t('errors.annotator.commentNotUpdated'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -654,8 +658,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Comment not updated",
-            message: res.message,
+            title: this.$t('errors.annotator.commentNotUpdated'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

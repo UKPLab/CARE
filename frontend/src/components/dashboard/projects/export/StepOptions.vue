@@ -1,14 +1,16 @@
 <template>
   <div class="mt-2 mb-3 p-3 bg-body-tertiary border rounded">
     <h6 class="mb-3 pb-2 border-bottom text-muted">
-      Options
+      {{ $t('dashboard.projects.exportOptions.title') }}
     </h6>
     <BasicForm
       v-model="optionsData"
       :fields="fields"
     />
     <small v-if="optionsData.generateAliases" class="text-muted d-block mt-1">
-      Using the same seed ensures consistent aliases for your own exports. <strong>Note:</strong> Aliases are tied to your account and won't match other users' exports.
+      {{ $t('dashboard.projects.exportOptions.seedHint') }}
+      <strong>{{ $t('dashboard.projects.exportOptions.noteLabel') }}</strong>
+      {{ $t('dashboard.projects.exportOptions.accountSpecificHint') }}
     </small>
   </div>
 </template>
@@ -66,7 +68,7 @@ export default {
       const formFields = [
         {
           key: "generateAliases",
-          label: "Generate aliases for student names",
+          label: this.$t('dashboard.projects.exportOptions.generateAliases'),
           type: "switch"
         }
       ];
@@ -74,21 +76,21 @@ export default {
       if (this.optionsData.generateAliases) {
         formFields.push({
           key: "fakerSeed",
-          label: "Custom Seed (Optional)",
+          label: this.$t('dashboard.projects.exportOptions.customSeedOptional'),
           type: "number",
           max: 999999999,
-          placeholder: "e.g. 846569412"
+          placeholder: this.$t('dashboard.projects.exportOptions.seedPlaceholder')
         });
       }
 
       if (this.showGradeFormat) {
         formFields.push({
           key: "gradeFormat",
-          label: "Grade file format",
+          label: this.$t('dashboard.projects.exportOptions.gradeFileFormat'),
           type: "select",
           options: [
-            { name: "JSON", value: "json" },
-            { name: "CSV", value: "csv" }
+            { name: this.$t('common.json'), value: "json" },
+            { name: this.$t('common.csv'), value: "csv" }
           ]
         });
       }
@@ -96,7 +98,7 @@ export default {
       if (this.showGradeFormat && this.optionsData.gradeFormat === "csv") {
         formFields.push({
           key: "mergeCsvFiles",
-          label: "Merge CSV files by study, step, and configuration",
+          label: this.$t('dashboard.projects.exportOptions.mergeCsvFiles'),
           type: "switch"
         });
       }

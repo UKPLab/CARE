@@ -1,0 +1,21 @@
+{
+  "title": "Einstellungen",
+  "changeUserSettings": "Benutzereinstellungen ändern",
+  "exportJson": "JSON exportieren",
+  "importJson": "JSON importieren",
+  "saveSettings": "Einstellungen speichern",
+  "saveSettingsUnsaved": "Einstellungen speichern (Ungespeicherte Änderungen)",
+  "importSettings": "Einstellungen importieren",
+  "importDescription": "Wählen Sie eine zuvor heruntergeladene Einstellungsdatei. Nur vorhandene Schlüssel werden aktualisiert.",
+  "messages": {
+    "settingsLoaded": "Einstellungen geladen",
+    "settingsLoadedMessage": "Die Einstellungen wurden erfolgreich geladen.",
+    "settingsSavedSuccessfully": "Einstellungen wurden erfolgreich gespeichert.",
+    "settingsImported": "Einstellungen importiert.",
+    "updatedSettings": "{count} vorhandene Einstellungen aktualisiert.",
+    "unsavedChangesWarning": "Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich ohne Speichern verlassen?"
+  },
+  "rememberToSave": "Denken Sie daran, nach Änderungen auf {save} zu klicken.",
+  "noneUseDefaultEmail": "Keine (Standard-E-Mail verwenden)",
+  "pickColor": "Farbe auswählen"
+}

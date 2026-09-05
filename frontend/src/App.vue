@@ -9,7 +9,7 @@
         class="text disconnect_error"
         :loading="true"
         :size="5"
-        text="Connection error! Reconnecting..."
+        :text="$t('errors.connectionError')"
     />
   </div>
   <div v-if="requireAuth">
@@ -50,6 +50,15 @@ import ConsentModal from "@/auth/ConsentModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
+import { i18n } from "@/main.js";
+import {
+  applyLocale,
+  clearCachedLocale,
+  getAuthPageLocale,
+  getLocaleFromSettings,
+  getStoredLocale,
+  setStoredLocale,
+} from "@/assets/locale.js";
 
 /**
  * Main App Component
@@ -109,6 +118,13 @@ export default {
     appSettings: function (data) {
       this.$store.commit("settings/setSettings", data);
       this.loaded.settings = true;
+      if (this.requireAuth) {
+        const locale = getLocaleFromSettings(data);
+        if (locale) {
+          applyLocale(i18n, locale);
+          setStoredLocale(locale);
+        }
+      }
     },
     appSystemRoles: function (data) {
       this.$store.commit("admin/setSystemRoles", data);
@@ -136,12 +152,15 @@ export default {
     },
     appLoadText() {
       if (!this.$socket.connected) {
-        return "Connecting...";
+        return this.$t('common.connecting');
       }
       if (this.appLoadPercent < 100) {
-        return "Load " + this.appLoadStep + " (" + this.appLoadPercent + "%)";
+        return this.$t('common.loadingProgress', {
+          appLoadStep: this.appLoadStep,
+          percent: this.appLoadPercent,
+        });
       }
-      return "Loading...";
+      return this.$t('common.loading');
     },
     acceptStats() {
       if (this.$store.getters["auth/isAuthenticated"]) {
@@ -192,7 +211,7 @@ export default {
     }
   },
   watch: {
-   "$store.state.settings": {
+    "$store.state.settings": {
       handler() {
         const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
         if (saved) {
@@ -212,13 +231,17 @@ export default {
       },
       deep: true,
     },
-    $route(to, from) {
-      if (to.meta && to.meta.checkLogin) {
-        this.runCheckLoginFlow();
-      }
-      if (to.fullPath !== from.fullPath && this.behaviorLogger) {
-        this.behaviorLogger.reportRouteChange(from, to);
-      }
+    $route: {
+      handler(to, from) {
+        this.syncLocaleForRoute(to);
+        if (to.meta && to.meta.checkLogin) {
+          this.runCheckLoginFlow();
+        }
+        if (to.fullPath !== from?.fullPath && this.behaviorLogger) {
+          this.behaviorLogger.reportRouteChange(from, to);
+        }
+      },
+      immediate: true,
     },
     "$route.meta.requireAuth"(newValue, oldValue) {
       if (newValue === oldValue) return;
@@ -275,6 +298,8 @@ export default {
         await this.$router.push(response.data.wizardCompleted === false ? "/wizard" : "/dashboard");
       } else if (response.data.needsSetup) {
         await this.$router.push("/wizard");
+      } else {
+        clearCachedLocale();
       }
     },
     resetAppLoadState() {
@@ -301,6 +326,23 @@ export default {
       if (this.acceptStats && !this.behaviorLogger) {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
         this.behaviorLogger.init();
+      }
+    },
+    syncLocaleForRoute(route) {
+      if (route.meta.requireAuth) {
+        const fromSettings = getLocaleFromSettings(this.$store.getters["settings/getSettings"]);
+        if (fromSettings) {
+          applyLocale(i18n, fromSettings);
+          return;
+        }
+        const stored = getStoredLocale();
+        if (stored) {
+          applyLocale(i18n, stored);
+        }
+        return;
+      }
+      if (route.meta.checkLogin) {
+        applyLocale(i18n, getAuthPageLocale());
       }
     },
     syncPostLoginModalFlow() {

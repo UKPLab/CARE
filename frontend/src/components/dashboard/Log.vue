@@ -1,5 +1,5 @@
 <template>
-  <Card title="Logs">
+  <Card :title="$t('components.logs.title')">
     <template #body>
       <!-- FIXME: Long error message would lead to very wide table. Try to limit the width. -->
       <BasicTable
@@ -43,25 +43,30 @@ export default {
           showPages: 3,
         },
       },
-      columns: [
+      data: [],
+    }
+  },
+  computed: {
+    columns() {
+      return [
         {name: "", key: "icon", type: "icon", width: "auto"},
         {
-          name: "Level",
+          name: this.$t('components.logs.columns.level'),
           key: "level",
           width: "1",
           filter: [
-            {key: "error", name: "Error"},
-            {key: "warn", name: "Warning"},
-            {key: "info", name: "Info"},
-            {key: "debug", name: "Debug"}]
+            {key: "error", name: this.$t('components.logs.levels.error')},
+            {key: "warn", name: this.$t('components.logs.levels.warn')},
+            {key: "info", name: this.$t('components.logs.levels.info')},
+            {key: "debug", name: this.$t('components.logs.levels.debug')}
+          ]
         },
-        {name: "Time", key: "timestamp", sortable: true, width: 2},
-        {name: "User", key: "creator_name", sortable: true, sortKey: "userId", width: 1},
-        {name: "Service", key: "service", width: 1},
-        {name: "Message", key: "message", width: 8},
-      ],
-      data: [],
-    }
+        {name: this.$t('components.logs.columns.time'), key: "timestamp", sortable: true, width: 2},
+        {name: this.$t('common.user'), key: "creator_name", sortable: true, sortKey: "userId", width: 1},
+        {name: this.$t('components.logs.columns.service'), key: "service", width: 1},
+        {name: this.$t('components.logs.columns.message'), key: "message", width: 8},
+      ];
+    },
   },
   sockets: {
     logAll: function (data) {

@@ -22,7 +22,7 @@
       >
         <Loader
           :loading="!isRendered"
-          :text="'Loading Page ' + pageNumber"
+          :text="$t('annotator.pdfPage.loadingPage', { pageNumber })"
           class="pageLoader"
         />
 

@@ -33,7 +33,7 @@
             @sidebar-action="handleButtonAction"
         >
           <template #annotations>
-            <SidebarTemplate icon="pencil-square" title="Annotations" :buttons="sidebarButtons">
+            <SidebarTemplate icon="pencil-square" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
               <template #content>
                 <AnnotationSidebar
                   ref="sidebar"
@@ -56,28 +56,28 @@
             v-if="review"
             class="btn btn-outline-success me-2"
             @click="$refs.reviewSubmit.open()"
-        >Submit Review
+        >{{ $t('annotator.submitReview') }}
         </TopBarButton>
         <TopBarButton
             v-if="approve"
             class="btn btn-outline-dark me-2"
             @click="$refs.report.open()"
         >
-          Report
+          {{ $t('annotator.report') }}
         </TopBarButton>
         <TopBarButton
             v-if="approve"
             class="btn btn-outline-success me-2"
             @click="decisionSubmit(true)"
         >
-          Accept
+          {{ $t('annotator.accept') }}
         </TopBarButton>
         <TopBarButton
             v-if="approve"
             class="btn btn-outline-danger me-2"
             @click="decisionSubmit(false)"
         >
-          Reject
+          {{ $t('annotator.reject') }}
         </TopBarButton>
       </form>
     </Teleport>
@@ -104,7 +104,7 @@ import {mapMutations} from "vuex";
 import {computed} from "vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 
 export default {
@@ -307,7 +307,7 @@ export default {
         buttons.push({
           id: 'toggle-study-comments',
           icon: this.showAll ? 'eye-fill' : 'eye-slash-fill',
-          title: this.showAll ? 'Hide study comments' : 'Show study comments',
+          title: this.showAll ? this.$t('annotator.hideStudyComments') : this.$t('annotator.showStudyComments'),
           action: 'toggleStudyComments'
         });
       }
@@ -317,7 +317,7 @@ export default {
         buttons.push({
           id: 'toggle-nlp',
           icon: 'robot',
-          title: this.nlpActive ? 'Deactivate NLP support' : 'Activate NLP support',
+          title: this.nlpActive ? this.$t('annotator.deactivateNlpSupport') : this.$t('annotator.activateNlpSupport'),
           color: this.nlpActive ? 'var(--care-nlp-active)' : 'var(--care-nlp-idle)',
           action: 'toggleNlp'
         });
@@ -331,7 +331,7 @@ export default {
         buttons.push({
           id: 'download-annotations',
           icon: 'download',
-          title: 'Download Annotations',
+          title: this.$t('annotator.downloadAnnotations'),
           disabled: !canDownload,
           action: 'downloadAnnotations'
         });
@@ -625,8 +625,8 @@ export default {
       this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Document subscribe error",
-            message: res.message,
+            title: this.$t('annotator.documentSubscribeError'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

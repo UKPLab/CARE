@@ -3,11 +3,11 @@
       ref="stepperModal"
       :steps="steps"
       :validation="validation"
-      submit-text="Assign Rights"
+      :submit-text="$t('users.rights.assignRights')"
       @submit="submit"
   >
     <template #title>
-      <h5 class="modal-title">Rights Management</h5>
+      <h5 class="modal-title">{{ $t('users.rights.managementTitle') }}</h5>
     </template>
     <template #step="{ index }">
       <div v-if="index === 0">
@@ -19,10 +19,20 @@
       </div>
       <div v-else-if="index === 1">
         <div class="mb-3">
-          <h6>Manage rights for <strong class="text-primary">{{ selectedRoleName }}</strong> role</h6>
-          <small class="text-muted">
-            Select the rights for this role. Note: All users have basic <strong>"user"</strong> rights by default.
-          </small>
+          <h6>
+            {{ $t('users.rights.manageRightsFor') }}
+            <strong class="text-primary">{{ selectedRoleName }}</strong>
+            {{ $t('users.rights.role') }}
+          </h6>
+          <i18n-t
+            keypath="users.rights.selectRightsNote"
+            tag="small"
+            class="text-muted"
+          >
+            <template #userRole>
+              <strong>{{ $t('dashboard.users.userWithQuotes') }}</strong>
+            </template>
+          </i18n-t>
         </div>
         <BasicTable
             v-model="roleRights"
@@ -40,6 +50,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AssignRolesModal",
@@ -57,14 +68,6 @@ export default {
       roleRights: [],
       originalRoleRights: [],
       allRights: [],
-      steps: [
-        {title: "Select Role"},
-        {title: "Manage Rights"},
-      ],
-      rightsColumns: [
-        {name: "Right Name", key: "name", sortable: true},
-        {name: "Description", key: "description"},
-      ],
       rightsTableOptions: {
         striped: true,
         hover: true,
@@ -75,6 +78,18 @@ export default {
     };
   },
   computed: {
+    steps() {
+      return [
+        { title: this.$t('users.rights.selectRole') },
+        { title: this.$t('users.rights.manageRights') },
+      ];
+    },
+    rightsColumns() {
+      return [
+        { name: this.$t('users.rights.rightName'), key: "name", sortable: true },
+        { name: this.$t('common.description'), key: "description" },
+      ];
+    },
     validation() {
       return [
         this.formData.roleId !== null,
@@ -98,14 +113,16 @@ export default {
       return [
         {
           key: "roleId",
-          label: "Select Role",
+          label: this.$t('users.rights.selectRole'),
           type: "select",
           required: true,
           options: this.availableRoles.filter(role => !role.deleted && role.name !== "admin").map(role => ({
             value: role.id,
-            name: role.name,
+            name: this.$te(`users.roles.${role.name}`)
+              ? this.$t(`users.roles.${role.name}`)
+              : role.name,
           })),
-          description: "Choose a role to assign to the user.",
+          description: this.$t('users.rights.chooseRoleDescription'),
         },
       ];
     },
@@ -114,7 +131,11 @@ export default {
     },
     selectedRoleName() {
       const role = this.availableRoles.find(r => r.id === this.formData.roleId);
-      return role ? role.name : "";
+      if (!role) {
+        return "";
+      }
+      const key = `users.roles.${role.name}`;
+      return this.$te(key) ? this.$t(key) : role.name;
     },
   },
   watch: {
@@ -141,8 +162,8 @@ export default {
           this.allRights = response.data;
         } else {
           this.eventBus.emit("toast", {
-            title: "Error",
-            message: "Failed to load available rights",
+            title: this.$t('common.error'),
+            message: this.$t('users.rights.errors.loadAvailableRightsFailed'),
             variant: "danger",
           });
         }
@@ -155,8 +176,8 @@ export default {
           // Get the selected right names from the role_right_matching response
           const selectedRightNames = response.data.map(item => item.userRightName);
 
-          // Filter allRights to only include the ones that are selected for this role
-          this.roleRights = this.allRights.filter(right =>
+          // Filter allRights so v-model rows match :data
+          this.roleRights = this.allRights.filter((right) =>
               selectedRightNames.includes(right.name)
           );
 
@@ -164,8 +185,8 @@ export default {
           this.originalRoleRights = JSON.parse(JSON.stringify(this.roleRights));
         } else {
           this.eventBus.emit("toast", {
-            title: "Error",
-            message: "Failed to load role rights",
+            title: this.$t('common.error'),
+            message: this.$t('users.rights.errors.loadRoleRightsFailed'),
             variant: "danger",
           });
         }
@@ -182,8 +203,8 @@ export default {
       await this.updateRoleRights();
 
       this.eventBus.emit("toast", {
-        title: "Role Rights Updated",
-        message: "Role rights have been successfully updated",
+        title: this.$t('users.rights.updatedTitle'),
+        message: this.$t('users.rights.updatedMessage'),
         variant: "success",
       });
 
@@ -212,8 +233,8 @@ export default {
             if (!result.success) {
               console.error("Failed to assign role rights:", result);
               this.eventBus.emit("toast", {
-                title: "Error",
-                message: result.message || "Failed to assign role rights",
+                title: this.$t('common.error'),
+                message: resolveApiMessage(result, 'users.rights.errors.assignRoleRightsFailed'),
                 variant: "danger",
               });
             }

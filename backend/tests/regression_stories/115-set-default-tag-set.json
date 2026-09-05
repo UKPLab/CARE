@@ -1,0 +1,473 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:20:13.468Z",
+  "traceCount": 25,
+  "recording": {
+    "name": "115-set-default-tag-set",
+    "status": "finished",
+    "startTime": "2026-08-10T23:12:44.990Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "HfkJbcIP3cSFqBocAAAL"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:12:55.458Z"
+  },
+  "traces": [
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "name": "Recording 8/11/2026, 1:12:44 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:12:44.992Z",
+          "startTime": "2026-08-10T23:12:44.990Z",
+          "updatedAt": "2026-08-10T23:12:44.992Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "HfkJbcIP3cSFqBocAAAL"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:12:45.007Z",
+      "endTime": "2026-08-10T23:12:45.007Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:46.125Z",
+      "endTime": "2026-08-10T23:12:46.125Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/tags",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.012Z",
+      "endTime": "2026-08-10T23:12:49.012Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "79008785-b114-4544-aea3-21a58e2dd4b4",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.019Z",
+      "endTime": "2026-08-10T23:12:49.019Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "7d504555-53b7-4451-8095-672bb79848bb",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.020Z",
+      "endTime": "2026-08-10T23:12:49.020Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "28f55d35-3d1c-42c4-9e4e-b94c8849a09e",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.020Z",
+      "endTime": "2026-08-10T23:12:49.020Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "5becb57e-dc4a-4439-8bb6-fccac1715a57",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.020Z",
+      "endTime": "2026-08-10T23:12:49.020Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "be95014b-42bc-45c7-b264-cedb8a2615d1",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.020Z",
+      "endTime": "2026-08-10T23:12:49.020Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "42749734-36ed-4c21-937b-f243b08b3d56",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.020Z",
+      "endTime": "2026-08-10T23:12:49.020Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.035Z",
+      "endTime": "2026-08-10T23:12:49.035Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:49.035Z",
+      "endTime": "2026-08-10T23:12:49.035Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "appSettingSet",
+      "payload": {
+        "key": "tags.tagSet.default",
+        "value": 2
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:50.101Z",
+      "endTime": "2026-08-10T23:12:50.101Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "action": "defaultTagSet",
+          "params": {}
+        },
+        "action": "actionClick"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:50.101Z",
+      "endTime": "2026-08-10T23:12:50.101Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "appSettings",
+      "payload": {
+        "logo.reBgColor": "#ffe599",
+        "system.baseUrl": "localhost:3000",
+        "app.login.guest": "true",
+        "service.nlp.url": "http://localhost:4852",
+        "projects.default": "1",
+        "app.study.enabled": "true",
+        "app.register.terms": "{\"ops\":[{\"insert\":\"Einwilligungserklärung\\n\",\"attributes\":{\"header\":2}},{\"insert\":\"Ich willige ein, dass meine personenbezogenen Daten (z. B. Name, Benutzerkennung, eingereichte Inhalte, Bewertungen, Interaktionen und IP-Adresse) zum Zweck der Durchführung der Anwendung verarbeitet werden dürfen. Zusätzlich willige ich in die Verarbeitung meiner personenbezogenen Daten für Forschungszwecke ein, sofern ich separat zugestimmt habe.\\n\\n\"},{\"insert\":\"Informationen und Datenschutzerklärung\\n\",\"attributes\":{\"header\":2}},{\"insert\":\"Die Datenverarbeitung erfolgt unter Beachtung geltender Datenschutzgesetze (z. B. DSGVO). Alle Daten werden ausschließlich zu den im Informationsblatt beschriebenen Zwecken verwendet.\\n\\n\"},{\"insert\":\"1. Bezeichnung der Verarbeitungstätigkeit\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Verarbeitung personenbezogener Daten zur Durchführung der Anwendung und optional zur wissenschaftlichen Auswertung von Nutzungsverhalten und Feedback.\\n\\n\"},{\"insert\":\"2. Datenverantwortlicher\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Verantwortliche Organisation:\\n\",\"attributes\":{\"bold\":true}},{\"insert\":\"[Name der Organisation]\\n[Adresse]\\n[E-Mail-Adresse oder Kontaktlink]\\n\\n\"},{\"insert\":\"3. Datenschutzbeauftragter\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"[Name/Titel des Datenschutzbeauftragten]\\n[Organisation oder Kontaktstelle]\\n[Adresse]\\n[E-Mail oder Datenschutzlink]\\n\\n\"},{\"insert\":\"4. Zweck(e) und Rechtsgrundlage(n) der Verarbeitung\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Zwecke:\\n\",\"attributes\":{\"bold\":true}},{\"insert\":\"Bewertung und Durchführung der Anwendung\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Eindeutige Zuordnung über Benutzerkennungen\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Sicherstellung der Kontosicherheit durch Zwei-Faktor-Authentifizierung (2FA), einschließlich Versand einmaliger Verifizierungscodes per E-Mail\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Nutzung anonymisierter Daten für Forschung und Publikation (bei Zustimmung)\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Analyse des Nutzungsverhaltens (z. B. Klicks, Navigation, Zeitstempel)\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Technisch notwendige IP-Verarbeitung (nicht gespeichert)\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"\\nRechtsgrundlage:\\n\",\"attributes\":{\"bold\":true}},{\"insert\":\"Art. 6 Abs. 1 lit. a DSGVO (Einwilligung)\\n\\n\"},{\"insert\":\"4a. Hinweise zur E-Mail-Verifizierung (2FA)\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Wenn E-Mail-2FA aktiviert ist, werden bei der Anmeldung einmalige Sicherheitscodes an die hinterlegte E-Mail-Adresse gesendet.\\n\"},{\"insert\":\"Verarbeitet werden dabei insbesondere:\\n\",\"attributes\":{\"bold\":true}},{\"insert\":\"E-Mail-Adresse\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Zeitpunkt des Versands und Ablaufzeitpunkt des Codes\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Technische Metadaten zur Missbrauchs- und Fehlerprävention\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Die Codes werden ausschließlich zur Anmeldung und Kontosicherheit verwendet, nicht für Werbung oder Newsletter.\\n\\n\"},{\"insert\":\"5. Dauer der Speicherung\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Personenbezogene Daten werden für einen definierten Zeitraum (z. B. zwei Jahre nach Abschluss) gespeichert und anschließend gelöscht oder anonymisiert.\\n\\n\"},{\"insert\":\"6. Rechte der betroffenen Personen\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Recht auf Auskunft\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Recht auf Berichtigung\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Recht auf Löschung oder Einschränkung\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Recht auf Widerspruch\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Recht auf Datenübertragbarkeit\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"Beschwerderecht bei einer Aufsichtsbehörde\\n\",\"attributes\":{\"list\":\"bullet\"}},{\"insert\":\"\\n\"},{\"insert\":\"7. Widerrufsrecht\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Die Einwilligung kann jederzeit widerrufen werden. Die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Nach Anonymisierung ist keine nachträgliche Löschung mehr möglich.\\n\\n\"},{\"insert\":\"8. Veröffentlichung anonymisierter Daten\\n\",\"attributes\":{\"header\":3}},{\"insert\":\"Anonymisierte Ergebnisse können in wissenschaftlichen Publikationen veröffentlicht werden. Die Daten werden unter einer offenen Lizenz (z. B. CC BY-NC 4.0) in geeigneten Repositorien veröffentlicht.\\n\"}]}",
+        "service.nlp.enabled": "true",
+        "service.nlp.timeout": "60000",
+        "tags.tagSet.default": "2",
+        "app.config.copyright": "Copyright © 2022-2024 Team Care UKP Lab (TU Darmstadt)",
+        "app.landing.linkDocs": "/docs",
+        "app.landing.showDocs": "true",
+        "app.register.enabled": "true",
+        "rpc.moodleAPI.apiKey": "",
+        "rpc.moodleAPI.apiUrl": "",
+        "system.auth.ldap.url": "",
+        "statistics.batch.size": "100",
+        "rpc.moodleAPI.courseID": "1",
+        "service.nlp.retryDelay": "10000",
+        "annotator.nlp.activated": "true",
+        "app.landing.linkProject": "https://intertext.ukp-lab.de/",
+        "app.landing.showProject": "true",
+        "system.auth.saml.issuer": "",
+        "tags.recencySortingIsOn": "false",
+        "app.landing.linkFeedback": "https://docs.google.com/forms/d/e/1FAIpQLSfS6Ju1FdvrErGvtqLXge5i6OYUHpbSXEFcXHKA0z_kTvMotg/viewform?usp=sf_link",
+        "app.landing.showFeedback": "true",
+        "app.login.forgotPassword": "true",
+        "app.register.requestData": "true",
+        "app.register.requestName": "true",
+        "system.auth.ldap.enabled": "false",
+        "system.auth.saml.enabled": "false",
+        "annotator.collab.response": "true",
+        "app.register.requestStats": "true",
+        "editor.edits.debounceTime": "150",
+        "editor.toolbar.tools.bold": "true",
+        "editor.toolbar.tools.font": "true",
+        "editor.toolbar.tools.link": "false",
+        "editor.toolbar.tools.size": "true",
+        "editor.toolbar.visibility": "true",
+        "email.template.assignment": "",
+        "modal.nlp.request.timeout": "15000",
+        "service.nlp.test.fallback": "true",
+        "system.auth.orcid.enabled": "false",
+        "system.auth.orcid.sandbox": "true",
+        "annotator.sidebar.maxWidth": "50",
+        "annotator.sidebar.minWidth": "400",
+        "app.config.consent.enabled": "true",
+        "editor.toolbar.tools.align": "true",
+        "editor.toolbar.tools.clean": "true",
+        "editor.toolbar.tools.color": "true",
+        "editor.toolbar.tools.image": "false",
+        "editor.toolbar.tools.video": "false",
+        "email.template.studyClosed": "",
+        "system.mailService.enabled": "true",
+        "editor.toolbar.tools.header": "true",
+        "editor.toolbar.tools.indent": "true",
+        "editor.toolbar.tools.italic": "true",
+        "editor.toolbar.tools.strike": "true",
+        "email.template.registration": "",
+        "email.template.sessionStart": "",
+        "email.template.twoFactorOtp": "",
+        "email.template.verification": "",
+        "system.auth.ldap.searchBase": "",
+        "system.auth.saml.entryPoint": "",
+        "editor.toolbar.tools.formula": "false",
+        "email.template.passwordReset": "",
+        "email.template.sessionFinish": "",
+        "system.auth.redirect.baseUrl": "http://localhost:3000",
+        "system.auth.saml.callbackUrl": "",
+        "system.mailService.smtp.host": "smtp.gmail.com",
+        "system.mailService.smtp.port": "587",
+        "annotator.nlp.request.timeout": "15000",
+        "editor.edits.historyGroupTime": "60000",
+        "modal.nlp.rotation_timer.long": "120000",
+        "system.auth.ldap.2fa.required": "false",
+        "system.auth.ldap.searchFilter": "(uid={{username}})",
+        "system.auth.orcid.callbackUrl": "",
+        "system.auth.saml.2fa.required": "false",
+        "app.register.emailVerification": "true",
+        "editor.toolbar.tools.checkList": "true",
+        "editor.toolbar.tools.direction": "true",
+        "editor.toolbar.tools.subscript": "true",
+        "editor.toolbar.tools.underline": "true",
+        "modal.nlp.rotation_timer.short": "30000",
+        "rpc.moodleAPI.showInput.apiKey": "true",
+        "rpc.moodleAPI.showInput.apiUrl": "true",
+        "system.auth.local.2fa.required": "false",
+        "system.auth.orcid.2fa.required": "false",
+        "system.mailService.smtp.secure": "true",
+        "editor.edits.showHistoryForUser": "false",
+        "editor.toolbar.showHTMLDownload": "true",
+        "editor.toolbar.tools.background": "true",
+        "editor.toolbar.tools.blockquote": "true",
+        "editor.toolbar.tools.code-block": "true",
+        "email.template.submissionUpload": "",
+        "system.mailService.smtp.enabled": "true",
+        "annotator.comments.votes.enabled": "true",
+        "app.login.passwordResetRateLimit": "5",
+        "app.register.acceptStats.default": "false",
+        "editor.document.showButtonCreate": "true",
+        "editor.toolbar.tools.orderedList": "true",
+        "editor.toolbar.tools.superscript": "true",
+        "rpc.moodleAPI.showInput.courseID": "true",
+        "system.mailService.sendMail.path": "/usr/sbin/sendmail",
+        "system.mailService.senderAddress": "system@localhost",
+        "system.mailService.smtp.auth.pass": "",
+        "system.mailService.smtp.auth.user": "",
+        "topBar.projects.hideProjectButton": "false",
+        "editor.toolbar.tools.unorderedList": "true",
+        "annotator.comments.votes.onlyUpvote": "false",
+        "email.template.passwordResetSuccess": "",
+        "system.mailService.sendMail.enabled": "true",
+        "system.mailService.smtp.auth.enabled": "true",
+        "annotator.nlp.summarization.activated": "true",
+        "annotator.nlp.summarization.maxLength": "30",
+        "annotator.nlp.summarization.minLength": "10",
+        "annotator.nlp.summarization.skillName": "summarization",
+        "editor.document.showButtonPDFDownload": "true",
+        "statistics.tracking.mouseDebounceTime": "500",
+        "system.auth.tokenExpiry.passwordReset": "1",
+        "annotator.nlp.summarization.annoLength": "10",
+        "app.register.acceptDataSharing.default": "false",
+        "dashboard.navigation.component.default": "Home",
+        "editor.document.showButtonHTMLDownload": "true",
+        "app.register.emailVerificationRateLimit": "2",
+        "editor.document.showButtonDeltaDownload": "false",
+        "system.auth.tokenExpiry.emailVerification": "24",
+        "annotator.nlp.sentiment_analysis.activated": "false",
+        "email.template.submissionUploadConfirmation": "",
+        "annotator.download.enabledBeforeStudyClosing": "true",
+        "annotator.comments.defaultNumsShown.levelZero": "3",
+        "annotator.comments.defaultNumsShown.levelOneUp": "1"
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:12:50.131Z",
+      "endTime": "2026-08-10T23:12:50.131Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard",
+          "from": "/dashboard/tags"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.915Z",
+      "endTime": "2026-08-10T23:12:52.915Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "ec386962-a38d-4ea4-9d69-923b210fb5eb",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.917Z",
+      "endTime": "2026-08-10T23:12:52.917Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "9ec60a5f-6a29-41dd-ba96-42894f5af073",
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.918Z",
+      "endTime": "2026-08-10T23:12:52.918Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.926Z",
+      "endTime": "2026-08-10T23:12:52.926Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.935Z",
+      "endTime": "2026-08-10T23:12:52.935Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.936Z",
+      "endTime": "2026-08-10T23:12:52.936Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.936Z",
+      "endTime": "2026-08-10T23:12:52.936Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.939Z",
+      "endTime": "2026-08-10T23:12:52.939Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:52.939Z",
+      "endTime": "2026-08-10T23:12:52.939Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 192,
+          "clientY": 2,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:53.773Z",
+      "endTime": "2026-08-10T23:12:53.773Z"
+    },
+    {
+      "recordingId": 3,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:12:54.553Z",
+      "endTime": "2026-08-10T23:12:54.553Z"
+    }
+  ]
+}

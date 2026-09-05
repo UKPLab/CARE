@@ -19,7 +19,7 @@
             class="readonly-toolbar-bar"
           >
             <LoadIcon icon-name="lock-fill" :size="16" />
-            <span class="readonly-toolbar-text">Read-Only Mode</span>
+            <span class="readonly-toolbar-text">{{ $t('editor.readOnlyMode') }}</span>
           </div>
           <div
             :id="`editor-container-${studyStepId}`"
@@ -45,7 +45,7 @@ import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
-import {downloadDocument} from "@/assets/utils.js";
+import {downloadDocument, resolveApiMessage} from "@/assets/utils.js";
 import LoadIcon from "@/basic/Icon.vue";
 
 const Delta = Quill.import('delta');
@@ -327,8 +327,8 @@ export default {
       this.$socket.emit("documentOpen", {documentId: this.documentId}, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Document Open Error",
-            message: res.message,
+            title: this.$t('errors.documents.documentOpenError'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -349,8 +349,8 @@ export default {
         this.$socket.emit("documentClose", {documentId: this.documentId, studySessionId: this.studySessionId}, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Document Close Error",
-              message: res.message,
+              title: this.$t('errors.documents.documentCloseError'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -396,8 +396,8 @@ export default {
             if (!res.success) {
               quill.setContents(backup);
               this.eventBus.emit("toast", {
-                title: "Previous edit failed; try again",
-                message: res.message,
+                title: this.$t("errors.editor.previousEditFailed"),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }
@@ -452,8 +452,8 @@ export default {
           this.emitContentForPlaceholders();
         } else {
           this.eventBus.emit("toast", {
-            title: "No Cursor Position",
-            message: "Please click in the editor to set the cursor position before inserting a placeholder.",
+            title: this.$t('errors.editor.cursorPositionError.title'),
+            message: this.$t('errors.editor.cursorPositionError.message'),
             variant: "warning",
           });
         }
@@ -526,8 +526,8 @@ export default {
             if (!res.success) {
               quill.setContents(backup);
               this.eventBus.emit("toast", {
-                title: "Previous edit failed; try again",
-                message: res.message,
+                title: this.$t('errors.editor.previousEditFailed'),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }
@@ -569,7 +569,7 @@ export default {
     },
     handleDocumentError(error) {
       this.eventBus.emit('toast', {
-        title: "Document error",
+        title: this.$t('errors.documents.documentError'),
         message: error.message,
         variant: "danger"
       });
@@ -577,7 +577,7 @@ export default {
     downloadDocumentAsHTML() {
       const editorContent = this.editor.getEditor().root.innerHTML;
       const document = this.$store.getters["table/document/getByHash"](this.documentHash);
-      const documentName = document ? document.name : "document";
+      const documentName = document ? document.name : this.$t('documents.documentDefaultName');
       const fileName = `${documentName}.html`;
       downloadDocument(editorContent, fileName, "text/html");
     },
@@ -598,7 +598,6 @@ export default {
   color: var(--bs-secondary-color, #666);
   font-size: 14px;
 }
-
 .readonly-toolbar-text {
   font-weight: 500;
 }

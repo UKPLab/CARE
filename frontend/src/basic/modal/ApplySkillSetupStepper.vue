@@ -4,12 +4,12 @@
         ref="applySkillsStepper"
         :steps="stepperSteps"
         :validation="stepValid"
-        submit-text="Apply Skills"
+        :submit-text="$t('nlp.preprocessing.setupStepper.submit')"
         @submit="applySkills"
         @close-requested="handleCloseRequest"
     >
       <template #title>
-        <h5 class="modal-title text-primary">Apply Skills</h5>
+        <h5 class="modal-title text-primary">{{ $t('nlp.preprocessing.setupStepper.title') }}</h5>
       </template>
 
       <template #step-1>
@@ -119,11 +119,14 @@ export default {
       return null;
     },
     stepperSteps() {
-      const baseSteps = [{title: 'Select Skill'}, {title: 'Select Files'}];
+      const baseSteps = [
+        {title: this.$t('nlp.preprocessing.setupStepper.steps.selectSkill')},
+        {title: this.$t('nlp.preprocessing.setupStepper.steps.selectFiles')}
+      ];
       if (this.requireValidation) {
-        baseSteps.push({title: 'Select Base Files'});
+        baseSteps.push({title: this.$t('nlp.preprocessing.setupStepper.steps.selectBaseFiles')});
       }
-      baseSteps.push({title: 'Confirmation'});
+      baseSteps.push({title: this.$t('nlp.preprocessing.setupStepper.steps.confirmation')});
       return baseSteps;
     },
     requireValidation() {
@@ -302,8 +305,8 @@ export default {
 
       if (this.$refs.applySkillsStepper.currentStep >= 1 && this.hasFilesSelected) {
         this.$refs.closeConfirmModal.open(
-            'Close Modal',
-            'Current selections will be lost if you close this modal. Are you sure you want to continue?',
+            this.$t('nlp.preprocessing.setupStepper.closeModalTitle'),
+            this.$t('nlp.preprocessing.setupStepper.closeModalMessage'),
             null,
             (confirmed) => {
               if (confirmed) {

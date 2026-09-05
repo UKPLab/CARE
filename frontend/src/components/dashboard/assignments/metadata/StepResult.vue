@@ -3,15 +3,27 @@
     <div v-if="hasResult">
       <div class="mb-2">
         <span v-if="result.metadataEntryCount > 0">
-          Wrote <strong>{{ result.metadataEntryCount }}</strong> metadata entries across <strong>{{ result.documentCount }}</strong> documents
-          (<strong>{{ result.matchedRowCount || 0 }}</strong> matched rows).
+          <i18n-t
+            keypath="assignments.metadata.result.wroteSummary"
+            tag="span"
+          >
+            <template #entries>
+              <strong>{{ result.metadataEntryCount }}</strong>
+            </template>
+            <template #documents>
+              <strong>{{ result.documentCount }}</strong>
+            </template>
+            <template #matched>
+              <strong>{{ result.matchedRowCount || 0 }}</strong>
+            </template>
+          </i18n-t>
         </span>
         <span v-else>
-          No metadata entries were written.
+          {{ $t('assignments.metadata.result.noneWritten') }}
         </span>
       </div>
       <div v-if="importIssues.length > 0" class="warning-container">
-        <div class="mb-1">Issues:</div>
+        <div class="mb-1">{{ $t('assignments.metadata.result.issues') }}</div>
         <ul>
           <li
             v-for="(issue, index) in importIssues"
@@ -23,7 +35,7 @@
       </div>
     </div>
     <div v-else class="text-muted">
-      Import has not been run yet.
+      {{ $t('assignments.metadata.result.notRunYet') }}
     </div>
   </div>
 </template>

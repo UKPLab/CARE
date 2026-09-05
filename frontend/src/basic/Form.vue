@@ -17,7 +17,7 @@
         class="col-12"
       >
         <Collapsible
-          title="Advanced Settings"
+          :title="$t('basic.form.advancedSettings')"
           :collapsed="true"
         >
           <div class="row g-3">
