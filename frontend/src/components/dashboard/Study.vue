@@ -88,6 +88,8 @@ import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import { withSearch } from "@/basic/dashboard/constants.js";
 
 /**
  * Dashboard component for handling studies
@@ -138,15 +140,7 @@ export default {
         information: false,
         savedTemplates: false,
       },
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true
-      },
+      options: withSearch(),
     }
   },
   computed: {
@@ -166,14 +160,7 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "pencil-square",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        dashboardRowAction("edit", {
           title: this.$t('studies.editStudy'),
           filter: [
             {key: "showEditButton", value: true},
@@ -181,16 +168,9 @@ export default {
           action: "editStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("delete", {
           filter: [
             {key: "showDeleteButton", value: true},
           ],
@@ -198,30 +178,16 @@ export default {
           action: "deleteStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("open", {
           title: this.$t('studies.openStudy'),
           action: "openStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "arrow-repeat",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("restart", {
           title: this.$t('studies.restartStudy'),
           filter: [
             {key: "showRestartButton", value: true},
@@ -230,43 +196,22 @@ export default {
           stats: {
             studyId: "id"
           },
-        },
-        {
-          icon: "link-45deg",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("link", {
           title: this.$t('studies.copyLink'),
           action: "copyStudyLink",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "card-list",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowAction("sessions", {
           title: this.$t('studies.inspectSessions'),
           action: "inspectStudySessions",
           stats: {
             studyId: "id"
           },
-        },
-        {
-          icon: "x-octagon",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("close", {
           filter: [
             {key: "showCloseButton", value: true},
           ],
@@ -274,16 +219,9 @@ export default {
           action: "closeStudy",
           stats: {
             studyId: "id"
-          }
-        },
-        {
-          icon: "save",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
           },
+        }),
+        dashboardRowButton("save", {
           filter: [
             {key: "showTemplateButton", value: true},
           ],
@@ -291,25 +229,17 @@ export default {
           action: "saveAsTemplate",
           stats: {
             studyId: "id"
-          }
-        }
-
+          },
+        }),
       ];
       if (this.showInformationButton) {
-        buttons.push({
-          icon: "arrows-angle-expand",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowButton("arrows-angle-expand", {
           title: this.$t('studies.showInformation'),
           action: "showInformation",
           stats: {
             studyId: "id"
-          }
-        });
+          },
+        }));
       }
       return buttons;
     },

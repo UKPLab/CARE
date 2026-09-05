@@ -1,8 +1,13 @@
 <template>
-  <Card
+  <DashboardListPage
     :title="$t('sidebar.nav.assignments')"
+    :columns="tableColumns"
+    :data="assignmentTable"
+    :buttons="tableButtons"
+    :table-options="tableOptions"
+    @action="action"
   >
-    <template #headerElements>
+    <template #headerActions>
       <div class="btn-group gap-2">
         <BasicButton
           class="btn-primary btn-sm"
@@ -13,17 +18,7 @@
         />
       </div>
     </template>
-
-    <template #body>
-      <BasicTable
-        :columns="tableColumns"
-        :data="assignmentTable"
-        :options="tableOptions"
-        :buttons="tableButtons"
-        @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <AssignmentModal ref="assignmentModal" />
   <AssignmentSubmissionsModal ref="assignmentSubmissionsModal" />
   <AssignmentMetadataModal ref="assignmentMetadataModal" />
@@ -32,22 +27,22 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.vue";
 import AssignmentSubmissionsModal from "@/components/dashboard/assignments/AssignmentSubmissionsModal.vue";
+import AssignmentMetadataModal from "@/components/dashboard/assignments/AssignmentMetadataModal.vue";
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
-import AssignmentMetadataModal from "./assignments/AssignmentMetadataModal.vue";
 
 export default {
   name: "DashboardAssignments",
   subscribeTable: ["assignment", "assignment_share", "user_role", "user"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     AssignmentModal,
     AssignmentSubmissionsModal,
@@ -57,15 +52,7 @@ export default {
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -101,10 +88,7 @@ export default {
               true: this.$t("common.yes"),
               false: this.$t("common.no"),
             },
-            classMapping: {
-              true: "bg-success",
-              false: "bg-secondary",
-            },
+            classMapping: { ...DASHBOARD_BADGES.disabled },
           },
         },
         {
@@ -113,7 +97,7 @@ export default {
           type: "badge",
           typeOptions: {
             keyMapping: { true: this.$t("common.yes"), false: this.$t("common.no") },
-            classMapping: { true: "bg-success", false: "bg-secondary" },
+            classMapping: { ...DASHBOARD_BADGES.yesNo },
           },
         },
         {
@@ -124,13 +108,10 @@ export default {
     },
     tableButtons() {
       return [
-        {
-          icon: "pencil",
+        dashboardRowAction("edit", {
           filter: [{ key: "canEditAssignment", value: true }],
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
               "btn-sm": true,
             },
           },
@@ -139,14 +120,11 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "trash",
+        }),
+        dashboardRowAction("delete", {
           filter: [{ key: "canEditAssignment", value: true }],
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-danger": true,
               "btn-sm": true,
             },
           },
@@ -155,13 +133,10 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "card-list",
+        }),
+        dashboardRowAction("submissions", {
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
               "btn-sm": true,
             },
           },
@@ -170,14 +145,11 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "upload",
+        }),
+        dashboardRowButton("upload", {
           filter: [{ key: "canEditAssignment", value: true }],
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
               "btn-sm": true,
             },
           },
@@ -186,14 +158,15 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "x-octagon",
-          filter: [{ key: "canEditAssignment", value: true }],
+        }),
+        dashboardRowAction("enable", {
+          filter: [
+            { key: "canEditAssignment", value: true },
+            { key: "disable", value: true },
+          ],
+          filterMode: "and",
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-danger": true,
               "btn-sm": true,
             },
           },
@@ -202,13 +175,27 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "copy",
+        }),
+        dashboardRowAction("disable", {
+          filter: [
+            { key: "canEditAssignment", value: true },
+            { key: "disable", value: false },
+          ],
+          filterMode: "and",
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
+              "btn-sm": true,
+            },
+          },
+          title: this.$t("assignments.dashboard.actions.toggleDisable"),
+          action: "toggleDisable",
+          stats: {
+            assignmentId: "id",
+          },
+        }),
+        dashboardRowAction("copy", {
+          options: {
+            specifiers: {
               "btn-sm": true,
             },
           },
@@ -217,14 +204,11 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "box-arrow-in-down",
+        }),
+        dashboardRowButton("box-arrow-in-down", {
           filter: [{ key: "canEditAssignment", value: true }],
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
               "btn-sm": true,
             },
           },
@@ -233,16 +217,13 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
-        {
-          icon: "x-circle",
+        }),
+        dashboardRowAction("close", {
           filter: [
             { key: "canCloseAssignment", value: true },
           ],
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-warning": true,
               "btn-sm": true,
             },
           },
@@ -251,7 +232,7 @@ export default {
           stats: {
             assignmentId: "id",
           },
-        },
+        }),
       ];
     },
     canViewAllAssignments() {
@@ -357,9 +338,6 @@ export default {
         case "uploadMetadata":
           this.$refs.assignmentMetadataModal.open(data.params.id);
           break;
-        case "togglePublic":
-          this.togglePublic(data.params);
-          break;
         case "importMoodle":
           this.$refs.importModal.open(data.params.id);
           break;
@@ -463,38 +441,26 @@ export default {
         });
         return;
       }
-      this.$refs.deleteConf.open(
-        this.$t("assignments.dashboard.confirm.delete.title"),
-        this.$t("assignments.dashboard.confirm.delete.message"),
-        "",
-        (confirmed) => {
-          if (!confirmed) return;
-
-          this.$socket.emit(
-            "appDataUpdate",
-            {
-              table: "assignment",
-              data: {
-                id: params.id,
-                deleted: true,
-              },
-            },
-            (result) => {
-              if (result.success) {
-                this.eventBus.emit("toast", {
-                  title: this.$t("assignments.dashboard.toasts.deleteSuccess.title"),
-                  message: this.$t("assignments.dashboard.toasts.deleteSuccess.message"),
-                  variant: "success",
-                });
-              } else {
-                this.eventBus.emit("toast", {
-                  title: this.$t("assignments.dashboard.toasts.deleteFailed"),
-                  message: resolveApiMessage(result),
-                  variant: "danger",
-                });
-              }
-            }
-          );
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "assignment",
+          id: params.id,
+          title: this.$t("assignments.dashboard.confirm.delete.title"),
+          message: this.$t("assignments.dashboard.confirm.delete.message"),
+          warning: "",
+          failTitle: this.$t("assignments.dashboard.toasts.deleteFailed"),
+          onSuccess: () => {
+            this.eventBus.emit("toast", {
+              title: this.$t("assignments.dashboard.toasts.deleteSuccess.title"),
+              message: this.$t("assignments.dashboard.toasts.deleteSuccess.message"),
+              variant: "success",
+            });
+          },
         }
       );
     },

@@ -1,6 +1,13 @@
 <template>
-  <Card :title="$t('basic.configuration.filesTitle')">
-    <template #headerElements>
+  <DashboardListPage
+      :title="$t('basic.configuration.filesTitle')"
+      :columns="columns"
+      :data="configurationsTable"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
         <BasicButton
             class="btn btn-secondary btn-sm"
@@ -22,17 +29,7 @@
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="configurationsTable"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
 
   <!-- Upload Modal for JSON configuration files -->
   <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.configuration.importTitle')" />
@@ -86,14 +83,15 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import {Editor} from "@/components/editor/editorStore.js";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import {resolveApiMessage} from "@/assets/utils";
 
 /**
@@ -106,8 +104,7 @@ export default {
   name: "ConfigurationsManagement",
   subscribeTable: ["configuration"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ExportFormatModal,
     ImportFormatModal,
@@ -121,15 +118,7 @@ export default {
       editableConfigContent: null,
       quillEditor: null,
       saving: false,
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      options: withSearch(),
     };
   },
   computed: {
@@ -143,42 +132,22 @@ export default {
     },
     buttons() {
       return [
-        {
-          icon: "eye",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-secondary": true},
-          },
+        dashboardRowAction("view", {
           title: this.$t('basic.configuration.tooltips.view'),
           action: "view",
-        },
-        {
-          icon: "pencil-square",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-primary": true},
-          },
+        }),
+        dashboardRowAction("edit", {
           title: this.$t('basic.configuration.tooltips.edit'),
           action: "edit",
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-secondary": true},
-          },
+        }),
+        dashboardRowAction("download", {
           title: this.$t('basic.configuration.tooltips.export'),
           action: "export",
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-danger": true},
-          },
+        }),
+        dashboardRowAction("delete", {
           title: this.$t('basic.configuration.tooltips.delete'),
           action: "delete",
-        },
+        }),
       ];
     },
     configurationsTable() {
@@ -340,33 +309,20 @@ export default {
     },
 
     deleteConfiguration(config) {
-      this.$refs.deleteModal.open(
-          this.$t('basic.configuration.delete.title'),
-          this.$t('basic.configuration.delete.message', { name: config.name }),
-          null,
-          (confirmed) => {
-            if (confirmed) {
-              this.$socket.emit(
-                  "appDataUpdate",
-                  {
-                    table: "configuration",
-                    data: {
-                      id: config.id,
-                      deleted: true,
-                    },
-                  },
-                  (result) => {
-                    if (!result.success) {
-                      this.eventBus.emit("toast", {
-                        title: this.$t('basic.configuration.toasts.deleteFailedTitle'),
-                        message: resolveApiMessage(result),
-                        variant: "danger",
-                      });
-                    }
-                  }
-              );
-            }
-          });
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteModal,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "configuration",
+          id: config.id,
+          title: this.$t('basic.configuration.delete.title'),
+          message: this.$t('basic.configuration.delete.message', { name: config.name }),
+          failTitle: this.$t('basic.configuration.toasts.deleteFailedTitle'),
+        }
+      );
     },
 
     cleanupQuillEditor() {

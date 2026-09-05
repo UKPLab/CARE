@@ -1,6 +1,13 @@
 <template>
-  <BasicCard :title="$t('tags.title')">
-    <template #headerElements>
+  <DashboardListPage
+    :title="$t('tags.title')"
+    :columns="columns"
+    :data="tagSets"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
         <BasicButton
           class="btn-secondary btn-sm"
@@ -24,17 +31,7 @@
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-        :columns="columns"
-        :data="tagSets"
-        :options="options"
-        :buttons="buttons"
-        :max-table-height="'65vh'"
-        @action="action"
-      />
-    </template>
-  </BasicCard>
+  </DashboardListPage>
   <TagSetModal
     ref="tagSetModal"
   />
@@ -51,8 +48,6 @@
  *
  * @author Dennis Zyska
  */
-import BasicTable from "@/basic/Table.vue";
-import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import TagSetModal from "./coordinator/TagSet.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
@@ -60,12 +55,15 @@ import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 
 import {mapGetters} from "vuex";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import {dashboardRowAction, DASHBOARD_BADGES, confirmSoftDelete} from "@/basic/dashboard/actions.js";
+import {DEFAULT_DASHBOARD_TABLE_OPTIONS} from "@/basic/dashboard/constants.js";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "DashboardTags",
   subscribeTable: ["tag_set", "tag"],
-  components: {ConfirmModal, BasicTable, BasicCard, BasicButton, TagSetModal, ExportFormatModal, ImportFormatModal},
+  components: {ConfirmModal, DashboardListPage, BasicButton, TagSetModal, ExportFormatModal, ImportFormatModal},
   props: {
     'admin': {
       type: Boolean,
@@ -75,14 +73,7 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
     }
   },
   computed: {
@@ -102,29 +93,15 @@ export default {
       ];
     },
     buttons() {
-      const buttons = [
-        {
-          icon: "clipboard",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+      return [
+        dashboardRowAction("copy", {
           title: this.$t('tags.copyTagSet'),
           action: "copyTagSet",
           stats: {
             tagSetId: "id",
           }
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("edit", {
           filter: [
             {key: "userId", value: this.userId},
           ],
@@ -133,15 +110,8 @@ export default {
           stats: {
             tagSetId: "id",
           }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("delete", {
           filter: [
             {key: "userId", value: this.userId},
           ],
@@ -150,38 +120,24 @@ export default {
           stats: {
             tagSetId: "id",
           }
-        },
-        {
-          icon: "share",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("share", {
           filter: [
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
+          filterMode: "and",
           title: this.$t('tags.shareTagSet'),
           action: "publishTagSet",
           stats: {
             tagSetId: "id",
           }
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("download", {
           title: this.$t('tags.exportTagSet'),
           action: "exportTagSet",
-        }
+        }),
       ];
-      return buttons;
     },
     tagSets() {
       return this.$store.getters["table/tag_set/getAll"]
@@ -190,7 +146,7 @@ export default {
           let newD = {...d};
           newD.published = {
             text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
-            class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
+            class: DASHBOARD_BADGES.publicPrivate[!!(newD.public || newD.userId === null)],
           };
           newD.user = {
             text: newD.creator_name
@@ -244,34 +200,25 @@ export default {
       }
     },
     deleteTagSet(row) {
-      this.$refs.confirm.open(
-        this.$t('tags.messages.deleteTitle'),
-        this.$t('tags.messages.deleteConfirm'),
-        "",
-        (val) => {
-          if (val) {
-            this.$socket.emit("appDataUpdate", {
-              table: "tag_set",
-              data: {
-                id: row.id,
-                deleted: true
-              }
-            }, (result) => {
-              if (result.success) {
-                this.eventBus.emit('toast', {
-                  title: this.$t('tags.messages.tagSetDeleted'),
-                  message: this.$t('tags.messages.tagSetDeletedMessage'),
-                  variant: "success"
-                });
-              } else {
-                this.eventBus.emit('toast', {
-                  title: this.$t('errors.tags.tagSetDeleteFailed'),
-                  message: resolveApiMessage(result),
-                  variant: "danger"
-                });
-              }
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.confirm,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "tag_set",
+          id: row.id,
+          title: this.$t('tags.messages.deleteTitle'),
+          message: this.$t('tags.messages.deleteConfirm'),
+          failTitle: this.$t('errors.tags.tagSetDeleteFailed'),
+          onSuccess: () => {
+            this.eventBus.emit('toast', {
+              title: this.$t('tags.messages.tagSetDeleted'),
+              message: this.$t('tags.messages.tagSetDeletedMessage'),
+              variant: "success"
             });
-          }
+          },
         }
       );
     },
