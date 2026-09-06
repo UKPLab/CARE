@@ -132,7 +132,7 @@
                   class="dropdown-item"
                   href="#"
                   @click.prevent="toggleTheme()"
-                >{{ isDarkMode ? 'Light mode' : 'Dark mode' }}</a>
+                >{{ isDarkMode ? $t('navigation.topbar.lightMode') : $t('navigation.topbar.darkMode') }}</a>
                 <a
                   class="dropdown-item"
                   href="#"
