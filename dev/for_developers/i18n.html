@@ -241,16 +241,16 @@ locale JSON files first.</p>
 <p><strong>2. Add the key in every active locale</strong></p>
 <p><code class="docutils literal notranslate"><span class="pre">utils/modules/i18n/en/users.json</span></code>:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"labels"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"manageHint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Manage team members from this page."</span>
+<span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;manageHint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Manage team members from this page.&quot;</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">utils/modules/i18n/de/users.json</span></code> — same key, translated value:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"labels"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"manageHint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Verwalten Sie Teammitglieder auf dieser Seite."</span>
+<span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;manageHint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Verwalten Sie Teammitglieder auf dieser Seite.&quot;</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
@@ -258,7 +258,7 @@ locale JSON files first.</p>
 <p>Repeat for every locale folder (<code class="docutils literal notranslate"><span class="pre">en/</span></code>, <code class="docutils literal notranslate"><span class="pre">de/</span></code>, …). <strong>Keys must match</strong> across locales; only the text
 values differ.</p>
 <p><strong>3. Use the key in the template</strong></p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ $t('users.labels.manageHint') }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ $t(&#39;users.labels.manageHint&#39;) }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 </pre></div>
 </div>
 <p>When the user switches language in <strong>Preferences</strong>, the paragraph updates automatically.</p>
@@ -268,13 +268,13 @@ Backend errors and logging use keys too: <a class="reference internal" href="#i1
 <h3>Key layout inside a JSON file<a class="headerlink" href="#key-layout-inside-a-json-file" title="Link to this heading"></a></h3>
 <p>Organize keys by <strong>screen or feature</strong>. Group related strings under clear subsections:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"workflows"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Workflows"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"labels"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"addWorkflow"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Add Workflow"</span>
+<span class="w">  </span><span class="nt">&quot;workflows&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Workflows&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;addWorkflow&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Add Workflow&quot;</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"importFailed"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Import failed"</span>
+<span class="w">    </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;importFailed&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Import failed&quot;</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -305,16 +305,16 @@ utils/modules/i18n/de/reports.json
 </pre></div>
 </div>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Reports"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"labels"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"export"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Export"</span>
+<span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Reports&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;labels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;export&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Export&quot;</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p><strong>2. Register in</strong> <code class="docutils literal notranslate"><span class="pre">index.js</span></code> <strong>for each locale</strong> (<code class="docutils literal notranslate"><span class="pre">en/index.js</span></code>, <code class="docutils literal notranslate"><span class="pre">de/index.js</span></code>, …) — required for
 the frontend:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">reports</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'./reports.json'</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">reports</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./reports.json&#39;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// ...existing namespaces...</span>
@@ -323,7 +323,7 @@ the frontend:</p>
 </pre></div>
 </div>
 <p><strong>3. Use the keys</strong> in Vue components:</p>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>{{ $t('reports.title') }}<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">h1</span><span class="p">&gt;</span>{{ $t(&#39;reports.title&#39;) }}<span class="p">&lt;/</span><span class="nt">h1</span><span class="p">&gt;</span>
 </pre></div>
 </div>
 </section>
@@ -337,17 +337,17 @@ the frontend:</p>
 <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>Manage team members from this page.<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 
 <span class="cm">&lt;!-- After --&gt;</span>
-<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ $t('users.labels.manageHint') }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ $t(&#39;users.labels.manageHint&#39;) }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 </pre></div>
 </div>
 </section>
 <section id="button-or-attribute-label">
 <h3>Button or attribute label<a class="headerlink" href="#button-or-attribute-label" title="Link to this heading"></a></h3>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="cm">&lt;!-- Before --&gt;</span>
-<span class="p">&lt;</span><span class="nt">BasicButton</span> <span class="na">title</span><span class="o">=</span><span class="s">"Save"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">BasicButton</span> <span class="na">title</span><span class="o">=</span><span class="s">&quot;Save&quot;</span> <span class="p">/&gt;</span>
 
 <span class="cm">&lt;!-- After --&gt;</span>
-<span class="p">&lt;</span><span class="nt">BasicButton</span> <span class="na">:title</span><span class="o">=</span><span class="s">"$t('common.save')"</span> <span class="p">/&gt;</span>
+<span class="p">&lt;</span><span class="nt">BasicButton</span> <span class="na">:title</span><span class="o">=</span><span class="s">&quot;$t(&#39;common.save&#39;)&quot;</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 </section>
@@ -357,9 +357,9 @@ the frontend:</p>
 <span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>Hello, {{ userName }}!<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 
 <span class="cm">&lt;!-- After --&gt;</span>
-<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ $t('greeting.hello', { name: userName }) }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
+<span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>{{ $t(&#39;greeting.hello&#39;, { name: userName }) }}<span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 
-<span class="cm">&lt;!-- JSON: "hello": "Hello, {name}!" --&gt;</span>
+<span class="cm">&lt;!-- JSON: &quot;hello&quot;: &quot;Hello, {name}!&quot; --&gt;</span>
 </pre></div>
 </div>
 </section>
@@ -367,10 +367,10 @@ the frontend:</p>
 <h3>Lists of strings ($tm)<a class="headerlink" href="#lists-of-strings-tm" title="Link to this heading"></a></h3>
 <p>When a key holds an <strong>array</strong> of messages (e.g. rotating status text), use <code class="docutils literal notranslate"><span class="pre">$tm</span></code>:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"loading"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"messages"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="s2">"Thinking through your request..."</span><span class="p">,</span>
-<span class="w">      </span><span class="s2">"Almost there..."</span>
+<span class="w">  </span><span class="nt">&quot;loading&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;messages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;Thinking through your request...&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;Almost there...&quot;</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -378,7 +378,7 @@ the frontend:</p>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">messages</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$tm</span><span class="p">(</span><span class="s1">'loading.messages'</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">messages</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$tm</span><span class="p">(</span><span class="s1">&#39;loading.messages&#39;</span><span class="p">),</span>
 <span class="w">    </span><span class="nx">index</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
 <span class="w">  </span><span class="p">};</span>
 <span class="p">}</span>
@@ -420,15 +420,15 @@ one element — the one named by <code class="code docutils literal notranslate"
 <p><strong>How it fits together</strong></p>
 <p><strong>1. Locale</strong> — one key, placeholder <code class="code docutils literal notranslate"><span class="pre">{0}</span></code> where the slot goes:</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"csvTemplateHint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Please check the format or {0} here."</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"downloadTemplate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"download the template"</span>
+<span class="w">  </span><span class="nt">&quot;csvTemplateHint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Please check the format or {0} here.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;downloadTemplate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;download the template&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p><strong>2. Vue</strong> — <code class="code docutils literal notranslate"><span class="pre">keypath</span></code> loads the key; <code class="code docutils literal notranslate"><span class="pre">tag=&quot;p&quot;</span></code> wraps the output; the <code class="code docutils literal notranslate"><span class="pre">&lt;a&gt;</span></code> fills <code class="code docutils literal notranslate"><span class="pre">{0}</span></code>:</p>
-<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">"dashboard.users.csvTemplateHint"</span> <span class="na">tag</span><span class="o">=</span><span class="s">"p"</span><span class="p">&gt;</span>
-  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">"template-link"</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">"</span><span class="nx">downloadTemplateCSV</span><span class="s">"</span><span class="p">&gt;</span>
-    <span class="cp">{{</span><span class="w"> </span><span class="nx">$t</span><span class="p">(</span><span class="s1">'dashboard.users.downloadTemplate'</span><span class="p">)</span><span class="w"> </span><span class="cp">}}</span>
+<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">&quot;dashboard.users.csvTemplateHint&quot;</span> <span class="na">tag</span><span class="o">=</span><span class="s">&quot;p&quot;</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;template-link&quot;</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">downloadTemplateCSV</span><span class="s">&quot;</span><span class="p">&gt;</span>
+    <span class="cp">{{</span><span class="w"> </span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;dashboard.users.downloadTemplate&#39;</span><span class="p">)</span><span class="w"> </span><span class="cp">}}</span>
   <span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">i18n-t</span><span class="p">&gt;</span>
 </pre></div>
@@ -436,7 +436,7 @@ one element — the one named by <code class="code docutils literal notranslate"
 <p><strong>3. Result in the browser:</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>
   Please check the format or
-  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">"template-link"</span><span class="p">&gt;</span>download the template<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;template-link&quot;</span><span class="p">&gt;</span>download the template<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
   here.
 <span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 </pre></div>
@@ -448,12 +448,12 @@ one element — the one named by <code class="code docutils literal notranslate"
 to a <code class="code docutils literal notranslate"><span class="pre">&lt;template</span> <span class="pre">#name&gt;</span></code> block with the same name (without <code class="code docutils literal notranslate"><span class="pre">#</span></code> in the JSON).</p>
 <p><strong>JSON:</strong></p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"bulkImportConfirm"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Are you sure you want to bulk create {newCount} users {br} and overwrite {dupCount} users?"</span>
+<span class="w">  </span><span class="nt">&quot;bulkImportConfirm&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Are you sure you want to bulk create {newCount} users {br} and overwrite {dupCount} users?&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p><strong>Vue</strong> — slot name <code class="code docutils literal notranslate"><span class="pre">newCount</span></code> fills <code class="code docutils literal notranslate"><span class="pre">{newCount}</span></code>, <code class="code docutils literal notranslate"><span class="pre">br</span></code> fills <code class="code docutils literal notranslate"><span class="pre">{br}</span></code>, etc.:</p>
-<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">"dashboard.users.bulkImportConfirm"</span> <span class="na">tag</span><span class="o">=</span><span class="s">"p"</span><span class="p">&gt;</span>
+<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">&quot;dashboard.users.bulkImportConfirm&quot;</span> <span class="na">tag</span><span class="o">=</span><span class="s">&quot;p&quot;</span><span class="p">&gt;</span>
   <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">newCount</span><span class="p">&gt;</span>
     <span class="p">&lt;</span><span class="nt">strong</span><span class="p">&gt;</span><span class="cp">{{</span><span class="w"> </span><span class="nx">userCount</span><span class="p">.</span><span class="ow">new</span><span class="w"> </span><span class="cp">}}</span><span class="p">&lt;/</span><span class="nt">strong</span><span class="p">&gt;</span>
   <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
@@ -483,15 +483,15 @@ choose explicit <code class="code docutils literal notranslate"><span class="pre
 <p><strong>Single slot</strong> (most common) — one link in the middle of a sentence:</p>
 <p><strong>JSON:</strong></p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"csvTemplateHint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Please check the format or {0} here."</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"downloadTemplate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"download the template"</span>
+<span class="w">  </span><span class="nt">&quot;csvTemplateHint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Please check the format or {0} here.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;downloadTemplate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;download the template&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p><strong>Vue</strong> — the lone <code class="code docutils literal notranslate"><span class="pre">&lt;a&gt;</span></code> is child #0 → fills <code class="code docutils literal notranslate"><span class="pre">{0}</span></code>:</p>
-<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">"dashboard.users.csvTemplateHint"</span> <span class="na">tag</span><span class="o">=</span><span class="s">"p"</span><span class="p">&gt;</span>
-  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">"template-link"</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">"</span><span class="nx">downloadTemplateCSV</span><span class="s">"</span><span class="p">&gt;</span>
-    <span class="cp">{{</span><span class="w"> </span><span class="nx">$t</span><span class="p">(</span><span class="s1">'dashboard.users.downloadTemplate'</span><span class="p">)</span><span class="w"> </span><span class="cp">}}</span>
+<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">&quot;dashboard.users.csvTemplateHint&quot;</span> <span class="na">tag</span><span class="o">=</span><span class="s">&quot;p&quot;</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;template-link&quot;</span> <span class="p">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;</span><span class="nx">downloadTemplateCSV</span><span class="s">&quot;</span><span class="p">&gt;</span>
+    <span class="cp">{{</span><span class="w"> </span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;dashboard.users.downloadTemplate&#39;</span><span class="p">)</span><span class="w"> </span><span class="cp">}}</span>
   <span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">i18n-t</span><span class="p">&gt;</span>
 </pre></div>
@@ -499,7 +499,7 @@ choose explicit <code class="code docutils literal notranslate"><span class="pre
 <p><strong>Rendered:</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>
   Please check the format or
-  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">"template-link"</span><span class="p">&gt;</span>download the template<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">class</span><span class="o">=</span><span class="s">&quot;template-link&quot;</span><span class="p">&gt;</span>download the template<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
   here.
 <span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 </pre></div>
@@ -507,20 +507,20 @@ choose explicit <code class="code docutils literal notranslate"><span class="pre
 <p><strong>Two slots</strong> — same idea with <code class="code docutils literal notranslate"><span class="pre">{0}</span></code> and <code class="code docutils literal notranslate"><span class="pre">{1}</span></code>:</p>
 <p><strong>JSON:</strong></p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"openDocs"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Read the {0} or watch the {1}."</span>
+<span class="w">  </span><span class="nt">&quot;openDocs&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Read the {0} or watch the {1}.&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p><strong>Vue</strong> — first child → <code class="code docutils literal notranslate"><span class="pre">{0}</span></code>, second child → <code class="code docutils literal notranslate"><span class="pre">{1}</span></code>:</p>
-<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">"help.openDocs"</span> <span class="na">tag</span><span class="o">=</span><span class="s">"p"</span><span class="p">&gt;</span>
-  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/docs"</span><span class="p">&gt;</span>documentation<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
-  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/tutorial"</span><span class="p">&gt;</span>tutorial video<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+<div class="highlight-vue notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">i18n-t</span> <span class="na">keypath</span><span class="o">=</span><span class="s">&quot;help.openDocs&quot;</span> <span class="na">tag</span><span class="o">=</span><span class="s">&quot;p&quot;</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/docs&quot;</span><span class="p">&gt;</span>documentation<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/tutorial&quot;</span><span class="p">&gt;</span>tutorial video<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>
 <span class="p">&lt;/</span><span class="nt">i18n-t</span><span class="p">&gt;</span>
 </pre></div>
 </div>
 <p><strong>Rendered:</strong></p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">p</span><span class="p">&gt;</span>
-  Read the <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/docs"</span><span class="p">&gt;</span>documentation<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span> or watch the <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">"/tutorial"</span><span class="p">&gt;</span>tutorial video<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>.
+  Read the <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/docs&quot;</span><span class="p">&gt;</span>documentation<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span> or watch the <span class="p">&lt;</span><span class="nt">a</span> <span class="na">href</span><span class="o">=</span><span class="s">&quot;/tutorial&quot;</span><span class="p">&gt;</span>tutorial video<span class="p">&lt;/</span><span class="nt">a</span><span class="p">&gt;</span>.
 <span class="p">&lt;/</span><span class="nt">p</span><span class="p">&gt;</span>
 </pre></div>
 </div>
@@ -555,11 +555,11 @@ choose explicit <code class="code docutils literal notranslate"><span class="pre
 from your locale JSON, and interpolated values are <strong>not</strong> raw user input, API text, or database names.</p>
 <p>If a phrase needs both markup and dynamic parts, <strong>prefer</strong> <a class="reference internal" href="#i18n-t-rich-text"><span class="std std-ref">Rich text in translations</span></a> above.</p>
 <div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">  </span><span class="nt">"declinedSharingWarning"</span><span class="p">:</span><span class="w"> </span><span class="s2">"You have selected students who &lt;strong&gt;didn't accept data sharing&lt;/strong&gt;."</span>
+<span class="w">  </span><span class="nt">&quot;declinedSharingWarning&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;You have selected students who &lt;strong&gt;didn&#39;t accept data sharing&lt;/strong&gt;.&quot;</span>
 <span class="p">}</span>
 </pre></div>
 </div>
-<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">span</span> <span class="na">v-html</span><span class="o">=</span><span class="s">"$t('dashboard.projects.export.declinedSharingWarning')"</span> <span class="p">/&gt;</span>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">span</span> <span class="na">v-html</span><span class="o">=</span><span class="s">&quot;$t(&#39;dashboard.projects.export.declinedSharingWarning&#39;)&quot;</span> <span class="p">/&gt;</span>
 </pre></div>
 </div>
 <div class="admonition danger">
@@ -572,26 +572,26 @@ input, API data, or database values.</p>
 <h3>Socket/API errors (resolveApiMessage)<a class="headerlink" href="#socket-api-errors-resolveapimessage" title="Link to this heading"></a></h3>
 <p><strong>File:</strong> <code class="docutils literal notranslate"><span class="pre">frontend/src/assets/utils.js</span></code></p>
 <p>Use for every toast, modal, or inline message that comes from a socket callback or HTTP response.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">resolveApiMessage</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/assets/utils"</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">resolveApiMessage</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/assets/utils&quot;</span><span class="p">;</span>
 
 <span class="c1">// Before — shows English from the server, ignores user locale:</span>
-<span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"userCreate"</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;userCreate&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">response</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"toast"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">"Error"</span><span class="p">,</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Error&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">response</span><span class="p">.</span><span class="nx">message</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">"danger"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">});</span>
 
-<span class="c1">// After — translates response.key (+ params) in the user's locale:</span>
-<span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"userCreate"</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="c1">// After — translates response.key (+ params) in the user&#39;s locale:</span>
+<span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;userCreate&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">response</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"toast"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">"errors.users.userCreationFailed"</span><span class="p">),</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">&quot;errors.users.userCreationFailed&quot;</span><span class="p">),</span>
 <span class="w">      </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">resolveApiMessage</span><span class="p">(</span><span class="nx">response</span><span class="p">),</span>
-<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">"danger"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">});</span>
@@ -599,7 +599,7 @@ input, API data, or database values.</p>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">resolveApiMessage</span></code> checks <code class="docutils literal notranslate"><span class="pre">response.key</span></code> first, then falls back to <code class="docutils literal notranslate"><span class="pre">response.message</span></code> (plain text or
 a key string). Optional second argument — fallback key if the response is empty:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">resolveApiMessage</span><span class="p">(</span><span class="nx">response</span><span class="p">,</span><span class="w"> </span><span class="s2">"errors.server.unknownError"</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">resolveApiMessage</span><span class="p">(</span><span class="nx">response</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;errors.server.unknownError&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
@@ -614,7 +614,7 @@ have:</p>
 <li><p>Not a key → shown as-is</p></li>
 </ul>
 <p><strong>1. Import</strong> from <code class="docutils literal notranslate"><span class="pre">&#64;/assets/utils</span></code>:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/assets/utils"</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/assets/utils&quot;</span><span class="p">;</span>
 </pre></div>
 </div>
 <p><strong>2. Expose in the component</strong> (so the template can call it):</p>
@@ -649,9 +649,9 @@ My custom workflow                → shown unchanged (user text)
 <span class="nx">data</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">columns</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"ID"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"id"</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Email"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"email"</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Roles"</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"roles"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;ID&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Email&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Roles&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;roles&quot;</span><span class="w"> </span><span class="p">},</span>
 <span class="w">    </span><span class="p">],</span>
 <span class="w">  </span><span class="p">};</span>
 <span class="p">}</span>
@@ -660,9 +660,9 @@ My custom workflow                → shown unchanged (user text)
 <span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">columns</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">"common.id"</span><span class="p">),</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"id"</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">"common.email"</span><span class="p">),</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"email"</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">"users.columns.roles"</span><span class="p">),</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"roles"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">&quot;common.id&quot;</span><span class="p">),</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;id&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">sortable</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">&quot;common.email&quot;</span><span class="p">),</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">&quot;users.columns.roles&quot;</span><span class="p">),</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;roles&quot;</span><span class="w"> </span><span class="p">},</span>
 <span class="w">    </span><span class="p">];</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="p">},</span>
@@ -723,7 +723,7 @@ is specific to that screen.</p>
 </table>
 <p><strong>How to use</strong></p>
 <p><strong>1. Import</strong> from <code class="docutils literal notranslate"><span class="pre">&#64;/assets/utils</span></code>:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">formatLocalizedDate</span><span class="p">,</span><span class="w"> </span><span class="nx">formatLocalizedDateTime</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/assets/utils"</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">formatLocalizedDate</span><span class="p">,</span><span class="w"> </span><span class="nx">formatLocalizedDateTime</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/assets/utils&quot;</span><span class="p">;</span>
 </pre></div>
 </div>
 <p><strong>2. Expose in the component</strong>:</p>
@@ -744,13 +744,13 @@ is specific to that screen.</p>
 </pre></div>
 </div>
 <p><strong>Format while preparing table rows</strong> (common pattern — no need to expose in <code class="code docutils literal notranslate"><span class="pre">methods</span></code>):</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">formatLocalizedDate</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"@/assets/utils"</span><span class="p">;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">formatLocalizedDate</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/assets/utils&quot;</span><span class="p">;</span>
 
 <span class="nx">computed</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">usersForTable</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">users</span><span class="p">.</span><span class="nx">map</span><span class="p">((</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">({</span>
 <span class="w">      </span><span class="p">...</span><span class="nx">user</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">lastLoginAt</span><span class="o">:</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">lastLoginAt</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">formatLocalizedDate</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">lastLoginAt</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s2">"-"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">lastLoginAt</span><span class="o">:</span><span class="w"> </span><span class="nx">user</span><span class="p">.</span><span class="nx">lastLoginAt</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="nx">formatLocalizedDate</span><span class="p">(</span><span class="nx">user</span><span class="p">.</span><span class="nx">lastLoginAt</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;-&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}));</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="p">},</span>
@@ -758,8 +758,8 @@ is specific to that screen.</p>
 </div>
 <p>Optional <code class="docutils literal notranslate"><span class="pre">Intl.DateTimeFormat</span></code> options as the second argument (<code class="code docutils literal notranslate"><span class="pre">options</span></code>) — same shape as for
 <code class="code docutils literal notranslate"><span class="pre">Date.prototype.toLocaleDateString</span></code>, <code class="code docutils literal notranslate"><span class="pre">toLocaleTimeString</span></code>, and <code class="code docutils literal notranslate"><span class="pre">toLocaleString</span></code>:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">formatLocalizedDate</span><span class="p">(</span><span class="nx">session</span><span class="p">.</span><span class="nx">start</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">year</span><span class="o">:</span><span class="w"> </span><span class="s2">"numeric"</span><span class="p">,</span><span class="w"> </span><span class="nx">month</span><span class="o">:</span><span class="w"> </span><span class="s2">"short"</span><span class="p">,</span><span class="w"> </span><span class="nx">day</span><span class="o">:</span><span class="w"> </span><span class="s2">"numeric"</span><span class="w"> </span><span class="p">});</span>
-<span class="nx">formatLocalizedTime</span><span class="p">(</span><span class="nx">edit</span><span class="p">.</span><span class="nx">createdAt</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">hour</span><span class="o">:</span><span class="w"> </span><span class="s2">"2-digit"</span><span class="p">,</span><span class="w"> </span><span class="nx">minute</span><span class="o">:</span><span class="w"> </span><span class="s2">"2-digit"</span><span class="w"> </span><span class="p">});</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">formatLocalizedDate</span><span class="p">(</span><span class="nx">session</span><span class="p">.</span><span class="nx">start</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">year</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;numeric&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">month</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;short&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">day</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;numeric&quot;</span><span class="w"> </span><span class="p">});</span>
+<span class="nx">formatLocalizedTime</span><span class="p">(</span><span class="nx">edit</span><span class="p">.</span><span class="nx">createdAt</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">hour</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2-digit&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">minute</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2-digit&quot;</span><span class="w"> </span><span class="p">});</span>
 </pre></div>
 </div>
 </section>
@@ -777,19 +777,19 @@ is specific to that screen.</p>
 </section>
 <section id="user-facing-error-in-a-handler">
 <h3>User-facing error in a handler<a class="headerlink" href="#user-facing-error-in-a-handler" title="Link to this heading"></a></h3>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../utils/TranslatableError"</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../utils/TranslatableError&quot;</span><span class="p">);</span>
 
 <span class="c1">// Before — hardcoded English, wrong language in the UI:</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s2">"User not found."</span><span class="p">);</span>
+<span class="w">  </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s2">&quot;User not found.&quot;</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="c1">// After — key + params; frontend shows the translated message:</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">"errors.users.notFound"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">&quot;errors.users.notFound&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">});</span>
 <span class="p">}</span>
 
-<span class="c1">// JSON (errors.json): "notFound": "User with id {id} was not found."</span>
+<span class="c1">// JSON (errors.json): &quot;notFound&quot;: &quot;User with id {id} was not found.&quot;</span>
 </pre></div>
 </div>
 </section>
@@ -844,20 +844,20 @@ plain <code class="docutils literal notranslate"><span class="pre">Error</span><
 <p><strong>Files:</strong> <code class="docutils literal notranslate"><span class="pre">backend/utils/TranslatableError.js</span></code>, <code class="docutils literal notranslate"><span class="pre">backend/utils/generic.js</span></code> (<code class="docutils literal notranslate"><span class="pre">generateError</span></code>)</p>
 <p>Simple examples:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// 1. Key only</span>
-<span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">"errors.auth.invalidCredentials"</span><span class="p">);</span>
+<span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">&quot;errors.auth.invalidCredentials&quot;</span><span class="p">);</span>
 
 <span class="c1">// 2. Key + params</span>
-<span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">"errors.users.notFound"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">});</span>
+<span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">&quot;errors.users.notFound&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">});</span>
 
 <span class="c1">// 3. Key + params + code (frontend may check response.code)</span>
 <span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span>
-<span class="w">  </span><span class="s2">"errors.assignment.unableToAssignEnoughDocuments"</span><span class="p">,</span>
-<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">roleName</span><span class="o">:</span><span class="w"> </span><span class="s2">"Reviewer"</span><span class="p">,</span><span class="w"> </span><span class="nx">count</span><span class="o">:</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="s2">"ASSIGNMENT_FAILED"</span>
+<span class="w">  </span><span class="s2">&quot;errors.assignment.unableToAssignEnoughDocuments&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">roleName</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Reviewer&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">count</span><span class="o">:</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="s2">&quot;ASSIGNMENT_FAILED&quot;</span>
 <span class="p">);</span>
 
 <span class="c1">// 4. Code + key, no params</span>
-<span class="k">throw</span><span class="w"> </span><span class="nx">generateError</span><span class="p">(</span><span class="s2">"DOCUMENT_NOT_FOUND"</span><span class="p">,</span><span class="w"> </span><span class="s2">"errors.documents.doesNotExistOrDeleted"</span><span class="p">);</span>
+<span class="k">throw</span><span class="w"> </span><span class="nx">generateError</span><span class="p">(</span><span class="s2">&quot;DOCUMENT_NOT_FOUND&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;errors.documents.doesNotExistOrDeleted&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
 </section>
@@ -868,16 +868,16 @@ receives <code class="docutils literal notranslate"><span class="pre">{</span> <
 catch block builds the callback for you:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Handler (backend) — throw; do not call callback yourself</span>
 <span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">user</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">"errors.users.notFound"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">});</span>
+<span class="w">  </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">TranslatableError</span><span class="p">(</span><span class="s2">&quot;errors.users.notFound&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">});</span>
 <span class="p">}</span>
 
 <span class="c1">// What the frontend receives in (response) =&gt; { ... }:</span>
 <span class="p">{</span>
 <span class="w">  </span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"errors.users.notFound"</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;errors.users.notFound&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">userId</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s2">"User with id 123 was not found."</span><span class="p">,</span><span class="w">  </span><span class="c1">// English fallback (translateMaybeKey)</span>
-<span class="w">  </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">"..."</span><span class="w">  </span><span class="c1">// optional, when set on the error</span>
+<span class="w">  </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;User with id 123 was not found.&quot;</span><span class="p">,</span><span class="w">  </span><span class="c1">// English fallback (translateMaybeKey)</span>
+<span class="w">  </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="w">  </span><span class="c1">// optional, when set on the error</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -887,19 +887,19 @@ directly.</p>
 <p><strong>Manual responses</strong> (validation results, per-row errors in <code class="docutils literal notranslate"><span class="pre">data</span></code>, direct <code class="docutils literal notranslate"><span class="pre">socket.emit</span></code>) may still use
 the legacy shape without a separate <code class="docutils literal notranslate"><span class="pre">key</span></code> field — put the i18n key in <code class="docutils literal notranslate"><span class="pre">message</span></code> instead:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="c1">// Legacy — still works; resolveApiMessage treats message as a key when it exists in JSON</span>
-<span class="p">{</span><span class="w"> </span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s2">"errors.validation.additionalFilesNotAllowed"</span><span class="p">,</span><span class="w"> </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">files</span><span class="o">:</span><span class="w"> </span><span class="s2">"foo.txt"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">{</span><span class="w"> </span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;errors.validation.additionalFilesNotAllowed&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">files</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo.txt&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 
 <span class="c1">// Preferred when you build the object yourself — same as the hub format</span>
-<span class="p">{</span><span class="w"> </span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">"errors.validation.additionalFilesNotAllowed"</span><span class="p">,</span><span class="w"> </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">files</span><span class="o">:</span><span class="w"> </span><span class="s2">"foo.txt"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="p">{</span><span class="w"> </span><span class="nx">success</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;errors.validation.additionalFilesNotAllowed&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">params</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">files</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;foo.txt&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 </pre></div>
 </div>
 <p><strong>Frontend:</strong></p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"userCreate"</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;userCreate&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="nx">response</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">response</span><span class="p">.</span><span class="nx">success</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">"toast"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">"errors.users.userCreationFailed"</span><span class="p">),</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;toast&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s2">&quot;errors.users.userCreationFailed&quot;</span><span class="p">),</span>
 <span class="w">      </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="nx">resolveApiMessage</span><span class="p">(</span><span class="nx">response</span><span class="p">),</span>
-<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">"danger"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">variant</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;danger&quot;</span><span class="p">,</span>
 <span class="w">    </span><span class="p">});</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">});</span>
@@ -933,14 +933,14 @@ restore English text when rolling back rows that store i18n keys).</p>
 <code class="docutils literal notranslate"><span class="pre">translateMaybeKey</span></code> to write back the English source string. If the key is missing from <code class="docutils literal notranslate"><span class="pre">en</span></code> JSON, the
 key string is returned unchanged (safe for rollback).</p></li>
 </ul>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../utils/i18n"</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../utils/i18n&quot;</span><span class="p">);</span>
 
-<span class="kd">const</span><span class="w"> </span><span class="nx">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"errors.users.importFailed"</span><span class="p">;</span>
+<span class="kd">const</span><span class="w"> </span><span class="nx">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;errors.users.importFailed&quot;</span><span class="p">;</span>
 
 <span class="c1">// Logger — pass key or plain English; SQLTransport translates once</span>
 <span class="k">this</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span>
-<span class="k">this</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">"errors.auth.passwordResetRateLimited"</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">i18nParams</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">minutes</span><span class="o">:</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">});</span>
-<span class="k">this</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">"Import finished with warnings"</span><span class="p">);</span>
+<span class="k">this</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">&quot;errors.auth.passwordResetRateLimited&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">i18nParams</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">minutes</span><span class="o">:</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">});</span>
+<span class="k">this</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">&quot;Import finished with warnings&quot;</span><span class="p">);</span>
 
 <span class="c1">// Socket catch (simplified)</span>
 <span class="k">this</span><span class="p">.</span><span class="nx">logger</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">i18nParams</span><span class="o">:</span><span class="w"> </span><span class="nx">params</span><span class="w"> </span><span class="p">});</span>
@@ -948,25 +948,25 @@ key string is returned unchanged (safe for rollback).</p></li>
 </pre></div>
 </div>
 <p>Migration example:</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">"../../utils/i18n"</span><span class="p">);</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s2">&quot;../../utils/i18n&quot;</span><span class="p">);</span>
 
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nx">up</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkUpdate</span><span class="p">(</span>
-<span class="w">      </span><span class="s2">"placeholder"</span><span class="p">,</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">placeholderLabel</span><span class="o">:</span><span class="w"> </span><span class="s2">"templates.placeholders.labels.emailGeneral.username"</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">placeholderKey</span><span class="o">:</span><span class="w"> </span><span class="s2">"username"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="s2">&quot;placeholder&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">placeholderLabel</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;templates.placeholders.labels.emailGeneral.username&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">placeholderKey</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;username&quot;</span><span class="w"> </span><span class="p">},</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="w">    </span><span class="c1">// ...more rows</span>
 <span class="w">  </span><span class="p">},</span>
 
 <span class="w">  </span><span class="k">async</span><span class="w"> </span><span class="nx">down</span><span class="p">(</span><span class="nx">queryInterface</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="p">(</span><span class="s2">"templates.placeholders.labels.emailGeneral.username"</span><span class="p">);</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">translateMaybeKey</span><span class="p">(</span><span class="s2">&quot;templates.placeholders.labels.emailGeneral.username&quot;</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">await</span><span class="w"> </span><span class="nx">queryInterface</span><span class="p">.</span><span class="nx">bulkUpdate</span><span class="p">(</span>
-<span class="w">      </span><span class="s2">"placeholder"</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;placeholder&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">placeholderLabel</span><span class="o">:</span><span class="w"> </span><span class="nx">label</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">placeholderKey</span><span class="o">:</span><span class="w"> </span><span class="s2">"username"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="nx">placeholderKey</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;username&quot;</span><span class="w"> </span><span class="p">},</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="w">    </span><span class="c1">// ...more rows</span>
 <span class="w">  </span><span class="p">},</span>
@@ -987,9 +987,9 @@ utils/modules/i18n/en/errors.json   →  utils/modules/i18n/fr/errors.json
 </pre></div>
 </div>
 <p><strong>2. Register the locale in</strong> <code class="docutils literal notranslate"><span class="pre">i18n-bundles.js</span></code></p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">en</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'./en/index.js'</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">de</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'./de/index.js'</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">fr</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'./fr/index.js'</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">en</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./en/index.js&#39;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">de</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./de/index.js&#39;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">fr</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;./fr/index.js&#39;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">i18nBundles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">en</span><span class="p">,</span><span class="w"> </span><span class="nx">de</span><span class="p">,</span><span class="w"> </span><span class="nx">fr</span><span class="w"> </span><span class="p">}</span>
 
@@ -1001,9 +1001,9 @@ utils/modules/i18n/en/errors.json   →  utils/modules/i18n/fr/errors.json
 <code class="docutils literal notranslate"><span class="pre">fr/*.json</span></code>).</p>
 <p><strong>3. Add French to the language switcher</strong> in <code class="docutils literal notranslate"><span class="pre">frontend/src/assets/locale.js</span></code>:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">SUPPORTED_LOCALES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">"de"</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Deutsch"</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">"🇩🇪"</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">"en"</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"English"</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">"🇬🇧"</span><span class="w"> </span><span class="p">},</span>
-<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">"fr"</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">"Français"</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">"🇫🇷"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;de&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Deutsch&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;🇩🇪&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;en&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;English&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;🇬🇧&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;fr&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Français&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;🇫🇷&quot;</span><span class="w"> </span><span class="p">},</span>
 <span class="p">];</span>
 </pre></div>
 </div>
