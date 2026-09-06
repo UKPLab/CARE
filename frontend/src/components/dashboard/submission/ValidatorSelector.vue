@@ -42,7 +42,7 @@
     </div>
     <div
       v-if="showPreview"
-      class="card bg-light"
+      class="card bg-body-tertiary"
     >
       <div class="card-body">
         <h5 class="card-title">{{ previewTitle }}</h5>

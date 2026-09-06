@@ -340,17 +340,17 @@ export default {
 
 .criterion-name {
   font-weight: 400;
-  color: #333;
+  color: var(--bs-body-color, #333);
 }
 
 /* Assessment Content */
 .criterion-assessment {
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--bs-border-color, #e9ecef);
   margin-top: 0;
 }
 
 .assessment-text {
-  background-color: #fff;
+  background-color: var(--bs-body-bg, #fff);
   padding: 12px;
   border-radius: 6px;
   border-left: 3px solid #007bff;
@@ -359,12 +359,12 @@ export default {
 }
 
 .assessment-text strong {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
 .assessment-text p {
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   margin-top: 4px;
 }
 
@@ -373,7 +373,7 @@ export default {
 }
 
 .assessment-textarea {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 6px;
   font-size: 0.9rem;
   resize: vertical;
@@ -445,10 +445,10 @@ export default {
 .score-dropdown {
   min-width: 80px;
   font-size: 0.875rem;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 4px;
   padding: 4px 8px;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 

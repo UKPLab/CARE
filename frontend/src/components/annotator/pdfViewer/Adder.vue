@@ -596,10 +596,9 @@ export default {
 }
 .expand-btn {
   width: 100%;
-  background-color: lightgrey;
+  background-color: var(--bs-secondary-bg, lightgrey);
   border-radius: 5px;
   padding: 5px;
-  box-shadow: 2px,2px #CCCCCC;
 }
 .menu-search-bar {
   width: 100%;

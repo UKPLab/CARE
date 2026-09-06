@@ -26,6 +26,10 @@
         :fields="zoomFields"
         @update:model-value="$emit('update:zoomFormData', $event)"
       />
+      <TopBarButton
+        :icon="pdfDarkMode ? 'sun' : 'moon-stars'"
+        @click="$emit('toggle-pdf-theme')"
+      />
     </template>
 
     <!-- Toggle Button (always visible) -->
@@ -70,8 +74,12 @@ export default {
       type: Boolean,
       default: false,
     },
+    pdfDarkMode: {
+      type: Boolean,
+      default: true,
+    },
   },
-  emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset'],
+  emits: ['update:model-value', 'update:zoomFormData', 'zoom-in', 'zoom-out', 'reset', 'toggle-pdf-theme'],
   data() {
     return {
       baseZoomOptions: this.generateZoomOptions(50, 200, 10),
@@ -136,8 +144,8 @@ export default {
   position: sticky;
   top: 0;
   z-index: 200;
-  background: #f8f9fa;
-  border-bottom: 1px solid #ddd;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border-bottom: 1px solid var(--bs-border-color, #ddd);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -160,7 +168,7 @@ export default {
 }
 
 .pdf-toolbar :deep(.btn:hover) {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg, #e9ecef);
   transform: translateY(-2px);
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
@@ -175,24 +183,24 @@ export default {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 32px;
   min-height: 32px;
 }
 
 .toolbar-toggle-btn:hover {
-  background: #e9ecef;
+  background: var(--bs-secondary-bg, #e9ecef);
   transform: scale(1.1);
 }
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn {
   margin-left: 0;
-  color: #6c757d;
+  color: var(--bs-body-color, #6c757d);
 }
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn:hover {
-  color: #6c757d;
+  color: var(--bs-body-color, #6c757d);
 }
 
 .pdf-toolbar.loading::after {
@@ -202,7 +210,7 @@ export default {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(248, 249, 250, 0.7);
+  background: var(--bs-tertiary-bg, rgba(248, 249, 250, 0.7));
   display: flex;
   align-items: center;
   justify-content: center;

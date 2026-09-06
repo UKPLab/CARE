@@ -183,7 +183,7 @@ export default {
 
 <style scoped>
 .validation-group {
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .form-label {
