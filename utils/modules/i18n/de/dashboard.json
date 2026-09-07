@@ -66,6 +66,21 @@
         "submissions": "{count} Submission(s)",
         "studies": "{count} Studie(n)",
         "documents": "{count} Dokument(e)"
+      },
+      "api": {
+        "loginRequired": "Anmeldung erforderlich",
+        "userNotFound": "Benutzer nicht gefunden",
+        "missingProjectId": "Projekt-ID fehlt.",
+        "unsupportedExportType": "Nicht unterstützter Exporttyp.",
+        "noWorkflowsSelected": "Keine Workflows ausgewählt.",
+        "unsupportedGradeFormat": "Nicht unterstütztes Notenformat. Verwenden Sie json oder csv.",
+        "noValidUsersSelected": "Keine gültigen Benutzer ausgewählt.",
+        "projectNotFound": "Das ausgewählte Projekt existiert nicht.",
+        "noProjectAccess": "Sie haben keinen Zugriff auf dieses Projekt.",
+        "noAuthorizedUsers": "Keine autorisierten Benutzer zum Exportieren.",
+        "adminRightsRequired": "Für diesen Export sind Administratorrechte erforderlich.",
+        "archiverError": "Beim Vorbereiten des Exports ist ein Fehler aufgetreten.",
+        "exportFailed": "Export fehlgeschlagen."
       }
     },
     "columns": {
