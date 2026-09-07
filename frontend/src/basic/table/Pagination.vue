@@ -28,7 +28,13 @@
             >
               {{ item }}
             </option>
-            <option :value="0">All</option>
+            <!-- Pagination All is disabled for now. Keep option for later. -->
+            <option
+              v-if="false"
+              :value="0"
+            >
+              All
+            </option>
           </select>
         </div>
       </div>
