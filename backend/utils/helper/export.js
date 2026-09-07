@@ -270,24 +270,25 @@ async function appendZipFileAnonymized(server, archive, hash, archivePath, shoul
         return;
     }
 
-    const filePath = path.join(storageDir, `${hash}.zip`);
-    if (!fs.existsSync(filePath)) {
-        server.logger.warn(`[DocumentExport] ZIP not found for document ${hash}`);
-        return;
-    }
     if (shouldGenerateAliases && ownerUser) {
-        const realName = `${ownerUser.firstName || ""} ${ownerUser.lastName || ""}`.trim();
-        const fakeName = userMapping[ownerUser.id];
-        try {
-            const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
-            anonymizedBufferCache?.set(hash, newZipBuffer);
-            archive.append(newZipBuffer, { name: archivePath });
-            return;
-        } catch (err) {
-            server.logger.error(`Failed to change names for zip ${hash}:`, err);
+        const filePath = path.join(storageDir, `${hash}.zip`);
+        // Checked up front (rather than letting replaceAuthorInZip's own read throw) so a missing
+        // file is reported via appendStoredFileIfExists's standard "not found" warning below,
+        // instead of being logged as an anonymization failure.
+        if (fs.existsSync(filePath)) {
+            const realName = `${ownerUser.firstName || ""} ${ownerUser.lastName || ""}`.trim();
+            const fakeName = userMapping[ownerUser.id];
+            try {
+                const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
+                anonymizedBufferCache?.set(hash, newZipBuffer);
+                archive.append(newZipBuffer, { name: archivePath });
+                return;
+            } catch (err) {
+                server.logger.error(`Failed to change names for zip ${hash}:`, err);
+            }
         }
     }
-    archive.file(filePath, { name: archivePath });
+    appendStoredFileIfExists(server, archive, hash, '.zip', archivePath, 'ZIP');
 }
 
 /**
