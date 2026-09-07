@@ -28,9 +28,14 @@
       
       <div class="alert alert-info">
         <strong>{{ $t('dashboard.projects.export.summary') }}</strong><br />
-        You are about to download
-        <span>{{ exportTypeLabel }}</span>
-        for <strong>{{ userSelection.length }}</strong> user(s).
+        <i18n-t keypath="dashboard.projects.export.downloadSummary" tag="span">
+          <template #type>
+            <span>{{ exportTypeLabel }}</span>
+          </template>
+          <template #count>
+            <strong>{{ userSelection.length }}</strong>
+          </template>
+        </i18n-t>
       </div>
 
       <div class="card card-body bg-body-tertiary" style="max-height: 150px; overflow-y: auto;">
@@ -84,25 +89,21 @@ export default {
       return this.userSelection.some(row => row.acceptDataSharing === false);
     },
     exportTypeLabel() {
-      const labels = {
-        submissions: 'submissions',
-        grades: 'grades',
-        documents: 'documents',
-        studies: 'studies',
-        userBehaviour: 'user behaviour data',
-      };
-      return labels[this.exportType] || 'documents';
+      const labels = this.$tm('dashboard.projects.export.typeLabel');
+      return labels[this.exportType] || labels.documents;
     },
     userSelectionDisplay() {
-      const unitByExportType = {
-        submissions: 'submission(s)',
-        studies: 'study(ies)',
+      const unitKeyByExportType = {
+        submissions: 'submissions',
+        studies: 'studies',
       };
-      const unit = unitByExportType[this.exportType] || 'document(s)';
+      const unitKey = unitKeyByExportType[this.exportType] || 'documents';
       return this.userSelection.map(row => ({
         userId: row.userId,
         name: row.fullName || row.userName,
-        suffix: ['grades', 'userBehaviour'].includes(this.exportType) ? null : `${row.count} ${unit}`,
+        suffix: ['grades', 'userBehaviour'].includes(this.exportType)
+          ? null
+          : this.$t(`dashboard.projects.export.unitCount.${unitKey}`, { count: row.count }),
       }));
     },
   }
