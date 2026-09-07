@@ -138,6 +138,8 @@
     "description": "Description",
     "running": "Running",
     "finished": "Finished",
+    "selectAll": "Select All",
+    "unselectAll": "Unselect All",
     "nlp": {
         "serviceRequest": "NLP Service Request"
     }
