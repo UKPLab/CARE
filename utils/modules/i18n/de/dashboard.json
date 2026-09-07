@@ -54,18 +54,26 @@
       "aliasMappingWarning": "Das heruntergeladene ZIP-Archiv enthält eine CSV-Datei, die die generierten Aliasnamen den echten Namen der Studierenden zuordnet.",
       "reviewWarning": "Wir empfehlen dringend, diesen Export vor der Weitergabe sorgfältig zu prüfen, um sicherzustellen, dass keine sensiblen oder unbeabsichtigten Informationen verteilt werden.",
       "summary": "Zusammenfassung:",
-      "downloadSummary": "Sie sind dabei, Abgaben für {count} Studierende herunterzuladen.",
-      "fileCount": "{count} Dateien"
+      "downloadSummary": "Sie sind dabei, {type} für {count} Benutzer herunterzuladen.",
+      "typeLabel": {
+        "submissions": "Submissions",
+        "grades": "Noten",
+        "documents": "Dokumente",
+        "studies": "Studien",
+        "userBehaviour": "Daten zum Nutzerverhalten"
+      },
+      "unitCount": {
+        "submissions": "{count} Submission(s)",
+        "studies": "{count} Studie(n)",
+        "documents": "{count} Dokument(e)"
+      }
     },
     "columns": {
       "name": "Projektname",
       "public": "Öffentlich",
       "closed": "Geschlossen",
       "username": "Benutzername",
-      "studentName": "Name des Studierenden",
-      "files": "Dateien",
-      "acceptedDataSharing": "Datenfreigabe akzeptiert",
-      "lastSubmitted": "Zuletzt eingereicht"
+      "acceptedDataSharing": "Datenfreigabe akzeptiert"
     },
     "actions": {
       "copy": "Projekt kopieren",
@@ -104,10 +112,49 @@
       "noteLabel": "Hinweis:",
       "accountSpecificHint": "Aliase sind an Ihr Konto gebunden und stimmen nicht mit den Exporten anderer Benutzer überein.",
       "gradeFileFormat": "Dateiformat für Noten",
-      "mergeCsvFiles": "CSV-Dateien nach Studie, Schritt und Konfiguration zusammenführen"
+      "mergeCsvFiles": "CSV-Dateien nach Studie, Schritt und Konfiguration zusammenführen",
+      "userBehaviour": {
+        "title": "Optionen für Nutzerverhalten",
+        "fileLayout": "Dateilayout",
+        "singleCombinedFile": "Eine zusammengeführte Datei",
+        "onePerUser": "Eine Datei pro Benutzer",
+        "fileFormat": "Dateiformat"
+      },
+      "excludeNonConsentingEdits": "Bearbeitungen von Benutzern ohne Einwilligung ausschließen",
+      "excludeNonConsentingAnnotations": "Annotationen und Kommentare von Benutzern ohne Einwilligung ausschließen",
+      "documents": {
+        "title": "Dokumentenoptionen",
+        "typesToInclude": "Einzuschließende Dokumenttypen",
+        "typePdf": "PDF — Enthält Annotationen und Kommentare",
+        "typeHtml": "HTML — Enthält Bearbeitungen, Klartext und HTML",
+        "typeModal": "Modal — Enthält Bearbeitungen, Klartext und HTML",
+        "typeZip": "ZIP — Enthält die ZIP-Datei"
+      },
+      "studies": {
+        "title": "Studienoptionen",
+        "noWorkflowsFound": "Keine Workflows für dieses Projekt gefunden.",
+        "filterByWorkflow": "Nach Workflow filtern",
+        "noWorkflowsSelected": "Keine Workflows ausgewählt",
+        "allWorkflowsSelected": "Alle Workflows ausgewählt",
+        "includeEmptyStudies": "Studien ohne Sitzungen einschließen",
+        "includeDocumentFiles": "PDFs und ZIP-Dateien einschließen",
+        "includeScores": "Bewertungen einschließen",
+        "includeAiScores": "KI-gestützte Bewertungen einschließen"
+      }
     },
-    "exportSelectSubmissions": "Einreichungen zum Herunterladen auswählen:",
-    "noSubmissionsFound": "Keine Einreichungen für dieses Projekt gefunden.",
+    "exportSelectUsers": {
+      "title": "Benutzer für den Datenexport auswählen:",
+      "noUsersFound": "Keine Benutzer mit Daten für dieses Projekt gefunden.",
+      "fullName": "Vollständiger Name",
+      "roles": "Rollen",
+      "acceptBehaviourSharing": "Freigabe des Nutzerverhaltens akzeptiert",
+      "submissions": "Submissions",
+      "documents": "Dokumente",
+      "studies": "Studien",
+      "assessmentConfigurations": "Bewertungskonfiguration(en)",
+      "noConfiguration": "Keine Konfiguration",
+      "noRole": "Keine Rolle"
+    },
     "exportModal": {
       "steps": {
         "selectStudent": "Student auswählen",
