@@ -94,7 +94,12 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Get the study steps of a study, sorted by their order
+         * Get the study steps of a study, sorted by their order.
+         *
+         * A soft-deleted step breaks the studyStepPrevious chain (getAllByKey excludes it, so the
+         * walk can't find the step that points past it). Any steps left unreachable this way are
+         * still non-deleted data and are appended at the end (id order) rather than dropped, so an
+         * export or session-progression check never silently loses a live step.
          * @param studyId
          * @returns {Promise<[]>} Array of study step objects
          */
@@ -106,6 +111,15 @@ module.exports = (sequelize, DataTypes) => {
             while (current) {
                 studyStepsSorted.push(current);
                 current = studySteps.find(step => step.studyStepPrevious === current.id);
+            }
+
+            if (studyStepsSorted.length < studySteps.length) {
+                const includedIds = new Set(studyStepsSorted.map(step => step.id));
+                const orphanedSteps = studySteps
+                    .filter(step => !includedIds.has(step.id))
+                    .sort((a, b) => a.id - b.id);
+                console.warn(`getSortedStudySteps: study ${studyId} has ${orphanedSteps.length} step(s) unreachable via studyStepPrevious (likely a soft-deleted step broke the chain); appending them out of order instead of dropping them.`);
+                studyStepsSorted.push(...orphanedSteps);
             }
 
             return studyStepsSorted;
