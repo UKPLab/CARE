@@ -97,6 +97,11 @@
         />
       </div>
       <div v-else-if="['userBehaviour'].includes(dataSelection.exportType)">
+        <StepOptions
+          v-model:generate-aliases="generateAliases"
+          v-model:faker-seed="fakerSeed"
+          :show-grade-format="false"
+        />
         <StepOptionsUserBehaviour
           v-model:outputFormat="behaviourOutputFormat"
           v-model:fileFormat="behaviourFileFormat"
@@ -535,6 +540,8 @@ export default {
           userIds: selectedUserIds,
           behaviourOutputFormat: this.behaviourOutputFormat,
           behaviourFileFormat: this.behaviourFileFormat,
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
         this.$refs.exportStepper.close();
       } catch (error) {
