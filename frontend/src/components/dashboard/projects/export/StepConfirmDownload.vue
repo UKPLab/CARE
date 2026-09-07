@@ -85,20 +85,31 @@ export default {
     }
   },
   computed: {
+    // Which consent flag and wording the "declined sharing" warning uses, per export type.
+    // Adding another consent-flavored export type only needs a new entry here.
+    declinedSharingConfig() {
+      const configsByExportType = {
+        userBehaviour: {
+          field: 'acceptStatsSharing',
+          warningKey: 'dashboard.projects.export.declinedStatsSharingWarning',
+          emphasisKey: 'dashboard.projects.export.declinedStatsSharingEmphasis',
+        },
+      };
+      return configsByExportType[this.exportType] || {
+        field: 'acceptDataSharing',
+        warningKey: 'dashboard.projects.export.declinedSharingWarning',
+        emphasisKey: 'dashboard.projects.export.declinedSharingEmphasis',
+      };
+    },
     hasDeclinedSharingSelected() {
-      return this.exportType === 'userBehaviour'
-        ? this.userSelection.some(row => row.acceptStatsSharing === false)
-        : this.userSelection.some(row => row.acceptDataSharing === false);
+      const field = this.declinedSharingConfig.field;
+      return this.userSelection.some(row => row[field] === false);
     },
     declinedSharingWarningKey() {
-      return this.exportType === 'userBehaviour'
-        ? 'dashboard.projects.export.declinedStatsSharingWarning'
-        : 'dashboard.projects.export.declinedSharingWarning';
+      return this.declinedSharingConfig.warningKey;
     },
     declinedSharingEmphasisKey() {
-      return this.exportType === 'userBehaviour'
-        ? 'dashboard.projects.export.declinedStatsSharingEmphasis'
-        : 'dashboard.projects.export.declinedSharingEmphasis';
+      return this.declinedSharingConfig.emphasisKey;
     },
     exportTypeLabel() {
       const labels = this.$tm('dashboard.projects.export.typeLabel');
