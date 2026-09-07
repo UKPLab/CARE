@@ -1,17 +1,17 @@
 <template>
   <div>
-    <h6>Select Users for the Data Export:</h6>
+    <h6>{{ $t('dashboard.projects.exportSelectUsers.title') }}</h6>
 
     <BasicTable
       v-if="userTableData.length > 0"
-      v-model="selectedUsers" 
+      v-model="selectedUsers"
       :columns="userTable.columns"
       :data="userTableData"
       :options="userTable.options"
     />
 
     <div v-else class="alert alert-warning">
-      <span>No users with data found for this project.</span>
+      <span>{{ $t('dashboard.projects.exportSelectUsers.noUsersFound') }}</span>
     </div>
 
   </div>
@@ -23,24 +23,25 @@ import BasicTable from "@/basic/Table.vue";
 /**
  * Resolves the "variable" column for the user-selection table based on export type
  * (submissions count / documents count / assessment configuration).
+ * @param {(key: string, params?: Object) => string} t - Translation function ($t from the calling component).
  * @param {string} exportType - The current export type.
  * @param {Array<Object>} userTableData - Current table rows, used to build the grades filter options.
  * @returns {Object} A column definition to slot into the table's columns array.
  */
-function getExportTypeColumn(exportType, userTableData, configurationsById) {
+function getExportTypeColumn(t, exportType, userTableData, configurationsById) {
     const columnsByExportType = {
-        submissions: { name: "Submissions", key: "count", sortable: true },
-        documents: { name: "Documents", key: "count", sortable: true },
-        studies: { name: "Studies", key: "count", sortable: true },
+        submissions: { name: t('dashboard.projects.exportSelectUsers.submissions'), key: "count", sortable: true },
+        documents: { name: t('dashboard.projects.exportSelectUsers.documents'), key: "count", sortable: true },
+        studies: { name: t('dashboard.projects.exportSelectUsers.studies'), key: "count", sortable: true },
         grades: {
-            name: "Assessment Configuration(s)",
+            name: t('dashboard.projects.exportSelectUsers.assessmentConfigurations'),
             key: "configurationName",
             sortable: true,
             filter: [...new Set(userTableData.flatMap(row => row.configurationIds))]
               .sort((a, b) => a - b)
               .map(id => ({
                   key: id,
-                  name: `${id}: ${configurationsById.get(id)?.name ?? "Unknown"}`,
+                  name: `${id}: ${configurationsById.get(id)?.name ?? t('common.unknown')}`,
               })),
         },
     };
@@ -129,14 +130,14 @@ export default {
           count: 0,
           countedSubmissions: new Set(),
           acceptDataSharing: !!student.acceptDataSharing,
-          acceptStatsSharing: student.acceptStats ? 'Yes' : 'No',
+          acceptStatsSharing: !!student.acceptStats,
           configurationName: this.gradeConfigurations[uid]?.ids?.length
             ? this.gradeConfigurations[uid].ids.join(", ")
-            : "No configuration",
+            : this.$t('dashboard.projects.exportSelectUsers.noConfiguration'),
           configurationIds: this.gradeConfigurations[uid]?.ids ?? [],
           userRoleNames: this.userRolesByUserId[uid]?.length
             ? this.userRolesByUserId[uid].join(", ")
-            : "No role",
+            : this.$t('dashboard.projects.exportSelectUsers.noRole'),
           userRoleIds: this.userRolesByUserId[uid] ?? [],
         };
         return submissionsByUser[uid];
@@ -201,52 +202,57 @@ export default {
     },
     userTable() {
       const cols = [
-        { name: "Username", key: "userName", sortable: true },
+        { name: this.$t('dashboard.projects.columns.username'), key: "userName", sortable: true },
       ];
 
       if (this.exportType === 'userBehaviour') {
         cols.push({
-          name: "Accept Behaviour Sharing",
+          name: this.$t('dashboard.projects.exportSelectUsers.acceptBehaviourSharing'),
           key: "acceptStatsSharing",
           sortable: true,
+          type: "badge",
+          typeOptions: {
+            keyMapping: { true: this.$t('common.yes'), false: this.$t('common.no') },
+            classMapping: { true: "bg-success", false: "bg-danger" },
+          },
           filter: [
-            { key: "Yes", name: "Yes" },
-            { key: "No", name: "No" },
+            { key: true, name: this.$t('common.yes') },
+            { key: false, name: this.$t('common.no') },
           ],
         });
       } else {
-        cols.push(getExportTypeColumn(this.exportType, this.userTableData, this.configurationsById));
+        cols.push(getExportTypeColumn((key, params) => this.$t(key, params), this.exportType, this.userTableData, this.configurationsById));
       }
 
       cols.push({
-        name: "Roles",
+        name: this.$t('dashboard.projects.exportSelectUsers.roles'),
         key: "userRoleNames",
         sortable: true,
         filter: [...new Set(this.userTableData.flatMap(row => row.userRoleIds))]
             .sort((a, b) => a - b)
             .map(id => ({
                 key: id,
-                name: `${id}: ${this.userRolesById.get(id)?.name ?? "Unknown"}`,
+                name: `${id}: ${this.userRolesById.get(id)?.name ?? this.$t('common.unknown')}`,
             })),
       });
 
       cols.push({
-        name: "Accepted Data Sharing",
+        name: this.$t('dashboard.projects.columns.acceptedDataSharing'),
         key: "acceptDataSharing",
         sortable: true,
         type: "badge",
         typeOptions: {
-          keyMapping: { true: "Yes", false: "No" },
+          keyMapping: { true: this.$t('common.yes'), false: this.$t('common.no') },
           classMapping: { true: "bg-success", false: "bg-danger" },
         },
         filter: [
-          { key: true, name: "Yes" },
-          { key: false, name: "No" },
+          { key: true, name: this.$t('common.yes') },
+          { key: false, name: this.$t('common.no') },
         ],
       });
 
       if (this.hasPrivateInfoRight) {
-        cols.splice(1, 0, { name: "Full Name", key: "fullName", sortable: true });
+        cols.splice(1, 0, { name: this.$t('dashboard.projects.exportSelectUsers.fullName'), key: "fullName", sortable: true });
       }
 
       return {
