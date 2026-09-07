@@ -93,6 +93,24 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Get the study steps of a study, sorted by their order
+         * @param studyId
+         * @returns {Promise<[]>} Array of study step objects
+         */
+        static async getSortedStudySteps(studyId) {
+            const studySteps = await sequelize.models.study_step.getAllByKey("studyId", studyId);
+            const studyStepsSorted = [];
+            let current = studySteps.find(step => step.studyStepPrevious === null);
+
+            while (current) {
+                studyStepsSorted.push(current);
+                current = studySteps.find(step => step.studyStepPrevious === current.id);
+            }
+
+            return studyStepsSorted;
+        }
+
+        /**
          * Adding a new study step
          * @param data
          * @param options - there must be a context object with the study object
