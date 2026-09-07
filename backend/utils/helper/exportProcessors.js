@@ -257,6 +257,9 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
     } = options;
 
     const usersById = new Map(users.map(u => [u.id, u]));
+    // A step's document (and its submission siblings) can recur across many sessions in a
+    // review workflow; cache anonymized ZIP buffers by hash so that work is only done once.
+    const anonymizedZipBufferCache = new Map();
 
     const studyWhere = { userId: userIds, projectId, deleted: false, workflowId: workflowIds };
 
@@ -521,6 +524,7 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
                                     shouldGenerateAliases,
                                     userMapping,
                                     usersById.get(doc.userId) ?? null,
+                                    anonymizedZipBufferCache,
                                 );
                             } else {
                                 appendStoredFileIfExists(

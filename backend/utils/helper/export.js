@@ -265,9 +265,17 @@ function appendStoredFileIfExists(server, archive, hash, extension, archivePath,
  * @param {boolean} shouldGenerateAliases - Whether the export should anonymize author names.
  * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
  * @param {Object|null} ownerUser - The document owner's user record (for the real name to replace).
+ * @param {Map<string, Buffer>|null} [anonymizedBufferCache] - Optional cache, keyed by hash, so a
+ *   document appended under several archive paths (e.g. one per review session) only pays for the
+ *   unzip/substitute/rezip round-trip once.
  * @returns {Promise<void>}
  */
-async function appendZipFileAnonymized(server, archive, hash, archivePath, shouldGenerateAliases, userMapping, ownerUser) {
+async function appendZipFileAnonymized(server, archive, hash, archivePath, shouldGenerateAliases, userMapping, ownerUser, anonymizedBufferCache = null) {
+    if (anonymizedBufferCache?.has(hash)) {
+        archive.append(anonymizedBufferCache.get(hash), { name: archivePath });
+        return;
+    }
+
     const filePath = path.join(storageDir, `${hash}.zip`);
     if (!fs.existsSync(filePath)) {
         server.logger.warn(`[DocumentExport] ZIP not found for document ${hash}`);
@@ -278,6 +286,7 @@ async function appendZipFileAnonymized(server, archive, hash, archivePath, shoul
         const fakeName = userMapping[ownerUser.id];
         try {
             const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
+            anonymizedBufferCache?.set(hash, newZipBuffer);
             archive.append(newZipBuffer, { name: archivePath });
             return;
         } catch (err) {
