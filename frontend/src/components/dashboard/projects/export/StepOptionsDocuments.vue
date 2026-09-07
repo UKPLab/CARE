@@ -1,12 +1,12 @@
 <template>
-  <div class="mt-2 mb-3 p-3 bg-light border rounded">
+  <div class="mt-2 mb-3 p-3 bg-body-tertiary border rounded">
     <h6 class="mb-3 pb-2 border-bottom text-muted">
-      Document Options
+      {{ $t('dashboard.projects.exportOptions.documents.title') }}
     </h6>
     <div class="mb-3">
-      <label class="form-label mb-0 d-block">Document Types to Include</label>
+      <label class="form-label mb-0 d-block">{{ $t('dashboard.projects.exportOptions.documents.typesToInclude') }}</label>
       <a href="#" class="link-secondary small d-inline-block mb-2" @click.prevent="toggleAllTypes">
-        {{ allTypesSelected ? 'Unselect All' : 'Select All' }}
+        {{ allTypesSelected ? $t('common.unselectAll') : $t('common.selectAll') }}
       </a>
       <div v-for="opt in documentTypeOptions" :key="opt.value" class="form-check">
         <input
@@ -69,10 +69,10 @@ export default {
   computed: {
     documentTypeOptions() {
       return [
-        { label: "PDF — Includes annotations and comments", value: 0 },
-        { label: "HTML — Includes edits, plain text and HTML", value: 1 },
-        { label: "Modal — Includes edits, plain text and HTML", value: 2 },
-        { label: "ZIP — Includes the zip file", value: 4 },
+        { label: this.$t('dashboard.projects.exportOptions.documents.typePdf'), value: 0 },
+        { label: this.$t('dashboard.projects.exportOptions.documents.typeHtml'), value: 1 },
+        { label: this.$t('dashboard.projects.exportOptions.documents.typeModal'), value: 2 },
+        { label: this.$t('dashboard.projects.exportOptions.documents.typeZip'), value: 4 },
       ];
     },
     allTypesSelected() {
@@ -90,14 +90,14 @@ export default {
       if (this.hasEditorTypes) {
         formFields.push({
           key: "excludeNonConsentingEdits",
-          label: "Exclude edits from non-consenting users",
+          label: this.$t('dashboard.projects.exportOptions.excludeNonConsentingEdits'),
           type: "switch",
         });
       }
       if (this.hasPdfTypes) {
         formFields.push({
           key: "excludeNonConsentingAnnotations",
-          label: "Exclude annotations and comments from non-consenting users",
+          label: this.$t('dashboard.projects.exportOptions.excludeNonConsentingAnnotations'),
           type: "switch",
         });
       }
