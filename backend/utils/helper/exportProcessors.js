@@ -4,6 +4,7 @@ const {
     getDisplayName,
     getConsentedUserIds,
     appendStoredFileIfExists,
+    appendZipFileAnonymized,
     attachTagNames,
     createJsonArrayStream,
     createCsvRowsStream
@@ -17,14 +18,17 @@ const STUDY_DOCUMENT_EXTENSIONS = { 0: '.pdf', 4: '.zip' };
  * Exports a single document to the archive based on its type.
  * - Type 0 (PDF): exports annotations, comments (with votes), document_data, and the PDF file.
  * - Type 1 (HTML) / Type 2 (Modal): exports edits, plain text, HTML, and document_data.
- * - Type 4 (ZIP): exports the zip file and document_data.
+ * - Type 4 (ZIP): exports the zip file (author name anonymized when aliases are requested) and document_data.
  * @param {Object} server - The server instance providing database models.
  * @param {Object} doc - The document record from the database.
  * @param {string} docFolder - The target folder path inside the archive.
  * @param {Object} archive - The archiver instance to append files to.
+ * @param {boolean} shouldGenerateAliases - Whether ZIP author names should be anonymized.
+ * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
+ * @param {Object|null} ownerUser - The document owner's user record (for the real name to replace in ZIPs).
  * @returns {Promise<void>}
  */
-async function processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive) {
+async function processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive, shouldGenerateAliases, userMapping, ownerUser) {
     // document_data for all types, at the doc level.
     const documentData = await server.db.models.document_data.findAll({
         where: { documentId: doc.id, deleted: false },
@@ -144,7 +148,7 @@ async function processDocumentForExport(server, doc, docFolder, shouldExcludeNon
         }
 
         case 4: { // ZIP
-            appendStoredFileIfExists(server, archive, doc.hash, '.zip', `${docFolder}/document.zip`, 'ZIP');
+            await appendZipFileAnonymized(server, archive, doc.hash, `${docFolder}/document.zip`, shouldGenerateAliases, userMapping, ownerUser);
             break;
         }
 
@@ -159,13 +163,16 @@ async function processDocumentForExport(server, doc, docFolder, shouldExcludeNon
  * filters by owner data sharing consent, and exports each document to the archive.
  * @param {Object} server - The server instance providing database models.
  * @param {number|string} projectId - The ID of the project to export.
+ * @param {Array<number>} userIds - List of user IDs to filter documents by.
+ * @param {Array<Object>} users - Full user records for the selected users (for ZIP anonymization).
+ * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
+ * @param {boolean} shouldGenerateAliases - Whether ZIP author names should be anonymized.
+ * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
  * @param {string} baseFolderName - The root folder name inside the ZIP archive.
  * @param {Object} archive - The archiver instance to append files to.
- * @param {Array<number>} userIds - List of user IDs to filter documents by.
- * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
  * @returns {Promise<void>}
  */
-async function processDocumentBasedExport(server, projectId, userIds, documentTypes, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, baseFolderName, archive) {
+async function processDocumentBasedExport(server, projectId, userIds, users, documentTypes, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, shouldGenerateAliases, userMapping, baseFolderName, archive) {
     try {
         documentTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes;
         if (!Array.isArray(documentTypes)) documentTypes = [0, 1, 2, 4];
@@ -205,10 +212,12 @@ async function processDocumentBasedExport(server, projectId, userIds, documentTy
         rolesMap[row.userId].push(row.userRoleId);
     }
 
+    const usersById = new Map(users.map(u => [u.id, u]));
+
     for (const doc of filteredDocs) {
         const docFolder = `${baseFolderName}/${doc.hash}`;
         const docUserRoles = rolesMap[doc.userId] || [];
-        await processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive);
+        await processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive, shouldGenerateAliases, userMapping, usersById.get(doc.userId) ?? null);
     }
 }
 
@@ -246,6 +255,8 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
         shouldIncludeGrades,
         shouldIncludeAiScores,
     } = options;
+
+    const usersById = new Map(users.map(u => [u.id, u]));
 
     const studyWhere = { userId: userIds, projectId, deleted: false, workflowId: workflowIds };
 
@@ -501,14 +512,26 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
                             const extension = STUDY_DOCUMENT_EXTENSIONS[doc.type];
                             if (!extension || appendedExtensions.has(extension)) continue;
                             appendedExtensions.add(extension);
-                            appendStoredFileIfExists(
-                                server,
-                                archive,
-                                doc.hash,
-                                extension,
-                                `${stepFolder}/document${extension}`,
-                                extension.slice(1).toUpperCase(),
-                            );
+                            if (extension === '.zip') {
+                                await appendZipFileAnonymized(
+                                    server,
+                                    archive,
+                                    doc.hash,
+                                    `${stepFolder}/document${extension}`,
+                                    shouldGenerateAliases,
+                                    userMapping,
+                                    usersById.get(doc.userId) ?? null,
+                                );
+                            } else {
+                                appendStoredFileIfExists(
+                                    server,
+                                    archive,
+                                    doc.hash,
+                                    extension,
+                                    `${stepFolder}/document${extension}`,
+                                    extension.slice(1).toUpperCase(),
+                                );
+                            }
                         }
                     }
                 }
