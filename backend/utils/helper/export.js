@@ -29,7 +29,12 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
     if (!SUPPORTED_EXPORT_TYPES.has(exportType)) {
         return { success: false, status: 400, message: "dashboard.projects.export.api.unsupportedExportType" };
     }
-    workflowIds = typeof workflowIds === 'string' ? JSON.parse(workflowIds) : workflowIds;
+    try {
+        workflowIds = typeof workflowIds === 'string' ? JSON.parse(workflowIds) : workflowIds;
+    } catch (e) {
+        server.logger.warn("Could not parse workflowIds:", workflowIds);
+        workflowIds = [];
+    }
     if (!Array.isArray(workflowIds)) workflowIds = [];
     if (exportType === "studies" && workflowIds.length === 0) {
         return { success: false, status: 400, message: "dashboard.projects.export.api.noWorkflowsSelected" };
