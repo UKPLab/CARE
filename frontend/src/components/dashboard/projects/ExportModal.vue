@@ -56,22 +56,16 @@
 
     
     <template #step-3>
-      <div v-if="['submissions', 'grades'].includes(dataSelection.exportType)">
-        <StepOptions 
-          v-model:generate-aliases="generateAliases"
-          v-model:faker-seed="fakerSeed"
-          v-model:grade-format="gradeFormat"
-          v-model:merge-csv-files="mergeCsvFiles"
-          :show-grade-format="dataSelection.exportType === 'grades'"
-        />
-        <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
-      </div>
-      <div v-else-if="['documents'].includes(dataSelection.exportType)">
-        <StepOptions
-          v-model:generate-aliases="generateAliases"
-          v-model:faker-seed="fakerSeed"
-          :show-grade-format="false"
-        />
+      <StepOptions
+        v-if="['submissions', 'grades', 'documents', 'studies', 'userBehaviour'].includes(dataSelection.exportType)"
+        v-model:generate-aliases="generateAliases"
+        v-model:faker-seed="fakerSeed"
+        v-model:grade-format="gradeFormat"
+        v-model:merge-csv-files="mergeCsvFiles"
+        :show-grade-format="dataSelection.exportType === 'grades'"
+      />
+      <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+      <div v-if="['documents'].includes(dataSelection.exportType)">
         <StepOptionsDocuments
           v-model:selectedTypes="selectedDocumentTypes"
           v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
@@ -80,11 +74,6 @@
         <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
       </div>
       <div v-else-if="['studies'].includes(dataSelection.exportType)">
-        <StepOptions
-          v-model:generate-aliases="generateAliases"
-          v-model:faker-seed="fakerSeed"
-          :show-grade-format="false"
-        />
         <StepOptionsStudies
           :project-id="dataSelection.projectId"
           v-model:selectedWorkflowIds="selectedWorkflowIds"
@@ -97,11 +86,6 @@
         />
       </div>
       <div v-else-if="['userBehaviour'].includes(dataSelection.exportType)">
-        <StepOptions
-          v-model:generate-aliases="generateAliases"
-          v-model:faker-seed="fakerSeed"
-          :show-grade-format="false"
-        />
         <StepOptionsUserBehaviour
           v-model:outputFormat="behaviourOutputFormat"
           v-model:fileFormat="behaviourFileFormat"
