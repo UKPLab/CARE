@@ -91,8 +91,8 @@ async function replaceAuthorInZip(filePath, realName, fakeName) {
         if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.tex')) {
             let text = await zipEntry.async("string");
             text = text.replace(authorRegex, `\\author{${fakeName}}`);
-            if (realFirstName && fakeFirstName) text = text.replace(realFirstName, fakeFirstName);
-            if (realLastName && fakeLastName) text = text.replace(realLastName, fakeLastName);
+            if (realFirstName && fakeFirstName) text = text.split(realFirstName).join(fakeFirstName);
+            if (realLastName && fakeLastName) text = text.split(realLastName).join(fakeLastName);
 
             zip.file(relativePath, text);
         }
@@ -121,7 +121,7 @@ function buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fak
     let csvRows = [];
 
     if (shouldGenerateAliases) {
-        if (fakerSeed && !isNaN(parseInt(fakerSeed, 10))) {
+        if (fakerSeed !== null && fakerSeed !== undefined && fakerSeed !== "" && !isNaN(parseInt(fakerSeed, 10))) {
             const derivedFakerSeed = deriveUserSeed(parseInt(fakerSeed, 10), salt);
             faker.seed(derivedFakerSeed);
         }
@@ -247,6 +247,39 @@ function appendStoredFileIfExists(server, archive, hash, extension, archivePath,
     } else {
         server.logger.warn(`[DocumentExport] ${typeLabel} not found for document ${hash}`);
     }
+}
+
+/**
+ * Appends a stored ZIP document to the archive, replacing the owner's real name with their
+ * alias in any .tex file inside it when aliases are requested. Falls back to a plain copy if
+ * the file is missing, aliasing isn't requested, the owner is unknown, or anonymization fails.
+ * @param {Object} server - The server instance providing the logger.
+ * @param {Object} archive - The archiver instance to append the file to.
+ * @param {string} hash - The document's storage hash.
+ * @param {string} archivePath - Destination path inside the ZIP archive.
+ * @param {boolean} shouldGenerateAliases - Whether the export should anonymize author names.
+ * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
+ * @param {Object|null} ownerUser - The document owner's user record (for the real name to replace).
+ * @returns {Promise<void>}
+ */
+async function appendZipFileAnonymized(server, archive, hash, archivePath, shouldGenerateAliases, userMapping, ownerUser) {
+    const filePath = path.join(storageDir, `${hash}.zip`);
+    if (!fs.existsSync(filePath)) {
+        server.logger.warn(`[DocumentExport] ZIP not found for document ${hash}`);
+        return;
+    }
+    if (shouldGenerateAliases && ownerUser) {
+        const realName = `${ownerUser.firstName || ""} ${ownerUser.lastName || ""}`.trim();
+        const fakeName = userMapping[ownerUser.id];
+        try {
+            const newZipBuffer = await replaceAuthorInZip(filePath, realName, fakeName);
+            archive.append(newZipBuffer, { name: archivePath });
+            return;
+        } catch (err) {
+            server.logger.error(`Failed to change names for zip ${hash}:`, err);
+        }
+    }
+    archive.file(filePath, { name: archivePath });
 }
 
 /**
@@ -434,6 +467,7 @@ module.exports = {
     calculateSubmissionVersion,
     getConsentedUserIds,
     appendStoredFileIfExists,
+    appendZipFileAnonymized,
     resolveHasPrivateInfoRight,
     parseUserIds,
     loadExportRequestContext,
