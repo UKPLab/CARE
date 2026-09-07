@@ -29,13 +29,7 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
     if (!SUPPORTED_EXPORT_TYPES.has(exportType)) {
         return { success: false, status: 400, message: "Unsupported export type." };
     }
-    try {
-        workflowIds = typeof workflowIds === 'string' ? JSON.parse(workflowIds) : workflowIds;
-    } catch (e) {
-        server.logger.warn("Could not parse workflowIds:", workflowIds);
-        workflowIds = [];
-    }
-    if (!Array.isArray(workflowIds)) workflowIds = [];
+    workflowIds = parseIdsArray(server, workflowIds, "workflowIds");
     if (exportType === "studies" && workflowIds.length === 0) {
         return { success: false, status: 400, message: "No workflows selected." };
     }
@@ -315,17 +309,18 @@ async function resolveHasPrivateInfoRight(server, userId) {
 }
 
 /**
- * Parses the raw userIds field from a request body into an array, tolerating a JSON-encoded string.
+ * Parses a raw request-body field expected to be an array of ids, tolerating a JSON-encoded string.
  * @param {Object} server - The server instance providing the logger.
- * @param {*} rawUserIds - The raw value from req.body.userIds.
- * @returns {Array} Parsed array of user ids, or an empty array if parsing fails.
+ * @param {*} raw - The raw value from the request body.
+ * @param {string} fieldName - Name of the field being parsed, used only for the warning log.
+ * @returns {Array} Parsed array of ids, or an empty array if parsing fails.
  */
-function parseUserIds(server, rawUserIds) {
+function parseIdsArray(server, raw, fieldName) {
     try {
-        const parsed = typeof rawUserIds === 'string' ? JSON.parse(rawUserIds) : rawUserIds;
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
         return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-        server.logger.warn("Could not parse userIds:", rawUserIds);
+        server.logger.warn(`Could not parse ${fieldName}:`, raw);
         return [];
     }
 }
@@ -483,7 +478,7 @@ module.exports = {
     appendStoredFileIfExists,
     appendZipFileAnonymized,
     resolveHasPrivateInfoRight,
-    parseUserIds,
+    parseIdsArray,
     loadExportRequestContext,
     SUPPORTED_EXPORT_TYPES,
     attachTagNames,

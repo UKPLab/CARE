@@ -9,7 +9,7 @@ const {
     getDisplayName,
     calculateSubmissionVersion,
     resolveHasPrivateInfoRight,
-    parseUserIds,
+    parseIdsArray,
     loadExportRequestContext,
     resolveIsAdmin,
 } = require('../../utils/helper/export.js');
@@ -52,7 +52,7 @@ module.exports = function (server) {
         const normalizedBehaviourFileFormat = behaviourFileFormat === 'csv' ? 'csv' : 'json';
         const normalizedGradeFormat = String(gradeFormat || "json").toLowerCase();
         const parsedProjectId = Number(projectId);
-        const userIds = parseUserIds(server, rawUserIds);
+        const userIds = parseIdsArray(server, rawUserIds, "userIds");
 
         try {
             const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds, currentUserId });
