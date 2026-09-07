@@ -80,7 +80,7 @@
           v-model:selectedWorkflowIds="selectedWorkflowIds"
           v-model:includeEmptyStudies="includeEmptyStudies"
           v-model:includeDocumentFiles="includeStudyDocumentFiles"
-          v-model:includeGrades="includeStudyGrades"
+          v-model:includeScores="includeStudyGrades"
           v-model:includeAiScores="includeStudyIncludeAiScores"
           v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
           v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
