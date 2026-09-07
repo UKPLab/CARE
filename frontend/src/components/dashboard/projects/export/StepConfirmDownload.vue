@@ -74,7 +74,7 @@ export default {
   },
   computed: {
     hasDeclinedSharingSelected() {
-      return this.userSelection.some(row => row.acceptDataSharing === 'No');
+      return this.userSelection.some(row => row.acceptDataSharing === false);
     },
     exportTypeLabel() {
       const labels = {

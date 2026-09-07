@@ -128,7 +128,7 @@ export default {
           fullName: this.hasPrivateInfoRight ? `${student.firstName} ${student.lastName}` : "",
           count: 0,
           countedSubmissions: new Set(),
-          acceptDataSharing: student.acceptDataSharing ? 'Yes' : 'No',
+          acceptDataSharing: !!student.acceptDataSharing,
           acceptStatsSharing: student.acceptStats ? 'Yes' : 'No',
           configurationName: this.gradeConfigurations[uid]?.ids?.length
             ? this.gradeConfigurations[uid].ids.join(", ")
@@ -230,13 +230,18 @@ export default {
             })),
       });
 
-      cols.push({ 
-        name: "Accepted Data Sharing", 
-        key: "acceptDataSharing", 
+      cols.push({
+        name: "Accepted Data Sharing",
+        key: "acceptDataSharing",
         sortable: true,
+        type: "badge",
+        typeOptions: {
+          keyMapping: { true: "Yes", false: "No" },
+          classMapping: { true: "bg-success", false: "bg-danger" },
+        },
         filter: [
-          { key: "Yes", name: "Yes" },
-          { key: "No", name: "No" },
+          { key: true, name: "Yes" },
+          { key: false, name: "No" },
         ],
       });
 
