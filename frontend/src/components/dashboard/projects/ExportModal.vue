@@ -67,6 +67,11 @@
         <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
       </div>
       <div v-else-if="['documents'].includes(dataSelection.exportType)">
+        <StepOptions
+          v-model:generate-aliases="generateAliases"
+          v-model:faker-seed="fakerSeed"
+          :show-grade-format="false"
+        />
         <StepOptionsDocuments
           v-model:selectedTypes="selectedDocumentTypes"
           v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
@@ -75,6 +80,11 @@
         <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
       </div>
       <div v-else-if="['studies'].includes(dataSelection.exportType)">
+        <StepOptions
+          v-model:generate-aliases="generateAliases"
+          v-model:faker-seed="fakerSeed"
+          :show-grade-format="false"
+        />
         <StepOptionsStudies
           :project-id="dataSelection.projectId"
           v-model:selectedWorkflowIds="selectedWorkflowIds"
@@ -482,7 +492,9 @@ export default {
           userIds: selectedUserIds,
           documentTypes: this.selectedDocumentTypes,
           excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
 
         this.$refs.exportStepper.close();
@@ -504,7 +516,9 @@ export default {
           includeGrades: this.includeStudyGrades,
           excludeNonConsentingEdits: this.excludeNonConsentingEdits,
           excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
-          includeAiScores: this.includeStudyIncludeAiScores
+          includeAiScores: this.includeStudyIncludeAiScores,
+          generateAliases: this.generateAliases,
+          fakerSeed: this.generateAliases ? this.fakerSeed : null
         });
         this.$refs.exportStepper.close();
       } catch (error) {
