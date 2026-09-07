@@ -1,0 +1,1102 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-14T18:02:22.133Z",
+  "traceCount": 59,
+  "recording": {
+    "name": "590-bulk-close-studies",
+    "status": "finished",
+    "startTime": "2026-08-14T14:44:22.758Z",
+    "endTime": "2026-08-14T14:45:25.919Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "vqQNw-zydud49qrFAABr"
+    ],
+    "excludeEvents": null
+  },
+  "traces": [
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 12,
+          "name": "Recording 8/14/2026, 4:44:22 PM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-14T14:44:22.759Z",
+          "startTime": "2026-08-14T14:44:22.758Z",
+          "updatedAt": "2026-08-14T14:44:22.759Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "vqQNw-zydud49qrFAABr"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:44:22.773Z",
+      "endTime": "2026-08-14T14:44:22.773Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:23.580Z",
+      "endTime": "2026-08-14T14:44:23.580Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "plus",
+          "title": "Add"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:25.932Z",
+      "endTime": "2026-08-14T14:44:25.932Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:25.960Z",
+      "endTime": "2026-08-14T14:44:25.960Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:25.960Z",
+      "endTime": "2026-08-14T14:44:25.960Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:26.421Z",
+      "endTime": "2026-08-14T14:44:26.421Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:27.331Z",
+      "endTime": "2026-08-14T14:44:27.331Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "unsubscribeAppData",
+      "payload": "a3f92443-fe70-4c4c-a29d-764d6cd1b6cb",
+      "direction": true,
+      "startTime": "2026-08-14T14:44:27.336Z",
+      "endTime": "2026-08-14T14:44:27.336Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "unsubscribeAppData",
+      "payload": "6daf95c0-1584-4945-b54a-e1ba61f0ba09",
+      "direction": true,
+      "startTime": "2026-08-14T14:44:27.336Z",
+      "endTime": "2026-08-14T14:44:27.336Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1361,
+          "clientY": 83,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:28.772Z",
+      "endTime": "2026-08-14T14:44:28.772Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "plus",
+          "title": "Add"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:29.463Z",
+      "endTime": "2026-08-14T14:44:29.463Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:29.476Z",
+      "endTime": "2026-08-14T14:44:29.476Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:29.476Z",
+      "endTime": "2026-08-14T14:44:29.476Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:29.923Z",
+      "endTime": "2026-08-14T14:44:29.923Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 688,
+          "clientY": 147,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:31.086Z",
+      "endTime": "2026-08-14T14:44:31.086Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 677,
+          "clientY": 232,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:37.238Z",
+      "endTime": "2026-08-14T14:44:37.238Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 677,
+          "clientY": 319,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:38.989Z",
+      "endTime": "2026-08-14T14:44:38.989Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 682,
+          "clientY": 401,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:40.188Z",
+      "endTime": "2026-08-14T14:44:40.188Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 676,
+          "clientY": 583,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:42.188Z",
+      "endTime": "2026-08-14T14:44:42.188Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 658,
+          "clientY": 610,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:43.008Z",
+      "endTime": "2026-08-14T14:44:43.008Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 638,
+          "clientY": 696,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:45.395Z",
+      "endTime": "2026-08-14T14:44:45.395Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1082,
+          "clientY": 755,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:46.470Z",
+      "endTime": "2026-08-14T14:44:46.470Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "appDataUpdate",
+      "payload": {
+        "data": {
+          "end": null,
+          "name": "bulkdelete",
+          "start": null,
+          "collab": false,
+          "tagSetId": 1,
+          "anonymize": false,
+          "resumable": false,
+          "timeLimit": 0,
+          "documentId": 0,
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"delete\\n\"}]}",
+          "limitSessions": 0,
+          "stepDocuments": [
+            {
+              "id": 1,
+              "documentId": 2,
+              "configuration": {}
+            },
+            {
+              "id": 2,
+              "documentId": null,
+              "configuration": {}
+            }
+          ],
+          "isTemplateMode": false,
+          "multipleSubmit": false,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        },
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:46.529Z",
+      "endTime": "2026-08-14T14:44:46.529Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 9,
+          "deleted": false,
+          "studyId": 5,
+          "stepType": 1,
+          "createdAt": "2026-08-14T14:44:46.558Z",
+          "updatedAt": "2026-08-14T14:44:46.558Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 10,
+          "deleted": false,
+          "studyId": 5,
+          "stepType": 2,
+          "createdAt": "2026-08-14T14:44:46.603Z",
+          "updatedAt": "2026-08-14T14:44:46.603Z",
+          "documentId": 11,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 9
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:44:46.614Z",
+      "endTime": "2026-08-14T14:44:46.614Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "hash": "97309c5c-7717-4f26-a55f-572c2566d04b",
+          "name": "care-test-doc_renamed",
+          "type": 0,
+          "public": true,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-14T13:54:37.799Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-14T14:44:46.572Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 4,
+          "originalFilename": "care-test-doc.pdf",
+          "parentDocumentId": null,
+          "uploadedByUserId": 4
+        },
+        {
+          "id": 11,
+          "hash": "81f3fa19-abdc-4e99-b8a1-0770780bd2ae",
+          "name": "Document Study 5",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-14T14:44:46.592Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-14T14:44:46.592Z",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 11,
+          "hash": "81f3fa19-abdc-4e99-b8a1-0770780bd2ae",
+          "name": "Document Study 5",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-14T14:44:46.592Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-14T14:44:46.606Z",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:44:46.613Z",
+      "endTime": "2026-08-14T14:44:46.613Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "end": null,
+          "hash": "8414c328-3990-40ef-8665-7210c5a1957f",
+          "name": "bulkdelete",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "deleted": false,
+          "tagSetId": 1,
+          "template": false,
+          "anonymize": false,
+          "createdAt": "2026-08-14T14:44:46.532Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-14T14:44:46.532Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"delete\\n\"}]}",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:44:46.614Z",
+      "endTime": "2026-08-14T14:44:46.614Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:47.930Z",
+      "endTime": "2026-08-14T14:44:47.930Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "unsubscribeAppData",
+      "payload": "84fa8f4d-0b01-4172-8415-c93a49392e44",
+      "direction": true,
+      "startTime": "2026-08-14T14:44:47.932Z",
+      "endTime": "2026-08-14T14:44:47.932Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "unsubscribeAppData",
+      "payload": "1d12892c-7e95-4df7-add4-f58db117d415",
+      "direction": true,
+      "startTime": "2026-08-14T14:44:47.933Z",
+      "endTime": "2026-08-14T14:44:47.933Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1068,
+          "clientY": 231,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:48.256Z",
+      "endTime": "2026-08-14T14:44:48.256Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:50.442Z",
+      "endTime": "2026-08-14T14:44:50.442Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:54.205Z",
+      "endTime": "2026-08-14T14:44:54.205Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "gear-fill",
+          "title": "Manage studies"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:57.684Z",
+      "endTime": "2026-08-14T14:44:57.684Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:57.689Z",
+      "endTime": "2026-08-14T14:44:57.689Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role_matching"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:57.689Z",
+      "endTime": "2026-08-14T14:44:57.689Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:57.690Z",
+      "endTime": "2026-08-14T14:44:57.690Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:57.690Z",
+      "endTime": "2026-08-14T14:44:57.690Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:57.690Z",
+      "endTime": "2026-08-14T14:44:57.690Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:44:58.156Z",
+      "endTime": "2026-08-14T14:44:58.156Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 238,
+          "clientY": 270,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:00.970Z",
+      "endTime": "2026-08-14T14:45:00.970Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:02.040Z",
+      "endTime": "2026-08-14T14:45:02.040Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:04.096Z",
+      "endTime": "2026-08-14T14:45:04.096Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:06.465Z",
+      "endTime": "2026-08-14T14:45:06.465Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 456,
+          "clientY": 348,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:08.722Z",
+      "endTime": "2026-08-14T14:45:08.722Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1237,
+          "clientY": 549,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:11.089Z",
+      "endTime": "2026-08-14T14:45:11.089Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:11.282Z",
+      "endTime": "2026-08-14T14:45:11.282Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "studyCloseBulk",
+      "payload": {
+        "studyIds": [
+          4,
+          5
+        ],
+        "progressId": "3923fbd8-1d64-4784-b4a7-931e94ea823f",
+        "notifySessions": false
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:15.671Z",
+      "endTime": "2026-08-14T14:45:15.671Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Submit"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:15.694Z",
+      "endTime": "2026-08-14T14:45:15.694Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "end": null,
+          "hash": "d88e89d6-aa7f-4e0c-8b85-c8b8bb11e5b4",
+          "name": "annostudy",
+          "start": null,
+          "closed": "2026-08-14T14:45:15.707Z",
+          "collab": false,
+          "userId": 4,
+          "deleted": false,
+          "tagSetId": 1,
+          "template": false,
+          "anonymize": true,
+          "createdAt": "2026-08-14T14:41:35.833Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-14T14:45:15.708Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"hi\\n\"}]}",
+          "userIdClosed": 4,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:45:15.715Z",
+      "endTime": "2026-08-14T14:45:15.715Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "progressUpdate",
+      "payload": {
+        "id": "3923fbd8-1d64-4784-b4a7-931e94ea823f",
+        "total": 2,
+        "current": 1
+      },
+      "direction": false,
+      "startTime": "2026-08-14T14:45:15.716Z",
+      "endTime": "2026-08-14T14:45:15.716Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "end": null,
+          "hash": "8414c328-3990-40ef-8665-7210c5a1957f",
+          "name": "bulkdelete",
+          "start": null,
+          "closed": "2026-08-14T14:45:15.718Z",
+          "collab": false,
+          "userId": 4,
+          "deleted": false,
+          "tagSetId": 1,
+          "template": false,
+          "anonymize": false,
+          "createdAt": "2026-08-14T14:44:46.532Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-14T14:45:15.718Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"delete\\n\"}]}",
+          "userIdClosed": 4,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:45:15.729Z",
+      "endTime": "2026-08-14T14:45:15.729Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "progressUpdate",
+      "payload": {
+        "id": "3923fbd8-1d64-4784-b4a7-931e94ea823f",
+        "total": 2,
+        "current": 2
+      },
+      "direction": false,
+      "startTime": "2026-08-14T14:45:15.729Z",
+      "endTime": "2026-08-14T14:45:15.729Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:15.735Z",
+      "endTime": "2026-08-14T14:45:15.735Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1261,
+          "clientY": 576,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:15.956Z",
+      "endTime": "2026-08-14T14:45:15.956Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1252,
+          "clientY": 556,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:16.873Z",
+      "endTime": "2026-08-14T14:45:16.873Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:19.139Z",
+      "endTime": "2026-08-14T14:45:19.139Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:22.147Z",
+      "endTime": "2026-08-14T14:45:22.147Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1139,
+          "clientY": 0,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:24.815Z",
+      "endTime": "2026-08-14T14:45:24.815Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 4,
+      "socketId": "vqQNw-zydud49qrFAABr",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:45:25.073Z",
+      "endTime": "2026-08-14T14:45:25.073Z"
+    }
+  ]
+}

@@ -18,7 +18,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
     server.app.post('/auth/2fa/totp/setup/initiate', shared.ensureAuthenticated, async (req, res) => {
         const user = await server.db.models['user'].findOne({ where: { id: req.user.id }, raw: true });
         if (!user) {
-            return res.status(404).json({ message: 'User not found.' });
+            return res.status(404).json({ message: 'auth.twoFactor.api.userNotFound' });
         }
 
         const secret = new Secret({ size: 20 });
@@ -35,7 +35,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
         return req.session.save((err) => {
             if (err) {
                 server.logger.error('Failed to save session for TOTP setup: ' + err);
-                return res.status(500).json({ message: 'Failed to initiate TOTP setup.' });
+                return res.status(500).json({ message: 'auth.twoFactor.api.totpSetupInitiateFailed' });
             }
             return res.status(200).json({
                 otpauthUrl: totp.toString(),
@@ -50,16 +50,16 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
     server.app.post('/auth/2fa/totp/setup/verify', shared.ensureAuthenticated, async (req, res, next) => {
         const { token } = req.body;
         if (!token) {
-            return res.status(400).json({ message: 'TOTP token is required.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.totpTokenRequired' });
         }
         if (!req.session?.totpSetupPending?.secretBase32) {
-            return res.status(400).json({ message: 'No pending TOTP setup found.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.noPendingTotpSetup' });
         }
 
         const secretBase32 = req.session.totpSetupPending.secretBase32;
         const totp = new TOTP({ secret: secretBase32, digits: 6, period: 30 });
         if (totp.validate({ token: String(token).trim(), window: 1 }) === null) {
-            return res.status(401).json({ message: 'Invalid TOTP code.' });
+            return res.status(401).json({ message: 'auth.twoFactor.api.invalidTotpCode' });
         }
 
         try {
@@ -67,7 +67,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
                 where: { id: req.user.id },
             });
             if (!dbUser) {
-                return res.status(404).json({ message: 'User not found.' });
+                return res.status(404).json({ message: 'auth.twoFactor.api.userNotFound' });
             }
 
             const currentMethods = Array.isArray(dbUser.twoFactorMethods) ? [...dbUser.twoFactorMethods] : [];
@@ -86,7 +86,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
             delete req.session.totpSetupPending;
 
             return res.status(200).json({
-                message: 'TOTP configured successfully.',
+                message: 'auth.twoFactor.api.totpConfiguredSuccessfully',
                 twoFactorMethods: currentMethods,
             });
         } catch (err) {
@@ -99,7 +99,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
      */
     server.app.get('/auth/2fa/status', async (req, res) => {
         if (!req.user) {
-            return res.status(401).json({ message: 'You must be logged in to check 2FA status.' });
+            return res.status(401).json({ message: 'auth.twoFactor.api.loginRequiredCheckStatus' });
         }
 
         try {
@@ -108,7 +108,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
                 attributes: ['twoFactorMethods', 'totpSecret', 'email', 'orcidId'],
             });
             if (!user) {
-                return res.status(404).json({ message: 'User not found.' });
+                return res.status(404).json({ message: 'auth.twoFactor.api.userNotFound' });
             }
 
             const methods = twoFactor.getTwoFactorMethods(user);
@@ -123,7 +123,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
             });
         } catch (error) {
             server.logger.error('Failed to get 2FA status: ' + error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.twoFactor.api.internalServerError' });
         }
     });
 
@@ -132,12 +132,12 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
      */
     server.app.post('/auth/2fa/enable', async (req, res) => {
         if (!req.user) {
-            return res.status(401).json({ message: 'You must be logged in to enable 2FA.' });
+            return res.status(401).json({ message: 'auth.twoFactor.api.loginRequiredEnable' });
         }
 
         const { method } = req.body;
         if (!method || !['email', 'totp'].includes(method)) {
-            return res.status(400).json({ message: 'Valid 2FA method is required (email or totp).' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.validMethodRequired' });
         }
 
         try {
@@ -145,13 +145,13 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
                 where: { id: req.user.id },
             });
             if (!user) {
-                return res.status(404).json({ message: 'User not found.' });
+                return res.status(404).json({ message: 'auth.twoFactor.api.userNotFound' });
             }
             if (method === 'email' && !user.email) {
-                return res.status(400).json({ message: 'Email address is required to enable email 2FA.' });
+                return res.status(400).json({ message: 'auth.twoFactor.api.emailRequiredFor2fa' });
             }
             if (method === 'totp') {
-                return res.status(400).json({ message: 'Use /auth/2fa/totp/setup/initiate and /auth/2fa/totp/setup/verify to enable TOTP (requires setup + verification).' });
+                return res.status(400).json({ message: 'auth.twoFactor.api.useTotpSetup' });
             }
 
             const currentMethods = Array.isArray(user.twoFactorMethods) ? user.twoFactorMethods.slice() : [];
@@ -165,12 +165,13 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
             );
 
             return res.status(200).json({
-                message: `2FA has been enabled with ${method} method.`,
+                message: 'auth.twoFactor.api.enabledWithMethod',
+                params: { method },
                 twoFactorMethods: currentMethods,
             });
         } catch (error) {
             server.logger.error('Failed to enable 2FA: ' + error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.twoFactor.api.internalServerError' });
         }
     });
 
@@ -181,7 +182,7 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
     server.app.post('/auth/2fa/disable/:method', shared.ensureAuthenticated, async (req, res) => {
         const method = req.params.method;
         if (!['email', 'totp'].includes(method)) {
-            return res.status(400).json({ message: 'Valid 2FA method is required (email or totp).' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.validMethodRequired' });
         }
 
         try {
@@ -189,12 +190,12 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
                 where: { id: req.user.id },
             });
             if (!user) {
-                return res.status(404).json({ message: 'User not found.' });
+                return res.status(404).json({ message: 'auth.twoFactor.api.userNotFound' });
             }
 
             const currentMethods = twoFactor.getTwoFactorMethods(user);
             if (!currentMethods.includes(method)) {
-                return res.status(400).json({ message: `2FA method '${method}' is not enabled for this user.` });
+                return res.status(400).json({ message: 'auth.twoFactor.api.methodNotEnabledForUser', params: { method } });
             }
 
             const updatedMethods = currentMethods.filter((entry) => entry !== method);
@@ -216,12 +217,13 @@ function registerTwoFactorSettingsRoutes(server, helpers) {
             await server.db.models['user'].update(updateData, { where: { id: user.id } });
 
             return res.status(200).json({
-                message: `2FA method '${method}' has been disabled.`,
+                message: 'auth.twoFactor.api.methodDisabled',
+                params: { method },
                 twoFactorMethods: updatedMethods,
             });
         } catch (error) {
             server.logger.error('Failed to disable 2FA method: ' + error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.twoFactor.api.internalServerError' });
         }
     });
 }

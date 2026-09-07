@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import { FlatCompat } from '@eslint/eslintrc'
 import pluginVue from 'eslint-plugin-vue'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import footerButtonGroupRule from './eslint-rules/footer-button-group.js'
 import warnFileLineCountRule from './eslint-rules/warn-file-line-count.js'
 
@@ -25,13 +26,21 @@ export default [
     js.configs.recommended,
     ...pluginVue.configs['flat/recommended'],
     eslintConfigPrettier,
+    ...vueI18n.configs['flat/recommended'],
     {
         plugins: {
             local: localPlugin,
         },
         languageOptions: {
+            ecmaVersion: 'latest',
             globals: {
                 APP_VERSION: 'readonly',
+            },
+        },
+        settings: {
+            'vue-i18n': {
+                // Catalogs are checked by scripts/check-i18n-keys.mjs (filename = namespace).
+                messageSyntaxVersion: '^9.0.0',
             },
         },
         rules: {
@@ -62,6 +71,32 @@ export default [
                     message: 'Always name caught errors `_error`.',
                 },
             ],
+            '@intlify/vue-i18n/no-raw-text': [
+                'error',
+                {
+                    // Empty, non-Latin, single letter, tiny UI crumbs.
+                    ignorePattern: '^$|^([^A-Za-z]+|[A-Za-z]|KB\\)?|\\(ID:)$',
+                    ignoreText: ['CARE', 'ID', 'REQ', 'CMD', 'ORCID', 'LDAP', 'SSO', '-'],
+                    // Vue props
+                    attributes: {
+                        '/.+/': [
+                            'text',
+                            'title',
+                            'label',
+                            'placeholder',
+                            'message',
+                            'alt',
+                            'submit-text',
+                            'next-text',
+                            'cancel-next-text',
+                            'error-message',
+                        ],
+                    },
+                },
+            ],
+            // Missing keys: custom script reads utils/modules/i18n/en/*.json.
+            '@intlify/vue-i18n/no-missing-keys': 'off',
+            '@intlify/vue-i18n/no-unused-keys': 'off',
         },
     },
     {
@@ -85,6 +120,21 @@ export default [
         ],
         rules: {
             'vue/no-restricted-html-elements': 'off',
+        },
+    },
+    // Out of scope for i18n lint: setup wizard, Settings,
+    // unused submission ReviewUpload/Publish modals.
+    {
+        files: [
+            'src/auth/SetupWizard.vue',
+            'src/components/wizard/**/*.vue',
+            'src/components/wizard/**/*.js',
+            'src/components/dashboard/Settings.vue',
+            'src/components/dashboard/submission/UploadModal.vue',
+            'src/components/dashboard/submission/PublishModal.vue',
+        ],
+        rules: {
+            '@intlify/vue-i18n/no-raw-text': 'off',
         },
     },
 ]

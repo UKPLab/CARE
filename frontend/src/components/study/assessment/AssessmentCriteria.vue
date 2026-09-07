@@ -13,7 +13,7 @@
           />
         </span>
         <span class="criterion-name">
-          {{ criterion.name || 'Unnamed criterion' }}
+          {{ criterion.name || $t('assessment.criteria.unnamedCriterion') }}
         </span>
       </div>
 
@@ -45,12 +45,12 @@
         class="criterion-assessment mt-2 px-3 pb-2"
     >
       <div class="assessment-text">
-        <strong>Justification:</strong>
+        <strong>{{ $t('assessment.criteria.justification') }}</strong>
 
         <!-- Read-only view -->
         <div v-if="!isEditing" class="assessment-content">
           <p class="mb-0 mt-1">
-            {{ state.assessment || 'No justification provided' }}
+            {{ state.assessment || $t('assessment.criteria.noJustification') }}
           </p>
         </div>
 
@@ -61,7 +61,7 @@
                 ref="assessmentTextarea"
                 v-model="localAssessment"
                 class="form-control assessment-textarea"
-                placeholder="Edit the justification..."
+                :placeholder="$t('assessment.criteria.editPlaceholder')"
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
                 @input="autoResizeTextarea"
@@ -81,7 +81,7 @@
             <BasicButton
                 v-if="!readOnly"
                 class="btn-outline-primary btn-sm"
-                title="Edit"
+                :title="$t('assessment.criteria.edit')"
                 text=""
                 icon="pen"
                 :props="{ criterionName: criterion.name }"
@@ -93,7 +93,7 @@
             <select
                 v-model.number="scoreProxy"
                 class="form-select form-select-sm score-dropdown"
-                title="Change score"
+                :title="$t('assessment.criteria.changeScore')"
             >
               <!-- Use scoring list if present -->
               <template v-if="hasScoringList">
@@ -120,7 +120,7 @@
 
             <BasicButton
                 :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
-                :title="isSaved ? 'Assessment saved' : 'Save assessment'"
+                :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
                 text=""
                 icon="floppy"
                 :props="{ criterionName: criterion.name }"
@@ -134,7 +134,7 @@
           <BasicButton
               v-if="!readOnly"
               class="btn-primary btn-sm"
-              title="Save"
+              :title="$t('assessment.criteria.saveEdit')"
               text=""
               icon="floppy"
               :props="{ criterionName: criterion.name }"
@@ -143,7 +143,7 @@
           <BasicButton
               v-if="!readOnly"
               class="btn-secondary btn-sm"
-              title="Cancel"
+              :title="$t('assessment.criteria.cancel')"
               text=""
               icon="x-lg"
               :props="{ criterionName: criterion.name }"
@@ -340,17 +340,17 @@ export default {
 
 .criterion-name {
   font-weight: 400;
-  color: #333;
+  color: var(--bs-body-color, #333);
 }
 
 /* Assessment Content */
 .criterion-assessment {
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid var(--bs-border-color, #e9ecef);
   margin-top: 0;
 }
 
 .assessment-text {
-  background-color: #fff;
+  background-color: var(--bs-body-bg, #fff);
   padding: 12px;
   border-radius: 6px;
   border-left: 3px solid #007bff;
@@ -359,12 +359,12 @@ export default {
 }
 
 .assessment-text strong {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
 .assessment-text p {
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   margin-top: 4px;
 }
 
@@ -373,7 +373,7 @@ export default {
 }
 
 .assessment-textarea {
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 6px;
   font-size: 0.9rem;
   resize: vertical;
@@ -445,10 +445,10 @@ export default {
 .score-dropdown {
   min-width: 80px;
   font-size: 0.875rem;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 4px;
   padding: 4px 8px;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 

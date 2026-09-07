@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
 const fs = require("fs");
@@ -29,7 +30,7 @@ class AnnotationSocket extends Socket {
         const anno = await this.models['annotation'].getById(data.annotationId);
 
         if (!(await this.checkDocumentAccess(anno.documentId))) {
-            throw new Error("You have no permission to change this annotation");
+            throw new TranslatableError("errors.permission.noAnnotationChangePermission");
         }
 
         await this.loadCommentsByAnnotation(anno.id);
@@ -49,7 +50,7 @@ class AnnotationSocket extends Socket {
             this.emitDoc(comment.documentId, "commentRefresh", comment);
         } catch (e) {
             this.logger.error("Error during loading of comments: " + e);
-            this.sendToast("Internal server error. Failed to load comments.", "Internal server error", "danger");
+            this.sendToast("errors.annotator.commentsLoadFailedInternal", "errors.server.internalServerError", "danger");
         }
     }
 
@@ -76,7 +77,7 @@ class AnnotationSocket extends Socket {
             const origAnnotation = await this.models['annotation'].getById(data.annotationId, {transaction: options.transaction});
 
             if (!(await this.checkUserAccess(origAnnotation.userId))) {
-                throw Error("You have no permission to change this annotation");
+                throw Error("errors.permission.noAnnotationChangePermission");
             }
 
             data.draft = false;
@@ -164,7 +165,7 @@ class AnnotationSocket extends Socket {
         const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
         if (!fs.existsSync(filePath)) {
-            throw new Error("PDF file not found");
+            throw new TranslatableError("errors.file.pdfNotFound");
         }
         const file = fs.readFileSync(filePath);
 

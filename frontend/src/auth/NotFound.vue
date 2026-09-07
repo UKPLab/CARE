@@ -1,7 +1,7 @@
 <template>
   <div style="text-align: center;">
-    <h1>404 not found</h1>
-    <h2>This page does not exist!</h2>
+    <h1>{{ $t('errors.page.notFoundTitle') }}</h1>
+    <h2>{{ $t('errors.page.notFoundMessage') }}</h2>
   </div>
 </template>
 

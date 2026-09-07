@@ -5,13 +5,13 @@
       size="lg"
   >
     <template #title>
-      Active Sessions
+      {{ $t('users.activeSessions.title') }}
     </template>
 
     <template #body>
      <div v-if="filteredUserName" class="mb-2">
         <small class="text-muted">
-          Filtered user:
+          {{ $t('users.activeSessions.filteredUser') }}
           <span class="fw-semibold text-body">{{ filteredUserName }}</span>
         </small>
       </div>
@@ -24,11 +24,11 @@
 
     <template #footer>
      <small v-if="!filteredUserName" class="text-muted me-auto">
-         {{ stats.activeUsers }} active user(s)
+         {{ $t('users.activeSessions.activeUsers', { count: stats.activeUsers }) }}
      </small>
       <BasicButton
           class="btn btn-secondary"
-          title="Close"
+          :title="$t('common.close')"
           @click="$refs.modal.close()"
       />
     </template>
@@ -60,15 +60,6 @@ export default {
   data() {
     return {
       filterUserId: null,
-
-      sessionColumns: [
-        {name: "Socket ID",    key: "socketId"},
-        {name: "User ID",      key: "userId",      sortable: true},
-        {name: "Username",     key: "userName",    sortable: true},
-        {name: "Connected At", key: "connectedAt", sortable: true},
-        {name: "Browser",      key: "browser"},
-      ],
-
       tableOptions: {
         striped:    true,
         hover:      true,
@@ -80,6 +71,15 @@ export default {
   },
 
   computed: {
+    sessionColumns() {
+      return [
+        { name: this.$t('users.activeSessions.socketId'), key: "socketId" },
+        { name: this.$t('users.activeSessions.userId'), key: "userId", sortable: true },
+        { name: this.$t('common.userName'), key: "userName", sortable: true },
+        { name: this.$t('users.activeSessions.connectedAt'), key: "connectedAt", sortable: true },
+        { name: this.$t('users.activeSessions.browser'), key: "browser" },
+      ];
+    },
     formattedSessions() {
       const source = this.filterUserId
         ? this.stats.sessions.filter(s => s.userId === this.filterUserId)

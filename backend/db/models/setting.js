@@ -163,6 +163,7 @@ module.exports = (sequelize, DataTypes) => {
         displayGroup: DataTypes.STRING,
         displaySubsection: DataTypes.STRING,
         onlyAdmin: DataTypes.BOOLEAN,
+        allowUserOverride: DataTypes.BOOLEAN,
         showInWizard: DataTypes.BOOLEAN,
         wizardOrder: DataTypes.INTEGER,
         requiredInWizard: DataTypes.BOOLEAN,

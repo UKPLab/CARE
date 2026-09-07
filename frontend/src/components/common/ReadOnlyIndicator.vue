@@ -39,7 +39,7 @@ export default {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 10;
-  color: #c0c0c0;
+  color: var(--bs-secondary-color, #c0c0c0);
   opacity: 0.25;
   pointer-events: none;
   user-select: none;

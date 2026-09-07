@@ -1,11 +1,11 @@
 <template>
   <div class="container">
     <div class="d-flex justify-content-between align-items-center">
-      <h1 class="mb-0">Active Assignments</h1>
+      <h1 class="mb-0">{{ $t('assignments.dashboard.submissions.activeTitle') }}</h1>
     </div>
     <div v-if="activeAssignments.length === 0">
       <p class="fs-6">
-        You have no active assignments.
+        {{ $t('assignments.dashboard.submissions.noActive') }}
       </p>
     </div>
     <div v-else>
@@ -20,22 +20,32 @@
           collapsed
         >
           <template #headerElements>
-            <BasicButton
-              class="btn btn-primary btn-sm"
-              title="Upload Submission"
-              text="Upload Submission"
-              icon="file-earmark-arrow-up"
-              :disabled="!canUploadSubmissionForAssignment(assignment)"
-              @click="openUploadModalForAssignment(assignment)"
-            />
+            <div class="d-flex align-items-center gap-2">
+              <span
+                v-if="!canUploadForOthers"
+                :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', submissionsBadgeClass(assignment)]"
+              >
+                <LoadIcon icon-name="file-earmark-check" size="14" />
+                {{ remainingSubmissionsLabel(assignment) }}
+              </span>
+              <span :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', timeBadgeClass(assignment)]">
+                <LoadIcon icon-name="clock" size="14" />
+                {{ timeBadgeText(assignment) }}
+              </span>
+              <BasicButton
+                class="btn btn-primary btn-sm"
+                :title="$t('dashboard.uploadModal.title')"
+                :text="$t('dashboard.uploadModal.title')"
+                icon="file-earmark-arrow-up"
+                :disabled="!canUploadSubmissionForAssignment(assignment)"
+                @click="openUploadModalForAssignment(assignment)"
+              />
+            </div>
           </template>
           <template #body>
             <AssignmentSubmissionsTable
               :assignment-id="assignment.id"
             />
-          </template>
-          <template #footer>
-            <span>{{ assignment.end ? assignmentTimes[assignment.id] : "no due date" }}</span>
           </template>
         </Card>
         <hr>
@@ -44,10 +54,10 @@
   </div>
 
   <div class="container">
-    <h1>Closed Assignments</h1>
+    <h1>{{ $t('assignments.dashboard.submissions.closedTitle') }}</h1>
     <div v-if="closedAssignments.length === 0">
       <p class="fs-6">
-        You have no closed assignments.
+        {{ $t('assignments.dashboard.submissions.noClosed') }}
       </p>
     </div>
     <div v-else>
@@ -61,15 +71,24 @@
           collapsable
           collapsed
         >
-          <template #headerButtons>
-            <BasicButton
-              class="btn btn-primary btn-sm"
-              title="Upload Submission"
-              text="Upload Submission"
-              icon="file-earmark-arrow-up"
-              :disabled="!canUploadSubmissionForAssignment(assignment)"
-              @click="openUploadModalForAssignment(assignment)"
-            />
+          <template #headerElements>
+            <div class="d-flex align-items-center gap-2">
+              <span
+                v-if="!canUploadForOthers"
+                :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', submissionsBadgeClass(assignment)]"
+              >
+                <LoadIcon icon-name="file-earmark-check" size="14" />
+                {{ remainingSubmissionsLabel(assignment) }}
+              </span>
+              <BasicButton
+                class="btn btn-primary btn-sm"
+                :title="$t('dashboard.uploadModal.title')"
+                :text="$t('dashboard.uploadModal.title')"
+                icon="file-earmark-arrow-up"
+                :disabled="!canUploadSubmissionForAssignment(assignment)"
+                @click="openUploadModalForAssignment(assignment)"
+              />
+            </div>
           </template>
           <template #body>
             <AssignmentSubmissionsTable
@@ -89,6 +108,7 @@
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -97,8 +117,11 @@ import { getTimeDiffString } from "@/assets/utils";
 export default {
   name: "DashboardSubmission",
   subscribeTable: ["assignment", "submission", "user", "document"],
-  components: { Card, BasicButton, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
   computed: {
+    canUploadForOthers() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -186,10 +209,53 @@ export default {
     },
     isRevisionLimitReachedForAssignment(assignment) {
       const maxRevisions = this.maxRevisionsForAssignment(assignment);
-      if (maxRevisions === 0) {
+      if (maxRevisions === -1) {
         return false;
       }
-      return this.currentUserMaxRevisionDepth(assignment.id) >= maxRevisions;
+      return this.currentUserMaxRevisionDepth(assignment.id) >= maxRevisions + 1;
+    },
+    remainingSubmissionsCount(assignment) {
+      const maxRevisions = this.maxRevisionsForAssignment(assignment);
+      if (maxRevisions === -1) {
+        return null;
+      }
+      return Math.max(maxRevisions + 1 - this.currentUserMaxRevisionDepth(assignment.id), 0);
+    },
+    remainingSubmissionsLabel(assignment) {
+      const remaining = this.remainingSubmissionsCount(assignment);
+      if (remaining === null) {
+        return this.$t("assignments.dashboard.submissions.unlimited");
+      }
+      return this.$t("assignments.dashboard.submissions.remainingLeft", { count: remaining });
+    },
+    submissionsBadgeClass(assignment) {
+      return this.remainingSubmissionsCount(assignment) === 0
+        ? "bg-success text-white"
+        : "bg-light text-dark border";
+    },
+    isAssignmentOverdue(assignment) {
+      return !!assignment.end && new Date(assignment.end) < new Date();
+    },
+    isAssignmentClosingSoon(assignment) {
+      if (!assignment.end) return false;
+      const msLeft = new Date(assignment.end) - new Date();
+      return msLeft > 0 && msLeft <= 24 * 60 * 60 * 1000;
+    },
+    timeBadgeClass(assignment) {
+      if (this.isAssignmentOverdue(assignment)) return "bg-danger text-white";
+      if (this.isAssignmentClosingSoon(assignment)) return "bg-warning text-dark";
+      return "bg-light text-dark border";
+    },
+    timeBadgeText(assignment) {
+      if (!assignment.end) {
+        return this.$t("assignments.dashboard.submissions.noDueDate");
+      }
+      if (this.isAssignmentOverdue(assignment)) {
+        return this.$t("assignments.dashboard.submissions.overdueBy", {
+          time: this.assignmentTimes[assignment.id],
+        });
+      }
+      return this.assignmentTimes[assignment.id];
     },
     canUploadSubmissionForAssignment(assignment) {
       const statusAllowsUpload = this.getAssignmentStatus(assignment) === "open";
@@ -198,8 +264,10 @@ export default {
     openUploadModalForAssignment(assignment) {
       if (this.isRevisionLimitReachedForAssignment(assignment)) {
         this.eventBus.emit("toast", {
-          title: "Revision limit reached",
-          message: `You have reached the maximum number of revisions (${this.maxRevisionsForAssignment(assignment)}).`,
+          title: this.$t("assignments.dashboard.toasts.revisionLimitReached.title"),
+          message: this.$t("assignments.dashboard.toasts.revisionLimitReached.message", {
+            count: this.maxRevisionsForAssignment(assignment) + 1,
+          }),
           variant: "warning",
         });
         return;
@@ -207,8 +275,8 @@ export default {
 
       if (!this.canUploadSubmissionForAssignment(assignment)) {
         this.eventBus.emit("toast", {
-          title: "Upload not allowed",
-          message: "Submissions are closed for this assignment.",
+          title: this.$t("assignments.dashboard.toasts.uploadNotAllowed.title"),
+          message: this.$t("assignments.dashboard.toasts.uploadNotAllowed.message"),
           variant: "warning",
         });
         return;

@@ -1,0 +1,332 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:20:19.170Z",
+  "traceCount": 17,
+  "recording": {
+    "name": "130-create-html-document",
+    "status": "finished",
+    "startTime": "2026-08-10T23:14:08.048Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "HfkJbcIP3cSFqBocAAAL"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:14:30.227Z"
+  },
+  "traces": [
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "name": "Recording 8/11/2026, 1:14:08 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:14:08.049Z",
+          "startTime": "2026-08-10T23:14:08.048Z",
+          "updatedAt": "2026-08-10T23:14:08.049Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "HfkJbcIP3cSFqBocAAAL"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:14:08.065Z",
+      "endTime": "2026-08-10T23:14:08.065Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:09.762Z",
+      "endTime": "2026-08-10T23:14:09.762Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "file-earmark-plus",
+          "title": "Create document"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:12.501Z",
+      "endTime": "2026-08-10T23:14:12.501Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "documentCreate",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:12.972Z",
+      "endTime": "2026-08-10T23:14:12.972Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 640,
+          "clientY": 157,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:13.792Z",
+      "endTime": "2026-08-10T23:14:13.792Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 655,
+          "clientY": 227,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:15.360Z",
+      "endTime": "2026-08-10T23:14:15.360Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "documentCreate",
+      "payload": {
+        "name": "test_doc",
+        "type": 1,
+        "projectId": 1,
+        "templateId": 0
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:22.484Z",
+      "endTime": "2026-08-10T23:14:22.484Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {},
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:22.487Z",
+      "endTime": "2026-08-10T23:14:22.487Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "hash": "281da0da-fcfc-4a30-91c9-eaf8087d03bd",
+          "name": "test_doc",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-10T23:14:22.490Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-10T23:14:22.490Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:14:22.500Z",
+      "endTime": "2026-08-10T23:14:22.500Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "hash": "281da0da-fcfc-4a30-91c9-eaf8087d03bd",
+          "name": "test_doc",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-10T23:14:22.490Z",
+          "deletedAt": null,
+          "projectId": 1,
+          "updatedAt": "2026-08-10T23:14:22.490Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:14:22.501Z",
+      "endTime": "2026-08-10T23:14:22.501Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "documentCreate",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:22.505Z",
+      "endTime": "2026-08-10T23:14:22.505Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 912,
+          "clientY": 437,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:23.092Z",
+      "endTime": "2026-08-10T23:14:23.092Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 889,
+          "clientY": 403,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:25.459Z",
+      "endTime": "2026-08-10T23:14:25.459Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:26.774Z",
+      "endTime": "2026-08-10T23:14:26.774Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:27.145Z",
+      "endTime": "2026-08-10T23:14:27.145Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:28.905Z",
+      "endTime": "2026-08-10T23:14:28.905Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "HfkJbcIP3cSFqBocAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1071,
+          "clientY": 2,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:14:29.679Z",
+      "endTime": "2026-08-10T23:14:29.679Z"
+    }
+  ]
+}

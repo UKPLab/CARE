@@ -87,47 +87,49 @@ export default {
             return a.localeCompare(b);
           })
           .map(g => ({ key: g, name: g }));
-      if (hasEmptyGroups) options.unshift({ key: '', name: 'No GroupID' });
+      if (hasEmptyGroups) options.unshift({ key: '', name: this.$t("common.noGroupId") });
       return options;
     },
     documentsTable() {
       return this.documents.filter(d => d.type === 0).map(d => {
         let newD = { ...d };
-        newD.type = d.type === 0 ? "PDF" : "HTML";
+        newD.type = d.type === 0
+          ? this.$t("dashboard.study.typePdf")
+          : this.$t("dashboard.study.typeHtml");
         const user = this.$store.getters["table/user/get"](d.userId);
-        newD.firstName = user ? user.firstName : "Unknown";
-        newD.lastName = user ? user.lastName : "Unknown";
+        newD.firstName = user ? user.firstName : this.$t("common.unknown");
+        newD.lastName = user ? user.lastName : this.$t("common.unknown");
         return newD;
       });
     },
     documentsTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "Document", key: "name" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("dashboard.study.typeDocument"), key: "name" },
+        { name: this.$t("common.firstName"), key: "firstName" },
+        { name: this.$t("common.lastName"), key: "lastName" },
       ];
     },
     submissionsTable() {
       return this.submissions.map(s => {
         let newS = { ...s };
         const user = this.$store.getters["table/user/get"](s.userId);
-        newS.name = s.name || `Submission ${s.id}`;
-        newS.userName = user ? user.userName : "N/A";
-        newS.firstName = user ? user.firstName : "Unknown";
-        newS.lastName = user ? user.lastName : "Unknown";
+        newS.name = s.name || this.$t("dashboard.study.submissionWithId", { id: s.id });
+        newS.userName = user ? user.userName : this.$t("dashboard.study.na");
+        newS.firstName = user ? user.firstName : this.$t("common.unknown");
+        newS.lastName = user ? user.lastName : this.$t("common.unknown");
         newS.group = (s.group !== null && s.group !== undefined && s.group !== '') ? s.group : '';
         return newS;
       });
     },
     submissionColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "User Name", key: "userName" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Group ID", key: "group", filter: this.groupFilterOptions },
-        { name: "Created At", key: "createdAt" },
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("common.userName"), key: "userName" },
+        { name: this.$t("common.firstName"), key: "firstName" },
+        { name: this.$t("common.lastName"), key: "lastName" },
+        { name: this.$t("dashboard.study.groupId"), key: "group", filter: this.groupFilterOptions },
+        { name: this.$t("common.createdAt"), key: "createdAt" },
       ];
     },
     currentTableData() {
@@ -157,15 +159,15 @@ export default {
               id: session.id,
               studyId: session.studyId,
               userId: this.newStudyOwner === 'session_owner' ? user.id : studyOwner.id,
-              completeUserName: user ? `${user.firstName} ${user.lastName}` : 'Unknown User',
-              firstName: user ? user.firstName : 'Unknown',
-              lastName: user ? user.lastName : 'Unknown',
-              studyCompleteUserName: studyOwner ? `${studyOwner.firstName} ${studyOwner.lastName}` : 'Unknown User',
+              completeUserName: user ? `${user.firstName} ${user.lastName}` : this.$t("dashboard.study.unknownUser"),
+              firstName: user ? user.firstName : this.$t("common.unknown"),
+              lastName: user ? user.lastName : this.$t("common.unknown"),
+              studyCompleteUserName: studyOwner ? `${studyOwner.firstName} ${studyOwner.lastName}` : this.$t("dashboard.study.unknownUser"),
               studyUserId: studyOwner.userId,
-              studyFirstName: studyOwner ? studyOwner.firstName : 'Unknown',
-              studyLastName: studyOwner ? studyOwner.lastName : 'Unknown',
+              studyFirstName: studyOwner ? studyOwner.firstName : this.$t("common.unknown"),
+              studyLastName: studyOwner ? studyOwner.lastName : this.$t("common.unknown"),
               workflowType: this.getWorkflowType(study.workflowId),
-              submissionGroup: submission && submission.group ? submission.group : 'N/A',
+              submissionGroup: submission && submission.group ? submission.group : this.$t("dashboard.study.na"),
               status: session.end === null ? "Running" : "Finished",
               createdAt: new Date(session.createdAt).toLocaleString(),
             };
@@ -173,19 +175,22 @@ export default {
     },
     studySessionsTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "Session User Name", key: "completeUserName", sortable: true },
-        { name: "Study Owner User Name", key: "studyCompleteUserName", sortable: true },
-        { name: "Workflow Type", key: "workflowType", sortable: true },
-        { name: "Created At", key: "createdAt", sortable: true },
-        { name: "Submission Group", key: "submissionGroup", sortable: true, filter: this.sessionGroupFilterOptions },
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("dashboard.study.sessionUserName"), key: "completeUserName", sortable: true },
+        { name: this.$t("dashboard.study.studyOwnerUserName"), key: "studyCompleteUserName", sortable: true },
+        { name: this.$t("dashboard.study.workflowType"), key: "workflowType", sortable: true },
+        { name: this.$t("common.createdAt"), key: "createdAt", sortable: true },
+        { name: this.$t("dashboard.study.submissionGroup"), key: "submissionGroup", sortable: true, filter: this.sessionGroupFilterOptions },
         {
-          name: "Status",
+          name: this.$t("common.status"),
           key: "status",
           type: "badge",
           sortable: true,
           typeOptions: {
-            keyMapping: { Running: "Running", Finished: "Finished" },
+            keyMapping: {
+              Running: this.$t("dashboard.study.running"),
+              Finished: this.$t("dashboard.study.finished"),
+            },
             classMapping: { Running: "bg-primary", Finished: "bg-success" },
           },
         },
@@ -210,7 +215,7 @@ export default {
             return a.localeCompare(b);
           })
           .map(g => ({ key: g, name: g }));
-      if (hasEmptyGroups) options.unshift({ key: '', name: 'No GroupID' });
+      if (hasEmptyGroups) options.unshift({ key: '', name: this.$t("common.noGroupId") });
       return options;
     },
     selectedAssignmentUserIds() {
@@ -256,7 +261,7 @@ export default {
   methods: {
     getWorkflowType(workflowId) {
       const workflow = this.$store.getters["table/workflow/get"](workflowId);
-      return workflow ? workflow.name : "Unknown";
+      return workflow ? workflow.name : this.$t("common.unknown");
     },
     getSubmission(studyId) {
       const studySteps = this.$store.getters["table/study_step/getFiltered"](

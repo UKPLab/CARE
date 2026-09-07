@@ -96,7 +96,22 @@ export default {
                 return true;
             }
             return getters.getUserRights.includes(right);
-        }
+        },
+
+        /**
+         * Whether the logged-in user may not change UI language (restriction right, not a permission).
+         *
+         * @param {Object} state
+         * @param {Object} getters
+         * @returns {boolean} `true` if language selection is disabled, otherwise `false`
+         */
+        isLanguageSelectionDisabled: (state, getters) => {
+            if (getters.isAdmin) {
+                return false;
+            }
+            const rights = getters.getUserRights;
+            return Array.isArray(rights) && rights.includes("frontend.preferences.disableLanguageSelection");
+        },
     },
     mutations: {
         /**

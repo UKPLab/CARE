@@ -1,50 +1,50 @@
 <template>
   <span>
-    <Card title="Studies">
+    <Card :title="$t('studies.title')">
       <template #headerElements>
         <div class="btn-group gap-2">
           <BasicButton
               class="btn-secondary btn-sm"
-              title="Saved Templates"
-              text="Saved Templates"
+              :title="$t('studies.savedTemplates')"
+              :text="$t('studies.savedTemplates')"
               icon="folder"
               @click="openSavedTemplates"
           />
           <BasicButton
               v-if="canManageStudies"
               class="btn-secondary btn-sm"
-              title="Manage studies"
-              text="Manage Studies"
+              :title="$t('studies.manageStudies')"
+              :text="$t('studies.manageStudies')"
               icon="gear-fill"
               @click="manageStudies"
           />
            <BasicButton
             class="btn-secondary btn-sm"
-            text="Publish Assessment"
-            title="Publish Assessment"
+            :title="$t('submission.publishAssessment.title')"
+            :text="$t('submission.publishAssessment.title')"
             icon="clipboard-data"
             @click="$refs.publishAssessmentModal.open()"
           />
           <BasicButton
               v-if="canAddBulkAssignments"
               class="btn-secondary btn-sm"
-              title="Add Bulk Assignments"
-              text="Add Bulk Assignments"
+              :title="$t('studies.addBulkAssignments')"
+              :text="$t('studies.addBulkAssignments')"
               icon="stack"
               @click="addBulkAssignment"
           />
           <BasicButton
               v-if="isAdmin"
               class="btn-secondary btn-sm"
-              title="Add Single Assignment"
-              text="Add Single Assignment"
+              :title="$t('studies.addSingleAssignment')"
+              :text="$t('studies.addSingleAssignment')"
               icon="plus-square"
               @click="addSingleAssignment"
           />
           <BasicButton
               class="btn btn-primary btn-sm"
-              title="Add"
-              text="Add"
+              :title="$t('common.add')"
+              :text="$t('common.add')"
               icon="plus"
               @click="add"
           />
@@ -86,6 +86,7 @@ import InformationModal from "@/basic/modal/InformationModal.vue";
 import ManageStudiesModal from "@/components/dashboard/study/ManageStudiesModal.vue";
 import StudyCloseModal from "@/components/dashboard/study/StudyCloseModal.vue";
 import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 
 /**
@@ -173,7 +174,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Edit study",
+          title: this.$t('studies.editStudy'),
           filter: [
             {key: "showEditButton", value: true},
           ],
@@ -193,7 +194,7 @@ export default {
           filter: [
             {key: "showDeleteButton", value: true},
           ],
-          title: "Delete study",
+          title: this.$t('studies.deleteStudy'),
           action: "deleteStudy",
           stats: {
             studyId: "id"
@@ -207,7 +208,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Open study",
+          title: this.$t('studies.openStudy'),
           action: "openStudy",
           stats: {
             studyId: "id"
@@ -221,7 +222,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Restart study",
+          title: this.$t('studies.restartStudy'),
           filter: [
             {key: "showRestartButton", value: true},
           ],
@@ -238,7 +239,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Copy link to study",
+          title: this.$t('studies.copyLink'),
           action: "copyStudyLink",
           stats: {
             studyId: "id"
@@ -252,7 +253,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Inspect sessions",
+          title: this.$t('studies.inspectSessions'),
           action: "inspectStudySessions",
           stats: {
             studyId: "id"
@@ -269,7 +270,7 @@ export default {
           filter: [
             {key: "showCloseButton", value: true},
           ],
-          title: "Close study",
+          title: this.$t('studies.closeStudy'),
           action: "closeStudy",
           stats: {
             studyId: "id"
@@ -286,7 +287,7 @@ export default {
           filter: [
             {key: "showTemplateButton", value: true},
           ],
-          title: "Save as Template",
+          title: this.$t('studies.saveAsTemplate'),
           action: "saveAsTemplate",
           stats: {
             studyId: "id"
@@ -303,7 +304,7 @@ export default {
               "btn-outline-secondary": true,
             },
           },
-          title: "Show information",
+          title: this.$t('studies.showInformation'),
           action: "showInformation",
           stats: {
             studyId: "id"
@@ -314,20 +315,19 @@ export default {
     },
     columns() {
       let cols = [
-        {name: "ID", key: "id", fixed: "left" },
-        {name: "Name", key: "name", fixed: "left" },
+        {name: this.$t('common.id'), key: "id", fixed: "left" },
+        {name: this.$t('common.name'), key: "name", fixed: "left" },
         {
-          name: "Status",
+          name: this.$t('studies.columns.status'),
           key: "state",
           sortable: true,
           type: "badge",
           typeOptions: {
             keyMapping: {
-              "not started": "Not started",
-              "closed": "Closed",
-              "running": "Running",
-              "ended": "Ended",
-
+              "not started": this.$t('studies.status.notStarted'),
+              "closed": this.$t('studies.status.closed'),
+              "running": this.$t('studies.status.running'),
+              "ended": this.$t('studies.status.ended'),
             },
             classMapping: {
               "not started": "bg-warning",
@@ -337,51 +337,51 @@ export default {
             }
           }
         },
-        {name: "Created", key: "createdAt", sortable: true},
+        {name: this.$t('studies.columns.created'), key: "createdAt", sortable: true},
         //{name: "Time Limit", key: "timeLimit", sortable: true},
-        {name: "Sessions", key: "sessions", sortable: true},
-        {name: "Session Limit", key: "limitSessions", sortable: true},
-        {name: "Session Limit per User", key: "limitSessionsPerUser", sortable: true},
+        {name: this.$t('studies.columns.sessions'), key: "sessions", sortable: true},
+        {name: this.$t('studies.columns.sessionLimit'), key: "limitSessions", sortable: true},
+        {name: this.$t('studies.columns.sessionLimitPerUser'), key: "limitSessionsPerUser", sortable: true},
         {
-          name: "Session Start/Finish Emails",
+          name: this.$t('studies.columns.sessionStartFinishEmails'),
           key: "enableEmailNotifications",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", false: "No" },
+            keyMapping: { true: this.$t('common.yes'), false: this.$t('common.no') },
             classMapping: { true: "bg-success", false: "bg-danger" }
           }
         },
         {
-          name: "Resumable",
+          name: this.$t('studies.columns.resumable'),
           key: "resumable",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Collaborative",
+          name: this.$t('studies.columns.collaborative'),
           key: "collab",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Multiple Submissions",
+          name: this.$t('studies.columns.multipleSubmissions'),
           key: "multipleSubmit",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
       ];
       if (this.canReadPrivateInformation) {
-        cols.splice(3, 0, {name: "FirstName", key: "firstName"});
-        cols.splice(4, 0, {name: "LastName", key: "lastName"});
+        cols.splice(3, 0, {name: this.$t('users.columns.firstName'), key: "firstName"});
+        cols.splice(4, 0, {name: this.$t('users.columns.lastName'), key: "lastName"});
       }
       return cols;
     },
@@ -502,14 +502,14 @@ export default {
         }, (result) => {
           if (result.success) {
             this.eventBus.emit('toast', {
-              title: "Study restarted",
-              message: "The study has been restarted",
+              title: this.$t('studies.messages.studyRestarted'),
+              message: this.$t('studies.messages.studyRestartedMessage'),
               variant: "success"
             });
           } else {
             this.eventBus.emit('toast', {
-              title: "Study restart failed",
-              message: result.message,
+              title: this.$t('errors.studies.studyRestartFailed'),
+              message: resolveApiMessage(result),
               variant: "danger"
             });
           }
@@ -529,8 +529,8 @@ export default {
       const study = this.$store.getters["table/study/get"](studyId);
       if (!study) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Failed to retrieve URL. Try again later.",
+          title: this.$t('errors.clipboard.linkNotCopied'),
+          message: this.$t('errors.clipboard.retrieveFailed'),
           variant: "danger"
         });
         return;
@@ -540,14 +540,14 @@ export default {
       try {
         await navigator.clipboard.writeText(link);
         this.eventBus.emit('toast', {
-          title: "Link copied",
-          message: "Study link copied to clipboard!",
+          title: this.$t('studies.messages.linkCopied'),
+          message: this.$t('studies.messages.linkCopiedMessage'),
           variant: "success"
         });
       } catch (_error) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Could not copy study link to clipboard!",
+          title: this.$t('errors.clipboard.linkNotCopied'),
+          message: this.$t('errors.clipboard.copyFailed'),
           variant: "danger"
         });
       }
@@ -572,22 +572,22 @@ export default {
     },
     saveAsTemplate(study) {
       this.openConfirmModal(
-          "Save Study as Template",
-          "Are you sure you want to save this study as a template?",
+          this.$t('studies.messages.saveAsTemplateTitle'),
+          this.$t('studies.messages.saveAsTemplateConfirm'),
           "",
           (confirmed) => {
             if (confirmed) {
               this.$socket.emit("studySaveAsTemplate", {id: study.id}, (result) => {
                 if (!result.success) {
                   this.eventBus.emit('toast', {
-                    title: "Template Save Failed",
-                    message: result.message,
+                    title: this.$t('errors.studies.templateSaveFailed'),
+                    message: resolveApiMessage(result),
                     variant: "danger",
                   });
                 } else {
                   this.eventBus.emit('toast', {
-                    title: "Template Saved",
-                    message: "This study has been saved as a template.",
+                    title: this.$t('studies.messages.templateSaved'),
+                    message: this.$t('studies.messages.templateSavedMessage'),
                     variant: "success",
                   });
                 }
@@ -602,21 +602,16 @@ export default {
       );
       let warning;
       if (studySessions && studySessions.length > 0) {
-        warning = ` There ${studySessions.length !== 1 ? "are" : "is"} currently ${
-            studySessions.length
-        } ${studySessions.length !== 1 ? "study session" : "study sessions"}
-         existing for this study. Deleting it will delete the ${
-            studySessions.length !== 1 ? "study session" : "study sessions"
-        }!`;
+        warning = this.$t('studies.messages.sessionWarning', { count: studySessions.length });
       } else {
         warning = "";
       }
 
       this.openDeleteConfModal(
-          "Delete Study",
-          "Are you sure you want to delete the study?",
+          this.$t('studies.messages.deleteTitle'),
+          this.$t('studies.messages.deleteConfirm'),
           warning,
-          function (val) {
+          (val) => {
             if (val) {
               this.$socket.emit("appDataUpdate", {
                 table: "study",
@@ -627,14 +622,14 @@ export default {
               }, (result) => {
                 if (result.success) {
                   this.eventBus.emit('toast', {
-                    title: "Study deleted",
-                    message: "The study has been deleted",
+                    title: this.$t('studies.messages.studyDeleted'),
+                    message: this.$t('studies.messages.studyDeletedMessage'),
                     variant: "success"
                   });
                 } else {
                   this.eventBus.emit('toast', {
-                    title: "Study delete failed",
-                    message: result.message,
+                    title: this.$t('errors.studies.studyDeleteFailed'),
+                    message: resolveApiMessage(result),
                     variant: "danger"
                   });
                 }

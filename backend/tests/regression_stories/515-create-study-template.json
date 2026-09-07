@@ -1,0 +1,557 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-11T00:34:29.158Z",
+  "traceCount": 24,
+  "recording": {
+    "name": "515-create-study-template",
+    "status": "finished",
+    "startTime": "2026-08-11T00:32:07.234Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "d9A9RFi1xfVMSPlsAAAL"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-11T00:32:42.546Z"
+  },
+  "traces": [
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "name": "Recording 8/11/2026, 2:32:07 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-11T00:32:07.236Z",
+          "startTime": "2026-08-11T00:32:07.234Z",
+          "updatedAt": "2026-08-11T00:32:07.236Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "d9A9RFi1xfVMSPlsAAAL"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:32:07.256Z",
+      "endTime": "2026-08-11T00:32:07.256Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:08.554Z",
+      "endTime": "2026-08-11T00:32:08.554Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "folder",
+          "title": "Saved Templates"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:10.689Z",
+      "endTime": "2026-08-11T00:32:10.689Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "savedTemplatesModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:11.148Z",
+      "endTime": "2026-08-11T00:32:11.148Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "savedTemplatesModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:12.658Z",
+      "endTime": "2026-08-11T00:32:12.658Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Create Template"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:12.664Z",
+      "endTime": "2026-08-11T00:32:12.664Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:13.146Z",
+      "endTime": "2026-08-11T00:32:13.146Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 742,
+          "clientY": 157,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:14.230Z",
+      "endTime": "2026-08-11T00:32:14.230Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 623,
+          "clientY": 174,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:16.348Z",
+      "endTime": "2026-08-11T00:32:16.348Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 619,
+          "clientY": 224,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:21.430Z",
+      "endTime": "2026-08-11T00:32:21.430Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 595,
+          "clientY": 320,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:23.229Z",
+      "endTime": "2026-08-11T00:32:23.229Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 594,
+          "clientY": 396,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:24.630Z",
+      "endTime": "2026-08-11T00:32:24.630Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 598,
+          "clientY": 446,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:28.114Z",
+      "endTime": "2026-08-11T00:32:28.114Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 598,
+          "clientY": 598,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:29.981Z",
+      "endTime": "2026-08-11T00:32:29.981Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 691,
+          "clientY": 636,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:33.496Z",
+      "endTime": "2026-08-11T00:32:33.496Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studySaveAsTemplate",
+      "payload": {
+        "onlyTemplate": true,
+        "templateData": {
+          "end": null,
+          "name": "replaystudytemplate",
+          "start": null,
+          "collab": false,
+          "tagSetId": 1,
+          "anonymize": false,
+          "resumable": false,
+          "timeLimit": 0,
+          "documentId": 0,
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "limitSessions": 0,
+          "stepDocuments": [
+            {
+              "id": 1,
+              "documentId": 2,
+              "configuration": {}
+            },
+            {
+              "id": 2,
+              "documentId": null,
+              "configuration": {}
+            }
+          ],
+          "isTemplateMode": true,
+          "multipleSubmit": false,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:35.358Z",
+      "endTime": "2026-08-11T00:32:35.358Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "hash": "8c8ab9b8-5ca1-41f0-88ae-b52d57a67879",
+          "name": "care-test-doc_renamed",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:25:13.188Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.419Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 2,
+          "originalFilename": "care-test-doc.pdf",
+          "parentDocumentId": null,
+          "uploadedByUserId": 4
+        },
+        {
+          "id": 4,
+          "hash": "2a1d0c59-9b50-4703-bc81-2a75c534f95e",
+          "name": "Document Study 2",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:32:35.422Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.422Z",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 4,
+          "hash": "2a1d0c59-9b50-4703-bc81-2a75c534f95e",
+          "name": "Document Study 2",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:32:35.422Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.427Z",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:32:35.430Z",
+      "endTime": "2026-08-11T00:32:35.430Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "deleted": false,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "deleted": false,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:32:35.430Z",
+      "endTime": "2026-08-11T00:32:35.430Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "deleted": false,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:32:35.430Z",
+      "endTime": "2026-08-11T00:32:35.430Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 900,
+          "clientY": 506,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:36.229Z",
+      "endTime": "2026-08-11T00:32:36.229Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:39.440Z",
+      "endTime": "2026-08-11T00:32:39.440Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1131,
+          "clientY": 174,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:40.300Z",
+      "endTime": "2026-08-11T00:32:40.300Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1145,
+          "clientY": 3,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:41.082Z",
+      "endTime": "2026-08-11T00:32:41.082Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:32:41.555Z",
+      "endTime": "2026-08-11T00:32:41.555Z"
+    }
+  ]
+}

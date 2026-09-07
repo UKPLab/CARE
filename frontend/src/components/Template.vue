@@ -21,6 +21,7 @@
   
   import Loader from "@/basic/Loading.vue";
   import Editor from "@/components/editor/Editor.vue"
+  import { resolveApiMessage } from "@/assets/utils";
   
   export default {
     name: "TemplateRoute",
@@ -50,8 +51,8 @@
             return;
           }
           const confirmMessage = [
-            "This template is missing required placeholders, so your changes will not be saved.",
-            res?.message || "",
+            this.$t("templates.editor.leave.missingPlaceholdersConfirm"),
+            resolveApiMessage(res),
           ].filter(Boolean).join("\n\n");
           if (!window.confirm(confirmMessage)) {
             next(false);
@@ -60,8 +61,8 @@
           const discardRes = await templateEditor.requestDiscard();
           if (!discardRes || !discardRes.success) {
             this.eventBus.emit("toast", {
-              title: "Could not discard template changes",
-              message: discardRes?.message || "",
+              title: this.$t("templates.editor.toasts.templateDiscardFailed"),
+              message: resolveApiMessage(discardRes),
               variant: "danger",
             });
             next(false);
@@ -115,8 +116,8 @@
       templateError: function (data) {
         if (data.templateId === this.templateIdNum) {
           this.eventBus.emit('toast', {
-            title: "Template Error",
-            message: data.message,
+            title: this.$t("templates.editor.toasts.templateError"),
+            message: resolveApiMessage(data),
             variant: "danger"
           });
           this.$router.push("/dashboard/templates");

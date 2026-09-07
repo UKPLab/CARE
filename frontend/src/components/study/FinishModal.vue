@@ -8,28 +8,28 @@
     name="studyFinish"
   >
     <template #title>
-      Finish Study
+      {{ $t('studies.finishStudy') }}
     </template>
     <template #body>
       <div v-if="finished">
         <div class="mb-3 text-center h4">
-          Thank you for your participation :-)
+          {{ $t('studies.thankYouParticipation') }}
         </div>
         <div class="mb-3 text-center h4">
-          You can close the browser now!
+          {{ $t('studies.canCloseBrowser') }}
         </div>
       </div>
       <div v-else>
         <div class="mb-3 text-center h5">
-          Thank you for joining! <br>
+          {{ $t('studies.thankYouJoining') }} <br>
           <br>
-          With a click on the finish button, you can submit your results.
+          {{ $t('studies.clickFinishToSubmit') }}
         </div>
         <div
           v-if="showTimeUp"
           class="text-center text-danger h6"
         >
-          The time has expired, no more changes are possible.
+          {{ $t('studies.timeExpired') }}
         </div>
       </div>
     </template>
@@ -37,7 +37,7 @@
       <div v-if="finished">
         <BasicButton
           class="btn btn-primary"
-          text="Back to Dashboard"
+          :text="$t('studies.backToDashboard')"
           @click="toDashboard"
         />
       </div>
@@ -48,12 +48,12 @@
         <BasicButton
           v-if="closeable"
           class="btn btn-secondary"
-          title="Cancel"
+          :title="$t('common.cancel')"
           data-bs-dismiss="modal"
         />
         <BasicButton
           class="btn btn-success"
-          title="Finish study"
+          :title="$t('studies.finishStudy')"
           @click="finish"
         />
       </div>

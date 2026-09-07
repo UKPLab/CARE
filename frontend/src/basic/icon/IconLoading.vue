@@ -4,7 +4,7 @@
     :style="'width: ' + size + 'px; height: ' + size + 'px;'"
     role="status"
   >
-    <span class="visually-hidden">Loading...</span>
+    <span class="visually-hidden"> {{ $t('common.loading') }}</span>
   </div>
 </template>
 

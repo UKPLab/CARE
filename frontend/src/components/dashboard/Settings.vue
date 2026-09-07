@@ -1,13 +1,13 @@
 <template>
   <div>
-    <Card title="Settings">
+    <Card :title="$t('settings.title')">
       <template #headerElements>
         <div class="btn-group gap-2">
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
-              text="Change User Settings"
-              title="Change User Settings"
+              :text="$t('settings.changeUserSettings')"
+              :title="$t('settings.changeUserSettings')"
               icon="sliders"
               :disabled="!settings || !settings.length"
               @click="$refs.changeUserSettingsModal.open()"
@@ -15,8 +15,8 @@
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
-              text="Export JSON"
-              title="Export JSON"
+              :text="$t('settings.exportJson')"
+              :title="$t('settings.exportJson')"
               icon="download"
               :disabled="!settings || !settings.length"
               @click="exportSettings"
@@ -24,8 +24,8 @@
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
-              text="Import JSON"
-              title="Import JSON"
+              :text="$t('settings.importJson')"
+              :title="$t('settings.importJson')"
               icon="upload"
               :disabled="!settings || !settings.length"
               @click="openUploadModal"
@@ -33,8 +33,8 @@
 
           <BasicButton
               class="btn-outline-secondary btn-sm"
-              text="Reload"
-              title="Reload"
+              :text="$t('common.reload')"
+              :title="$t('common.reload')"
               icon="arrow-clockwise"
               @click="load"
           />
@@ -42,8 +42,8 @@
           <BasicButton
               class="btn-sm"
               :class="hasUnsavedChanges ? 'btn-warning' : 'btn-primary'"
-              :text="hasUnsavedChanges ? 'Save Settings (Unsaved changes)' : 'Save Settings'"
-              :title="hasUnsavedChanges ? 'Save Settings (Unsaved changes)' : 'Save Settings'"
+              :text="hasUnsavedChanges ? $t('settings.saveSettingsUnsaved') : $t('settings.saveSettings')"
+              :title="hasUnsavedChanges ? $t('settings.saveSettingsUnsaved') : $t('settings.saveSettings')"
               icon="upload"
               @click="save"
           />
@@ -58,7 +58,14 @@
         >
           <LoadIcon class="me-2" icon-name="exclamation-triangle-fill"/>
           <div>
-            Remember to click <strong>Save Settings</strong> after making changes.
+            <i18n-t
+              keypath="settings.rememberToSave"
+              tag="span"
+            >
+              <template #save>
+                <strong>{{ $t('settings.saveSettings') }}</strong>
+              </template>
+            </i18n-t>
           </div>
         </div>
 
@@ -117,13 +124,13 @@
         name="settingsUpload"
     >
       <template #title>
-        Import Settings
+        {{ $t('settings.importSettings') }}
       </template>
 
       <template #body>
         <div class="modal-body">
           <p class="mb-2">
-            Select a previous downloaded settings file. Only existing keys will be updated.
+            {{ $t('settings.importDescription') }}
           </p>
           <input
               ref="settingsUploadInput"
@@ -139,13 +146,13 @@
         <span class="btn-group">
           <BasicButton
               class="btn btn-secondary"
-              title="Close"
+              :title="$t('common.close')"
               :disabled="uploading"
               @click="$refs.settingsUploadModal.close()"
           />
           <BasicButton
               class="btn btn-primary"
-              :title="uploading ? 'Importing…' : 'Import'"
+              :title="uploading ? $t('common.importing') : $t('common.import')"
               :disabled="!uploadFile || uploading"
               @click="importSettings"
           />
@@ -169,7 +176,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import SettingsSection from "@/components/dashboard/settings/SettingsSection.vue";
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import {onBeforeRouteUpdate} from "vue-router";
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
 
@@ -192,7 +199,7 @@ const SUBSECTION_ORDER = {
   registration: ["Enable registration", "Information requested at registration", "Consent options", "Terms and conditions", "Email verification rate limit"],
   moodle: ["Connection", "Course", "Show inputs"],
   annotations: ["Comments", "Download", "NLP in annotations", "Sidebar"],
-  interface: ["Navigation and dashboard", "Branding", "Projects", "Statistics and tags"],
+  interface: ["Localization", "Navigation and dashboard", "Branding", "Projects", "Statistics and tags"],
   "text editor": ["Document buttons", "Edit history", "Toolbar"],
   "ai & nlp": ["Modal NLP", "NLP service"],
   system: ["Token expiry"],
@@ -288,9 +295,7 @@ export default {
 
     onBeforeRouteUpdate((to, from, next) => {
       if (this.hasUnsavedChanges) {
-        const answer = window.confirm(
-            "You have unsaved changes in your settings. Are you sure you want to leave without saving?"
-        );
+        const answer = window.confirm(this.$t('settings.messages.unsavedChangesWarning'));
         if (!answer) {
           return next(false);
         }
@@ -360,15 +365,15 @@ export default {
             this.$store.commit("settings/set", { key: s.key, value: s.value });
           });
           this.eventBus.emit("toast", {
-            title: "Success",
-            message: res.data,
+            title: this.$t('common.success'),
+            message: resolveApiMessage({ message: res.data }, 'settings.messages.settingsSavedSuccessfully'),
             variant: "success",
           });
           this.setSettingsSnapshot();
         } else {
           this.eventBus.emit("toast", {
-            title: "Error Saving Settings",
-            message: res.message,
+            title: this.$t('errors.settings.errorSaving'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -379,8 +384,8 @@ export default {
         if (res.success) {
           if (showToast) {
             this.eventBus.emit("toast", {
-                title: "Settings Loaded",
-                message: "Settings have been successfully loaded.",
+                title: this.$t('settings.messages.settingsLoaded'),
+                message: this.$t('settings.messages.settingsLoadedMessage'),
                 variant: "success",
             });
           }
@@ -388,8 +393,8 @@ export default {
           this.setSettingsSnapshot();
         } else {
           this.eventBus.emit("toast", {
-            title: "Error Loading Settings",
-            message: res.message,
+            title: this.$t('errors.settings.errorLoading'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -427,8 +432,8 @@ export default {
     async importSettings() {
       if (!this.uploadFile) {
         this.eventBus.emit("toast", {
-          title: "No file selected",
-          message: "Please select a JSON file to import.",
+          title: this.$t('errors.file.noFileSelected'),
+          message: this.$t('errors.file.selectJsonFile'),
           variant: "warning",
         });
         return;
@@ -437,8 +442,8 @@ export default {
       const fileName = this.uploadFile.name || "";
       if (!fileName.toLowerCase().endsWith(".json")) {
         this.eventBus.emit("toast", {
-          title: "Invalid file type",
-          message: "Only JSON files are allowed.",
+          title: this.$t('errors.file.invalidFileType'),
+          message: this.$t('errors.file.onlyJsonAllowed'),
           variant: "danger",
         });
         return;
@@ -455,11 +460,11 @@ export default {
         try {
           json = JSON.parse(text);
         } catch (e) {
-          throw new Error("Invalid JSON: " + e.message, { cause: e });
+          throw new Error(this.$t('errors.file.invalidJson') + ": " + e.message, { cause: e });
         }
 
         if (typeof json !== "object" || json === null || Array.isArray(json)) {
-          throw new Error("The JSON must be an object of key/value pairs.");
+          throw new Error(this.$t('errors.file.jsonMustBeObject'));
         }
 
         let updatedCount = 0;
@@ -476,8 +481,8 @@ export default {
         });
 
         this.eventBus.emit("toast", {
-          title: "Settings imported",
-          message: `Updated ${updatedCount} existing setting(s).`,
+          title: this.$t('settings.messages.settingsImported'),
+          message: this.$t('settings.messages.updatedSettings', { count: updatedCount }),
           variant: "success",
         });
 
@@ -489,7 +494,7 @@ export default {
         // Importing marks the form as "dirty" until the user clicks Save.
       } catch (e) {
         this.eventBus.emit("toast", {
-          title: "Failed to import settings",
+          title: this.$t('errors.settings.failedToImport'),
           message: e.message,
           variant: "danger",
         });

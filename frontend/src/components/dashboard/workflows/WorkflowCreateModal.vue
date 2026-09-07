@@ -2,7 +2,9 @@
   <BasicCoordinator
     ref="coordinator"
     table="workflow"
-    title="Workflow"
+    :title="$t('workflow.createModal.title')"
+    :text-add="$t('common.add')"
+    :text-cancel="$t('common.cancel')"
   />
 </template>
 
@@ -27,9 +29,8 @@ export default {
       this.$refs.coordinator.open(workflowId, defaultValues);
     },
     copy(workflowId, defaultValues = {}) {
-      this.$refs.coordinator.open(workflowId, defaultValues, true, {
-        parentWorkflowId: workflowId,
-      });
+      const overrides = { parentWorkflowId: workflowId };
+      this.$refs.coordinator.open(workflowId, defaultValues, true, overrides);
     },
     close() {
       this.$refs.coordinator.close();
@@ -38,15 +39,15 @@ export default {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-          title: "Link copied",
-          message: "Workflow link copied to clipboard!",
-          variant: "success"
+          title: this.$t("workflow.createModal.success.linkCopied.title"),
+          message: this.$t("workflow.createModal.success.linkCopied.message"),
+          variant: "success",
         });
       } catch (_error) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Could not copy workflow link to clipboard!",
-          variant: "danger"
+          title: this.$t("workflow.createModal.errors.linkNotCopied.title"),
+          message: this.$t("workflow.createModal.errors.linkNotCopied.message"),
+          variant: "danger",
         });
       }
     }

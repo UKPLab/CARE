@@ -18,12 +18,12 @@
 
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            Register
+            {{ $t('auth.register') }}
             <a
                 class="btn btn-sm btn-primary"
                 href="#"
                 @click="toLogin"
-            >Login</a>
+            >{{ $t('auth.login') }}</a>
           </div>
 
           <div class="card-body mx-4 my-4">
@@ -34,7 +34,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="firstName"
-              >First name</label>
+              >{{ $t('auth.firstName') }}</label>
               <div class="col-md-6">
                 <input
                     id="firstName"
@@ -46,7 +46,7 @@
                     type="text"
                 >
                 <div class="feedback-invalid">
-                  Please provide your first name.
+                  {{ $t('errors.validation.auth.provideFirstName') }}
                 </div>
               </div>
             </div>
@@ -59,7 +59,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="lastName"
-              >Last name</label>
+              >{{ $t('auth.lastName') }}</label>
               <div class="col-md-6">
                 <input
                     id="lastName"
@@ -70,7 +70,7 @@
                     type="text"
                 >
                 <div class="feedback-invalid">
-                  Please provide your last name.
+                  {{ $t('errors.validation.auth.provideLastName') }}
                 </div>
               </div>
             </div>
@@ -79,7 +79,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="userName"
-              >Username</label>
+              >{{ $t('auth.username') }}</label>
               <div class="col-md-6">
                 <input
                     id="userName"
@@ -92,7 +92,7 @@
                     @blur="checkVal('userName')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
-                  Please provide a valid username - no special characters.
+                  {{ $t('errors.validation.auth.usernameNoSpecialChars') }}
                 </div>
               </div>
             </div>
@@ -101,7 +101,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="email"
-              >E-Mail</label>
+              >{{ $t('auth.email') }}</label>
               <div class="col-md-6">
                 <input
                     id="email"
@@ -113,7 +113,7 @@
                     @blur="checkVal('email')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
-                  Please provide a valid email address.
+                  {{ $t('errors.validation.auth.provideEmail') }}
                 </div>
               </div>
             </div>
@@ -123,7 +123,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="password"
-              >Password</label>
+              >{{ $t('auth.password') }}</label>
               <div class="col-md-6">
                 <input
                     id="password"
@@ -136,7 +136,7 @@
                     @blur="checkVal('password')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  Password must be at least 8 characters. Use letters, numbers, and standard punctuation; no spaces-only or emojis.
+                  {{ $t('errors.validation.auth.passwordRequirements') }}
                 </div>
               </div>
             </div>
@@ -150,12 +150,12 @@
                       name="acceptTerms"
                       type="checkbox"
                       @blur="checkVal('acceptTerms')"
-                  > I accept the <a
+                  > {{ $t('auth.acceptTermsPrefix') }} <a
                     href="#"
                     @click="$refs.terms.open()"
-                >Terms of Service</a>
-                  <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">Please accept
-                    the terms.
+                  >{{ $t('auth.termsOfService') }}</a>
+                  <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}"
+                    >{{ $t('errors.validation.auth.acceptTermsRequired') }}
                   </div>
                 </label>
               </div>
@@ -170,7 +170,7 @@
                       v-model="formData['acceptStats']"
                       name="acceptStats"
                       type="checkbox"
-                  > I allow the collection of anonymous statistics
+                  > {{ $t('auth.acceptStats') }}
                 </label>
               </div>
             </div>
@@ -184,7 +184,7 @@
                       v-model="formData['acceptDataSharing']"
                       name="acceptDataSharing"
                       type="checkbox"
-                  > I agree to my data being made available for research purposes
+                  > {{ $t('auth.acceptDataSharing') }}
                 </label>
               </div>
             </div>
@@ -193,7 +193,7 @@
                 class="btn btn-primary"
                 type="submit"
                 :disabled="!config['isRegistrationEnabled']"
-                text="Register"
+                :title="$t('auth.register')"
               />
             </div>
           </div>
@@ -218,6 +218,7 @@ import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthRegister",
@@ -317,14 +318,14 @@ export default {
         });
         if( window.config["app.register.emailVerification"] === "true" ) {
           this.eventBus.emit('toast', {
-            message: "A validation link was sent to your email",
-            title: "Validate your email",
+            message: this.$t('auth.messages.validationLinkSent'),
+            title: this.$t('auth.messages.validateEmail'),
             variant: 'warning'
           });
         } else{
           this.eventBus.emit('toast', {
-            message: "Registration successful! You can now log in.",
-            title: "Success",
+            message: this.$t('auth.messages.registrationSuccess'),
+            title: this.$t('common.success'),
             variant: 'success'
           });
         }
@@ -333,8 +334,8 @@ export default {
         this.toLogin();
       } catch (err) {
         this.eventBus.emit('toast', {
-          message: err.response && err.response.data && err.response.data.message ? err.response.data.message : err.message,
-          title: "Invalid User Credentials",
+          message: resolveApiMessage(err.response?.data || { message: err.message }, 'errors.server.unexpectedError'),
+          title: this.$t('errors.auth.invalidCredentials'),
           variant: 'danger'
         });
       }

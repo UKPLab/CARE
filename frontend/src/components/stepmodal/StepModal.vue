@@ -12,7 +12,7 @@
           class="modal-title"
           :class="studyStep?.configuration?.titleClass || 'text-primary'"
         >
-          {{ studyStep?.configuration?.title || 'Feedback' }}
+          {{ studyStep?.configuration?.title || $t('navigation.feedback') }}
         </h5>
       </template>  
       <template #body>
@@ -21,7 +21,7 @@
           :style="{ color: studyStep?.configuration?.textColor || '' }"
         >
           <p v-if="!documentText">
-            No content available for this step.
+            {{ $t('modals.noContentForThisStep') }}
           </p>
 
           <div v-else>
@@ -46,20 +46,20 @@
         <div v-if="!waiting" class="btn-group">
           <BasicButton
             v-if="!isLastStep"
-            :title="studyStep?.configuration?.nextButtonText || 'Next'"
+            :title="studyStep?.configuration?.nextButtonText || $t('common.next')"
             @click="closeModal({ nextStep: true })"
           />
           <!-- Button for the last step -->
           <BasicButton
             v-if="isLastStep && !readOnly"
-            :title="studyStep?.configuration?.finishButtonText || 'Finish Study'"
+            :title="studyStep?.configuration?.finishButtonText || $t('modals.finishStudy')"
             :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
             @click="closeModal({ endStudy: true })"
           />
           <!-- Button for the last step in read-only mode -->
           <BasicButton
             v-if="isAdmin && isLastStep && readOnly"
-            title="Export Study Data"
+            :title="$t('modals.exportStudyData')"
             class="btn me-1 btn-outline-secondary"
             icon="cloud-arrow-down"
             @click="exportStudyData"
@@ -67,7 +67,7 @@
           <!-- Button for returning to the dashboard when in read-only mode -->
           <BasicButton
             v-if="isLastStep && readOnly"
-            :title="'Return to Studies'"
+            :title="$t('modals.returnToStudies')"
             :class="'btn btn-primary'"
             @click="$router.push('/dashboard/studies')"
           />
@@ -239,7 +239,7 @@ export default {
             quill.setContents(response.data.deltas);
             this.documentText = quill.root.innerHTML;
           } else {
-            this.documentText = "Failed to load the document content.";
+            this.documentText = this.$t('errors.documents.failedToLoadDocContent');
           }
           this.waiting = false;
         }
@@ -279,7 +279,7 @@ export default {
 .feedback-container {
   max-height: 400px;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.5rem;
 }
 
@@ -293,15 +293,15 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .text-muted {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .fw-bold {

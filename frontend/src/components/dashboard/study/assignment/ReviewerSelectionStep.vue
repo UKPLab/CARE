@@ -2,10 +2,14 @@
   <div>
     <div v-if="bulk" class="form-check">
       <input id="filterHasDocumentsCheckbox" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
-      <label class="form-check-label" for="filterHasDocumentsCheckbox">Filter only users with documents</label>
+      <label class="form-check-label" for="filterHasDocumentsCheckbox">
+        {{ $t('dashboard.study.filterUsersWithDocuments') }}
+      </label>
       <br>
       <input id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input" type="checkbox">
-      <label class="form-check-label" for="filterSelectedDocumentsCheckbox">Filter only users from previous selected documents</label>
+      <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
+        {{ $t('dashboard.study.filterUsersFromPreviousDocuments') }}
+      </label>
     </div>
     <BasicTable
         v-model="selectedReviewer"
@@ -103,18 +107,18 @@ export default {
     },
     reviewerTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "extId", key: "extId" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Number of Assignments", key: "studySessions" },
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("dashboard.projects.extId"), key: "extId" },
+        { name: this.$t("common.firstName"), key: "firstName" },
+        { name: this.$t("common.lastName"), key: "lastName" },
+        { name: this.$t("dashboard.projects.numberOfAssignments"), key: "studySessions" },
         {
-          name: "Documents",
+          name: this.$t("dashboard.study.documents"),
           key: "documents",
           filter: { type: "numeric", defaultOperator: "gte", defaultValue: 0 },
         },
         {
-          name: "Roles",
+          name: this.$t("dashboard.study.roles"),
           key: "rolesNames",
           filter: this.reviewerRoles.map(r => ({ key: r, name: r })),
         },

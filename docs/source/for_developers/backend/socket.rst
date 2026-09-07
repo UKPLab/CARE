@@ -445,6 +445,25 @@ In these cases, you can register a manual `afterCommit` hook on the transaction 
    When using ``autoTable`` models, commit-time change tracking and ``<table>Refresh`` emits are automatic.
    Details in :ref:`Store Updates & <table>Refresh> Events <table-refresh-events>`.
 
+.. _document-replace-file:
+
+documentReplaceFile
+~~~~~~~~~~~~~~~~~~~
+
+Admin-only socket used by the Admin Tools dashboard to correct a wrong PDF or ZIP on disk
+without creating a new document row.
+
+- Event name: ``documentReplaceFile``
+- Registered with ``createSocket(..., true)`` (transactional)
+- Input: ``documentId``, ``file`` (binary), ``name`` (original filename for extension checks)
+- Keeps the same document ``id`` and ``hash``; overwrites ``files/{hash}.pdf`` or ``files/{hash}.zip``
+- Only PDF and ZIP documents are supported; the upload extension must match the document type
+- For PDFs: soft-deletes existing CARE annotations and comments on that document, and best-effort
+  strips embedded PDF annotations via PDFRPC (falls back to the raw upload if strip fails)
+- Writes ``files/{hash}.{ext}.replace-tmp`` before commit (failure rolls back DB changes); renames
+  onto the live hash path in ``afterCommit``. If rename fails after commit, the socket returns an
+  error so the admin is notified and the temp file is left for manual recovery.
+
 .. _document-create-example:
 
 Example Lifecycle

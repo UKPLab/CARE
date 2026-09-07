@@ -10,11 +10,11 @@
           role="status"
           :style="'width:' + size + 'rem;height:'+ size + 'rem;'"
       >
-        <span class="visually-hidden">{{ text }}</span>
+        <span class="visually-hidden">{{ displayText }}</span>
       </div>
     </div>
     <div class="row">
-      <strong :class="textClass" :style="'font-size:' + size / 2 + 'rem;'">{{ text }}</strong>
+      <strong :class="textClass" :style="'font-size:' + size / 2 + 'rem;'">{{ displayText }}</strong>
     </div>
   </div>
 </template>
@@ -43,7 +43,7 @@ export default {
     'text': {
       type: String,
       required: false,
-      default: "Loading..."
+      default: null
     },
     'textClass': {
       type: String,
@@ -56,6 +56,11 @@ export default {
       default: 3,
     }
   },
+  computed: {
+    displayText() {
+      return this.text ? this.text : this.$t('common.loading');
+    }
+  }
 }
 </script>
 

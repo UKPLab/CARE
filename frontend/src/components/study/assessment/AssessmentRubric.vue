@@ -12,7 +12,7 @@
             :size="16"
             class="me-2"
         />
-        <span class="fw-bold">{{ rubric.name || 'Unnamed rubric' }}</span>
+        <span class="fw-bold">{{ rubric.name || $t("assessment.rubric.unnamedRubric") }}</span>
       </div>
 
       <div class="d-flex align-items-center">
@@ -42,9 +42,9 @@
         <span
             class="badge"
             :class="isGroupSaved ? 'bg-success' : 'bg-secondary'"
-            :title="`Rubric: ${groupScore} / ${groupMax} P`"
+            :title="$t('assessment.rubric.scoreTitle', { score: groupScore, max: groupMax })"
         >
-          {{ groupScore }} P
+          {{ $t("assessment.rubric.scoreBadge", { score: groupScore }) }}
         </span>
       </div>
     </div>
@@ -86,7 +86,7 @@
             v-if="!rubric.criteria || rubric.criteria.length === 0"
             class="text-muted px-2 py-1"
         >
-          No criteria defined for this rubric.
+          {{ $t("assessment.rubric.noCriteria") }}
         </div>
       </div>
     </div>

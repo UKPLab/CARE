@@ -1,7 +1,7 @@
 <template>
   <BasicModal ref="modal" name="PasswordModal" @hide="resetForm">
     <template #title>
-      <span>Reset Password</span>
+      <span>{{ $t('auth.resetPassword') }}</span>
     </template>
     <template #body>
       <BasicForm
@@ -14,12 +14,12 @@
     <template #footer>
       <span class="btn-group">
         <BasicButton
-          title="Cancel"
+          :title="$t('common.cancel')"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
         />
         <BasicButton
-          title="Confirm"
+          :title="$t('common.confirm')"
           class="btn btn-primary"
           @click="submit"
         />
@@ -32,6 +32,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for resetting user's password
@@ -45,18 +46,25 @@ export default {
     return {
       userId: 0,
       data: {},
-      allFields: [
+    };
+  },
+  computed: {
+    isAdmin() {
+      return this.$store.getters['auth/isAdmin'];
+    },
+    allFields() {
+      return [
         {
           key:"oldPassword",
           type: "password",
-          label: "Current Password",
+          label: this.$t('auth.currentPassword'),
           required: true,
           placeholder: "",
         },
         {
           key: "password",
           type: "password",
-          label: "New Password",
+          label: this.$t('auth.newPassword'),
           required: true,
           placeholder: "",
           pattern: ".{8,}",
@@ -65,18 +73,13 @@ export default {
         {
           key: "confirmPassword",
           type: "password",
-          label: "Confirm Password",
+          label: this.$t('auth.confirmPassword'),
           required: true,
           placeholder: "",
           pattern: ".{8,}",
           default: "",
         }
-      ],
-    };
-  },
-  computed: {
-    isAdmin() {
-      return this.$store.getters['auth/isAdmin'];
+      ];
     },
     fields() {
       const thisUserID = this.$store.getters['auth/getUserId'];
@@ -103,14 +106,14 @@ export default {
         if (response.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
-            title: "Password updated",
-            message: "Successfully reset password!",
+            title: this.$t('modals.passwordUpdated'),
+            message: this.$t('modals.passwordResetSuccess'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to reset password",
-            message: response.message,
+            title: this.$t('errors.auth.passwordResetFailed'),
+            message: resolveApiMessage(response),
             variant: "danger",
           });
         }
@@ -126,8 +129,8 @@ export default {
       const { confirmPassword, password } = this.$refs.form.modelValue;
       if (password !== confirmPassword) {
         this.eventBus.emit("toast", {
-          title: "Validation Error",
-          message: "Passwords do not match",
+          title: this.$t('errors.validation.validationError'),
+          message: this.$t('errors.validation.auth.passwordsDoNotMatch'),
           variant: "danger",
         });
         return false;
@@ -138,8 +141,8 @@ export default {
       });
       if (/^\s*$/.test(password) || hasInvalidCharacter) {
         this.eventBus.emit("toast", {
-          title: "Validation Error",
-          message: "Password cannot contain only spaces, control characters, or emojis. Use letters, numbers, and standard punctuation.",
+          title: this.$t('errors.validation.validationError'),
+          message: this.$t('errors.validation.auth.passwordInvalidChars'),
           variant: "danger",
         });
         return false;
