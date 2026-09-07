@@ -13,6 +13,7 @@ import { resolveApiMessage } from "@/assets/utils";
  * - caution actions (e.g. hide) use outline-warning via dashboardRowButton(..., "warning")
  *
  * Prefer one catalog key per meaning so icons stay distinct without hover titles.
+ * Access a row with "open", edit or rename metadata with "edit".
  *
  * @author Mohammad Elwan
  */
@@ -44,10 +45,6 @@ export const DASHBOARD_ROW_BUTTON_STYLES = Object.freeze({
 export const DASHBOARD_ROW_ACTIONS = Object.freeze({
   edit: Object.freeze({
     icon: "pencil",
-    options: DASHBOARD_ROW_BUTTON_STYLES.default,
-  }),
-  editContent: Object.freeze({
-    icon: "journal-text",
     options: DASHBOARD_ROW_BUTTON_STYLES.default,
   }),
   open: Object.freeze({

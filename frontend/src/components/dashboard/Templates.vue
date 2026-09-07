@@ -9,21 +9,21 @@
     >
       <template #headerActions>
         <BasicButton
-          class="btn-outline-secondary btn-sm me-2"
+          class="btn-secondary btn-sm me-2"
           :title="$t('templates.dashboard.browsePublicTemplates')"
           :text="$t('templates.dashboard.publicTemplates')"
           icon="globe"
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
-          class="btn-outline-secondary btn-sm me-2"
+          class="btn-secondary btn-sm me-2"
           :title="$t('modals.importExport.wiring.templates.importTooltip')"
           :text="$t('common.import')"
           icon="upload"
           @click="$refs.importFormatModal.open('template')"
         />
         <BasicButton
-          class="btn-outline-secondary btn-sm me-2"
+          class="btn-secondary btn-sm me-2"
           :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
           :text="$t('common.exportAll')"
           icon="download"
@@ -133,8 +133,8 @@
             title: this.$t("templates.dashboard.actions.editTemplate"),
             action: "edit",
           }),
-          // Edit content - own non-copy templates only
-          dashboardRowAction("editContent", {
+          // Open template editor - own non-copy templates only
+          dashboardRowAction("open", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
@@ -143,8 +143,8 @@
             title: this.$t("templates.dashboard.actions.editContent"),
             action: "editContent",
           }),
-          // Edit content - for copies (detaches first)
-          dashboardRowAction("editContent", {
+          // Open template editor - for copies (detaches first)
+          dashboardRowAction("open", {
             filter: [{ key: "isCopy", value: true }],
             title: this.$t("templates.dashboard.actions.editContent"),
             action: "editContentCopy",

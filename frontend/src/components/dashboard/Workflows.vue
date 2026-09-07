@@ -9,20 +9,20 @@
   >
     <template #headerActions>
       <BasicButton
-        class="btn btn-primary btn-sm"
+        class="btn-primary btn-sm"
         :title="$t('workflow.dashboard.addWorkflow')"
         :text="$t('workflow.dashboard.addWorkflow')"
         @click="$refs.workflowCreateModal.open()"
       />
       <BasicButton
-        class="btn btn-secondary btn-sm ms-2"
+        class="btn-secondary btn-sm ms-2"
         :title="$t('workflow.dashboard.exportWorkflows')"
         :text="$t('workflow.dashboard.exportAll')"
         icon="download"
         @click="exportWorkflows"
       />
       <BasicButton
-        class="btn btn-secondary btn-sm ms-2"
+        class="btn-secondary btn-sm ms-2"
         :title="$t('workflow.dashboard.importWorkflows')"
         :text="$t('common.import')"
         icon="upload"
@@ -66,7 +66,7 @@ import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
-import { dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -152,12 +152,12 @@ export default {
             {key: "isEditable", value: true},
           ],
         }),
-        dashboardRowButton("diagram-3", {
+        dashboardRowAction("open", {
           title: this.$t("workflow.dashboard.actions.editWorkflow"),
           action: "editWorkflow",
           stats: { workflowId: "id" },
         }),
-        dashboardRowButton("fonts", {
+        dashboardRowAction("edit", {
           title: this.$t("workflow.dashboard.actions.renameWorkflow"),
           action: "renameWorkflow",
           stats: { workflowId: "id" },
