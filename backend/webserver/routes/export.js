@@ -116,9 +116,12 @@ module.exports = function (server) {
                         server,
                         parsedProjectId,
                         userIds,
+                        users,
                         documentTypes,
                         shouldExcludeNonConsentingEdits,
                         shouldExcludeNonConsentingAnnotations,
+                        shouldGenerateAliases,
+                        userMapping,
                         baseFolderName,
                         archive
                     );
