@@ -276,6 +276,23 @@ module.exports = function (server) {
     }
 
     /**
+     * Serializes grade CSV rows to text, deriving the header from the union of keys across
+     * every row rather than just the first one's — a session's records can span more than one
+     * assessment configuration, each contributing its own criterion columns.
+     * @param {Array<Object>} csvRows - Flat rows built by buildGradeCsvRow.
+     * @returns {string} The CSV text.
+     */
+    function unparseGradeCsvRows(csvRows) {
+        const fields = [];
+        for (const row of csvRows) {
+            for (const key of Object.keys(row)) {
+                if (!fields.includes(key)) fields.push(key);
+            }
+        }
+        return Papa.unparse({ fields, data: csvRows });
+    }
+
+    /**
      * Exports assessment results for the selected users as a ZIP archive.
      * Each selected user gets one or more hash-named folders containing
      * either JSON or CSV score files depending on the requested format.
@@ -359,7 +376,7 @@ module.exports = function (server) {
 
                 const [studyNamePart, stepIdPart, configurationIdPart] = groupKey.split("__");
                 const fileName = `${studyNamePart}_${stepIdPart}_${configurationIdPart}.csv`;
-                archive.append(Papa.unparse(csvRows), { name: `grades/${fileName}` });
+                archive.append(unparseGradeCsvRows(csvRows), { name: `grades/${fileName}` });
             }
             return;
         }
@@ -381,7 +398,7 @@ module.exports = function (server) {
 
                 if (gradeFormat === "csv") {
                     const csvRows = exportedRecords.map((record) => buildGradeCsvRow(record));
-                    archive.append(Papa.unparse(csvRows), { name: `${hashFolder}/scores.csv` });
+                    archive.append(unparseGradeCsvRows(csvRows), { name: `${hashFolder}/scores.csv` });
                 } else {
                     archive.append(JSON.stringify(exportedRecords, null, 2), { name: `${hashFolder}/scores.json` });
                 }
