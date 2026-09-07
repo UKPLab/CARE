@@ -31,6 +31,9 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
     }
     workflowIds = typeof workflowIds === 'string' ? JSON.parse(workflowIds) : workflowIds;
     if (!Array.isArray(workflowIds)) workflowIds = [];
+    if (exportType === "studies" && workflowIds.length === 0) {
+        return { success: false, status: 400, message: "No workflows selected." };
+    }
     if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
         return { success: false, status: 400, message: "Unsupported grade format. Use json or csv." };
     }
@@ -280,6 +283,12 @@ function parseUserIds(server, rawUserIds) {
     }
 }
 
+/**
+ * Resolves each annotation's tagId to its tag name and attaches it as `tagName`.
+ * @param {Object} server - The server instance providing database models.
+ * @param {Array<Object>} annotations - Annotation records, each optionally carrying a `tagId`.
+ * @returns {Promise<Array<Object>>} The annotations with a `tagName` field added (null if untagged).
+ */
 async function attachTagNames(server, annotations) {
     const tagIds = [...new Set(annotations.map(a => a.tagId).filter(Boolean))];
     if (tagIds.length === 0) return annotations;
@@ -294,6 +303,12 @@ async function attachTagNames(server, annotations) {
     return annotations.map(a => ({ ...a, tagName: tagNameById.get(a.tagId) ?? null }));
 }
 
+/**
+ * Resolves whether a user holds an admin role.
+ * @param {Object} server - The server instance providing database models.
+ * @param {number} userId - The user's id.
+ * @returns {Promise<boolean>} Whether the user is an admin.
+ */
 async function resolveIsAdmin(server, userId) {
     const roleIds = await server.db.models["user_role_matching"].getUserRolesById(userId);
     return await server.db.models["user_role_matching"].isAdminInUserRoles(roleIds);
@@ -302,7 +317,10 @@ async function resolveIsAdmin(server, userId) {
 /**
  * Builds a Readable that emits a JSON array incrementally, paging through fetchPage(lastId, limit)
  * using keyset pagination so the full result set is never held in memory at once.
- * @param {(lastId: number, limit: number) => Promise<Array<{id:number}>>} fetchPage
+ * @param {(lastId: number, limit: number) => Promise<Array<{id:number}>>} fetchPage - Fetches the next page of rows after lastId, ordered by id.
+ * @param {(row: Object) => Object} [mapRow] - Transforms each row before serialization. Defaults to the identity function.
+ * @param {number} [pageSize=1000] - Number of rows to fetch per page.
+ * @returns {Readable} A stream emitting the JSON-serialized array.
  */
 function createJsonArrayStream(fetchPage, mapRow = (row) => row, pageSize = 1000) {
     let lastId = 0;
@@ -356,6 +374,15 @@ function createJsonArrayStream(fetchPage, mapRow = (row) => row, pageSize = 1000
     });
 }
 
+/**
+ * Builds a Readable that emits CSV rows incrementally, paging through fetchPage(lastId, limit)
+ * using keyset pagination so the full result set is never held in memory at once.
+ * @param {(lastId: number, limit: number) => Promise<Array<{id:number}>>} fetchPage - Fetches the next page of rows after lastId, ordered by id.
+ * @param {(row: Object) => Object} mapRow - Transforms each row into the record written to CSV.
+ * @param {Array<string>} fields - Column names/order for the CSV header.
+ * @param {number} [pageSize=1000] - Number of rows to fetch per page.
+ * @returns {Readable} A stream emitting CSV text, with the header written once on the first non-empty chunk.
+ */
 function createCsvRowsStream(fetchPage, mapRow, fields, pageSize = 1000) {
     let lastId = 0;
     let started = false;
