@@ -10,7 +10,7 @@
     <template #headerActions>
       <div class="btn-group gap-2">
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :text="$t('basic.configuration.uploadButton')"
             :title="$t('basic.configuration.uploadTooltip')"
             icon="upload"
@@ -21,7 +21,7 @@
             })"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :text="$t('common.exportAll')"
             :title="$t('modals.importExport.wiring.configuration.exportAllTooltip')"
             icon="download"

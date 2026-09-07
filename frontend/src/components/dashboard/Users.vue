@@ -9,58 +9,58 @@
       @action="chooseAction"
   >
     <template #headerActions>
-      <div class="d-flex align-items-center flex-wrap gap-2">
+      <div class="btn-group gap-2 flex-wrap">
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.liveSessions')"
             :text="$t('users.liveSessions')"
             icon="people-fill"
             @click="openSessionDetailsModal()"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.downloadUsers')"
             :text="$t('users.downloadUsers')"
             icon="download"
             @click="downloadUsers"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.rights.managementTitle')"
             :text="$t('users.rights.managementTitle')"
             icon="shield-lock"
             @click="openRightsManagementModal"
         />
         <BasicButton
-          class="btn btn-secondary btn-sm"
+          class="btn-secondary btn-sm"
           :title="$t('users.roleManagement.button')"
           :text="$t('users.roleManagement.button')"
           icon="person-plus"
           @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.uploadPassword')"
             :text="$t('users.uploadPassword')"
             icon="key"
             @click="openUploadModal"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.importCsv')"
             :text="$t('users.importCsv')"
             icon="filetype-csv"
             @click="openImportModal('csv')"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.importViaMoodle')"
             :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
             @click="openImportModal('moodle')"
         />
         <BasicButton
-            class="btn btn-primary btn-sm"
+            class="btn-primary btn-sm"
             :title="$t('users.addUser')"
             :text="$t('users.addUser')"
             icon="person-plus"

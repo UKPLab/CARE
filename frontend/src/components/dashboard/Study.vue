@@ -42,7 +42,7 @@
               @click="addSingleAssignment"
           />
           <BasicButton
-              class="btn btn-primary btn-sm"
+              class="btn-primary btn-sm"
               :title="$t('common.add')"
               :text="$t('common.add')"
               icon="plus"

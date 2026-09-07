@@ -145,7 +145,7 @@ way ``Tags.vue`` does.
 
 Column names and row-button titles that use ``$t`` belong in ``computed``, not ``data``,
 so they update when the locale changes. Header buttons pass ``:title="$t(...)"`` (see
-:doc:`../../i18n`).
+:doc:`../../i18n`). Import/export use ``btn-secondary``; add/create uses ``btn-primary``.
 
 **Script imports**
 
@@ -164,7 +164,7 @@ or ``getFiltered`` (see :doc:`../vuex_store`).
 **Row buttons**
 
 * ``dashboardRowAction("edit", { title, action, filter, stats })`` — catalog name
-  (``edit``, ``delete``, ``copy``, ``share``, ``download``, …) so icons and colors stay consistent.
+  (``edit``, ``open``, ``delete``, ``copy``, ``share``, ``download``, …) so icons and colors stay consistent.
   Unknown catalog names throw (see ``dashboardRowAction`` in ``actions.js``).
 * ``dashboardRowButton("upload", { title, action, ... })`` — first argument is a Bootstrap icon
   name, not a catalog key. Use this for page-only icons (Assignments metadata upload uses

@@ -20,14 +20,14 @@
       >
         <template #additional-buttons>
           <BasicButton
-            class="btn btn-outline-secondary btn-sm"
+            class="btn-secondary btn-sm"
             icon="upload"
             text=""
             :title="$t('modals.importExport.wiring.studyTemplates.importTooltip')"
             @click="openImport"
           />
           <BasicButton
-            class="btn btn-outline-secondary btn-sm"
+            class="btn-secondary btn-sm"
             icon="download"
             text=""
             :title="$t('modals.importExport.wiring.studyTemplates.exportAllTooltip')"
