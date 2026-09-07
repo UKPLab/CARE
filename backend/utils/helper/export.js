@@ -24,10 +24,10 @@ const SUPPORTED_EXPORT_TYPES = new Set(["submissions", "grades", "documents", "s
  */
 async function loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds, currentUserId }) {
     if (!Number.isInteger(parsedProjectId)) {
-        return { success: false, status: 400, message: "dashboard.projects.export.api.missingProjectId" };
+        return { success: false, status: 400, message: "Missing projectId." };
     }
     if (!SUPPORTED_EXPORT_TYPES.has(exportType)) {
-        return { success: false, status: 400, message: "dashboard.projects.export.api.unsupportedExportType" };
+        return { success: false, status: 400, message: "Unsupported export type." };
     }
     try {
         workflowIds = typeof workflowIds === 'string' ? JSON.parse(workflowIds) : workflowIds;
@@ -37,34 +37,34 @@ async function loadExportRequestContext(server, { parsedProjectId, exportType, n
     }
     if (!Array.isArray(workflowIds)) workflowIds = [];
     if (exportType === "studies" && workflowIds.length === 0) {
-        return { success: false, status: 400, message: "dashboard.projects.export.api.noWorkflowsSelected" };
+        return { success: false, status: 400, message: "No workflows selected." };
     }
     if (exportType === "grades" && !["json", "csv"].includes(normalizedGradeFormat)) {
-        return { success: false, status: 400, message: "dashboard.projects.export.api.unsupportedGradeFormat" };
+        return { success: false, status: 400, message: "Unsupported grade format. Use json or csv." };
     }
     if (userIds.length === 0) {
         server.logger.warn("Export aborted: No valid users selected.");
-        return { success: false, status: 400, message: "dashboard.projects.export.api.noValidUsersSelected" };
+        return { success: false, status: 400, message: "No valid users selected." };
     }
 
     const project = await server.db.models.project.findOne({ where: { id: parsedProjectId } });
     if (!project) {
         server.logger.warn(`${parsedProjectId} does not exist.`);
-        return { success: false, status: 403, message: "dashboard.projects.export.api.projectNotFound" };
+        return { success: false, status: 403, message: "The selected project does not exist." };
     }
 
     const isAdmin = await resolveIsAdmin(server, currentUserId);
     const isSelfOnlyExport = userIds.every(id => Number(id) === Number(currentUserId));
     if (!isAdmin && project.userId !== currentUserId && !isSelfOnlyExport) {
         server.logger.warn(`User ${currentUserId} attempted to export project ${parsedProjectId} without access.`);
-        return { success: false, status: 403, message: "dashboard.projects.export.api.noProjectAccess" };
+        return { success: false, status: 403, message: "You don't have access to this project." };
     }
 
     const { Op } = server.db.Sequelize;
     const users = await server.db.models.user.findAll({ where: { id: { [Op.in]: userIds } } });
     if (users.length === 0) {
         server.logger.warn("Export aborted: No existing users to export.");
-        return { success: false, status: 400, message: "dashboard.projects.export.api.noAuthorizedUsers" };
+        return { success: false, status: 400, message: "No authorized users to export." };
     }
 
     return { success: true, users, workflowIds };

@@ -31,9 +31,9 @@ module.exports = function (server) {
 
         // Auth checking
         const currentUserId = req.user?.id;
-        if (!currentUserId) return res.status(401).json({ message: "dashboard.projects.export.api.loginRequired" });
+        if (!currentUserId) return res.status(401).send("Log in required");
         const currentUser = await server.db.models.user.findByPk(currentUserId);
-        if (!currentUser) return res.status(401).json({ message: "dashboard.projects.export.api.userNotFound" });
+        if (!currentUser) return res.status(401).send("User not found");
         const hasPrivateInfoRight = await resolveHasPrivateInfoRight(server, currentUserId);
 
 
@@ -57,7 +57,7 @@ module.exports = function (server) {
         try {
             const context = await loadExportRequestContext(server, { parsedProjectId, exportType, normalizedGradeFormat, userIds, workflowIds, currentUserId });
             if (!context.success) {
-                return res.status(context.status).json({ message: context.message });
+                return res.status(context.status).send(context.message);
             }
             const { users, workflowIds: parsedWorkflowIds } = context;
 
@@ -71,7 +71,7 @@ module.exports = function (server) {
             const archive = archiver('zip', { zlib: { level: 5 } });
             archive.on('error', function(err) {
                 server.logger.error("Archiver Error:", err);
-                if (!res.headersSent) res.status(500).json({ message: "dashboard.projects.export.api.archiverError" });
+                if (!res.headersSent) res.status(500).send({error: "An error occurred while preparing the export."});
             });
 
             // start stream & start by piping the mapping if necessary
@@ -151,7 +151,7 @@ module.exports = function (server) {
                 case 'userBehaviour': {
                     const isAdmin = await resolveIsAdmin(server, currentUserId);
                     if (!isAdmin) {
-                        return res.status(403).json({ message: "dashboard.projects.export.api.adminRightsRequired" });
+                        return res.status(403).send("Admin rights required for this export.");
                     }
                     await processUserBehaviourExport(
                         server,
@@ -167,14 +167,14 @@ module.exports = function (server) {
                     break;
                 }
                 default:
-                    return res.status(400).json({ message: "dashboard.projects.export.api.unsupportedExportType" });
+                    return res.status(400).send("Unsupported export type.");
             }
 
             await archive.finalize();
 
         } catch (error) {
             server.logger.error("Export Error:", error);
-            if (!res.headersSent) res.status(500).json({ message: "dashboard.projects.export.api.exportFailed" });
+            if (!res.headersSent) res.status(500).send("Export failed.");
             else res.end();
         }
     });
