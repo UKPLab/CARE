@@ -1,22 +1,21 @@
 <template>
-  <div class="mt-2 mb-3 p-3 bg-light border rounded">
+  <div class="mt-2 mb-3 p-3 bg-body-tertiary border rounded">
     <h6 class="mb-3 pb-2 border-bottom text-muted">
-      Study Options
+      {{ $t('dashboard.projects.exportOptions.studies.title') }}
     </h6>
     <div v-if="workflows.length === 0" class="text-muted fst-italic mb-3">
-      No workflows found for this project.
+      {{ $t('dashboard.projects.exportOptions.studies.noWorkflowsFound') }}
     </div>
     <div v-else class="mb-3">
-      <label class="form-label d-block">Filter by Workflow</label>
+      <label class="form-label d-block">{{ $t('dashboard.projects.exportOptions.studies.filterByWorkflow') }}</label>
       <div class="dropdown d-inline-block">
-        <button
+        <BasicButton
           class="btn btn-outline-secondary dropdown-toggle text-start"
           type="button"
           data-bs-toggle="dropdown"
           aria-expanded="false"
-        >
-          {{ workflowDropdownLabel }}
-        </button>
+          :text="workflowDropdownLabel"
+        />
         <ul class="dropdown-menu" style="max-height: 300px; overflow-y: auto;" @click.stop>
           <li class="border-bottom mb-1">
             <div class="dropdown-item">
@@ -29,7 +28,7 @@
                   @change="toggleSelectAllWorkflows"
                 />
                 <label class="form-check-label fw-bold" for="workflow-select-all">
-                  Select All
+                  {{ $t('common.selectAll') }}
                 </label>
               </div>
             </div>
@@ -62,6 +61,7 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * StepOptionsStudies
@@ -75,7 +75,7 @@ import BasicForm from "@/basic/Form.vue";
  */
 export default {
   name: "StepOptionsStudies",
-  components: { BasicForm },
+  components: { BasicForm, BasicButton },
   props: {
     projectId: {
       type: Number,
@@ -135,9 +135,9 @@ export default {
     },
     workflowDropdownLabel() {
       const count = this.optionsData.selectedWorkflowIds.length;
-      if (count === 0) return "No workflows selected";
-      if (count === this.workflows.length) return "All workflows selected";
-      return `${count} of ${this.workflows.length} selected`;
+      if (count === 0) return this.$t('dashboard.projects.exportOptions.studies.noWorkflowsSelected');
+      if (count === this.workflows.length) return this.$t('dashboard.projects.exportOptions.studies.allWorkflowsSelected');
+      return this.$t('common.selectedCount', { selected: count, total: this.workflows.length });
     },
     fields() {
       const formFields = [];
@@ -145,32 +145,32 @@ export default {
       formFields.push(
         {
           key: "includeEmptyStudies",
-          label: "Include studies with no sessions",
+          label: this.$t('dashboard.projects.exportOptions.studies.includeEmptyStudies'),
           type: "switch",
         },
         {
           key: "includeDocumentFiles",
-          label: "Include PDFs and ZIP files",
+          label: this.$t('dashboard.projects.exportOptions.studies.includeDocumentFiles'),
           type: "switch",
         },
         {
           key: "includeScores",
-          label: "Include scores",
+          label: this.$t('dashboard.projects.exportOptions.studies.includeScores'),
           type: "switch",
         },
         ...(this.optionsData.includeScores ? [{
           key: "includeAiScores",
-          label: "Include AI-assisted scores",
+          label: this.$t('dashboard.projects.exportOptions.studies.includeAiScores'),
           type: "switch",
         }] : []),
         {
           key: "excludeNonConsentingEdits",
-          label: "Exclude edits from non-consenting users",
+          label: this.$t('dashboard.projects.exportOptions.excludeNonConsentingEdits'),
           type: "switch",
         },
         {
           key: "excludeNonConsentingAnnotations",
-          label: "Exclude annotations & comments from non-consenting users",
+          label: this.$t('dashboard.projects.exportOptions.excludeNonConsentingAnnotations'),
           type: "switch",
         }
       );
