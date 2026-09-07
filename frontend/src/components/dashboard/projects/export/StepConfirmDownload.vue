@@ -9,11 +9,11 @@
 
       <div v-if="hasDeclinedSharingSelected" class="alert alert-danger mt-3">
         <i18n-t
-          keypath="dashboard.projects.export.declinedSharingWarning"
+          :keypath="declinedSharingWarningKey"
           tag="span"
         >
           <template #emphasis>
-            <strong>{{ $t('dashboard.projects.export.declinedSharingEmphasis') }}</strong>
+            <strong>{{ $t(declinedSharingEmphasisKey) }}</strong>
           </template>
         </i18n-t>
       </div>
@@ -86,7 +86,19 @@ export default {
   },
   computed: {
     hasDeclinedSharingSelected() {
-      return this.userSelection.some(row => row.acceptDataSharing === false);
+      return this.exportType === 'userBehaviour'
+        ? this.userSelection.some(row => row.acceptStatsSharing === false)
+        : this.userSelection.some(row => row.acceptDataSharing === false);
+    },
+    declinedSharingWarningKey() {
+      return this.exportType === 'userBehaviour'
+        ? 'dashboard.projects.export.declinedStatsSharingWarning'
+        : 'dashboard.projects.export.declinedSharingWarning';
+    },
+    declinedSharingEmphasisKey() {
+      return this.exportType === 'userBehaviour'
+        ? 'dashboard.projects.export.declinedStatsSharingEmphasis'
+        : 'dashboard.projects.export.declinedSharingEmphasis';
     },
     exportTypeLabel() {
       const labels = this.$tm('dashboard.projects.export.typeLabel');

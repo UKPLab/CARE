@@ -51,6 +51,8 @@
       "confirmSelection": "Auswahl bestätigen:",
       "declinedSharingWarning": "Sie haben einen oder mehrere Studierende ausgewählt, die der Datenfreigabe {emphasis}.",
       "declinedSharingEmphasis": "nicht zugestimmt haben",
+      "declinedStatsSharingWarning": "Sie haben einen oder mehrere Benutzer ausgewählt, die der Freigabe des Nutzerverhaltens {emphasis}.",
+      "declinedStatsSharingEmphasis": "nicht zugestimmt haben",
       "aliasMappingWarning": "Das heruntergeladene ZIP-Archiv enthält eine CSV-Datei, die die generierten Aliasnamen den echten Namen der Studierenden zuordnet.",
       "reviewWarning": "Wir empfehlen dringend, diesen Export vor der Weitergabe sorgfältig zu prüfen, um sicherzustellen, dass keine sensiblen oder unbeabsichtigten Informationen verteilt werden.",
       "summary": "Zusammenfassung:",
