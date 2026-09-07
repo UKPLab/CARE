@@ -40,7 +40,6 @@ export default {
           itemsPerPage: 10,
           itemsPerPageList: [10, 25, 50, 100],
           total: 0,
-          showPages: 3,
         },
       },
       columns: [

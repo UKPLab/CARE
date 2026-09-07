@@ -61,33 +61,6 @@
                 <span aria-hidden="true">&laquo;</span>
               </button>
             </li>
-            <!-- Pagination Elements -->
-            <li
-              v-for="p in pages"
-              :key="p"
-              :class="{'active': p === currentPage, 'disabled': (p === currentPage - showPages || p === currentPage + showPages)}"
-              class="page-item"
-            >
-              <button
-                v-if="p === currentPage - showPages"
-                class="page-link"
-              >
-                ...
-              </button>
-              <button
-                v-if="p < currentPage + showPages && p > currentPage - showPages"
-                class="page-link"
-                @click="changePage(p)"
-              >
-                {{ p }}
-              </button>
-              <button
-                v-if="p === currentPage + showPages"
-                class="page-link"
-              >
-                ...
-              </button>
-            </li>
             <!-- Next Page Link -->
             <li
               :class="{ disabled: currentPage === pages }"
@@ -117,15 +90,6 @@
           </ul>
         </nav>
       </div>
-
-      <!--<div class="col-md-1">
-        <div class="input-group">
-          <span class="input-group-text" title="Jump to page" >
-            <LoadIcon icon-name="arrow-right" />
-          </span>
-          <input type="text" class="form-control">
-        </div>
-      </div>-->
     </div>
   </div>
 </template>
@@ -151,11 +115,6 @@ export default {
     currentPage: {
       type: Number,
       required: true
-    },
-    showPages: {
-      type: Number,
-      required: false,
-      default: 3
     },
     itemsPerPageList: {
       type: Array,
