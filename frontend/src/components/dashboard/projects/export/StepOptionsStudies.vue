@@ -121,7 +121,12 @@ export default {
         excludeNonConsentingEdits: this.excludeNonConsentingEdits,
         excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
         includeAiScores: this.includeAiScores
-      }
+      },
+      // Guards the one-time "default to all workflows selected" behavior below so it can't
+      // re-fire (and silently override a deliberate deselect-all) on every unrelated recompute
+      // of `workflows` — that computed reads non-memoized Vuex getters, so any realtime update
+      // to an already-loaded study/workflow produces a new array reference and re-triggers the watcher.
+      hasAppliedDefaultWorkflowSelection: false,
     };
   },
   computed: {
@@ -203,7 +208,9 @@ export default {
     workflows: {
         immediate: true,
         handler(newWorkflows) {
-        if (this.optionsData.selectedWorkflowIds.length === 0 && newWorkflows.length > 0) {
+        if (this.hasAppliedDefaultWorkflowSelection || newWorkflows.length === 0) return;
+        this.hasAppliedDefaultWorkflowSelection = true;
+        if (this.optionsData.selectedWorkflowIds.length === 0) {
             this.optionsData.selectedWorkflowIds = newWorkflows.map(wf => wf.id);
             this.$emit('update:selectedWorkflowIds', this.optionsData.selectedWorkflowIds);
         }
