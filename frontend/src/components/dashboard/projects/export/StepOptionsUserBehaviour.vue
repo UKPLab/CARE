@@ -1,7 +1,7 @@
 <template>
-  <div class="mt-2 mb-3 p-3 bg-light border rounded">
+  <div class="mt-2 mb-3 p-3 bg-body-tertiary border rounded">
     <h6 class="mb-3 pb-2 border-bottom text-muted">
-      User Behaviour Options
+      {{ $t('dashboard.projects.exportOptions.userBehaviour.title') }}
     </h6>
     <BasicForm
       v-model="optionsData"
@@ -34,20 +34,20 @@ export default {
             return [
                 {
                     key: "outputFormat",
-                    label: "File Layout",
+                    label: this.$t('dashboard.projects.exportOptions.userBehaviour.fileLayout'),
                     type: "select",
                     options: [
-                        { name: "Single combined file", value: "single" },
-                        { name: "One file per user", value: "perUser" },
+                        { name: this.$t('dashboard.projects.exportOptions.userBehaviour.singleCombinedFile'), value: "single" },
+                        { name: this.$t('dashboard.projects.exportOptions.userBehaviour.onePerUser'), value: "perUser" },
                     ],
                 },
                 {
                     key: "fileFormat",
-                    label: "File Format",
+                    label: this.$t('dashboard.projects.exportOptions.userBehaviour.fileFormat'),
                     type: "select",
                     options: [
-                        { name: "JSON", value: "json" },
-                        { name: "CSV", value: "csv" },
+                        { name: this.$t('common.json'), value: "json" },
+                        { name: this.$t('common.csv'), value: "csv" },
                     ],
                 },
             ];
