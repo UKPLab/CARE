@@ -200,6 +200,13 @@ function compareGradeRecords(a, b) {
  * Shared by processGradesExport (grouped by user for JSON/CSV output) and
  * processStudyBasedExport (grouped by session for a per-session scores.json).
  *
+ * Pass `options.sessionIds` to scope the lookup to a set of study sessions. Without it the lookup
+ * is scoped by the owner of the assessed document, which only works when that owner is also the
+ * person the grades are being collected for. That holds for exposé assessments, where the assessed
+ * document belongs to the study owner, but not for review assessments: there the study belongs to
+ * the reviewer being assessed while the assessed review document belongs to the reviewed author,
+ * so an owner-scoped lookup returns nothing and the review grades are silently dropped.
+ *
  * @param {Object} server - The server instance providing database models and Sequelize operators.
  * @param {number} projectId - The project whose grades should be resolved.
  * @param {Array<number|string>} userIds - The selected document owners.
@@ -208,16 +215,6 @@ function compareGradeRecords(a, b) {
  * @param {boolean} hasPrivateInfoRight - Whether the requester may export real names.
  * @param {Object} userMapping - Map of user IDs to generated aliases.
  * @returns {Promise<{records: Array<Object>, criteriaReferencesByConfigId: Map<number, Object>}>}
- */
-/**
- * Collect assessment results and translate them into grade records.
- *
- * Pass `options.sessionIds` to scope the lookup to a set of study sessions. Without it the lookup
- * is scoped by the owner of the assessed document, which only works when that owner is also the
- * person the grades are being collected for. That holds for exposé assessments, where the assessed
- * document belongs to the study owner, but not for review assessments: there the study belongs to
- * the reviewer being assessed while the assessed review document belongs to the reviewed author,
- * so an owner-scoped lookup returns nothing and the review grades are silently dropped.
  */
 async function buildGradeRecords(server, projectId, userIds, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, options = {}) {
     const { Op } = server.db.Sequelize;
