@@ -62,7 +62,6 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
-import BasicButton from "@/basic/Button.vue";
 
 /**
  * StepOptionsStudies
@@ -76,7 +75,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "StepOptionsStudies",
-  components: { BasicForm, BasicButton },
+  components: { BasicForm },
   props: {
     projectId: {
       type: Number,
