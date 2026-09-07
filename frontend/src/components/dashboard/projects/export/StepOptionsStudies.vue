@@ -125,8 +125,11 @@ export default {
       // Guards the one-time "default to all workflows selected" behavior below so it can't
       // re-fire (and silently override a deliberate deselect-all) on every unrelated recompute
       // of `workflows` — that computed reads non-memoized Vuex getters, so any realtime update
-      // to an already-loaded study/workflow produces a new array reference and re-triggers the watcher.
-      hasAppliedDefaultWorkflowSelection: false,
+      // to an already-loaded study/workflow produces a new array reference and re-triggers the
+      // watcher. Scoped to a projectId (rather than a plain boolean) so switching projects
+      // — which reuses this same component instance instead of remounting it — re-arms the
+      // default selection for the new project's workflow list.
+      defaultWorkflowSelectionAppliedForProjectId: null,
     };
   },
   computed: {
@@ -208,8 +211,8 @@ export default {
     workflows: {
         immediate: true,
         handler(newWorkflows) {
-        if (this.hasAppliedDefaultWorkflowSelection || newWorkflows.length === 0) return;
-        this.hasAppliedDefaultWorkflowSelection = true;
+        if (this.defaultWorkflowSelectionAppliedForProjectId === this.projectId || newWorkflows.length === 0) return;
+        this.defaultWorkflowSelectionAppliedForProjectId = this.projectId;
         if (this.optionsData.selectedWorkflowIds.length === 0) {
             this.optionsData.selectedWorkflowIds = newWorkflows.map(wf => wf.id);
             this.$emit('update:selectedWorkflowIds', this.optionsData.selectedWorkflowIds);

@@ -281,7 +281,7 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
         if (shouldIncludeDocumentFiles) {
             const stepDocumentIds = [...new Set(sortedSteps.map(step => step.documentId).filter(Boolean))];
             const stepDocuments = stepDocumentIds.length > 0
-                ? await server.db.models.document.findAll({ where: { id: stepDocumentIds }, raw: true })
+                ? await server.db.models.document.findAll({ where: { id: stepDocumentIds, deleted: false }, raw: true })
                 : [];
             for (const doc of stepDocuments) stepDocumentsById.set(doc.id, doc);
 
