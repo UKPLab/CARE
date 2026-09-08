@@ -477,51 +477,6 @@ module.exports = class Socket {
     }
 
     /**
-     * Creates database filters according to limitations in the accessMap.
-     * @param {string} tableName The name of the table to create limitations for
-     * @param {Object} allFilter Starting filters
-     * @param {Object} accessMap AccessMap with limitations
-     * @param {Array<Object>} accessRights Access rights for the user
-     * @param {number} userId Id of user to check limitations for
-     * @returns {Object} array of limitation filters
-     */
-    handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
-
-
-        let filteredAccessMap = accessMap
-            .flatMap(a => {
-                const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-                return a.limitation
-                    ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                    : null;
-            })
-            .filter(Boolean);
-
-
-        if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
-            // Ensure we always include the 'userId' condition
-            filteredAccessMap = filteredAccessMap.concat([{userId: userId}]);
-        }
-
-        const limitedFilter = {
-            [Op.and]: [
-                allFilter,
-                {
-                    [Op.or]: filteredAccessMap
-                }
-            ]
-        };
-
-        const columns = [...new Set(
-            accessRights
-                .filter(a => a.columns)
-                .flatMap(a => a.columns)
-        )];
-
-        return {filter: limitedFilter, columns};
-    }
-
-    /**
      * Modifies allFilter and allAttributes according to user rights in the table.
      * @param {number} userId User ID to check the rights for
      * @param {Object} allFilter Starting filters
