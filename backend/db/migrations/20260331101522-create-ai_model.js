@@ -45,6 +45,7 @@ module.exports = {
       },
       additionalParameters: {
         type: Sequelize.JSONB,
+        allowNull: true,
         defaultValue: {},
       },
       enabled: {
