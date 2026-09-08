@@ -151,26 +151,11 @@ export default {
       this.isLoadingProviders = false;
       this.eventBus.emit("resetFormField");
     },
-    emitAiServiceCommand(command, data = {}) {
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("serviceCommand", {
-          service: "AIService",
-          command,
-          data,
-        }, (result) => {
-          if (result?.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(result?.message || "AI service request failed"));
-          }
-        });
-      });
-    },
     async loadProviders() {
       this.isLoadingProviders = true;
       this.providerLookupError = "";
       try {
-        const result = await this.emitAiServiceCommand("getProviders");
+        const result = await this.$ai.getProviders();
         this.providerOptions = Array.isArray(result?.providers) ? result.providers : [];
         if (this.providerOptions.length === 0) {
           this.providerLookupError = "No providers were returned from LiteLLM.";

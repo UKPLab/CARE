@@ -132,6 +132,38 @@ export default {
                         getStatus() {
                             return emitAiCommand(socket, "getStatus", {}, {timeout: 10000});
                         },
+
+                        /**
+                         * List LiteLLM provider ids for the credential form.
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{providers: string[]}>}
+                         */
+                        getProviders(opts = {}) {
+                            return emitAiCommand(socket, "getProviders", {}, opts);
+                        },
+
+                        /**
+                         * List models available for a credential.
+                         * @param {object} params - { credentialId }
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{models: string[]}>}
+                         */
+                        getValidModels(params, opts = {}) {
+                            return emitAiCommand(socket, "getValidModels", params, opts);
+                        },
+
+                        /**
+                         * Send a short test prompt through a model or credential.
+                         * @param {object} params - { aiModelId, credentialId, model, additionalParameters }
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{outputText?: string}>}
+                         */
+                        testModel(params, opts = {}) {
+                            return emitAiCommand(socket, "testModel", params, opts);
+                        },
                     };
                 },
             },

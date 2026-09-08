@@ -258,21 +258,6 @@ export default {
       this.modelOptions = [];
       this.modelLookupError = "";
     },
-    emitAiServiceCommand(command, data = {}) {
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("serviceCommand", {
-          service: "AIService",
-          command,
-          data,
-        }, (result) => {
-          if (result?.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(result?.message || "AI service request failed"));
-          }
-        });
-      });
-    },
     async loadModelOptions() {
       if (!this.modelForm.aiCredentialId) {
         this.toastError("Credential is required");
@@ -282,7 +267,7 @@ export default {
       this.isLoadingModels = true;
       this.modelLookupError = "";
       try {
-        const result = await this.emitAiServiceCommand("getValidModels", {
+        const result = await this.$ai.getValidModels({
           credentialId: this.modelForm.aiCredentialId,
         });
         this.modelOptions = Array.isArray(result?.models) ? result.models : [];
@@ -343,28 +328,24 @@ export default {
         this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
       });
     },
-    testModel() {
+    async testModel() {
       if (!this.$refs.form.validate()) return;
 
       this.isTestingModel = true;
-      this.$socket.emit("serviceCommand", {
-        service: "AIService",
-        command: "testModel",
-        data: {
+      try {
+        const result = await this.$ai.testModel({
           aiModelId: this.modelForm.id || null,
           credentialId: this.modelForm.aiCredentialId,
           model: this.modelForm.model.trim(),
           additionalParameters: this.modelForm.additionalParameters || {},
-        },
-      }, (result) => {
+        });
+        const outputText = result?.outputText ? String(result.outputText) : "";
+        this.toastSuccess(outputText ? `Model test successful. Output: ${outputText}` : "Model test successful.");
+      } catch (error) {
+        this.toastError(error.message || "Model test failed");
+      } finally {
         this.isTestingModel = false;
-        if (result?.success) {
-          const outputText = result.data?.outputText ? String(result.data.outputText) : "";
-          this.toastSuccess(outputText ? `Model test successful. Output: ${outputText}` : "Model test successful.");
-        } else {
-          this.toastError(result?.message || "Model test failed");
-        }
-      });
+      }
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
