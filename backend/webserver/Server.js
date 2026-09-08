@@ -222,14 +222,14 @@ module.exports = class Server {
             mailOptions.text = body;
         }
 
-        this.mailer.sendMail(mailOptions, (err, info) => {
-            if (err) {
-                this.logger.error(err);
-            } else {
-                this.logger.info("Message send: " + info.messageId);
-                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); //TODO: for testing remove when using actual mail server
-            }
-        });
+        try {
+            const info = await this.mailer.sendMail(mailOptions);
+            this.logger.info("Message send: " + info.messageId);
+            console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); //TODO: for testing remove when using actual mail server
+        } catch (err) {
+            this.logger.error(err);
+            throw err;
+        }
     }
 
     /**
