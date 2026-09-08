@@ -3,7 +3,9 @@
 const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
 const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
-const PRESERVE_WHITESPACE_SETTING_TYPES = new Set(["edits", "text"]);
+// Only list setting types where leading/trailing whitespace has no semantic value.
+// Unknown or newly added types preserve whitespace by default.
+const TRIM_WHITESPACE_SETTING_TYPES = new Set(["boolean", "color", "integer", "number", "string"]);
 
 /**
  * Returns whether a setting value should be trimmed before saving.
@@ -12,7 +14,7 @@ const PRESERVE_WHITESPACE_SETTING_TYPES = new Set(["edits", "text"]);
  * @returns {boolean}
  */
 function shouldTrimSetting(setting) {
-    return !PRESERVE_WHITESPACE_SETTING_TYPES.has(setting?.type);
+    return TRIM_WHITESPACE_SETTING_TYPES.has(setting?.type);
 }
 
 /**
