@@ -160,8 +160,9 @@ async function runAiPreprocessing(server, trigger, context, options = {}) {
     }
 
     const socketId = `trigger:${trigger.id}:${Date.now()}`;
+    const userId = trigger.userId || context.userId;
     const documentSocket = {
-        userId: trigger.userId || context.userId,
+        userId,
         socket: {
             id: socketId,
             emit: async (event, payload) => {
@@ -176,7 +177,14 @@ async function runAiPreprocessing(server, trigger, context, options = {}) {
                 }
             },
         },
-        isAdmin: async () => true,
+        isAdmin: async () => {
+            if (!userId) {
+                return false;
+            }
+            const matching = server.db.models.user_role_matching;
+            const roleIds = await matching.getUserRolesById(userId);
+            return matching.isAdminInUserRoles(roleIds);
+        },
     };
     server.availSockets = server.availSockets || {};
     const previousSocket = server.availSockets[socketId];
