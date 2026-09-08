@@ -482,7 +482,9 @@ module.exports = class Server {
      */
     start(port) {
         this.logger.debug("Start Webserver...");
-        this.triggers.start();
+        this.triggers.start().catch((error) => {
+            this.logger.error(`Failed to start trigger queue: ${error.message}`, error);
+        });
         this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });

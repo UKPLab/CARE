@@ -9,7 +9,8 @@ const {
 const triggerQueue = require("./queue.js");
 const triggerHandlers = require("./handlers/index.js");
 
-const TRIGGER_POLL_INTERVAL_MS = 1000;
+const POLL_INTERVAL_SETTING_KEY = "trigger.queue.pollInterval";
+const DEFAULT_TRIGGER_POLL_INTERVAL_MINUTES = 5;
 const DEFAULT_TRIGGER_TIMEOUT_SECONDS = 300;
 
 /**
@@ -34,19 +35,37 @@ class TriggerManager {
     /**
      * Starts polling for pending trigger jobs.
      *
-     * @returns {void}
+     * @returns {Promise<void>}
      */
-    start() {
+    async start() {
         if (this.started) {
             return;
         }
         this.started = true;
+        this.scheduleProcessing();
+        const intervalMs = await this.getPollIntervalMs();
+        if (!this.started) {
+            return;
+        }
         this.pollTimer = setInterval(
             () => this.scheduleProcessing(),
-            TRIGGER_POLL_INTERVAL_MS
+            intervalMs
         );
         this.pollTimer.unref?.();
-        this.scheduleProcessing();
+    }
+
+    /**
+     * Reads trigger.queue.pollInterval (minutes) once at start. Restart the server to apply a change.
+     *
+     * @returns {Promise<number>} Poll interval in milliseconds.
+     */
+    async getPollIntervalMs() {
+        const raw = await this.server.db.models["setting"].get(POLL_INTERVAL_SETTING_KEY);
+        const minutes = Number(raw);
+        const validMinutes = Number.isFinite(minutes) && minutes > 0
+            ? minutes
+            : DEFAULT_TRIGGER_POLL_INTERVAL_MINUTES;
+        return validMinutes * 60 * 1000;
     }
 
     /**
