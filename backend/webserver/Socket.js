@@ -597,6 +597,35 @@ module.exports = class Socket {
     }
 
     /**
+     * Throws unless the user may write to a specific row.
+     * Applies the write filter to the target row: if the row is not reachable
+     * under that filter, the user does not own it and the write is denied.
+     * @param {string} tableName The table being written to
+     * @param {number} id The id of the row being written
+     * @param {Object} options Handler options; options.transaction is passed through
+     *        so rows created earlier in the same transaction remain visible
+     * @returns {Promise<void>} Resolves when access is allowed
+     * @throws {TranslatableError} ACCESS_DENIED when the row is not writable by this user
+     */
+    async assertWriteAccess(tableName, id, options = {}) {
+        const {filter, accessAllowed} = await this.getWriteFilter(
+            this.userId, {id: id, deleted: false}, {}, tableName, this.rolesUpdatedAt
+        );
+        if (!accessAllowed) {
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
+        const rows = await this.models[tableName].getAll({
+            where: filter,
+            attributes: ["id"],
+            transaction: options.transaction,
+        });
+        if (rows.length === 0) {
+            this.logger.warn("User with id " + this.userId + " tried to write row " + id + " in table " + tableName + " without access");
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
+    }
+
+    /**
      * Row filters and column attributes for writing to a table.
      * Unlike the read path, publicTable and public rows grant nothing.
      * Callers must apply the returned filter to the row they intend to write —

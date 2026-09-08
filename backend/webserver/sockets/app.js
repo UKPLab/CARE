@@ -69,6 +69,10 @@ class AppSocket extends Socket {
         let newEntry = null;
 
 
+        if ("id" in data.data && data.data.id !== 0) {
+            await this.assertWriteAccess(data.table, data.data.id, options);
+        }
+
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data)) {
             newEntry = await this.models[data.table].updateById(
