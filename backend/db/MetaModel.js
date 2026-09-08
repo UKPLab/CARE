@@ -50,6 +50,31 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
+     * Blocks socket writes to `foreignOwner` tables unless the requester owns the parent.
+     * appDataUpdate always sets context.currentUserId. Trusted backend paths omit it.
+     *
+     * @param {Object} payload Incoming add/update fields (must include the parent FK or an id).
+     * @param {Object} [options={}]
+     * @param {Object} [options.context]
+     * @param {number} [options.context.currentUserId]
+     * @param {import("sequelize").Transaction} [options.transaction]
+     * @returns {Promise<void>}
+     */
+    static async assertForeignOwnerWrite(payload, options = {}) {
+        if (!this.foreignOwner) {
+            return;
+        }
+        const currentUserId = Number(options?.context?.currentUserId);
+        if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+            return;
+        }
+        const allowed = await this.validateForeignUserId(payload, currentUserId, options.transaction);
+        if (!allowed) {
+            throw new Error("You do not own this record");
+        }
+    }
+
+    /**
      * Filter object by keys
      * @param {Object} obj
      * @param {Array} relevantFields
@@ -240,6 +265,7 @@ module.exports = class MetaModel extends Model {
      */
     static async add(data, options = {}) {
         try {
+            await this.assertForeignOwnerWrite(data, options);
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'deleted', 'deletedAt', 'creator_name'].includes(key));
 
             if ("hash" in this.getAttributes()) {
@@ -311,6 +337,7 @@ module.exports = class MetaModel extends Model {
      */
     static async updateById(id, data, additionalOptions = {}) {
         try {
+            await this.assertForeignOwnerWrite({ ...data, id }, additionalOptions);
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
             if (data.deleted) {
