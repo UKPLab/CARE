@@ -59,6 +59,26 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Socket writes must come from the model owner. Share recipients stay read-only.
+         * Trusted backend paths omit context.currentUserId and skip this check.
+         *
+         * @param {import('sequelize').Model} aiModel Mutated instance triggering the hook.
+         * @param {{ context?: { currentUserId?: number } }} [options={}]
+         */
+        static validateOwner(aiModel, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            const ownerUserId = Number(
+                aiModel._previousDataValues?.userId ?? aiModel.userId
+            );
+            if (ownerUserId !== currentUserId) {
+                throw new Error("You are not allowed to update this AI model");
+            }
+        }
+
+        /**
          * Ensures linked credentials exist, belong to this model owner, and allow enablement semantics.
          *
          * @param {import('sequelize').Model} aiModel Mutated instance triggering the hook.
@@ -106,9 +126,11 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ai_model',
         hooks: {
             beforeCreate: async (aiModel, options) => {
+                AiModel.validateOwner(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
             beforeUpdate: async (aiModel, options) => {
+                AiModel.validateOwner(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
         },
