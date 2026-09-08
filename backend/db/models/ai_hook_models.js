@@ -56,6 +56,12 @@ module.exports = (sequelize, DataTypes) => {
                 throw new Error("You are not allowed to manage models for this AI hook");
             }
 
+            // Soft-delete still needs ownership, but not uniqueness: leftover
+            // fallback B is removed after the primary is switched to B.
+            if (hookModel.deleted) {
+                return;
+            }
+
             const priority = Number(hookModel.priority ?? hookModel._previousDataValues?.priority);
             if (!Number.isInteger(priority) || priority < 1) {
                 throw new Error("AI hook model priority must be at least 1");
