@@ -477,15 +477,20 @@ module.exports = class Socket {
     }
 
     /**
-     * Modifies allFilter and allAttributes according to user rights in the table.
+     * Builds row filters and column attributes according to user rights in the table.
+     * Shared implementation for the read and write paths — call getReadFilter or
+     * getWriteFilter instead of using this directly.
      * @param {number} userId User ID to check the rights for
      * @param {Object} allFilter Starting filters
      * @param {Object} allAttributes Starting attributes
      * @param {string} tableName The table to check the rights for
      * @param {Date} rolesUpdatedAt Date of the last role update of the user
-     * @returns {Object} modified filters and attributes + whether access is allowed
+     * @param {boolean} publicGrantsAccess Whether publicTable and public rows grant access.
+     *        True when reading (public data is readable by anyone); false when writing,
+     *        since being visible must never imply permission to modify.
+     * @returns {Promise<Object>} modified filters and attributes + whether access is allowed
      */
-    async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
+    async #buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, publicGrantsAccess) {
         const accessMap = this.server.db.models[tableName]['accessMap'] || [];
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
@@ -493,7 +498,7 @@ module.exports = class Socket {
         const model = this.models[tableName];
         const hasModelUserFilter = typeof model.getUserFilter === "function";
         const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
-        const isPublicOrAdmin = isAdmin || model.publicTable;
+        const isPublicOrAdmin = isAdmin || (publicGrantsAccess && model.publicTable);
         const hasAccessRules = accessMap.length > 0;
         const hasUserIdAttribute = model.autoTable && 'userId' in model.getAttributes();
 
@@ -516,7 +521,8 @@ module.exports = class Socket {
             }
 
             // --- Public rows: always visible regardless of ownership or access rights ---
-            if ('public' in model.getAttributes()) {
+            // Read-only: a public row may be seen by anyone, but not written by anyone.
+            if (publicGrantsAccess && 'public' in model.getAttributes()) {
                 rowVisibilityConditions.push({public: true});
             }
 
@@ -575,6 +581,36 @@ module.exports = class Socket {
             };
         }
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
+    }
+
+    /**
+     * Row filters and column attributes for reading a table.
+     * @param {number} userId User ID to check the rights for
+     * @param {Object} allFilter Starting filters
+     * @param {Object} allAttributes Starting attributes
+     * @param {string} tableName The table to check the rights for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
+     * @returns {Promise<Object>} modified filters and attributes + whether access is allowed
+     */
+    async getReadFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
+        return await this.#buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, true);
+    }
+
+    /**
+     * Row filters and column attributes for writing to a table.
+     * Unlike the read path, publicTable and public rows grant nothing.
+     * Callers must apply the returned filter to the row they intend to write —
+     * checking accessAllowed alone is not enough, as it only reports whether the
+     * user can reach any row in the table at all.
+     * @param {number} userId User ID to check the rights for
+     * @param {Object} allFilter Starting filters
+     * @param {Object} allAttributes Starting attributes
+     * @param {string} tableName The table to check the rights for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
+     * @returns {Promise<Object>} modified filters and attributes + whether access is allowed
+     */
+    async getWriteFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
+        return await this.#buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, false);
     }
 
     /**
@@ -720,7 +756,7 @@ module.exports = class Socket {
         let allAttributes = {
             exclude: defaultExcludes,
         };
-        const filtersAndAttributes = await this.getFiltersAndAttributes(this.userId, allFilter, allAttributes, tableName, this.rolesUpdatedAt)
+        const filtersAndAttributes = await this.getReadFilter(this.userId, allFilter, allAttributes, tableName, this.rolesUpdatedAt)
         if (!filtersAndAttributes.accessAllowed) {
             return;
         }
@@ -967,7 +1003,7 @@ module.exports = class Socket {
             }
             let allFilter = {};
             let allAttributes = {};
-            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
+            const filtersAndAttributes = await this.getReadFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
             if (!filtersAndAttributes.accessAllowed) {
                 continue;
             }

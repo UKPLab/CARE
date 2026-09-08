@@ -39,7 +39,7 @@ class ConfigurationSocket extends Socket {
     }
 
     // Check if user has access to update this configuration
-    const { accessAllowed } = await this.getFiltersAndAttributes(
+    const { accessAllowed } = await this.getReadFilter(
       this.userId,
       { id: configurationId },
       {},
