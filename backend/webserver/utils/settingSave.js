@@ -104,15 +104,14 @@ function normalizeSettingValue(value, setting = {}) {
  * @returns {Promise<Map<string, string>>}
  */
 async function getSettingTypeByKey(Setting, settings, options = {}) {
-    if (typeof Setting.findAll !== "function") {
-        return new Map();
-    }
-
     const keys = [...new Set(settings
         .filter((setting) => setting && typeof setting.key === "string" && !setting.type)
         .map((setting) => setting.key))];
     if (!keys.length) {
         return new Map();
+    }
+    if (!Setting || typeof Setting.findAll !== "function") {
+        throw new TypeError("getSettingTypeByKey requires a Setting model with findAll.");
     }
 
     const rows = await Setting.findAll({
