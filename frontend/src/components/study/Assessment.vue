@@ -34,6 +34,7 @@
                   :rubric="rubric"
                   :group-index="groupIndex"
                   :is-expanded="!!expandedGroups[groupIndex]"
+                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :assessment-state="assessmentState"
                   :read-only="computedReadOnly"
                   :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
@@ -144,6 +145,7 @@ export default {
     return {
       error: null,
       expandedGroups: {},
+      rubricRefs: {},
       assessmentState: {},
       showInfoPanel: false,
       selectedCriterion: null,
@@ -607,6 +609,7 @@ export default {
         const newExpanded = {};
         newExpanded[nextIndex] = true;
         this.expandedGroups = newExpanded;
+        this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
       }
