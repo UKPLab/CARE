@@ -1,9 +1,16 @@
 <template>
   <div>
     <div
+        ref="criterionHeader"
         class="d-flex justify-content-between align-items-center py-2"
         style="cursor: pointer"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isExpanded"
+        :aria-controls="panelId"
         @click="$emit('toggle')"
+        @keydown.enter.prevent="$emit('toggle')"
+        @keydown.space.prevent="$emit('toggle')"
     >
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
@@ -42,6 +49,7 @@
 
     <div
         v-if="isExpanded"
+        :id="panelId"
         class="criterion-assessment mt-2 px-3 pb-2"
     >
       <div class="assessment-text">
@@ -65,6 +73,9 @@
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
                 @input="autoResizeTextarea"
+                @keydown.ctrl.enter.exact.prevent="saveEdit"
+                @keydown.meta.enter.exact.prevent="saveEdit"
+                @keydown.esc.prevent="cancelEdit"
             ></textarea>
           </div>
         </div>
@@ -80,6 +91,7 @@
           <div>
             <BasicButton
                 v-if="!readOnly"
+                ref="editButton"
                 class="btn-outline-primary btn-sm"
                 :title="$t('assessment.criteria.edit')"
                 text=""
@@ -119,6 +131,7 @@
             </select>
 
             <BasicButton
+                ref="markDoneButton"
                 :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
                 :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
                 text=""
@@ -215,6 +228,16 @@ export default {
     isSaved() {
       return !!this.state.isSaved;
     },
+    /**
+     * Unique DOM id for this criterion's panel, used by aria-controls.
+     * Uses the component uid so it cannot collide, regardless of how the
+     * assessment configuration names its criteria.
+     *
+     * @returns {string} unique panel id
+     */
+    panelId() {
+      return `criterion-panel-${this._uid ?? this.$.uid}`;
+    },
     isEditing() {
       return !!this.state.isEditing;
     },
@@ -289,6 +312,7 @@ export default {
       };
       this.$nextTick(() => {
         this.autoResizeTextarea();
+        this.$refs.assessmentTextarea?.focus();
       });
     },
     saveEdit() {
@@ -299,6 +323,7 @@ export default {
         isEditing: false,
         isSaved: false,
       };
+      this.$nextTick(() => this.focusEl("markDoneButton"));
     },
     cancelEdit() {
       if (this.readOnly) return;
@@ -307,6 +332,25 @@ export default {
         isEditing: false,
       };
       this.localAssessment = this.state.assessment || "";
+      this.$nextTick(() => this.focusEl("editButton"));
+    },
+    /**
+     * Focus the native element behind a BasicButton ref.
+     * BasicButton has a single root <button>, so $el is that button.
+     *
+     * @param {string} refName - name of the ref to focus
+     */
+    /**
+     * Move keyboard focus to this criterion's header.
+     * Called by the parent rubric after an advance, never on a plain expand.
+     */
+    focusHeader() {
+      this.$refs.criterionHeader?.focus();
+    },
+    focusEl(refName) {
+      const c = this.$refs[refName];
+      const el = c && c.$el ? c.$el : c;
+      if (el && typeof el.focus === "function") el.focus();
     },
     saveAssessment() {
       if (this.readOnly) return;
