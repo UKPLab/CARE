@@ -8,29 +8,12 @@
       {{ trigger ? `Trigger: ${trigger.name}` : "Trigger" }}
     </template>
     <template #body>
-      <dl
-        v-if="trigger"
-        class="row small mb-0"
-      >
-        <template
-          v-for="item in detailRows"
-          :key="item.key"
-        >
-          <dt class="col-sm-4">{{ item.label }}</dt>
-          <dd class="col-sm-8 text-break">
-            <span
-              v-if="item.type === 'badge'"
-              class="badge"
-              :class="item.class"
-            >{{ item.value }}</span>
-            <span v-else>{{ item.value }}</span>
-          </dd>
-        </template>
-      </dl>
-      <pre
-        v-if="configurationJson"
-        class="bg-light border rounded p-2 small text-break mt-3 mb-0"
-      >{{ configurationJson }}</pre>
+      <BasicDetails v-if="trigger" :items="detailRows">
+        <pre
+          v-if="configurationJson"
+          class="bg-light border rounded p-2 small text-break mb-0"
+        >{{ configurationJson }}</pre>
+      </BasicDetails>
     </template>
     <template #footer>
       <BasicButton
@@ -45,10 +28,11 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicDetails from "@/basic/Details.vue";
 
 export default {
   name: "TriggerViewModal",
-  components: { BasicModal, BasicButton },
+  components: { BasicModal, BasicButton, BasicDetails },
   data() {
     return { trigger: null };
   },

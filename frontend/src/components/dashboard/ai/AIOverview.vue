@@ -4,26 +4,7 @@
       {{ config.title }}
     </template>
     <template #body>
-      <template v-if="meta && row">
-        <dl class="row mb-3 small">
-          <template v-for="item in detailRows" :key="item.key">
-            <dt class="col-sm-3">
-              {{ item.label }}
-            </dt>
-            <dd class="col-sm-9 text-break">
-              <span v-if="item.type === 'badge'" class="badge" :class="item.class">
-                {{ item.value }}
-              </span>
-              <code v-else-if="item.type === 'code'">{{ item.value }}</code>
-              <ol v-else-if="item.type === 'list'" class="mb-0 ps-3">
-                <li v-for="(entry, index) in item.value" :key="`${item.key}-${index}`">
-                  {{ entry }}
-                </li>
-              </ol>
-              <span v-else>{{ item.value }}</span>
-            </dd>
-          </template>
-        </dl>
+      <BasicDetails v-if="meta && row" :items="detailRows">
         <pre
           v-if="meta.isOwner && additionalParametersJson"
           class="bg-light border rounded p-2 small text-break mb-3"
@@ -44,7 +25,7 @@
             :max-table-height="300"
           />
         </template>
-      </template>
+      </BasicDetails>
     </template>
     <template #footer>
       <BasicButton
@@ -66,6 +47,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicDetails from "@/basic/Details.vue";
 
 const RESOURCE_CONFIGS = {
   model: {
@@ -116,7 +98,7 @@ const RESOURCE_CONFIGS = {
 export default {
   name: "AIOverview",
   subscribeTable: ["ai_model_share", "ai_hook_share", "user", "user_role", "user_role_matching"],
-  components: { BasicModal, BasicButton, BasicTable },
+  components: { BasicModal, BasicButton, BasicTable, BasicDetails },
   props: {
     resourceType: {
       type: String,
@@ -226,7 +208,7 @@ export default {
   methods: {
     normalizeDetailValue(item) {
       if (item.type === "list") {
-        return Array.isArray(item.value) && item.value.length > 0 ? item.value : ["-"];
+        return Array.isArray(item.value) ? item.value : [];
       }
       return item.value || "-";
     },

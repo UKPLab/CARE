@@ -1,29 +1,16 @@
 <template>
-  <div class="summary-container">
-    <div
-      v-for="section in summarySections"
-      :key="section.title"
-      class="mb-4"
-    >
-      <h6>{{ section.title }}</h6>
-      <div
-        v-for="item in section.items"
-        :key="item.label"
-        class="summary-item"
-      >
-        <strong>{{ item.label }}:</strong> {{ item.value }}
-      </div>
-    </div>
-    <div class="alert alert-info mt-3">
-      <i class="bi bi-info-circle"></i>
-      Please review the information above before submitting.
-    </div>
-  </div>
+  <BasicDetails
+    :sections="summarySections"
+    note="Please review the information above before submitting."
+  />
 </template>
 
 <script>
+import BasicDetails from "@/basic/Details.vue";
+
 export default {
   name: "TriggerReviewStep",
+  components: { BasicDetails },
   props: {
     triggerForm: { type: Object, required: true },
     eventData: { type: Object, required: true },
@@ -65,6 +52,7 @@ export default {
     },
     itemsForFields(fields, data) {
       return fields.map((field) => ({
+        key: field.key,
         label: field.label,
         value: this.formatValue(field, data) || "N/A",
       }));
@@ -82,17 +70,19 @@ export default {
       const actionField = this.actionFields[0];
       const items = [
         {
+          key: "action",
           label: actionField?.label || "Then (action)",
           value: actionField?.options?.find(
             (option) => this.sameValue(option.value, this.triggerForm.triggerActionId)
           )?.name || "N/A",
         },
-        { label: "NLP skill", value: this.actionData.skillName || "N/A" },
+        { key: "skill", label: "NLP skill", value: this.actionData.skillName || "N/A" },
       ];
 
       Object.entries(this.actionData.inputMappings || {}).forEach(([parameter, mapping]) => {
         if (parameter !== "output" && mapping) {
           items.push({
+            key: `input-${parameter}`,
             label: `Input: ${parameter}`,
             value: mapping.name || mapping.table || "N/A",
           });
@@ -102,6 +92,7 @@ export default {
       const names = this.actionData.validationConfigurationNames || {};
       Object.entries(this.actionData.baseFiles || {}).forEach(([id, selection]) => {
         items.push({
+          key: `base-${id}`,
           label: `Base file (${names[id] || id})`,
           value: selection,
         });
@@ -111,24 +102,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.summary-container {
-  padding: 1rem;
-}
-
-.summary-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.summary-item:last-of-type {
-  border-bottom: none;
-}
-
-.summary-item strong {
-  display: inline-block;
-  min-width: 180px;
-  color: #495057;
-}
-</style>

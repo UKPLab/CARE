@@ -35,41 +35,11 @@
     </template>
 
     <template #step-5>
-      <div class="mb-3">
-        <h6 class="mb-3">Review AI Hook</h6>
-        <dl class="row mb-0">
-          <dt class="col-sm-4">Name</dt>
-          <dd class="col-sm-8">{{ hookForm.name || "-" }}</dd>
-
-          <dt class="col-sm-4">Description</dt>
-          <dd class="col-sm-8">{{ hookForm.description || "-" }}</dd>
-
-          <dt class="col-sm-4">Prompt Template</dt>
-          <dd class="col-sm-8">{{ selectedPromptTemplateName }}</dd>
-
-          <dt class="col-sm-4">Models</dt>
-          <dd class="col-sm-8">
-            <ol v-if="selectedModelNames.length > 0" class="mb-0 ps-3">
-              <li v-for="(name, index) in selectedModelNames" :key="`${name}-${index}`">
-                {{ name }}
-              </li>
-            </ol>
-            <span v-else>-</span>
-          </dd>
-
-          <dt class="col-sm-4">Output Type</dt>
-          <dd class="col-sm-8">{{ selectedOutputModeLabel }}</dd>
-          
-          <dt class="col-sm-4">Cost limit</dt>
-          <dd class="col-sm-8">{{ formattedCostLimit }}</dd>
-
-          <dt class="col-sm-4">Status</dt>
-          <dd class="col-sm-8">{{ hookForm.enabled ? "Enabled" : "Disabled" }}</dd>
-        </dl>
-      </div>
-      <small class="text-muted">
-        Please confirm these settings before saving the AI hook.
-      </small>
+      <BasicDetails
+        heading="Review AI Hook"
+        :items="reviewItems"
+        note="Please confirm these settings before saving the AI hook."
+      />
     </template>
   </StepperModal>
 </template>
@@ -77,6 +47,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicDetails from "@/basic/Details.vue";
 import AIHookModelOrder from "@/components/dashboard/ai/AIHookModelOrder.vue";
 
 function getEmptyHookForm() {
@@ -94,7 +65,7 @@ function getEmptyHookForm() {
 
 export default {
   name: "AIHookStepperModal",
-  components: { StepperModal, BasicForm, AIHookModelOrder },
+  components: { StepperModal, BasicForm, BasicDetails, AIHookModelOrder },
   subscribeTable: ["ai_budget"],
   props: {
     promptTemplates: {
@@ -235,6 +206,17 @@ export default {
     formattedCostLimit() {
       const value = Number(this.hookForm.costLimit);
       return Number.isFinite(value) && value > 0 ? `$${value.toFixed(2)}` : "-";
+    },
+    reviewItems() {
+      return [
+        { key: "name", label: "Name", value: this.hookForm.name },
+        { key: "description", label: "Description", value: this.hookForm.description },
+        { key: "template", label: "Prompt Template", value: this.selectedPromptTemplateName },
+        { key: "models", label: "Models", value: this.selectedModelNames, type: "list" },
+        { key: "output", label: "Output Type", value: this.selectedOutputModeLabel },
+        { key: "costLimit", label: "Cost limit", value: this.formattedCostLimit },
+        { key: "status", label: "Status", value: this.hookForm.enabled ? "Enabled" : "Disabled" },
+      ];
     },
   },
   methods: {

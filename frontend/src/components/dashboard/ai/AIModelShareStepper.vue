@@ -78,21 +78,14 @@
       </div>
     </template>
     <template #step-3>
-      <div class="mb-3">
-        <div><strong>{{ resourceLabel }}:</strong> {{ selectedShareModel?.name || "-" }}</div>
-        <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
-        <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
-        <div>
-          <strong>Cost limit:</strong>
-          {{ shareCostLimitLabel }}{{ shareTotalLimitLabel ? ` (${shareTotalLimitLabel} total)` : '' }}
-        </div>
-      </div>
-      <BasicTable
-        :columns="shareSelectionColumns"
-        :data="activeShareSelections"
-        :options="shareReviewTableOptions"
-        :max-table-height="360"
-      />
+      <BasicDetails :items="shareReviewItems">
+        <BasicTable
+          :columns="shareSelectionColumns"
+          :data="activeShareSelections"
+          :options="shareReviewTableOptions"
+          :max-table-height="360"
+        />
+      </BasicDetails>
     </template>
   </StepperModal>
 </template>
@@ -105,6 +98,7 @@
  */
 
 import BasicTable from "@/basic/Table.vue";
+import BasicDetails from "@/basic/Details.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 
 export default {
@@ -112,6 +106,7 @@ export default {
   subscribeTable: ["ai_budget", "ai_model_share", "ai_hook_share", "user_role", "user"],
   components: {
     BasicTable,
+    BasicDetails,
     StepperModal,
   },
   props: {
@@ -232,6 +227,17 @@ export default {
       const value = Number(this.shareForm.costLimit);
       if (!Number.isFinite(value) || value <= 0 || this.activeSelectionIds.length <= 1) return "";
       return `$${(value * this.activeSelectionIds.length).toFixed(2)}`;
+    },
+    shareReviewItems() {
+      const costLimit = this.shareTotalLimitLabel
+        ? `${this.shareCostLimitLabel} (${this.shareTotalLimitLabel} total)`
+        : this.shareCostLimitLabel;
+      return [
+        { key: "resource", label: this.resourceLabel, value: this.selectedShareModel?.name },
+        { key: "audience", label: "Audience Type", value: this.shareAudienceLabel },
+        { key: "expiry", label: "Expiry Date", value: this.shareExpiryDateLabel },
+        { key: "costLimit", label: "Cost limit", value: costLimit },
+      ];
     },
     resourceLabelLower() {
       return this.resourceLabel.toLowerCase();
