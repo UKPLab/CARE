@@ -16,6 +16,8 @@
 import BasicTable from "@/basic/Table.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import { resolveApiMessage } from "@/assets/utils";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
@@ -48,15 +50,7 @@ export default {
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -125,75 +119,26 @@ export default {
         });
     },
     tableButtons() {
-      const buttons = [];
-
-      buttons.push(
-        {
-          icon: "download",
-          filter: [
-            {
-              key: "canDownload",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
+      return [
+        dashboardRowAction("download", {
+          filter: [{ key: "canDownload", value: true }],
           title: this.$t("submission.dashboard.actions.download"),
           action: "downloadSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-        {
-          icon: "arrow-repeat",
-          filter: [
-            {
-              key: "canReplaceDelete",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
+          stats: { submissionId: "id" },
+        }),
+        dashboardRowAction("replace", {
+          filter: [{ key: "canReplaceDelete", value: true }],
           title: this.$t("assignments.dashboard.submissionsTable.actions.replace"),
           action: "replaceSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-        {
-          icon: "trash",
-          filter: [
-            {
-              key: "canReplaceDelete",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-danger": true,
-              "btn-sm": true,
-            },
-          },
+          stats: { submissionId: "id" },
+        }),
+        dashboardRowAction("delete", {
+          filter: [{ key: "canReplaceDelete", value: true }],
           title: this.$t("assignments.dashboard.submissionsTable.actions.delete"),
           action: "deleteSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        }
-      );
-
-      return buttons;
+          stats: { submissionId: "id" },
+        }),
+      ];
     },
   },
   methods: {

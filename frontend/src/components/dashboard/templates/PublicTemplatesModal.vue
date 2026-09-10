@@ -29,6 +29,8 @@
 import Modal from "@/basic/Modal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -45,14 +47,7 @@ export default {
   subscribeTable: ["template"],
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      tableOptions: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
     };
   },
   computed: {
@@ -90,42 +85,31 @@ export default {
     },
     buttons() {
       return [
-        {
-          icon: "eye",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        dashboardRowAction("view", {
           title: this.$t("templates.publicTemplates.viewContentReadOnly"),
           action: "view",
-        },
-        {
-          icon: "clipboard-plus",
+        }),
+        dashboardRowButton("clipboard-plus", {
           options: {
-            iconOnly: true,
             specifiers: {
+              "btn-outline-secondary": false,
               "btn-outline-primary": true,
             },
           },
           filter: [{ key: "canCopy", value: true }],
           title: this.$t("templates.publicTemplates.copyToMyTemplates"),
           action: "copy",
-        },
-        {
-          icon: "clipboard-check",
+        }),
+        dashboardRowButton("clipboard-check", {
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
               disabled: true,
             },
           },
           filter: [{ key: "alreadyCopied", value: true }],
           title: this.$t("templates.publicTemplates.alreadyCopied"),
           action: null,
-        },
+        }),
       ];
     },
   },
