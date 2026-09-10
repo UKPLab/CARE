@@ -55,10 +55,6 @@ export default {
   name: "AIModel",
   components: { BasicModal, BasicForm, BasicButton },
   props: {
-    currentUserId: {
-      type: Number,
-      required: true,
-    },
     credentialRows: {
       type: Array,
       default: () => [],
@@ -216,10 +212,6 @@ export default {
     open(row = null) {
       this.resetForm();
       if (row) {
-        if (Number(row.userId) !== Number(this.currentUserId)) {
-          this.toastError("Only model owners can edit this model");
-          return;
-        }
         this.modelForm = {
           id: row.id,
           name: row.name || "",

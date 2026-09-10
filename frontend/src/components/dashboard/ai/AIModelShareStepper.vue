@@ -131,10 +131,6 @@ export default {
       type: String,
       required: true,
     },
-    ownerOnlyMessage: {
-      type: String,
-      required: true,
-    },
   },
   data() {
     return {
@@ -337,10 +333,6 @@ export default {
     async open(row) {
       if (!row?.id) {
         this.toastError("Invalid model selected");
-        return;
-      }
-      if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError(this.ownerOnlyMessage);
         return;
       }
 

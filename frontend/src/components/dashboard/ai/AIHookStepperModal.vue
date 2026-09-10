@@ -109,10 +109,6 @@ export default {
       type: Array,
       default: () => [],
     },
-    currentUserId: {
-      type: Number,
-      required: true,
-    },
     outputModes: {
       type: Array,
       required: true,
@@ -270,10 +266,6 @@ export default {
     open(row = null) {
       this.hookForm = getEmptyHookForm();
       if (row) {
-        if (Number(row.userId) !== Number(this.currentUserId)) {
-          this.toastError("Only hook owners can edit this AI hook");
-          return;
-        }
         this.hookForm = {
           id: row.id,
           name: row.name || "",
@@ -299,19 +291,6 @@ export default {
       });
     },
     async saveHook() {
-      if (!this.hookForm.name.trim()) {
-        this.toastError("Name is required");
-        return;
-      }
-      if (!this.hookForm.templateId) {
-        this.toastError("Prompt template is required");
-        return;
-      }
-      if (this.hookForm.modelIds.length === 0) {
-        this.toastError("At least one model is required");
-        return;
-      }
-
       const payload = {
         id: this.hookForm.id || 0,
         name: this.hookForm.name.trim(),

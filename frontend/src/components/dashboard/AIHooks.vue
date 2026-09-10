@@ -22,7 +22,6 @@
 
   <AIHookStepperModal
     ref="hookModal"
-    :current-user-id="currentUserId"
     :output-modes="outputModes"
     :prompt-templates="promptTemplates"
     :model-rows="models"
@@ -31,7 +30,6 @@
 
   <AIHookModelModal
     ref="hookModelModal"
-    :current-user-id="currentUserId"
     :model-rows="models"
     :hook-model-rows="hookModels"
   />
@@ -44,7 +42,6 @@
     resource-label="AI Hook"
     resource-id-key="aiHookId"
     share-table="ai_hook_share"
-    owner-only-message="Only hook owners can manage sharing"
   />
 
   <ConfirmModal ref="confirmModal" />
@@ -273,11 +270,6 @@ export default {
       this.$refs.hookModal.open(row);
     },
     toggleHook(row) {
-      if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError("Only hook owners can update this AI hook");
-        return;
-      }
-
       this.$socket.emit("appDataUpdate", {
         table: "ai_hook",
         data: {
@@ -291,11 +283,6 @@ export default {
       });
     },
     deleteHook(row) {
-      if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError("Only hook owners can delete this AI hook");
-        return;
-      }
-
       this.$refs.confirmModal.open(
         "Delete AI Hook",
         `Delete AI hook "${row.name}"?`,

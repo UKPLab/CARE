@@ -46,7 +46,6 @@
 
     <AIModel
       ref="aiModel"
-      :current-user-id="currentUserId"
       :credential-rows="credentialRows"
     />
 
@@ -56,7 +55,6 @@
       resource-label="AI Model"
       resource-id-key="aiModelId"
       share-table="ai_model_share"
-      owner-only-message="Only model owners can manage sharing"
     />
 
     <AIOverview ref="aiOverview" />
@@ -332,10 +330,6 @@ export default {
       this.$refs.aiModel.open(row);
     },
     toggleModel(row) {
-      if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError("Only model owners can update this model");
-        return;
-      }
       this.$socket.emit("appDataUpdate", {
         table: "ai_model",
         data: {
@@ -349,10 +343,6 @@ export default {
       });
     },
     deleteModel(row) {
-      if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError("Only model owners can delete this model");
-        return;
-      }
       this.$refs.confirmModal.open(
         "Delete Model",
         `Delete model "${row.name}"?`,

@@ -45,10 +45,6 @@ export default {
   name: "AIHookModelModal",
   components: { BasicModal, BasicButton, AIHookModelOrder },
   props: {
-    currentUserId: {
-      type: Number,
-      required: true,
-    },
     modelRows: {
       type: Array,
       default: () => [],
@@ -94,10 +90,6 @@ export default {
         this.toastError("Invalid AI hook selected");
         return;
       }
-      if (Number(hookRow.userId) !== Number(this.currentUserId)) {
-        this.toastError("Only hook owners can manage AI hook models");
-        return;
-      }
 
       this.selectedHook = hookRow;
       const existing = this.orderedHookModelRows.map((row) => Number(row.aiModelId));
@@ -119,21 +111,7 @@ export default {
       });
     },
     async saveModels() {
-      if (!this.selectedHook?.id) {
-        this.toastError("No AI hook selected");
-        return;
-      }
-      if (this.modelIds.length === 0) {
-        this.toastError("Select at least one model");
-        return;
-      }
-
       const normalizedModelIds = this.modelIds.map((id) => Number(id));
-      const uniqueIds = new Set(normalizedModelIds);
-      if (uniqueIds.size !== normalizedModelIds.length) {
-        this.toastError("Each model can only be selected once");
-        return;
-      }
 
       this.isSaving = true;
       try {
