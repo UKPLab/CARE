@@ -12,6 +12,10 @@
 const { Op } = require("sequelize");
 const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../db/models/ai_budget.js");
 
+function deny(reason, key, params = {}) {
+    return { allowed: false, reason, key, params };
+}
+
 /**
  * Decides if an AI request can run. If yes, creates the ai_log row for it.
  * Blocks a second request from the same user in the same session while one is still running.
@@ -29,13 +33,16 @@ async function beginRequest(service, request, options = {}) {
     } = request || {};
 
     if (await _hasInflight(service, userId, studySessionId)) {
-        return { allowed: false, reason: "You already have a pending AI request in this session" };
+        return deny(
+            "You already have a pending AI request in this session",
+            "errors.ai.requestAlreadyPending"
+        );
     }
 
     if (!options.bypassChecks) {
         const model = await service.server.db.models["ai_model"].findByPk(aiModelId, { raw: true });
         if (!model || model.deleted || !model.enabled) {
-            return { allowed: false, reason: "AI model is not available" };
+            return deny("AI model is not available", "errors.ai.model.notAvailable");
         }
 
         // Inside a study, access (and per-share budget attribution) rides on the
@@ -44,18 +51,24 @@ async function beginRequest(service, request, options = {}) {
             ? await _getStudyOwnerId(service, studyId)
             : userId;
         if (!accessHolderId) {
-            return { allowed: false, reason: "Study owner could not be resolved" };
+            return deny(
+                "Study owner could not be resolved",
+                "errors.ai.studyOwnerUnavailable"
+            );
         }
 
         const isModelOwner = model.userId === accessHolderId;
         const modelShare = await _findActiveShare(service, "ai_model_share", "aiModelId", accessHolderId, aiModelId);
         if (!isModelOwner && !modelShare) {
-            return {
-                allowed: false,
-                reason: studyId
-                    ? "Study creator no longer has access to this AI model"
-                    : "You do not have access to this AI model",
-            };
+            return studyId
+                ? deny(
+                    "Study creator no longer has access to this AI model",
+                    "errors.ai.model.studyOwnerAccessDenied"
+                )
+                : deny(
+                    "You do not have access to this AI model",
+                    "errors.ai.model.accessDenied"
+                );
         }
 
         // Model access does not imply hook access, a hook must be owned by, or actively shared with
@@ -66,17 +79,20 @@ async function beginRequest(service, request, options = {}) {
                 raw: true,
             });
             if (!hook || hook.deleted) {
-                return { allowed: false, reason: "AI hook is not available" };
+                return deny("AI hook is not available", "errors.ai.hook.notAvailable");
             }
             const isHookOwner = hook.userId === accessHolderId;
             hookShare = await _findActiveShare(service, "ai_hook_share", "aiHookId", accessHolderId, aiHookId);
             if (!isHookOwner && !hookShare) {
-                return {
-                    allowed: false,
-                    reason: studyId
-                        ? "Study creator no longer has access to this AI hook"
-                        : "You do not have access to this AI hook",
-                };
+                return studyId
+                    ? deny(
+                        "Study creator no longer has access to this AI hook",
+                        "errors.ai.hook.studyOwnerAccessDenied"
+                    )
+                    : deny(
+                        "You do not have access to this AI hook",
+                        "errors.ai.hook.accessDenied"
+                    );
             }
         }
 
@@ -93,7 +109,7 @@ async function beginRequest(service, request, options = {}) {
             for (const cap of caps) {
                 const used = await _sumLogsFor(service, cap, { userId, studySessionId, accessHolderId });
                 if (used >= cap.costLimit) {
-                    return { allowed: false, reason: _capDenyMessage(cap, used) };
+                    return {allowed: false, ..._capDenial(cap, used)};
                 }
             }
         }
@@ -239,16 +255,17 @@ async function _sumLogsFor(service, cap, ctx) {
 }
 
 // Human-readable deny message for the cap that blocked the request.
-function _capDenyMessage(cap, used) {
+function _capDenial(cap, used) {
     const limit = Number(cap.costLimit).toFixed(2);
     const spent = used.toFixed(2);
-    if (cap.aiModelId) return `Model budget exhausted: $${spent} / $${limit}`;
-    if (cap.aiModelShareId) return `Model share budget exhausted: $${spent} / $${limit}`;
-    if (cap.aiHookShareId) return `Hook share budget exhausted: $${spent} / $${limit}`;
-    if (cap.studyStepId) return `Step-hook budget exhausted: $${spent} / $${limit}`;
-    if (cap.aiHookId) return `Hook budget exhausted: $${spent} / $${limit}`;
-    if (cap.studyId) return `Study budget exhausted: $${spent} / $${limit}`;
-    return `Budget exhausted: $${spent} / $${limit}`;
+    const params = {spent, limit};
+    if (cap.aiModelId) return {reason: `Model budget exhausted: $${spent} / $${limit}`, key: "errors.budget.modelExhausted", params};
+    if (cap.aiModelShareId) return {reason: `Model share budget exhausted: $${spent} / $${limit}`, key: "errors.budget.modelShareExhausted", params};
+    if (cap.aiHookShareId) return {reason: `Hook share budget exhausted: $${spent} / $${limit}`, key: "errors.budget.hookShareExhausted", params};
+    if (cap.studyStepId) return {reason: `Step-hook budget exhausted: $${spent} / $${limit}`, key: "errors.budget.stepHookExhausted", params};
+    if (cap.aiHookId) return {reason: `Hook budget exhausted: $${spent} / $${limit}`, key: "errors.budget.hookExhausted", params};
+    if (cap.studyId) return {reason: `Study budget exhausted: $${spent} / $${limit}`, key: "errors.budget.studyExhausted", params};
+    return {reason: `Budget exhausted: $${spent} / $${limit}`, key: "errors.budget.exhausted", params};
 }
 
 /// Sum helpers

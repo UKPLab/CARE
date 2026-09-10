@@ -6,10 +6,10 @@
       @click="(setting.type === 'boolean' || setting.type === 'bool') && $event.preventDefault()"
     >
       <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-md-end">
-        <span>{{ setting.displayName || setting.key }}</span>
+        <span>{{ translateMaybeKey(setting.displayName || setting.key) }}</span>
         <FormHelp
           v-if="setting.description"
-          :help="setting.description"
+          :help="translateMaybeKey(setting.description)"
           icon-name="info-circle"
           button-class="text-muted flex-shrink-0"
         />
@@ -121,6 +121,7 @@
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
@@ -194,6 +195,7 @@ export default {
     },
   },
   methods: {
+    translateMaybeKey,
     updateColorValue(value) {
       const normalized = value && value.startsWith("#") ? value : `#${value || ""}`;
       if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {

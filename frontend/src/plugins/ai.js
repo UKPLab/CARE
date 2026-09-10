@@ -17,6 +17,13 @@
 // server error reaches the caller before the client gives up.
 const DEFAULT_TIMEOUT_MS = 130000;
 
+const createAIError = (key, params = {}, message = key) => {
+    const error = new Error(message);
+    error.key = key;
+    error.params = params;
+    return error;
+};
+
 const createRequestId = () => {
     if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
         return globalThis.crypto.randomUUID();
@@ -68,7 +75,7 @@ const emitAiCommand = (socket, command, data = {}, opts = {}) => {
             settled = true;
             clearTimer();
             sendAbort(`client timeout after ${timeoutMs}ms`);
-            reject(new Error(`AI request timed out after ${timeoutMs}ms (command: ${command})`));
+            reject(createAIError("ai.errors.requestTimeout", {timeoutMs, command}));
         }, timeoutMs);
 
         socket.emit("serviceCommand", {
@@ -81,13 +88,17 @@ const emitAiCommand = (socket, command, data = {}, opts = {}) => {
             clearTimer();
 
             if (!response) {
-                reject(new Error("No response received from AIService"));
+                reject(createAIError("ai.errors.noResponse"));
                 return;
             }
             if (response.success) {
                 resolve(response.data);
             } else {
-                reject(new Error(response.message || "AIService request failed"));
+                reject(createAIError(
+                    response.key || "ai.errors.requestFailed",
+                    response.params || {},
+                    response.message
+                ));
             }
         });
     });

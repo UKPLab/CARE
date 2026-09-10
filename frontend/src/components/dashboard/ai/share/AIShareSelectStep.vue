@@ -1,6 +1,6 @@
 <template>
   <div v-if="loading" class="text-muted mb-2">
-    Loading share options...
+    {{ $t("ai.share.loadingOptions") }}
   </div>
   <div
     v-else

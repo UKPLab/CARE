@@ -236,6 +236,18 @@
       "label": "Allow multiple submissions?",
       "help": "Specify whether participants can submit their study multiple times."
     },
+    "aiCostLimitTotal": {
+      "label": "AI cost limit - total ($):",
+      "help": "Total AI spend allowed in this study across all participants. Leave empty for no cap."
+    },
+    "aiCostLimitPerSession": {
+      "label": "Per session ($):",
+      "help": "AI spend allowed in a single session. Leave empty for no per-session cap."
+    },
+    "aiCostLimitPerUser": {
+      "label": "Per participant ($):",
+      "help": "AI spend allowed per participant in this study. Leave empty for no per-participant cap."
+    },
     "step": {
       "documentId": {
         "label": "Select Document",

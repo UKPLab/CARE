@@ -37,20 +37,20 @@ class TemplateSocket extends Socket {
     let studyStep = null;
 
     if (context.documentId && !(await this.checkDocumentAccess(context.documentId))) {
-      throw new Error("Access denied");
+      throw new TranslatableError("errors.templates.accessDenied");
     }
 
     if (context.studyStepId) {
       studyStep = await this.models["study_step"].getById(context.studyStepId, options);
       if (!studyStep) {
-        throw new Error("Study step not found");
+        throw new TranslatableError("errors.templates.resolveContextStudyStepNotFound");
       }
       if (studyStep.documentId) {
         if (!(await this.checkDocumentAccess(studyStep.documentId))) {
-          throw new Error("Access denied");
+          throw new TranslatableError("errors.templates.accessDenied");
         }
         if (context.documentId && studyStep.documentId !== context.documentId) {
-          throw new Error("Study step does not match document");
+          throw new TranslatableError("errors.templates.resolveContextStepDocumentMismatch");
         }
       } else if (!context.studySessionId) {
         // add() can leave documentId null for editor/modal steps; there is no document ACL then,
@@ -61,7 +61,7 @@ class TemplateSocket extends Socket {
           hasStepAccess = !!study && (await this.checkUserAccess(study.userId));
         }
         if (!hasStepAccess) {
-          throw new Error("Access denied");
+          throw new TranslatableError("errors.templates.accessDenied");
         }
       }
     }
@@ -69,7 +69,7 @@ class TemplateSocket extends Socket {
     if (context.studySessionId) {
       const studySession = await this.models["study_session"].getById(context.studySessionId, options);
       if (!studySession) {
-        throw new Error("Study session not found");
+        throw new TranslatableError("errors.templates.resolveContextStudySessionNotFound");
       }
 
       let hasSessionAccess =
@@ -82,11 +82,11 @@ class TemplateSocket extends Socket {
       }
 
       if (!hasSessionAccess) {
-        throw new Error("Access denied");
+        throw new TranslatableError("errors.templates.accessDenied");
       }
 
       if (studyStep?.studyId && studySession.studyId !== studyStep.studyId) {
-        throw new Error("Study session does not match study step");
+        throw new TranslatableError("errors.templates.resolveContextSessionStepMismatch");
       }
     }
   }
@@ -395,17 +395,17 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Array>}
    */
   async getUsedPlaceholders(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
 
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
     if (!isOwner && !isPublicFromOthers) {
-      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+      throw new TranslatableError("errors.templates.viewPlaceholdersOwnOrPublicOnly");
     }
 
     return await getUsedPlaceholders(data.templateId, this.models, { transaction: options.transaction });
@@ -586,10 +586,9 @@ class TemplateSocket extends Socket {
       options
     );
     if (duplicates.length > 0) {
-      throw new Error(
-        `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
-        `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
-      );
+      throw new TranslatableError("errors.templates.duplicateBracketPlaceholders", {
+        ids: duplicates.join(", "),
+      });
     }
   }
 

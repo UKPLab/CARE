@@ -1,12 +1,13 @@
 <template>
   <BasicDetails
     :sections="summarySections"
-    note="Please review the information above before submitting."
+    :note="$t('triggers.review.note')"
   />
 </template>
 
 <script>
 import BasicDetails from "@/basic/Details.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "TriggerReviewStep",
@@ -24,18 +25,18 @@ export default {
     summarySections() {
       return [
         {
-          title: "Trigger info",
+          title: this.$t("triggers.steps.info"),
           items: this.itemsForFields(this.settingsFields, this.triggerForm),
         },
         {
-          title: "Event",
+          title: this.$t("triggers.common.event"),
           items: this.itemsForFields(this.eventFields, {
             ...this.triggerForm,
             ...this.eventData,
           }),
         },
         {
-          title: "Action",
+          title: this.$t("triggers.common.action"),
           items: this.preprocessingAction
             ? this.preprocessingItems()
             : this.itemsForFields(this.actionFields, {
@@ -54,37 +55,40 @@ export default {
       return fields.map((field) => ({
         key: field.key,
         label: field.label,
-        value: this.formatValue(field, data) || "N/A",
+        value: this.formatValue(field, data) || this.$t("triggers.common.notAvailable"),
       }));
     },
     formatValue(field, data) {
       const value = data[field.key];
       if (field.type === "select" && field.options?.length) {
-        return field.options.find((option) => this.sameValue(option.value, value))?.name
-          ?? (value == null ? "" : String(value));
+        const optionName = field.options.find((option) => this.sameValue(option.value, value))?.name;
+        return optionName ? translateMaybeKey(optionName) : (value == null ? "" : String(value));
       }
-      if (field.type === "boolean" || field.type === "bool") return value ? "Yes" : "No";
+      if (field.type === "boolean" || field.type === "bool") return value ? this.$t("triggers.common.yes") : this.$t("triggers.common.no");
       return value == null ? "" : String(value);
     },
     preprocessingItems() {
       const actionField = this.actionFields[0];
+      const selectedActionName = actionField?.options?.find(
+        (option) => this.sameValue(option.value, this.triggerForm.triggerActionId)
+      )?.name;
       const items = [
         {
           key: "action",
-          label: actionField?.label || "Then (action)",
-          value: actionField?.options?.find(
-            (option) => this.sameValue(option.value, this.triggerForm.triggerActionId)
-          )?.name || "N/A",
+          label: actionField?.label || this.$t("triggers.fields.thenAction"),
+          value: selectedActionName
+            ? translateMaybeKey(selectedActionName)
+            : this.$t("triggers.common.notAvailable"),
         },
-        { key: "skill", label: "NLP skill", value: this.actionData.skillName || "N/A" },
+        { key: "skill", label: this.$t("triggers.review.nlpSkill"), value: this.actionData.skillName || this.$t("triggers.common.notAvailable") },
       ];
 
       Object.entries(this.actionData.inputMappings || {}).forEach(([parameter, mapping]) => {
         if (parameter !== "output" && mapping) {
           items.push({
             key: `input-${parameter}`,
-            label: `Input: ${parameter}`,
-            value: mapping.name || mapping.table || "N/A",
+            label: this.$t("triggers.review.input", { parameter }),
+            value: mapping.name || mapping.table || this.$t("triggers.common.notAvailable"),
           });
         }
       });
@@ -93,7 +97,7 @@ export default {
       Object.entries(this.actionData.baseFiles || {}).forEach(([id, selection]) => {
         items.push({
           key: `base-${id}`,
-          label: `Base file (${names[id] || id})`,
+          label: this.$t("triggers.review.baseFile", { name: names[id] || id }),
           value: selection,
         });
       });

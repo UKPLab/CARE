@@ -7,6 +7,7 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
@@ -74,7 +75,7 @@ module.exports = (sequelize, DataTypes) => {
                 aiModel._previousDataValues?.userId ?? aiModel.userId
             );
             if (ownerUserId !== currentUserId) {
-                throw new Error("You are not allowed to update this AI model");
+                throw new TranslatableError("errors.ai.model.updateNotAllowed");
             }
         }
 
@@ -94,15 +95,15 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             if (!credential || credential.deleted) {
-                throw new Error("Selected AI credential does not exist");
+                throw new TranslatableError("errors.ai.credential.selectedNotFound");
             }
 
             if (credential.userId !== aiModel.userId) {
-                throw new Error("Selected AI credential does not belong to this user");
+                throw new TranslatableError("errors.ai.credential.selectedNotOwned");
             }
 
             if (!credential.enabled && aiModel.enabled) {
-                throw new Error("Cannot enable this model while its credential is disabled");
+                throw new TranslatableError("errors.ai.model.credentialDisabled");
             }
         }
     }

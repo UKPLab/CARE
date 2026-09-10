@@ -365,7 +365,7 @@ class AssignmentSocket extends Socket {
                     (a) => String(a.id) === String(assignmentId)
                 );
                 if (!assignment) {
-                    throw new Error(`Selected assignment ${assignmentId} could not be resolved.`);
+                    throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId});
                 }
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
                 const assignmentData = {
@@ -526,7 +526,7 @@ class AssignmentSocket extends Socket {
                         (a) => String(a.id) === String(assignmentId)
                     );
                     if (!assignment) {
-                        throw new Error(`Selected assignment ${assignmentId} could not be resolved.`);
+                        throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId});
                     }
                     const reviewer = data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId));
                     

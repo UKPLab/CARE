@@ -1,6 +1,7 @@
 "use strict";
 
 const { QUEUE_STATUS } = require("../../triggerQueueStatus.js");
+const TranslatableError = require("../../TranslatableError");
 const {
     buildEventContext,
     findMatchingTriggers,
@@ -12,6 +13,16 @@ const triggerHandlers = require("./handlers/index.js");
 const POLL_INTERVAL_SETTING_KEY = "trigger.queue.pollInterval";
 const DEFAULT_TRIGGER_POLL_INTERVAL_MINUTES = 5;
 const DEFAULT_TRIGGER_TIMEOUT_SECONDS = 300;
+
+function serializeTriggerError(error) {
+    if (TranslatableError.is(error)) {
+        return JSON.stringify({
+            key: error.key,
+            params: error.params || {},
+        });
+    }
+    return error.message || String(error);
+}
 
 /**
  * Coordinates trigger events and processes persisted trigger jobs.
@@ -130,7 +141,7 @@ class TriggerManager {
             this.activeExecutions.has(Number(queueItemId))
             || this.unsettledHandlers.has(Number(queueItemId))
         ) {
-            throw new Error("A running queue item cannot be retried.");
+            throw new TranslatableError("errors.triggers.runningCannotRetry");
         }
         const queueItem = await triggerQueue.retryQueueItem(
             this.server,
@@ -262,8 +273,8 @@ class TriggerManager {
                         {
                             status: QUEUE_STATUS.FAILED,
                             errorMessage: trigger
-                                ? "Trigger parallel limit must be at least 1."
-                                : "Associated trigger rule not found.",
+                                ? "errors.triggers.parallelLimitInvalid"
+                                : "errors.triggers.associatedRuleNotFound",
                             completedAt: new Date(),
                         }
                     );
@@ -340,7 +351,7 @@ class TriggerManager {
                 queueItem.attemptCount,
                 {
                     status: QUEUE_STATUS.FAILED,
-                    errorMessage: "Trigger execution timed out.",
+                    errorMessage: "errors.triggers.executionTimedOut",
                     completedAt: new Date(),
                 }
             );
@@ -390,8 +401,9 @@ class TriggerManager {
 
         try {
             if (!handler) {
-                throw new Error(
-                    `No trigger handler registered for ${handlerName}`
+                throw new TranslatableError(
+                    "errors.triggers.handlerNotRegistered",
+                    {handlerName: handlerName || "unknown"}
                 );
             }
 
@@ -405,7 +417,7 @@ class TriggerManager {
             const timeout = new Promise((_, reject) => {
                 timeoutId = setTimeout(() => {
                     abortController.abort();
-                    reject(new Error("Trigger execution timed out."));
+                    reject(new TranslatableError("errors.triggers.executionTimedOut"));
                 }, this.getTimeoutMilliseconds(trigger));
                 timeoutId.unref?.();
             });
@@ -466,7 +478,7 @@ class TriggerManager {
                 queueItem.attemptCount,
                 {
                     status: QUEUE_STATUS.FAILED,
-                    errorMessage: error.message || String(error),
+                    errorMessage: serializeTriggerError(error),
                     completedAt: new Date(),
                 }
             );

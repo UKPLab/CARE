@@ -4,10 +4,10 @@ const settings = [{
     key: "trigger.queue.pollInterval",
     value: "5",
     type: "integer",
-    description: "How often the trigger queue worker looks for pending jobs, in minutes. New jobs still start immediately when an event fires. Requires a server restart.",
-    displayName: "Trigger queue poll interval (minutes)",
-    displayGroup: "Triggers",
-    displaySubsection: "Queue",
+    description: "settings.triggerQueue.pollInterval.description",
+    displayName: "settings.triggerQueue.pollInterval.displayName",
+    displayGroup: "settings.triggerQueue.group",
+    displaySubsection: "settings.triggerQueue.queue",
     onlyAdmin: true,
 }];
 

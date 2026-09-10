@@ -1,12 +1,12 @@
 <template>
   <div>
-    <BasicCard title="AI Credentials" class="mb-3">
+    <BasicCard :title="$t('ai.models.credentialsTitle')" class="mb-3">
       <template #headerElements>
         <BasicButton
           class="btn-primary btn-sm"
-          title="Add AI credential"
+          :title="$t('ai.models.addCredentialTitle')"
           icon="plus"
-          text="Add Credential"
+          :text="$t('ai.models.addCredential')"
           @click="openCredentialModal()"
         />
       </template>
@@ -21,13 +21,13 @@
       </template>
     </BasicCard>
 
-    <BasicCard title="AI Models">
+    <BasicCard :title="$t('ai.models.modelsTitle')">
       <template #headerElements>
         <BasicButton
           class="btn-primary btn-sm"
-          title="Add AI model"
+          :title="$t('ai.models.addModelTitle')"
           icon="plus"
-          text="Add Model"
+          :text="$t('ai.models.addModel')"
           @click="openModelModal()"
         />
       </template>
@@ -52,7 +52,7 @@
     <AIModelShareStepper
       ref="shareModelStepper"
       :current-user-id="currentUserId"
-      resource-label="AI Model"
+      :resource-label="$t('ai.resources.model')"
       resource-id-key="aiModelId"
       share-table="ai_model_share"
     />
@@ -78,6 +78,7 @@ import AICredential from "@/components/dashboard/ai/AICredential.vue";
 import AIModel from "@/components/dashboard/ai/AIModel.vue";
 import AIModelShareStepper from "@/components/dashboard/ai/share/AIModelShareStepper.vue";
 import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "DashboardAIModels",
@@ -99,27 +100,31 @@ export default {
         hover: true,
         pagination: 10,
       },
-      credentialColumns: [
-        { name: "Name", key: "name", sortable: true },
-        { name: "Provider", key: "provider", sortable: true },
-        { name: "Base URL", key: "apiBaseUrl", sortable: true },
-        { name: "Version", key: "apiVersion", sortable: true },
-        { name: "Models", key: "modelCount", type: "badge" },
-        { name: "Status", key: "status", type: "badge" },
-        { name: "Created", key: "createdAt", type: "datetime", sortable: true },
-      ],
-      modelColumns: [
-        { name: "Name", key: "name", sortable: true },
-        { name: "Provider", key: "provider", sortable: true },
-        { name: "Model ID", key: "model", sortable: true },
-        { name: "Credential", key: "credentialName", sortable: true },
-        { name: "Shared by", key: "sharedBy", sortable: true },
-        { name: "Status", key: "status", type: "badge" },
-        { name: "Created", key: "createdAt", type: "datetime", sortable: true },
-      ],
     };
   },
   computed: {
+    credentialColumns() {
+      return [
+        { name: this.$t("ai.common.name"), key: "name", sortable: true },
+        { name: this.$t("ai.common.provider"), key: "provider", sortable: true },
+        { name: this.$t("ai.models.baseUrl"), key: "apiBaseUrl", sortable: true },
+        { name: this.$t("ai.models.version"), key: "apiVersion", sortable: true },
+        { name: this.$t("ai.common.models"), key: "modelCount", type: "badge" },
+        { name: this.$t("ai.common.status"), key: "status", type: "badge" },
+        { name: this.$t("ai.common.created"), key: "createdAt", type: "datetime", sortable: true },
+      ];
+    },
+    modelColumns() {
+      return [
+        { name: this.$t("ai.common.name"), key: "name", sortable: true },
+        { name: this.$t("ai.common.provider"), key: "provider", sortable: true },
+        { name: this.$t("ai.models.modelId"), key: "model", sortable: true },
+        { name: this.$t("ai.common.credential"), key: "credentialName", sortable: true },
+        { name: this.$t("ai.common.sharedBy"), key: "sharedBy", sortable: true },
+        { name: this.$t("ai.common.status"), key: "status", type: "badge" },
+        { name: this.$t("ai.common.created"), key: "createdAt", type: "datetime", sortable: true },
+      ];
+    },
     currentUserId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -143,7 +148,7 @@ export default {
       return this.credentials.map((credential) => ({
         ...credential,
         status: {
-          text: credential.enabled ? "Enabled" : "Disabled",
+          text: credential.enabled ? this.$t("ai.status.enabled") : this.$t("ai.status.disabled"),
           class: credential.enabled ? "bg-success" : "bg-secondary",
         },
         modelCount: {
@@ -167,10 +172,10 @@ export default {
         return {
           ...model,
           provider: credentialsById[model.aiCredentialId]?.provider || "",
-          credentialName: model.aiCredentialId ? (credentialsById[model.aiCredentialId]?.name || "Unknown") : "None",
+          credentialName: model.aiCredentialId ? (credentialsById[model.aiCredentialId]?.name || this.$t("ai.common.unknown")) : this.$t("ai.common.none"),
           sharedBy,
           status: {
-            text: model.enabled ? "Enabled" : "Disabled",
+            text: model.enabled ? this.$t("ai.status.enabled") : this.$t("ai.status.disabled"),
             class: model.enabled ? "bg-success" : "bg-secondary",
           },
         };
@@ -180,27 +185,27 @@ export default {
       return [
         {
           icon: "pencil",
-          title: "Edit credential",
+          title: this.$t("ai.actions.editCredential"),
           action: "editCredential",
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
           icon: "toggle2-on",
-          title: "Disable credential",
+          title: this.$t("ai.actions.disableCredential"),
           action: "toggleCredential",
           filter: [{ key: "enabled", value: true }],
           options: { iconOnly: true, specifiers: { "btn-outline-success": true } },
         },
         {
           icon: "toggle2-off",
-          title: "Enable credential",
+          title: this.$t("ai.actions.enableCredential"),
           action: "toggleCredential",
           filter: [{ key: "enabled", value: false }],
           options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
         },
         {
           icon: "trash",
-          title: "Delete credential",
+          title: this.$t("ai.actions.deleteCredential"),
           action: "deleteCredential",
           options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
         },
@@ -210,20 +215,20 @@ export default {
       return [
         {
           icon: "pencil",
-          title: "Edit model",
+          title: this.$t("ai.actions.editModel"),
           action: "editModel",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
           icon: "info-circle",
-          title: "Model overview",
+          title: this.$t("ai.actions.modelOverview"),
           action: "modelOverview",
           options: { iconOnly: true, specifiers: { "btn-outline-info": true } },
         },
         {
           icon: "toggle2-on",
-          title: "Disable model",
+          title: this.$t("ai.actions.disableModel"),
           action: "toggleModel",
           filter: [{ key: "enabled", value: true }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
@@ -231,7 +236,7 @@ export default {
         },
         {
           icon: "toggle2-off",
-          title: "Enable model",
+          title: this.$t("ai.actions.enableModel"),
           action: "toggleModel",
           filter: [{ key: "enabled", value: false }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
@@ -239,14 +244,14 @@ export default {
         },
         {
           icon: "share",
-          title: "Share model",
+          title: this.$t("ai.actions.shareModel"),
           action: "shareModel",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
         {
           icon: "trash",
-          title: "Delete model",
+          title: this.$t("ai.actions.deleteModel"),
           action: "deleteModel",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
@@ -299,14 +304,14 @@ export default {
         },
       }, (result) => {
         if (!result.success) {
-          this.toastError(result.message || "Failed to update credential");
+          this.toastError(resolveApiMessage(result, "ai.errors.updateCredential"));
         }
       });
     },
     deleteCredential(row) {
       this.$refs.confirmModal.open(
-        "Delete Credential",
-        `Delete credential "${row.name}"? Models linked to it will keep existing values, but cannot use this credential anymore.`,
+        this.$t("ai.confirm.deleteCredentialTitle"),
+        this.$t("ai.confirm.deleteCredential", { name: row.name }),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -318,9 +323,9 @@ export default {
             },
           }, (result) => {
             if (result.success) {
-              this.toastSuccess("Credential deleted");
+              this.toastSuccess(this.$t("ai.messages.credentialDeleted"));
             } else {
-              this.toastError(result.message || "Failed to delete credential");
+              this.toastError(resolveApiMessage(result, "ai.errors.deleteCredential"));
             }
           });
         }
@@ -338,14 +343,14 @@ export default {
         },
       }, (result) => {
         if (!result.success) {
-          this.toastError(result.message || "Failed to update model");
+          this.toastError(resolveApiMessage(result, "ai.errors.updateModel"));
         }
       });
     },
     deleteModel(row) {
       this.$refs.confirmModal.open(
-        "Delete Model",
-        `Delete model "${row.name}"?`,
+        this.$t("ai.confirm.deleteModelTitle"),
+        this.$t("ai.confirm.deleteModel", { name: row.name }),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -357,9 +362,9 @@ export default {
             },
           }, (result) => {
             if (result.success) {
-              this.toastSuccess("Model deleted");
+              this.toastSuccess(this.$t("ai.messages.modelDeleted"));
             } else {
-              this.toastError(result.message || "Failed to delete model");
+              this.toastError(resolveApiMessage(result, "ai.errors.deleteModel"));
             }
           });
         }
@@ -367,14 +372,14 @@ export default {
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
-        title: "Success",
+        title: this.$t("ai.common.success"),
         message,
         variant: "success",
       });
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

@@ -264,7 +264,12 @@
         "notCopyOrDoesNotExist": "Template is not a copy or does not exist",
         "sourceNoLongerAvailable": "Source template is no longer available",
         "cannotMakeNonPublic": "Cannot make a template non-public once it has been made public",
-        "updateOwnOnly": "You can only update templates that you own"
+        "updateOwnOnly": "You can only update templates that you own",
+        "resolveContextStudyStepNotFound": "The study step was not found.",
+        "resolveContextStepDocumentMismatch": "The study step does not match the selected document.",
+        "resolveContextStudySessionNotFound": "The study session was not found.",
+        "resolveContextSessionStepMismatch": "The study session does not match the study step.",
+        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once."
     },
     "settings": {
         "errorLoading": "Error Loading Settings",
@@ -391,6 +396,7 @@
     "backgroundTask": {
         "noDocumentSocketForClient": "No DocumentSocket found for client",
         "invalidPreprocessRequest": "Invalid request data: missing skillName or skillParameterMappings",
+        "alreadyRunning": "Another preprocessing job is already running.",
         "noCompletedPreprocessing": "Cannot confirm completion: no completed preprocessing to confirm",
         "confirmCompletionMissingAdminRights": "Cannot confirm completion: missing admin rights"
     },
@@ -406,7 +412,111 @@
         "studySessionOwnerNotSelectedReviewer": "Study session owner (User ID: {reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.",
         "invalidMode": "Invalid mode provided for assignment creation.",
         "firstStepNotSubmission": "First step selected does not map to a submission.",
-        "latestSubmissionNotFound": "The latest version of the chosen submission could not be found."
+        "latestSubmissionNotFound": "The latest version of the chosen submission could not be found.",
+        "selectedNotResolved": "The selected assignment {assignmentId} could not be resolved."
+    },
+    "ai": {
+        "requestAlreadyPending": "You already have a pending AI request in this session.",
+        "studyOwnerUnavailable": "The study owner could not be resolved.",
+        "serviceUnavailable": "The AI service is not available.",
+        "serviceNotConnected": "The AI service is not connected.",
+        "requestNotAbortable": "The request was not found or can no longer be stopped.",
+        "credential": {
+            "updateNotAllowed": "You are not allowed to update this AI credential.",
+            "selectedNotFound": "The selected AI credential does not exist.",
+            "selectedNotOwned": "The selected AI credential does not belong to you.",
+            "notFound": "AI credential not found.",
+            "accessDenied": "You are not allowed to access this AI credential.",
+            "disabled": "The AI credential is disabled.",
+            "invalidId": "A valid AI credential ID is required.",
+            "providerRequired": "A credential provider is required to load models."
+        },
+        "model": {
+            "updateNotAllowed": "You are not allowed to update this AI model.",
+            "credentialDisabled": "This model cannot be enabled while its credential is disabled.",
+            "notAvailable": "The AI model is not available.",
+            "credentialUnavailable": "The AI model credential is not available.",
+            "studyOwnerAccessDenied": "The study creator no longer has access to this AI model.",
+            "accessDenied": "You do not have access to this AI model.",
+            "required": "An AI model is required."
+        },
+        "hook": {
+            "updateNotAllowed": "You are not allowed to update this AI hook.",
+            "invalidOutputMode": "The AI hook output mode is invalid.",
+            "notAvailable": "The AI hook is not available.",
+            "studyOwnerAccessDenied": "The study creator no longer has access to this AI hook.",
+            "accessDenied": "You do not have access to this AI hook.",
+            "notFound": "AI hook not found.",
+            "disabled": "The AI hook is disabled.",
+            "templateRequired": "The AI hook has no prompt template.",
+            "modelRequired": "The AI hook has no configured model.",
+            "modelNotFound": "The AI hook model was not found.",
+            "modelDisabled": "The AI hook model is disabled.",
+            "credentialNotFound": "The AI hook model credential was not found.",
+            "credentialDisabled": "The AI hook model credential is disabled.",
+            "invalidId": "A valid AI hook ID is required."
+        },
+        "hookModel": {
+            "hookRequired": "An AI hook is required for hook models.",
+            "manageNotAllowed": "You are not allowed to manage models for this AI hook.",
+            "invalidPriority": "AI hook model priority must be at least 1.",
+            "duplicatePriority": "AI hook model priority must be unique for this hook.",
+            "fallbackMatchesPrimary": "The fallback model cannot be the same as the primary model."
+        }
+    },
+    "triggers": {
+        "createNotAllowed": "You do not have permission to create triggers.",
+        "updateNotAllowed": "You do not have permission to update triggers.",
+        "deleteNotAllowed": "You do not have permission to delete triggers.",
+        "modifyNotAllowed": "You do not have permission to modify triggers.",
+        "logsViewNotAllowed": "You do not have permission to view trigger logs.",
+        "retryNotAllowed": "You do not have permission to retry trigger jobs.",
+        "rerunNotAllowed": "You do not have permission to re-run trigger jobs.",
+        "cancelNotAllowed": "You do not have permission to cancel trigger jobs.",
+        "eventRequired": "A trigger event is required.",
+        "actionRequired": "A trigger action is required.",
+        "nameRequired": "A trigger name is required.",
+        "idRequired": "A trigger ID is required.",
+        "queueItemIdRequired": "A queue item ID is required.",
+        "queueItemNotFound": "Queue item not found.",
+        "retryInvalidStatus": "Only failed or cancelled queue items can be retried.",
+        "associatedRuleNotFound": "The associated trigger rule was not found.",
+        "parallelLimitInvalid": "Trigger parallel limit must be at least 1.",
+        "handlerNotRegistered": "No trigger handler is registered for {handlerName}.",
+        "maxRetriesReached": "The maximum number of retries for this trigger has been reached.",
+        "alreadyRetrying": "The queue item is already being retried.",
+        "rerunInvalidStatus": "Only completed queue items can be re-run.",
+        "cancelInvalidStatus": "Only pending or running queue items can be cancelled.",
+        "noLongerCancellable": "The queue item can no longer be cancelled.",
+        "runningCannotRetry": "A running queue item cannot be retried.",
+        "executionTimedOut": "The trigger execution timed out.",
+        "email": {
+            "unsupportedRecipient": "The email recipient \"{recipient}\" is not supported.",
+            "templateRequired": "The email trigger action requires an email template.",
+            "templateNotFound": "Email template {templateId} was not found.",
+            "noRecipients": "The email trigger action could not resolve any recipients."
+        },
+        "preprocessing": {
+            "mappingSourceMissing": "NLP parameter {paramName} does not define file IDs or a context source.",
+            "mappingContextMissing": "NLP parameter {paramName} could not resolve {contextKey} from the event context.",
+            "hookInvalid": "The AI hook trigger is not configured correctly.",
+            "resultDocumentMissing": "The AI hook trigger could not resolve its result document.",
+            "unsupportedHookInput": "AI hook input type \"{type}\" is not supported.",
+            "serviceUnavailable": "The background preprocessing service is not available.",
+            "cancelled": "Trigger preprocessing was cancelled."
+        }
+    },
+    "budget": {
+        "invalidScope": "The selected budget scope is invalid.",
+        "entityNotOwned": "You do not own the selected budget entity.",
+        "notOwned": "You do not own this budget.",
+        "modelExhausted": "Model budget exhausted: ${spent} / ${limit}",
+        "modelShareExhausted": "Model share budget exhausted: ${spent} / ${limit}",
+        "hookShareExhausted": "Hook share budget exhausted: ${spent} / ${limit}",
+        "stepHookExhausted": "Step-hook budget exhausted: ${spent} / ${limit}",
+        "hookExhausted": "Hook budget exhausted: ${spent} / ${limit}",
+        "studyExhausted": "Study budget exhausted: ${spent} / ${limit}",
+        "exhausted": "Budget exhausted: ${spent} / ${limit}"
     },
     "common": {
         "resourceNotFound": "The requested resource does not exist or has been deleted.",

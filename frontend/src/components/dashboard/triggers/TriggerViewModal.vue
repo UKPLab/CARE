@@ -5,7 +5,7 @@
     size="lg"
   >
     <template #title>
-      {{ trigger ? `Trigger: ${trigger.name}` : "Trigger" }}
+      {{ trigger ? $t("triggers.view.namedTitle", { name: trigger.name }) : $t("triggers.common.trigger") }}
     </template>
     <template #body>
       <BasicDetails v-if="trigger" :items="detailRows">
@@ -17,7 +17,7 @@
     </template>
     <template #footer>
       <BasicButton
-        title="Close"
+        :title="$t('triggers.common.close')"
         class="btn btn-secondary"
         @click="$refs.modal.close()"
       />
@@ -29,6 +29,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicDetails from "@/basic/Details.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "TriggerViewModal",
@@ -41,20 +42,20 @@ export default {
       if (!this.trigger) return [];
       const t = this.trigger;
       return [
-        { key: "description", label: "Description", value: t.description || "-" },
+        { key: "description", label: this.$t("triggers.common.description"), value: t.description || "-" },
         {
           key: "status",
-          label: "Status",
-          value: t.enabled ? "Enabled" : "Disabled",
+          label: this.$t("triggers.common.status"),
+          value: t.enabled ? this.$t("triggers.status.enabled") : this.$t("triggers.status.disabled"),
           type: "badge",
           class: t.enabled ? "bg-success" : "bg-secondary",
         },
-        { key: "event", label: "Event", value: t.eventLabel },
-        { key: "action", label: "Action", value: t.actionLabel },
-        { key: "project", label: "Project", value: t.projectLabel },
-        { key: "maxRetries", label: "Max retries", value: t.maxRetries },
-        { key: "parallelLimit", label: "Parallel limit", value: t.parallelLimit },
-        { key: "timeout", label: "Timeout", value: `${t.timeout} seconds` },
+        { key: "event", label: this.$t("triggers.common.event"), value: t.eventLabel },
+        { key: "action", label: this.$t("triggers.common.action"), value: t.actionLabel },
+        { key: "project", label: this.$t("triggers.common.project"), value: t.projectLabel },
+        { key: "maxRetries", label: this.$t("triggers.fields.maxRetries"), value: t.maxRetries },
+        { key: "parallelLimit", label: this.$t("triggers.fields.parallelLimit"), value: t.parallelLimit },
+        { key: "timeout", label: this.$t("triggers.fields.timeout"), value: this.$t("triggers.view.seconds", { count: t.timeout }) },
       ];
     },
     configurationJson() {
@@ -81,8 +82,8 @@ export default {
         name: row.name,
         description: configuration.description || "",
         enabled: row.enabled?.value ?? row.enabled,
-        eventLabel: row.eventLabel || event?.configuration?.label || event?.name || "-",
-        actionLabel: row.actionLabel || action?.configuration?.label || action?.name || "-",
+        eventLabel: translateMaybeKey(row.eventLabel || event?.configuration?.label || event?.name || "-"),
+        actionLabel: translateMaybeKey(row.actionLabel || action?.configuration?.label || action?.name || "-"),
         projectLabel: project?.name || (row.projectId == null ? "-" : `#${row.projectId}`),
         maxRetries: row.maxRetries ?? "-",
         parallelLimit: row.parallelLimit ?? "-",

@@ -31,7 +31,7 @@
               class="template-example-preview-panel border rounded bg-light"
             >
               <div class="alert alert-info mb-0 rounded-0 py-2 small template-preview-banner">
-                Example values only — not live data. Layout matches the editor where placeholders appear as plain text in HTML.
+                {{ $t("templates.editor.viewMode.previewHelp") }}
               </div>
               <div class="ql-snow template-preview-scroll p-3">
                 <div
@@ -104,9 +104,9 @@
     { code: "fr", labelKey: "common.languages.fr" },
   ];
 
-  const VIEW_MODE_LABELS = {
-    edit: "Edit",
-    preview: "Preview",
+  const VIEW_MODE_LABEL_KEYS = {
+    edit: "templates.editor.viewMode.edit",
+    preview: "templates.editor.viewMode.preview",
   };
 
   export default {
@@ -611,14 +611,14 @@
         wrapper.className = "ql-templateViewMode ql-picker";
 
         const currentMode = this.previewMode ? "preview" : "edit";
-        const currentLabel = VIEW_MODE_LABELS[currentMode];
+        const currentLabel = this.$t(VIEW_MODE_LABEL_KEYS[currentMode]);
         wrapper.innerHTML = `
-          <span class="ql-picker-label" title="View mode">${currentLabel}
+          <span class="ql-picker-label" title="${this.$t("templates.editor.viewMode.title")}">${currentLabel}
             <svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>
           </span>
           <span class="ql-picker-options">
-            <span class="ql-picker-item" data-value="edit">${VIEW_MODE_LABELS.edit}</span>
-            <span class="ql-picker-item" data-value="preview">${VIEW_MODE_LABELS.preview}</span>
+            <span class="ql-picker-item" data-value="edit">${this.$t(VIEW_MODE_LABEL_KEYS.edit)}</span>
+            <span class="ql-picker-item" data-value="preview">${this.$t(VIEW_MODE_LABEL_KEYS.preview)}</span>
           </span>
         `;
 
@@ -638,7 +638,7 @@
             const labelEl = wrapper.querySelector(".ql-picker-label");
             if (labelEl) {
               const svg = labelEl.querySelector("svg");
-              labelEl.innerHTML = (VIEW_MODE_LABELS[value] || value) + (svg ? svg.outerHTML : "");
+              labelEl.innerHTML = this.$t(VIEW_MODE_LABEL_KEYS[value]) + (svg ? svg.outerHTML : "");
             }
             this.setPreviewMode(value === "preview");
           });
@@ -668,7 +668,7 @@
         if (label) {
           const mode = this.previewMode ? "preview" : "edit";
           const svg = label.querySelector("svg");
-          label.innerHTML = (VIEW_MODE_LABELS[mode] || mode) + (svg ? svg.outerHTML : '<svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>');
+          label.innerHTML = this.$t(VIEW_MODE_LABEL_KEYS[mode]) + (svg ? svg.outerHTML : '<svg viewBox="0 0 18 18"><polygon class="ql-stroke" points="7 11 9 13 11 11 7 11"></polygon><polygon class="ql-stroke" points="7 7 9 5 11 7 7 7"></polygon></svg>');
         }
       },
 
@@ -681,8 +681,8 @@
             this.placeholderPreviewList = mapPlaceholderPreviewRows(result.data);
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to load placeholders",
-              message: result.message || "Unknown error",
+              title: this.$t("templates.placeholders.failedToLoad"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }

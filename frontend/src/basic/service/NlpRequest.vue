@@ -6,7 +6,7 @@
 import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
-import {extractTextFromPDF} from "@/assets/utils";
+import {extractTextFromPDF, resolveApiMessage} from "@/assets/utils";
 import {
   buildHookResultKey,
   buildServiceSkillKey,
@@ -254,8 +254,8 @@ export default {
         this.status = 'completed';
       } catch (error) {
         this.eventBus.emit('toast', {
-          title: "AI Hook Request",
-          message: error.message || "AI hook request failed",
+          title: this.$t("nlp.hooks.requestTitle"),
+          message: resolveApiMessage(error, "nlp.hooks.requestFailed"),
           variant: "danger",
         });
         this.status = 'failed';
@@ -320,7 +320,7 @@ export default {
           studyStepId: this.studyStepId,
         }, (res) => {
           if (res && res.success) resolve(res.data.file);
-          else reject(new Error(res?.message || "Failed to load document"));
+          else reject(new Error(resolveApiMessage(res, "nlp.hooks.documentLoadFailed")));
         });
       });
       const pdf = await pdfjsLib.getDocument(file).promise;

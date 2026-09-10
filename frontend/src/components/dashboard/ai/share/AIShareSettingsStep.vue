@@ -8,7 +8,7 @@
       :fields="fields"
       @update:model-value="$emit('update:shareForm', $event)"
     />
-    <small class="text-muted">Next step: select {{ audienceLabel.toLowerCase() }}.</small>
+    <small class="text-muted">{{ $t("ai.share.nextStep", { audience: audienceLabel.toLowerCase() }) }}</small>
   </div>
 </template>
 
@@ -35,31 +35,31 @@ export default {
       return [
         {
           key: "mode",
-          label: "Share by",
+          label: this.$t("ai.share.shareBy"),
           type: "radio",
           required: true,
           class: "form-check-inline",
           options: [
-            { value: "users", label: "Users" },
-            { value: "roles", label: "Roles" },
+            { value: "users", label: this.$t("ai.common.users") },
+            { value: "roles", label: this.$t("ai.common.roles") },
           ],
         },
         {
           key: "expiryDate",
-          label: "Expiry Date",
+          label: this.$t("ai.share.expiryDate"),
           type: "date",
           required: true,
           min: this.minShareExpiryDate,
-          help: "Required. Access expires on this date.",
+          help: this.$t("ai.share.expiryHelp"),
         },
         {
           key: "costLimit",
-          label: "Cost limit per recipient ($)",
+          label: this.$t("ai.share.costLimitPerRecipient"),
           type: "number",
           min: 0,
           step: 0.01,
-          placeholder: "No limit",
-          help: `Optional. Same limit applied to every selected ${this.audienceLabel.toLowerCase()}.`,
+          placeholder: this.$t("ai.common.noLimit"),
+          help: this.$t("ai.share.costLimitHelp", { audience: this.audienceLabel.toLowerCase() }),
         },
       ];
     },

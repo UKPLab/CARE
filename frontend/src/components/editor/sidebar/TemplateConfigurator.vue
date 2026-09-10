@@ -11,11 +11,12 @@
       </div>
 
       <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
-        <strong>Warning:</strong> The same bracket id appears more than once (e.g. two ~link[2]~):
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.duplicateBracketIds") }}
         <ul class="mb-0 mt-2">
           <li v-for="ph in duplicatePlaceholders" :key="ph">{{ ph }}</li>
         </ul>
-        Each ~key[N]~ id must be unique. Legacy ~key~ tokens without [N] are not checked here and can still repeat in older email templates. Saving is blocked until bracket duplicates are removed.
+        {{ $t("templates.placeholders.duplicateBracketIdsHelp") }}
       </div>
   
       <div class="card shadow mb-0 configurator">

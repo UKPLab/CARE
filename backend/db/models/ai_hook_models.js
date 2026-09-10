@@ -7,6 +7,7 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
     class AiHookModels extends MetaModel {
@@ -45,7 +46,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const hookId = hookModel.aiHookId ?? hookModel._previousDataValues?.aiHookId;
             if (!hookId) {
-                throw new Error("AI hook is required for hook models");
+                throw new TranslatableError("errors.ai.hookModel.hookRequired");
             }
 
             const hook = await sequelize.models.ai_hook.getById(
@@ -53,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
                 {transaction: options.transaction}
             );
             if (!hook || hook.deleted || Number(hook.userId) !== Number(userId)) {
-                throw new Error("You are not allowed to manage models for this AI hook");
+                throw new TranslatableError("errors.ai.hookModel.manageNotAllowed");
             }
 
             // Soft-delete still needs ownership, but not uniqueness: leftover
@@ -64,7 +65,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const priority = Number(hookModel.priority ?? hookModel._previousDataValues?.priority);
             if (!Number.isInteger(priority) || priority < 1) {
-                throw new Error("AI hook model priority must be at least 1");
+                throw new TranslatableError("errors.ai.hookModel.invalidPriority");
             }
 
             const aiModelId = Number(hookModel.aiModelId ?? hookModel._previousDataValues?.aiModelId);
@@ -80,7 +81,7 @@ module.exports = (sequelize, DataTypes) => {
                 (row) => Number(row.id) !== currentId && Number(row.priority) === priority
             );
             if (hasDuplicatePriority) {
-                throw new Error("AI hook model priority must be unique for this hook");
+                throw new TranslatableError("errors.ai.hookModel.duplicatePriority");
             }
 
             const primaryRow = existingRows.find((row) => Number(row.priority) === 1);
@@ -90,7 +91,7 @@ module.exports = (sequelize, DataTypes) => {
                 Number(primaryRow.id) !== currentId &&
                 Number(primaryRow.aiModelId) === aiModelId
             ) {
-                throw new Error("Fallback model cannot be the same as the primary model");
+                throw new TranslatableError("errors.ai.hookModel.fallbackMatchesPrimary");
             }
         }
 

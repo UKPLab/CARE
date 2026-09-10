@@ -104,6 +104,7 @@
     "summarize": "Summarize",
     "apply": "Apply",
     "unknown": "Unknown",
+    "selectPlaceholder": "Select...",
     "use": "Use",
     "hideReplies": "Hide replies",
     "showReplies": "Show replies ({count})",

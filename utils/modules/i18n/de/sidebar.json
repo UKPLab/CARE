@@ -38,6 +38,12 @@
         "workflows": "Workflows",
         "session_overview": "Sitzungsübersicht",
         "admin_tools": "Admin-Tools",
+        "ai_log": "KI-Protokolle",
+        "ai_models": "KI-Modelle",
+        "ai_hooks": "KI-Hooks",
+        "ai_budget": "KI-Budget",
+        "triggers": "Trigger",
+        "trigger_logs": "Trigger-Protokolle",
         "groups": {
             "default": "Standard",
             "admin": "Administrator",
@@ -46,7 +52,8 @@
             "manage": "Verwalten",
             "settings": "Einstellungen",
             "ai": "KI",
-            "assignment": "Assignment"
+            "assignment": "Assignment",
+            "triggers": "Trigger"
         }
     },
     "textPlaceholderHelp": "Zeigt einen einzelnen Wert aus einem vorherigen Editor-Schritt oder einer NLP-Skill-Ausgabe an. Verwenden Sie dies, wenn Sie ein bestimmtes Datenelement wie ein Textfeld, eine Zahl oder ein Label aus einem früheren Schritt Ihres Workflows anzeigen möchten.",

@@ -1,11 +1,11 @@
 <template>
-  <BasicCard title="AI Hooks">
+  <BasicCard :title="$t('ai.hooks.title')">
     <template #headerElements>
       <BasicButton
         class="btn-primary btn-sm"
-        title="Create AI hook"
+        :title="$t('ai.hooks.createTitle')"
         icon="plus"
-        text="Add AI Hook"
+        :text="$t('ai.hooks.add')"
         @click="openHookModal()"
       />
     </template>
@@ -39,7 +39,7 @@
   <AIModelShareStepper
     ref="shareHookStepper"
     :current-user-id="currentUserId"
-    resource-label="AI Hook"
+    :resource-label="$t('ai.resources.hook')"
     resource-id-key="aiHookId"
     share-table="ai_hook_share"
   />
@@ -56,15 +56,8 @@ import AIHookModelModal from "@/components/dashboard/ai/hook/AIHookModelModal.vu
 import AIHookStepperModal from "@/components/dashboard/ai/hook/AIHookStepperModal.vue";
 import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
 import AIModelShareStepper from "@/components/dashboard/ai/share/AIModelShareStepper.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
-const OUTPUT_MODES = [
-  { value: 0, label: "Text", class: "bg-secondary" },
-  { value: 1, label: "JSON", class: "bg-primary" },
-];
-const OUTPUT_MODES_BY_VALUE = OUTPUT_MODES.reduce((acc, mode) => {
-  acc[mode.value] = mode;
-  return acc;
-}, {});
 
 export default {
   name: "DashboardAIHooks",
@@ -87,19 +80,26 @@ export default {
         pagination: 10,
         search: true,
       },
-      outputModes: OUTPUT_MODES,
-      columns: [
-        { name: "Name", key: "name", sortable: true },
-        { name: "Prompt Template", key: "templateName", sortable: true },
-        { name: "Models", key: "modelSummary", sortable: true, sortKey: "modelSortLabel" },
-        { name: "Shared by", key: "sharedBy", sortable: true },
-        { name: "Output", key: "outputBadge", type: "badge", sortable: true, sortKey: "outputLabel" },
-        { name: "Status", key: "statusBadge", type: "badge", sortable: true, sortKey: "statusLabel" },
-        { name: "Created", key: "createdAt", type: "datetime", sortable: true },
-      ],
     };
   },
   computed: {
+    outputModes() {
+      return [
+        { value: 0, label: this.$t("ai.output.text"), class: "bg-secondary" },
+        { value: 1, label: this.$t("ai.output.json"), class: "bg-primary" },
+      ];
+    },
+    columns() {
+      return [
+        { name: this.$t("ai.common.name"), key: "name", sortable: true },
+        { name: this.$t("ai.hooks.promptTemplate"), key: "templateName", sortable: true },
+        { name: this.$t("ai.common.models"), key: "modelSummary", sortable: true, sortKey: "modelSortLabel" },
+        { name: this.$t("ai.common.sharedBy"), key: "sharedBy", sortable: true },
+        { name: this.$t("ai.hooks.output"), key: "outputBadge", type: "badge", sortable: true, sortKey: "outputLabel" },
+        { name: this.$t("ai.common.status"), key: "statusBadge", type: "badge", sortable: true, sortKey: "statusLabel" },
+        { name: this.$t("ai.common.created"), key: "createdAt", type: "datetime", sortable: true },
+      ];
+    },
     currentUserId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -150,14 +150,14 @@ export default {
       return this.hooks.map((hook) => {
         const ownerId = Number(hook.userId);
         const isOwner = ownerId === me;
-        const outputMode = OUTPUT_MODES_BY_VALUE[Number(hook.outputMode)] || OUTPUT_MODES_BY_VALUE[0];
+        const outputMode = this.outputModes.find((mode) => mode.value === Number(hook.outputMode)) || this.outputModes[0];
         const hookModelRows = [...(hookModelsByHookId[hook.id] || [])]
           .sort((a, b) => Number(a.priority) - Number(b.priority));
         const models = hookModelRows.map((row) => {
           const model = modelsById[row.aiModelId];
           return {
             ...row,
-            name: model?.name || `Model #${row.aiModelId}`,
+            name: model?.name || this.$t("ai.common.modelNumber", { id: row.aiModelId }),
             model: model?.model || null,
           };
         });
@@ -165,12 +165,12 @@ export default {
         const extraModelCount = Math.max(models.length - 1, 0);
         const modelSummary = primaryModel
           ? `${primaryModel.name}${extraModelCount > 0 ? ` +${extraModelCount}` : ""}`
-          : "Unknown model";
+          : this.$t("ai.common.unknownModel");
         const sharedBy = isOwner ? "—" : (this.ownerLabelsByUserId[String(ownerId)] || "—");
         return {
           ...hook,
           isOwner,
-          templateName: templatesById[hook.templateId]?.name || "Unknown template",
+          templateName: templatesById[hook.templateId]?.name || this.$t("ai.common.unknownTemplate"),
           models,
           modelSummary,
           modelSortLabel: modelSummary,
@@ -180,9 +180,9 @@ export default {
             text: outputMode.label,
             class: outputMode.class,
           },
-          statusLabel: hook.enabled ? "Enabled" : "Disabled",
+          statusLabel: hook.enabled ? this.$t("ai.status.enabled") : this.$t("ai.status.disabled"),
           statusBadge: {
-            text: hook.enabled ? "Enabled" : "Disabled",
+            text: hook.enabled ? this.$t("ai.status.enabled") : this.$t("ai.status.disabled"),
             class: hook.enabled ? "bg-success" : "bg-secondary",
           },
         };
@@ -192,34 +192,34 @@ export default {
       return [
         {
           icon: "eye",
-          title: "View AI hook",
+          title: this.$t("ai.actions.viewHook"),
           action: "view",
           options: { iconOnly: true, specifiers: { "btn-outline-info": true } },
         },
         {
           icon: "pencil",
-          title: "Edit AI hook",
+          title: this.$t("ai.actions.editHook"),
           action: "edit",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
           icon: "shuffle",
-          title: "Manage AI hook models",
+          title: this.$t("ai.actions.manageHookModels"),
           action: "models",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
         {
           icon: "share",
-          title: "Share AI hook",
+          title: this.$t("ai.actions.shareHook"),
           action: "share",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
         {
           icon: "toggle2-on",
-          title: "Disable AI hook",
+          title: this.$t("ai.actions.disableHook"),
           action: "toggle",
           filter: [{ key: "enabled", value: true }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
@@ -227,7 +227,7 @@ export default {
         },
         {
           icon: "toggle2-off",
-          title: "Enable AI hook",
+          title: this.$t("ai.actions.enableHook"),
           action: "toggle",
           filter: [{ key: "enabled", value: false }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
@@ -235,7 +235,7 @@ export default {
         },
         {
           icon: "trash",
-          title: "Delete AI hook",
+          title: this.$t("ai.actions.deleteHook"),
           action: "delete",
           filter: [{ key: "userId", value: this.currentUserId }],
           options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
@@ -278,14 +278,14 @@ export default {
         },
       }, (result) => {
         if (!result?.success) {
-          this.toastError(result?.message || "Failed to update AI hook");
+          this.toastError(resolveApiMessage(result, "ai.errors.updateHook"));
         }
       });
     },
     deleteHook(row) {
       this.$refs.confirmModal.open(
-        "Delete AI Hook",
-        `Delete AI hook "${row.name}"?`,
+        this.$t("ai.confirm.deleteHookTitle"),
+        this.$t("ai.confirm.deleteHook", { name: row.name }),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -297,9 +297,9 @@ export default {
             },
           }, (result) => {
             if (result?.success) {
-              this.toastSuccess("AI hook deleted");
+              this.toastSuccess(this.$t("ai.messages.hookDeleted"));
             } else {
-              this.toastError(result?.message || "Failed to delete AI hook");
+              this.toastError(resolveApiMessage(result, "ai.errors.deleteHook"));
             }
           });
         }
@@ -307,14 +307,14 @@ export default {
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
-        title: "Success",
+        title: this.$t("ai.common.success"),
         message,
         variant: "success",
       });
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

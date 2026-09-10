@@ -1,5 +1,5 @@
 <template>
-  <Card title="Trigger logs">
+  <Card :title="$t('triggers.logs.title')">
     <template #body>
       <BasicTable
         :columns="columns"
@@ -40,6 +40,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Loading from "@/basic/Loading.vue";
+import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "DashboardTriggerLogs",
@@ -59,64 +60,65 @@ export default {
         hover: true,
         pagination: 10,
       },
-      queueStatuses: [
-        { name: "PENDING", value: 0, label: "Pending", badgeClass: "bg-secondary", flags: ["canCancel"] },
-        { name: "RUNNING", value: 1, label: "Running", badgeClass: "bg-primary", flags: ["canCancel"] },
-        { name: "COMPLETED", value: 2, label: "Completed", badgeClass: "bg-success", flags: ["canRerun"] },
-        { name: "CANCELLED", value: 3, label: "Cancelled", badgeClass: "bg-warning text-dark", flags: ["canRetry"] },
-        { name: "FAILED", value: 4, label: "Failed", badgeClass: "bg-danger", flags: ["canRetry", "hasError"] },
-      ],
-      columnDefs: [
-        { name: "Trigger", key: "triggerName" },
-        { name: "Status", key: "status", type: "badge", badgeFrom: "statuses" },
-        { name: "Attempts", key: "attemptCount" },
-        { name: "Started", key: "startedAt", type: "datetime" },
-      ],
-      manageActions: [
+      errorFormData: null,
+    };
+  },
+  computed: {
+    queueStatuses() {
+      return [
+        { name: "PENDING", value: 0, label: this.$t("triggers.status.pending"), badgeClass: "bg-secondary", flags: ["canCancel"] },
+        { name: "RUNNING", value: 1, label: this.$t("triggers.status.running"), badgeClass: "bg-primary", flags: ["canCancel"] },
+        { name: "COMPLETED", value: 2, label: this.$t("triggers.status.completed"), badgeClass: "bg-success", flags: ["canRerun"] },
+        { name: "CANCELLED", value: 3, label: this.$t("triggers.status.cancelled"), badgeClass: "bg-warning text-dark", flags: ["canRetry"] },
+        { name: "FAILED", value: 4, label: this.$t("triggers.status.failed"), badgeClass: "bg-danger", flags: ["canRetry", "hasError"] },
+      ];
+    },
+    manageActions() {
+      return [
         {
           icon: "x-circle",
-          title: "Cancel",
+          title: this.$t("triggers.actions.cancel"),
           action: "cancel",
           handler: "confirmCancel",
           socketEvent: "triggerQueueCancel",
           options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
           filter: [{ key: "canCancel", value: true }],
           confirm: {
-            title: "Cancel execution",
-            message: 'Cancel this trigger run for "{triggerName}"?',
+            title: this.$t("triggers.confirm.cancelTitle"),
+            message: this.$t("triggers.confirm.cancel", { name: "{triggerName}" }),
           },
-          successToast: { title: "Cancelled", message: "The trigger execution has been cancelled." },
-          errorToast: { title: "Cancel failed" },
+          successToast: { title: this.$t("triggers.messages.cancelledTitle"), message: this.$t("triggers.messages.cancelled") },
+          errorToast: { title: this.$t("triggers.errors.cancelTitle") },
         },
         {
           icon: "arrow-repeat",
-          title: "Retry",
+          title: this.$t("triggers.actions.retry"),
           action: "retry",
           handler: "socketCallback",
           socketEvent: "triggerQueueRetry",
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
           filter: [{ key: "canRetry", value: true }],
-          successToast: { title: "Retry queued", message: "The trigger execution has been set back to pending." },
-          errorToast: { title: "Retry failed" },
+          successToast: { title: this.$t("triggers.messages.retryQueuedTitle"), message: this.$t("triggers.messages.retryQueued") },
+          errorToast: { title: this.$t("triggers.errors.retryTitle") },
         },
         {
           icon: "arrow-repeat",
-          title: "Re-run",
+          title: this.$t("triggers.actions.rerun"),
           action: "rerun",
           handler: "confirmSocket",
           socketEvent: "triggerQueueRerun",
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
           filter: [{ key: "canRerun", value: true }],
           confirm: {
-            title: "Re-run execution",
-            message: 'Run the completed trigger "{triggerName}" again?',
+            title: this.$t("triggers.confirm.rerunTitle"),
+            message: this.$t("triggers.confirm.rerun", { name: "{triggerName}" }),
           },
-          successToast: { title: "Re-run queued", message: "A new trigger execution has been queued." },
-          errorToast: { title: "Re-run failed" },
+          successToast: { title: this.$t("triggers.messages.rerunQueuedTitle"), message: this.$t("triggers.messages.rerunQueued") },
+          errorToast: { title: this.$t("triggers.errors.rerunTitle") },
         },
         {
           icon: "exclamation-triangle",
-          title: "View error message",
+          title: this.$t("triggers.actions.viewError"),
           action: "viewError",
           handler: "errorModal",
           socketEvent: "triggerQueueGetDetails",
@@ -124,16 +126,17 @@ export default {
           filter: [{ key: "hasError", value: true }],
           modal: "error",
         },
-      ],
-      errorModalTitle: "Error message",
-      errorFormSchema: [
-        { key: "summary", label: "Trigger", type: "text", readOnly: true },
-        { key: "errorMessage", label: "Error", type: "textarea", readOnly: true },
-      ],
-      errorFormData: null,
-    };
-  },
-  computed: {
+      ];
+    },
+    errorModalTitle() {
+      return this.$t("triggers.logs.errorMessageTitle");
+    },
+    errorFormSchema() {
+      return [
+        { key: "summary", label: this.$t("triggers.common.trigger"), type: "text", readOnly: true },
+        { key: "errorMessage", label: this.$t("triggers.common.error"), type: "textarea", readOnly: true },
+      ];
+    },
     statusMaps() {
       const keyMapping = {};
       const classMapping = { default: "bg-secondary" };
@@ -149,7 +152,12 @@ export default {
       return this.queueStatuses.map((s) => ({ key: s.value, name: s.label }));
     },
     columns() {
-      return this.columnDefs.map((col) => {
+      return [
+        { name: this.$t("triggers.common.trigger"), key: "triggerName" },
+        { name: this.$t("triggers.common.status"), key: "status", type: "badge", badgeFrom: "statuses" },
+        { name: this.$t("triggers.logs.attempts"), key: "attemptCount" },
+        { name: this.$t("triggers.logs.started"), key: "startedAt", type: "datetime" },
+      ].map((col) => {
         if (col.type === "badge" && col.badgeFrom === "statuses") {
           return {
             ...col,
@@ -187,7 +195,7 @@ export default {
       const { flagByValue } = this.statusMaps;
       const row = { ...item };
       const trigger = triggersById[item.triggerId];
-      row.triggerName = trigger ? trigger.name : "<Deleted Trigger>";
+      row.triggerName = trigger ? trigger.name : this.$t("triggers.logs.deletedTrigger");
 
       const statusFlags = flagByValue[item.status] || [];
       row.canRetry = statusFlags.includes("canRetry");
@@ -208,12 +216,12 @@ export default {
           if (res.success) {
             const d = res.data;
             this.errorFormData = {
-              summary: `${(!d.trigger?.deleted && d.trigger?.name) || "<Deleted Trigger>"} - ${d.statusLabel}`,
-              errorMessage: d.item.errorMessage || "No error message recorded.",
+              summary: `${(!d.trigger?.deleted && d.trigger?.name) || this.$t("triggers.logs.deletedTrigger")} - ${this.statusMaps.keyMapping[d.item.status] || d.statusLabel}`,
+              errorMessage: this.resolveStoredError(d.item.errorMessage),
             };
           } else {
             this.$refs.errorModal.close();
-            this.toast(actionDef.errorToast.title, res.message, "danger");
+            this.toast(actionDef.errorToast.title, resolveApiMessage(res, "triggers.errors.details"), "danger");
           }
         });
         return;
@@ -243,12 +251,22 @@ export default {
         if (res.success && actionDef.successToast) {
           this.toast(actionDef.successToast.title, actionDef.successToast.message, "success");
         } else if (!res.success) {
-          this.toast(actionDef.errorToast.title, res.message, "danger");
+          this.toast(actionDef.errorToast.title, resolveApiMessage(res, "triggers.errors.action"), "danger");
         }
       });
     },
     toast(title, message, variant) {
-      this.eventBus.emit("toast", { title, message: message || "Unknown error", variant });
+      this.eventBus.emit("toast", { title, message: message || this.$t("triggers.errors.unknown"), variant });
+    },
+    resolveStoredError(value) {
+      if (!value) return this.$t("triggers.logs.noErrorMessage");
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed?.key) return resolveApiMessage(parsed);
+      } catch (_error) {
+        // Legacy trigger failures are stored as plain text or an i18n key.
+      }
+      return translateMaybeKey(value);
     },
   },
 };

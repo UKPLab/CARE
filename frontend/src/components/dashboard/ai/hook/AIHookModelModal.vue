@@ -1,15 +1,15 @@
 <template>
   <BasicModal ref="aiHookModelModal" name="aiHookModelModal" size="lg">
     <template #title>
-      AI Hook Models
+      {{ $t("ai.hooks.modelsTitle") }}
     </template>
     <template #body>
       <div v-if="selectedHook" class="mb-3">
-        <div><strong>AI Hook:</strong> {{ selectedHook.name }}</div>
+        <div><strong>{{ $t("ai.resources.hook") }}:</strong> {{ selectedHook.name }}</div>
       </div>
 
       <p class="text-muted small mb-3">
-        Add models in priority order. Priority 1 is tried first; later priorities are fallbacks.
+        {{ $t("ai.hooks.modelOrderDescription") }}
       </p>
 
       <AIHookModelOrder
@@ -21,12 +21,12 @@
     <template #footer>
       <div class="btn-group">
         <BasicButton
-          title="Cancel"
+          :title="$t('ai.common.cancel')"
           class="btn btn-secondary"
           @click="$refs.aiHookModelModal.close()"
         />
         <BasicButton
-          :title="isSaving ? 'Saving...' : 'Save Models'"
+          :title="isSaving ? $t('ai.common.saving') : $t('ai.hooks.saveModels')"
           class="btn btn-primary"
           :disabled="!canSave"
           @click="saveModels"
@@ -40,6 +40,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import AIHookModelOrder from "./AIHookModelOrder.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AIHookModelModal",
@@ -87,7 +88,7 @@ export default {
   methods: {
     open(hookRow) {
       if (!hookRow?.id) {
-        this.toastError("Invalid AI hook selected");
+        this.toastError(this.$t("ai.errors.invalidHookSelected"));
         return;
       }
 
@@ -105,7 +106,7 @@ export default {
           if (result?.success) {
             resolve(result);
           } else {
-            reject(new Error(result?.message || "Failed to update data"));
+            reject(new Error(resolveApiMessage(result, "ai.errors.updateData")));
           }
         });
       });
@@ -162,23 +163,23 @@ export default {
         }
 
         this.$refs.aiHookModelModal.close();
-        this.toastSuccess("AI hook models updated");
+        this.toastSuccess(this.$t("ai.messages.hookModelsUpdated"));
       } catch (error) {
-        this.toastError(error.message || "Failed to save AI hook models");
+        this.toastError(resolveApiMessage(error, "ai.errors.saveHookModels"));
       } finally {
         this.isSaving = false;
       }
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
-        title: "Success",
+        title: this.$t("ai.common.success"),
         message,
         variant: "success",
       });
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

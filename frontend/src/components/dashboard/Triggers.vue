@@ -1,10 +1,10 @@
 <template>
-  <Card title="Triggers">
+  <Card :title="$t('triggers.dashboard.title')">
     <template #headerElements>
       <BasicButton
         class="btn-primary btn-sm"
-        text="Create trigger"
-        title="Create a new trigger rule"
+        :text="$t('triggers.dashboard.create')"
+        :title="$t('triggers.dashboard.createTitle')"
         icon="plus"
         @click="openCreate"
       />
@@ -31,6 +31,7 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import TriggerStepperModal from "./triggers/TriggerStepperModal.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "DashboardTriggers",
@@ -49,48 +50,54 @@ export default {
         hover: true,
         pagination: 10,
       },
-      columns: [
-        { name: "Name", key: "name" },
-        { name: "Event", key: "eventLabel" },
-        { name: "Action", key: "actionLabel" },
-        { name: "Enabled", key: "enabled", type: "toggle" },
-      ],
-      manageActions: [
+    };
+  },
+  computed: {
+    columns() {
+      return [
+        { name: this.$t("triggers.common.name"), key: "name" },
+        { name: this.$t("triggers.common.event"), key: "eventLabel" },
+        { name: this.$t("triggers.common.action"), key: "actionLabel" },
+        { name: this.$t("triggers.common.enabled"), key: "enabled", type: "toggle" },
+      ];
+    },
+    manageActions() {
+      return [
         {
           icon: "eye",
-          title: "View trigger",
+          title: this.$t("triggers.actions.view"),
           action: "view",
           handler: "viewModal",
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
           icon: "pencil-square",
-          title: "Edit trigger",
+          title: this.$t("triggers.actions.edit"),
           action: "edit",
           handler: "editStepper",
           options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
         },
         {
           icon: "trash",
-          title: "Delete trigger",
+          title: this.$t("triggers.actions.delete"),
           action: "delete",
           handler: "confirmDelete",
           socketEvent: "triggerDelete",
           options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
           confirm: {
-            title: "Delete Trigger",
-            message: 'Are you sure you want to delete "{name}"?',
+            title: this.$t("triggers.confirm.deleteTitle"),
+            message: this.$t("triggers.confirm.delete", { name: "{name}" }),
           },
         },
-      ],
-      enabledToggle: {
-        title: "Enable / disable trigger",
+      ];
+    },
+    enabledToggle() {
+      return {
+        title: this.$t("triggers.actions.toggle"),
         action: "toggleEnabled",
         socketEvent: "triggerUpdate",
-      },
-    };
-  },
-  computed: {
+      };
+    },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
@@ -120,8 +127,8 @@ export default {
           const action = actionsById[t.triggerActionId];
           return {
             ...t,
-            eventLabel: event?.configuration?.label || event?.name || "-",
-            actionLabel: action?.configuration?.label || action?.name || "-",
+            eventLabel: translateMaybeKey(event?.configuration?.label || event?.name || "-"),
+            actionLabel: translateMaybeKey(action?.configuration?.label || action?.name || "-"),
             enabled: {
               title: this.enabledToggle.title,
               value: t.enabled,

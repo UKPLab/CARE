@@ -1,5 +1,6 @@
 "use strict";
 const Socket = require("../Socket.js");
+const TranslatableError = require("../../utils/TranslatableError");
 const { queueStatusLabel } = require("../../utils/triggerQueueStatus");
 
 /**
@@ -19,16 +20,16 @@ class TriggerSocket extends Socket {
      */
     async createTrigger(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to create triggers.");
+            throw new TranslatableError("errors.triggers.createNotAllowed");
         }
         if (!data.triggerEventId) {
-            throw new Error("An event is required.");
+            throw new TranslatableError("errors.triggers.eventRequired");
         }
         if (!data.triggerActionId) {
-            throw new Error("An action is required.");
+            throw new TranslatableError("errors.triggers.actionRequired");
         }
         if (!data.name?.trim()) {
-            throw new Error("A name is required.");
+            throw new TranslatableError("errors.triggers.nameRequired");
         }
 
         const payload = {
@@ -57,10 +58,10 @@ class TriggerSocket extends Socket {
      */
     async updateTrigger(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to update triggers.");
+            throw new TranslatableError("errors.triggers.updateNotAllowed");
         }
         if (!data.id) {
-            throw new Error("A trigger id is required.");
+            throw new TranslatableError("errors.triggers.idRequired");
         }
 
         const allowed = [
@@ -87,10 +88,10 @@ class TriggerSocket extends Socket {
      */
     async deleteTrigger(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to delete triggers.");
+            throw new TranslatableError("errors.triggers.deleteNotAllowed");
         }
         if (!data.id) {
-            throw new Error("A trigger id is required.");
+            throw new TranslatableError("errors.triggers.idRequired");
         }
 
         return await this.models["trigger"].deleteById(data.id, { transaction: options.transaction });
@@ -105,15 +106,15 @@ class TriggerSocket extends Socket {
      */
     async getQueueDetails(data) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to view trigger logs.");
+            throw new TranslatableError("errors.triggers.logsViewNotAllowed");
         }
         if (!data.id) {
-            throw new Error("A queue item id is required.");
+            throw new TranslatableError("errors.triggers.queueItemIdRequired");
         }
 
         const item = await this.models["trigger_queue"].getById(data.id);
         if (!item) {
-            throw new Error("Queue item not found.");
+            throw new TranslatableError("errors.triggers.queueItemNotFound");
         }
 
         const trigger = await this.models["trigger"].getById(item.triggerId, {}, true);
@@ -145,10 +146,10 @@ class TriggerSocket extends Socket {
      */
     async retryQueueItem(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to retry trigger logs.");
+            throw new TranslatableError("errors.triggers.retryNotAllowed");
         }
         if (!data.id) {
-            throw new Error("A queue item id is required.");
+            throw new TranslatableError("errors.triggers.queueItemIdRequired");
         }
 
         return await this.server.triggers.retryQueueItem(data.id, options);
@@ -164,10 +165,10 @@ class TriggerSocket extends Socket {
      */
     async rerunQueueItem(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to re-run trigger logs.");
+            throw new TranslatableError("errors.triggers.rerunNotAllowed");
         }
         if (!data.id) {
-            throw new Error("A queue item id is required.");
+            throw new TranslatableError("errors.triggers.queueItemIdRequired");
         }
 
         return await this.server.triggers.rerunQueueItem(data.id, options);
@@ -183,10 +184,10 @@ class TriggerSocket extends Socket {
      */
     async cancelQueueItem(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to cancel trigger logs.");
+            throw new TranslatableError("errors.triggers.cancelNotAllowed");
         }
         if (!data.id) {
-            throw new Error("A queue item id is required.");
+            throw new TranslatableError("errors.triggers.queueItemIdRequired");
         }
 
         return await this.server.triggers.cancelQueueItem(data.id, options);

@@ -1,29 +1,29 @@
 <template>
   <div>
-    <Card title="AI Log Summary" class="mb-3">
+    <Card :title="$t('ai.log.summaryTitle')" class="mb-3">
       <template #body>
         <div class="row g-3">
           <div class="col-12 col-md-6 col-xl-3">
             <div class="metric-card">
-              <div class="metric-label">Total Requests</div>
+              <div class="metric-label">{{ $t("ai.log.totalRequests") }}</div>
               <div class="metric-value">{{ formatInteger(summary.totalRequests) }}</div>
             </div>
           </div>
           <div class="col-12 col-md-6 col-xl-3">
             <div class="metric-card">
-              <div class="metric-label">Total Input Tokens</div>
+              <div class="metric-label">{{ $t("ai.log.totalInputTokens") }}</div>
               <div class="metric-value">{{ formatInteger(summary.totalInputTokens) }}</div>
             </div>
           </div>
           <div class="col-12 col-md-6 col-xl-3">
             <div class="metric-card">
-              <div class="metric-label">Total Output Tokens</div>
+              <div class="metric-label">{{ $t("ai.log.totalOutputTokens") }}</div>
               <div class="metric-value">{{ formatInteger(summary.totalOutputTokens) }}</div>
             </div>
           </div>
           <div class="col-12 col-md-6 col-xl-3">
             <div class="metric-card">
-              <div class="metric-label">Total Costs</div>
+              <div class="metric-label">{{ $t("ai.log.totalCosts") }}</div>
               <div class="metric-value">{{ formatCurrency(summary.totalCosts) }}</div>
             </div>
           </div>
@@ -31,7 +31,7 @@
       </template>
     </Card>
 
-    <Card title="AI Requests">
+    <Card :title="$t('ai.log.requestsTitle')">
       <template #body>
         <BasicTable
           :columns="columns"
@@ -72,18 +72,20 @@ export default {
         pagination: 10,
         search: true,
       },
-      columns: [
-        { name: "Time", key: "createdAt", type: "datetime", sortable: true },
-        { name: "Model", key: "modelName", sortable: true },
-        { name: "Status", key: "statusBadge", type: "badge", sortable: true, sortKey: "status" },
-        { name: "Input Tokens", key: "inputTokens", sortable: true },
-        { name: "Output Tokens", key: "outputTokens", sortable: true },
-        { name: "Total Tokens", key: "totalTokens", sortable: true },
-        { name: "Cost (USD)", key: "costDisplay", sortable: true, sortKey: "costs" },
-      ],
     };
   },
   computed: {
+    columns() {
+      return [
+        { name: this.$t("ai.log.time"), key: "createdAt", type: "datetime", sortable: true },
+        { name: this.$t("ai.common.model"), key: "modelName", sortable: true },
+        { name: this.$t("ai.common.status"), key: "statusBadge", type: "badge", sortable: true, sortKey: "status" },
+        { name: this.$t("ai.log.inputTokens"), key: "inputTokens", sortable: true },
+        { name: this.$t("ai.log.outputTokens"), key: "outputTokens", sortable: true },
+        { name: this.$t("ai.log.totalTokens"), key: "totalTokens", sortable: true },
+        { name: this.$t("ai.log.costUsd"), key: "costDisplay", sortable: true, sortKey: "costs" },
+      ];
+    },
     logs() {
       return this.$store.getters["table/ai_log/getAll"] || [];
     },
@@ -109,14 +111,14 @@ export default {
     },
     rows() {
       const modelsById = this.models.reduce((acc, model) => {
-        acc[model.id] = model.name || model.model || `Model #${model.id}`;
+        acc[model.id] = model.name || model.model || this.$t("ai.common.modelNumber", { id: model.id });
         return acc;
       }, {});
 
       return this.logs
         .map((log) => ({
           ...log,
-          modelName: log.aiModelId ? (modelsById[log.aiModelId] || `Model #${log.aiModelId}`) : "-",
+          modelName: log.aiModelId ? (modelsById[log.aiModelId] || this.$t("ai.common.modelNumber", { id: log.aiModelId })) : "-",
           inputTokens: this.toNumber(log.inputTokens),
           outputTokens: this.toNumber(log.outputTokens),
           totalTokens: this.toNumber(log.totalTokens),
@@ -142,16 +144,16 @@ export default {
       });
     },
     getStatusBadge(status) {
-      const statusText = (status || "unknown").toString();
+      const statusText = status ? status.toString() : this.$t("ai.common.unknown");
       const normalized = statusText.toLowerCase();
       if (normalized.includes("test")) {
-        return { text: statusText, class: "bg-info" };
+        return { text: this.$t("ai.log.status.test"), class: "bg-info" };
       }
       if (normalized.includes("success")) {
-        return { text: statusText, class: "bg-success" };
+        return { text: this.$t("ai.log.status.success"), class: "bg-success" };
       }
       if (normalized.includes("fail") || normalized.includes("error")) {
-        return { text: statusText, class: "bg-danger" };
+        return { text: this.$t("ai.log.status.failed"), class: "bg-danger" };
       }
       return { text: statusText, class: "bg-secondary" };
     },

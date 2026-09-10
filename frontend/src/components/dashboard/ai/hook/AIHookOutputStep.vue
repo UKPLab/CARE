@@ -22,20 +22,20 @@ export default {
       return [
         {
           key: "outputMode",
-          label: "Output Type",
+          label: this.$t("ai.hooks.outputType"),
           type: "select",
           required: true,
           options: this.outputModes.map((mode) => ({
             value: mode.value,
             name: mode.label,
           })),
-          help: "Text returns plain output. JSON expects structured data.",
+          help: this.$t("ai.hooks.outputHelp"),
         },
         {
           key: "enabled",
-          label: "Enabled",
+          label: this.$t("ai.status.enabled"),
           type: "switch",
-          help: "Disabled hooks stay saved but should not be used by AI features.",
+          help: this.$t("ai.hooks.enabledHelp"),
         },
       ];
     },

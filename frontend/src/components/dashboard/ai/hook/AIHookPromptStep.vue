@@ -5,7 +5,7 @@
     @update:model-value="$emit('update:modelValue', $event)"
   />
   <div v-if="selectablePromptTemplates.length === 0" class="text-warning small mt-1">
-    No prompt templates are available yet.
+    {{ $t("ai.hooks.noPromptTemplates") }}
   </div>
 </template>
 
@@ -28,17 +28,17 @@ export default {
       return [
         {
           key: "templateId",
-          label: "Prompt Template",
+          label: this.$t("ai.hooks.promptTemplate"),
           type: "select",
           required: true,
           options: [
-            { value: null, name: "Select prompt template" },
+            { value: null, name: this.$t("ai.hooks.selectPromptTemplate") },
             ...this.selectablePromptTemplates.map((template) => ({
               value: template.id,
               name: template.name,
             })),
           ],
-          help: "Only prompt templates with placeholders such as document text or study context are shown.",
+          help: this.$t("ai.hooks.promptTemplateHelp"),
         },
       ];
     },

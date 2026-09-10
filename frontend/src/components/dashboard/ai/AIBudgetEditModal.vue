@@ -1,7 +1,7 @@
 <template>
   <BasicModal ref="modal" name="aiBudgetEditModal" size="md">
     <template #title>
-      Edit cost limit
+      {{ $t("ai.budgets.editTitle") }}
     </template>
     <template #body>
       <BasicForm v-model="form" :fields="fields" />
@@ -10,12 +10,12 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('ai.common.cancel')"
           @click="close"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Save"
+          :text="$t('ai.common.save')"
           :disabled="!isValid"
           @click="save"
         />
@@ -33,6 +33,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AIBudgetEditModal",
@@ -52,12 +53,12 @@ export default {
       return [
         {
           key: "costLimit",
-          label: "Cost limit ($)",
+          label: this.$t("ai.budgets.costLimitUsd"),
           type: "number",
           min: 0,
           step: 0.01,
           placeholder: "0",
-          help: "Setting to 0 blocks all usage at this level. To remove the cap entirely, close this modal and use the trash icon.",
+          help: this.$t("ai.budgets.costLimitHelp"),
         },
       ];
     },
@@ -65,7 +66,7 @@ export default {
   methods: {
     open(row) {
       if (!row?.id) {
-        this.toastError("Invalid budget row");
+        this.toastError(this.$t("ai.errors.invalidBudget"));
         return;
       }
       this.row = row;
@@ -86,19 +87,19 @@ export default {
         },
         (result) => {
           if (result?.success) {
-            this.toastSuccess("Cap updated");
+            this.toastSuccess(this.$t("ai.messages.capUpdated"));
             this.close();
           } else {
-            this.toastError(result?.message || "Failed to update cap");
+            this.toastError(resolveApiMessage(result, "ai.errors.updateCap"));
           }
         }
       );
     },
     toastSuccess(message) {
-      this.eventBus.emit("toast", { title: "Success", message, variant: "success" });
+      this.eventBus.emit("toast", { title: this.$t("ai.common.success"), message, variant: "success" });
     },
     toastError(message) {
-      this.eventBus.emit("toast", { title: "Error", message, variant: "danger" });
+      this.eventBus.emit("toast", { title: this.$t("ai.common.error"), message, variant: "danger" });
     },
   },
 };

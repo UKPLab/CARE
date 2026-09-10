@@ -1,5 +1,7 @@
 "use strict";
 
+const TranslatableError = require("../../TranslatableError");
+
 /**
  * Blocks non-admin writes that arrive with a socket user (appDataUpdate always
  * sets context.currentUserId). TriggerSocket and the queue worker omit that
@@ -20,7 +22,7 @@ async function assertTriggerAdminWrite(sequelize, options = {}) {
     const matching = sequelize.models.user_role_matching;
     const roleIds = await matching.getUserRolesById(currentUserId);
     if (!(await matching.isAdminInUserRoles(roleIds))) {
-        throw new Error("You do not have permission to modify triggers.");
+        throw new TranslatableError("errors.triggers.modifyNotAllowed");
     }
 }
 

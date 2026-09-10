@@ -6,6 +6,7 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 const {AI_HOOK_OUTPUT_MODES, normalizeAiHookOutputMode} = require('../../utils/aiHookOutputModes.js');
 const {Op} = require("sequelize");
 
@@ -90,7 +91,7 @@ module.exports = (sequelize, DataTypes) => {
             }
             const ownerUserId = Number(aiHook.userId ?? aiHook._previousDataValues?.userId);
             if (ownerUserId !== currentUserId) {
-                throw new Error("You are not allowed to update this AI hook");
+                throw new TranslatableError("errors.ai.hook.updateNotAllowed");
             }
         }
     }

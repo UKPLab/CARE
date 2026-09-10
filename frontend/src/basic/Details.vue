@@ -1,6 +1,6 @@
 <template>
   <div class="basic-details">
-    <h6 v-if="heading" class="mb-3">{{ heading }}</h6>
+    <h6 v-if="heading" class="mb-3">{{ translateMaybeKey(heading) }}</h6>
     <div
       v-for="(section, sectionIndex) in resolvedSections"
       :key="section.title || `section-${sectionIndex}`"
@@ -9,10 +9,10 @@
         'mb-3': sectionIndex === resolvedSections.length - 1 && $slots.default,
       }"
     >
-      <h6 v-if="section.title" class="mb-2">{{ section.title }}</h6>
+      <h6 v-if="section.title" class="mb-2">{{ translateMaybeKey(section.title) }}</h6>
       <dl class="row mb-0 small">
         <template v-for="item in section.items" :key="item.key || item.label">
-          <dt class="col-sm-4">{{ item.label }}</dt>
+          <dt class="col-sm-4">{{ translateMaybeKey(item.label) }}</dt>
           <dd class="col-sm-8 text-break">
             <span
               v-if="item.type === 'badge'"
@@ -39,12 +39,14 @@
     <slot />
     <div v-if="note" class="alert alert-info mt-3 mb-0">
       <i class="bi bi-info-circle"></i>
-      {{ note }}
+      {{ translateMaybeKey(note) }}
     </div>
   </div>
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
+
 /**
  * Read-only label/value list for review steps and overview modals.
  *
@@ -87,6 +89,7 @@ export default {
     },
   },
   methods: {
+    translateMaybeKey,
     visibleItems(items) {
       return (items || []).filter((item) => item && item.visible !== false);
     },

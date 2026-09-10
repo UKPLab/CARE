@@ -1,4 +1,5 @@
 const {Model, Op} = require("sequelize");
+const TranslatableError = require("../utils/TranslatableError");
 const {v4: uuidv4} = require("uuid");
 
 module.exports = class MetaModel extends Model {
@@ -70,7 +71,7 @@ module.exports = class MetaModel extends Model {
         }
         const allowed = await this.validateForeignUserId(payload, currentUserId, options.transaction);
         if (!allowed) {
-            throw new Error("You do not own this record");
+            throw new TranslatableError("errors.common.accessDenied");
         }
     }
 

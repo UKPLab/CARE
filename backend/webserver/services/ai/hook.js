@@ -8,6 +8,7 @@
  */
 
 const chat = require("./chat");
+const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
@@ -23,13 +24,13 @@ const { resolveTemplateWithValues } = require("../../../utils/helper/templateRes
 async function loadEnabledHook(service, hookId) {
     const hook = await service.server.db.models.ai_hook.getById(hookId);
     if (!hook || hook.deleted) {
-        throw new Error("AI hook not found");
+        throw new TranslatableError("errors.ai.hook.notFound");
     }
     if (!hook.enabled) {
-        throw new Error("AI hook is disabled");
+        throw new TranslatableError("errors.ai.hook.disabled");
     }
     if (!hook.templateId) {
-        throw new Error("AI hook has no prompt template");
+        throw new TranslatableError("errors.ai.hook.templateRequired");
     }
     return hook;
 }
@@ -51,25 +52,25 @@ async function resolveHookModelParams(service, hookId) {
         raw: true,
     });
     if (!hookModel) {
-        throw new Error("AI hook has no configured model");
+        throw new TranslatableError("errors.ai.hook.modelRequired");
     }
 
     const aiModel = await service.server.db.models['ai_model'].getById(hookModel.aiModelId);
     if (!aiModel || aiModel.deleted) {
-        throw new Error("AI hook model not found");
+        throw new TranslatableError("errors.ai.hook.modelNotFound");
     }
     if (!aiModel.enabled) {
-        throw new Error("AI hook model is disabled");
+        throw new TranslatableError("errors.ai.hook.modelDisabled");
     }
 
     const credential = await service.server.db.models['ai_credential'].getById(aiModel.aiCredentialId, {
         attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
-        throw new Error("AI hook model credential not found");
+        throw new TranslatableError("errors.ai.hook.credentialNotFound");
     }
     if (!credential.enabled) {
-        throw new Error("AI hook model credential is disabled");
+        throw new TranslatableError("errors.ai.hook.credentialDisabled");
     }
 
     return {
@@ -200,7 +201,7 @@ const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
 async function runHook(service, client, data) {
     const hookId = Number(data?.hookId);
     if (!Number.isInteger(hookId) || hookId <= 0) {
-        throw new Error("Missing or invalid hookId");
+        throw new TranslatableError("errors.ai.hook.invalidId");
     }
 
     try {

@@ -32,26 +32,26 @@
         />
         <!-- Hook-only budget caps: total / per session / per user -->
         <div v-if="isHook(skill)" class="cap-fields mt-2">
-          <h6 class="text-secondary">Cost limits (optional)</h6>
+          <h6 class="text-secondary">{{ $t('nlp.services.costLimits') }}</h6>
           <div class="row g-2">
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capTotal || '')"
-                  :options="{ key: 'capTotal', label: 'Total ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Total spending cap' }"
+                  :options="{ key: 'capTotal', label: 'nlp.services.totalCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.totalCostLimitHelp' }"
                   @update:model-value="skill.capTotal = $event ? Number($event) : null; emitServices()"
               />
             </div>
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capPerSession || '')"
-                  :options="{ key: 'capPerSession', label: 'Per session ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Per-session spending cap' }"
+                  :options="{ key: 'capPerSession', label: 'nlp.services.sessionCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.sessionCostLimitHelp' }"
                   @update:model-value="skill.capPerSession = $event ? Number($event) : null; emitServices()"
               />
             </div>
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capPerUser || '')"
-                  :options="{ key: 'capPerUser', label: 'Per user ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Per-user spending cap' }"
+                  :options="{ key: 'capPerUser', label: 'nlp.services.userCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.userCostLimitHelp' }"
                   @update:model-value="skill.capPerUser = $event ? Number($event) : null; emitServices()"
               />
             </div>

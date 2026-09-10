@@ -264,7 +264,12 @@
     "notCopyOrDoesNotExist": "Vorlage ist keine Kopie oder existiert nicht",
     "sourceNoLongerAvailable": "Quellvorlage ist nicht mehr verfügbar",
     "cannotMakeNonPublic": "Eine Vorlage kann nicht mehr nicht-öffentlich gemacht werden, nachdem sie öffentlich gemacht wurde",
-    "updateOwnOnly": "Sie können nur Vorlagen aktualisieren, die Ihnen gehören"
+    "updateOwnOnly": "Sie können nur Vorlagen aktualisieren, die Ihnen gehören",
+    "resolveContextStudyStepNotFound": "Der Studienschritt wurde nicht gefunden.",
+    "resolveContextStepDocumentMismatch": "Der Studienschritt stimmt nicht mit dem ausgewählten Dokument überein.",
+    "resolveContextStudySessionNotFound": "Die Studiensitzung wurde nicht gefunden.",
+    "resolveContextSessionStepMismatch": "Die Studiensitzung stimmt nicht mit dem Studienschritt überein.",
+    "duplicateBracketPlaceholders": "Diese Vorlage enthält doppelte Platzhalter-IDs in eckigen Klammern: {ids}. Jeder ~key[N]~-Token darf höchstens einmal vorkommen."
   },
   "settings": {
     "errorLoading": "Fehler beim Laden der Einstellungen",
@@ -391,6 +396,7 @@
   "backgroundTask": {
     "noDocumentSocketForClient": "Kein DocumentSocket für den Client gefunden",
     "invalidPreprocessRequest": "Ungültige Anfragedaten: skillName oder skillParameterMappings fehlen",
+    "alreadyRunning": "Ein anderer Vorverarbeitungsauftrag wird bereits ausgeführt.",
     "noCompletedPreprocessing": "Abschluss kann nicht bestätigt werden: keine abgeschlossene Vorverarbeitung zum Bestätigen",
     "confirmCompletionMissingAdminRights": "Abschluss kann nicht bestätigt werden: fehlende Administratorrechte"
   },
@@ -406,7 +412,111 @@
     "studySessionOwnerNotSelectedReviewer": "Der Besitzer der Studiensitzung (Benutzer-ID: {reviewerId}) ist nicht in der ausgewählten Reviewerliste. Bitte fügen Sie ihn zur Reviewerauswahl hinzu.",
     "invalidMode": "Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben.",
     "firstStepNotSubmission": "Der ausgewählte erste Schritt ist keiner Einreichung zugeordnet.",
-    "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden."
+    "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden.",
+    "selectedNotResolved": "Die ausgewählte Zuweisung {assignmentId} konnte nicht aufgelöst werden."
+  },
+  "ai": {
+    "requestAlreadyPending": "In dieser Sitzung steht bereits eine KI-Anfrage von Ihnen aus.",
+    "studyOwnerUnavailable": "Der Besitzer der Studie konnte nicht ermittelt werden.",
+    "serviceUnavailable": "Der KI-Dienst ist nicht verfügbar.",
+    "serviceNotConnected": "Der KI-Dienst ist nicht verbunden.",
+    "requestNotAbortable": "Die Anfrage wurde nicht gefunden oder kann nicht mehr abgebrochen werden.",
+    "credential": {
+      "updateNotAllowed": "Sie dürfen diese KI-Zugangsdaten nicht aktualisieren.",
+      "selectedNotFound": "Die ausgewählten KI-Zugangsdaten existieren nicht.",
+      "selectedNotOwned": "Die ausgewählten KI-Zugangsdaten gehören Ihnen nicht.",
+      "notFound": "KI-Zugangsdaten nicht gefunden.",
+      "accessDenied": "Sie dürfen nicht auf diese KI-Zugangsdaten zugreifen.",
+      "disabled": "Die KI-Zugangsdaten sind deaktiviert.",
+      "invalidId": "Eine gültige ID für KI-Zugangsdaten ist erforderlich.",
+      "providerRequired": "Zum Laden der Modelle muss ein Anbieter für die Zugangsdaten angegeben sein."
+    },
+    "model": {
+      "updateNotAllowed": "Sie dürfen dieses KI-Modell nicht aktualisieren.",
+      "credentialDisabled": "Dieses Modell kann nicht aktiviert werden, solange seine Zugangsdaten deaktiviert sind.",
+      "notAvailable": "Das KI-Modell ist nicht verfügbar.",
+      "credentialUnavailable": "Die Zugangsdaten des KI-Modells sind nicht verfügbar.",
+      "studyOwnerAccessDenied": "Der Ersteller der Studie hat keinen Zugriff mehr auf dieses KI-Modell.",
+      "accessDenied": "Sie haben keinen Zugriff auf dieses KI-Modell.",
+      "required": "Ein KI-Modell ist erforderlich."
+    },
+    "hook": {
+      "updateNotAllowed": "Sie dürfen diesen KI-Hook nicht aktualisieren.",
+      "invalidOutputMode": "Der Ausgabemodus des KI-Hooks ist ungültig.",
+      "notAvailable": "Der KI-Hook ist nicht verfügbar.",
+      "studyOwnerAccessDenied": "Der Ersteller der Studie hat keinen Zugriff mehr auf diesen KI-Hook.",
+      "accessDenied": "Sie haben keinen Zugriff auf diesen KI-Hook.",
+      "notFound": "KI-Hook nicht gefunden.",
+      "disabled": "Der KI-Hook ist deaktiviert.",
+      "templateRequired": "Dem KI-Hook ist keine Prompt-Vorlage zugewiesen.",
+      "modelRequired": "Für den KI-Hook ist kein Modell konfiguriert.",
+      "modelNotFound": "Das Modell des KI-Hooks wurde nicht gefunden.",
+      "modelDisabled": "Das Modell des KI-Hooks ist deaktiviert.",
+      "credentialNotFound": "Die Zugangsdaten für das Modell des KI-Hooks wurden nicht gefunden.",
+      "credentialDisabled": "Die Zugangsdaten für das Modell des KI-Hooks sind deaktiviert.",
+      "invalidId": "Eine gültige KI-Hook-ID ist erforderlich."
+    },
+    "hookModel": {
+      "hookRequired": "Für Hook-Modelle ist ein KI-Hook erforderlich.",
+      "manageNotAllowed": "Sie dürfen die Modelle dieses KI-Hooks nicht verwalten.",
+      "invalidPriority": "Die Priorität eines KI-Hook-Modells muss mindestens 1 sein.",
+      "duplicatePriority": "Die Priorität eines KI-Hook-Modells muss innerhalb des Hooks eindeutig sein.",
+      "fallbackMatchesPrimary": "Das Ausweichmodell darf nicht mit dem primären Modell übereinstimmen."
+    }
+  },
+  "triggers": {
+    "createNotAllowed": "Sie haben keine Berechtigung, Trigger zu erstellen.",
+    "updateNotAllowed": "Sie haben keine Berechtigung, Trigger zu aktualisieren.",
+    "deleteNotAllowed": "Sie haben keine Berechtigung, Trigger zu löschen.",
+    "modifyNotAllowed": "Sie haben keine Berechtigung, Trigger zu ändern.",
+    "logsViewNotAllowed": "Sie haben keine Berechtigung, Trigger-Protokolle anzuzeigen.",
+    "retryNotAllowed": "Sie haben keine Berechtigung, Trigger-Aufträge erneut zu versuchen.",
+    "rerunNotAllowed": "Sie haben keine Berechtigung, Trigger-Aufträge erneut auszuführen.",
+    "cancelNotAllowed": "Sie haben keine Berechtigung, Trigger-Aufträge abzubrechen.",
+    "eventRequired": "Ein Trigger-Ereignis ist erforderlich.",
+    "actionRequired": "Eine Trigger-Aktion ist erforderlich.",
+    "nameRequired": "Ein Trigger-Name ist erforderlich.",
+    "idRequired": "Eine Trigger-ID ist erforderlich.",
+    "queueItemIdRequired": "Eine Warteschlangeneintrags-ID ist erforderlich.",
+    "queueItemNotFound": "Warteschlangeneintrag nicht gefunden.",
+    "retryInvalidStatus": "Nur fehlgeschlagene oder abgebrochene Warteschlangeneinträge können erneut versucht werden.",
+    "associatedRuleNotFound": "Die zugehörige Trigger-Regel wurde nicht gefunden.",
+    "parallelLimitInvalid": "Das Parallelitätslimit des Triggers muss mindestens 1 sein.",
+    "handlerNotRegistered": "Für {handlerName} ist kein Trigger-Handler registriert.",
+    "maxRetriesReached": "Die maximale Anzahl von Wiederholungsversuchen für diesen Trigger wurde erreicht.",
+    "alreadyRetrying": "Für diesen Warteschlangeneintrag läuft bereits ein neuer Versuch.",
+    "rerunInvalidStatus": "Nur abgeschlossene Warteschlangeneinträge können erneut ausgeführt werden.",
+    "cancelInvalidStatus": "Nur ausstehende oder laufende Warteschlangeneinträge können abgebrochen werden.",
+    "noLongerCancellable": "Der Warteschlangeneintrag kann nicht mehr abgebrochen werden.",
+    "runningCannotRetry": "Ein laufender Warteschlangeneintrag kann nicht erneut versucht werden.",
+    "executionTimedOut": "Die Trigger-Ausführung hat das Zeitlimit überschritten.",
+    "email": {
+      "unsupportedRecipient": "Der E-Mail-Empfänger \"{recipient}\" wird nicht unterstützt.",
+      "templateRequired": "Für die E-Mail-Trigger-Aktion ist eine E-Mail-Vorlage erforderlich.",
+      "templateNotFound": "E-Mail-Vorlage {templateId} wurde nicht gefunden.",
+      "noRecipients": "Die E-Mail-Trigger-Aktion konnte keine Empfänger ermitteln."
+    },
+    "preprocessing": {
+      "mappingSourceMissing": "Für den NLP-Parameter {paramName} sind weder Datei-IDs noch eine Kontextquelle definiert.",
+      "mappingContextMissing": "Der NLP-Parameter {paramName} konnte {contextKey} nicht aus dem Ereigniskontext ermitteln.",
+      "hookInvalid": "Der KI-Hook-Trigger ist nicht korrekt konfiguriert.",
+      "resultDocumentMissing": "Der KI-Hook-Trigger konnte sein Ergebnisdokument nicht ermitteln.",
+      "unsupportedHookInput": "Der KI-Hook-Eingabetyp \"{type}\" wird nicht unterstützt.",
+      "serviceUnavailable": "Der Hintergrunddienst für die Vorverarbeitung ist nicht verfügbar.",
+      "cancelled": "Die Trigger-Vorverarbeitung wurde abgebrochen."
+    }
+  },
+  "budget": {
+    "invalidScope": "Der ausgewählte Geltungsbereich des Budgets ist ungültig.",
+    "entityNotOwned": "Das ausgewählte Budgetobjekt gehört Ihnen nicht.",
+    "notOwned": "Dieses Budget gehört Ihnen nicht.",
+    "modelExhausted": "Modellbudget ausgeschöpft: {spent} $ / {limit} $",
+    "modelShareExhausted": "Budget der Modellfreigabe ausgeschöpft: {spent} $ / {limit} $",
+    "hookShareExhausted": "Budget der Hook-Freigabe ausgeschöpft: {spent} $ / {limit} $",
+    "stepHookExhausted": "Budget des Schritt-Hooks ausgeschöpft: {spent} $ / {limit} $",
+    "hookExhausted": "Hook-Budget ausgeschöpft: {spent} $ / {limit} $",
+    "studyExhausted": "Studienbudget ausgeschöpft: {spent} $ / {limit} $",
+    "exhausted": "Budget ausgeschöpft: {spent} $ / {limit} $"
   },
   "common": {
     "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",

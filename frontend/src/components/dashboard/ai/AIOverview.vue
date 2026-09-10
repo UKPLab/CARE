@@ -1,7 +1,7 @@
 <template>
   <BasicModal ref="overviewModal" :name="modalName" size="lg">
     <template #title>
-      {{ config.title }}
+      {{ $t(config.titleKey) }}
     </template>
     <template #body>
       <BasicDetails v-if="meta && row" :items="detailRows">
@@ -11,12 +11,12 @@
         >{{ additionalParametersJson }}</pre>
 
         <div v-if="meta.viewerShare" class="alert alert-info py-2 small mb-3">
-          Shared access expires {{ formatDateTime(meta.viewerShare.expiryDate) }}.
+          {{ $t("ai.overview.sharedAccessExpires", { date: formatDateTime(meta.viewerShare.expiryDate) }) }}
         </div>
 
         <template v-if="meta.isOwner">
           <h6 class="text-muted text-uppercase small mb-2">
-            Shared with (active)
+            {{ $t("ai.overview.sharedWithActive") }}
           </h6>
           <BasicTable
             :columns="shareColumns"
@@ -29,7 +29,7 @@
     </template>
     <template #footer>
       <BasicButton
-        title="Close"
+        :title="$t('ai.common.close')"
         class="btn btn-secondary"
         @click="$refs.overviewModal.close()"
       />
@@ -48,48 +48,49 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicDetails from "@/basic/Details.vue";
+import { formatLocalizedDateTime } from "@/assets/utils";
 
 const RESOURCE_CONFIGS = {
   model: {
-    title: "AI model overview",
+    titleKey: "ai.overview.modelTitle",
     modalName: "aiModelOverviewModal",
     shareTable: "ai_model_share",
     idKey: "aiModelId",
-    invalidMessage: "Invalid model",
+    invalidMessageKey: "ai.errors.invalidModel",
     details(row, meta, helpers) {
       return [
-        { key: "name", label: "Name", value: row.name },
-        { key: "provider", label: "Provider", value: row.provider },
-        { key: "model", label: "Model ID", value: row.model, type: "code" },
+        { key: "name", label: helpers.t("ai.common.name"), value: row.name },
+        { key: "provider", label: helpers.t("ai.common.provider"), value: row.provider },
+        { key: "model", label: helpers.t("ai.models.modelId"), value: row.model, type: "code" },
         {
           key: "status",
-          label: "Status",
-          value: row.enabled ? "Enabled" : "Disabled",
+          label: helpers.t("ai.common.status"),
+          value: row.enabled ? helpers.t("ai.status.enabled") : helpers.t("ai.status.disabled"),
           type: "badge",
           class: row.enabled ? "bg-success" : "bg-secondary",
         },
-        { key: "credential", label: "Credential", value: row.credentialName, visible: meta.isOwner && !!row.credentialName },
-        { key: "updated", label: "Updated", value: helpers.formatDateTime(row.updatedAt) },
-        { key: "description", label: "Description", value: row.description, visible: !!row.description },
+        { key: "credential", label: helpers.t("ai.common.credential"), value: row.credentialName, visible: meta.isOwner && !!row.credentialName },
+        { key: "updated", label: helpers.t("ai.common.updated"), value: helpers.formatDateTime(row.updatedAt) },
+        { key: "description", label: helpers.t("ai.common.description"), value: row.description, visible: !!row.description },
       ];
     },
   },
   hook: {
-    title: "AI hook overview",
+    titleKey: "ai.overview.hookTitle",
     modalName: "aiHookOverviewModal",
     shareTable: "ai_hook_share",
     idKey: "aiHookId",
-    invalidMessage: "Invalid AI hook",
+    invalidMessageKey: "ai.errors.invalidHook",
     details(row, _meta, helpers) {
       return [
-        { key: "name", label: "Name", value: row.name },
-        { key: "description", label: "Description", value: row.description },
-        { key: "template", label: "Prompt Template", value: row.templateName },
-        { key: "models", label: "Models", value: (row.models || []).map((model) => model.name), type: "list" },
-        { key: "output", label: "Output Type", value: row.outputLabel },
-        { key: "status", label: "Status", value: row.statusLabel },
-        { key: "created", label: "Created", value: helpers.formatDateTime(row.createdAt) },
-        { key: "updated", label: "Updated", value: helpers.formatDateTime(row.updatedAt) },
+        { key: "name", label: helpers.t("ai.common.name"), value: row.name },
+        { key: "description", label: helpers.t("ai.common.description"), value: row.description },
+        { key: "template", label: helpers.t("ai.hooks.promptTemplate"), value: row.templateName },
+        { key: "models", label: helpers.t("ai.common.models"), value: (row.models || []).map((model) => model.name), type: "list" },
+        { key: "output", label: helpers.t("ai.hooks.outputType"), value: row.outputLabel },
+        { key: "status", label: helpers.t("ai.common.status"), value: row.statusLabel },
+        { key: "created", label: helpers.t("ai.common.created"), value: helpers.formatDateTime(row.createdAt) },
+        { key: "updated", label: helpers.t("ai.common.updated"), value: helpers.formatDateTime(row.updatedAt) },
       ];
     },
   },
@@ -113,14 +114,16 @@ export default {
         striped: true,
         hover: true,
       },
-      shareColumns: [
-        { name: "Name", key: "recipientLabel", sortable: true },
-        { name: "Access", key: "accessLabel", sortable: true },
-        { name: "Expires", key: "expiryLabel", sortable: true },
-      ],
     };
   },
   computed: {
+    shareColumns() {
+      return [
+        { name: this.$t("ai.common.name"), key: "recipientLabel", sortable: true },
+        { name: this.$t("ai.overview.access"), key: "accessLabel", sortable: true },
+        { name: this.$t("ai.overview.expires"), key: "expiryLabel", sortable: true },
+      ];
+    },
     config() {
       return RESOURCE_CONFIGS[this.resourceType] || RESOURCE_CONFIGS.model;
     },
@@ -178,7 +181,7 @@ export default {
     },
     detailRows() {
       if (!this.row || !this.meta) return [];
-      const helpers = { formatDateTime: this.formatDateTime };
+      const helpers = { formatDateTime: this.formatDateTime, t: (key) => this.$t(key) };
       return this.config.details(this.row, this.meta, helpers)
         .filter((item) => item.visible !== false)
         .map((item) => ({
@@ -213,17 +216,16 @@ export default {
       return item.value || "-";
     },
     formatAccess(row) {
-      if (row.accessVia === "role") return row.viaLabel ? `Role: ${row.viaLabel}` : "Role";
-      return "User";
+      if (row.accessVia === "role") return row.viaLabel ? this.$t("ai.overview.roleNamed", { name: row.viaLabel }) : this.$t("ai.common.role");
+      return this.$t("ai.common.user");
     },
     formatDateTime(value) {
       if (!value) return "-";
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? "-" : date.toLocaleString();
+      return formatLocalizedDateTime(value) || "-";
     },
     open(row) {
       if (!row?.id) {
-        this.eventBus.emit("toast", { title: "Error", message: this.config.invalidMessage, variant: "danger" });
+        this.eventBus.emit("toast", { title: this.$t("ai.common.error"), message: this.$t(this.config.invalidMessageKey), variant: "danger" });
         return;
       }
       this.row = row;

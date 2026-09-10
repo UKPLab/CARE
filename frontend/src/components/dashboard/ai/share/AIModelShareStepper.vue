@@ -3,11 +3,11 @@
     ref="shareStepper"
     :steps="shareSteps"
     :validation="shareStepValidation"
-    submit-text="Save"
+    :submit-text="$t('ai.common.save')"
     @submit="saveShare"
   >
     <template #title>
-      Share {{ resourceLabel }}
+      {{ $t("ai.share.title", { resource: resourceLabel }) }}
     </template>
     <template #step-1>
       <AIShareSettingsStep
@@ -52,6 +52,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import AIShareSettingsStep from "./AIShareSettingsStep.vue";
 import AIShareSelectStep from "./AIShareSelectStep.vue";
 import AIShareReviewStep from "./AIShareReviewStep.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AIModelShareStepper",
@@ -82,9 +83,9 @@ export default {
   computed: {
     shareSteps() {
       return [
-        { title: "Share Settings" },
-        { title: `Select ${this.shareAudienceLabel}` },
-        { title: "Review & Save" },
+        { title: this.$t("ai.share.steps.settings") },
+        { title: this.$t("ai.share.steps.select", { audience: this.shareAudienceLabel }) },
+        { title: this.$t("ai.share.steps.review") },
       ];
     },
     shareStepValidation() {
@@ -97,20 +98,20 @@ export default {
     shareSelectionColumns() {
       if (this.shareForm.mode === "roles") {
         return [
-          { name: "Role", key: "label", sortable: true },
-          { name: "Type", key: "type", sortable: true },
+          { name: this.$t("ai.common.role"), key: "label", sortable: true },
+          { name: this.$t("ai.share.type"), key: "type", sortable: true },
         ];
       }
       return [
-        { name: "Name", key: "label", sortable: true },
-        { name: "Type", key: "type", sortable: true },
+        { name: this.$t("ai.common.name"), key: "label", sortable: true },
+        { name: this.$t("ai.share.type"), key: "type", sortable: true },
       ];
     },
     shareSelectionData() {
       if (this.shareForm.mode === "roles") {
-        return this.shareTargets.roles.map((role) => ({ ...role, type: "Role" }));
+        return this.shareTargets.roles.map((role) => ({ ...role, type: this.$t("ai.common.role") }));
       }
-      return this.shareTargets.users.map((user) => ({ ...user, type: "User" }));
+      return this.shareTargets.users.map((user) => ({ ...user, type: this.$t("ai.common.user") }));
     },
     activeSelectionIds() {
       if (this.shareForm.mode === "roles") {
@@ -129,8 +130,8 @@ export default {
       return this.shareSelectionData.filter((row) => this.selectedIdSet.has(Number(row.id)));
     },
     shareAudienceLabel() {
-      if (this.shareForm.mode === "roles") return "Roles";
-      return "Users";
+      if (this.shareForm.mode === "roles") return this.$t("ai.common.roles");
+      return this.$t("ai.common.users");
     },
     resourceLabelLower() {
       return this.resourceLabel.toLowerCase();
@@ -138,7 +139,7 @@ export default {
     roleOptions() {
       return (this.$store.getters["table/user_role/getAll"] || [])
         .filter((role) => !role.deleted)
-        .map((role) => ({ id: role.id, label: role.name || `Role ${role.id}` }));
+        .map((role) => ({ id: role.id, label: role.name || this.$t("ai.common.roleNumber", { id: role.id }) }));
     },
   },
   methods: {
@@ -181,7 +182,7 @@ export default {
       return new Promise((resolve, reject) => {
         this.$socket.emit("appDataUpdate", { table, data }, (result) => {
           if (result?.success) resolve(result.data);
-          else reject(new Error(result?.message || "Failed to update data"));
+          else reject(new Error(resolveApiMessage(result, "ai.errors.updateData")));
         });
       });
     },
@@ -224,7 +225,7 @@ export default {
     },
     async open(row) {
       if (!row?.id) {
-        this.toastError("Invalid model selected");
+        this.toastError(this.$t("ai.errors.invalidResourceSelected", { resource: this.resourceLabel }));
         return;
       }
 
@@ -248,18 +249,18 @@ export default {
         this.selectedUserIds = config.userIds;
         this.selectedRoleIds = config.roleIds;
       } catch (error) {
-        this.toastError(error.message || `Failed to load ${this.resourceLabelLower} share data`);
+        this.toastError(resolveApiMessage(error, "ai.errors.loadShareData"));
       } finally {
         this.isLoadingShareData = false;
       }
     },
     async saveShare() {
       if (!this.selectedShareModel?.id) {
-        this.toastError("No model selected");
+        this.toastError(this.$t("ai.errors.noResourceSelected", { resource: this.resourceLabel }));
         return;
       }
       if (!this.shareForm.expiryDate) {
-        this.toastError("Please select an expiry date");
+        this.toastError(this.$t("ai.errors.selectExpiryDate"));
         return;
       }
 
@@ -270,14 +271,14 @@ export default {
       if (this.shareForm.mode === "roles") {
         const roleIds = [...this.selectedRoleIds];
         if (roleIds.length === 0) {
-          this.toastError("Please select at least one role");
+          this.toastError(this.$t("ai.errors.selectRole"));
           return;
         }
         recipients = roleIds.map((roleId) => ({ userId: null, roleId }));
       } else {
         const userIds = [...this.selectedUserIds];
         if (userIds.length === 0) {
-          this.toastError("Please select at least one user");
+          this.toastError(this.$t("ai.errors.selectUser"));
           return;
         }
         recipients = userIds.map((userId) => ({ userId, roleId: null }));
@@ -323,12 +324,12 @@ export default {
 
         this.$refs.shareStepper.close();
         this.eventBus.emit("toast", {
-          title: "Success",
-          message: `${this.resourceLabel} sharing updated`,
+          title: this.$t("ai.common.success"),
+          message: this.$t("ai.messages.sharingUpdated", { resource: this.resourceLabel }),
           variant: "success",
         });
       } catch (error) {
-        this.toastError(error.message || `Failed to save ${this.resourceLabelLower} sharing`);
+        this.toastError(resolveApiMessage(error, "ai.errors.saveSharing"));
       } finally {
         this.$refs.shareStepper.setWaiting(false);
         this.isSavingShare = false;
@@ -336,7 +337,7 @@ export default {
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

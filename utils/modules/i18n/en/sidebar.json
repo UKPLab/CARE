@@ -38,6 +38,12 @@
         "workflows": "Workflows",
         "session_overview": "Session Overview",
         "admin_tools": "Admin Tools",
+        "ai_log": "AI Logs",
+        "ai_models": "AI Models",
+        "ai_hooks": "AI Hooks",
+        "ai_budget": "AI Budget",
+        "triggers": "Triggers",
+        "trigger_logs": "Trigger Logs",
         "groups": {
             "default": "Default",
             "admin": "Admin",
@@ -46,7 +52,8 @@
             "manage": "Manage",
             "settings": "Settings",
             "ai": "AI",
-            "assignment": "Assignment"
+            "assignment": "Assignment",
+            "triggers": "Triggers"
         }
     },
     "textPlaceholderHelp": "Displays a single value from a previous editor step or NLP skill output. Use this when you want to show a specific piece of data (like a text field, number, or label) from an earlier step in your workflow.",

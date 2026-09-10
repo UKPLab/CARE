@@ -6,7 +6,7 @@
     @hide="resetForm"
   >
     <template #title>
-      {{ credentialForm.id ? "Edit AI Credential" : "Add AI Credential" }}
+      {{ credentialForm.id ? $t("ai.credentials.editTitle") : $t("ai.credentials.addTitle") }}
     </template>
     <template #body>
       <BasicForm
@@ -19,12 +19,12 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('ai.common.cancel')"
           @click="$refs.modal.close()"
         />
         <BasicButton
           class="btn btn-primary"
-          :text="credentialForm.id ? 'Update' : 'Create'"
+          :text="credentialForm.id ? $t('ai.common.update') : $t('ai.common.create')"
           @click="saveCredential"
         />
       </span>
@@ -42,6 +42,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AICredential",
@@ -73,54 +74,54 @@ export default {
       return [
         {
           key: "name",
-          label: "Credential Name",
+          label: this.$t("ai.credentials.name"),
           type: "text",
           required: true,
           default: "",
-          placeholder: "Credential name",
-          help: "A display name for your API credential.",
+          placeholder: this.$t("ai.credentials.namePlaceholder"),
+          help: this.$t("ai.credentials.nameHelp"),
         },
         {
           key: "apiKey",
-          label: "API Key",
+          label: this.$t("ai.credentials.apiKey"),
           type: "password",
           default: "",
           placeholder: this.credentialForm.id
-            ? "Leave empty to keep existing key"
-            : "API key",
-          help: "Provide an API key and/or a base URL. At least one is required. Leave empty while editing to keep the existing key.",
+            ? this.$t("ai.credentials.keepKeyPlaceholder")
+            : this.$t("ai.credentials.apiKeyPlaceholder"),
+          help: this.$t("ai.credentials.apiKeyHelp"),
         },
         {
           key: "provider",
-          label: "Provider",
+          label: this.$t("ai.common.provider"),
           type: "select",
           required: true,
           default: "",
           search: true,
-          placeholder: this.isLoadingProviders ? "Loading providers..." : "Select provider",
+          placeholder: this.isLoadingProviders ? this.$t("ai.credentials.loadingProviders") : this.$t("ai.credentials.selectProvider"),
           help: this.providerLookupError
-            || "Select the LiteLLM provider for your API key (e.g. openai, groq, openrouter).",
+            || this.$t("ai.credentials.providerHelp"),
           options: this.providerSelectOptions,
         },
         {
           key: "apiBaseUrl",
-          label: "API Base URL",
+          label: this.$t("ai.credentials.baseUrl"),
           type: "text",
           default: "",
-          placeholder: "Provider base URL",
-          help: "Custom endpoint for proxies, local providers, or hosted compatible APIs. Required if no API key is provided.",
+          placeholder: this.$t("ai.credentials.baseUrlPlaceholder"),
+          help: this.$t("ai.credentials.baseUrlHelp"),
         },
         {
           key: "apiVersion",
-          label: "API Version (optional)",
+          label: this.$t("ai.credentials.apiVersion"),
           type: "text",
           default: "",
-          placeholder: "Version (optional)",
-          help: "Optional API version, commonly needed for Azure/OpenAI-compatible deployments.",
+          placeholder: this.$t("ai.credentials.apiVersionPlaceholder"),
+          help: this.$t("ai.credentials.apiVersionHelp"),
         },
         {
           key: "enabled",
-          label: "Enabled",
+          label: this.$t("ai.status.enabled"),
           type: "switch",
           default: true,
         },
@@ -158,11 +159,11 @@ export default {
         const result = await this.$ai.getProviders();
         this.providerOptions = Array.isArray(result?.providers) ? result.providers : [];
         if (this.providerOptions.length === 0) {
-          this.providerLookupError = "No providers were returned from LiteLLM.";
+          this.providerLookupError = this.$t("ai.credentials.noProviders");
         }
       } catch (error) {
         this.providerOptions = [];
-        this.providerLookupError = error.message || "Failed to load providers";
+        this.providerLookupError = resolveApiMessage(error, "ai.errors.loadProviders");
         this.toastError(this.providerLookupError);
       } finally {
         this.isLoadingProviders = false;
@@ -175,7 +176,7 @@ export default {
       const hasBaseUrl = !!this.credentialForm.apiBaseUrl?.trim();
       // On edit, empty API key keeps the existing key, so that still satisfies the requirement.
       if (!hasApiKey && !hasBaseUrl && !this.credentialForm.id) {
-        this.toastError("Provide an API key or a base URL");
+        this.toastError(this.$t("ai.errors.credentialRequired"));
         return;
       }
 
@@ -197,22 +198,22 @@ export default {
       }, (result) => {
         if (result.success) {
           this.$refs.modal.close();
-          this.toastSuccess(this.credentialForm.id ? "Credential updated" : "Credential created");
+          this.toastSuccess(this.credentialForm.id ? this.$t("ai.messages.credentialUpdated") : this.$t("ai.messages.credentialCreated"));
         } else {
-          this.toastError(result.message || "Failed to save credential");
+          this.toastError(resolveApiMessage(result, "ai.errors.saveCredential"));
         }
       });
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
-        title: "Success",
+        title: this.$t("ai.common.success"),
         message,
         variant: "success",
       });
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

@@ -16,7 +16,7 @@
         />
       </div>
       <BasicButton
-        title="Add Model"
+        :title="$t('ai.models.addModel')"
         class="btn btn-primary mb-3"
         icon="plus"
         :disabled="!modelToAddId"
@@ -24,7 +24,7 @@
       />
     </div>
     <div v-if="selectableModels.length === 0" class="text-warning small mt-1">
-      No enabled AI models are available yet.
+      {{ $t("ai.hooks.noEnabledModels") }}
     </div>
   </div>
 </template>
@@ -59,14 +59,20 @@ export default {
         striped: true,
         hover: true,
       },
-      tableColumns: [
+    };
+  },
+  computed: {
+    tableColumns() {
+      return [
         { name: "#", key: "priority", width: 1 },
-        { name: "Model", key: "modelLabel" },
-      ],
-      tableButtons: [
+        { name: this.$t("ai.common.model"), key: "modelLabel" },
+      ];
+    },
+    tableButtons() {
+      return [
         {
           icon: "arrow-up-short",
-          title: "Move up",
+          title: this.$t("ai.actions.moveUp"),
           action: "moveUp",
           filter: [{ key: "canMoveUp", value: true }],
           options: {
@@ -76,7 +82,7 @@ export default {
         },
         {
           icon: "arrow-down-short",
-          title: "Move down",
+          title: this.$t("ai.actions.moveDown"),
           action: "moveDown",
           filter: [{ key: "canMoveDown", value: true }],
           options: {
@@ -86,17 +92,15 @@ export default {
         },
         {
           icon: "trash",
-          title: "Remove model",
+          title: this.$t("ai.actions.removeModel"),
           action: "remove",
           options: {
             iconOnly: true,
             specifiers: { "btn-outline-danger": true },
           },
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     modelIds() {
       return this.modelValue.map((id) => Number(id));
     },
@@ -120,7 +124,7 @@ export default {
         id: modelId,
         index,
         priority: index + 1,
-        modelLabel: this.modelLabelById[modelId] || `Model #${modelId}`,
+        modelLabel: this.modelLabelById[modelId] || this.$t("ai.common.modelNumber", { id: modelId }),
         canMoveUp: index > 0,
         canMoveDown: index < this.modelIds.length - 1,
       }));
@@ -128,10 +132,10 @@ export default {
     addModelSelectOptions() {
       return {
         key: `${this.idPrefix}ModelToAdd`,
-        label: "Add Model",
-        help: "Add models in the order CARE should try them. Priority 1 is the primary model. Priority 2 and later are fallback models.",
+        label: this.$t("ai.models.addModel"),
+        help: this.$t("ai.hooks.modelOrderHelp"),
         options: [
-          { value: null, name: "Select model" },
+          { value: null, name: this.$t("ai.models.selectModel") },
           ...this.modelsAvailableToAdd.map((model) => ({
             value: model.id,
             name: this.formatModelLabel(model),

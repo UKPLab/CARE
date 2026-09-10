@@ -10,7 +10,20 @@
     "downloadedConfigMessage": "Downloaded {name} configuration",
     "services": {
         "availableServices": "Available Services",
-        "noServices": "No services configuration available for this step."
+        "noServices": "No services configuration available for this step.",
+        "costLimits": "Cost limits (optional)",
+        "totalCostLimit": "Total ($)",
+        "sessionCostLimit": "Per session ($)",
+        "userCostLimit": "Per user ($)",
+        "noLimit": "No limit",
+        "totalCostLimitHelp": "Total spending cap",
+        "sessionCostLimitHelp": "Per-session spending cap",
+        "userCostLimitHelp": "Per-user spending cap"
+    },
+    "hooks": {
+        "requestTitle": "AI Hook Request",
+        "requestFailed": "AI hook request failed",
+        "documentLoadFailed": "Failed to load document"
     },
     "inputConfirm": {
         "confirmSelections": "Confirm Your Selections",
@@ -37,6 +50,7 @@
     "inputMap": {
         "inputMapping": "Input Mapping",
         "outputMapping": "Output Mapping",
+        "selectFilesToInclude": "Select files to include:",
         "saveInDocumentData": "Save in Document Data",
         "insertIntoEditor": "Insert into Editor",
         "sources": {

@@ -3,12 +3,12 @@
     ref="hookStepper"
     :steps="hookSteps"
     :validation="hookStepValidation"
-    :submit-text="hookForm.id ? 'Update Hook' : 'Create Hook'"
+    :submit-text="hookForm.id ? $t('ai.hooks.update') : $t('ai.hooks.create')"
     size="lg"
     @submit="saveHook"
   >
     <template #title>
-      {{ hookForm.id ? "Edit AI Hook" : "Create AI Hook" }}
+      {{ hookForm.id ? $t("ai.hooks.editTitle") : $t("ai.hooks.createTitle") }}
     </template>
     <template #step-1>
       <AIHookBasicInfoStep v-model="hookForm" />
@@ -44,6 +44,7 @@ import AIHookPromptStep from "./AIHookPromptStep.vue";
 import AIHookModelOrder from "./AIHookModelOrder.vue";
 import AIHookOutputStep from "./AIHookOutputStep.vue";
 import AIHookReviewStep from "./AIHookReviewStep.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 function getEmptyHookForm() {
   return {
@@ -84,11 +85,11 @@ export default {
   computed: {
     hookSteps() {
       return [
-        { title: "Basic Info" },
-        { title: "Prompt" },
-        { title: "Model" },
-        { title: "Output" },
-        { title: "Review" },
+        { title: this.$t("ai.hooks.steps.basicInfo") },
+        { title: this.$t("ai.hooks.steps.prompt") },
+        { title: this.$t("ai.hooks.steps.model") },
+        { title: this.$t("ai.hooks.steps.output") },
+        { title: this.$t("ai.hooks.steps.review") },
       ];
     },
     hookStepValidation() {
@@ -148,7 +149,7 @@ export default {
           if (result?.success) {
             resolve(result.data);
           } else {
-            reject(new Error(result?.message || "Failed to update data"));
+            reject(new Error(resolveApiMessage(result, "ai.errors.updateData")));
           }
         });
       });
@@ -220,24 +221,24 @@ export default {
         }
 
         this.$refs.hookStepper.close();
-        this.toastSuccess(this.hookForm.id ? "AI hook updated" : "AI hook created");
+        this.toastSuccess(this.hookForm.id ? this.$t("ai.messages.hookUpdated") : this.$t("ai.messages.hookCreated"));
         this.$emit("saved");
       } catch (error) {
-        this.toastError(error.message || "Failed to save AI hook");
+        this.toastError(resolveApiMessage(error, "ai.errors.saveHook"));
       } finally {
         this.$refs.hookStepper.setWaiting(false);
       }
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
-        title: "Success",
+        title: this.$t("ai.common.success"),
         message,
         variant: "success",
       });
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

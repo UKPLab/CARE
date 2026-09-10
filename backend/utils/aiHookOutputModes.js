@@ -1,5 +1,7 @@
 'use strict';
 
+const TranslatableError = require("./TranslatableError");
+
 const AI_HOOK_OUTPUT_MODES = Object.freeze({
     TEXT: 0,
     JSON: 1,
@@ -13,7 +15,7 @@ function normalizeAiHookOutputMode(value) {
         return numericValue;
     }
 
-    throw new Error("Invalid AI hook output mode");
+    throw new TranslatableError("errors.ai.hook.invalidOutputMode");
 }
 
 module.exports = {

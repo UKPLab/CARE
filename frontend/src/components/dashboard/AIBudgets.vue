@@ -1,5 +1,5 @@
 <template>
-  <BasicCard title="AI Budget">
+  <BasicCard :title="$t('ai.budgets.title')">
     <template #body>
       <ul class="nav nav-tabs mb-3">
         <li v-for="tab in tabs" :key="tab.key" class="nav-item">
@@ -42,8 +42,8 @@ import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIBudgetEditModal from "@/components/dashboard/ai/AIBudgetEditModal.vue";
+import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
 
-const LIMIT_TYPE_LABELS = { 0: "Total", 1: "Per session", 2: "Per user" };
 
 export default {
   name: "DashboardAIBudgets",
@@ -56,9 +56,9 @@ export default {
     return {
       activeTab: "models",
       tabs: [
-        { key: "models",  label: "Models",  types: ["model", "model_share"] },
-        { key: "hooks",   label: "Hooks",   types: ["hook", "hook_share"] },
-        { key: "studies", label: "Studies", types: ["study", "step_hook"] },
+        { key: "models", label: this.$t("ai.budgets.tabs.models"), types: ["model", "model_share"] },
+        { key: "hooks", label: this.$t("ai.budgets.tabs.hooks"), types: ["hook", "hook_share"] },
+        { key: "studies", label: this.$t("ai.budgets.tabs.studies"), types: ["study", "step_hook"] },
       ],
       tableOptions: {
         striped: true,
@@ -116,28 +116,28 @@ export default {
     },
     tabColumns() {
       const base = [
-        { name: "Limit type", key: "limitTypeLabel", sortable: true },
-        { name: "Limit", key: "costLimitLabel", sortable: true, sortKey: "costLimit" },
-        { name: "Last reset", key: "resetAtLabel", sortable: true, sortKey: "resetAt" },
+        { name: this.$t("ai.budgets.limitType"), key: "limitTypeLabel", sortable: true },
+        { name: this.$t("ai.budgets.limit"), key: "costLimitLabel", sortable: true, sortKey: "costLimit" },
+        { name: this.$t("ai.budgets.lastReset"), key: "resetAtLabel", sortable: true, sortKey: "resetAt" },
       ];
       if (this.activeTab === "models") {
         return [
-          { name: "Model", key: "entityLabel", sortable: true },
-          { name: "Shared with", key: "sharedWith", sortable: true },
+          { name: this.$t("ai.common.model"), key: "entityLabel", sortable: true },
+          { name: this.$t("ai.common.sharedWith"), key: "sharedWith", sortable: true },
           ...base,
         ];
       }
       if (this.activeTab === "hooks") {
         return [
-          { name: "Hook", key: "entityLabel", sortable: true },
-          { name: "Shared with", key: "sharedWith", sortable: true },
+          { name: this.$t("ai.common.hook"), key: "entityLabel", sortable: true },
+          { name: this.$t("ai.common.sharedWith"), key: "sharedWith", sortable: true },
           ...base,
         ];
       }
       return [
-        { name: "Study", key: "studyLabel", sortable: true },
-        { name: "Level", key: "levelLabel", sortable: true },
-        { name: "Hook", key: "hookLabel", sortable: true },
+        { name: this.$t("ai.common.study"), key: "studyLabel", sortable: true },
+        { name: this.$t("ai.budgets.level"), key: "levelLabel", sortable: true },
+        { name: this.$t("ai.common.hook"), key: "hookLabel", sortable: true },
         ...base,
       ];
     },
@@ -154,7 +154,7 @@ export default {
             studyLabel: studyLabel || "—",
             levelLabel: levelLabel || "—",
             hookLabel: hookLabel || "—",
-            limitTypeLabel: LIMIT_TYPE_LABELS[Number(b.limitType)] || "—",
+            limitTypeLabel: this.$t(`ai.budgets.limitTypes.${Number(b.limitType)}`, "—"),
             costLimitLabel: this.formatCurrency(b.costLimit),
             resetAtLabel: this.formatDateTime(b.resetAt),
           };
@@ -164,19 +164,19 @@ export default {
       return [
         {
           icon: "pencil",
-          title: "Edit limit",
+          title: this.$t("ai.actions.editLimit"),
           action: "edit",
           options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
         },
         {
           icon: "arrow-counterclockwise",
-          title: "Reset spending window",
+          title: this.$t("ai.actions.resetSpendingWindow"),
           action: "reset",
           options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
         },
         {
           icon: "trash",
-          title: "Remove cap",
+          title: this.$t("ai.actions.removeCap"),
           action: "delete",
           options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
         },
@@ -194,33 +194,33 @@ export default {
         const step = this.studyStepsById[b.studyStepId];
         const study = step ? this.studiesById[step.studyId] : null;
         const hook = this.hooksById[b.aiHookId];
-        const studyLabel = study?.name || (step ? `Study #${step.studyId}` : `Study #?`);
-        const levelLabel = step ? `Step ${step.stepNumber || step.id}` : `Step #${b.studyStepId}`;
-        const hookLabel = hook?.name || `Hook #${b.aiHookId}`;
+        const studyLabel = study?.name || (step ? this.$t("ai.common.studyNumber", { id: step.studyId }) : this.$t("ai.common.studyUnknown"));
+        const levelLabel = step ? this.$t("ai.common.stepNumber", { id: step.stepNumber || step.id }) : this.$t("ai.common.stepNumber", { id: b.studyStepId });
+        const hookLabel = hook?.name || this.$t("ai.common.hookNumber", { id: b.aiHookId });
         return { entityType: "step_hook", entityLabel: studyLabel, sharedWith: null, studyLabel, levelLabel, hookLabel };
       }
       if (b.aiModelId) {
         const m = this.modelsById[b.aiModelId];
-        return { entityType: "model", entityLabel: m?.name || `Model #${b.aiModelId}`, sharedWith: null };
+        return { entityType: "model", entityLabel: m?.name || this.$t("ai.common.modelNumber", { id: b.aiModelId }), sharedWith: null };
       }
       if (b.aiModelShareId) {
         const share = this.modelSharesById[b.aiModelShareId];
         const model = share ? this.modelsById[share.aiModelId] : null;
-        return { entityType: "model_share", entityLabel: model?.name || `Model #${share?.aiModelId}`, sharedWith: this.recipientLabel(share) };
+        return { entityType: "model_share", entityLabel: model?.name || this.$t("ai.common.modelNumber", { id: share?.aiModelId }), sharedWith: this.recipientLabel(share) };
       }
       if (b.aiHookId) {
         const h = this.hooksById[b.aiHookId];
-        return { entityType: "hook", entityLabel: h?.name || `Hook #${b.aiHookId}`, sharedWith: null };
+        return { entityType: "hook", entityLabel: h?.name || this.$t("ai.common.hookNumber", { id: b.aiHookId }), sharedWith: null };
       }
       if (b.aiHookShareId) {
         const share = this.hookSharesById[b.aiHookShareId];
         const hook = share ? this.hooksById[share.aiHookId] : null;
-        return { entityType: "hook_share", entityLabel: hook?.name || `Hook #${share?.aiHookId}`, sharedWith: this.recipientLabel(share) };
+        return { entityType: "hook_share", entityLabel: hook?.name || this.$t("ai.common.hookNumber", { id: share?.aiHookId }), sharedWith: this.recipientLabel(share) };
       }
       if (b.studyId) {
         const s = this.studiesById[b.studyId];
-        const studyLabel = s?.name || `Study #${b.studyId}`;
-        return { entityType: "study", entityLabel: studyLabel, sharedWith: null, studyLabel, levelLabel: "Global", hookLabel: null };
+        const studyLabel = s?.name || this.$t("ai.common.studyNumber", { id: b.studyId });
+        return { entityType: "study", entityLabel: studyLabel, sharedWith: null, studyLabel, levelLabel: this.$t("ai.budgets.global"), hookLabel: null };
       }
       return { entityType: "unknown", entityLabel: "—", sharedWith: null, studyLabel: null, levelLabel: null, hookLabel: null };
     },
@@ -229,10 +229,10 @@ export default {
       const user = this.usersById[share.userId];
       if (user) {
         const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ").trim();
-        return fullName || user.userName || `User #${share.userId}`;
+        return fullName || user.userName || this.$t("ai.common.userNumber", { id: share.userId });
       }
-      if (share.roleId) return `Role #${share.roleId}`;
-      return `User #${share.userId}`;
+      if (share.roleId) return this.$t("ai.common.roleNumber", { id: share.roleId });
+      return this.$t("ai.common.userNumber", { id: share.userId });
     },
     formatCurrency(value) {
       const num = Number(value);
@@ -240,9 +240,8 @@ export default {
       return `$${num.toFixed(2)}`;
     },
     formatDateTime(value) {
-      if (!value) return "Never";
-      const date = new Date(value);
-      return Number.isNaN(date.getTime()) ? "Never" : date.toLocaleString();
+      if (!value) return this.$t("ai.common.never");
+      return formatLocalizedDateTime(value) || this.$t("ai.common.never");
     },
     onAction(data) {
       switch (data.action) {
@@ -256,8 +255,8 @@ export default {
     },
     openReset(row) {
       this.$refs.confirmModal.open(
-        "Reset",
-        `Reset the spending counter for this cap? Past usage will no longer count toward the limit.`,
+        this.$t("ai.confirm.resetTitle"),
+        this.$t("ai.confirm.resetBudget"),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -266,9 +265,9 @@ export default {
             { table: "ai_budget", data: { id: row.id, resetAt: new Date().toISOString() } },
             (result) => {
               if (result?.success) {
-                this.toastSuccess("Spending window reset");
+                this.toastSuccess(this.$t("ai.messages.spendingWindowReset"));
               } else {
-                this.toastError(result?.message || "Failed to reset");
+                this.toastError(resolveApiMessage(result, "ai.errors.resetBudget"));
               }
             }
           );
@@ -277,8 +276,8 @@ export default {
     },
     openDelete(row) {
       this.$refs.confirmModal.open(
-        "Remove cap",
-        `Remove this budget? AI usage at this level will no longer be capped.`,
+        this.$t("ai.confirm.removeCapTitle"),
+        this.$t("ai.confirm.removeCap"),
         "",
         (confirmed) => {
           if (!confirmed) return;
@@ -288,9 +287,9 @@ export default {
             { table: "ai_budget", data: { id: row.id, deleted: true } },
             (result) => {
               if (result?.success) {
-                this.toastSuccess("Cap removed");
+                this.toastSuccess(this.$t("ai.messages.capRemoved"));
               } else {
-                this.toastError(result?.message || "Failed to remove cap");
+                this.toastError(resolveApiMessage(result, "ai.errors.removeCap"));
               }
             }
           );
@@ -298,10 +297,10 @@ export default {
       );
     },
     toastSuccess(message) {
-      this.eventBus.emit("toast", { title: "Success", message, variant: "success" });
+      this.eventBus.emit("toast", { title: this.$t("ai.common.success"), message, variant: "success" });
     },
     toastError(message) {
-      this.eventBus.emit("toast", { title: "Error", message, variant: "danger" });
+      this.eventBus.emit("toast", { title: this.$t("ai.common.error"), message, variant: "danger" });
     },
   },
 };

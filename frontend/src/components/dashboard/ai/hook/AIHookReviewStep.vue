@@ -1,8 +1,8 @@
 <template>
   <BasicDetails
-    heading="Review AI Hook"
+    :heading="$t('ai.hooks.reviewTitle')"
     :items="reviewItems"
-    note="Please confirm these settings before saving the AI hook."
+    :note="$t('ai.hooks.reviewNote')"
   />
 </template>
 
@@ -30,21 +30,21 @@ export default {
         return acc;
       }, {});
       const selectedModelNames = this.hookForm.modelIds.map(
-        (modelId) => modelLabelById[modelId] || `Model #${modelId}`
+        (modelId) => modelLabelById[modelId] || this.$t("ai.common.modelNumber", { id: modelId })
       );
 
       return [
-        { key: "name", label: "Name", value: this.hookForm.name },
-        { key: "description", label: "Description", value: this.hookForm.description },
-        { key: "template", label: "Prompt Template", value: template?.name || "-" },
-        { key: "models", label: "Models", value: selectedModelNames, type: "list" },
-        { key: "output", label: "Output Type", value: mode?.label || "-" },
+        { key: "name", label: this.$t("ai.common.name"), value: this.hookForm.name },
+        { key: "description", label: this.$t("ai.common.description"), value: this.hookForm.description },
+        { key: "template", label: this.$t("ai.hooks.promptTemplate"), value: template?.name || "-" },
+        { key: "models", label: this.$t("ai.common.models"), value: selectedModelNames, type: "list" },
+        { key: "output", label: this.$t("ai.hooks.outputType"), value: mode?.label || "-" },
         {
           key: "costLimit",
-          label: "Cost limit",
+          label: this.$t("ai.budgets.costLimit"),
           value: Number.isFinite(cost) && cost > 0 ? `$${cost.toFixed(2)}` : "-",
         },
-        { key: "status", label: "Status", value: this.hookForm.enabled ? "Enabled" : "Disabled" },
+        { key: "status", label: this.$t("ai.common.status"), value: this.hookForm.enabled ? this.$t("ai.status.enabled") : this.$t("ai.status.disabled") },
       ];
     },
   },
