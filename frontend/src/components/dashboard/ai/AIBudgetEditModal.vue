@@ -4,24 +4,22 @@
       Edit cost limit
     </template>
     <template #body>
-    
-      <label class="form-label" for="aiBudgetCostLimit">Cost limit ($)</label>
-      <input
-        id="aiBudgetCostLimit"
-        v-model.number="form.costLimit"
-        type="number"
-        min="0"
-        step="0.01"
-        class="form-control"
-        placeholder="0"
-      />
-      <small class="text-muted">
-        Setting to 0 blocks all usage at this level. To remove the cap entirely, close this modal and use the trash icon.
-      </small>
+      <BasicForm v-model="form" :fields="fields" />
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="close">Cancel</button>
-      <button class="btn btn-primary" type="button" :disabled="!isValid" @click="save">Save</button>
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          text="Cancel"
+          @click="close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          text="Save"
+          :disabled="!isValid"
+          @click="save"
+        />
+      </span>
     </template>
   </BasicModal>
 </template>
@@ -33,10 +31,12 @@
  * @author Mohammed Rawhani
  */
 import BasicModal from "@/basic/Modal.vue";
+import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 
 export default {
   name: "AIBudgetEditModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicForm, BasicButton },
   data() {
     return {
       row: null,
@@ -48,6 +48,19 @@ export default {
       const value = Number(this.form.costLimit);
       return Number.isFinite(value) && value >= 0;
     },
+    fields() {
+      return [
+        {
+          key: "costLimit",
+          label: "Cost limit ($)",
+          type: "number",
+          min: 0,
+          step: 0.01,
+          placeholder: "0",
+          help: "Setting to 0 blocks all usage at this level. To remove the cap entirely, close this modal and use the trash icon.",
+        },
+      ];
+    },
   },
   methods: {
     open(row) {
@@ -56,7 +69,7 @@ export default {
         return;
       }
       this.row = row;
-      this.form.costLimit = Number(row.costLimit);
+      this.form = { costLimit: Number(row.costLimit) };
       this.$refs.modal.open();
     },
     close() {

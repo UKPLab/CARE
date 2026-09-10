@@ -8,43 +8,23 @@
       @action="onTableAction"
     />
 
-    <div class="mt-3">
-      <label class="form-label" :for="`${idPrefix}ModelToAdd`">
-        Add Model
-        <i
-          class="bi bi-info-circle text-muted ms-1"
-          title="Add models in the order CARE should try them."
-        />
-      </label>
-      <div class="input-group">
-        <select
-          :id="`${idPrefix}ModelToAdd`"
-          v-model.number="modelToAddId"
-          class="form-select"
-        >
-          <option :value="null">Select model</option>
-          <option
-            v-for="model in modelsAvailableToAdd"
-            :key="model.id"
-            :value="model.id"
-          >
-            {{ formatModelLabel(model) }}
-          </option>
-        </select>
-        <BasicButton
-          title="Add Model"
-          class="btn btn-primary"
-          icon="plus"
-          :disabled="!modelToAddId"
-          @click="addModel"
+    <div class="d-flex align-items-end gap-2 mt-3">
+      <div class="flex-grow-1">
+        <FormSelect
+          v-model="modelToAddId"
+          :options="addModelSelectOptions"
         />
       </div>
-      <small class="text-muted">
-        Priority 1 is the primary model. Priority 2 and later are fallback models.
-      </small>
-      <div v-if="selectableModels.length === 0" class="text-warning small mt-1">
-        No enabled AI models are available yet.
-      </div>
+      <BasicButton
+        title="Add Model"
+        class="btn btn-primary mb-3"
+        icon="plus"
+        :disabled="!modelToAddId"
+        @click="addModel"
+      />
+    </div>
+    <div v-if="selectableModels.length === 0" class="text-warning small mt-1">
+      No enabled AI models are available yet.
     </div>
   </div>
 </template>
@@ -52,10 +32,11 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import FormSelect from "@/basic/form/Select.vue";
 
 export default {
   name: "AIHookModelOrder",
-  components: { BasicButton, BasicTable },
+  components: { BasicButton, BasicTable, FormSelect },
   props: {
     modelValue: {
       type: Array,
@@ -143,6 +124,20 @@ export default {
         canMoveUp: index > 0,
         canMoveDown: index < this.modelIds.length - 1,
       }));
+    },
+    addModelSelectOptions() {
+      return {
+        key: `${this.idPrefix}ModelToAdd`,
+        label: "Add Model",
+        help: "Add models in the order CARE should try them. Priority 1 is the primary model. Priority 2 and later are fallback models.",
+        options: [
+          { value: null, name: "Select model" },
+          ...this.modelsAvailableToAdd.map((model) => ({
+            value: model.id,
+            name: this.formatModelLabel(model),
+          })),
+        ],
+      };
     },
   },
   methods: {
