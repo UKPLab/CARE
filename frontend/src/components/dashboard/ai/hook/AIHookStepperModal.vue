@@ -10,18 +10,12 @@
     <template #title>
       {{ hookForm.id ? "Edit AI Hook" : "Create AI Hook" }}
     </template>
-
     <template #step-1>
-      <BasicForm v-model="hookForm" :fields="basicInfoFields" />
+      <AIHookBasicInfoStep v-model="hookForm" />
     </template>
-
     <template #step-2>
-      <BasicForm v-model="hookForm" :fields="promptFields" />
-      <div v-if="selectablePromptTemplates.length === 0" class="text-warning small mt-1">
-        No prompt templates are available yet.
-      </div>
+      <AIHookPromptStep v-model="hookForm" :prompt-templates="promptTemplates" />
     </template>
-
     <template #step-3>
       <AIHookModelOrder
         v-model="hookForm.modelIds"
@@ -29,16 +23,15 @@
         id-prefix="hookStepper"
       />
     </template>
-
     <template #step-4>
-      <BasicForm v-model="hookForm" :fields="outputFields" />
+      <AIHookOutputStep v-model="hookForm" :output-modes="outputModes" />
     </template>
-
     <template #step-5>
-      <BasicDetails
-        heading="Review AI Hook"
-        :items="reviewItems"
-        note="Please confirm these settings before saving the AI hook."
+      <AIHookReviewStep
+        :hook-form="hookForm"
+        :prompt-templates="promptTemplates"
+        :model-rows="modelRows"
+        :output-modes="outputModes"
       />
     </template>
   </StepperModal>
@@ -46,9 +39,11 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import BasicForm from "@/basic/Form.vue";
-import BasicDetails from "@/basic/Details.vue";
-import AIHookModelOrder from "@/components/dashboard/ai/AIHookModelOrder.vue";
+import AIHookBasicInfoStep from "./AIHookBasicInfoStep.vue";
+import AIHookPromptStep from "./AIHookPromptStep.vue";
+import AIHookModelOrder from "./AIHookModelOrder.vue";
+import AIHookOutputStep from "./AIHookOutputStep.vue";
+import AIHookReviewStep from "./AIHookReviewStep.vue";
 
 function getEmptyHookForm() {
   return {
@@ -65,25 +60,20 @@ function getEmptyHookForm() {
 
 export default {
   name: "AIHookStepperModal",
-  components: { StepperModal, BasicForm, BasicDetails, AIHookModelOrder },
+  components: {
+    StepperModal,
+    AIHookBasicInfoStep,
+    AIHookPromptStep,
+    AIHookModelOrder,
+    AIHookOutputStep,
+    AIHookReviewStep,
+  },
   subscribeTable: ["ai_budget"],
   props: {
-    promptTemplates: {
-      type: Array,
-      default: () => [],
-    },
-    modelRows: {
-      type: Array,
-      default: () => [],
-    },
-    hookModelRows: {
-      type: Array,
-      default: () => [],
-    },
-    outputModes: {
-      type: Array,
-      required: true,
-    },
+    promptTemplates: { type: Array, default: () => [] },
+    modelRows: { type: Array, default: () => [] },
+    hookModelRows: { type: Array, default: () => [] },
+    outputModes: { type: Array, required: true },
   },
   emits: ["saved"],
   data() {
@@ -113,117 +103,8 @@ export default {
         hasBasics && hasPrompt && hasModel,
       ];
     },
-    selectedPromptTemplateName() {
-      const selectedId = Number(this.hookForm.templateId);
-      const template = this.promptTemplates.find((item) => Number(item.id) === selectedId);
-      return template?.name || "-";
-    },
-    modelLabelById() {
-      return this.modelRows.reduce((acc, model) => {
-        acc[model.id] = this.formatModelLabel(model);
-        return acc;
-      }, {});
-    },
-    selectedModelNames() {
-      return this.hookForm.modelIds.map((modelId) => this.modelLabelById[modelId] || `Model #${modelId}`);
-    },
-    selectedOutputModeLabel() {
-      const selectedValue = Number(this.hookForm.outputMode);
-      const mode = this.outputModes.find((item) => Number(item.value) === selectedValue);
-      return mode?.label || "-";
-    },
-    selectablePromptTemplates() {
-      return this.promptTemplates.filter((template) => Number(template.type) === 8);
-    },
-    basicInfoFields() {
-      return [
-        {
-          key: "name",
-          label: "Name",
-          type: "text",
-          required: true,
-          placeholder: "e.g. Assessment Feedback Hook",
-          help: "A short dashboard name that helps admins recognize where this AIHook is used.",
-        },
-        {
-          key: "description",
-          label: "Description",
-          type: "textarea",
-          rows: 3,
-          placeholder: "Explain when this hook should be used.",
-          help: "Optional. Add context about the feature, input data, or expected model behavior.",
-        },
-        {
-          key: "costLimit",
-          label: "Cost limit ($)",
-          type: "number",
-          min: 0,
-          step: 0.01,
-          placeholder: "No limit",
-          help: "Optional. Total AI spend allowed for this hook across all studies. Leave empty for no cap.",
-        },
-      ];
-    },
-    promptFields() {
-      return [
-        {
-          key: "templateId",
-          label: "Prompt Template",
-          type: "select",
-          required: true,
-          options: [
-            { value: null, name: "Select prompt template" },
-            ...this.selectablePromptTemplates.map((template) => ({
-              value: template.id,
-              name: template.name,
-            })),
-          ],
-          help: "Only prompt templates with placeholders such as document text or study context are shown.",
-        },
-      ];
-    },
-    outputFields() {
-      return [
-        {
-          key: "outputMode",
-          label: "Output Type",
-          type: "select",
-          required: true,
-          options: this.outputModes.map((mode) => ({
-            value: mode.value,
-            name: mode.label,
-          })),
-          help: "Text returns plain output. JSON expects structured data.",
-        },
-        {
-          key: "enabled",
-          label: "Enabled",
-          type: "switch",
-          help: "Disabled hooks stay saved but should not be used by AI features.",
-        },
-      ];
-    },
-    formattedCostLimit() {
-      const value = Number(this.hookForm.costLimit);
-      return Number.isFinite(value) && value > 0 ? `$${value.toFixed(2)}` : "-";
-    },
-    reviewItems() {
-      return [
-        { key: "name", label: "Name", value: this.hookForm.name },
-        { key: "description", label: "Description", value: this.hookForm.description },
-        { key: "template", label: "Prompt Template", value: this.selectedPromptTemplateName },
-        { key: "models", label: "Models", value: this.selectedModelNames, type: "list" },
-        { key: "output", label: "Output Type", value: this.selectedOutputModeLabel },
-        { key: "costLimit", label: "Cost limit", value: this.formattedCostLimit },
-        { key: "status", label: "Status", value: this.hookForm.enabled ? "Enabled" : "Disabled" },
-      ];
-    },
   },
   methods: {
-    formatModelLabel(model) {
-      if (!model) return "-";
-      return model.model ? `${model.name} (${model.model})` : model.name;
-    },
     getHookModelRows(hookId) {
       return this.hookModelRows
         .filter((row) => Number(row.aiHookId) === Number(hookId) && !row.deleted)

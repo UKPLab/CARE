@@ -39,7 +39,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import AIHookModelOrder from "@/components/dashboard/ai/AIHookModelOrder.vue";
+import AIHookModelOrder from "./AIHookModelOrder.vue";
 
 export default {
   name: "AIHookModelModal",

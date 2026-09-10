@@ -76,7 +76,7 @@ import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AICredential from "@/components/dashboard/ai/AICredential.vue";
 import AIModel from "@/components/dashboard/ai/AIModel.vue";
-import AIModelShareStepper from "@/components/dashboard/ai/AIModelShareStepper.vue";
+import AIModelShareStepper from "@/components/dashboard/ai/share/AIModelShareStepper.vue";
 import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
 
 export default {

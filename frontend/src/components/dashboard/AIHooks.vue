@@ -52,10 +52,10 @@ import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import AIHookModelModal from "@/components/dashboard/ai/AIHookModelModal.vue";
-import AIHookStepperModal from "@/components/dashboard/ai/AIHookStepperModal.vue";
+import AIHookModelModal from "@/components/dashboard/ai/hook/AIHookModelModal.vue";
+import AIHookStepperModal from "@/components/dashboard/ai/hook/AIHookStepperModal.vue";
 import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
-import AIModelShareStepper from "@/components/dashboard/ai/AIModelShareStepper.vue";
+import AIModelShareStepper from "@/components/dashboard/ai/share/AIModelShareStepper.vue";
 
 const OUTPUT_MODES = [
   { value: 0, label: "Text", class: "bg-secondary" },
