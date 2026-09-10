@@ -133,7 +133,7 @@ export default {
       default: null,
     },
   },
-  emits: ["state-changed", "assessment-ready-changed", "update:data"],
+  emits: ["state-changed", "assessment-ready-changed", "update:data", "assessment-advance-past-end"],
   data() {
     return {
       error: null,
@@ -593,6 +593,11 @@ export default {
         this.$emit("update:data", value);
       }).catch((err) => {
         console.error("Failed to save assessment data", err);
+        this.eventBus.emit("toast", {
+          title: this.$t("assessment.save.failedTitle"),
+          message: this.$t("assessment.save.failedMessage"),
+          variant: "danger",
+        });
       });
     },
     onFocusNextRubric(currentGroupIndex) {
@@ -609,6 +614,7 @@ export default {
         this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
+        this.$emit("assessment-advance-past-end");
       }
     },
   },
