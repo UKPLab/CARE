@@ -2,10 +2,11 @@
  * 
  * This module provides methods to convert between Quill Delta objects and database entries.
  * 
- * @author Juliane Bechert
+ * @author Juliane Bechert, Mélissa Loew
  * 
  */
 const Delta = require('quill-delta');
+const { QuillDeltaToHtmlConverter } = require('quill-delta-to-html');
 
 /**
  * Converts an array of database entries to a Quill Delta object.
@@ -134,8 +135,29 @@ function deltaToPlainText(deltaOrOps) {
         .join("");
 }
 
+/**
+ * Converts a Quill Delta object to an HTML string.
+ * Each newline in the delta marks the end of a paragraph and is flushed as a <p> tag.
+ * Supports bold, italic, underline, and link attributes.
+ *
+ * @param {object|array} deltaOrOps - Quill Delta ({ ops: [...] }) or ops array
+ * @returns {string} A full HTML document string
+ */
+function deltaToHtml(deltaOrOps) {
+    if (!deltaOrOps) return "";
+    const ops = Array.isArray(deltaOrOps)
+        ? deltaOrOps
+        : (deltaOrOps.ops || []);
+
+    const converter = new QuillDeltaToHtmlConverter(ops, {});
+    const body = converter.convert();
+
+    return `<!DOCTYPE html>\n<html>\n<body>\n${body}</body>\n</html>`;
+}
+
 module.exports = {
     deltaToDb: deltaToDb,
     dbToDelta: dbToDelta,
     deltaToPlainText: deltaToPlainText,
+    deltaToHtml: deltaToHtml,
 }

@@ -51,21 +51,31 @@
             "confirmSelection": "Confirm Selection:",
             "declinedSharingWarning": "You have selected one or more students who {emphasis}.",
             "declinedSharingEmphasis": "didn't accept data sharing",
+            "declinedStatsSharingWarning": "You have selected one or more users who {emphasis}.",
+            "declinedStatsSharingEmphasis": "didn't accept behaviour sharing",
             "aliasMappingWarning": "The downloaded ZIP archive will include a CSV file that maps the generated aliases back to the real student names.",
             "reviewWarning": "We strongly recommend conducting a thorough review of this export before sharing it, to ensure no sensitive or unintended information is distributed.",
             "summary": "Summary:",
-            "downloadSummary": "You are about to download submissions for {count} student(s).",
-            "fileCount": "{count} files"
+            "downloadSummary": "You are about to download {type} for {count} user(s).",
+            "typeLabel": {
+                "submissions": "submissions",
+                "grades": "grades",
+                "documents": "documents",
+                "studies": "studies",
+                "userBehaviour": "user behaviour data"
+            },
+            "unitCount": {
+                "submissions": "{count} submission(s)",
+                "studies": "{count} study(ies)",
+                "documents": "{count} document(s)"
+            }
         },
         "columns": {
             "name": "Project name",
             "public": "Public",
             "closed": "Closed",
             "username": "Username",
-            "studentName": "Student Name",
-            "files": "Files",
-            "acceptedDataSharing": "Accepted Data Sharing",
-            "lastSubmitted": "Last Submitted"
+            "acceptedDataSharing": "Accepted Data Sharing"
         },
         "actions": {
             "copy": "Copy project",
@@ -104,10 +114,49 @@
             "noteLabel": "Note:",
             "accountSpecificHint": "Aliases are tied to your account and won't match other users' exports.",
             "gradeFileFormat": "Grade file format",
-            "mergeCsvFiles": "Merge CSV files by study, step, and configuration"
+            "mergeCsvFiles": "Merge CSV files by study, step, and configuration",
+            "userBehaviour": {
+                "title": "User Behaviour Options",
+                "fileLayout": "File Layout",
+                "singleCombinedFile": "Single combined file",
+                "onePerUser": "One file per user",
+                "fileFormat": "File Format"
+            },
+            "excludeNonConsentingEdits": "Exclude edits from non-consenting users",
+            "excludeNonConsentingAnnotations": "Exclude annotations and comments from non-consenting users",
+            "documents": {
+                "title": "Document Options",
+                "typesToInclude": "Document Types to Include",
+                "typePdf": "PDF — Includes annotations and comments",
+                "typeHtml": "HTML — Includes edits, plain text and HTML",
+                "typeModal": "Modal — Includes edits, plain text and HTML",
+                "typeZip": "ZIP — Includes the zip file"
+            },
+            "studies": {
+                "title": "Study Options",
+                "noWorkflowsFound": "No workflows found for this project.",
+                "filterByWorkflow": "Filter by Workflow",
+                "noWorkflowsSelected": "No workflows selected",
+                "allWorkflowsSelected": "All workflows selected",
+                "includeEmptyStudies": "Include studies with no sessions",
+                "includeDocumentFiles": "Include PDFs and ZIP files",
+                "includeScores": "Include scores",
+                "includeAiScores": "Include AI-assisted scores"
+            }
         },
-        "exportSelectSubmissions": "Select Submissions to Download:",
-        "noSubmissionsFound": "No submissions found for this project.",
+        "exportSelectUsers": {
+            "title": "Select Users for the Data Export:",
+            "noUsersFound": "No users with data found for this project.",
+            "fullName": "Full Name",
+            "roles": "Roles",
+            "acceptBehaviourSharing": "Accept Behaviour Sharing",
+            "submissions": "Submissions",
+            "documents": "Documents",
+            "studies": "Studies",
+            "assessmentConfigurations": "Assessment Configuration(s)",
+            "noConfiguration": "No configuration",
+            "noRole": "No role"
+        },
         "exportModal": {
             "steps": {
                 "selectStudent": "Select Student",
@@ -117,7 +166,10 @@
             },
             "exportReviewers": "Export a list of all reviewers",
             "exportSubmissions": "Export submissions",
-            "exportGrades": "Export grades"
+            "exportGrades": "Export grades",
+            "exportDocuments": "Export documents",
+            "exportStudies": "Export studies",
+            "exportUserBehaviour": "Export user behaviour"
         }
     },
     "settings": {
