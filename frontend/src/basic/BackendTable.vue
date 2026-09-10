@@ -10,26 +10,15 @@
       {{ pendingBannerText }}
     </div>
   </Transition>
-  <div
+  <TableSearch
     v-if="options && options['search']"
-    class="input-group input-group-sm"
+    v-model="searchQuery"
+    :schema="queryMode ? queryFilterSchema : {}"
   >
-    <span
-      id="search-addon1"
-      class="input-group-text"
-    >
-      <BasicIcon icon-name="search"></BasicIcon>
-    </span>
-    <input
-      v-model="search"
-      type="text"
-      class="form-control"
-      placeholder="Type to filter table..."
-      aria-label="table-search"
-      aria-describedby="search-addon1"
-    />
-    <slot name="additional-buttons"/>
-  </div>
+    <template #additional-buttons>
+      <slot name="additional-buttons"/>
+    </template>
+  </TableSearch>
   <div
     ref="tableWrapper"
     class="table-wrapper"
@@ -333,8 +322,8 @@ import TToggle from "./table/Toggle.vue";
 import TBadge from "./table/Badge.vue";
 import TIcon from "./table/Icon.vue";
 import Pagination from "./table/Pagination.vue";
+import TableSearch from "./table/Search.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import BasicIcon from "@/basic/Icon.vue";
 import { tooltip } from "@/assets/tooltip.js";
 import deepEqual from "deep-equal";
 
@@ -369,8 +358,8 @@ import deepEqual from "deep-equal";
 export default {
   name: "BackendTable",
   components: {
-    BasicIcon,
     Pagination,
+    TableSearch,
     TIcon,
     TBadge,
     TButtonGroup,
@@ -433,6 +422,15 @@ export default {
       required: false,
       default: () => [],
     },
+    /**
+     * Filterable keys offered by the search bar, per table (see basic/table/Search.vue).
+     * The backend validates the same keys again — this only drives the UI.
+     */
+    queryFilterSchema: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
     /** Optional (row) => enrichedRow mapper (e.g. Study computed fields) */
     enrichRow: {
       type: Function,
@@ -458,7 +456,7 @@ export default {
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
       filter: null, // Can be assigned an object or an array, see example above.
-      search: "",
+      searchQuery: {search: "", columnFilters: {}},
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
       manageColumnStyle: {},
@@ -635,6 +633,14 @@ export default {
           .map(([k, v]) => ({ [k]: v }))
       );
     },
+    /** Free-text part of the search bar. */
+    search() {
+      return this.searchQuery.search || "";
+    },
+    /** Token filters from the search bar: `{ key: {operator, value} }`. */
+    activeColumnFilters() {
+      return this.searchQuery.columnFilters || {};
+    },
     // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
     // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
     visibleColumns() {
@@ -721,13 +727,16 @@ export default {
       },
       deep: true,
     },
-    search() {
-      if (!this.queryMode) return;
-      clearTimeout(this.searchDebounceTimer);
-      this.searchDebounceTimer = setTimeout(() => {
-        this.currentPage = 1;
-        this.fetchQueryPage({nav: {}});
-      }, 300);
+    searchQuery: {
+      handler() {
+        if (!this.queryMode) return;
+        clearTimeout(this.searchDebounceTimer);
+        this.searchDebounceTimer = setTimeout(() => {
+          this.currentPage = 1;
+          this.fetchQueryPage({nav: {}});
+        }, 300);
+      },
+      deep: true,
     },
   },
   mounted() {
@@ -1319,6 +1328,9 @@ export default {
       const query = {limit, sort};
       const search = (this.search || "").trim();
       if (search) query.search = search;
+      if (Object.keys(this.activeColumnFilters).length > 0) {
+        query.columnFilters = this.activeColumnFilters;
+      }
       // Keyset navigation: absence of all three → first page.
       if (nav.after) query.after = nav.after;
       if (nav.before) query.before = nav.before;
@@ -1348,6 +1360,7 @@ export default {
         before: requestedNav.before || null,
         fromEnd: !!requestedNav.fromEnd,
         search: (this.search || "").trim() || null,
+        columnFilters: this.activeColumnFilters,
       };
       this.pendingInserts = 0;
       this.anchorDisplacement = 0;
@@ -1473,6 +1486,56 @@ export default {
         this.options.pagination.total = this.queryMeta.total;
       }
     },
+    /**
+     * Re-check one search-bar filter against a delta row, only to decide the animation.
+     * The server owns which rows match; a field the delta does not carry counts as a match so a
+     * row is never dropped from the page on missing data.
+     */
+    matchesColumnFilter(row, key, filter) {
+      const entry = this.queryFilterSchema[key] || {};
+      const field = entry.type === "exists" ? (entry.field || key) : key;
+      if (!Object.prototype.hasOwnProperty.call(row, field)) return true;
+      const value = row[field];
+
+      if (Array.isArray(filter)) {
+        return filter.length === 0 || filter.map(String).includes(String(value));
+      }
+      if (!filter?.operator) return true;
+
+      if (entry.type === "exists") {
+        const equal = (value !== null && value !== undefined) === Boolean(filter.value);
+        return filter.operator === "!=" ? !equal : equal;
+      }
+      if (entry.type === "boolean") {
+        const equal = Boolean(value) === Boolean(filter.value);
+        return filter.operator === "!=" ? !equal : equal;
+      }
+
+      switch (filter.operator) {
+        case "=":
+        case "eq":
+          return String(value) === String(filter.value);
+        case "!=":
+        case "ne":
+          return String(value) !== String(filter.value);
+        case "~":
+          return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+        case ">":
+        case "gt":
+          return Number(value) > Number(filter.value);
+        case ">=":
+        case "gte":
+          return Number(value) >= Number(filter.value);
+        case "<":
+        case "lt":
+          return Number(value) < Number(filter.value);
+        case "<=":
+        case "lte":
+          return Number(value) <= Number(filter.value);
+        default:
+          return true;
+      }
+    },
     passesCurrentFilter(row) {
       const q = this.currentQuery || {};
       if (q.search) {
@@ -1483,17 +1546,7 @@ export default {
         if (!hit) return false;
       }
       for (const [col, filter] of Object.entries(q.columnFilters || {})) {
-        if (Array.isArray(filter)) {
-          if (filter.length && !filter.map(String).includes(String(row[col]))) return false;
-        } else if (filter?.operator) {
-          const v = Number(row[col]);
-          const fv = Number(filter.value);
-          if (filter.operator === "gt" && !(v > fv)) return false;
-          if (filter.operator === "lt" && !(v < fv)) return false;
-          if (filter.operator === "gte" && !(v >= fv)) return false;
-          if (filter.operator === "lte" && !(v <= fv)) return false;
-          if (filter.operator === "eq" && !(v === fv)) return false;
-        }
+        if (!this.matchesColumnFilter(row, col, filter)) return false;
       }
       // Client base filters from queryFilter
       for (const f of this.queryFilter || []) {
@@ -1753,7 +1806,9 @@ export default {
           ? filter.length > 0
           : !!(filter && (filter.operator || filter.value != null && filter.value !== ""));
         if (!active) continue;
-        if (oldRow[col] !== newRow[col]) return true;
+        const entry = this.queryFilterSchema[col] || {};
+        const field = entry.type === "exists" ? (entry.field || col) : col;
+        if (oldRow[field] !== newRow[field]) return true;
       }
       return false;
     },

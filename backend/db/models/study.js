@@ -3,6 +3,24 @@ const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const {Op, where, fn, literal} = require("sequelize");
 
+// Status as the dashboard shows it. Search and filter both compare against this, so the CASE has to
+// stay in sync with enrichStudyRow in frontend Study.vue.
+const STATE_SQL = `CASE
+    WHEN "study"."start" IS NOT NULL AND "study"."start" > NOW() THEN 'not started'
+    WHEN "study"."end" IS NOT NULL AND "study"."end" < NOW() THEN
+        CASE WHEN "study"."multipleSubmit"
+            THEN CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
+            ELSE 'ended'
+        END
+    ELSE CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
+END`;
+
+const STATES = ["not started", "running", "closed", "ended"];
+
+// Same count as the sessions column inject, usable inside WHERE.
+const SESSION_COUNT_SQL = `(SELECT COUNT(*) FROM "study_session"
+    WHERE "study_session"."studyId" = "study"."id" AND "study_session"."deleted" = false)`;
+
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
         static autoTable = {
@@ -444,16 +462,26 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Object}
          */
         static getQueryTableSearchConditions(needle) {
-            const stateSql = `CASE
-                WHEN "study"."start" IS NOT NULL AND "study"."start" > NOW() THEN 'not started'
-                WHEN "study"."end" IS NOT NULL AND "study"."end" < NOW() THEN
-                    CASE WHEN "study"."multipleSubmit"
-                        THEN CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
-                        ELSE 'ended'
-                    END
-                ELSE CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
-            END`;
-            return where(fn("STRPOS", fn("LOWER", literal(stateSql)), needle), {[Op.gt]: 0});
+            return where(fn("STRPOS", fn("LOWER", literal(STATE_SQL)), needle), {[Op.gt]: 0});
+        }
+
+        /**
+         * Keys the Studies search bar may filter on, with the SQL for computed ones.
+         * A filter token for anything outside this spec is dropped server-side.
+         * @returns {Promise<Object>}
+         */
+        static async getQueryTableFilterColumns() {
+            return {
+                state: {type: "enum", values: STATES, sql: STATE_SQL},
+                sessions: {type: "numeric", sql: SESSION_COUNT_SQL},
+                limitSessions: {type: "numeric"},
+                limitSessionsPerUser: {type: "numeric"},
+                workflow: {type: "exists", field: "workflowId"},
+                collab: {type: "boolean"},
+                resumable: {type: "boolean"},
+                multipleSubmit: {type: "boolean"},
+                enableEmailNotifications: {type: "boolean"},
+            };
         }
 
     }

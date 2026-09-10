@@ -6,6 +6,7 @@ const {mergeFilter} = require("../../utils/helper/data.js");
 const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
 const {buildQueryTableSearch, MAX_SEARCH_LENGTH} = require("../../utils/helper/queryTableSearch.js");
+const {buildQueryTableColumnFilters} = require("../../utils/helper/queryTableColumnFilters.js");
 const {Op} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
 
@@ -441,6 +442,7 @@ class AppSocket extends Socket {
      * @param {number} [data.query.limit]
      * @param {Object} [data.query.sort] { column, direction }
      * @param {string} [data.query.search] case-insensitive substring across visible + injected columns
+     * @param {Object} [data.query.columnFilters] search-bar filter tokens: { key: {operator, value} }
      * @param {string} [data.query.after] endCursor of previous result → next page
      * @param {string} [data.query.before] startCursor of previous result → previous page
      * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
@@ -464,8 +466,6 @@ class AppSocket extends Socket {
             allFilter[Op.or] = mergedClientFilter;
         }
 
-        // Column funnel filters stay client-side for now; search is applied below.
-
         const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
         let allAttributes = {exclude: defaultExcludes};
         // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
@@ -478,18 +478,38 @@ class AppSocket extends Socket {
         allFilter = filtersAndAttributes.filter;
         allAttributes = filtersAndAttributes.attributes;
 
+        const allowedAttributeNames = Array.isArray(allAttributes)
+            ? allAttributes
+            : Object.keys(attributes).filter((name) => !(allAttributes.exclude || []).includes(name));
+        const injectCtx = {
+            userId: this.userId,
+            rolesUpdatedAt: this.rolesUpdatedAt,
+            hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
+        };
+
+        // Search-bar filter tokens. Which keys are filterable is the model's decision, not the client's.
+        const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
+            ? query.columnFilters
+            : null;
+        if (columnFilters && Object.keys(columnFilters).length > 0) {
+            const filterSpec = typeof model.getQueryTableFilterColumns === "function"
+                ? await model.getQueryTableFilterColumns(injectCtx)
+                : null;
+            const columnWhere = buildQueryTableColumnFilters({
+                model,
+                columnFilters,
+                filterSpec,
+                allowedAttributeNames,
+            });
+            if (columnWhere) {
+                allFilter = {[Op.and]: [allFilter, columnWhere]};
+            }
+        }
+
         const search = typeof query.search === "string"
             ? query.search.trim().slice(0, MAX_SEARCH_LENGTH)
             : "";
         if (search) {
-            const allowedAttributeNames = Array.isArray(allAttributes)
-                ? allAttributes
-                : Object.keys(attributes).filter((name) => !(allAttributes.exclude || []).includes(name));
-            const injectCtx = {
-                userId: this.userId,
-                rolesUpdatedAt: this.rolesUpdatedAt,
-                hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
-            };
             const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
             const searchColumns = typeof model.getQueryTableSearchColumns === "function"
                 ? await model.getQueryTableSearchColumns(injectCtx)
@@ -597,6 +617,7 @@ class AppSocket extends Socket {
             fromEnd,
             filter,
             search: search || null,
+            columnFilters: columnFilters || null,
         };
 
         return {

@@ -56,6 +56,7 @@
             table="study"
             :columns="columns"
             :query-filter="studyQueryFilter"
+            :query-filter-schema="studyFilterSchema"
             :enrich-row="(row) => enrichStudyRow(row)"
             :options="options"
             :buttons="buttons"
@@ -118,8 +119,11 @@ export default {
     }
   },
   props: {},
+  // Do not subscribe the full `study` table: queryTable already pages the grid, and an
+  // unfiltered sendTable would dump every row into Vuex (tens of thousands locally).
+  // Templates are a small subset and still live in the store for Saved Templates / assignments.
   subscribeTable: [
-    "study",
+    {table: "study", filter: [{key: "template", value: true}]},
     "document",
     "study_session", "workflow", "workflow_step", "study_step", "template"],
   data() {
@@ -151,10 +155,31 @@ export default {
     }
   },
   computed: {
-    studies() {
-      return this.$store.getters["table/study/getFiltered"](
-          (study) => study.projectId === this.projectId
-      );
+    /**
+     * Filter tokens offered by the table search bar. Mirrors study.getQueryTableFilterColumns —
+     * the backend drops anything it does not know, so a key added here needs the model too.
+     */
+    studyFilterSchema() {
+      return {
+        state: {
+          label: "Status",
+          type: "enum",
+          options: [
+            {value: "not started", label: "Not started"},
+            {value: "running", label: "Running"},
+            {value: "closed", label: "Closed"},
+            {value: "ended", label: "Ended"},
+          ],
+        },
+        sessions: {label: "Sessions", type: "numeric"},
+        limitSessions: {label: "Session Limit", type: "numeric"},
+        limitSessionsPerUser: {label: "Session Limit per User", type: "numeric"},
+        workflow: {label: "Workflow", type: "exists", field: "workflowId"},
+        collab: {label: "Collaborative", type: "boolean"},
+        resumable: {label: "Resumable", type: "boolean"},
+        multipleSubmit: {label: "Multiple Submissions", type: "boolean"},
+        enableEmailNotifications: {label: "Session Start/Finish Emails", type: "boolean"},
+      };
     },
     studyQueryFilter() {
       // Ownership (userId / createdByUserId) is applied server-side via study.getUserFilter.
@@ -394,20 +419,8 @@ export default {
       }
       return cols;
     },
-    studiesTable() {
-      return this.studies
-          .filter(study => !study.template)
-          .filter(study => this.canViewAllStudies ||
-              (((study.createdByUserId === null && study.userId === this.userId) ||
-                  (study.createdByUserId === this.userId))))
-          .sort((s1, s2) => new Date(s1.createdAt) - new Date(s2.createdAt))
-          .map(st => this.enrichStudyRow(st));
-    },
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
-    },
-    canViewAllStudies() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.fullAccess");
     },
     canReadPrivateInformation() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
@@ -445,11 +458,21 @@ export default {
       study.showTemplateButton = this.isAdmin || study.userId === this.userId;
       return study;
     },
-    openStudyCoordinator(id = 0, linkOnly = false) {
+    /**
+     * Put one study into Vuex so coordinators / session UI that still `table/study/get` can
+     * see it. The grid no longer dumps the whole table; only the row you opened is seeded.
+     */
+    seedStudyRow(row) {
+      if (!row?.id) return;
+      this.$store.commit("table/study/SOCKET_studyRefresh", [row]);
+    },
+    openStudyCoordinator(id = 0, linkOnly = false, row = null) {
+      if (row) this.seedStudyRow(row);
       this.modals.studyCoordinator = true;
       this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly));
     },
-    openStudySessionModal(studyId) {
+    openStudySessionModal(studyId, row = null) {
+      if (row) this.seedStudyRow(row);
       this.modals.studySession = true;
       this.$nextTick(() => this.$refs.studySessionModal?.open(studyId));
     },
@@ -513,7 +536,7 @@ export default {
           }
         });
       } else if (data.action === "inspectStudySessions") {
-        this.openStudySessionModal(data.params.id);
+        this.openStudySessionModal(data.params.id, data.params);
       } else if (data.action === "closeStudy") {
         this.$refs.studyCloseModal.open(data.params);
       } else if (data.action === "saveAsTemplate") {
@@ -562,7 +585,7 @@ export default {
       this.openSingleAssignmentModal();
     },
     studyCoordinator(row, linkOnly = false) {
-      this.openStudyCoordinator(row.id, linkOnly);
+      this.openStudyCoordinator(row.id, linkOnly, row);
     },
     manageStudies() {
       this.openManageStudiesModal();
