@@ -152,7 +152,7 @@ Each component that is visible to the specific user and configured in the settin
 <p>Let’s assume we want to add a new Dashboard component <code class="docutils literal notranslate"><span class="pre">MyAnnotations</span></code>. To add the component, we need to</p>
 <ol class="arabic simple">
 <li><p>Add a new <span class="xref std std-doc">DB migration</span> extending the navigation database.</p></li>
-<li><p>Create a new frontend component in the <code class="docutils literal notranslate"><span class="pre">frontend/src/components</span></code> directory</p></li>
+<li><p>Create a new frontend component in the <code class="docutils literal notranslate"><span class="pre">frontend/src/components/dashboard</span></code> directory</p></li>
 </ol>
 <p>Please refer to the <span class="xref std std-doc">database</span> chapter for a detailed explanation of the
 migration functionality. Here, we only cover the necessary commands and code snippets to add a dashboard component.</p>
@@ -202,7 +202,7 @@ specific element again on <code class="docutils literal notranslate"><span class
 <span class="p">};</span>
 </pre></div>
 </div>
-<p>Finally, you add a new Vue component <code class="docutils literal notranslate"><span class="pre">MyAnnotations.vue</span></code> to the <code class="docutils literal notranslate"><span class="pre">frontend/src/components</span></code> directory. For testing,
+<p>Finally, you add a new Vue component <code class="docutils literal notranslate"><span class="pre">MyAnnotations.vue</span></code> to the <code class="docutils literal notranslate"><span class="pre">frontend/src/components/dashboard</span></code> directory. For testing,
 we set this to an empty component showing just “Hello World!”:</p>
 <div class="highlight-vue-js notranslate"><div class="highlight"><pre><span></span>&lt;template&gt;
  &lt;span&gt;Hello World!&lt;/span&gt;
@@ -215,6 +215,117 @@ we set this to an empty component showing just “Hello World!”:</p>
 <p>That’s it – to load the new component in the frontend, you first need to stop the service, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">init</span></code> and
 start it up again. Now you should see a nav element in the dashboard sidebar, which shows upon selection an empty
 component with just the words “Hello World!”.</p>
+</section>
+<section id="list-dashboard-pages">
+<h2>List dashboard pages<a class="headerlink" href="#list-dashboard-pages" title="Link to this heading"></a></h2>
+<p>A list-style management screen is a <strong>card + table + row buttons</strong>. Do not copy a raw <code class="docutils literal notranslate"><span class="pre">Card</span></code> / <code class="docutils literal notranslate"><span class="pre">BasicTable</span></code>
+shell. Use the shared list-page foundation under <code class="docutils literal notranslate"><span class="pre">frontend/src/basic/dashboard/</span></code>
+(component reference: <a class="reference internal" href="../basic/dashboard.html"><span class="doc">Dashboard</span></a>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ListPage.vue</span></code> (<code class="docutils literal notranslate"><span class="pre">DashboardListPage</span></code>) — card, header slot, table, default height</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">constants.js</span></code> — <code class="docutils literal notranslate"><span class="pre">DEFAULT_DASHBOARD_TABLE_OPTIONS</span></code>, <code class="docutils literal notranslate"><span class="pre">withSearch()</span></code>, <code class="docutils literal notranslate"><span class="pre">DASHBOARD_TABLE_HEIGHT</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">actions.js</span></code> — row-button catalog, <code class="docutils literal notranslate"><span class="pre">DASHBOARD_BADGES</span></code>, <code class="docutils literal notranslate"><span class="pre">confirmSoftDelete()</span></code></p></li>
+</ul>
+<p>Copy a small existing page such as <code class="docutils literal notranslate"><span class="pre">Tags.vue</span></code> or <code class="docutils literal notranslate"><span class="pre">Projects.vue</span></code> and change columns, data, and buttons.
+Do not copy <code class="docutils literal notranslate"><span class="pre">Log.vue</span></code> (server-side pagination), <code class="docutils literal notranslate"><span class="pre">Study.vue</span></code>, <code class="docutils literal notranslate"><span class="pre">Submissions.vue</span></code>,
+<code class="docutils literal notranslate"><span class="pre">SessionOverview.vue</span></code>, <code class="docutils literal notranslate"><span class="pre">Settings.vue</span></code>, <code class="docutils literal notranslate"><span class="pre">AdminTools.vue</span></code>, or <code class="docutils literal notranslate"><span class="pre">UserStatistics.vue</span></code> — those layouts are
+specialized.</p>
+<p><strong>Template</strong></p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">DashboardListPage</span>
+    <span class="na">:title</span><span class="o">=</span><span class="s">&quot;$t(&#39;tags.title&#39;)&quot;</span>
+    <span class="na">:columns</span><span class="o">=</span><span class="s">&quot;columns&quot;</span>
+    <span class="na">:data</span><span class="o">=</span><span class="s">&quot;tagSets&quot;</span>
+    <span class="na">:buttons</span><span class="o">=</span><span class="s">&quot;buttons&quot;</span>
+    <span class="err">@</span><span class="na">action</span><span class="o">=</span><span class="s">&quot;action&quot;</span>
+  <span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="nt">template</span> <span class="err">#</span><span class="na">headerActions</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">BasicButton</span>
+        <span class="na">class</span><span class="o">=</span><span class="s">&quot;btn-primary btn-sm&quot;</span>
+        <span class="na">:title</span><span class="o">=</span><span class="s">&quot;$t(&#39;tags.addNewTagSet&#39;)&quot;</span>
+        <span class="na">icon</span><span class="o">=</span><span class="s">&quot;plus&quot;</span>
+        <span class="err">@</span><span class="na">click</span><span class="o">=</span><span class="s">&quot;$refs.tagSetModal.open(0)&quot;</span>
+      <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="nt">DashboardListPage</span><span class="p">&gt;</span>
+  <span class="p">&lt;</span><span class="nt">TagSetModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;tagSetModal&quot;</span> <span class="p">/&gt;</span>
+  <span class="p">&lt;</span><span class="nt">ConfirmModal</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;confirm&quot;</span> <span class="p">/&gt;</span>
+<span class="p">&lt;/</span><span class="nt">template</span><span class="p">&gt;</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">DashboardListPage</span></code> already applies <code class="docutils literal notranslate"><span class="pre">DEFAULT_DASHBOARD_TABLE_OPTIONS</span></code> and
+<code class="docutils literal notranslate"><span class="pre">DASHBOARD_TABLE_HEIGHT</span></code> (see <code class="docutils literal notranslate"><span class="pre">ListPage.vue</span></code>). Pass <code class="docutils literal notranslate"><span class="pre">:table-options=&quot;withSearch()&quot;</span></code>
+only when the table needs search. Extra options passed to <code class="docutils literal notranslate"><span class="pre">withSearch()</span></code> are added on top
+of the defaults, they do not replace them. Put page modals as siblings of <code class="docutils literal notranslate"><span class="pre">DashboardListPage</span></code>,
+as <code class="docutils literal notranslate"><span class="pre">Tags.vue</span></code> and <code class="docutils literal notranslate"><span class="pre">Projects.vue</span></code> do. Extra UI under the table goes in <code class="docutils literal notranslate"><span class="pre">#afterTable</span></code>
+(<code class="docutils literal notranslate"><span class="pre">Documents.vue</span></code>). Register <code class="docutils literal notranslate"><span class="pre">BasicButton</span></code>, <code class="docutils literal notranslate"><span class="pre">ConfirmModal</span></code>, and the page modal the same
+way <code class="docutils literal notranslate"><span class="pre">Tags.vue</span></code> does.</p>
+<p>Column names and row-button titles that use <code class="docutils literal notranslate"><span class="pre">$t</span></code> belong in <code class="docutils literal notranslate"><span class="pre">computed</span></code>, not <code class="docutils literal notranslate"><span class="pre">data</span></code>,
+so they update when the locale changes. Header buttons pass <code class="docutils literal notranslate"><span class="pre">:title=&quot;$t(...)&quot;</span></code> (see
+<a class="reference internal" href="../../i18n.html"><span class="doc">Internationalization (i18n)</span></a>). Import/export use <code class="docutils literal notranslate"><span class="pre">btn-secondary</span></code>; add/create uses <code class="docutils literal notranslate"><span class="pre">btn-primary</span></code>.</p>
+<p><strong>Script imports</strong></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="nx">DashboardListPage</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/dashboard/ListPage.vue&quot;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">dashboardRowAction</span><span class="p">,</span><span class="w"> </span><span class="nx">confirmSoftDelete</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;@/basic/dashboard/actions.js&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>Also from those files when needed: <code class="docutils literal notranslate"><span class="pre">withSearch</span></code> from <code class="docutils literal notranslate"><span class="pre">constants.js</span></code>;
+<code class="docutils literal notranslate"><span class="pre">dashboardRowButton</span></code> and <code class="docutils literal notranslate"><span class="pre">DASHBOARD_BADGES</span></code> from <code class="docutils literal notranslate"><span class="pre">actions.js</span></code>.</p>
+<p>Declare <code class="docutils literal notranslate"><span class="pre">subscribeTable:</span> <span class="pre">[&quot;&lt;table&gt;&quot;]</span></code> for every table whose getter this page reads
+(see <a class="reference internal" href="../plugins.html"><span class="doc">Plugins</span></a>). Read rows with <code class="docutils literal notranslate"><span class="pre">this.$store.getters[&quot;table/&lt;table&gt;/getAll&quot;]</span></code>
+or <code class="docutils literal notranslate"><span class="pre">getFiltered</span></code> (see <a class="reference internal" href="../vuex_store.html"><span class="doc">Vuex Store</span></a>).</p>
+<p><strong>Row buttons</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dashboardRowAction(&quot;edit&quot;,</span> <span class="pre">{</span> <span class="pre">title,</span> <span class="pre">action,</span> <span class="pre">filter,</span> <span class="pre">stats</span> <span class="pre">})</span></code> — catalog name
+(<code class="docutils literal notranslate"><span class="pre">edit</span></code>, <code class="docutils literal notranslate"><span class="pre">open</span></code>, <code class="docutils literal notranslate"><span class="pre">delete</span></code>, <code class="docutils literal notranslate"><span class="pre">copy</span></code>, <code class="docutils literal notranslate"><span class="pre">share</span></code>, <code class="docutils literal notranslate"><span class="pre">download</span></code>, …) so icons and colors stay consistent.
+Unknown catalog names throw (see <code class="docutils literal notranslate"><span class="pre">dashboardRowAction</span></code> in <code class="docutils literal notranslate"><span class="pre">actions.js</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dashboardRowButton(&quot;upload&quot;,</span> <span class="pre">{</span> <span class="pre">title,</span> <span class="pre">action,</span> <span class="pre">...</span> <span class="pre">})</span></code> — first argument is a Bootstrap icon
+name, not a catalog key. Use this for page-only icons (Assignments metadata upload uses
+<code class="docutils literal notranslate"><span class="pre">&quot;upload&quot;</span></code>).</p></li>
+<li><p>Handle <code class="docutils literal notranslate"><span class="pre">&#64;action</span></code>. Existing pages name the handler <code class="docutils literal notranslate"><span class="pre">action</span></code> (Tags, Projects) or
+<code class="docutils literal notranslate"><span class="pre">chooseAction</span></code> (Users, Workflows). Switch on <code class="docutils literal notranslate"><span class="pre">data.action</span></code>.</p></li>
+</ul>
+<p><strong>When a button should appear only on some rows</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">filter</span></code> is a list of <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">key,</span> <span class="pre">value</span> <span class="pre">}</span></code> checks against that row. One check is enough by itself.
+With two or more checks, decide OR vs AND:</p>
+<ul class="simple">
+<li><p>Default is <strong>OR</strong> — show the button if <strong>any</strong> check matches. Use this when the same field has
+two allowed values (for example uploaded by me <strong>or</strong> uploaded by nobody).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">filterMode:</span> <span class="pre">&quot;and&quot;</span></code> — show the button only if <strong>all</strong> checks match. Use this when two different
+fields must be true together.</p></li>
+</ul>
+<p>Share on a private row you own needs <strong>AND</strong>. Without it, Share also appears on someone else’s
+private row (<code class="docutils literal notranslate"><span class="pre">public</span> <span class="pre">===</span> <span class="pre">false</span></code>) and on your already-public row (<code class="docutils literal notranslate"><span class="pre">userId</span></code> matches):</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">dashboardRowAction</span><span class="p">(</span><span class="s2">&quot;share&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;tags.shareTagSet&#39;</span><span class="p">),</span>
+<span class="w">  </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;publishTagSet&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">filter</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;public&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;userId&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">value</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">userId</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nx">filterMode</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;and&quot;</span><span class="p">,</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+<p><strong>Soft delete</strong></p>
+<p>If the row is removed with <code class="docutils literal notranslate"><span class="pre">appDataUpdate</span></code> and <code class="docutils literal notranslate"><span class="pre">deleted:</span> <span class="pre">true</span></code>, call <code class="docutils literal notranslate"><span class="pre">confirmSoftDelete</span></code> from
+<code class="docutils literal notranslate"><span class="pre">actions.js</span></code> (confirm dialog + socket + error toast). Keep a dedicated socket such as
+<code class="docutils literal notranslate"><span class="pre">templateDelete</span></code> or <code class="docutils literal notranslate"><span class="pre">submissionDelete</span></code> when that is how the backend deletes the row.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">confirmSoftDelete</span><span class="p">(</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">confirmRef</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">confirm</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">socket</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">eventBus</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">eventBus</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">table</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tag_set&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nx">row</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;tags.messages.deleteTitle&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;tags.messages.deleteConfirm&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">failTitle</span><span class="o">:</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;errors.tags.tagSetDeleteFailed&#39;</span><span class="p">),</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">);</span>
+</pre></div>
+</div>
 </section>
 <section id="populating-a-dashboard-component">
 <h2>Populating a Dashboard Component<a class="headerlink" href="#populating-a-dashboard-component" title="Link to this heading"></a></h2>
@@ -231,7 +342,8 @@ socket interface, please refer to the step-by-step guide in the <span class="xre
 <section id="table">
 <h2>Table<a class="headerlink" href="#table" title="Link to this heading"></a></h2>
 <p>The table is the best way to visualize many rows of data.
-We recommend to use the basic table component <span class="xref std std-doc">Table</span> for this purpose.</p>
+For a full dashboard list page, wrap it with <code class="docutils literal notranslate"><span class="pre">DashboardListPage</span></code> as described above.
+<code class="docutils literal notranslate"><span class="pre">DashboardListPage</span></code> uses the basic table component <a class="reference internal" href="../basic/table.html"><span class="doc">Table</span></a>.</p>
 </section>
 </section>
 

@@ -260,6 +260,15 @@ The dictionary contains the following keys:</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">pagination</span></code> – enable pagination (<code class="docutils literal notranslate"><span class="pre">false</span></code> or number)</p></li>
 </ul>
 <hr class="docutils" />
+<p><strong>Row action buttons</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">BasicTable</span></code> accepts a <code class="docutils literal notranslate"><span class="pre">buttons</span></code> array. That becomes the manage column. For each row,
+<code class="docutils literal notranslate"><span class="pre">getFilteredButtons</span></code> in <code class="docutils literal notranslate"><span class="pre">Table.vue</span></code> decides which buttons to show.</p>
+<p>Each button may include <code class="docutils literal notranslate"><span class="pre">filter</span></code>: an array of <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">key,</span> <span class="pre">value</span> <span class="pre">}</span></code> checks against that row.
+Default <code class="docutils literal notranslate"><span class="pre">filterMode</span></code> is <code class="docutils literal notranslate"><span class="pre">or</span></code> (show if any check matches). Set <code class="docutils literal notranslate"><span class="pre">filterMode:</span> <span class="pre">&quot;and&quot;</span></code> when
+every check must match.</p>
+<p>On a dashboard list page, build this array with <code class="docutils literal notranslate"><span class="pre">dashboardRowAction</span></code> / <code class="docutils literal notranslate"><span class="pre">dashboardRowButton</span></code>
+from <code class="docutils literal notranslate"><span class="pre">frontend/src/basic/dashboard/actions.js</span></code>. See <a class="reference internal" href="../components/dashboard.html"><span class="doc">Dashboard</span></a>.</p>
+<hr class="docutils" />
 <p><strong>Pagination</strong></p>
 <p>Pagination is handled by the <code class="docutils literal notranslate"><span class="pre">BasicTablePagination</span></code> component.</p>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicTablePagination</span>

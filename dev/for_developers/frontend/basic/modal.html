@@ -527,13 +527,16 @@ Whenever possible, <code class="docutils literal notranslate"><span class="pre">
 </pre></div>
 </div>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="nx">confirmModal</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span>
-<span class="w">    </span><span class="s2">&quot;Delete User&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;Are you sure you want to delete this user?&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;This action cannot be undone.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;users.messages.deleteTitle&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">$t</span><span class="p">(</span><span class="s1">&#39;users.messages.deleteConfirm&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">    </span><span class="p">(</span><span class="nx">res</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Confirmed:&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">res</span><span class="p">)</span>
 <span class="p">);</span>
 </pre></div>
 </div>
+<p>Footer buttons use <code class="docutils literal notranslate"><span class="pre">$t('common.abort')</span></code> and <code class="docutils literal notranslate"><span class="pre">$t('common.confirm')</span></code>. Pass already-translated
+<code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">message</span></code>, and <code class="docutils literal notranslate"><span class="pre">warning</span></code> into <code class="docutils literal notranslate"><span class="pre">open()</span></code>. <code class="docutils literal notranslate"><span class="pre">warning</span></code> is plain text, not HTML, so
+newlines do not break lines.</p>
 <p><strong>API:</strong> <code class="docutils literal notranslate"><span class="pre">open(title,</span> <span class="pre">message,</span> <span class="pre">warning?,</span> <span class="pre">callback)</span></code>; emits <code class="docutils literal notranslate"><span class="pre">&#64;response</span></code> with <code class="docutils literal notranslate"><span class="pre">true/false</span></code>.</p>
 <hr class="docutils" />
 <p><cite>ConsentUpdateModal</cite></p>
