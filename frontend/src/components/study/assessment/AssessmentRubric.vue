@@ -9,8 +9,8 @@
         :aria-expanded="isExpanded"
         :aria-controls="panelId"
         @click="$emit('toggle-group', groupIndex)"
-        @keydown.enter.prevent="$emit('toggle-group', groupIndex)"
-        @keydown.space.prevent="$emit('toggle-group', groupIndex)"
+        @keydown.enter.exact.prevent="$emit('toggle-group', groupIndex)"
+        @keydown.space.exact.prevent="$emit('toggle-group', groupIndex)"
     >
       <div class="d-flex align-items-center flex-grow-1">
         <LoadIcon

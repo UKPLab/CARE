@@ -9,8 +9,8 @@
         :aria-expanded="isExpanded"
         :aria-controls="panelId"
         @click="$emit('toggle')"
-        @keydown.enter.prevent="$emit('toggle')"
-        @keydown.space.prevent="$emit('toggle')"
+        @keydown.enter.exact.prevent="$emit('toggle')"
+        @keydown.space.exact.prevent="$emit('toggle')"
     >
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
