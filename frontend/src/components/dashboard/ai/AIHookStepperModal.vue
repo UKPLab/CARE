@@ -12,98 +12,13 @@
     </template>
 
     <template #step-1>
-      <div class="mb-3">
-        <label class="form-label" for="hookName">
-          Name
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="A short dashboard name that helps admins recognize where this AIHook is used."
-          />
-        </label>
-        <input
-          id="hookName"
-          v-model="hookForm.name"
-          type="text"
-          class="form-control"
-          placeholder="e.g. Assessment Feedback Hook"
-        />
-        <small class="text-muted">
-          Use a clear name that describes the AI workflow or feature this hook belongs to.
-        </small>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label" for="hookDescription">
-          Description
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Optional notes for other admins, researchers, or future you."
-          />
-        </label>
-        <textarea
-          id="hookDescription"
-          v-model="hookForm.description"
-          class="form-control"
-          rows="3"
-          placeholder="Explain when this hook should be used."
-        />
-        <small class="text-muted">
-          Optional. Add context about the feature, input data, or expected model behavior.
-        </small>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label" for="hookCostLimit">
-          Cost limit ($)
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Global cap across all invocations of this hook. Leave empty for no cap."
-          />
-        </label>
-        <input
-          id="hookCostLimit"
-          v-model.number="hookForm.costLimit"
-          type="number"
-          min="0"
-          step="0.01"
-          class="form-control"
-          placeholder="No limit"
-        />
-        <small class="text-muted">
-          Optional. Total AI spend allowed for this hook across all studies.
-        </small>
-      </div>
+      <BasicForm v-model="hookForm" :fields="basicInfoFields" />
     </template>
 
     <template #step-2>
-      <div class="mb-3">
-        <label class="form-label" for="hookPromptTemplate">
-          Prompt Template
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Select the prompt template that provides the instructions and placeholders sent to the model."
-          />
-        </label>
-        <select
-          id="hookPromptTemplate"
-          v-model.number="hookForm.templateId"
-          class="form-select"
-        >
-          <option :value="null">Select prompt template</option>
-          <option
-            v-for="template in selectablePromptTemplates"
-            :key="template.id"
-            :value="template.id"
-          >
-            {{ template.name }}
-          </option>
-        </select>
-        <small class="text-muted">
-          Only prompt templates with placeholders such as document text or study context are shown.
-        </small>
-        <div v-if="selectablePromptTemplates.length === 0" class="text-warning small mt-1">
-          No prompt templates are available yet.
-        </div>
+      <BasicForm v-model="hookForm" :fields="promptFields" />
+      <div v-if="selectablePromptTemplates.length === 0" class="text-warning small mt-1">
+        No prompt templates are available yet.
       </div>
     </template>
 
@@ -116,47 +31,7 @@
     </template>
 
     <template #step-4>
-      <div class="mb-3">
-        <label class="form-label" for="hookOutputMode">
-          Output Type
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Choose how CARE should handle the model response after generation."
-          />
-        </label>
-        <select
-          id="hookOutputMode"
-          v-model.number="hookForm.outputMode"
-          class="form-select"
-        >
-          <option
-            v-for="mode in outputModes"
-            :key="mode.value"
-            :value="mode.value"
-          >
-            {{ mode.label }}
-          </option>
-        </select>
-        <small class="text-muted">
-          Text returns plain output. JSON expects structured data.
-        </small>
-      </div>
-
-      <div class="form-check">
-        <input
-          id="hookEnabled"
-          v-model="hookForm.enabled"
-          class="form-check-input"
-          type="checkbox"
-        />
-        <label class="form-check-label" for="hookEnabled">
-          Enabled
-          <i
-            class="bi bi-info-circle text-muted ms-1"
-            title="Disabled hooks stay saved but should not be used by AI features."
-          />
-        </label>
-      </div>
+      <BasicForm v-model="hookForm" :fields="outputFields" />
     </template>
 
     <template #step-5>
@@ -186,7 +61,7 @@
           <dd class="col-sm-8">{{ selectedOutputModeLabel }}</dd>
           
           <dt class="col-sm-4">Cost limit</dt>
-          <dd class="col-sm-8">{{ hookForm.costLimit ? `$${hookForm.costLimit.toFixed(2)}` : "-" }}</dd>
+          <dd class="col-sm-8">{{ formattedCostLimit }}</dd>
 
           <dt class="col-sm-4">Status</dt>
           <dd class="col-sm-8">{{ hookForm.enabled ? "Enabled" : "Disabled" }}</dd>
@@ -201,6 +76,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import BasicForm from "@/basic/Form.vue";
 import AIHookModelOrder from "@/components/dashboard/ai/AIHookModelOrder.vue";
 
 function getEmptyHookForm() {
@@ -218,7 +94,7 @@ function getEmptyHookForm() {
 
 export default {
   name: "AIHookStepperModal",
-  components: { StepperModal, AIHookModelOrder },
+  components: { StepperModal, BasicForm, AIHookModelOrder },
   subscribeTable: ["ai_budget"],
   props: {
     promptTemplates: {
@@ -291,6 +167,78 @@ export default {
     },
     selectablePromptTemplates() {
       return this.promptTemplates.filter((template) => Number(template.type) === 8);
+    },
+    basicInfoFields() {
+      return [
+        {
+          key: "name",
+          label: "Name",
+          type: "text",
+          required: true,
+          placeholder: "e.g. Assessment Feedback Hook",
+          help: "A short dashboard name that helps admins recognize where this AIHook is used.",
+        },
+        {
+          key: "description",
+          label: "Description",
+          type: "textarea",
+          rows: 3,
+          placeholder: "Explain when this hook should be used.",
+          help: "Optional. Add context about the feature, input data, or expected model behavior.",
+        },
+        {
+          key: "costLimit",
+          label: "Cost limit ($)",
+          type: "number",
+          min: 0,
+          step: 0.01,
+          placeholder: "No limit",
+          help: "Optional. Total AI spend allowed for this hook across all studies. Leave empty for no cap.",
+        },
+      ];
+    },
+    promptFields() {
+      return [
+        {
+          key: "templateId",
+          label: "Prompt Template",
+          type: "select",
+          required: true,
+          options: [
+            { value: null, name: "Select prompt template" },
+            ...this.selectablePromptTemplates.map((template) => ({
+              value: template.id,
+              name: template.name,
+            })),
+          ],
+          help: "Only prompt templates with placeholders such as document text or study context are shown.",
+        },
+      ];
+    },
+    outputFields() {
+      return [
+        {
+          key: "outputMode",
+          label: "Output Type",
+          type: "select",
+          required: true,
+          options: this.outputModes.map((mode) => ({
+            value: mode.value,
+            name: mode.label,
+          })),
+          help: "Text returns plain output. JSON expects structured data.",
+        },
+        {
+          key: "enabled",
+          label: "Enabled",
+          type: "switch",
+          help: "Disabled hooks stay saved but should not be used by AI features.",
+        },
+      ];
+    },
+    formattedCostLimit() {
+      const value = Number(this.hookForm.costLimit);
+      return Number.isFinite(value) && value > 0 ? `$${value.toFixed(2)}` : "-";
     },
   },
   methods: {
