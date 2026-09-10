@@ -74,6 +74,7 @@
           currentStudyStep.stepType !== 3 &&
           studySession.studyStepId === lastStep.id
         "
+          ref="finishButton"
           class="btn btn-outline-secondary mx-3"
           :disabled="!isCurrentStepReady"
           :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
@@ -84,6 +85,7 @@
 
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
+          ref="nextButton"
           :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
           class="btn btn-outline-primary ms-3"
           :title="$t('common.next')"
@@ -148,6 +150,7 @@
                         :config="step.configuration"
                         :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
                   </template>
@@ -171,6 +174,7 @@
                         :config="step.configuration"
                         :study-step-id="step.id"
                         @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
                   </template>
@@ -470,6 +474,26 @@ export default {
     }
   },
   methods: {
+    
+    /**
+     * Move keyboard focus to the forward control after the final assessment
+     * criterion is marked done. Under forcedAssessment the button is enabled
+     * in the same render that triggers this, so retry for a few frames
+     * before giving up.
+     *
+     * @param {number} attempt - current attempt number
+     */
+    focusForwardControl(attempt = 0) {
+      const pick = this.$refs.nextButton || this.$refs.finishButton;
+      const el = pick && pick.$el ? pick.$el : pick;
+      if (el && !el.disabled && typeof el.focus === "function") {
+        el.focus();
+        return;
+      }
+      if (attempt < 5) {
+        requestAnimationFrame(() => this.focusForwardControl(attempt + 1));
+      }
+    },
     setStudyError(message, errorCode) {
       const titleMap = {
         NOT_FOUND: this.$t('components.studyRoute.errors.studyNotFoundTitle'),
