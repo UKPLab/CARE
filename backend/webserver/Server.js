@@ -95,12 +95,13 @@ module.exports = class Server {
         require("./routes/config")(this);
         require('./routes/auth')(this);
         require("./routes/setup")(this);
+        require("./routes/rest")(this);
 
         this.app.use((req, res, next) => {
             if (req.method !== "GET") {
                 return next();
             }
-            if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/docs")) {
+            if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/docs") || req.path.startsWith("/rest")) {
                 return next();
             }
             return res.sendFile(path.resolve(__dirname, "../../dist/index.html"));

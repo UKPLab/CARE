@@ -411,5 +411,22 @@
   "common": {
     "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",
     "accessDenied": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen."
+  },
+  "rest": {
+    "apiTokensDisabled": "API-Tokens sind deaktiviert.",
+    "missingBearer": "Authorization-Bearer-Token fehlt.",
+    "invalidBearer": "Ungueltiges oder widerrufenes API-Token.",
+    "missingTokenRight": "Dieses API-Token hat nicht das erforderliche Recht.",
+    "rateLimitExceeded": "Zu viele Anfragen fuer dieses API-Token. Bitte spaeter erneut versuchen.",
+    "guestCannotCreateToken": "Konten nur mit der Gastrolle koennen keine API-Tokens erstellen.",
+    "guestCannotUseToken": "Konten nur mit der Gastrolle koennen keine API-Tokens verwenden.",
+    "tokenNameRequired": "Token-Name ist erforderlich.",
+    "cannotGrantMissingRight": "Ein Token darf kein Recht enthalten, das die Besitzenden nicht haben.",
+    "invalidTokenId": "Ungueltige Token-ID.",
+    "tokenNotFound": "API-Token nicht gefunden.",
+    "cannotRevokeForeignToken": "Sie koennen das API-Token einer anderen Person nicht widerrufen.",
+    "documentNameRequired": "Dokumentname ist erforderlich.",
+    "unsupportedDocumentType": "Ueber diesen Endpunkt koennen nur HTML-Dokumente erstellt werden.",
+    "invalidProjectId": "Ungueltige Projekt-ID."
   }
 }

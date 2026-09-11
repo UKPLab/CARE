@@ -411,5 +411,22 @@
     "common": {
         "resourceNotFound": "The requested resource does not exist or has been deleted.",
         "accessDenied": "You do not have rights to access this data."
+    },
+    "rest": {
+        "apiTokensDisabled": "API tokens are disabled.",
+        "missingBearer": "Missing Authorization Bearer token.",
+        "invalidBearer": "Invalid or revoked API token.",
+        "missingTokenRight": "This API token does not have the required right.",
+        "rateLimitExceeded": "Too many requests for this API token. Try again later.",
+        "guestCannotCreateToken": "Guest-only accounts cannot create API tokens.",
+        "guestCannotUseToken": "Guest-only accounts cannot use API tokens.",
+        "tokenNameRequired": "Token name is required.",
+        "cannotGrantMissingRight": "A token cannot include a right the owner does not have.",
+        "invalidTokenId": "Invalid token id.",
+        "tokenNotFound": "API token not found.",
+        "cannotRevokeForeignToken": "You cannot revoke another user's API token.",
+        "documentNameRequired": "Document name is required.",
+        "unsupportedDocumentType": "Only HTML documents can be created through this endpoint.",
+        "invalidProjectId": "Invalid project id."
     }
 }
