@@ -6,12 +6,12 @@
     name="studyReview"
   >
     <template #title>
-      Evaluate this session
+      {{$t('review.evaluateSession')}}
     </template>
     <template #body>
       <div v-if="studySession.end === null">
         <div class="mb-3 text-center h5">
-          This session is not finished yet, please wait until the session is closed!
+          {{$t('review.sessionNotFinishedYet')}}
         </div>
       </div>
       <div v-else>
@@ -20,20 +20,20 @@
             v-if="studySession.reviewUserId === userId"
             class="mb-3 text-center h5"
           >
-            <div>Thank you for evaluating this session!</div>
+            <div>{{$t('review.thankYouForEvaluating')}}</div>
           </div>
           <div
             v-else
             class="mb-3 text-center h5"
           >
-            This session is already evaluated.
+            {{$t('review.sessionAlreadyEvaluated')}}
           </div>
         </div>
         <div v-else>
           <div class="mb-3 text-center h5">
-            Make a decision based on this study session.
+            {{$t('review.makeDecision')}}
           </div>
-          <label class="form-label">Comment</label>
+          <label class="form-label">{{$t('review.comment')}}</label>
           <textarea
             v-model="comment"
             class="form-control"
@@ -46,7 +46,7 @@
         <BasicButton
           class="btn btn-primary"
           data-bs-dismiss="modal"
-          title="Close"
+          :title="$t('common.close')"
         />
       </div>
       <div
@@ -55,12 +55,12 @@
       >
         <BasicButton
           class="btn btn-danger"
-          title="Decline"
+          :title="$t('common.decline')"
           @click="evaluate(0)"
         />
         <BasicButton
           class="btn btn-success"
-          title="Acceptance"
+          :title="$t('review.acceptance')"
           @click="evaluate(1)"
         />
       </div>

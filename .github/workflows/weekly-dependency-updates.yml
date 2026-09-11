@@ -1,17 +1,29 @@
-name: Weekly dependency updates
+name: Dependency updates
 
 on:
   schedule:
-    # Every Monday at 06:00 UTC
+    # Minor/patch: every Monday at 06:00 UTC
     - cron: "0 6 * * 1"
+    # Major: 1st of Jan / Apr / Jul / Oct at 06:00 UTC
+    - cron: "0 6 1 1,4,7,10 *"
   workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
 
+env:
+  PACKAGE_DIRS: |
+    frontend
+    backend
+    utils/modules/editor-delta-conversion
+    utils/modules/assessment-score
+
 jobs:
-  update-dependencies:
+  # Minor + patch only. Always open a PR when those bumps exist.
+  # Remaining audit issues (majors / npm audit fix --force) do not block the PR.
+  update-minor-patch:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 * * 1'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout dev
@@ -24,38 +36,121 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Update packages in frontend, backend, and utils
+      - name: Update minor and patch versions
         run: |
-          set -e
-          for dir in \
-            frontend \
-            backend \
-            utils/modules/editor-delta-conversion \
-            utils/modules/assessment-score
-          do
-            echo "=== Updating ${dir} ==="
+          set -euo pipefail
+          while IFS= read -r dir; do
+            [ -z "${dir}" ] && continue
+            echo "=== Minor/patch update: ${dir} ==="
             (
               cd "${dir}"
-              npx --yes npm-check-updates -u
+              npx --yes npm-check-updates -u --target minor
               npm install --no-fund --no-audit
+              # Non-breaking security patches only. Remaining vulns must not abort the job.
+              npm audit fix || true
             )
-          done
+          done <<< "${PACKAGE_DIRS}"
 
-      - name: Create single Pull Request
+      - name: Run npm audit
+        continue-on-error: true
+        run: make audit
+
+      - name: Create minor/patch Pull Request
         uses: peter-evans/create-pull-request@v7
         with:
           base: dev
-          branch: chore-weekly-dependency-updates
+          branch: chore-weekly-dependency-updates-minor
           delete-branch: true
-          title: "[CHORE] Weekly dependency updates"
-          commit-message: "chore: weekly npm dependency updates"
+          title: "[CHORE] Weekly minor/patch dependency updates"
+          commit-message: "chore: weekly npm minor/patch dependency updates"
           body: |
-            Automated weekly npm package updates for:
+            Automated weekly **minor and patch** npm updates for:
 
             - `frontend`
             - `backend`
             - `utils/modules/editor-delta-conversion`
             - `utils/modules/assessment-score`
 
-            Please review the diff and run `make audit` / CI before merging.
+            Includes non-breaking `npm audit fix` patches. Remaining audit
+            findings (those that need a major bump) do not block this PR.
+            Please review the diff and let CI / `make audit` finish before merging.
+          labels: dependencies
+
+  # Major only (quarterly). Reminder PR with bumps applied for testing —
+  # do not merge without manual verification.
+  update-major:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '0 6 1 1,4,7,10 *'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Update major versions only
+        run: |
+          set -euo pipefail
+          while IFS= read -r dir; do
+            [ -z "${dir}" ] && continue
+            echo "=== Major update check: ${dir} ==="
+            (
+              cd "${dir}"
+              upgraded="$(npx --yes npm-check-updates --jsonUpgraded)"
+              filters="$(node -e '
+                const fs = require("fs");
+                const pkg = JSON.parse(fs.readFileSync("package.json", "utf8"));
+                const deps = { ...(pkg.dependencies || {}), ...(pkg.devDependencies || {}) };
+                const upgraded = JSON.parse(process.argv[1]);
+                const strip = (v) => String(v).replace(/^[^0-9]*/, "");
+                const major = (v) => parseInt(strip(v).split(".")[0], 10);
+                const names = Object.keys(upgraded).filter((name) => {
+                  const cur = deps[name];
+                  if (!cur) return false;
+                  const curMajor = major(cur);
+                  const nextMajor = major(upgraded[name]);
+                  return Number.isFinite(curMajor) && Number.isFinite(nextMajor) && nextMajor > curMajor;
+                });
+                process.stdout.write(names.join(" "));
+              ' "${upgraded}")"
+              if [ -z "${filters}" ]; then
+                echo "No major upgrades in ${dir}"
+                exit 0
+              fi
+              echo "Major upgrades: ${filters}"
+              npx --yes npm-check-updates -u --filter "${filters}"
+              npm install --no-fund --no-audit
+            )
+          done <<< "${PACKAGE_DIRS}"
+
+      - name: Create major-update reminder Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          base: dev
+          branch: chore-quarterly-dependency-updates-major
+          delete-branch: true
+          title: "[CHORE] Quarterly major dependency updates (needs testing)"
+          commit-message: "chore: quarterly npm major dependency updates"
+          body: |
+            **Reminder — major dependency updates. Do not merge without testing.**
+
+            Automated quarterly **major** npm bumps for:
+
+            - `frontend`
+            - `backend`
+            - `utils/modules/editor-delta-conversion`
+            - `utils/modules/assessment-score`
+
+            Major upgrades can break APIs and behaviour. Use this PR as a checklist:
+
+            1. Review the diff package by package
+            2. Run the app / relevant tests locally on this branch
+            3. Confirm `make audit` / CI after any follow-up fixes
+            4. Merge only when verified
+
+            Minor/patch updates are handled in a separate weekly PR.
           labels: dependencies

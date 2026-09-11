@@ -1,0 +1,1956 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-11T00:34:31.943Z",
+  "traceCount": 86,
+  "recording": {
+    "name": "520-assign-user-to-study",
+    "status": "finished",
+    "startTime": "2026-08-11T00:33:09.796Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "d9A9RFi1xfVMSPlsAAAL"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-11T00:33:49.463Z"
+  },
+  "traces": [
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "name": "Recording 8/11/2026, 2:33:09 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-11T00:33:09.797Z",
+          "startTime": "2026-08-11T00:33:09.796Z",
+          "updatedAt": "2026-08-11T00:33:09.797Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "d9A9RFi1xfVMSPlsAAAL"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:09.807Z",
+      "endTime": "2026-08-11T00:33:09.807Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:10.884Z",
+      "endTime": "2026-08-11T00:33:10.884Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "plus-square",
+          "title": "Add Single Assignment"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.593Z",
+      "endTime": "2026-08-11T00:33:13.593Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study",
+        "filter": [
+          {
+            "key": "template",
+            "value": true
+          }
+        ]
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.609Z",
+      "endTime": "2026-08-11T00:33:13.609Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.609Z",
+      "endTime": "2026-08-11T00:33:13.609Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow_step"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.623Z",
+      "endTime": "2026-08-11T00:33:13.623Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document",
+        "filter": [
+          {
+            "key": "readyForReview",
+            "value": true
+          }
+        ]
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.623Z",
+      "endTime": "2026-08-11T00:33:13.623Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.623Z",
+      "endTime": "2026-08-11T00:33:13.623Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "submission"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.624Z",
+      "endTime": "2026-08-11T00:33:13.624Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study",
+        "filter": [
+          {
+            "key": "template",
+            "value": true
+          }
+        ]
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.623Z",
+      "endTime": "2026-08-11T00:33:13.623Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.624Z",
+      "endTime": "2026-08-11T00:33:13.624Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study",
+        "filter": [
+          {
+            "key": "template",
+            "value": true
+          }
+        ]
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.624Z",
+      "endTime": "2026-08-11T00:33:13.624Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.624Z",
+      "endTime": "2026-08-11T00:33:13.624Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow_step"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:13.624Z",
+      "endTime": "2026-08-11T00:33:13.624Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:13.663Z",
+      "endTime": "2026-08-11T00:33:13.663Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:13.662Z",
+      "endTime": "2026-08-11T00:33:13.662Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:13.666Z",
+      "endTime": "2026-08-11T00:33:13.666Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:13.665Z",
+      "endTime": "2026-08-11T00:33:13.665Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:13.666Z",
+      "endTime": "2026-08-11T00:33:13.666Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:13.667Z",
+      "endTime": "2026-08-11T00:33:13.667Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:14.079Z",
+      "endTime": "2026-08-11T00:33:14.079Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.874Z",
+      "endTime": "2026-08-11T00:33:18.874Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "9e8d6fb0-1c83-4d1d-b4b2-f7cde97e25de",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.880Z",
+      "endTime": "2026-08-11T00:33:18.880Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "4adaa282-a1c2-4021-8010-b57cf9154600",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.881Z",
+      "endTime": "2026-08-11T00:33:18.881Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "submission"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.881Z",
+      "endTime": "2026-08-11T00:33:18.881Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.881Z",
+      "endTime": "2026-08-11T00:33:18.881Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "e424a1d8-2c52-4813-a9cc-e49890111bec",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.881Z",
+      "endTime": "2026-08-11T00:33:18.881Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study_session"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.897Z",
+      "endTime": "2026-08-11T00:33:18.897Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study_step"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.897Z",
+      "endTime": "2026-08-11T00:33:18.897Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:18.897Z",
+      "endTime": "2026-08-11T00:33:18.897Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "hash": "8852a746-360e-4c31-add2-4d1c75bfb96d",
+          "name": "Showcase Document",
+          "type": 0,
+          "public": false,
+          "userId": 3,
+          "createdAt": "2026-08-11T00:15:41.390Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:15:41.390Z",
+          "creator_name": "guest",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 3,
+          "hash": "d9c1ee71-172f-469e-83f1-03271e817ea0",
+          "name": "Document Study 1",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "createdAt": "2026-08-11T00:26:29.412Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:26:29.419Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 2,
+          "hash": "8c8ab9b8-5ca1-41f0-88ae-b52d57a67879",
+          "name": "care-test-doc_renamed",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "createdAt": "2026-08-11T00:25:13.188Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.419Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 2,
+          "originalFilename": "care-test-doc.pdf",
+          "parentDocumentId": null,
+          "uploadedByUserId": 4
+        },
+        {
+          "id": 4,
+          "hash": "2a1d0c59-9b50-4703-bc81-2a75c534f95e",
+          "name": "Document Study 2",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "createdAt": "2026-08-11T00:32:35.422Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.427Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:18.911Z",
+      "endTime": "2026-08-11T00:33:18.911Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "studyId": 1,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:26:29.395Z",
+          "updatedAt": "2026-08-11T00:26:29.395Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 2,
+          "studyId": 1,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:26:29.417Z",
+          "updatedAt": "2026-08-11T00:26:29.417Z",
+          "documentId": 3,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 1
+        },
+        {
+          "id": 3,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:18.919Z",
+      "endTime": "2026-08-11T00:33:18.919Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "end": null,
+          "hash": "584adaad-05b8-4235-b575-59b6c6c0d112",
+          "name": "replaystudy",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": false,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:26:29.375Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:26:29.375Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"this is a test\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        },
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:18.920Z",
+      "endTime": "2026-08-11T00:33:18.920Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 825,
+          "clientY": 236,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:20.932Z",
+      "endTime": "2026-08-11T00:33:20.932Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Previous"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.191Z",
+      "endTime": "2026-08-11T00:33:23.191Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "c2ea09a7-9108-4726-94e6-fefc32c3b551",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.201Z",
+      "endTime": "2026-08-11T00:33:23.201Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "602d33ed-a3d9-4d24-a14a-2f1291086a63",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "23df3ebf-6ca2-493b-ab13-0cf81c26a138",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "b01d8414-5784-49a8-9f9a-9f3a4a08d43f",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "6c87bd6e-1f0f-4d0a-a7eb-59010b33d336",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study",
+        "filter": [
+          {
+            "key": "template",
+            "value": true
+          }
+        ]
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow_step"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "workflow"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:23.203Z",
+      "endTime": "2026-08-11T00:33:23.203Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:23.215Z",
+      "endTime": "2026-08-11T00:33:23.215Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:23.215Z",
+      "endTime": "2026-08-11T00:33:23.215Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 860,
+          "clientY": 402,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:24.680Z",
+      "endTime": "2026-08-11T00:33:24.680Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:28.890Z",
+      "endTime": "2026-08-11T00:33:28.890Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "0d0b7135-8640-4aa4-95cf-1dbe3f6b3ce6",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:28.907Z",
+      "endTime": "2026-08-11T00:33:28.907Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "ff812ba3-ad7e-4b0f-8a2f-018eef35ca02",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:28.907Z",
+      "endTime": "2026-08-11T00:33:28.907Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "6a4a050b-e659-4835-ad7b-11e51e260309",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:28.907Z",
+      "endTime": "2026-08-11T00:33:28.907Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 981,
+          "clientY": 231,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:30.414Z",
+      "endTime": "2026-08-11T00:33:30.414Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:33.356Z",
+      "endTime": "2026-08-11T00:33:33.356Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "submission"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:33.367Z",
+      "endTime": "2026-08-11T00:33:33.367Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:33.367Z",
+      "endTime": "2026-08-11T00:33:33.367Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study_session"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:33.367Z",
+      "endTime": "2026-08-11T00:33:33.367Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "hash": "8852a746-360e-4c31-add2-4d1c75bfb96d",
+          "name": "Showcase Document",
+          "type": 0,
+          "public": false,
+          "userId": 3,
+          "createdAt": "2026-08-11T00:15:41.390Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:15:41.390Z",
+          "creator_name": "guest",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 3,
+          "hash": "d9c1ee71-172f-469e-83f1-03271e817ea0",
+          "name": "Document Study 1",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "createdAt": "2026-08-11T00:26:29.412Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:26:29.419Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 2,
+          "hash": "8c8ab9b8-5ca1-41f0-88ae-b52d57a67879",
+          "name": "care-test-doc_renamed",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "createdAt": "2026-08-11T00:25:13.188Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.419Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 2,
+          "originalFilename": "care-test-doc.pdf",
+          "parentDocumentId": null,
+          "uploadedByUserId": 4
+        },
+        {
+          "id": 4,
+          "hash": "2a1d0c59-9b50-4703-bc81-2a75c534f95e",
+          "name": "Document Study 2",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "createdAt": "2026-08-11T00:32:35.422Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:32:35.427Z",
+          "creator_name": "admin",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:33.371Z",
+      "endTime": "2026-08-11T00:33:33.371Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:33.374Z",
+      "endTime": "2026-08-11T00:33:33.374Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study_step"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:33.374Z",
+      "endTime": "2026-08-11T00:33:33.374Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "studyId": 1,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:26:29.395Z",
+          "updatedAt": "2026-08-11T00:26:29.395Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 2,
+          "studyId": 1,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:26:29.417Z",
+          "updatedAt": "2026-08-11T00:26:29.417Z",
+          "documentId": 3,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 1
+        },
+        {
+          "id": 3,
+          "studyId": 2,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:32:35.412Z",
+          "updatedAt": "2026-08-11T00:32:35.412Z",
+          "documentId": 2,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 4,
+          "studyId": 2,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:32:35.425Z",
+          "updatedAt": "2026-08-11T00:32:35.425Z",
+          "documentId": 4,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 3
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:33.386Z",
+      "endTime": "2026-08-11T00:33:33.386Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "end": null,
+          "hash": "584adaad-05b8-4235-b575-59b6c6c0d112",
+          "name": "replaystudy",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": false,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:26:29.375Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:26:29.375Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"this is a test\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        },
+        {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:33.386Z",
+      "endTime": "2026-08-11T00:33:33.386Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 969,
+          "clientY": 243,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:35.398Z",
+      "endTime": "2026-08-11T00:33:35.398Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:37.980Z",
+      "endTime": "2026-08-11T00:33:37.980Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "08f30338-812e-4b37-bea9-6898ddaaf833",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:38.009Z",
+      "endTime": "2026-08-11T00:33:38.009Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "8548c86b-5eca-4493-a144-ab7ca272e7d3",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:38.010Z",
+      "endTime": "2026-08-11T00:33:38.010Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "b864b268-21a9-460e-9d89-48dd769434bf",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:38.010Z",
+      "endTime": "2026-08-11T00:33:38.010Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "b8bb66e6-6144-4f61-ad11-5c6017a32a62",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:38.010Z",
+      "endTime": "2026-08-11T00:33:38.010Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "2f1705c1-78c3-4971-9d4b-deb0d247c47b",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:38.010Z",
+      "endTime": "2026-08-11T00:33:38.010Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1013,
+          "clientY": 290,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:39.031Z",
+      "endTime": "2026-08-11T00:33:39.031Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:40.208Z",
+      "endTime": "2026-08-11T00:33:40.208Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "assignmentCreateSingle",
+      "payload": {
+        "reviewer": [
+          {
+            "id": 3,
+            "email": "guest@guest.com",
+            "extId": null,
+            "roles": [
+              6
+            ],
+            "orcidId": null,
+            "lastName": "user",
+            "userName": "guest",
+            "createdAt": "2026-08-11T00:15:41.381Z",
+            "documents": 0,
+            "firstName": "guest",
+            "updatedAt": "2026-08-11T00:15:41.381Z",
+            "acceptedAt": null,
+            "resetToken": null,
+            "rolesNames": "guest",
+            "samlNameId": null,
+            "totpSecret": null,
+            "acceptStats": true,
+            "acceptTerms": true,
+            "lastLoginAt": null,
+            "ldapUsername": null,
+            "twoFactorOtp": null,
+            "emailVerified": true,
+            "studySessions": 0,
+            "twoFactorMethods": [],
+            "acceptDataSharing": false,
+            "twoFactorOtpExpiresAt": null,
+            "emailVerificationToken": null,
+            "lastVerificationEmailSent": null,
+            "lastPasswordResetEmailSent": null
+          }
+        ],
+        "template": {
+          "id": 2,
+          "end": null,
+          "hash": "54bd784b-53ed-418f-98c2-49714defe52e",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "deleted": false,
+          "tagSetId": 1,
+          "template": true,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:32:35.384Z",
+          "projectId": 1,
+          "resumable": false,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:32:35.384Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "creator_name": "admin",
+          "userIdClosed": null,
+          "limitSessions": 0,
+          "parentStudyId": null,
+          "multipleSubmit": false,
+          "createdByUserId": null,
+          "limitSessionsPerUser": 0,
+          "enableEmailNotifications": false
+        },
+        "assignmentType": "study_session",
+        "workflowMapping": {
+          "1": 1,
+          "2": 2
+        },
+        "selectedAssignments": [
+          {
+            "id": 1,
+            "status": "Running",
+            "userId": 4,
+            "studyId": 1,
+            "lastName": "User",
+            "createdAt": "8/11/2026, 2:30:28 AM",
+            "firstName": "admin",
+            "workflowType": "Peer Review Workflow",
+            "studyLastName": "User",
+            "studyFirstName": "admin",
+            "submissionGroup": "N/A",
+            "completeUserName": "admin User",
+            "studyCompleteUserName": "admin User"
+          }
+        ],
+        "enableEmailNotification": false
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.794Z",
+      "endTime": "2026-08-11T00:33:41.794Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Submit"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.798Z",
+      "endTime": "2026-08-11T00:33:41.798Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_sessionRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "end": null,
+          "hash": "f4be4faa-a36a-467f-936a-4e2805f48ad4",
+          "start": null,
+          "userId": 3,
+          "deleted": false,
+          "studyId": 3,
+          "createdAt": "2026-08-11T00:33:41.871Z",
+          "updatedAt": "2026-08-11T00:33:41.871Z",
+          "numberSteps": 1,
+          "studyStepId": 5,
+          "studyStepIdMax": 5,
+          "parentStudySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:41.874Z",
+      "endTime": "2026-08-11T00:33:41.874Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "studyRefresh",
+      "payload": [
+        {
+          "id": 3,
+          "end": null,
+          "hash": "f39dca56-2735-478a-ab3c-23f35ba517df",
+          "name": "replaystudytemplate",
+          "start": null,
+          "closed": null,
+          "collab": false,
+          "userId": 4,
+          "deleted": false,
+          "tagSetId": 1,
+          "template": false,
+          "anonymize": false,
+          "createdAt": "2026-08-11T00:33:41.844Z",
+          "projectId": 1,
+          "resumable": true,
+          "timeLimit": 0,
+          "updatedAt": "2026-08-11T00:33:41.844Z",
+          "workflowId": 1,
+          "description": "{\"ops\":[{\"insert\":\"template\\n\"}]}",
+          "userIdClosed": null,
+          "limitSessions": 1,
+          "parentStudyId": 1,
+          "multipleSubmit": false,
+          "createdByUserId": 4,
+          "limitSessionsPerUser": 1,
+          "enableEmailNotifications": false
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:41.874Z",
+      "endTime": "2026-08-11T00:33:41.874Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "hash": "72dbe4d3-46de-4d62-b305-3a9aeb6309aa",
+          "name": "care-test-doc_renamed_copy",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:33:41.821Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:33:41.821Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": "care-test-doc.pdf",
+          "parentDocumentId": 2,
+          "uploadedByUserId": 4
+        },
+        {
+          "id": 6,
+          "hash": "95f54acf-08bf-4ff3-9a26-95f52ad5d815",
+          "name": "Document Study 1_copy",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:33:41.835Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:33:41.835Z",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": 3,
+          "uploadedByUserId": null
+        },
+        {
+          "id": 5,
+          "hash": "72dbe4d3-46de-4d62-b305-3a9aeb6309aa",
+          "name": "care-test-doc_renamed_copy",
+          "type": 0,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:33:41.821Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:33:41.860Z",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": "care-test-doc.pdf",
+          "parentDocumentId": 2,
+          "uploadedByUserId": 4
+        },
+        {
+          "id": 6,
+          "hash": "95f54acf-08bf-4ff3-9a26-95f52ad5d815",
+          "name": "Document Study 1_copy",
+          "type": 1,
+          "public": false,
+          "userId": 4,
+          "deleted": false,
+          "createdAt": "2026-08-11T00:33:41.835Z",
+          "projectId": 1,
+          "updatedAt": "2026-08-11T00:33:41.865Z",
+          "submissionId": null,
+          "hideInFrontend": true,
+          "readyForReview": false,
+          "studyUsageCount": 1,
+          "originalFilename": null,
+          "parentDocumentId": 3,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:41.873Z",
+      "endTime": "2026-08-11T00:33:41.873Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "study_stepRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "deleted": false,
+          "studyId": 3,
+          "stepType": 1,
+          "createdAt": "2026-08-11T00:33:41.857Z",
+          "updatedAt": "2026-08-11T00:33:41.857Z",
+          "documentId": 5,
+          "stepNumber": 1,
+          "allowBackward": false,
+          "configuration": {},
+          "workflowStepId": 1,
+          "studyStepDocument": null,
+          "studyStepPrevious": null
+        },
+        {
+          "id": 6,
+          "deleted": false,
+          "studyId": 3,
+          "stepType": 2,
+          "createdAt": "2026-08-11T00:33:41.863Z",
+          "updatedAt": "2026-08-11T00:33:41.863Z",
+          "documentId": 6,
+          "stepNumber": 2,
+          "allowBackward": true,
+          "configuration": {},
+          "workflowStepId": 2,
+          "studyStepDocument": null,
+          "studyStepPrevious": 5
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-11T00:33:41.874Z",
+      "endTime": "2026-08-11T00:33:41.874Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.895Z",
+      "endTime": "2026-08-11T00:33:41.895Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "b6875816-27c0-463f-9fdf-462cdbccb268",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.916Z",
+      "endTime": "2026-08-11T00:33:41.916Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "bd109548-8a9b-4148-910f-0f34933136a2",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.915Z",
+      "endTime": "2026-08-11T00:33:41.915Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "41178d8f-5db1-4d8a-b18d-fccbf504ea82",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.916Z",
+      "endTime": "2026-08-11T00:33:41.916Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "36966c06-6e3d-49e1-8bf7-89912a6e2981",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.916Z",
+      "endTime": "2026-08-11T00:33:41.916Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "unsubscribeAppData",
+      "payload": "ec13e0a1-2cab-438c-9464-ab2171ed41f9",
+      "direction": true,
+      "startTime": "2026-08-11T00:33:41.916Z",
+      "endTime": "2026-08-11T00:33:41.916Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 968,
+          "clientY": 285,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:43.351Z",
+      "endTime": "2026-08-11T00:33:43.351Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:47.227Z",
+      "endTime": "2026-08-11T00:33:47.227Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:47.314Z",
+      "endTime": "2026-08-11T00:33:47.314Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 971,
+          "clientY": 27,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:48.430Z",
+      "endTime": "2026-08-11T00:33:48.430Z"
+    },
+    {
+      "recordingId": 6,
+      "userId": 4,
+      "socketId": "d9A9RFi1xfVMSPlsAAAL",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-11T00:33:48.585Z",
+      "endTime": "2026-08-11T00:33:48.585Z"
+    }
+  ]
+}

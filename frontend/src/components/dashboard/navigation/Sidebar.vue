@@ -35,10 +35,10 @@
               >
                 <!-- Expanded mode -->
                 <div v-if="!isCollapsed" class="list-group-item-text subgroup-title">
-                  <span class="sidebar-icon subgroup-heading-icon" :title="subgroup.name">
+                  <span class="sidebar-icon subgroup-heading-icon" :title="tNavGroup(subgroup)">
                     <LoadIcon :icon-name="subgroup.icon" :size="22" />
                   </span>
-                  {{ subgroup.name }}
+                  {{ tNavGroup(subgroup) }}
                 </div>
 
                 <!-- Expanded mode: subgroup arrow -->
@@ -54,7 +54,7 @@
                 <span
                   v-else
                   class="sidebar-icon collapsed-group-icon"
-                  :title="subgroup.name"
+                  :title="tNavGroup(subgroup)"
                 >
                   <LoadIcon :icon-name="subgroup.icon" :size="24" />
                 </span>
@@ -78,14 +78,14 @@
                   >
                     <span
                       class="sidebar-icon"
-                      :title="element.name"
+                      :title="tNavElement(element)"
                     >
                       <LoadIcon
                         :icon-name="element.icon"
                         :size="24"
                       />
                     </span>
-                    <div class="list-group-item-text">{{ element.name }}</div>
+                    <div class="list-group-item-text">{{ tNavElement(element) }}</div>
                   </router-link>
                 </div>
               </transition>
@@ -102,7 +102,7 @@
                 <div class="submenu-preview-inner">
                   <!-- Collapsed mode: preview header -->
                   <div v-if="isCollapsed" class="submenu-preview-header">
-                    {{ subgroup.name }}
+                    {{ tNavGroup(subgroup) }}
                   </div>
 
                   <div v-if="isCollapsed" class="submenu-preview-divider" />
@@ -115,14 +115,14 @@
                   >
                     <span
                       class="sidebar-icon"
-                      :title="element.name"
+                      :title="tNavElement(element)"
                     >
                       <LoadIcon
                         :icon-name="element.icon"
                         :size="24"
                       />
                     </span>
-                    <div class="list-group-item-text">{{ element.name }}</div>
+                    <div class="list-group-item-text">{{ tNavElement(element) }}</div>
                   </router-link>
                 </div>
               </div>
@@ -133,12 +133,12 @@
 
       <!-- Sidebar footer -->
       <div v-if="isAdmin && !isCollapsed" class="text-center text-secondary">
-        App Version: {{ version }}
+        {{ $t('common.appVersion') }}: {{ version }}
       </div>
 
       <div
         class="collapse-sidebar-container list-group-item-action list-group-item list-group-item-custom"
-        title="Toggle sidebar"
+        :title="$t('navigation.sidebar.toggleSidebar')"
         @click="toggleSidebar()"
       >
         <span class="arrow-toggle sidebar-icon">
@@ -147,7 +147,7 @@
 
         <!-- Expanded mode -->
         <div v-if="!isCollapsed" class="list-group-item-text" style="cursor:pointer">
-          Collapse sidebar
+          {{ $t('navigation.sidebar.collapseSidebar') }}
         </div>
       </div>
     </div>
@@ -492,6 +492,16 @@ export default {
         }
       });
     },
+
+    tNavGroup(group) {
+      const key = `sidebar.nav.groups.${group.name.toLowerCase()}`;
+      return this.$te(key) ? this.$t(key) : group.name;
+    },
+
+    tNavElement(element) {
+      const key = `sidebar.nav.${element.path}`;
+      return this.$te(key) ? this.$t(key) : element.name;
+    },
   },
 };
 </script>
@@ -503,7 +513,7 @@ export default {
 
 #wrapper {
   height: 100%;
-  background-color: #f2f2f2;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
 }
 
 #sidebar-wrapper {
@@ -608,11 +618,11 @@ export default {
   text-overflow: ellipsis;
   overflow: hidden;
   border: none;
-  background-color: #f2f2f2;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
 }
 
 .list-group-item:hover {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .sidebar-icon {
@@ -646,13 +656,13 @@ export default {
   cursor: pointer;
   font-weight: 400;
   border: none;
-  background-color: #f2f2f2;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
   border-radius: 0;
   padding-right: 2.75rem !important;
 }
 
 .sidebar-subgroup-heading:hover {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .subgroup-title {
@@ -681,8 +691,8 @@ export default {
 
 .default-subitem.router-link-active,
 .default-subitem.router-link-exact-active {
-  background-color: #e0e0e0 !important;
-  box-shadow: inset 2px 0 0 #222;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
+  box-shadow: inset 2px 0 0 var(--bs-emphasis-color, #222);
 }
 
 .submenu-enter-active,
@@ -707,7 +717,7 @@ export default {
 
 .submenu-preview-inner {
   min-width: 220px;
-  background: #ebebeb;
+  background: var(--bs-tertiary-bg, #ebebeb);
   color: inherit;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -722,7 +732,7 @@ export default {
   padding: 0.95rem 1rem 0.75rem;
   font-size: 1rem;
   font-weight: 600;
-  background: #f2f2f2;
+  background: var(--bs-tertiary-bg, #f2f2f2);
   color: inherit;
 }
 
@@ -745,18 +755,18 @@ export default {
 }
 
 .submenu-preview .list-group-item-custom {
-  background-color: #f2f2f2 !important;
+  background-color: var(--bs-tertiary-bg, #f2f2f2) !important;
   color: inherit;
 }
 
 .submenu-preview .list-group-item-custom:hover {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .submenu-preview .preview-subitem.router-link-active,
 .submenu-preview .preview-subitem.router-link-exact-active {
-  background-color: #e0e0e0 !important;
-  box-shadow: inset 2px 0 0 #222;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
+  box-shadow: inset 2px 0 0 var(--bs-emphasis-color, #222);
 }
 
 /* ========================================
@@ -811,7 +821,7 @@ export default {
 
 #sidebar-wrapper.collapsed .collapsed-group-icon-active {
   position: relative;
-  background-color: #e0e0e0 !important;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
 }
 
 #sidebar-wrapper.collapsed .collapsed-group-icon-active::before {
@@ -827,7 +837,7 @@ export default {
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active {
   position: relative;
-  background-color: #e0e0e0 !important;
+  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
 }
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active::before {
@@ -842,12 +852,12 @@ export default {
 }
 
 .sidebar-subgroup-heading.preview-group-active {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active.preview-group-active,
 #sidebar-wrapper.collapsed .collapsed-group-icon-active.preview-group-active {
-  background-color: white !important;
+  background-color: var(--bs-body-bg, #fff) !important;
 }
 
 .arrow-toggle {

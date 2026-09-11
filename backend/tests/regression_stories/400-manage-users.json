@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:47:37.336Z",
+  "traceCount": 32,
+  "recording": {
+    "name": "400-manage-users",
+    "status": "finished",
+    "startTime": "2026-08-10T23:43:36.840Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "90oWDZwTlp-h7ZFKAAAZ"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:44:18.998Z"
+  },
+  "traces": [
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 24,
+          "name": "Recording 8/11/2026, 1:43:36 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:43:36.840Z",
+          "startTime": "2026-08-10T23:43:36.840Z",
+          "updatedAt": "2026-08-10T23:43:36.840Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "90oWDZwTlp-h7ZFKAAAZ"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:43:36.851Z",
+      "endTime": "2026-08-10T23:43:36.851Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:38.330Z",
+      "endTime": "2026-08-10T23:43:38.330Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/users",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.069Z",
+      "endTime": "2026-08-10T23:43:41.069Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "9f125ec6-1de6-4b8a-b0fa-23cb73010e7e",
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.075Z",
+      "endTime": "2026-08-10T23:43:41.075Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "94c2d10f-0d8d-468f-bac3-14d28167b50c",
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.076Z",
+      "endTime": "2026-08-10T23:43:41.076Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "2d384854-b707-47eb-8b3b-3779848b8960",
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.076Z",
+      "endTime": "2026-08-10T23:43:41.076Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "c3583090-39f3-4ec3-8e43-4bf8e6b6f6bb",
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.085Z",
+      "endTime": "2026-08-10T23:43:41.085Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "510e71e4-2518-4a16-8556-5920811b09bc",
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.076Z",
+      "endTime": "2026-08-10T23:43:41.076Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "1729dabf-a345-4032-9360-3fd613dea402",
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.085Z",
+      "endTime": "2026-08-10T23:43:41.085Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.207Z",
+      "endTime": "2026-08-10T23:43:41.207Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.210Z",
+      "endTime": "2026-08-10T23:43:41.210Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "user_roleRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "name": "user",
+          "createdAt": "2026-08-10T22:35:47.511Z",
+          "updatedAt": "2026-08-10T22:35:47.511Z",
+          "description": "no system rights"
+        },
+        {
+          "id": 2,
+          "name": "admin",
+          "createdAt": "2026-08-10T22:35:47.511Z",
+          "updatedAt": "2026-08-10T22:35:47.511Z",
+          "description": "full control"
+        },
+        {
+          "id": 3,
+          "name": "teacher",
+          "createdAt": "2026-08-10T22:35:47.763Z",
+          "updatedAt": "2026-08-10T22:35:47.763Z",
+          "description": "responsible for coordination"
+        },
+        {
+          "id": 4,
+          "name": "mentor",
+          "createdAt": "2026-08-10T22:35:47.763Z",
+          "updatedAt": "2026-08-10T22:35:47.763Z",
+          "description": "have the right to grade"
+        },
+        {
+          "id": 5,
+          "name": "student",
+          "createdAt": "2026-08-10T22:35:47.763Z",
+          "updatedAt": "2026-08-10T22:35:47.763Z",
+          "description": "leave inline commentary"
+        },
+        {
+          "id": 6,
+          "name": "guest",
+          "createdAt": "2026-08-10T22:35:47.763Z",
+          "updatedAt": "2026-08-10T22:35:47.763Z",
+          "description": "have limited rights when using the platform"
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:43:41.211Z",
+      "endTime": "2026-08-10T23:43:41.212Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userMonitorSubscribe",
+      "payload": {},
+      "direction": true,
+      "startTime": "2026-08-10T23:43:41.210Z",
+      "endTime": "2026-08-10T23:43:41.210Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "person-plus",
+          "title": "Add User"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:42.645Z",
+      "endTime": "2026-08-10T23:43:42.645Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "UserCreateModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:43.102Z",
+      "endTime": "2026-08-10T23:43:43.102Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 784,
+          "clientY": 162,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:44.069Z",
+      "endTime": "2026-08-10T23:43:44.069Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:45.203Z",
+      "endTime": "2026-08-10T23:43:45.203Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:53.336Z",
+      "endTime": "2026-08-10T23:43:53.336Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 663,
+          "clientY": 160,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:54.822Z",
+      "endTime": "2026-08-10T23:43:54.822Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 663,
+          "clientY": 170,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:55.897Z",
+      "endTime": "2026-08-10T23:43:55.897Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 525,
+          "clientY": 134,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:57.770Z",
+      "endTime": "2026-08-10T23:43:57.770Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 551,
+          "clientY": 196,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:43:59.403Z",
+      "endTime": "2026-08-10T23:43:59.403Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 562,
+          "clientY": 299,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:03.038Z",
+      "endTime": "2026-08-10T23:44:03.038Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 539,
+          "clientY": 394,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:05.871Z",
+      "endTime": "2026-08-10T23:44:05.871Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 612,
+          "clientY": 467,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:07.890Z",
+      "endTime": "2026-08-10T23:44:07.890Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Add"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:15.765Z",
+      "endTime": "2026-08-10T23:44:15.765Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userCreate",
+      "payload": {
+        "email": "jojos@email.com",
+        "lastName": "Joestar",
+        "password": "Jojo@123",
+        "userName": "jojo",
+        "firstName": "Joseph",
+        "isCreatedByAdmin": true
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:15.761Z",
+      "endTime": "2026-08-10T23:44:15.761Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "email": "jojos@email.com",
+          "extId": null,
+          "deleted": false,
+          "orcidId": null,
+          "lastName": "Joestar",
+          "userName": "jojo",
+          "createdAt": "2026-08-10T23:44:15.840Z",
+          "firstName": "Joseph",
+          "updatedAt": "2026-08-10T23:44:15.840Z",
+          "acceptedAt": null,
+          "resetToken": null,
+          "samlNameId": null,
+          "totpSecret": null,
+          "acceptStats": false,
+          "acceptTerms": false,
+          "lastLoginAt": null,
+          "ldapUsername": null,
+          "twoFactorOtp": null,
+          "emailVerified": false,
+          "rolesUpdatedAt": null,
+          "initialPassword": null,
+          "twoFactorMethods": [],
+          "acceptDataSharing": false,
+          "twoFactorOtpExpiresAt": null,
+          "emailVerificationToken": null,
+          "lastVerificationEmailSent": null,
+          "lastPasswordResetEmailSent": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:44:15.858Z",
+      "endTime": "2026-08-10T23:44:15.858Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "UserCreateModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:15.864Z",
+      "endTime": "2026-08-10T23:44:15.864Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 704,
+          "clientY": 476,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:16.737Z",
+      "endTime": "2026-08-10T23:44:16.737Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1059,
+          "clientY": 62,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:17.845Z",
+      "endTime": "2026-08-10T23:44:17.845Z"
+    },
+    {
+      "recordingId": 24,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:44:18.114Z",
+      "endTime": "2026-08-10T23:44:18.114Z"
+    }
+  ]
+}

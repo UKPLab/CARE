@@ -7,7 +7,7 @@
     size="lg"
   >
     <template #title>
-      <h5 class="modal-title">Saved Templates</h5>
+      <h5 class="modal-title">{{$t('studies.savedTemplates')}}</h5>
     </template>
     <template #body>
       <BasicTable
@@ -20,17 +20,17 @@
       >
         <template #additional-buttons>
           <BasicButton
-            class="btn btn-outline-secondary btn-sm"
+            class="btn-secondary btn-sm"
             icon="upload"
             text=""
-            title="Import Template"
+            :title="$t('modals.importExport.wiring.studyTemplates.importTooltip')"
             @click="openImport"
           />
           <BasicButton
-            class="btn btn-outline-secondary btn-sm"
+            class="btn-secondary btn-sm"
             icon="download"
             text=""
-            title="Export All Templates"
+            :title="$t('modals.importExport.wiring.studyTemplates.exportAllTooltip')"
             @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
           />
         </template>
@@ -40,12 +40,14 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          title="Close"
+          :text="$t('common.close')"
+          :title="$t('common.close')"
           @click="close"
         />
         <BasicButton
           class="btn btn-primary"
-          title="Create Template"
+          :text="$t('dashboard.study.createTemplate')"
+          :title="$t('dashboard.study.createTemplate')"
           @click="createTemplate"
         />
       </span>
@@ -54,11 +56,11 @@
   <ConfirmModal ref="deleteConf"/>
   <ImportFormatModal
     ref="importFormatModal"
-    title="Import Study Templates"
+    :title="$t('modals.importExport.wiring.studyTemplates.importTitle')"
   />
   <ExportFormatModal
     ref="exportFormatModal"
-    title="Export Study Template"
+    :title="$t('modals.importExport.wiring.studyTemplates.exportTitle')"
   />
 </span>
 </template>
@@ -69,8 +71,10 @@ import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 /**
  * Modal to show saved study templates
  * 
@@ -94,84 +98,67 @@ export default {
         pagination: 10,
         search: true,
       },
-      columns: [
-        { name: "Name", key: "name" },
-        { name: "Created At", key: "createdAt", sortable: true },
+    };
+  },
+  computed:{
+    columns() {
+      return [
+        { name: this.$t('common.name'), key: "name" },
+        { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
         {
-          name: "Resumable",
+          name: this.$t('studies.columns.resumable'),
           key: "resumable",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Collaborative",
+          name: this.$t('studies.columns.collaborative'),
           key: "collab",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
         {
-          name: "Multiple Submissions",
+          name: this.$t('studies.columns.multipleSubmissions'),
           key: "multipleSubmit",
           type: "badge",
           typeOptions: {
-            keyMapping: {true: "Yes", false: "No"},
+            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
             classMapping: {true: "bg-success", false: "bg-danger"}
           }
         },
-      ],
-      tableButtons: [
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
-          title: "Delete",
+      ];
+    },
+    tableButtons() {
+      return [
+        dashboardRowAction("delete", {
+          title: this.$t('common.delete'),
           filter: [
             {key: "showDeleteTemplateButton", value: true},
           ],
           action: "deleteTemplate",
-        },
-        {
-          icon: "play",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
-          title: "Use",
+        }),
+        dashboardRowAction("resume", {
+          title: this.$t('common.use'),
           action: "useTemplate",
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
-          title: "Export",
+        }),
+        dashboardRowAction("download", {
+          title: this.$t('common.export'),
           action: "exportTemplate",
-        },
-      ],
-    };
-  },
-  computed:{
+        }),
+      ];
+    },
     savedTemplates() {
       return this.$store.getters["table/study/getFiltered"]((s) => s.template === true).map((s) => {
         return {
           id: s.id,
           name: s.name,
-          createdAt: new Date(s.createdAt).toLocaleDateString(),
+          createdAt: formatLocalizedDate(s.createdAt),
           resumable: s.resumable,
           collab: s.collab,
           multipleSubmit: s.multipleSubmit,
@@ -205,8 +192,8 @@ export default {
     deleteTemplate(template) {
       this.close();
       this.$refs.deleteConf.open(
-        "Delete Template",
-        "Are you sure you want to delete this template?",
+        this.$t('dashboard.study.deleteTemplate'),
+        this.$t('dashboard.study.deleteTemplatePrompt'),
         "",
         (val) => {
           if (val) {
@@ -219,14 +206,14 @@ export default {
             }, (result) => {
               if (result.success) {
                 this.eventBus.emit('toast', {
-                  title: "Study template deleted",
-                  message: "The study template has been deleted",
+                  title: this.$t('dashboard.study.studyTemplateDeleted'),
+                  message: this.$t('dashboard.study.studyTemplateDeletedMessage'),
                   variant: "success"
                 });
               } else {
                 this.eventBus.emit('toast', {
-                  title: "Study template deletion failed",
-                  message: result.message,
+                  title: this.$t('dashboard.study.deletionFailed'),
+                  message: resolveApiMessage(result),
                   variant: "danger"
                 });
               }

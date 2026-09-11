@@ -1,0 +1,591 @@
+const Socket = require("../Socket.js");
+const { snapshot } = require("../../db/stats.js");
+const TranslatableError = require("../../utils/TranslatableError");
+
+// How long a start-recording claim stays valid before another admin may take
+// the socket. Only reached when a start failed between claiming and committing,
+// so it just needs to outlast a normal insert.
+const RECORDING_CLAIM_TIMEOUT_MS = 10000;
+
+// The recorder's own control events. These are recording machinery, not user
+// activity, so they're never captured — otherwise a recording would include
+// its own recorderStop, and replaying it fails with errors.socketProfiler.noActiveRecording.
+const RECORDER_CONTROL_EVENTS = [
+    "recorderStart",
+    "recorderStop",
+    "recordingGetTraces",
+    "recordingGetOnlineSessions",
+    "recordingGetPerfHealth",
+    "recordingGetPerfStats"
+];
+
+/**
+ * Recorder Socket
+ *
+ * Captures WebSocket events for stress-test replay. An admin selects which
+ * connected sessions (sockets) to record; each selected socket gets its own
+ * recording, so one capture per participant. Selection is fixed at start —
+ * sessions connecting later are not added to a running recording.
+ *
+ * @type {RecorderSocket}
+ * @class RecorderSocket
+ */
+class RecorderSocket extends Socket {
+
+    constructor(server, io, socket) {
+        super(server, io, socket);
+        this.incomingHandler = null;
+        this.outgoingHandler = null;
+    }
+
+    /**
+     * Build a trace-capturing listener for one direction.
+     * @param {boolean} direction - true for client->server, false for server->client
+     * @returns {Function} An onAny/onAnyOutgoing listener
+     */
+    makeTraceHandler(direction) {
+        return async (eventName, ...args) => {
+            const entry = this.server.activeRecordings && this.server.activeRecordings[this.socket.id];
+            if (!entry) return;
+            if (RECORDER_CONTROL_EVENTS.includes(eventName)) return;
+            if (entry.excludeEvents && entry.excludeEvents.includes(eventName)) return;
+            // An ack callback isn't data and can't be stored or replayed.
+            const payload = typeof args[0] === "function" || args[0] === undefined ? null : args[0];
+            try {
+                await this.models["trace"].add({
+                    recordingId: entry.recordingId,
+                    userId: this.userId,
+                    socketId: this.socket.id,
+                    action: eventName,
+                    payload,
+                    direction,
+                    startTime: new Date(),
+                    endTime: new Date(),
+                });
+            } catch (err) {
+                this.logger.error("Failed to save trace: " + err.message);
+            }
+        };
+    }
+
+    /**
+     * Attach the capture listeners to this socket, once.
+     * @returns {void}
+     */
+    attachListeners() {
+        if (this.incomingHandler || this.outgoingHandler) return;
+        this.incomingHandler = this.makeTraceHandler(true);
+        this.outgoingHandler = this.makeTraceHandler(false);
+        this.socket.onAny(this.incomingHandler);
+        this.socket.onAnyOutgoing(this.outgoingHandler);
+    }
+
+    /**
+     * Remove this socket's capture listeners, if attached.
+     * @returns {void}
+     */
+    detachListeners() {
+        if (this.incomingHandler) {
+            this.socket.offAny(this.incomingHandler);
+            this.incomingHandler = null;
+        }
+        if (this.outgoingHandler) {
+            this.socket.offAnyOutgoing(this.outgoingHandler);
+            this.outgoingHandler = null;
+        }
+    }
+
+    /**
+     * Start recording the selected sessions. Each selected socket gets its own
+     * recording row, so one capture per participant.
+     * @param {Object} data - {participantSocketIds: string[], name?: string, excludeEvents?: string[]}
+     * @param {Object} options - Handler options; carries the transaction
+     * @returns {Promise<void>}
+     * @throws {Error} If the caller is not an admin, no sessions are selected,
+     *                 a session is already recording, or a session is offline
+     */
+    async startRecording(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+        if (!this.server.activeRecordings) {
+            this.server.activeRecordings = {};
+        }
+
+        const participantSocketIds = Array.isArray(data?.participantSocketIds) && data.participantSocketIds.length > 0
+            ? data.participantSocketIds
+            : null;
+
+        if (!participantSocketIds) {
+            throw new TranslatableError("errors.socketProfiler.noSessionsSelected");
+        }
+
+        // Claim the sockets synchronously, before any await: two admins starting
+        // at once would otherwise both pass this check and the second activation
+        // would orphan the first's recording. Claims expire on a timer (see
+        // below); the age check here is a fallback in case that timer was
+        // missed, e.g. across a server restart.
+        const now = Date.now();
+        const taken = participantSocketIds.filter(id => {
+            const entry = this.server.activeRecordings[id];
+            if (!entry) {
+                return false;
+            }
+            if (entry.claimedAt && now - entry.claimedAt > RECORDING_CLAIM_TIMEOUT_MS) {
+                delete this.server.activeRecordings[id];
+                return false;
+            }
+            return true;
+        });
+        if (taken.length > 0) {
+            throw new TranslatableError("errors.socketProfiler.sessionsAlreadyRecorded");
+        }
+
+        // A socketId from a stale session list has no live socket to attach to,
+        // so it would produce a recording that stays open and captures nothing.
+        // availSockets can retain ghosts after a disconnect, so check the live
+        // socket too — the same test getOnlineSessions uses to build the list.
+        const offline = participantSocketIds.filter(id => !(
+            this.server.availSockets[id]
+            && this.server.availSockets[id]["RecorderSocket"]
+            && this.server.io.sockets.sockets.get(id)
+        ));
+        if (offline.length > 0) {
+            throw new TranslatableError("errors.socketProfiler.sessionsNoLongerConnected");
+        }
+
+        for (const socketId of participantSocketIds) {
+            // Sequelize has no rollback hook, so a claim whose transaction
+            // fails would otherwise sit here blocking the socket until someone
+            // happened to try recording it again. Expire it on a timer instead.
+            const claimTimer = setTimeout(() => {
+                const entry = this.server.activeRecordings[socketId];
+                if (entry && !entry.recordingId) {
+                    delete this.server.activeRecordings[socketId];
+                    this.logger.warn(`Released stale recording claim on socket ${socketId}`);
+                }
+            }, RECORDING_CLAIM_TIMEOUT_MS);
+            if (typeof claimTimer.unref === "function") {
+                claimTimer.unref();
+            }
+            this.server.activeRecordings[socketId] = {
+                claimedAt: now,
+                ownerUserId: this.userId,
+                claimTimer,
+            };
+        }
+
+        const excludeEvents = Array.isArray(data?.excludeEvents) && data.excludeEvents.length > 0
+            ? data.excludeEvents
+            : null;
+
+        const baseName = data.name || "Recording " + new Date().toLocaleString();
+        const started = [];
+
+        for (const socketId of participantSocketIds) {
+            const recorder = this.server.availSockets[socketId]["RecorderSocket"];
+
+            const recording = await this.models["recording"].add({
+                // One recording per participant, so the name has to say which.
+                name: participantSocketIds.length > 1 ? `${baseName} — ${socketId}` : baseName,
+                status: "recording",
+                startTime: new Date(),
+                userId: recorder.userId,
+                participantSocketIds: [socketId],
+                excludeEvents,
+            }, options);
+
+            started.push({ socketId, recorder, recordingId: recording.id });
+        }
+
+        // Only start capturing once the rows are committed: a rollback would
+        // otherwise leave listeners writing traces against recordings that
+        // don't exist. This also replaces the claims above with real entries.
+        const activate = () => {
+            for (const s of started) {
+                // The claim became a real recording, so its expiry timer is
+                // no longer needed.
+                const claim = this.server.activeRecordings[s.socketId];
+                if (claim && claim.claimTimer) {
+                    clearTimeout(claim.claimTimer);
+                }
+                this.server.activeRecordings[s.socketId] = {
+                    recordingId: s.recordingId,
+                    ownerUserId: this.userId,
+                    excludeEvents,
+                };
+                s.recorder.attachListeners();
+            }
+        };
+
+        if (options && options.transaction) {
+            options.transaction.afterCommit(activate);
+        } else {
+            activate();
+        }
+    }
+
+    /**
+     * Stop one or more active recordings and return each one's captured traces.
+     * @param {Object} data - {socketId?: string, status?: string}; socketId stops
+     *                        just that session, otherwise the caller's whole batch
+     * @param {Object} options - Handler options; options.internal bypasses the
+     *                           admin check and the targeted-stop ownership check
+     * @returns {Promise<{stopped: Array<Object>}>} Each stopped recording with its traces
+     * @throws {Error} If the caller is not an admin (unless internal) or nothing is recording
+     */
+    async stopRecording(data, options) {
+        // Internal callers (e.g. disconnect cleanup in Server.js) pass
+        // options.internal to bypass the admin check, since the triggering
+        // socket isn't an admin. User-initiated stops via recorderStop are
+        // not internal and must be admin-gated.
+        if (!(options && options.internal) && !(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+
+        if (!this.server.activeRecordings) {
+            this.server.activeRecordings = {};
+        }
+
+        // Allow callers to override the terminal status (e.g. "disconnected"
+        // when a participant's socket drops). Normal user-initiated stops use
+        // "finished".
+        const finalStatus = (data && data.status) || "finished";
+
+        // Determine which sockets to stop:
+        // - data.socketId given (e.g. disconnect path): stop only that socket.
+        // - otherwise: stop every recording started by this caller (their batch),
+        //   so one admin stopping doesn't end another admin's recordings.
+        //   Ownership is keyed on userId, not socket id: a reloaded tab or a
+        //   second tab is a new socket but the same admin, and must still be
+        //   able to stop the batch it started.
+        // A claim (see startRecording) has an ownerUserId but no recordingId
+        // yet, so it must never be treated as stoppable — its real entry lands
+        // when the start transaction commits.
+        const isStoppable = (sid) => Boolean(this.server.activeRecordings[sid]?.recordingId);
+
+        let socketIdsToStop;
+        if (data && data.socketId) {
+            // Internal callers (disconnect cleanup) stop a recording they don't
+            // own by design. A user-initiated targeted stop must not reach
+            // another admin's recording.
+            const owned = options?.internal
+                || this.server.activeRecordings[data.socketId]?.ownerUserId === this.userId;
+            socketIdsToStop = (isStoppable(data.socketId) && owned) ? [data.socketId] : [];
+        } else {
+            socketIdsToStop = Object.keys(this.server.activeRecordings)
+                .filter(sid => isStoppable(sid) && this.server.activeRecordings[sid].ownerUserId === this.userId);
+        }
+
+        if (socketIdsToStop.length === 0) {
+            throw new TranslatableError("errors.socketProfiler.noActiveRecording");
+        }
+
+        const stopped = [];
+
+        for (const socketId of socketIdsToStop) {
+            const entry = this.server.activeRecordings[socketId];
+            const recordingId = entry.recordingId;
+
+            const recorder = this.server.availSockets[socketId] && this.server.availSockets[socketId]["RecorderSocket"];
+
+            await this.models["recording"].updateById(
+                recordingId,
+                { status: finalStatus, endTime: new Date() },
+                options
+            );
+
+            // Callers without a transaction (e.g. disconnect cleanup) get no
+            // automatic table broadcast, so push the updated row to
+            // subscribers here. Under a transaction, createSocket's
+            // afterCommit hook broadcasts the change instead.
+            if (!options || !options.transaction) {
+                try {
+                    const updatedRow = await this.models["recording"].getById(recordingId, options);
+                    if (updatedRow) {
+                        await this.broadcastTable("recording", [updatedRow]);
+                    }
+                } catch (e) {
+                    this.logger.warn("Failed to broadcast stopped recording: " + e);
+                }
+            }
+
+            // Detaching listeners and dropping the in-memory entry are only
+            // safe once the status write is durable — a rollback would
+            // otherwise leave the server treating the recording as stopped
+            // while the row still says "recording".
+            const applyStopSideEffects = () => {
+                if (recorder) {
+                    recorder.detachListeners();
+                }
+                delete this.server.activeRecordings[socketId];
+            };
+
+            if (options && options.transaction) {
+                options.transaction.afterCommit(applyStopSideEffects);
+            } else {
+                applyStopSideEffects();
+            }
+
+            const traces = (await this.models["trace"].getAllByKey("recordingId", recordingId, options))
+                .sort((a, b) => a.id - b.id);
+
+            stopped.push({
+                id: recordingId,
+                socketId,
+                traces: traces.map(t => ({
+                    id: t.id,
+                    recordingId: t.recordingId,
+                    userId: t.userId,
+                    socketId: t.socketId,
+                    action: t.action,
+                    direction: t.direction,
+                    startTime: t.startTime,
+                    endTime: t.endTime,
+                })),
+            });
+        }
+
+        return { stopped };
+    }
+
+    /**
+     * Return every trace of one recording, oldest first. Feeds the results
+     * table and the export payload.
+     * @param {Object} data - {id: number} recording id
+     * @param {Object} options - Handler options
+     * @returns {Promise<Array<Object>>} The recording's traces
+     * @throws {Error} If the caller is not an admin or no id is given
+     */
+    async getTraces(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+        if (!data || !data.id) {
+            throw new TranslatableError("errors.socketProfiler.recordingIdRequired");
+        }
+        return (await this.models["trace"].getAllByKey("recordingId", data.id, options))
+            .sort((a, b) => a.id - b.id);
+    }
+
+    /**
+     * Return one entry per live socket connection (= session), for the Start
+     * Recording modal's session list. Offline users have no sessions and are
+     * not returned.
+     * @param {Object} data
+     * @param {Object} options - Handler options
+     * @returns {Promise<Array<Object>>} Sessions with socketId, userId, userName, connectedAt
+     * @throws {Error} If the caller is not an admin
+     */
+    async getOnlineSessions(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+        const userIds = new Set();
+        const sessions = [];
+        for (const socketId of Object.keys(this.server.availSockets)) {
+            const bucket = this.server.availSockets[socketId];
+            const userSocket = bucket["UserSocket"];
+            const rawSocket = this.server.io.sockets.sockets.get(socketId);
+            // Skip ghost entries: a socket may linger in availSockets after
+            // disconnecting if its cleanup didn't fully run. socket.io removes
+            // disconnected sockets from io.sockets.sockets immediately, so a
+            // missing rawSocket means this session is stale and shouldn't be
+            // listed as online.
+            if (rawSocket && userSocket && userSocket.userId) {
+                userIds.add(userSocket.userId);
+                sessions.push({
+                    socketId,
+                    userId: userSocket.userId,
+                    connectedAt: rawSocket.connectedAt || null,
+                });
+            }
+        }
+
+        // Resolve userNames in one query
+        const userMap = {};
+        if (userIds.size > 0) {
+            const users = await this.models["user"].getAllByKeyValues("id", Array.from(userIds), options);
+            for (const u of users) {
+                userMap[u.id] = u.userName;
+            }
+        }
+
+        return sessions.map(s => ({
+            ...s,
+            userName: userMap[s.userId] || "Unknown",
+        }));
+
+    }
+
+    /**
+     * Return a snapshot of backend process vitals for perf metric sampling.
+     * Admin-only. Used by the perf tool to detect memory/connection leaks and
+     * event-loop pressure during load tests.
+     * @param {Object} data
+     * @param {Object} options
+     * @returns {Promise<Object>} process vitals (memory, socket/recording counts, uptime)
+     * @throws {Error} if the caller is not an admin
+     */
+    async getPerfHealth(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+        const mem = process.memoryUsage();
+        return {
+            rss: mem.rss,
+            heapUsed: mem.heapUsed,
+            heapTotal: mem.heapTotal,
+            socketCount: Object.keys(this.server.availSockets || {}).length,
+            activeRecordings: Object.keys(this.server.activeRecordings || {}).length,
+            uptime: process.uptime(),
+        };
+    }
+
+    /**
+     * Return a snapshot of PostgreSQL runtime stats (connection counts, Sequelize
+     * pool usage incl. waiting, DB counters, locks) for perf metric sampling.
+     * Admin-only. Delegates to the shared db/stats.js snapshot().
+     * @param {Object} data
+     * @param {Object} options
+     * @returns {Promise<Object>} pg_stat snapshot
+     * @throws {Error} if the caller is not an admin
+     */
+    async getPerfStats(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+        return await snapshot(this.server.db.sequelize, this.logger);
+    }
+
+    /**
+     * Delete a recording, or specific traces within it.
+     *
+     * @socketEvent recorderDelete
+     * @param {Object} data The delete request
+     * @param {Number} data.recordingId The recording to delete, or the one owning the traces
+     * @param {Number[]} [data.traceIds] When present, only these traces are deleted
+     * @param {Object} options Managed transaction from createSocket
+     * @returns {Promise<Object>} The recording id and how many traces were removed
+     * @throws {TranslatableError} If the caller is not an admin, or the payload is invalid
+     */
+    async removeRecording(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+
+        const recordingId = data && data.recordingId;
+        if (!recordingId) {
+            throw new TranslatableError("errors.socketProfiler.missingRecordingId");
+        }
+
+        const traceIds = data && data.traceIds;
+        if (traceIds !== undefined && !Array.isArray(traceIds)) {
+            throw new TranslatableError("errors.socketProfiler.invalidTraceIds");
+        }
+
+        if (Array.isArray(traceIds)) {
+            for (const id of traceIds) {
+                await this.models['trace'].deleteById(id, options);
+            }
+            return {recordingId, deletedTraces: traceIds.length};
+        }
+
+        await this.models['recording'].deleteById(recordingId, options);
+        return {recordingId, deletedTraces: 0};
+    }
+
+    /**
+     * Import a previously exported recording and all of its traces in one
+     * transaction. Replaces the frontend's per-trace appDataUpdate loop: one
+     * round trip instead of N, and a mid-import failure rolls the whole thing
+     * back rather than leaving a half-imported recording behind.
+     *
+     * The original userId is dropped — it's meaningless on this server — and
+     * the importing admin becomes the owner. Original socketIds are kept as
+     * opaque grouping keys so replay can reconstruct the sessions.
+     * @param {Object} data - Import payload
+     * @param {Object} data.recording - Recording row from the export file (name, status, startTime, endTime, excludeEvents)
+     * @param {Array<Object>} data.traces - Trace rows to re-create under the new recording
+     * @param {Object} options - Socket options; carries the transaction
+     * @returns {Promise<{recordingId: number, traceCount: number}>} The new recording's id and how many traces were written
+     * @throws {Error} if the caller is not an admin or the payload is malformed
+     */
+    async importRecording(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
+
+        const source = data && data.recording;
+        const traces = data && data.traces;
+
+        if (!source || typeof source !== "object") {
+            throw new TranslatableError("errors.socketProfiler.missingRecordingObject");
+        }
+        if (!Array.isArray(traces)) {
+            throw new TranslatableError("errors.socketProfiler.missingTracesArray");
+        }
+
+        // The client validates too, for fast feedback before upload, but this
+        // handler is reachable directly so the payload can't be trusted.
+        for (const t of traces) {
+            if (!t.action) {
+                throw new TranslatableError("errors.socketProfiler.traceMissingAction");
+            }
+            if (t.direction !== true && t.direction !== false) {
+                throw new TranslatableError("errors.socketProfiler.traceInvalidDirection");
+            }
+            if (!t.startTime) {
+                throw new TranslatableError("errors.socketProfiler.traceMissingStartTime");
+            }
+        }
+
+        // Sessions are reconstructed from the distinct socketIds, mirroring how
+        // a normally recorded row stores them.
+        const participantSocketIds = [...new Set(
+            traces.map(t => t.socketId).filter(Boolean)
+        )];
+
+        const recording = await this.models["recording"].add({
+            name: source.name ? `${source.name} (imported)` : `Imported recording ${Date.now()}`,
+            status: source.status || "finished",
+            startTime: source.startTime || new Date(),
+            endTime: source.endTime || null,
+            userId: this.userId,
+            participantSocketIds: participantSocketIds.length > 0 ? participantSocketIds : null,
+            excludeEvents: source.excludeEvents || null,
+        }, options);
+
+        for (const trace of traces) {
+            await this.models["trace"].add({
+                recordingId: recording.id,
+                userId: this.userId,
+                socketId: trace.socketId || null,
+                action: trace.action,
+                payload: trace.payload || null,
+                direction: trace.direction,
+                startTime: trace.startTime,
+                endTime: trace.endTime,
+            }, options);
+        }
+
+        return { recordingId: recording.id, traceCount: traces.length };
+    }
+
+    /**
+     * Register this socket's event handlers.
+     * @returns {void}
+     */
+    init() {
+        this.createSocket("recorderStart", this.startRecording, {}, true);
+        this.createSocket("recorderStop", this.stopRecording, {}, true);
+        this.createSocket("recordingGetTraces", this.getTraces, {}, false);
+        this.createSocket("recordingGetOnlineSessions", this.getOnlineSessions, {}, false);
+        this.createSocket("recordingGetPerfHealth", this.getPerfHealth, {}, false);
+        this.createSocket("recordingGetPerfStats", this.getPerfStats, {}, false);
+        this.createSocket("recorderImport", this.importRecording, {}, true);
+        this.createSocket("recorderDelete", this.removeRecording, {}, true);
+    }
+}
+
+module.exports = RecorderSocket;

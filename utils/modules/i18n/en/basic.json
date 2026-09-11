@@ -1,0 +1,110 @@
+{
+    "form": {
+        "placeholders": {
+            "documentBracket": "<Document>",
+            "documentTemplateSuffix": "(document template)"
+        },
+        "advancedSettings": "Advanced Settings"
+    },
+    "configuration": {
+        "title": "Configuration",
+        "filesTitle": "Configuration Files",
+        "uploadButton": "Upload Configuration",
+        "uploadTooltip": "Upload new configuration file",
+        "types": {
+            "assessment": "Assessment",
+            "validation": "Validation"
+        },
+        "fields": {
+            "name": {
+                "label": "Name",
+                "placeholder": "Configuration name"
+            },
+            "description": {
+                "label": "Description",
+                "placeholder": "Optional description"
+            },
+            "userId": {
+                "label": "User ID"
+            },
+            "hideInFrontend": {
+                "label": "Hide in Frontend"
+            },
+            "type": {
+                "label": "Type"
+            },
+            "content": {
+                "label": "Config (JSON)"
+            }
+        },
+        "viewer": {
+            "title": "Configuration: {name}"
+        },
+        "editor": {
+            "title": "Edit Configuration: {name}",
+            "placeholder": "Edit JSON content here..."
+        },
+        "delete": {
+            "title": "Delete Configuration",
+            "message": "Are you sure you want to delete \"{name}\"?"
+        },
+        "tooltips": {
+            "view": "View configuration",
+            "edit": "Edit configuration",
+            "export": "Export configuration",
+            "delete": "Delete configuration"
+        },
+        "steps": {
+            "general": "General Settings",
+            "services": "Services",
+            "placeholders": "Placeholders"
+        },
+        "editButton": "Edit Configuration",
+        "saveButton": "Save Configuration",
+        "toasts": {
+            "updatedTitle": "Configuration Updated",
+            "updatedMessage": "The configuration data has been successfully updated.",
+            "loadErrorTitle": "Configuration Error",
+            "loadErrorMessage": "Failed to load configuration content: {error}",
+            "editorNotInit": "Editor not initialized",
+            "noContent": "No configuration content to save",
+            "contentUnavailable": "No configuration content available",
+            "invalidJsonTitle": "Invalid JSON",
+            "invalidJsonMessage": "Please check your JSON syntax: {error}",
+            "updateErrorTitle": "Configuration Update Error",
+            "deleteFailedTitle": "Configuration delete failed"
+        },
+        "stepTitles": {
+            "general": "General Configuration",
+            "services": "Services Configuration",
+            "placeholders": "Placeholders Configuration"
+        }
+    },
+    "export": {
+        "successTitle": "Export Success",
+        "successMessage": "Exported {id}"
+    },
+    "graph": {
+        "inspectNode": "Inspect node",
+        "copyNode": "Copy node",
+        "addNodeBefore": "Add node before",
+        "addNodeAfter": "Add node after",
+        "removeNode": "Remove node",
+        "editNode": "Edit node",
+        "pasteCopiedNode": "Paste copied node",
+        "pasteBeforeSelectedNode": "Paste before selected node",
+        "pasteAfterSelectedNode": "Paste after selected node",
+        "readOnly": "You cannot edit this graph",
+        "confirmRemove": {
+            "title": "Remove Node",
+            "message": "Do you really want to remove the selected node?",
+            "warning": "All subsequent nodes will also be removed!"
+        }
+    },
+    "workflowStepEditor": {
+        "title": "Workflow Step",
+        "errors": {
+            "addNextNode": "Error adding next node: {error}"
+        }
+    }
+}

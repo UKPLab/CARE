@@ -1,17 +1,17 @@
 <template>
   <div class="p-3">
     <div class="mb-3">
-      <label class="form-label">Target type</label>
+      <label class="form-label">{{ $t('assignments.metadata.target.typeLabel') }}</label>
       <select
         :value="targetType"
         class="form-select"
         @change="$emit('update:targetType', $event.target.value)"
       >
-        <option value="assignment">Assignment</option>
+        <option value="assignment">{{ $t('common.assignment') }}</option>
       </select>
     </div>
     <div class="mb-3">
-      <label class="form-label">Assignment</label>
+      <label class="form-label">{{ $t('common.assignment') }}</label>
       <select
         :value="selectedAssignmentId"
         class="form-select"
@@ -22,12 +22,12 @@
           :key="assignmentOption.id"
           :value="assignmentOption.id"
         >
-          {{ assignmentOption.name || `Assignment #${assignmentOption.id}` }}
+          {{ assignmentOption.name || $t('assignments.metadata.fallback.assignmentLabel', { id: assignmentOption.id }) }}
         </option>
       </select>
     </div>
     <div class="small text-muted">
-      Metadata will be written to documents belonging to submissions in the selected assignment.
+      {{ $t('assignments.metadata.target.help') }}
     </div>
   </div>
 </template>

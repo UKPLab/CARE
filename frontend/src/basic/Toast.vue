@@ -52,11 +52,24 @@ export default {
     })
   },
   methods: {
+    resolveText(value, params = {}) {
+      if (typeof value !== "string") {
+        return value || "";
+      }
+      return this.$te(value) ? this.$t(value, params) : value;
+    },
     makeToast(data) {
+      const title = data.titleKey !== undefined
+        ? this.resolveText(data.titleKey, data.titleParams || {})
+        : this.resolveText(data.title, data.titleParams || {});
+      const body = data.key !== undefined
+        ? this.resolveText(data.key, data.params || {})
+        : this.resolveText(data.message, data.params || {});
+
       this.toaster.show(
           {
-            title: (data.title !== undefined) ? data.title : "",
-            body: data.message,
+            title,
+            body,
 
           },
           {

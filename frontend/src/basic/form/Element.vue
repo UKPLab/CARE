@@ -3,11 +3,11 @@
     <div v-if="dataTable">
       <slot :id="options.key" :blur="validate" name="element"/>
       <div v-if="invalidField" class="feedback-invalid">
-        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
-        <span v-else>The input is invalid.</span>
+        <span v-if="options.invalidText"> {{ translateMaybeKey(options.invalidText) }}</span>
+        <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
       <div v-else-if="options.required && emptyField" class="feedback-invalid">
-        This field is required.
+        {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
     <div v-else>
@@ -15,9 +15,9 @@
         v-if="'label' in options"
         :for="options.key"
         class="form-label"
-      >{{ options.label }}</label>
+      >{{ translateMaybeKey(options.label) }}</label>
       <FormHelp
-        :help="options.help"
+        :help="translateMaybeKey(options.help)"
       />
       <div class="input-group">
         <div
@@ -33,11 +33,11 @@
 
       </div>
       <div v-if="invalidField" class="feedback-invalid">
-        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
-        <span v-else>The input is invalid.</span>
+        <span v-if="options.invalidText"> {{ translateMaybeKey(options.invalidText) }}</span>
+        <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
       <div v-else-if="options.required && emptyField" class="feedback-invalid">
-        This field is required.
+        {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
   </fieldset>
@@ -46,6 +46,7 @@
 <script>
 import FormHelp from "@/basic/form/Help.vue"
 import LoadIcon from "@/basic/Icon.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Basic form element with label and help text
@@ -80,6 +81,7 @@ export default {
     this.eventBus.off('resetFormField', this.resetFieldState)
   },
   methods: {
+    translateMaybeKey,
     validate(data) {
       if (data === true) {
         this.invalidField = false;

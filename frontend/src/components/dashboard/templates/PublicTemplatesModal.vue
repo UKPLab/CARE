@@ -1,11 +1,11 @@
 <template>
   <Modal ref="modal" name="publicTemplates" size="xl">
     <template #title>
-      Public Templates
+      {{ $t("templates.publicTemplates.title") }}
     </template>
     <template #body>
       <p class="text-muted mb-3">
-        Browse published templates from other users. Copy a template to add it to your own list.
+        {{ $t("templates.publicTemplates.description") }}
       </p>
       <BasicTable
         :columns="columns"
@@ -18,7 +18,7 @@
     <template #footer>
       <BasicButton
         class="btn btn-secondary"
-        title="Close"
+        :title="$t('common.close')"
         @click="close"
       />
     </template>
@@ -29,6 +29,9 @@
 import Modal from "@/basic/Modal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * PublicTemplatesModal - modal for browsing and copying public templates
@@ -44,24 +47,19 @@ export default {
   subscribeTable: ["template"],
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
-      columns: [
-        { name: "ID", key: "id" },
-        { name: "Name", key: "name", sortable: true },
-        { name: "Type", key: "typeName", sortable: true },
-        { name: "Updated At", key: "updatedAt", sortable: true, type: "datetime" },
-        { name: "Status", key: "copyStatus", type: "badge" },
-      ],
+      tableOptions: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
     };
   },
   computed: {
+    columns() {
+      return [
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("common.name"), key: "name", sortable: true },
+        { name: this.$t("common.type"), key: "typeName", sortable: true },
+        { name: this.$t("common.updatedAt"), key: "updatedAt", sortable: true, type: "datetime" },
+        { name: this.$t("common.status"), key: "copyStatus", type: "badge" },
+      ];
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -84,48 +82,37 @@ export default {
             typeName: this.typeName(t.type),
             alreadyCopied,
             canCopy: !alreadyCopied,
-            copyStatus: alreadyCopied ? { text: "Already copied", class: "bg-secondary" } : { text: "", class: "" },
+            copyStatus: alreadyCopied ? { text: this.$t("templates.publicTemplates.alreadyCopied"), class: "bg-secondary" } : { text: "", class: "" },
           };
         });
     },
     buttons() {
       return [
-        {
-          icon: "eye",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          title: "View content (read-only)",
+        dashboardRowAction("view", {
+          title: this.$t("templates.publicTemplates.viewContentReadOnly"),
           action: "view",
-        },
-        {
-          icon: "clipboard-plus",
+        }),
+        dashboardRowButton("clipboard-plus", {
           options: {
-            iconOnly: true,
             specifiers: {
+              "btn-outline-secondary": false,
               "btn-outline-primary": true,
             },
           },
           filter: [{ key: "canCopy", value: true }],
-          title: "Copy to my templates",
+          title: this.$t("templates.publicTemplates.copyToMyTemplates"),
           action: "copy",
-        },
-        {
-          icon: "clipboard-check",
+        }),
+        dashboardRowButton("clipboard-check", {
           options: {
-            iconOnly: true,
             specifiers: {
-              "btn-outline-secondary": true,
               disabled: true,
             },
           },
           filter: [{ key: "alreadyCopied", value: true }],
-          title: "Already copied",
+          title: this.$t("templates.publicTemplates.alreadyCopied"),
           action: null,
-        },
+        }),
       ];
     },
   },
@@ -138,14 +125,14 @@ export default {
     },
     typeName(type) {
       switch (type) {
-        case 1: return "Email - General";
-        case 2: return "Email - Study Session";
-        case 3: return "Email - Assignment";
-        case 4: return "Document - General";
-        case 5: return "Document - Study";
-        case 6: return "Email - Study Close";
-        case 7: return "Email - Submission upload";
-        default: return "Unknown";
+        case 1: return this.$t("templates.types.emailGeneral");
+        case 2: return this.$t("templates.types.emailStudySession");
+        case 3: return this.$t("templates.types.emailAssignment");
+        case 4: return this.$t("templates.types.documentGeneral");
+        case 5: return this.$t("templates.types.documentStudy");
+        case 6: return this.$t("templates.types.emailStudyClose");
+        case 7: return this.$t("templates.types.emailSubmissionUpload");
+        default: return this.$t("common.unknown");
       }
     },
     action(data) {
@@ -165,14 +152,14 @@ export default {
       }, (result) => {
         if (result.success) {
           this.eventBus.emit("toast", {
-            title: "Template copied",
-            message: "Template copied to your list",
+            title: this.$t("templates.publicTemplates.success.title"),
+            message: this.$t("templates.publicTemplates.success.message"),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Copy failed",
-            message: result.message,
+            title: this.$t("templates.publicTemplates.errors.copyFailed"),
+            message: resolveApiMessage(result),
             variant: "danger",
           });
         }

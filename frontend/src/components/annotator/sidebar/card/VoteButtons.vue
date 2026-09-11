@@ -3,7 +3,7 @@
     v-if="voteEnabled && (upVotes.length >= 1 || comment.userId !== userId)"
     :loading="false"
     :props="$props"
-    title="Helpful"
+    :title="$t('components.voteButtons.helpful')"
     :disabled="comment.userId === userId"
     :badge="(upVotes.length >= 1) ? upVotes.length : false"
     :icon="(myVoteValue === 1) ? 'hand-thumbs-up-fill' : 'hand-thumbs-up'"
@@ -13,7 +13,7 @@
     v-if="voteEnabled && !voteOnlyUpvote && comment.userId !== userId"
     :loading="false"
     :props="$props"
-    title="Not helpful"
+    :title="$t('components.voteButtons.notHelpful')"
     :icon="(myVoteValue === -1) ? 'hand-thumbs-down-fill' : 'hand-thumbs-down'"
     @click="vote(-1)"/>
 </template>

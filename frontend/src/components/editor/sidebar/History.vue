@@ -1,12 +1,12 @@
 <template>
   <div>
-    <h3 class="sidebar-title">Version History</h3>
+    <h3 class="sidebar-title">{{$t('sidebar.versionHistory')}}</h3>
     <div
       v-for="group in Object.keys(periodEdits)"
       :key="group"
     >
       <div v-if="periodEdits[group].length > 0">
-        <span class="small">{{ group }}</span>
+        <span class="small">{{ $te(`sidebar.periode.${group}`) ? $t(`sidebar.periode.${group}`) : group }}</span>
         <ul class="list-group">
           <li
             v-for="editGroup in periodEdits[group]"
@@ -22,11 +22,11 @@
               <div class="ms-2 me-auto">
                 <div class="fw-bold">{{ constructString(editGroup) }}</div>
                 <div class="text-start">
-                  {{ editGroup[0].creator_name || "Anonymous User" }}
+                  {{ editGroup[0].creator_name || $t('sidebar.anonymousUser') }}
                   <span
                     v-if="editGroup.includes(currentVersion)"
                     class="current-badge"
-                    >Current Version</span
+                    >{{$t('sidebar.currentVersion')}}</span
                   >
                 </div>
                 <ul
@@ -42,13 +42,13 @@
                       @click="selectEdit(edit)"
                     >
                       <div class="edit-header-line">
-                        <strong>{{ new Date(edit.createdAt).toLocaleString() }}</strong>
+                        <strong>{{ formatLocalizedDateTime(edit.createdAt) }}</strong>
                       </div>
                       <div
                         v-if="currentVersion.id === edit.id"
                         class="current-version-body"
                       >
-                        <span class="current-badge">Current Version</span>
+                        <span class="current-badge">{{$t('sidebar.currentVersion')}}</span>
                       </div>
                     </a>
                   </li>
@@ -71,6 +71,8 @@
  *
  * @author Dennis Zyska, Juliane Bechert
  */
+import { formatLocalizedDateTime, formatLocalizedTime } from "@/assets/utils";
+
 export default {
   name: "SidebarHistory",
   inject: {
@@ -128,13 +130,13 @@ export default {
     },
     periodEdits() {
       const categories = {
-        "Today": [],
-        "Yesterday": [],
-        "This week": [],
-        "Last week": [],
-        "This month": [],
-        "Last month": [],
-        "Older": [],
+        today: [],
+        yesterday: [],
+        thisWeek: [],
+        lastWeek: [],
+        thisMonth: [],
+        lastMonth: [],
+        older: [],
       };
 
       if (this.groupedEdits.length === 0 || this.groupedEdits[0].length === 0) {
@@ -157,19 +159,19 @@ export default {
         const createdAt = new Date(firstEdit.createdAt);
 
         if (createdAt >= startOfToday) {
-          categories["Today"].push(group);
+          categories.today.push(group);
         } else if (createdAt >= startOfYesterday) {
-          categories["Yesterday"].push(group);
+          categories.yesterday.push(group);
         } else if (createdAt >= startOfThisWeek) {
-          categories["This week"].push(group);
+          categories.thisWeek.push(group);
         } else if (createdAt >= startOfLastWeek) {
-          categories["Last week"].push(group);
+          categories.lastWeek.push(group);
         } else if (createdAt >= startOfThisMonth) {
-          categories["This month"].push(group);
+          categories.thisMonth.push(group);
         } else if (createdAt >= startOfLastMonth) {
-          categories["Last month"].push(group);
+          categories.lastMonth.push(group);
         } else {
-          categories["Older"].push(group);
+          categories.older.push(group);
         }
       }
 
@@ -189,6 +191,7 @@ export default {
     this.eventBus.emit("editorSelectEdit", -1);
   },
   methods: {
+    formatLocalizedDateTime,
     selectEdit(edit) {
       this.eventBus.emit("editorSelectEdit", {
         documentId: this.documentId,
@@ -221,11 +224,11 @@ export default {
       const month2 = lastDate.getMonth() + 1;
       const day1 = firstDate.getDate();
       const day2 = lastDate.getDate();
-      const time1 = firstDate.toLocaleString().split(" ")[1];
-      const time2 = lastDate.toLocaleString().split(" ")[1];
+      const time1 = formatLocalizedTime(firstDate);
+      const time2 = formatLocalizedTime(lastDate);
 
       if (year1 !== year2 || month1 !== month2 || day1 !== day2) {
-        return `${firstDate.toLocaleString()} - ${lastDate.toLocaleString()}`;
+        return `${formatLocalizedDateTime(firstDate)} - ${formatLocalizedDateTime(lastDate)}`;
       } else {
         return `${day1}/${month1}/${year1}, ${time1} - ${time2}`;
       }

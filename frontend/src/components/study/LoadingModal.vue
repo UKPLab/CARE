@@ -15,16 +15,15 @@
       <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
         <div v-if="documentData && nlpRequestsFailed">
           <div class="d-flex flex-column align-items-center">
-            <p class="text-danger">An error occurred while processing NLP results. Please try again or skip NLP
-              support.</p>
+            <p class="text-danger">{{ $t('studies.loading.nlpError') }}</p>
             <div class="d-flex gap-2">
               <BasicButton
-                  title="Try Again"
+                  :title="$t('studies.loading.buttons.tryAgain')"
                   class="btn btn-warning"
                   @click="retryNlpRequests"
               />
               <BasicButton
-                  title="Skip NLP Support"
+                  :title="$t('studies.loading.buttons.skip')"
                   class="btn btn-secondary"
                   @click="skipNlpSupport"
               />
@@ -33,7 +32,7 @@
         </div>
         <div v-else class="d-flex align-items-center">
           <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
+            <span class="visually-hidden">{{ $t('common.loading') }}</span>
           </div>
           <span class="ms-3">{{ rotatingStatusText }}</span>
         </div>
@@ -72,6 +71,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyLoadingModal",
@@ -119,27 +119,15 @@ export default {
       rotatingIndex: 0,
       documentData: null,
       nlpRequests: {},
-      rotatingMessages: [
-        "Thinking through your request...",
-        "Almost there, just refining the details...",
-        "Gathering the best possible answer...",
-        "Just a few more moments, precision takes time...",
-        "Working on something smart for you...",
-        "One moment... I'm thinking faster than it looks...",
-        "Just aligning a few neurons...",
-        "Spinning up some linguistic magic...",
-        "Your request is traveling through a billion neurons...",
-        "Looking around corners for edge cases...",
-        "Running a quick plausibility pass...",
-        "Consulting the wisdom of the crowd...",
-        "Almost ready...",
-      ],
     }
   },
   computed: {
 
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
+    },
+    rotatingMessages() {
+      return this.$tm('studies.loading.messages');
     },
     rotatingTimerLong() {
       return this.$store.getters["settings/getValue"]('modal.nlp.rotation_timer.long');
@@ -191,24 +179,18 @@ export default {
     },
     modalTitle() {
       if (this.error) {
-        return "Error Loading Study Step";
+        return this.$t('studies.loading.errorTitle');
       }
-
-      // Still fetching the document data
       if (!this.documentData) {
-        return "Loading Study Step";
+        return this.$t('studies.loading.title');
       }
-
       if (this.nlpRequestsInProgress) {
-        return "Processing NLP Requests";
+        return this.$t('studies.loading.processingTitle');
       }
-
-      // NLP services active
       if (this.nlpRequestsFailed) {
-        return "NLP Requests Failed";
+        return this.$t('studies.loading.failedTitle');
       }
-
-      return "Study Step Ready";
+      return this.$t('studies.loading.readyTitle');
     }
   },
   watch: {
@@ -274,7 +256,8 @@ export default {
               }
             } else {
               this.error = true;
-              this.errorMessage = response.message || 'An error occurred while loading the study step.';
+              const message = resolveApiMessage(response, 'studies.loading.generalError');
+              this.errorMessage = message;
 
               this.$nextTick(() => {
                 if (this.$refs.modal) {
@@ -284,7 +267,7 @@ export default {
               
               this.$emit('error', {
                 code: response.code || 'UNKNOWN_ERROR',
-                message: response.message || 'An error occurred while loading the study step.'
+                message
               });
 
             }

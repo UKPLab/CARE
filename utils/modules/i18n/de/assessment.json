@@ -1,0 +1,23 @@
+{
+    "title": "Bewertung",
+    "noConfiguration": "Keine Bewertungskonfiguration verfügbar.",
+    "totalPoints": "{points} / {maxPoints} Pkt.",
+    "criteria": {
+        "unnamedCriterion": "Unbenanntes Kriterium",
+        "justification": "Begründung:",
+        "noJustification": "Keine Begründung angegeben",
+        "editPlaceholder": "Begründung bearbeiten...",
+        "edit": "Bearbeiten",
+        "changeScore": "Punktzahl ändern",
+        "saved": "Bewertung gespeichert",
+        "save": "Bewertung speichern",
+        "saveEdit": "Speichern",
+        "cancel": "Abbrechen"
+    },
+    "rubric": {
+        "unnamedRubric": "Unbenanntes Bewertungsschema",
+        "noCriteria": "Keine Kriterien für dieses Bewertungsschema definiert.",
+        "scoreTitle": "Rubric: {score} / {max} Pkt",
+        "scoreBadge": "{score} Pkt"
+    }
+}

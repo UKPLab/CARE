@@ -1,7 +1,7 @@
 <template>
   <div class="comparison-container">
     <Chart v-if="chartConfig" :config="chartConfig" />
-    <p v-else class="text-muted"> ~ Placeholder data missing or invalid ~ </p>
+    <p v-else class="text-muted"> {{ $t('modals.placeholders.dataMissingOrInvalid') }} </p>
   </div>
 </template>
 
@@ -56,12 +56,12 @@ export default {
           labels,
           datasets: [
             {
-              label: this.config.labels?.[0] || 'Überarbeitung 1',
+              label: this.config.labels?.[0] || this.$t('modals.revisions.revisionOne'),
               data: dataset1,
               backgroundColor: '#EB7E47',
             },
             {
-              label: this.config.labels?.[1] || 'Überarbeitung 2',
+              label: this.config.labels?.[1] || this.$t('modals.revisions.revisionTwo'),
               data: dataset2,
               backgroundColor: '#4BD0FF',
             }
@@ -75,7 +75,7 @@ export default {
             },
             title: {
               display: true,
-              text: this.config.title || 'Comparison Chart',
+              text: this.config.title || this.$t('modals.comparisonChart'),
             },
           },
           indexAxis: 'y',

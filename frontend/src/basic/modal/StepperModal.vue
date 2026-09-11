@@ -3,6 +3,7 @@
     ref="stepperModal"
     name="stepperModal"
     :size="size"
+    scrollable-body
     @hide="$emit('hide')"
     @close-requested="handleCloseRequest"
   >
@@ -32,7 +33,7 @@
             <slot :name="'step-' + (currentStep + 1)"/>
           </template>
           <template v-else>
-            <p>Step {{ currentStep + 1 }} is not implemented.</p>
+            <p>{{ $t('common.stepper.stepNotImplemented', { step: currentStep + 1 }) }}</p>
           </template>
         </div>
       </div>
@@ -42,26 +43,26 @@
         <slot name="buttons"/>
         <BasicButton
           v-if="currentStep !== 0"
-          title="Previous"
+          :title="$t('common.previous')"
           class="btn btn-secondary"
           @click="currentStep--"
         />
         <BasicButton
           v-if="currentStep === 0 && showClose"
-          title="Close"
+          :title="$t('common.close')"
           class="btn btn-secondary"
           @click="close"
         />
         <BasicButton
           v-if="currentStep < steps.length - 1"
-          :title="nextText"
+          :title="nextText || $t('common.nextText')"
           :class="['btn', currentStep === 0 && nextText && nextText.toLowerCase().includes('cancel') ? 'btn-danger' : 'btn-primary']"
           :disabled="disabled(currentStep)"
           @click="currentStep++"
         />
         <BasicButton
           v-if="currentStep === steps.length - 1"
-          :title="submitText"
+          :title="submitText || $t('common.submitText')"
           class="btn btn-primary"
           :disabled="disabled(currentStep)"
           @click="submit"
@@ -69,7 +70,7 @@
       </div>
       <div v-else>
         <BasicButton
-          title="Close"
+          :title="$t('common.close')"
           class="btn btn-primary"
           @click="close"
         />
@@ -97,11 +98,11 @@ export default {
     },
     submitText: {
       type: String,
-      default: "Submit"
+      default: null
     },
     nextText: {
       type: String,
-      default: "Next"
+      default: null
     },
     validation: {
       type: Array,
@@ -191,38 +192,44 @@ export default {
 <style scoped>
 /* Stepper */
 .stepper {
+  --stepper-pad-top: 1.25rem;
+  --stepper-circle: 30px;
+  flex-shrink: 0;
+  position: relative;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  position: relative;
+  margin-bottom: 1.5rem;
+  background-color: var(--bs-body-bg, #fff);
+  padding-top: var(--stepper-pad-top);
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 
   &:after {
     content: "";
     position: absolute;
-    top: 15px;
+    top: calc(var(--stepper-pad-top) + (var(--stepper-circle) / 2) - 1px);
     left: 0;
     right: 0;
     height: 2px;
-    background-color: #ccc;
+    background-color: var(--bs-secondary-bg, #ccc);
   }
 }
 
 .stepper div {
   z-index: 1;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   padding: 0 5px;
 
   &:before {
-    --dimension: 30px;
     content: attr(data-index);
     margin-right: 6px;
     display: inline-flex;
-    width: var(--dimension);
-    height: var(--dimension);
+    width: var(--stepper-circle);
+    height: var(--stepper-circle);
     border-radius: 50%;
     align-items: center;
     justify-content: center;
-    border: 1px solid #6c6b6b;
+    border: 1px solid var(--bs-border-color, #6c6b6b);
   }
 
   &:first-child {
@@ -235,7 +242,7 @@ export default {
 }
 
 .stepper div.active {
-  --btn-color: #0d6efd;
+  --btn-color: var(--bs-primary, #0d6efd);
   border-color: var(--btn-color);
 
   &:before {
@@ -247,6 +254,9 @@ export default {
 
 
 .content-container {
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>

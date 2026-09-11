@@ -1,42 +1,41 @@
 <template>
-  <Card title="Skills">
-    <template #headerElements>
+  <DashboardListPage
+      :title="$t('nlp.skills.title')"
+      :columns="columns"
+      :data="data"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+  >
+    <template #headerActions>
       <span v-if="!waitForStatus" class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'">
-        {{ onlineStatus ? "ONLINE" : "OFFLINE" }}
+        {{ onlineStatus ? $t('nlp.skills.status.online') : $t('nlp.skills.status.offline') }}
       </span>
       <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
-        <span class="visually-hidden">Loading...</span>
+        <span class="visually-hidden">{{ $t('common.loading') }}</span>
       </div>
       <div class="btn-group gap-2 ms-3">
         <BasicButton
             class="btn-primary btn-sm"
-            title="Refresh"
-            text="Refresh"
+            :title="$t('common.refresh')"
+            :text="$t('common.refresh')"
             icon="arrow-clockwise"
             @click="load"
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="data"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <NlpSkillModal ref="nlpSkillModal"/>
 </template>
 
 <script>
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import {cloneDeep} from "lodash";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Shows the list of available nlp skills to admins
@@ -48,7 +47,7 @@ import {cloneDeep} from "lodash";
  */
 export default {
   name: "NlpSkills",
-  components: {BasicTable, Card, BasicButton, NlpSkillModal},
+  components: {DashboardListPage, BasicButton, NlpSkillModal},
   props: {
     'admin': {
       type: Boolean,
@@ -58,52 +57,39 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
-      columns: [
-        {name: "Name", key: "name"},
-        {name: "# Nodes", key: "nodes"},
-        {
-          name: "Activated",
-          key: "activated",
-          type: "toggle",
-        },
-        {
-          name: "Fallback",
-          key: "fallback",
-          type: "badge",
-          typeOptions: {
-            keyMapping: {true: "Yes", default: "No"},
-            classMapping: {true: "bg-success", default: "bg-danger"}
-          },
-        },
-        {name: "Actions", key: "actions", type: "button-group"},
-      ],
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
       waitForStatus: true,
       onlineStatus: false
     }
   },
   computed: {
+    columns() {
+      return [
+        {name: this.$t('common.name'), key: "name"},
+        {name: this.$t('nlp.skills.columns.nodes'), key: "nodes"},
+        {
+          name: this.$t('nlp.skills.columns.activated'),
+          key: "activated",
+          type: "toggle",
+        },
+        {
+          name: this.$t('nlp.skills.columns.fallback'),
+          key: "fallback",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {true: this.$t('common.yes'), default: this.$t('common.no')},
+            classMapping: {true: "bg-success", default: "bg-danger"}
+          },
+        },
+        {name: this.$t('common.actions'), key: "actions", type: "button-group"},
+      ];
+    },
     buttons() {
       return [
-        {
-          icon: "gear",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-secondary": true,
-            }
-          },
-          title: "Configure",
+        dashboardRowAction("settings", {
+          title: this.$t('common.configure'),
           action: "configure",
-          // todo which stats params to pass
-        }
+        }),
       ];
     },
     data() {
@@ -114,7 +100,7 @@ export default {
         // check for relevant settings
         const activeStatus = this.$store.getters["settings/getValue"](`annotator.nlp.${s.name}.activated`);
         s.activated = {
-          title: "Activating",
+          title: this.$t('nlp.skills.status.activating'),
           value: activeStatus !== "false",
           action: "toggleActiveStatus"
         }
@@ -156,14 +142,14 @@ export default {
           }], (res) => {
             if (res.success) {
               this.eventBus.emit("toast", {
-                title: "Setting Updated",
-                message: `Skill "${skill_row.name}" activation updated.`,
+                title: this.$t('nlp.skills.toasts.settingUpdatedTitle'),
+                message: this.$t('nlp.skills.toasts.settingUpdatedMessage', { name: skill_row.name }),
                 variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Failed to Update Setting",
-                message: res.message,
+                title: this.$t('nlp.skills.toasts.updateFailedTitle'),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }

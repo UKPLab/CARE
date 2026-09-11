@@ -7,13 +7,13 @@
         :required="options.required"
         :class="[options.class, { 'is-invalid': parseError }]"
         class="form-control font-monospace"
-        :placeholder="options.placeholder || '{}'"
+        :placeholder="translatedPlaceholder"
         :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
         :rows="options.rows || (options.large ? 20 : 5)"
         @blur="onBlur(blur)"
       />
       <div v-if="parseError" class="invalid-feedback">
-        Invalid JSON: {{ parseError }}
+        {{ $t('errors.validation.invalidJson', { error: parseError }) }}
       </div>
     </template>
   </FormElement>
@@ -21,6 +21,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * JSON Textarea form component
@@ -48,6 +49,11 @@ export default {
       jsonString: "",
       parseError: null,
     };
+  },
+  computed: {
+    translatedPlaceholder() {
+      return translateMaybeKey(this.options.placeholder || "{}");
+    },
   },
   watch: {
     jsonString() {

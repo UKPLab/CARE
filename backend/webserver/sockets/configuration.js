@@ -1,4 +1,6 @@
 "use strict";
+
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket");
 
 /**
@@ -22,18 +24,18 @@ class ConfigurationSocket extends Socket {
     const { configurationId, content } = data;
 
     if (!configurationId) {
-      throw new Error("Configuration ID is required");
+      throw new TranslatableError("errors.configuration.idRequiredNoPeriod");
     }
 
     if (!content) {
-      throw new Error("Configuration content is required");
+      throw new TranslatableError("errors.configuration.contentRequiredNoPeriod");
     }
 
     // Get the existing configuration
     const existingConfig = await this.models["configuration"].getById(configurationId);
 
     if (!existingConfig) {
-      throw new Error("Configuration not found");
+      throw new TranslatableError("errors.configuration.notFound");
     }
 
     // Check if user has access to update this configuration
@@ -45,7 +47,7 @@ class ConfigurationSocket extends Socket {
     );
     
     if (!accessAllowed) {
-      throw new Error("Access denied");
+      throw new TranslatableError("errors.configuration.accessDenied");
     }
 
     // Update only the content field
@@ -71,7 +73,7 @@ class ConfigurationSocket extends Socket {
    */
   async createConfiguration(data, options) {
     if (!(await this.isAdmin())) {
-      throw new Error("You do not have permission to create configurations for other users.");
+      throw new TranslatableError("errors.configuration.createForOtherUsersDenied");
     }
     const payload = {
       name: data.name,
