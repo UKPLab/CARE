@@ -13,6 +13,7 @@ const {DataTypes} = require("sequelize");
 const env = process.env.NODE_ENV || 'development';
 const loadedConfig = require(__dirname + '/config/config.js')[env];
 const {GlobalChangeTrackingPlugin, TimeoutTrackerPlugin} = require('./plugins');
+const {attachStudyDashboardSortHooks} = require('./studyDashboardSortRefresh');
 const db = {};
 // add in global hook for tracking timed out transactions
 const config = {
@@ -53,6 +54,8 @@ Object.keys(db.models).forEach(modelName => {
         db.models[modelName].associate(db.models);
     }
 });
+
+attachStudyDashboardSortHooks(sequelize, db.models);
 
 
 

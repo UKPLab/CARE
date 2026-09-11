@@ -16,8 +16,10 @@ module.exports = class MetaModel extends Model {
      * - static getQueryTableInjects(ctx) → inject specs for handleInjections (count, parent, …)
      * - static getCompanionBroadcasts(rows, operation) → related table deltas after txn commit
      * - static getQueryTableSearchConditions(needle) → extra OR clauses for search (computed columns)
+     * - static getQueryTableViewSearchFields() → sidecar-view columns to STRPOS in search
      * - static getQueryTableSearchColumns(ctx) → whitelist of searchable keys
      * - static getQueryTableFilterColumns(ctx) → filterable keys for the table search bar
+     * - static getQueryTableSortColumns() → { [uiKey]: { field } } JOIN sort via a sidecar view
      */
 
     /**

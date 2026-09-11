@@ -1,4 +1,5 @@
 const {Op, where, fn, col, cast} = require("sequelize");
+const {SORT_ALIAS} = require("./queryTableJoinSort.js");
 
 const SKIP_SEARCH = new Set([
     "deleted",
@@ -23,6 +24,13 @@ function typeKey(attr) {
 
 function includesCondition(expression, needle) {
     return where(fn("STRPOS", fn("LOWER", expression), needle), {[Op.gt]: 0});
+}
+
+function viewSearchFields(model) {
+    if (typeof model.getQueryTableViewSearchFields !== "function") {
+        return [];
+    }
+    return model.getQueryTableViewSearchFields() || [];
 }
 
 /**
@@ -60,6 +68,8 @@ function buildQueryTableSearch({
     const conditions = [];
 
     const canSearch = (key) => !searchable || searchable.has(key);
+    const viewFields = viewSearchFields(model);
+    const viewSearchKeys = new Set(viewFields.map((spec) => spec.key));
 
     for (const [name, attr] of Object.entries(attributes)) {
         if (!canSearch(name) || SKIP_SEARCH.has(name) || !allowed.has(name)) {
@@ -114,6 +124,10 @@ function buildQueryTableSearch({
             if (injection.as && !canSearch(injection.as)) {
                 continue;
             }
+            // Count injects that the sidecar view already exposes (sessions) are searched there.
+            if (injection.as && viewSearchKeys.has(injection.as)) {
+                continue;
+            }
             const childModel = sequelize.models[injection.table];
             if (!childModel) {
                 continue;
@@ -134,7 +148,15 @@ function buildQueryTableSearch({
         }
     }
 
-    if (typeof model.getQueryTableSearchConditions === "function" && canSearch("state")) {
+    for (const spec of viewFields) {
+        if (!canSearch(spec.key) || !spec.field) {
+            continue;
+        }
+        const column = col(`${SORT_ALIAS}.${spec.field}`);
+        conditions.push(includesCondition(spec.castText ? cast(column, "TEXT") : column, needle));
+    }
+
+    if (typeof model.getQueryTableSearchConditions === "function") {
         const extra = model.getQueryTableSearchConditions(needle);
         if (Array.isArray(extra)) {
             conditions.push(...extra.filter(Boolean));
@@ -151,5 +173,6 @@ function buildQueryTableSearch({
 
 module.exports = {
     buildQueryTableSearch,
+    viewSearchFields,
     MAX_SEARCH_LENGTH,
 };

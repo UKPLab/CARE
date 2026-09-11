@@ -1,4 +1,5 @@
 const {Op, where, fn, col, literal} = require("sequelize");
+const {SORT_ALIAS, nestedViewKey} = require("./queryTableJoinSort.js");
 
 const OPERATORS = {
     "=": Op.eq,
@@ -42,6 +43,26 @@ function containsCondition(expression, needle) {
     return where(fn("STRPOS", fn("LOWER", expression), needle), {[Op.gt]: 0});
 }
 
+function wrapCondition(entry, condition) {
+    if (entry.viewField) {
+        return {[nestedViewKey(entry.viewField)]: condition};
+    }
+    if (entry.sql) {
+        return where(literal(entry.sql), condition);
+    }
+    return {[entry.field]: condition};
+}
+
+function filterExpression(entry) {
+    if (entry.viewField) {
+        return col(`${SORT_ALIAS}.${entry.viewField}`);
+    }
+    if (entry.sql) {
+        return literal(entry.sql);
+    }
+    return col(`${entry.table}.${entry.field}`);
+}
+
 /**
  * Resolve one requested filter into a WHERE fragment, or null if it does not fit the spec.
  *
@@ -52,9 +73,7 @@ function containsCondition(expression, needle) {
  * @returns {Object|null}
  */
 function buildCondition({entry, operator, value}) {
-    // Computed columns bring their own SQL (status CASE, session count); real columns filter by name.
-    const target = entry.sql ? literal(entry.sql) : null;
-    const wrap = (condition) => (target ? where(target, condition) : {[entry.field]: condition});
+    const wrap = (condition) => wrapCondition(entry, condition);
 
     if (entry.type === "exists") {
         const wanted = toBoolean(value);
@@ -108,8 +127,7 @@ function buildCondition({entry, operator, value}) {
         return null;
     }
     if (operator === "~") {
-        const expression = target || col(`${entry.table}.${entry.field}`);
-        return containsCondition(expression, text.toLowerCase());
+        return containsCondition(filterExpression(entry), text.toLowerCase());
     }
     return wrap({[operator === "!=" ? Op.ne : Op.eq]: text});
 }
@@ -125,7 +143,7 @@ function buildCondition({entry, operator, value}) {
  * @param {Object} params
  * @param {import("sequelize").Model} params.model
  * @param {Object} params.columnFilters requested filters, keyed by spec key
- * @param {Object} params.filterSpec model spec: `{ key: {type, field, sql, values, operators} }`
+ * @param {Object} params.filterSpec model spec: `{ key: {type, field, sql, viewField, values, operators} }`
  * @param {string[]} params.allowedAttributeNames columns the viewer may see
  * @returns {Object|null} WHERE fragment, or null when nothing valid was requested
  */
@@ -148,11 +166,12 @@ function buildQueryTableColumnFilters({model, columnFilters, filterSpec, allowed
             type: spec.type || "text",
             field: spec.field || key,
             sql: spec.sql || null,
+            viewField: spec.viewField || null,
             values: spec.values || null,
             table: model.tableName,
         };
-        // Without model SQL the key must be a real column the viewer is allowed to read.
-        if (!entry.sql && !(entry.field in attributes && allowed.has(entry.field))) {
+        // Sidecar-view and model-SQL keys are not study columns; anything else must be readable.
+        if (!entry.sql && !entry.viewField && !(entry.field in attributes && allowed.has(entry.field))) {
             continue;
         }
 
@@ -181,6 +200,20 @@ function buildQueryTableColumnFilters({model, columnFilters, filterSpec, allowed
     return {[Op.and]: conditions};
 }
 
+/**
+ * True when a requested filter reads a sidecar-view column (needs INNER JOIN).
+ * @param {Object|null} filterSpec
+ * @param {Object|null} columnFilters
+ * @returns {boolean}
+ */
+function columnFiltersNeedViewJoin(filterSpec, columnFilters) {
+    if (!filterSpec || !columnFilters || typeof columnFilters !== "object") {
+        return false;
+    }
+    return Object.keys(columnFilters).some((key) => !!(filterSpec[key] && filterSpec[key].viewField));
+}
+
 module.exports = {
     buildQueryTableColumnFilters,
+    columnFiltersNeedViewJoin,
 };

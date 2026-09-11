@@ -1,25 +1,8 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
-const {Op, where, fn, literal} = require("sequelize");
-
-// Status as the dashboard shows it. Search and filter both compare against this, so the CASE has to
-// stay in sync with enrichStudyRow in frontend Study.vue.
-const STATE_SQL = `CASE
-    WHEN "study"."start" IS NOT NULL AND "study"."start" > NOW() THEN 'not started'
-    WHEN "study"."end" IS NOT NULL AND "study"."end" < NOW() THEN
-        CASE WHEN "study"."multipleSubmit"
-            THEN CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
-            ELSE 'ended'
-        END
-    ELSE CASE WHEN "study"."closed" IS NOT NULL THEN 'closed' ELSE 'running' END
-END`;
-
-const STATES = ["not started", "running", "closed", "ended"];
-
-// Same count as the sessions column inject, usable inside WHERE.
-const SESSION_COUNT_SQL = `(SELECT COUNT(*) FROM "study_session"
-    WHERE "study_session"."studyId" = "study"."id" AND "study_session"."deleted" = false)`;
+const {Op} = require("sequelize");
+const {STATES} = require("../studyDashboardSortSql.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -403,6 +386,25 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "projectId",
                 as: "project"
             });
+
+            Study.hasOne(models["study_dashboard_sort"], {
+                foreignKey: "id",
+                sourceKey: "id",
+                as: "dashboardSort",
+                constraints: false,
+            });
+        }
+
+        /**
+         * queryTable ORDER BY for columns that are not study fields.
+         * Values live on materialized view study_dashboard_sort.
+         * @returns {Object<string, {field: string}>}
+         */
+        static getQueryTableSortColumns() {
+            return {
+                state: {field: "stateRank"},
+                sessions: {field: "sessions"},
+            };
         }
 
         /**
@@ -443,7 +445,7 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Searchable keys aligned with visible Studies dashboard columns (not every DB field).
-         * Virtual keys: sessions (count inject), state (SQL CASE), firstName/lastName (parent inject).
+         * Virtual keys: sessions / state (materialized view), firstName/lastName (parent inject).
          * @param {Object} ctx
          * @param {function(string): Promise<boolean>} ctx.hasAccess
          * @returns {Promise<string[]>}
@@ -457,23 +459,26 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Search computed `state` the same way Study.vue derives it for the Status column.
-         * @param {string} needle already lowercased search term
-         * @returns {Object}
+         * Free-text search on study_dashboard_sort (same values as sort/filter).
+         * @returns {Array<{key: string, field: string, castText?: boolean}>}
          */
-        static getQueryTableSearchConditions(needle) {
-            return where(fn("STRPOS", fn("LOWER", literal(STATE_SQL)), needle), {[Op.gt]: 0});
+        static getQueryTableViewSearchFields() {
+            return [
+                {key: "state", field: "state"},
+                {key: "sessions", field: "sessions", castText: true},
+            ];
         }
 
         /**
-         * Keys the Studies search bar may filter on, with the SQL for computed ones.
+         * Keys the Studies search bar may filter on.
+         * state / sessions read the materialized view; other keys are study columns.
          * A filter token for anything outside this spec is dropped server-side.
          * @returns {Promise<Object>}
          */
         static async getQueryTableFilterColumns() {
             return {
-                state: {type: "enum", values: STATES, sql: STATE_SQL},
-                sessions: {type: "numeric", sql: SESSION_COUNT_SQL},
+                state: {type: "enum", values: STATES, viewField: "state"},
+                sessions: {type: "numeric", viewField: "sessions"},
                 limitSessions: {type: "numeric"},
                 limitSessionsPerUser: {type: "numeric"},
                 workflow: {type: "exists", field: "workflowId"},

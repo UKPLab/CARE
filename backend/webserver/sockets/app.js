@@ -5,10 +5,12 @@ const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/helper/data.js");
 const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
-const {buildQueryTableSearch, MAX_SEARCH_LENGTH} = require("../../utils/helper/queryTableSearch.js");
-const {buildQueryTableColumnFilters} = require("../../utils/helper/queryTableColumnFilters.js");
+const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("../../utils/helper/queryTableSearch.js");
+const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../../utils/helper/queryTableColumnFilters.js");
 const {Op} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
+const {paginateJoinSort, dashboardSortInclude} = require("../../utils/helper/queryTableJoinSort.js");
+const {ensureStudyDashboardSortFresh} = require("../../db/studyDashboardSortRefresh.js");
 
 /**
  * Send data for building the frontend app
@@ -491,8 +493,9 @@ class AppSocket extends Socket {
         const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
             ? query.columnFilters
             : null;
+        let filterSpec = null;
         if (columnFilters && Object.keys(columnFilters).length > 0) {
-            const filterSpec = typeof model.getQueryTableFilterColumns === "function"
+            filterSpec = typeof model.getQueryTableFilterColumns === "function"
                 ? await model.getQueryTableFilterColumns(injectCtx)
                 : null;
             const columnWhere = buildQueryTableColumnFilters({
@@ -509,9 +512,10 @@ class AppSocket extends Socket {
         const search = typeof query.search === "string"
             ? query.search.trim().slice(0, MAX_SEARCH_LENGTH)
             : "";
+        let searchColumns = null;
         if (search) {
             const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
-            const searchColumns = typeof model.getQueryTableSearchColumns === "function"
+            searchColumns = typeof model.getQueryTableSearchColumns === "function"
                 ? await model.getQueryTableSearchColumns(injectCtx)
                 : null;
             const searchWhere = buildQueryTableSearch({
@@ -536,46 +540,93 @@ class AppSocket extends Socket {
         if (sortDirection !== "ASC" && sortDirection !== "DESC") {
             sortDirection = "ASC";
         }
-        if (!sortColumn || !(sortColumn in attributes)) {
+        const derivedSortSpec = typeof model.getQueryTableSortColumns === "function"
+            ? (model.getQueryTableSortColumns() || {})[sortColumn]
+            : null;
+        // Fallback to id when the requested key is neither a model attribute nor a derived sort column.
+        if (!derivedSortSpec && (!sortColumn || !(sortColumn in attributes))) {
             sortColumn = "id";
         }
-
-        // Order field list is identical on every request so cursors are interchangeable
-        // between first / after / before / fromEnd. Cursor payload = [sortColumn, id].
-        const forwardOrder = sortColumn === "id"
-            ? [["id", sortDirection]]
-            : [[sortColumn, sortDirection], ["id", sortDirection]];
-        const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
-
-        // Same simple cache as getById/findAll: identical page query (same where/order/
-        // cursor/limit) hits memory; any study write still clears the whole model cache.
-        // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
-        const paginateLazy = makePaginateLazy(model, {omitPrimaryKeyFromOrder: true});
 
         const after = query.after || null;
         const before = query.before || null;
         const fromEnd = !!query.fromEnd;
-        // Backward travel (prev page / last page): trim from the front and infer hasPrev.
         const backward = !!before || fromEnd;
 
-        // Fetch limit + 1 to detect a further page in the travel direction without a 3rd COUNT.
-        const connection = paginateLazy({
-            where: allFilter,
-            attributes: allAttributes,
-            order: fromEnd ? reversedOrder : forwardOrder,
-            limit: limit + 1,
-            ...(after ? {after} : {}),
-            ...(before ? {before} : {}),
-        });
+        let edges;
+        let total;
 
-        // Two SQL queries only: page rows (getEdges) + total (getTotalCount).
-        const [rawEdges, total] = await Promise.all([
-            connection.getEdges(),
-            connection.getTotalCount(),
-        ]);
+        const viewFields = viewSearchFields(model);
+        const searchNeedsView = !!(search && viewFields.some((spec) => !searchColumns || searchColumns.includes(spec.key)));
+        const needsViewJoin = Boolean(derivedSortSpec)
+            || columnFiltersNeedViewJoin(filterSpec, columnFilters)
+            || searchNeedsView;
 
-        // fromEnd ran the reversed order → flip back to normal (ascending-by-request) order.
-        let edges = fromEnd ? [...rawEdges].reverse() : rawEdges;
+        const sortModel = needsViewJoin ? this.models["study_dashboard_sort"] : null;
+        if (needsViewJoin) {
+            if (!sortModel) {
+                throw new Error("study_dashboard_sort is not available");
+            }
+            const usesStateView = derivedSortSpec?.field === "stateRank"
+                || !!(filterSpec && columnFilters && Object.keys(columnFilters).some(
+                    (key) => filterSpec[key]?.viewField === "state"
+                ))
+                || !!(search && viewFields.some((spec) => spec.field === "state"
+                    && (!searchColumns || searchColumns.includes(spec.key))));
+            await ensureStudyDashboardSortFresh(
+                this.server.db.sequelize,
+                usesStateView ? "stateRank" : "sessions"
+            );
+        }
+
+        if (derivedSortSpec) {
+            const joinPage = await paginateJoinSort({
+                model,
+                sortModel,
+                where: allFilter,
+                attributes: allAttributes,
+                viewField: derivedSortSpec.field,
+                sortDirection,
+                after,
+                before,
+                fromEnd,
+                limit: limit + 1,
+            });
+            edges = joinPage.edges;
+            total = joinPage.total;
+        } else {
+            // Order field list is identical on every request so cursors are interchangeable
+            // between first / after / before / fromEnd. Cursor payload = [sortColumn, id].
+            const forwardOrder = sortColumn === "id"
+                ? [["id", sortDirection]]
+                : [[sortColumn, sortDirection], ["id", sortDirection]];
+            const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
+
+            // Same simple cache as getById/findAll: identical page query (same where/order/
+            // cursor/limit) hits memory; any study write still clears the whole model cache.
+            // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
+            const paginateLazy = makePaginateLazy(model, {omitPrimaryKeyFromOrder: true});
+
+            const connection = paginateLazy({
+                where: allFilter,
+                attributes: allAttributes,
+                order: fromEnd ? reversedOrder : forwardOrder,
+                limit: limit + 1,
+                ...(after ? {after} : {}),
+                ...(before ? {before} : {}),
+                ...(needsViewJoin ? {
+                    include: [dashboardSortInclude(sortModel)],
+                    subQuery: false,
+                } : {}),
+            });
+
+            const [rawEdges, rawTotal] = await Promise.all([
+                connection.getEdges(),
+                connection.getTotalCount(),
+            ]);
+            edges = fromEnd ? [...rawEdges].reverse() : rawEdges;
+            total = rawTotal;
+        }
         const overflow = edges.length > limit;
         if (overflow) {
             edges = backward ? edges.slice(edges.length - limit) : edges.slice(0, limit);
@@ -583,7 +634,11 @@ class AppSocket extends Socket {
 
         let items = edges.map((edge) => {
             const node = edge.node;
-            return (node && typeof node.get === "function") ? node.get({plain: true}) : node;
+            const row = (node && typeof node.get === "function") ? node.get({plain: true}) : node;
+            if (row && row.dashboardSort) {
+                delete row.dashboardSort;
+            }
+            return row;
         });
         items = await this.enrichQueryTableItems(table, items, this.userId, this.rolesUpdatedAt);
         const startCursor = edges.length ? edges[0].cursor : null;
