@@ -64,7 +64,7 @@
                 :disabled="currentPage === 1"
                 @click="changePage(currentPage - 1)"
               >
-                <span aria-hidden="true">&laquo;</span>
+                Prev
               </button>
             </li>
             <!-- Next Page Link -->
@@ -77,7 +77,7 @@
                 :disabled="currentPage === pages"
                 @click="changePage(currentPage + 1)"
               >
-                <span aria-hidden="true">&raquo;</span>
+                Next
               </button>
             </li>
             <!-- Last Page Link -->
