@@ -19,6 +19,22 @@ const OPERATORS = {
 const TRUTHY = new Set(["true", "yes", "1"]);
 const FALSY = new Set(["false", "no", "0"]);
 
+/** Calendar day `YYYY-MM-DD`, or null when the text is not a real date. */
+function parseIsoDate(value) {
+    const text = String(value ?? "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+        return null;
+    }
+    const year = Number(text.slice(0, 4));
+    const month = Number(text.slice(5, 7));
+    const day = Number(text.slice(8, 10));
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+        return null;
+    }
+    return text;
+}
+
 function toBoolean(value) {
     if (typeof value === "boolean") {
         return value;
@@ -41,6 +57,53 @@ function toBoolean(value) {
  */
 function containsCondition(expression, needle) {
     return where(fn("STRPOS", fn("LOWER", expression), needle), {[Op.gt]: 0});
+}
+
+/** Next calendar day after `YYYY-MM-DD`, still as `YYYY-MM-DD`. */
+function nextIsoDate(day) {
+    const year = Number(day.slice(0, 4));
+    const month = Number(day.slice(5, 7));
+    const date = Number(day.slice(8, 10));
+    const next = new Date(Date.UTC(year, month - 1, date + 1));
+    const yyyy = String(next.getUTCFullYear()).padStart(4, "0");
+    const mm = String(next.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(next.getUTCDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * UTC half-open range for one calendar day so "=" is the whole day, not a timestamp instant.
+ * @returns {Object|null} Sequelize operators for the timestamp column
+ */
+function dateRangeOps(operator, day) {
+    const start = new Date(`${day}T00:00:00.000Z`);
+    const end = new Date(`${nextIsoDate(day)}T00:00:00.000Z`);
+    switch (operator) {
+        case "=":
+        case "eq":
+            return {[Op.gte]: start, [Op.lt]: end};
+        case ">":
+        case "gt":
+            return {[Op.gte]: end};
+        case ">=":
+        case "gte":
+            return {[Op.gte]: start};
+        case "<":
+        case "lt":
+            return {[Op.lt]: start};
+        case "<=":
+        case "lte":
+            return {[Op.lt]: end};
+        default:
+            return null;
+    }
+}
+
+function applyOps(entry, ops) {
+    if (entry.viewField || entry.sql) {
+        return where(filterExpression(entry), ops);
+    }
+    return wrapCondition(entry, ops);
 }
 
 function wrapCondition(entry, condition) {
@@ -111,6 +174,19 @@ function buildCondition({entry, operator, value}) {
         }
         const op = OPERATORS[operator];
         return op ? wrap({[op]: number}) : null;
+    }
+
+    if (entry.type === "date") {
+        // No "!=" — excluding a single day is not offered; use before/after instead.
+        if (operator === "!=" || operator === "ne") {
+            return null;
+        }
+        const day = parseIsoDate(value);
+        if (!day) {
+            return null;
+        }
+        const ops = dateRangeOps(operator, day);
+        return ops ? applyOps(entry, ops) : null;
     }
 
     if (entry.type === "enum") {

@@ -1487,6 +1487,19 @@ export default {
       }
     },
     /**
+     * UTC calendar day `YYYY-MM-DD` for a timestamp / ISO string, or "" when unknown.
+     */
+    rowCalendarDay(value) {
+      if (value == null || value === "") return "";
+      if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return value.toISOString().slice(0, 10);
+      }
+      const text = String(value);
+      if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+      const parsed = new Date(text);
+      return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
+    },
+    /**
      * Re-check one search-bar filter against a delta row, only to decide the animation.
      * The server owns which rows match; a field the delta does not carry counts as a match so a
      * row is never dropped from the page on missing data.
@@ -1509,6 +1522,32 @@ export default {
       if (entry.type === "boolean") {
         const equal = Boolean(value) === Boolean(filter.value);
         return filter.operator === "!=" ? !equal : equal;
+      }
+      if (entry.type === "date") {
+        const day = String(filter.value || "").slice(0, 10);
+        const rowDay = this.rowCalendarDay(value);
+        switch (filter.operator) {
+          case "=":
+          case "eq":
+            return rowDay === day;
+          case "!=":
+          case "ne":
+            return rowDay !== day;
+          case ">":
+          case "gt":
+            return rowDay > day;
+          case ">=":
+          case "gte":
+            return rowDay >= day;
+          case "<":
+          case "lt":
+            return rowDay < day;
+          case "<=":
+          case "lte":
+            return rowDay <= day;
+          default:
+            return true;
+        }
       }
 
       switch (filter.operator) {

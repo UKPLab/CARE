@@ -478,6 +478,8 @@ module.exports = (sequelize, DataTypes) => {
         static async getQueryTableFilterColumns() {
             return {
                 state: {type: "enum", values: STATES, viewField: "state"},
+                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
+                createdAt: {type: "date"},
                 sessions: {type: "numeric", viewField: "sessions"},
                 limitSessions: {type: "numeric"},
                 limitSessionsPerUser: {type: "numeric"},

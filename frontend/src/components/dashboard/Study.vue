@@ -171,6 +171,8 @@ export default {
             {value: "ended", label: "Ended"},
           ],
         },
+        id: {label: "ID", type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
+        createdAt: {label: "Created", type: "date"},
         sessions: {label: "Sessions", type: "numeric"},
         limitSessions: {label: "Session Limit", type: "numeric"},
         limitSessionsPerUser: {label: "Session Limit per User", type: "numeric"},

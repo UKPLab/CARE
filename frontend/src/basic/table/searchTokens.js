@@ -8,7 +8,8 @@
  *   {state: {label: "Status", type: "enum", options: ["running", "closed"]},
  *    collab: {label: "Collaborative", type: "boolean"},
  *    workflow: {label: "Workflow", type: "exists", field: "workflowId"},
- *    sessions: {label: "Sessions", type: "numeric"}}
+ *    sessions: {label: "Sessions", type: "numeric"},
+ *    createdAt: {label: "Created", type: "date"}}
  */
 
 export const OPERATOR_LABELS = {
@@ -32,9 +33,18 @@ export const OPERATOR_HINTS = {
   "<=": "less or equal",
 };
 
+/** Right-hand words in the operator dropdown for a calendar date. */
+export const DATE_OPERATOR_HINTS = {
+  "=": "on",
+  ">": "after",
+  ">=": "on or after",
+  "<": "before",
+  "<=": "on or before",
+};
+
 // Types whose value is typed rather than picked from a list — the token stays incomplete until a
 // value is entered, so `sessions:>=` never becomes a filter on its own.
-const TYPED_VALUE_TYPES = new Set(["numeric", "text"]);
+const TYPED_VALUE_TYPES = new Set(["numeric", "text", "date"]);
 
 /** True when the value for this key has to be typed (no options to pick). */
 export function needsTypedValue(schema, key) {
@@ -46,6 +56,7 @@ const OPERATORS_BY_TYPE = {
   exists: ["=", "!="],
   enum: ["=", "!="],
   numeric: ["=", "!=", ">", ">=", "<", "<="],
+  date: ["=", ">", ">=", "<", "<="],
   text: ["~", "="],
 };
 
@@ -72,7 +83,7 @@ export function defaultOperator(schema, key) {
   return operatorsFor(schema, key)[0] || "=";
 }
 
-/** Values that can be picked from the dropdown; numeric and text keys are typed instead. */
+/** Values that can be picked from the dropdown; numeric, date, and text keys are typed instead. */
 export function optionsFor(schema, key) {
   const entry = schema[key];
   if (!entry) return [];
@@ -100,6 +111,20 @@ export function unquote(value) {
   return text;
 }
 
+/** Calendar day `YYYY-MM-DD`, or null when the text is not a real date. */
+export function parseIsoDate(value) {
+  const text = String(value ?? "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const year = Number(text.slice(0, 4));
+  const month = Number(text.slice(5, 7));
+  const day = Number(text.slice(8, 10));
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    return null;
+  }
+  return text;
+}
+
 /**
  * Text from the bar → typed value for that key, or null when it does not fit.
  * @returns {*|null}
@@ -120,6 +145,9 @@ export function coerceValue(schema, key, raw) {
     if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value)) return null;
     const number = Number(value);
     return Number.isFinite(number) ? number : null;
+  }
+  if (entry.type === "date") {
+    return parseIsoDate(value);
   }
   if (entry.type === "enum") {
     const options = optionsFor(schema, key);
