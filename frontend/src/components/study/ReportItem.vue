@@ -87,6 +87,6 @@ export default {
 <style scoped>
 #emptyText {
   font-style: italic;
-  color: darkgrey;
+  color: var(--bs-secondary-color, darkgrey);
 }
 </style>

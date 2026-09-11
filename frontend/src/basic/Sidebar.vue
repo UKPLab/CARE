@@ -73,7 +73,7 @@
                   <LoadIcon
                       icon-name="three-dots-vertical"
                       :size="18"
-                      color="#495057"
+                      color="var(--bs-body-color)"
                   />
                 </TopBarButton>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sidebarDropdownButton">
@@ -529,8 +529,8 @@ export default {
 /* ===== MAIN CONTAINER STYLES ===== */
 .sidebar-wrapper {
   position: relative;
-  background-color: #f8f9fa;
-  border-left: 1px solid #ddd;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-left: 1px solid var(--bs-border-color, #ddd);
   flex-shrink: 0;
 }
 
@@ -568,7 +568,7 @@ export default {
 }
 
 #sidepane {
-  background-color: #e6e6e6;
+  background-color: var(--bs-secondary-bg, #e6e6e6);
   width: 100%;
   height: 100%;
   display: flex;
@@ -584,8 +584,8 @@ export default {
   display: flex;
   align-items: stretch;
   padding: 10px;
-  border-bottom: 1px solid #ddd;
-  background-color: #ffff;
+  border-bottom: 1px solid var(--bs-border-color, #ddd);
+  background-color: var(--bs-body-bg, #ffffff);
   flex-shrink: 0;
 }
 
@@ -598,23 +598,23 @@ export default {
   border: 1px solid transparent;
   border-radius: 0.375rem 0.375rem 0 0;
   padding: 8px 8px;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   transition: all 0.2s ease-in-out;
 }
 
 .sidebar-header .nav-tabs .nav-link:hover {
-  border-color: #e9ecef #e9ecef #dee2e6;
-  background-color: #f8f9fa;
+  border-color: var(--bs-border-color, #dee2e6);
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .sidebar-header .nav-tabs .nav-link.active {
-  color: #0d6efd;
-  background-color: #fff;
-  border-color: #dee2e6 #dee2e6 #fff;
+  color: var(--bs-primary, #0d6efd);
+  background-color: var(--bs-body-bg, #fff);
+  border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) var(--bs-body-bg, #fff);
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   background-color: transparent;
   border-color: transparent;
   cursor: not-allowed;
@@ -640,8 +640,8 @@ export default {
 .sidebar-action-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  background-color: #f8f9fa !important;
-  border-color: #dee2e6 !important;
+  background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
+  border-color: var(--bs-border-color, #dee2e6) !important;
 }
 
 .sidebar-action-button:active {
@@ -666,13 +666,13 @@ export default {
 /* ===== DROPDOWN STYLES ===== */
 .dropdown-menu {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   padding: 4px
 }
 
 .dropdown-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   transform: translateY(-1px);
   transition: all 0.2s ease;
 }
@@ -688,7 +688,7 @@ export default {
 
 #addPageNote .btn {
   border: none;
-  color: #575757;
+  color: var(--bs-secondary-color, #575757);
 }
 
 .nav-text {

@@ -1,6 +1,13 @@
 <template>
-  <Card :title="$t('nlp.skills.title')">
-    <template #headerElements>
+  <DashboardListPage
+      :title="$t('nlp.skills.title')"
+      :columns="columns"
+      :data="data"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+  >
+    <template #headerActions>
       <span v-if="!waitForStatus" class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'">
         {{ onlineStatus ? $t('nlp.skills.status.online') : $t('nlp.skills.status.offline') }}
       </span>
@@ -17,26 +24,17 @@
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="data"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <NlpSkillModal ref="nlpSkillModal"/>
 </template>
 
 <script>
 import NlpSkillModal from "./nlp_skills/NlpSkillModal.vue";
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import {cloneDeep} from "lodash";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -49,7 +47,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "NlpSkills",
-  components: {BasicTable, Card, BasicButton, NlpSkillModal},
+  components: {DashboardListPage, BasicButton, NlpSkillModal},
   props: {
     'admin': {
       type: Boolean,
@@ -59,14 +57,7 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
       waitForStatus: true,
       onlineStatus: false
     }
@@ -95,18 +86,10 @@ export default {
     },
     buttons() {
       return [
-        {
-          icon: "gear",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-secondary": true,
-            }
-          },
+        dashboardRowAction("settings", {
           title: this.$t('common.configure'),
           action: "configure",
-          // todo which stats params to pass
-        }
+        }),
       ];
     },
     data() {

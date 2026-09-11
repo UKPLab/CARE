@@ -93,7 +93,7 @@ export default {
 .information-container {
   max-height: 400px;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.5rem;
 }
 
@@ -107,15 +107,15 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .text-muted {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .fw-bold {
@@ -131,8 +131,8 @@ export default {
 }
 
 .btn-outline-secondary:hover {
-  background-color: #6c757d;
-  color: #fff;
+  background-color: var(--bs-secondary-bg, #6c757d);
+  color: var(--bs-body-color, #fff);
 }
 </style>
 
