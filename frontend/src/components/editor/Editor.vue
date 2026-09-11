@@ -81,6 +81,7 @@ import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
+import { emailTemplateTypes } from "@/assets/templateTypes";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
@@ -206,7 +207,7 @@ export default {
       // Only email templates (types 1, 2, 3, 6, 7) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6, 7].includes(this.template.type);
+      return emailTemplateTypes.includes(this.template.type);
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {
