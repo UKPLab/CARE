@@ -504,6 +504,32 @@
             }
         }
     },
+  "apiTokens": {
+    "title": "API tokens",
+    "description": "Create a token for scripts that call CARE over HTTP. The secret is shown once. After that, scripts send it as Authorization Bearer on /rest/v1, not on this page.",
+    "disabledByAdmin": "API tokens are turned off in Settings. An administrator can enable them under General, API tokens.",
+    "createTooltip": "Create API token",
+    "createTitle": "Create API token",
+    "nameLabel": "Name",
+    "secretLabel": "Secret",
+    "secretOnceWarning": "Copy this secret now. CARE will not show it again.",
+    "revoke": "Revoke",
+    "revokeConfirm": "Revoke token \"{name}\"? Scripts using it will stop working.",
+    "columns": {
+      "name": "Name",
+      "prefix": "Prefix",
+      "createdAt": "Created",
+      "lastUsedAt": "Last used",
+      "userId": "User id"
+    },
+    "toasts": {
+      "loadFailed": "Could not load tokens",
+      "createFailed": "Could not create token",
+      "revokeFailed": "Could not revoke token",
+      "copied": "Secret copied",
+      "copyFailed": "Could not copy secret"
+    }
+  },
   "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",

@@ -225,6 +225,12 @@ export default {
           const hasRight = this.$store.getters["auth/checkRight"](
             `frontend.dashboard.${element.path}.view`
           );
+          if (element.path === 'api_tokens') {
+            const on = this.$store.getters['settings/getValue']('system.auth.apiTokens.enabled');
+            if (on !== true && on !== 'true') {
+              return false;
+            }
+          }
           return (!element.admin || this.isAdmin) && hasRight;
         })
         .reduce((acc, cur) => {
