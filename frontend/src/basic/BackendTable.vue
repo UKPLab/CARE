@@ -20,17 +20,29 @@
     </template>
   </TableSearch>
   <div
+    class="table-scroll-shell"
+    :class="{ 'table-infinite-shell': isInfiniteMode }"
+    :style="infiniteShellStyle"
+  >
+  <div :class="{ 'table-infinite-main': isInfiniteMode }">
+  <div
     ref="tableWrapper"
     class="table-wrapper"
     :class="{
       'pending-load-out': pendingLoadPhase === 'out',
       'pending-load-in': pendingLoadPhase === 'in',
+      'table-infinite': isInfiniteMode,
     }"
     :style="tableWrapperStyle"
   >
+    <div
+      v-if="isInfiniteMode && topSpacerHeight > 0"
+      class="virtual-spacer-fill"
+      :style="{ height: topSpacerHeight + 'px' }"
+    ></div>
     <table
       ref="tableElement"
-      :class="tableClass"
+      :class="[tableClass, { 'table-virtual': isInfiniteMode }]"
       class="table"
     >
       <thead>
@@ -140,7 +152,7 @@
             </span>
           </th>
           <th
-            v-if="hasManageButtons"
+            v-if="manageColumnActive"
             ref="manageHeader"
             :class="getManageColumnClass()"
             :style="manageColumnStyle"
@@ -149,8 +161,8 @@
           </th>
         </tr>
       </thead>
-      <tbody>
-        <tr v-if="serverSidePagination && total > 0 && sourceData.length === 0">
+      <tbody ref="tableBody">
+        <tr v-if="!showPlaceholderRows && serverSidePagination && total > 0 && sourceData.length === 0">
           <td
             :colspan="emptyColspan"
             class="text-center"
@@ -158,7 +170,7 @@
             Loading data from server...
           </td>
         </tr>
-        <tr v-else-if="!sourceData || sourceData.length === 0">
+        <tr v-else-if="!showPlaceholderRows && (!sourceData || sourceData.length === 0)">
           <td
             :colspan="emptyColspan"
             class="text-center"
@@ -167,18 +179,20 @@
           </td>
         </tr>
         <tr
-          v-for="r in tableData"
+          v-for="(r, rowIndex) in tableData"
           v-else
           :key="r.id"
+          data-row="1"
           :class="{
+            'row-stripe-odd': isInfiniteMode && (infiniteSliceStart + rowIndex) % 2 === 1,
             'row-deleting': isDeletingRow(r.id),
-            'row-placeholder': isPlaceholderRow(r.id),
+            'row-placeholder': r.__skeleton || isPlaceholderRow(r.id),
             'row-updated': isUpdatedRow(r.id),
             'row-entering': isEnteringRow(r.id),
             'row-entering-top': isEnteringTopRow(r.id),
             'row-entering-bottom': isEnteringBottomRow(r.id),
           }"
-          @click="isPlaceholderRow(r.id) ? null : selectRow(r)"
+          @click="r.__skeleton || isPlaceholderRow(r.id) ? null : selectRow(r)"
         >
           <td v-if="selectableRows">
             <div
@@ -272,20 +286,23 @@
             </span>
             <span v-else> - </span>
           </td>
+          <!-- Always rendered once the column exists: a cell that comes and goes with the
+               rendered slice would change the table width on every scroll frame. -->
           <td
-            v-if="getFilteredButtons(r).length > 0"
+            v-if="manageColumnActive"
             :class="getManageColumnClass()"
             :style="manageColumnStyle"
             @click.stop=""
           >
             <TButtonGroup
-              :buttons="getFilteredButtons(r)"
+              v-if="!r.__skeleton && rowButtons(r).length > 0"
+              :buttons="rowButtons(r)"
               :params="r"
               @action="actionEmitter"
             />
           </td>
         </tr>
-        <tr v-if="isAllMode && allRenderLimit < total" ref="loadMoreSentinel">
+        <tr v-if="isAllMode && !queryMode && allRenderLimit < total" ref="loadMoreSentinel">
           <td 
             :colspan="emptyColspan" 
             style="height: 1px; 
@@ -295,6 +312,42 @@
         </tr>
       </tbody>
     </table>
+    <div
+      v-if="isInfiniteMode && bottomSpacerHeight > 0"
+      class="virtual-spacer-fill"
+      :style="{ height: bottomSpacerHeight + 'px' }"
+    ></div>
+  </div>
+  <!-- Pinned to the bottom edge, outside the scrolled content: an in-flow spinner would
+       change the content height and shift the row-index maths under the viewport. -->
+  <div
+    v-if="isInfiniteMode && infiniteFetching"
+    class="infinite-loading-end"
+    role="status"
+    aria-live="polite"
+  >
+    <Loader
+      :loading="true"
+      :size="1.1"
+      text="Loading..."
+    />
+  </div>
+  </div>
+  <div
+    v-if="isInfiniteMode && total > 0"
+    ref="infiniteScrollbar"
+    class="infinite-scrollbar"
+    role="scrollbar"
+    :aria-valuemin="0"
+    :aria-valuemax="Math.max(0, total - 1)"
+    :aria-valuenow="visibleFirstRow"
+    @mousedown.prevent="onInfiniteScrollbarDown"
+  >
+    <div
+      class="infinite-scrollbar-thumb"
+      :style="infiniteThumbStyle"
+    ></div>
+  </div>
   </div>
   <div
     v-if="selectableRows && !(options && options.singleSelect)"
@@ -306,8 +359,11 @@
     v-if="options && options.pagination && total > 0"
     ref="pagination"
     :current-page="currentPage"
-    :items-per-page="limit"
+    :items-per-page="isInfiniteMode ? 0 : limit"
     :items-per-page-list="itemsPerPageList"
+    :allow-all="queryMode"
+    :window-first="windowFirstVisible"
+    :window-last="windowLastVisible"
     :pages="pages"
     :total-items="total"
     @update-items-per-page="paginationItemsPerPageChange"
@@ -324,6 +380,7 @@ import TIcon from "./table/Icon.vue";
 import Pagination from "./table/Pagination.vue";
 import TableSearch from "./table/Search.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import Loader from "./Loading.vue";
 import { tooltip } from "@/assets/tooltip.js";
 import deepEqual from "deep-equal";
 
@@ -366,6 +423,7 @@ export default {
     TButton,
     TToggle,
     LoadIcon,
+    Loader,
   },
   directives: { tooltip },
   inject: {
@@ -495,6 +553,35 @@ export default {
       _backfillBusy: false,
       _hopBusy: false,
       _deleteAnimMs: 750,
+      // Infinite scroll ("All" in query-mode): sliding keyset window + row virtualization.
+      // queryItems holds the loaded window; rowsBefore says where that window sits in the
+      // result set, so the spacers can stand in for every row we did not load.
+      rowsBefore: 0,
+      // queryMeta cursors only describe the last fetched block. These say whether they still
+      // match the window edges, i.e. whether we may keep walking by cursor on that side.
+      windowStartCursorValid: true,
+      windowEndCursorValid: true,
+      rowHeight: 0,
+      virtualStart: 0,
+      virtualEnd: 0,
+      visibleFirstRow: 0, // global index of the first row on screen
+      visibleLastRow: 0,
+      viewportHeight: 0,
+      scrollTop: 0,
+      scrollHeight: 0,
+      infiniteBlockSize: 50, // rows per fetch while scrolling
+      infiniteMaxRows: 150, // loaded window cap; the far edge is dropped past this
+      infiniteOverscan: 8, // rendered rows above/below the viewport
+      infinitePrefetchRows: 15, // distance to the window edge that triggers the next block
+      _scrollTarget: null,
+      _scrollHandler: null,
+      _scrollRaf: null,
+      _windowFetchBusy: false,
+      _seekTimer: null,
+      _seekToken: 0,
+      _windowRefetchTimer: null,
+      _windowRefetchHighlight: [],
+      _emptyBlockKey: null,
     };
   },
   computed: {
@@ -502,7 +589,110 @@ export default {
       return !!(this.table && this.serverSidePagination);
     },
     pendingBannerVisible() {
-      return this.queryMode && (this.pendingInserts > 0 || this.pendingStructural);
+      // Infinite scroll absorbs inserts with the spacers, so it never needs the banner.
+      return this.queryMode && !this.isInfiniteMode && (this.pendingInserts > 0 || this.pendingStructural);
+    },
+    /** "All" page size on a server-side table: sliding window instead of a fixed page. */
+    isInfiniteMode() {
+      return this.queryMode && this.itemsPerPage === 0;
+    },
+    loadedCount() {
+      return this.queryItems.length;
+    },
+    /** Result rows behind the loaded window; rendered as the bottom spacer. */
+    rowsAfter() {
+      return Math.max(0, this.total - this.rowsBefore - this.loadedCount);
+    },
+    effectiveRowHeight() {
+      return this.rowHeight > 0 ? this.rowHeight : 41;
+    },
+    /** Global index of the first row `tableData` renders. */
+    infiniteSliceStart() {
+      if (!this.isInfiniteMode) return 0;
+      return this.showPlaceholderRows ? this.visibleFirstRow : this.rowsBefore + this.virtualStart;
+    },
+    topSpacerHeight() {
+      return this.infiniteSliceStart * this.effectiveRowHeight;
+    },
+    bottomSpacerHeight() {
+      const after = this.total - this.infiniteSliceStart - this.tableData.length;
+      return Math.max(0, after) * this.effectiveRowHeight;
+    },
+    /** True when the viewport is looking at rows we have not fetched yet. */
+    infiniteViewportUnloaded() {
+      if (!this.isInfiniteMode || this.total === 0) return false;
+      if (this.loadedCount === 0) return true;
+      const loadedEnd = this.rowsBefore + this.loadedCount;
+      const overlapStart = Math.max(this.visibleFirstRow, this.rowsBefore);
+      const overlapEnd = Math.min(this.visibleLastRow, loadedEnd - 1);
+      // Only when nothing loaded is on screen. A partial overlap keeps the real rows and lets
+      // the incoming block fill the rest, which looks calmer than swapping rows for skeletons.
+      return (overlapEnd >= overlapStart ? overlapEnd - overlapStart + 1 : 0) <= 0;
+    },
+    showPlaceholderRows() {
+      return this.isInfiniteMode && this.total > 0 && this.infiniteViewportUnloaded;
+    },
+    /**
+     * Skeleton stand-ins for the viewport while its rows are still in flight. They carry the
+     * full set of cells, so no column width changes when the real rows replace them.
+     */
+    infinitePlaceholderRows() {
+      if (!this.showPlaceholderRows) return [];
+      const measured = this.visibleLastRow - this.visibleFirstRow + 1;
+      const byHeight = Math.ceil((this.viewportHeight || 0) / this.effectiveRowHeight);
+      // 12 is the floor for the very first paint, before the viewport has been measured.
+      const visible = Math.max(measured, byHeight, 12);
+      const count = Math.min(visible + this.infiniteOverscan, this.total - this.visibleFirstRow);
+      const rows = [];
+      for (let i = 0; i < count; i += 1) {
+        rows.push({id: `__skeleton_${this.visibleFirstRow + i}`, __skeleton: true});
+      }
+      return rows;
+    },
+    infiniteFetching() {
+      return this.isInfiniteMode && (this.queryLoading || this._windowFetchBusy);
+    },
+    /**
+     * Whether the Manage column exists at all. Derived from the loaded rows rather than the
+     * rendered ones so virtualization cannot make the column blink in and out.
+     */
+    manageColumnActive() {
+      if (!this.buttons.length) return false;
+      // Reserve the column while the first block is still loading.
+      if (this.isInfiniteMode && this.loadedCount === 0) return true;
+      return (this.sourceData || []).some((row) => this.rowButtons(row).length > 0);
+    },
+    infiniteThumbHeight() {
+      const view = this.viewportHeight || 1;
+      const content = Math.max(this.scrollHeight || view, view);
+      return Math.max(32, (view / content) * view);
+    },
+    infiniteThumbStyle() {
+      const view = this.viewportHeight || 1;
+      const content = Math.max(this.scrollHeight || view, view);
+      const thumb = this.infiniteThumbHeight;
+      const maxScroll = Math.max(1, content - view);
+      const maxTop = Math.max(0, view - thumb);
+      const top = (this.scrollTop / maxScroll) * maxTop;
+      return {
+        height: `${thumb}px`,
+        top: `${top}px`,
+      };
+    },
+    infiniteShellStyle() {
+      if (!this.isInfiniteMode) return null;
+      const height = this.maxTableHeight
+        ? this.normalizeCssSize(this.maxTableHeight)
+        : "65vh";
+      return height ? {height} : {height: "65vh"};
+    },
+    windowFirstVisible() {
+      if (!this.isInfiniteMode || this.total === 0) return 0;
+      return Math.min(this.visibleFirstRow + 1, this.total);
+    },
+    windowLastVisible() {
+      if (!this.isInfiniteMode || this.total === 0) return 0;
+      return Math.min(this.visibleLastRow + 1, this.total);
     },
     pendingBannerText() {
       if (this.pendingInserts > 0) {
@@ -523,13 +713,21 @@ export default {
       return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
     },
     tableWrapperStyle() {
-      if (!this.maxTableHeight) return null;
-      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
-      if (!maxHeight) return null;
-      return {
-        maxHeight,
-        overflowY: "auto",
-      };
+      const style = {};
+      if (this.isInfiniteMode) {
+        // Fixed height lives on the shell so the custom scrollbar can match it.
+        style.height = "100%";
+        style.overflowY = "auto";
+        style.overflowX = "auto";
+        style.overflowAnchor = "none";
+        return style;
+      }
+      const maxHeight = this.maxTableHeight ? this.normalizeCssSize(this.maxTableHeight) : null;
+      if (maxHeight) {
+        style.maxHeight = maxHeight;
+        style.overflowY = "auto";
+      }
+      return Object.keys(style).length > 0 ? style : null;
     },
     serverSidePagination() {
       return (
@@ -566,8 +764,8 @@ export default {
       // if manually set, use that
       if (this.itemsPerPage !== null) {
         if (this.itemsPerPage === 0) {
-          // Prevent UI freeze when "All" is selected
-          return Math.min(this.total, this.allRenderLimit);
+          // "All" on the server streams one block per scroll; only the client copy slices memory.
+          return this.queryMode ? this.infiniteBlockSize : Math.min(this.total, this.allRenderLimit);
         }
         return this.itemsPerPage;
       }
@@ -603,6 +801,11 @@ export default {
       return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
     },
     tableData() {
+      if (this.isInfiniteMode) {
+        if (this.showPlaceholderRows) return this.infinitePlaceholderRows;
+        // Only the rows around the viewport reach the DOM; the rest of the window stays in memory.
+        return this.queryItems.slice(this.virtualStart, this.virtualEnd);
+      }
       if (this.serverSidePagination) {
         return this.sourceData;
       }
@@ -701,6 +904,12 @@ export default {
       },
       deep: true,
     },
+    manageColumnActive: {
+      handler(val) {
+        this.hasManageButtons = val;
+      },
+      immediate: true,
+    },
     hasManageButtons(newVal) {
       if(newVal) {
         this.setupFixedColumns();
@@ -712,10 +921,21 @@ export default {
     itemsPerPage(newVal) {
       if (newVal === 0) {
         this.currentPage = 1;
-        this.allRenderLimit = this.allChunkSize;
-        this.$nextTick(() => this.setupAllObserver());
+        if (this.queryMode) {
+          // The fetch itself comes from paginationUpdate() / setupQueryMode().
+          this.enterInfiniteMode();
+        } else {
+          this.allRenderLimit = this.allChunkSize;
+          this.$nextTick(() => this.setupAllObserver());
+        }
       } else {
         this.cleanupAllObserver();
+        this.exitInfiniteMode();
+      }
+    },
+    loadedCount() {
+      if (this.isInfiniteMode) {
+        this.scheduleVirtualUpdate();
       }
     },
     queryFilter: {
@@ -762,6 +982,11 @@ export default {
         }))
     );
 
+    // Consumers may open a query-mode table directly in "All" (infinite scroll).
+    if (this.queryMode && this.options?.pagination?.itemsPerPage === 0) {
+      this.itemsPerPage = 0;
+    }
+
     this.setupQueryMode();
 
     if (this.hasFixedColumns || this.hasManageButtons) {
@@ -780,6 +1005,7 @@ export default {
     clearTimeout(this._backfillTimer);
     this.cleanupFixedColumns();
     this.cleanupAllObserver();
+    this.exitInfiniteMode();
   },
   methods: {
     setupFixedColumns() {
@@ -1185,8 +1411,12 @@ export default {
     deepEqual(row1, row2) {
       return deepEqual(row1, row2);
     },
-    getFilteredButtons(row) {
-      const filteredButtons = this.buttons.filter((b) => {
+    /**
+     * Buttons that apply to this row. Pure on purpose: it runs during render, so it must not
+     * touch component state (that used to flip hasManageButtons mid-render).
+     */
+    rowButtons(row) {
+      return this.buttons.filter((b) => {
         if (!b.filter || !b.filter.length) return true;
         
         // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
@@ -1210,14 +1440,9 @@ export default {
           });
         }
       });
-
-      // Update this flag if there are any buttons
-      if (filteredButtons.length > 0) {
-        this.hasManageButtons = true;
-      }
-
-
-      return filteredButtons;
+    },
+    getFilteredButtons(row) {
+      return this.rowButtons(row);
     },
     getMultilineStyles(column) {
       if (!column.multiline) {
@@ -1321,7 +1546,9 @@ export default {
       this._pendingConnectFetch = null;
     },
     buildQueryPayload(nav = {}) {
-      const limit = this.limit;
+      // Sort, search and column filters ride along on every request — block fetches of the
+      // infinite window included, otherwise the window would stitch two result sets together.
+      const limit = nav.limit > 0 ? nav.limit : this.limit;
       const sort = this.sortColumn
         ? {column: this.sortColumn, direction: this.sortDirection}
         : {column: "id", direction: "ASC"};
@@ -1335,6 +1562,8 @@ export default {
       if (nav.after) query.after = nav.after;
       if (nav.before) query.before = nav.before;
       if (nav.fromEnd) query.fromEnd = true;
+      // Absolute position, used only by the infinite window (jump / refetch in place).
+      if (nav.offset > 0) query.offset = nav.offset;
       return {
         table: this.table,
         filter: this.queryFilter || [],
@@ -1380,6 +1609,25 @@ export default {
         this.enteringTopIds = [];
         this.enteringBottomIds = [];
         this.enteringFrom = null;
+      }
+      if (this.isInfiniteMode) {
+        // A fresh window: sort / search / filter / page-size changes all land here.
+        this.rowsBefore = requestedNav.fromEnd
+          ? Math.max(0, (this.queryMeta.total || 0) - items.length)
+          : (Number.isFinite(this.queryMeta.offset) ? this.queryMeta.offset : 0);
+        this.windowStartCursorValid = true;
+        this.windowEndCursorValid = true;
+        this._emptyBlockKey = null;
+        this.virtualStart = 0;
+        this.virtualEnd = items.length;
+        this.syncWindowQuery();
+        this.$nextTick(() => {
+          if (!requestedNav.offset && !requestedNav.fromEnd) {
+            this.resetInfiniteScroll();
+          }
+          this.measureRowHeight();
+          this.updateVirtualWindow();
+        });
       }
     },
     applyEnrich(row) {
@@ -1695,7 +1943,12 @@ export default {
     schedulePageBackfill() {
       clearTimeout(this._backfillTimer);
       this._backfillTimer = setTimeout(() => {
-        this.backfillAfterDeletes();
+        // A page keeps its row count and backfills; a scroll window just gets shorter.
+        if (this.isInfiniteMode) {
+          this.finishInfiniteDeletes();
+        } else {
+          this.backfillAfterDeletes();
+        }
       }, 40);
     },
     /**
@@ -1741,22 +1994,7 @@ export default {
         const nextPayload = endCursor
           ? this.buildQueryPayload({after: endCursor})
           : this.buildQueryPayload(this.currentNav());
-        const {items: nextItems, meta} = await new Promise((resolve, reject) => {
-          if (!this.$socket?.connected) {
-            reject(new Error("socket not connected"));
-            return;
-          }
-          const t = setTimeout(() => reject(new Error("queryTable timeout")), 15000);
-          this.$socket.emit("queryTable", nextPayload, (response) => {
-            clearTimeout(t);
-            if (!response?.success) {
-              reject(new Error(response?.message || "queryTable failed"));
-              return;
-            }
-            const items = (response.data?.items || []).map((row) => this.applyEnrich(row));
-            resolve({items, meta: response.data?.meta || null});
-          });
-        });
+        const {items: nextItems, meta} = await this.requestQueryItems(nextPayload);
         const bottomFill = nextItems
           .filter((row) => !visibleIds.has(row.id))
           .slice(0, need);
@@ -1786,13 +2024,13 @@ export default {
         this._backfillBusy = false;
       }
     },
-    fetchCurrentPageItems() {
+    /** One-off queryTable call that returns its rows instead of replacing the current page. */
+    requestQueryItems(payload) {
       return new Promise((resolve, reject) => {
         if (!this.$socket?.connected) {
           reject(new Error("socket not connected"));
           return;
         }
-        const payload = this.buildQueryPayload(this.currentNav());
         const t = setTimeout(() => reject(new Error("queryTable timeout")), 15000);
         this.$socket.emit("queryTable", payload, (response) => {
           clearTimeout(t);
@@ -1804,6 +2042,9 @@ export default {
           resolve({items, meta: response.data?.meta || null});
         });
       });
+    },
+    fetchCurrentPageItems() {
+      return this.requestQueryItems(this.buildQueryPayload(this.currentNav()));
     },
     replaceRow(updatedRow) {
       const enriched = this.applyEnrich(updatedRow);
@@ -1853,6 +2094,11 @@ export default {
     },
     handleStale(payload = {}) {
       this.$emit("stale", payload);
+      if (this.isInfiniteMode) {
+        // No banner here: reload the window in place and keep the viewport on its anchor row.
+        this.scheduleWindowRefetch();
+        return;
+      }
       if (this.isOwnSocket(payload.originSocketId)) {
         this.fetchQueryPage({nav: this.currentNav()});
       } else {
@@ -1864,6 +2110,10 @@ export default {
       this.$emit("delta", delta);
       const {operation, row, originSocketId} = delta;
       if (!row?.id && row?.id !== 0) return;
+      if (this.isInfiniteMode) {
+        this.handleInfiniteDelta(delta);
+        return;
+      }
       const own = this.isOwnSocket(originSocketId);
       const currentIds = new Set(this.queryItems.map((i) => i.id));
 
@@ -2001,6 +2251,636 @@ export default {
         },
       });
     },
+    // --- Infinite scroll window ("All" in query-mode) ---
+    //
+    // queryItems is a window of at most infiniteMaxRows rows somewhere inside the result set.
+    // rowsBefore / rowsAfter are rendered as spacer rows, so the scroll height always matches
+    // the full result and every row keeps a stable index. Scroll position is therefore never
+    // disturbed by loading or dropping a block: the spacer on that side changes by the exact
+    // height of the rows that moved in or out.
+
+    enterInfiniteMode() {
+      this.cleanupAllObserver();
+      this.rowsBefore = 0;
+      this.virtualStart = 0;
+      this.virtualEnd = this.queryItems.length;
+      this.visibleFirstRow = 0;
+      this.visibleLastRow = 0;
+      this.windowStartCursorValid = true;
+      this.windowEndCursorValid = true;
+      this._emptyBlockKey = null;
+      this.pendingInserts = 0;
+      this.pendingStructural = false;
+      this.$nextTick(() => {
+        this.attachInfiniteScroll();
+        this.measureRowHeight();
+        this.updateVirtualWindow();
+      });
+    },
+    exitInfiniteMode() {
+      this.detachInfiniteScroll();
+      clearTimeout(this._seekTimer);
+      clearTimeout(this._windowRefetchTimer);
+      this._seekTimer = null;
+      this._windowRefetchTimer = null;
+      this._windowRefetchHighlight = [];
+      this.rowsBefore = 0;
+      this.virtualStart = 0;
+      this.virtualEnd = 0;
+      this.visibleFirstRow = 0;
+      this.visibleLastRow = 0;
+    },
+    /** Scroll container of the rows: the wrapper when it has its own height, otherwise the page. */
+    infiniteScrollTarget() {
+      const wrapper = this.$refs.tableWrapper;
+      if (wrapper && (this.isInfiniteMode || this.maxTableHeight)) return wrapper;
+      return null;
+    },
+    attachInfiniteScroll() {
+      this.detachInfiniteScroll();
+      this._scrollTarget = this.infiniteScrollTarget();
+      this._scrollHandler = () => this.scheduleVirtualUpdate();
+      (this._scrollTarget || window).addEventListener("scroll", this._scrollHandler, {passive: true});
+      window.addEventListener("resize", this._scrollHandler, {passive: true});
+    },
+    detachInfiniteScroll() {
+      this.stopInfiniteThumbDrag();
+      if (this._scrollHandler) {
+        (this._scrollTarget || window).removeEventListener("scroll", this._scrollHandler);
+        window.removeEventListener("resize", this._scrollHandler);
+      }
+      if (this._scrollRaf) {
+        cancelAnimationFrame(this._scrollRaf);
+        this._scrollRaf = null;
+      }
+      this._scrollHandler = null;
+      this._scrollTarget = null;
+    },
+    onInfiniteScrollbarDown(event) {
+      const track = this.$refs.infiniteScrollbar;
+      const wrapper = this.$refs.tableWrapper;
+      if (!track || !wrapper) return;
+      const rect = track.getBoundingClientRect();
+      const thumb = this.infiniteThumbHeight;
+      const maxTop = Math.max(0, rect.height - thumb);
+      const y = event.clientY - rect.top - thumb / 2;
+      this.scrollWrapperToThumb(Math.max(0, Math.min(maxTop, y)), maxTop);
+      this._thumbDrag = {
+        maxTop,
+        offset: thumb / 2,
+        rectTop: rect.top,
+      };
+      this._onThumbMove = (moveEvent) => {
+        if (!this._thumbDrag) return;
+        const next = moveEvent.clientY - this._thumbDrag.rectTop - this._thumbDrag.offset;
+        this.scrollWrapperToThumb(
+          Math.max(0, Math.min(this._thumbDrag.maxTop, next)),
+          this._thumbDrag.maxTop
+        );
+      };
+      this._onThumbUp = () => this.stopInfiniteThumbDrag();
+      window.addEventListener("mousemove", this._onThumbMove);
+      window.addEventListener("mouseup", this._onThumbUp);
+    },
+    scrollWrapperToThumb(thumbTop, maxTop) {
+      const wrapper = this.$refs.tableWrapper;
+      if (!wrapper) return;
+      const maxScroll = Math.max(0, wrapper.scrollHeight - wrapper.clientHeight);
+      wrapper.scrollTop = maxTop > 0 ? (thumbTop / maxTop) * maxScroll : 0;
+    },
+    stopInfiniteThumbDrag() {
+      if (this._onThumbMove) {
+        window.removeEventListener("mousemove", this._onThumbMove);
+      }
+      if (this._onThumbUp) {
+        window.removeEventListener("mouseup", this._onThumbUp);
+      }
+      this._thumbDrag = null;
+      this._onThumbMove = null;
+      this._onThumbUp = null;
+    },
+    scheduleVirtualUpdate() {
+      if (!this.isInfiniteMode || this._scrollRaf) return;
+      this._scrollRaf = requestAnimationFrame(() => {
+        this._scrollRaf = null;
+        this.updateVirtualWindow();
+      });
+    },
+    /**
+     * Average height of a rendered row. Spacer maths needs a single number, so multiline
+     * columns make this an approximation — it only affects scrollbar proportions.
+     */
+    measureRowHeight() {
+      const body = this.$refs.tableBody;
+      if (!body) return;
+      const rows = body.querySelectorAll("tr[data-row]");
+      let sum = 0;
+      let counted = 0;
+      rows.forEach((row) => {
+        const height = row.getBoundingClientRect().height;
+        if (height > 0) {
+          sum += height;
+          counted += 1;
+        }
+      });
+      if (!counted) return;
+      const next = sum / counted;
+      if (Math.abs(next - this.rowHeight) > 0.5) {
+        this.rowHeight = next;
+      }
+    },
+    updateVirtualWindow() {
+      if (!this.isInfiniteMode) return;
+      const target = this._scrollTarget || this.infiniteScrollTarget();
+      if (!target || target.clientHeight <= 0) return;
+      this.scrollTop = target.scrollTop;
+      this.scrollHeight = target.scrollHeight;
+      if (this.viewportHeight !== target.clientHeight) {
+        this.viewportHeight = target.clientHeight;
+      }
+      if (this.rowHeight <= 0) this.measureRowHeight();
+      const rowHeight = this.effectiveRowHeight;
+      const lastRow = Math.max(0, this.total - 1);
+      // Spacers sit outside the table, so row N starts at headHeight + N * rowHeight. The
+      // sticky header covers the top headHeight pixels of the viewport.
+      const headHeight = this.$refs.tableElement?.tHead?.offsetHeight || 0;
+      const first = Math.max(0, Math.floor(this.scrollTop / rowHeight));
+      const usable = Math.max(rowHeight, this.viewportHeight - headHeight);
+      const last = Math.max(first, Math.floor((this.scrollTop + usable - 1) / rowHeight));
+      this.visibleFirstRow = Math.min(first, lastRow);
+      this.visibleLastRow = Math.min(last, lastRow);
+
+      const start = Math.max(0, Math.min(this.loadedCount, first - this.infiniteOverscan - this.rowsBefore));
+      const end = Math.max(start, Math.min(this.loadedCount, last + this.infiniteOverscan + 1 - this.rowsBefore));
+      if (start !== this.virtualStart) this.virtualStart = start;
+      if (end !== this.virtualEnd) this.virtualEnd = end;
+
+      this.maintainInfiniteWindow();
+    },
+    /** Pull the next block in, or jump the window when the viewport left it entirely. */
+    maintainInfiniteWindow() {
+      if (!this.isInfiniteMode || this.queryLoading || this._windowFetchBusy) return;
+      // A seek is already queued for this viewport; do not stack more work on top of it.
+      if (this._seekTimer) return;
+      if (this.loadedCount === 0) {
+        // Window ran dry (e.g. everything on it was deleted) but the result set is not empty.
+        if (this.total > 0) {
+          this.scheduleWindowSeek(Math.min(this.visibleFirstRow, this.total - 1));
+        }
+        return;
+      }
+      const windowStart = this.rowsBefore;
+      const windowEnd = this.rowsBefore + this.loadedCount;
+
+      if (this.visibleLastRow < windowStart - this.infinitePrefetchRows
+        || this.visibleFirstRow > windowEnd + this.infinitePrefetchRows) {
+        // Scrollbar was dragged past everything we hold — re-anchor by row index.
+        this.scheduleWindowSeek(this.visibleFirstRow);
+        return;
+      }
+      if (this.rowsAfter > 0 && windowEnd - this.visibleLastRow <= this.infinitePrefetchRows) {
+        this.fetchWindowBlock("after");
+        return;
+      }
+      if (this.rowsBefore > 0 && this.visibleFirstRow - windowStart <= this.infinitePrefetchRows) {
+        this.fetchWindowBlock("before");
+      }
+    },
+    resetInfiniteScroll() {
+      const target = this._scrollTarget || this.infiniteScrollTarget();
+      if (target) target.scrollTop = 0;
+      this.visibleFirstRow = 0;
+      this.visibleLastRow = 0;
+    },
+    /** Keep the rows on screen still after the number of rows above them changed. */
+    shiftScrollForRows(rowDelta) {
+      if (!this.isInfiniteMode || !rowDelta) return;
+      const px = rowDelta * this.effectiveRowHeight;
+      this.$nextTick(() => {
+        const target = this._scrollTarget || this.infiniteScrollTarget();
+        if (target) {
+          target.scrollTop += px;
+        } else if (typeof window !== "undefined") {
+          window.scrollBy(0, px);
+        }
+        this.scheduleVirtualUpdate();
+      });
+    },
+    /** Total / cursors from a block response. Cursor validity is decided by the caller. */
+    applyWindowMeta(meta, {start = false, end = false} = {}) {
+      if (!meta) return;
+      if (Number.isFinite(meta.total)) {
+        this.queryMeta.total = meta.total;
+        this.queryMeta.totalPages = 1;
+        if (this.options?.pagination) {
+          this.options.pagination.total = meta.total;
+        }
+      }
+      if (start && meta.startCursor) this.queryMeta.startCursor = meta.startCursor;
+      if (end && meta.endCursor) this.queryMeta.endCursor = meta.endCursor;
+      this.queryMeta.hasPrev = this.rowsBefore > 0;
+      this.queryMeta.hasNext = this.rowsAfter > 0;
+    },
+    /** Describe the loaded window for the delta classifier (sort, search, filters). */
+    syncWindowQuery() {
+      this.currentQuery = {
+        limit: this.loadedCount || this.infiniteBlockSize,
+        sort: {
+          column: this.sortColumn || "id",
+          direction: this.sortDirection || "ASC",
+        },
+        after: null,
+        before: null,
+        fromEnd: false,
+        offset: this.rowsBefore,
+        search: (this.search || "").trim() || null,
+        columnFilters: this.activeColumnFilters,
+      };
+    },
+    async fetchWindowBlock(direction) {
+      if (!this.isInfiniteMode || this._windowFetchBusy || !this.$socket?.connected) return;
+      let nav;
+      if (direction === "after") {
+        nav = (this.windowEndCursorValid && this.queryMeta.endCursor)
+          ? {after: this.queryMeta.endCursor}
+          : {offset: this.rowsBefore + this.loadedCount, limit: this.infiniteBlockSize};
+      } else {
+        const wanted = Math.min(this.infiniteBlockSize, this.rowsBefore);
+        if (wanted <= 0) return;
+        nav = (this.windowStartCursorValid && this.queryMeta.startCursor)
+          ? {before: this.queryMeta.startCursor}
+          : {offset: Math.max(0, this.rowsBefore - wanted), limit: wanted};
+      }
+      // A block that brings nothing new must not be requested again on the next scroll frame.
+      const navKey = `${direction}:${nav.after || nav.before || `offset-${nav.offset}`}`;
+      if (this._emptyBlockKey === navKey) return;
+      this._windowFetchBusy = true;
+      try {
+        const {items, meta} = await this.requestQueryItems(this.buildQueryPayload(nav));
+        if (!this.isInfiniteMode) return;
+        const added = direction === "after"
+          ? this.appendWindowBlock(items, meta)
+          : this.prependWindowBlock(items, meta);
+        this._emptyBlockKey = added > 0 ? null : navKey;
+      } catch (err) {
+        console.warn("BackendTable fetchWindowBlock failed", err);
+      } finally {
+        this._windowFetchBusy = false;
+        this.$nextTick(() => {
+          this.measureRowHeight();
+          this.scheduleVirtualUpdate();
+        });
+      }
+    },
+    appendWindowBlock(items, meta) {
+      const known = new Set(this.queryItems.map((row) => row.id));
+      const fresh = items.filter((row) => row?.id != null && !known.has(row.id));
+      if (fresh.length) {
+        let next = [...this.queryItems, ...fresh];
+        const overflow = next.length - this.infiniteMaxRows;
+        if (overflow > 0) {
+          // Give back the rows furthest above: rowsBefore absorbs them, so nothing shifts.
+          next = next.slice(overflow);
+          this.rowsBefore += overflow;
+          this.windowStartCursorValid = false;
+        }
+        this.queryItems = next;
+        this.windowEndCursorValid = true;
+      }
+      this.applyWindowMeta(meta, {end: fresh.length > 0});
+      this.syncWindowQuery();
+      return fresh.length;
+    },
+    prependWindowBlock(items, meta) {
+      const known = new Set(this.queryItems.map((row) => row.id));
+      const fresh = items.filter((row) => row?.id != null && !known.has(row.id));
+      if (fresh.length) {
+        let next = [...fresh, ...this.queryItems];
+        this.rowsBefore = Math.max(0, this.rowsBefore - fresh.length);
+        const overflow = next.length - this.infiniteMaxRows;
+        if (overflow > 0) {
+          next = next.slice(0, next.length - overflow);
+          this.windowEndCursorValid = false;
+        }
+        this.queryItems = next;
+        this.windowStartCursorValid = true;
+      } else if (meta && meta.hasPrev === false && this.rowsBefore > 0) {
+        // Nothing above after all: rowsBefore drifted (concurrent writes). Collapse the top
+        // spacer and hold the viewport, which lands at the real start of the result.
+        const drift = this.rowsBefore;
+        this.rowsBefore = 0;
+        this.shiftScrollForRows(-drift);
+      }
+      this.applyWindowMeta(meta, {start: fresh.length > 0});
+      this.syncWindowQuery();
+      return fresh.length;
+    },
+    scheduleWindowSeek(targetRow) {
+      clearTimeout(this._seekTimer);
+      this._seekTimer = setTimeout(() => {
+        this._seekTimer = null;
+        this.seekWindow(targetRow);
+      }, 120);
+    },
+    /**
+     * Load the window around an absolute row index. Keyset cannot address "row N", so this is
+     * the one place that sends an offset; the window keeps walking by cursor afterwards.
+     */
+    async seekWindow(targetRow) {
+      if (!this.isInfiniteMode || this._windowFetchBusy || !this.$socket?.connected) return;
+      const wanted = Math.min(this.infiniteBlockSize * 2, this.infiniteMaxRows);
+      const highest = Math.max(0, this.total - wanted);
+      const offset = Math.max(0, Math.min(targetRow - Math.floor(this.infiniteBlockSize / 3), highest));
+      const token = ++this._seekToken;
+      this._windowFetchBusy = true;
+      try {
+        const {items, meta} = await this.requestQueryItems(
+          this.buildQueryPayload({offset, limit: wanted})
+        );
+        if (!this.isInfiniteMode || token !== this._seekToken) return;
+        this.queryItems = items;
+        this.virtualStart = 0;
+        this.virtualEnd = items.length;
+        this.rowsBefore = (meta && Number.isFinite(meta.offset)) ? meta.offset : offset;
+        this.windowStartCursorValid = true;
+        this.windowEndCursorValid = true;
+        this._emptyBlockKey = null;
+        this.applyWindowMeta(meta, {start: true, end: true});
+        this.deletingIds = new Set();
+        this.placeholderIds = new Set();
+        this.enteringIds = [];
+        this.enteringTopIds = [];
+        this.enteringBottomIds = [];
+        this.syncWindowQuery();
+        this.$nextTick(() => {
+          this.measureRowHeight();
+          this.updateVirtualWindow();
+        });
+      } catch (err) {
+        console.warn("BackendTable seekWindow failed", err);
+      } finally {
+        this._windowFetchBusy = false;
+      }
+    },
+    scheduleWindowRefetch(highlightId = null) {
+      if (!this.isInfiniteMode) return;
+      if (highlightId != null && !this._windowRefetchHighlight.includes(highlightId)) {
+        this._windowRefetchHighlight.push(highlightId);
+      }
+      clearTimeout(this._windowRefetchTimer);
+      this._windowRefetchTimer = setTimeout(() => {
+        this._windowRefetchTimer = null;
+        this.refetchWindow();
+      }, 150);
+    },
+    /**
+     * Reload the rows the window covers and keep the row that was on top of the viewport in
+     * the same place, even when the rows above it changed.
+     */
+    async refetchWindow() {
+      if (!this.isInfiniteMode || !this.$socket?.connected) return;
+      if (this._windowFetchBusy) {
+        this.scheduleWindowRefetch();
+        return;
+      }
+      const wanted = Math.min(Math.max(this.loadedCount, this.infiniteBlockSize), this.infiniteMaxRows);
+      const offset = Math.max(0, Math.min(this.rowsBefore, Math.max(0, this.total - wanted)));
+      const anchorId = this.firstVisibleRowId();
+      const anchorIndex = anchorId != null
+        ? this.rowsBefore + this.queryItems.findIndex((row) => row.id === anchorId)
+        : -1;
+      const highlight = this._windowRefetchHighlight;
+      this._windowRefetchHighlight = [];
+      this._windowFetchBusy = true;
+      try {
+        const {items, meta} = await this.requestQueryItems(
+          this.buildQueryPayload({offset, limit: wanted})
+        );
+        if (!this.isInfiniteMode) return;
+        this.queryItems = items;
+        this.virtualStart = 0;
+        this.virtualEnd = items.length;
+        this.rowsBefore = (meta && Number.isFinite(meta.offset)) ? meta.offset : offset;
+        this.windowStartCursorValid = true;
+        this.windowEndCursorValid = true;
+        this._emptyBlockKey = null;
+        this.applyWindowMeta(meta, {start: true, end: true});
+        this.deletingIds = new Set();
+        this.placeholderIds = new Set();
+        this.syncWindowQuery();
+
+        if (anchorIndex >= 0) {
+          const localIndex = items.findIndex((row) => row.id === anchorId);
+          if (localIndex >= 0) {
+            const drift = (this.rowsBefore + localIndex) - anchorIndex;
+            if (drift) this.shiftScrollForRows(drift);
+          }
+        }
+        const stillHere = highlight.filter((id) => items.some((row) => row.id === id));
+        if (stillHere.length) {
+          this.updatedIds = [...this.updatedIds, ...stillHere];
+          setTimeout(() => {
+            this.updatedIds = this.updatedIds.filter((id) => !stillHere.includes(id));
+          }, 1400);
+        }
+        this.$nextTick(() => {
+          this.measureRowHeight();
+          this.updateVirtualWindow();
+        });
+      } catch (err) {
+        console.warn("BackendTable refetchWindow failed", err);
+      } finally {
+        this._windowFetchBusy = false;
+      }
+    },
+    firstVisibleRowId() {
+      if (!this.loadedCount) return null;
+      const local = Math.max(0, Math.min(this.loadedCount - 1, this.visibleFirstRow - this.rowsBefore));
+      const row = this.queryItems[local];
+      return row ? row.id : null;
+    },
+    /** Is this window position currently on screen? Decides whether a change gets animated. */
+    isRowIndexVisible(localIndex) {
+      if (localIndex < 0) return false;
+      const global = this.rowsBefore + localIndex;
+      return global >= this.visibleFirstRow && global <= this.visibleLastRow;
+    },
+    isRowIndexAboveViewport(localIndex) {
+      if (localIndex < 0) return false;
+      return this.rowsBefore + localIndex < this.visibleFirstRow;
+    },
+    /** Row sorts between the first and the last loaded row, so it has a slot in the window. */
+    rowBelongsInWindow(row) {
+      if (!this.loadedCount) return false;
+      return !this.isBeforeAnchor(row) && !this.isAfterCurrentPage(row);
+    },
+    windowInsertIndex(row) {
+      const sort = this.currentQuery?.sort;
+      if (!sort?.column) return this.queryItems.length;
+      const direction = sort.direction || "ASC";
+      for (let i = 0; i < this.queryItems.length; i += 1) {
+        const other = this.queryItems[i];
+        const cmp = this.compareSort(row[sort.column], other[sort.column], direction);
+        if (cmp < 0 || (cmp === 0 && this.compareSort(row.id, other.id, "ASC") < 0)) {
+          return i;
+        }
+      }
+      return this.queryItems.length;
+    },
+    /** Drop rows from whichever edge is further from the viewport once past the cap. */
+    trimWindowFarEdge() {
+      const overflow = this.queryItems.length - this.infiniteMaxRows;
+      if (overflow <= 0) return;
+      const aboveViewport = Math.max(0, this.visibleFirstRow - this.rowsBefore);
+      const belowViewport = Math.max(0, (this.rowsBefore + this.queryItems.length - 1) - this.visibleLastRow);
+      if (aboveViewport >= belowViewport) {
+        this.queryItems = this.queryItems.slice(overflow);
+        this.rowsBefore += overflow;
+        this.windowStartCursorValid = false;
+      } else {
+        this.queryItems = this.queryItems.slice(0, this.queryItems.length - overflow);
+        this.windowEndCursorValid = false;
+      }
+    },
+    flashEnteringRow(id) {
+      this.enteringIds = [...this.enteringIds.filter((x) => x !== id), id];
+      clearTimeout(this._enteringClearTimer);
+      this._enteringClearTimer = setTimeout(() => {
+        this.enteringIds = [];
+        this.enteringTopIds = [];
+        this.enteringBottomIds = [];
+      }, 1200);
+    },
+    insertWindowRow(row) {
+      const enriched = this.applyEnrich(row);
+      const index = this.windowInsertIndex(enriched);
+      const above = this.isRowIndexAboveViewport(index);
+      const next = [...this.queryItems];
+      next.splice(index, 0, enriched);
+      this.queryItems = next;
+      this.trimWindowFarEdge();
+      const localIndex = this.queryItems.findIndex((item) => item.id === enriched.id);
+      if (this.isRowIndexVisible(localIndex)) {
+        this.flashEnteringRow(enriched.id);
+      } else if (above) {
+        this.shiftScrollForRows(1);
+      }
+      this.syncWindowQuery();
+      this.scheduleVirtualUpdate();
+    },
+    /** Remove a loaded row without animation (used when it is not on screen). */
+    removeWindowRow(id, index = -1) {
+      const at = index >= 0 ? index : this.queryItems.findIndex((item) => item.id === id);
+      if (at < 0) return;
+      const above = this.isRowIndexAboveViewport(at);
+      const next = [...this.queryItems];
+      next.splice(at, 1);
+      this.queryItems = next;
+      if (above) this.shiftScrollForRows(-1);
+      this.syncWindowQuery();
+      this.scheduleVirtualUpdate();
+    },
+    /**
+     * Clear the frozen skeletons the delete animation leaves behind. Unlike a page, the window
+     * is allowed to get shorter; the next scroll update fetches a block if the viewport needs it.
+     */
+    finishInfiniteDeletes() {
+      if (this.deletingIds && this.deletingIds.size > 0) {
+        this.schedulePageBackfill();
+        return;
+      }
+      const placeholders = this.placeholderIds || new Set();
+      if (!placeholders.size) return;
+      let removedAbove = 0;
+      this.queryItems.forEach((row, index) => {
+        if (placeholders.has(row.id) && this.isRowIndexAboveViewport(index)) {
+          removedAbove += 1;
+        }
+      });
+      this.queryItems = this.queryItems.filter((row) => !placeholders.has(row.id));
+      this.placeholderIds = new Set();
+      this._pendingBackfillCount = 0;
+      if (removedAbove) this.shiftScrollForRows(-removedAbove);
+      this.syncWindowQuery();
+      this.scheduleVirtualUpdate();
+    },
+    /**
+     * Live updates for the scroll window. No banner: rows outside the window only move the
+     * spacers, rows inside are patched in place, and rows on screen get the page-mode animations.
+     */
+    handleInfiniteDelta(delta) {
+      const {operation, row} = delta;
+      const loadedIndex = this.queryItems.findIndex((item) => item.id === row.id);
+      const loaded = loadedIndex >= 0;
+      // The result set moved, so an edge that had nothing to give may have rows now.
+      this._emptyBlockKey = null;
+
+      if (operation === "delete") {
+        if (this.processedDeleteIds.has(row.id)) return;
+        this.processedDeleteIds.add(row.id);
+        if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
+        this.bumpTotal(-1);
+        if (loaded) {
+          if (this.isRowIndexVisible(loadedIndex)) {
+            this.markRowDeleted(row.id);
+          } else {
+            this.removeWindowRow(row.id, loadedIndex);
+          }
+          return;
+        }
+        if (this.rowsBefore > 0 && this.isBeforeAnchor(row)) {
+          this.rowsBefore -= 1;
+          this.shiftScrollForRows(-1);
+        }
+        return;
+      }
+
+      if (operation === "update") {
+        if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
+        if (!this.passesCurrentFilter(row)) {
+          // Dropped out of the query (filter, search, rights): treat like a delete.
+          if (loaded) {
+            this.bumpTotal(-1);
+            if (this.isRowIndexVisible(loadedIndex)) {
+              this.markRowDeleted(row.id);
+            } else {
+              this.removeWindowRow(row.id, loadedIndex);
+            }
+          }
+          return;
+        }
+        const oldRow = loaded ? this.queryItems[loadedIndex] : null;
+        const sortColumn = this.currentQuery?.sort?.column;
+        const sortKeyChanged = !!(oldRow && sortColumn && oldRow[sortColumn] !== row[sortColumn]);
+        const structural = sortKeyChanged || this.updateTouchesActiveFilters(oldRow, row);
+        if (loaded && !structural) {
+          this.replaceRow(row);
+          return;
+        }
+        if (loaded || this.rowBelongsInWindow(row)) {
+          // The row moved within the order — let the server place it and highlight it after.
+          this.scheduleWindowRefetch(row.id);
+        }
+        return;
+      }
+
+      if (operation === "create") {
+        if (this.deletingIds.has(row.id)) return;
+        if (!this.passesCurrentFilter(row) || loaded) return;
+        this.bumpTotal(1);
+        if (this.isAfterCurrentPage(row)) {
+          // Below the window: only the bottom spacer grows.
+          return;
+        }
+        if (this.isBeforeAnchor(row)) {
+          // Above the window: the top spacer grows, so hold the viewport in place.
+          this.rowsBefore += 1;
+          this.shiftScrollForRows(1);
+          return;
+        }
+        this.insertWindowRow(row);
+      }
+    },
     /** Re-apply enrichRow to current page (e.g. after related Vuex data changes) */
     reEnrichItems() {
       if (!this.queryMode) return;
@@ -2052,6 +2932,93 @@ export default {
 
 .pointer {
   cursor: pointer;
+}
+
+.table-infinite-shell {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  margin-bottom: 1rem;
+  min-height: 0;
+}
+
+.table-infinite-main {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.table-wrapper.table-infinite {
+  height: 100%;
+  margin-bottom: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.table-wrapper.table-infinite::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.infinite-scrollbar {
+  flex: 0 0 14px;
+  position: relative;
+  margin-left: 6px;
+  background: #dee2e6;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.infinite-scrollbar-thumb {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  background: #6c757d;
+  border-radius: 6px;
+}
+
+.infinite-scrollbar-thumb:hover {
+  background: #495057;
+}
+
+.virtual-spacer-fill {
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.infinite-loading-end {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  justify-content: center;
+  padding: 0.4rem 0 0.5rem;
+  background: linear-gradient(
+    to top,
+    var(--bs-body-bg, #fff) 55%,
+    rgba(255, 255, 255, 0)
+  );
+  pointer-events: none;
+}
+
+/* Only part of the window is in the DOM, so stripes must follow the row's real position
+   instead of its position among the rendered rows — otherwise they crawl while scrolling. */
+.table-virtual.table-striped > tbody > tr > * {
+  --bs-table-color-type: initial;
+  --bs-table-bg-type: initial;
+}
+
+.table-virtual.table-striped > tbody > tr.row-stripe-odd > * {
+  --bs-table-color-type: var(--bs-table-striped-color);
+  --bs-table-bg-type: var(--bs-table-striped-bg);
 }
 
 .multiline {

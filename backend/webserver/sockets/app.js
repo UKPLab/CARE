@@ -9,8 +9,12 @@ const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("..
 const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../../utils/helper/queryTableColumnFilters.js");
 const {Op} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
-const {paginateJoinSort, dashboardSortInclude} = require("../../utils/helper/queryTableJoinSort.js");
+const {paginateJoinSort, dashboardSortInclude, serializeCursor} = require("../../utils/helper/queryTableJoinSort.js");
 const {ensureStudyDashboardSortFresh} = require("../../db/studyDashboardSortRefresh.js");
+
+// Upper bound for one queryTable page. The infinite-scroll window asks for its whole
+// loaded size in one request, so this is above a page size but far below a full table.
+const MAX_QUERY_TABLE_LIMIT = 200;
 
 /**
  * Send data for building the frontend app
@@ -448,7 +452,9 @@ class AppSocket extends Socket {
      * @param {string} [data.query.after] endCursor of previous result → next page
      * @param {string} [data.query.before] startCursor of previous result → previous page
      * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
-     * @returns {Promise<{items: Array, meta: Object}>} meta has total, pageSize, startCursor, endCursor, hasNext, hasPrev
+     * @param {number} [data.query.offset] row index to start at; only for the infinite-scroll
+     *        window (scrollbar jump / window refetch). Ignored when a cursor is given.
+     * @returns {Promise<{items: Array, meta: Object}>} meta has total, pageSize, startCursor, endCursor, hasNext, hasPrev, offset
      */
     async queryTable(data) {
         const {table, query = {}, filter = []} = data || {};
@@ -530,8 +536,8 @@ class AppSocket extends Socket {
             }
         }
 
-        // Rows per page (default 10).
-        const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
+        // Rows per page (default 10). Clamped: "All" in the UI is a sliding window, never the whole table.
+        const limit = Math.min(Number(query.limit) > 0 ? Number(query.limit) : 10, MAX_QUERY_TABLE_LIMIT);
 
         // Sort column (fallback to id). id is the tie-breaker so the cursor is stable;
         // same direction as sortColumn so btree can be scanned forward or backward without a mismatched ORDER BY.
@@ -552,6 +558,12 @@ class AppSocket extends Socket {
         const before = query.before || null;
         const fromEnd = !!query.fromEnd;
         const backward = !!before || fromEnd;
+        // Keyset cannot address "row N", which a virtualized scrollbar needs. Offset is therefore
+        // allowed as an absolute seek, but only when no cursor was sent (page turns stay keyset).
+        const requestedOffset = Number(query.offset);
+        const offset = (!after && !before && !fromEnd && Number.isFinite(requestedOffset) && requestedOffset > 0)
+            ? Math.floor(requestedOffset)
+            : 0;
 
         let edges;
         let total;
@@ -590,6 +602,7 @@ class AppSocket extends Socket {
                 after,
                 before,
                 fromEnd,
+                offset,
                 limit: limit + 1,
             });
             edges = joinPage.edges;
@@ -602,30 +615,52 @@ class AppSocket extends Socket {
                 : [[sortColumn, sortDirection], ["id", sortDirection]];
             const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
 
-            // Same simple cache as getById/findAll: identical page query (same where/order/
-            // cursor/limit) hits memory; any study write still clears the whole model cache.
-            // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
-            const paginateLazy = makePaginateLazy(model, {omitPrimaryKeyFromOrder: true});
+            const joinOptions = needsViewJoin
+                ? {include: [dashboardSortInclude(sortModel)], subQuery: false}
+                : {};
 
-            const connection = paginateLazy({
-                where: allFilter,
-                attributes: allAttributes,
-                order: fromEnd ? reversedOrder : forwardOrder,
-                limit: limit + 1,
-                ...(after ? {after} : {}),
-                ...(before ? {before} : {}),
-                ...(needsViewJoin ? {
-                    include: [dashboardSortInclude(sortModel)],
-                    subQuery: false,
-                } : {}),
-            });
+            if (offset > 0) {
+                // Cursor payload here is built exactly like sequelize-cursor-pagination's
+                // createCursor (the ordered field values), so the window can keep walking with
+                // after/before from a seeked position.
+                const [rows, rawTotal] = await Promise.all([
+                    model.findAll({
+                        where: allFilter,
+                        attributes: allAttributes,
+                        order: forwardOrder,
+                        limit: limit + 1,
+                        offset,
+                        ...joinOptions,
+                    }),
+                    model.count({where: allFilter, ...joinOptions}),
+                ]);
+                edges = rows.map((node) => ({
+                    node,
+                    cursor: serializeCursor(forwardOrder.map(([field]) => node.get(field))),
+                }));
+                total = rawTotal;
+            } else {
+                // Same simple cache as getById/findAll: identical page query (same where/order/
+                // cursor/limit) hits memory; any study write still clears the whole model cache.
+                // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
+                const paginateLazy = makePaginateLazy(model, {omitPrimaryKeyFromOrder: true});
+                const connection = paginateLazy({
+                    where: allFilter,
+                    attributes: allAttributes,
+                    order: fromEnd ? reversedOrder : forwardOrder,
+                    limit: limit + 1,
+                    ...(after ? {after} : {}),
+                    ...(before ? {before} : {}),
+                    ...joinOptions,
+                });
 
-            const [rawEdges, rawTotal] = await Promise.all([
-                connection.getEdges(),
-                connection.getTotalCount(),
-            ]);
-            edges = fromEnd ? [...rawEdges].reverse() : rawEdges;
-            total = rawTotal;
+                const [rawEdges, rawTotal] = await Promise.all([
+                    connection.getEdges(),
+                    connection.getTotalCount(),
+                ]);
+                edges = fromEnd ? [...rawEdges].reverse() : rawEdges;
+                total = rawTotal;
+            }
         }
         const overflow = edges.length > limit;
         if (overflow) {
@@ -656,6 +691,9 @@ class AppSocket extends Socket {
         } else if (after) {
             hasPrev = true;
             hasNext = overflow;
+        } else if (offset > 0) {
+            hasPrev = true;
+            hasNext = overflow;
         } else {
             hasPrev = false;
             hasNext = overflow;
@@ -670,6 +708,7 @@ class AppSocket extends Socket {
             after,
             before,
             fromEnd,
+            offset,
             filter,
             search: search || null,
             columnFilters: columnFilters || null,
@@ -685,6 +724,7 @@ class AppSocket extends Socket {
                 endCursor,
                 hasNext,
                 hasPrev,
+                offset,
             },
         };
     }

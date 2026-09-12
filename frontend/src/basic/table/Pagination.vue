@@ -28,9 +28,9 @@
             >
               {{ item }}
             </option>
-            <!-- Pagination All is disabled for now. Keep option for later. -->
+            <!-- "All" only where the parent can stream it (query-mode infinite scroll). -->
             <option
-              v-if="false"
+              v-if="allowAll"
               :value="0"
             >
               All
@@ -38,7 +38,9 @@
           </select>
         </div>
       </div>
-      <div class="col-md-auto">
+      <div
+        v-if="itemsPerPageSelect !== 0"
+        class="col-md-auto">
         <nav aria-label="Pagination">
           <ul class="pagination mb-0">
             <!-- First Page Link -->
@@ -137,6 +139,24 @@ export default {
       required: false,
       default: 0,
     },
+    /** Offer the "All" page size. Only tables that stream rows (infinite scroll) may enable it. */
+    allowAll: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    /** 1-based first row currently on screen in "All" mode (0 = unknown). */
+    windowFirst: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    /** 1-based last row currently on screen in "All" mode (0 = unknown). */
+    windowLast: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
   },
   emits: ["updatePage", "updateItemsPerPage"],
   data() {
@@ -152,9 +172,12 @@ export default {
         return "";
       }
 
-      // Handle "All" items case
+      // "All" scrolls a window over the result set, so report what is on screen.
       if (this.itemsPerPageSelect === 0) {
-        return `Showing 1-${this.totalItems} of ${this.totalItems}`;
+        if (this.windowFirst > 0 && this.windowLast >= this.windowFirst) {
+          return `Showing ${this.windowFirst}-${Math.min(this.windowLast, this.totalItems)} of ${this.totalItems}`;
+        }
+        return `${this.totalItems} entries`;
       }
 
       const startItem = (this.currentPage - 1) * this.itemsPerPageSelect + 1;
@@ -172,7 +195,8 @@ export default {
     this.itemsPerPageSelect = this.itemsPerPage;
     if (this.itemsPerPageList.length > 0) {
       this.itemsPerPageListSelect = this.itemsPerPageList;
-      if (this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {
+      // 0 means "All" and has its own option; it must not land in the numeric list.
+      if (this.itemsPerPage > 0 && this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {
         this.itemsPerPageListSelect.push(this.itemsPerPage);
       }
       this.itemsPerPageListSelect.sort((a, b) => a - b);

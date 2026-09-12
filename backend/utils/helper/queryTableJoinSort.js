@@ -70,6 +70,7 @@ function joinKeysetWhere(viewField, direction, cursorValues) {
  * @param {string|null} params.after
  * @param {string|null} params.before
  * @param {boolean} params.fromEnd
+ * @param {number} [params.offset] absolute row index; only honoured without a cursor
  * @param {number} params.limit fetch this many rows (caller adds +1 for overflow)
  * @returns {Promise<{edges: Array<{node: Object, cursor: string}>, total: number}>}
  */
@@ -83,11 +84,13 @@ async function paginateJoinSort({
     after,
     before,
     fromEnd,
+    offset = 0,
     limit,
 }) {
     const displayDir = sortDirection === "DESC" ? "DESC" : "ASC";
     const travelBack = !!before || fromEnd;
     const fetchDir = travelBack ? reverseDir(displayDir) : displayDir;
+    const seekOffset = (!after && !before && !fromEnd && offset > 0) ? Math.floor(offset) : 0;
 
     const include = [dashboardSortInclude(sortModel, [viewField])];
 
@@ -114,6 +117,7 @@ async function paginateJoinSort({
             include,
             order,
             limit,
+            ...(seekOffset > 0 ? {offset: seekOffset} : {}),
             subQuery: false,
         }),
         model.count({
