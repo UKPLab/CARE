@@ -154,10 +154,23 @@
           <th
             v-if="manageColumnActive"
             ref="manageHeader"
+            class="table-manage-col"
             :class="getManageColumnClass()"
-            :style="manageColumnStyle"
+            :style="manageColumnLayoutStyle"
           >
             Manage
+            <!-- Keeps the column as wide as the full button group while cells are empty
+                 (skeleton / not yet loaded). Otherwise max-content shrinks to the header
+                 label and jumps when TButtonGroup mounts. -->
+            <div
+              class="manage-col-sizer"
+              aria-hidden="true"
+            >
+              <TButtonGroup
+                :buttons="buttons"
+                :params="manageSizerParams"
+              />
+            </div>
           </th>
         </tr>
       </thead>
@@ -181,7 +194,7 @@
         <tr
           v-for="(r, rowIndex) in tableData"
           v-else
-          :key="r.id"
+          :key="r.__sid || r.id"
           data-row="1"
           :class="{
             'row-stripe-odd': isInfiniteMode && (infiniteSliceStart + rowIndex) % 2 === 1,
@@ -310,8 +323,9 @@
                rendered slice would change the table width on every scroll frame. -->
           <td
             v-if="manageColumnActive"
+            class="table-manage-col"
             :class="getManageColumnClass()"
-            :style="manageColumnStyle"
+            :style="manageColumnLayoutStyle"
             @click.stop=""
           >
             <TButtonGroup
@@ -537,6 +551,7 @@ export default {
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
       manageColumnStyle: {},
+      manageSizerParams: {},
       debouncedComputeFixedColumns: null,
       hasHorizontalOverflow: false,
       resizeObserver: null,
@@ -663,9 +678,20 @@ export default {
       // 12 is the floor for the very first paint, before the viewport has been measured.
       const visible = Math.max(measured, byHeight, 12);
       const count = Math.min(visible + this.infiniteOverscan, this.total - this.visibleFirstRow);
+      const blank = {};
+      for (const c of this.columns || []) {
+        if (c.key && c.key !== "id") blank[c.key] = "";
+      }
       const rows = [];
       for (let i = 0; i < count; i += 1) {
-        rows.push({id: `__skeleton_${this.visibleFirstRow + i}`, __skeleton: true});
+        rows.push({
+          ...blank,
+          // Short placeholder so the ID column does not inflate to `__skeleton_80000`
+          // and then snap back when real numeric ids arrive.
+          id: "00000",
+          __sid: `__skeleton_${this.visibleFirstRow + i}`,
+          __skeleton: true,
+        });
       }
       return rows;
     },
@@ -681,6 +707,22 @@ export default {
       // Reserve the column while the first block is still loading.
       if (this.isInfiniteMode && this.loadedCount === 0) return true;
       return (this.sourceData || []).some((row) => this.rowButtons(row).length > 0);
+    },
+    /**
+     * Floor width for Manage: icon-only btn-group-sm is ~2.05rem per button.
+     * The header sizer then stretches to the real group if icons are wider.
+     */
+    manageColumnMinWidth() {
+      const n = this.buttons.length;
+      if (!n) return null;
+      return `calc(${n} * 2.05rem + 1rem)`;
+    },
+    manageColumnLayoutStyle() {
+      const minWidth = this.manageColumnMinWidth;
+      return {
+        ...(this.manageColumnStyle || {}),
+        ...(minWidth ? {minWidth} : {}),
+      };
     },
     infiniteThumbHeight() {
       const view = this.viewportHeight || 1;
@@ -1080,7 +1122,9 @@ export default {
     getManageColumnWidth() {
       const ref = this.$refs.manageHeader;
       const el = Array.isArray(ref) ? ref[0] : ref;
-      return el?.offsetWidth || 100; // Default 100px 
+      if (el?.offsetWidth) return el.offsetWidth;
+      const n = this.buttons.length || 1;
+      return Math.round(n * 32.8 + 16);
     },
     computeFixedColumnStyles() {
       // Check for horizontal overflow
@@ -3042,6 +3086,19 @@ export default {
 
 .table thead .table-fixed {
   z-index: 3;
+}
+
+.table-manage-col {
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.manage-col-sizer {
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
 }
 
 .form-check-input:disabled {
