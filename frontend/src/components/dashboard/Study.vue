@@ -351,7 +351,7 @@ export default {
     columns() {
       let cols = [
         {name: "ID", key: "id", fixed: "left" },
-        {name: "Name", key: "name", fixed: "left" },
+        {name: "Name", key: "name", fixed: "left", scroll: true, maxChars: 40 },
         {
           name: "Status",
           key: "state",

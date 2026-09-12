@@ -67,7 +67,7 @@
               getFixedColumnClass(c, index),
             ]"
           
-            :style="[getFixedColumnStyle(c), c.style || {}]"
+            :style="[getFixedColumnStyle(c), getScrollColumnStyle(c), c.style || {}]"
           >
             {{ c.name }}
             <span
@@ -219,7 +219,7 @@
               { pointer: selectableRows && !r.isDisabled },
               getFixedColumnClass(c, index),
             ]"
-            :style="[getFixedColumnStyle(c), c.style || {}]"
+            :style="[getFixedColumnStyle(c), getScrollColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
               <TIcon
@@ -274,6 +274,26 @@
                   @click="actionEmitter({ action: r[c.key].action, params: r })"
                 />
               </span>
+              <div
+                v-else-if="isScrollColumn(c)"
+                class="cell-scroll"
+                :style="getScrollCellStyle(c)"
+                @mouseenter="syncNameScrollBar"
+              >
+                <div
+                  class="cell-scroll-content"
+                  @scroll="syncNameScrollBar"
+                  @wheel.prevent="onCellScrollWheel"
+                >
+                  {{ r[c.key] }}
+                </div>
+                <div
+                  class="cell-scroll-track"
+                  @mousedown.prevent.stop="onNameScrollBarDown"
+                >
+                  <div class="cell-scroll-thumb"></div>
+                </div>
+              </div>
               <span
                 v-else
                 :class="{
@@ -318,17 +338,16 @@
       :style="{ height: bottomSpacerHeight + 'px' }"
     ></div>
   </div>
-  <!-- Pinned to the bottom edge, outside the scrolled content: an in-flow spinner would
-       change the content height and shift the row-index maths under the viewport. -->
+  <!-- Classic CARE spinner over the skeleton: overlay is outside the scrolled content
+       so it does not change scroll height or row-index maths. -->
   <div
     v-if="isInfiniteMode && infiniteFetching"
-    class="infinite-loading-end"
+    class="infinite-loading-overlay"
     role="status"
     aria-live="polite"
   >
     <Loader
       :loading="true"
-      :size="1.1"
       text="Loading..."
     />
   </div>
@@ -582,6 +601,7 @@ export default {
       _windowRefetchTimer: null,
       _windowRefetchHighlight: [],
       _emptyBlockKey: null,
+      _infiniteResizeObserver: null,
     };
   },
   computed: {
@@ -1444,6 +1464,90 @@ export default {
     getFilteredButtons(row) {
       return this.rowButtons(row);
     },
+    isScrollColumn(column) {
+      return !!(column?.scroll || column?.maxChars);
+    },
+    scrollColumnChars(column) {
+      const n = Number(column?.maxChars);
+      return n > 0 ? n : 40;
+    },
+    /** Locks the column so a long value cannot widen the table; the cell content scrolls instead. */
+    getScrollColumnStyle(column) {
+      if (!this.isScrollColumn(column)) return null;
+      const chars = this.scrollColumnChars(column);
+      return {
+        width: `${chars}ch`,
+        maxWidth: `${chars}ch`,
+      };
+    },
+    getScrollCellStyle(column) {
+      if (!this.isScrollColumn(column)) return null;
+      return {
+        "--cell-scroll-ch": `${this.scrollColumnChars(column)}ch`,
+      };
+    },
+    /**
+     * Name cells are overflow-x scrollers, so a vertical wheel would otherwise die
+     * inside the cell. Send that movement to the table instead.
+     */
+    onCellScrollWheel(event) {
+      const content = event.currentTarget;
+      if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+        const target = this.$refs.tableWrapper;
+        if (target) target.scrollTop += event.deltaY;
+        return;
+      }
+      content.scrollLeft += event.deltaX || event.deltaY;
+    },
+    nameScrollRoot(el) {
+      return el?.classList?.contains("cell-scroll") ? el : el?.closest?.(".cell-scroll");
+    },
+    syncNameScrollBar(event) {
+      const root = this.nameScrollRoot(event.currentTarget);
+      if (!root) return;
+      const content = root.querySelector(".cell-scroll-content");
+      const thumb = root.querySelector(".cell-scroll-thumb");
+      if (!content || !thumb) return;
+      const {scrollWidth, clientWidth, scrollLeft} = content;
+      if (scrollWidth <= clientWidth + 1) {
+        root.classList.remove("is-overflow");
+        return;
+      }
+      root.classList.add("is-overflow");
+      const thumbW = Math.max(12, (clientWidth / scrollWidth) * clientWidth);
+      const maxLeft = Math.max(0, clientWidth - thumbW);
+      const left = (scrollWidth - clientWidth) > 0
+        ? (scrollLeft / (scrollWidth - clientWidth)) * maxLeft
+        : 0;
+      thumb.style.width = `${thumbW}px`;
+      thumb.style.transform = `translateX(${left}px)`;
+    },
+    onNameScrollBarDown(event) {
+      const track = event.currentTarget;
+      const root = this.nameScrollRoot(track);
+      const content = root?.querySelector(".cell-scroll-content");
+      const thumb = track.querySelector(".cell-scroll-thumb");
+      if (!root || !content || !thumb) return;
+      this.syncNameScrollBar({currentTarget: root});
+      const rect = track.getBoundingClientRect();
+      const thumbW = thumb.offsetWidth || 12;
+      const maxLeft = Math.max(0, rect.width - thumbW);
+      const apply = (clientX) => {
+        const x = Math.max(0, Math.min(maxLeft, clientX - rect.left - thumbW / 2));
+        const maxScroll = Math.max(0, content.scrollWidth - content.clientWidth);
+        content.scrollLeft = maxLeft > 0 ? (x / maxLeft) * maxScroll : 0;
+      };
+      apply(event.clientX);
+      root.classList.add("is-dragging");
+      const move = (e) => apply(e.clientX);
+      const up = () => {
+        root.classList.remove("is-dragging");
+        window.removeEventListener("mousemove", move);
+        window.removeEventListener("mouseup", up);
+      };
+      window.addEventListener("mousemove", move);
+      window.addEventListener("mouseup", up);
+    },
     getMultilineStyles(column) {
       if (!column.multiline) {
         return null;
@@ -2275,6 +2379,10 @@ export default {
         this.attachInfiniteScroll();
         this.measureRowHeight();
         this.updateVirtualWindow();
+        requestAnimationFrame(() => {
+          this.measureRowHeight();
+          this.updateVirtualWindow();
+        });
       });
     },
     exitInfiniteMode() {
@@ -2302,9 +2410,18 @@ export default {
       this._scrollHandler = () => this.scheduleVirtualUpdate();
       (this._scrollTarget || window).addEventListener("scroll", this._scrollHandler, {passive: true});
       window.addEventListener("resize", this._scrollHandler, {passive: true});
+      // First layout often has clientHeight 0 / a few rows; wait for the 65vh box to settle.
+      if (typeof ResizeObserver !== "undefined" && this.$refs.tableWrapper) {
+        this._infiniteResizeObserver = new ResizeObserver(() => this.scheduleVirtualUpdate());
+        this._infiniteResizeObserver.observe(this.$refs.tableWrapper);
+      }
     },
     detachInfiniteScroll() {
       this.stopInfiniteThumbDrag();
+      if (this._infiniteResizeObserver) {
+        this._infiniteResizeObserver.disconnect();
+        this._infiniteResizeObserver = null;
+      }
       if (this._scrollHandler) {
         (this._scrollTarget || window).removeEventListener("scroll", this._scrollHandler);
         window.removeEventListener("resize", this._scrollHandler);
@@ -2411,7 +2528,12 @@ export default {
       this.visibleLastRow = Math.min(last, lastRow);
 
       const start = Math.max(0, Math.min(this.loadedCount, first - this.infiniteOverscan - this.rowsBefore));
-      const end = Math.max(start, Math.min(this.loadedCount, last + this.infiniteOverscan + 1 - this.rowsBefore));
+      let end = Math.max(start, Math.min(this.loadedCount, last + this.infiniteOverscan + 1 - this.rowsBefore));
+      // Before the wrapper has its real height, clientHeight is a stub and the slice would
+      // collapse to a handful of rows. First user scroll then mounts the rest and hitches.
+      if (this.scrollTop < 1 && target.clientHeight < 120) {
+        end = Math.max(end, Math.min(this.loadedCount, 24));
+      }
       if (start !== this.virtualStart) this.virtualStart = start;
       if (end !== this.virtualEnd) this.virtualEnd = end;
 
@@ -2947,6 +3069,7 @@ export default {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
+  height: 100%;
 }
 
 .table-wrapper.table-infinite {
@@ -2985,6 +3108,11 @@ export default {
   background: #495057;
 }
 
+.infinite-scrollbar:active .infinite-scrollbar-thumb,
+.infinite-scrollbar-thumb:active {
+  background: #343a40;
+}
+
 .virtual-spacer-fill {
   display: block;
   width: 100%;
@@ -2992,20 +3120,14 @@ export default {
   pointer-events: none;
 }
 
-.infinite-loading-end {
+.infinite-loading-overlay {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 6;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.4rem 0 0.5rem;
-  background: linear-gradient(
-    to top,
-    var(--bs-body-bg, #fff) 55%,
-    rgba(255, 255, 255, 0)
-  );
+  background: rgba(255, 255, 255, 0.45);
   pointer-events: none;
 }
 
@@ -3030,6 +3152,81 @@ export default {
   text-overflow: ellipsis;
   white-space: normal;
   word-break: break-word;
+}
+
+.cell-scroll {
+  display: block;
+  max-width: 100%;
+  position: relative;
+}
+
+.cell-scroll-content {
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  padding-bottom: 10px;
+  scrollbar-width: none;
+}
+
+.cell-scroll-content::-webkit-scrollbar {
+  display: none;
+  height: 0;
+}
+
+.cell-scroll-track {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12px;
+  background: transparent;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+}
+
+.cell-scroll-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  height: 3px;
+  background: #dee2e6;
+  border-radius: 2px;
+}
+
+.cell-scroll.is-overflow:hover .cell-scroll-track,
+.cell-scroll.is-dragging .cell-scroll-track {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cell-scroll-thumb {
+  position: relative;
+  height: 12px;
+  background: transparent;
+  will-change: transform;
+}
+
+.cell-scroll-thumb::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  height: 3px;
+  background: #6c757d;
+  border-radius: 2px;
+}
+
+.cell-scroll.is-overflow:hover .cell-scroll-thumb:hover::after {
+  background: #495057;
+}
+
+.cell-scroll.is-dragging .cell-scroll-thumb::after {
+  background: #343a40;
 }
 
 .pending-inserts-banner {
