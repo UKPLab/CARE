@@ -477,60 +477,20 @@ module.exports = class Socket {
     }
 
     /**
-     * Creates database filters according to limitations in the accessMap.
-     * @param {string} tableName The name of the table to create limitations for
-     * @param {Object} allFilter Starting filters
-     * @param {Object} accessMap AccessMap with limitations
-     * @param {Array<Object>} accessRights Access rights for the user
-     * @param {number} userId Id of user to check limitations for
-     * @returns {Object} array of limitation filters
-     */
-    handleLimitations(tableName, allFilter, accessRights, accessMap, userId) {
-
-
-        let filteredAccessMap = accessMap
-            .flatMap(a => {
-                const idField = a.access.target || 'id'; // Use 'target' if available, fallback to 'id'
-                return a.limitation
-                    ? {[idField]: {[Op.in]: [...new Set(a.limitation)]}}
-                    : null;
-            })
-            .filter(Boolean);
-
-
-        if (this.models[tableName].autoTable && 'userId' in this.models[tableName].getAttributes()) {
-            // Ensure we always include the 'userId' condition
-            filteredAccessMap = filteredAccessMap.concat([{userId: userId}]);
-        }
-
-        const limitedFilter = {
-            [Op.and]: [
-                allFilter,
-                {
-                    [Op.or]: filteredAccessMap
-                }
-            ]
-        };
-
-        const columns = [...new Set(
-            accessRights
-                .filter(a => a.columns)
-                .flatMap(a => a.columns)
-        )];
-
-        return {filter: limitedFilter, columns};
-    }
-
-    /**
-     * Modifies allFilter and allAttributes according to user rights in the table.
+     * Builds row filters and column attributes according to user rights in the table.
+     * Shared implementation for the read and write paths — call getReadFilter or
+     * getWriteFilter instead of using this directly.
      * @param {number} userId User ID to check the rights for
      * @param {Object} allFilter Starting filters
      * @param {Object} allAttributes Starting attributes
      * @param {string} tableName The table to check the rights for
      * @param {Date} rolesUpdatedAt Date of the last role update of the user
-     * @returns {Object} modified filters and attributes + whether access is allowed
+     * @param {boolean} publicGrantsAccess Whether publicTable and public rows grant access.
+     *        True when reading (public data is readable by anyone); false when writing,
+     *        since being visible must never imply permission to modify.
+     * @returns {Promise<Object>} modified filters and attributes + whether access is allowed
      */
-    async getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
+    async #buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, publicGrantsAccess) {
         const accessMap = this.server.db.models[tableName]['accessMap'] || [];
         const filteredAccessMap = await this.filterAccessMap(accessMap, userId, rolesUpdatedAt);
         const relevantAccessMap = filteredAccessMap.filter(item => item.hasAccess);
@@ -538,7 +498,7 @@ module.exports = class Socket {
         const model = this.models[tableName];
         const hasModelUserFilter = typeof model.getUserFilter === "function";
         const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
-        const isPublicOrAdmin = isAdmin || model.publicTable;
+        const isPublicOrAdmin = isAdmin || (publicGrantsAccess && model.publicTable);
         const hasAccessRules = accessMap.length > 0;
         const hasUserIdAttribute = model.autoTable && 'userId' in model.getAttributes();
 
@@ -561,7 +521,8 @@ module.exports = class Socket {
             }
 
             // --- Public rows: always visible regardless of ownership or access rights ---
-            if ('public' in model.getAttributes()) {
+            // Read-only: a public row may be seen by anyone, but not written by anyone.
+            if (publicGrantsAccess && 'public' in model.getAttributes()) {
                 rowVisibilityConditions.push({public: true});
             }
 
@@ -584,8 +545,10 @@ module.exports = class Socket {
                 const limitedAccessMap = relevantAccessMap.filter(item => item.limitation);
                 const hasUnlimitedRights = accessRights.length > limitedAccessMap.length;
 
-                if (hasUnlimitedRights) {
-                    // At least one right has no limitation → unlimited row access for that right
+                if (hasUnlimitedRights && publicGrantsAccess) {
+                    // At least one right has no limitation → unlimited row access for that right.
+                    // Read-only: a column-only accessMap entry carries no limitation, so on the
+                    // write path this would grant every user full row access to the table.
                     fullRowAccess = true;
                 } else if (limitedAccessMap.length > 0) {
                     // All rights carry limitations → add each as an additional OR condition
@@ -623,6 +586,37 @@ module.exports = class Socket {
     }
 
     /**
+     * Row filters and column attributes for reading a table.
+     * @param {number} userId User ID to check the rights for
+     * @param {Object} allFilter Starting filters
+     * @param {Object} allAttributes Starting attributes
+     * @param {string} tableName The table to check the rights for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
+     * @returns {Promise<Object>} modified filters and attributes + whether access is allowed
+     */
+    async getReadFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
+        return await this.#buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, true);
+    }
+
+    
+    /**
+     * Row filters and column attributes for writing to a table.
+     * Unlike the read path, publicTable and public rows grant nothing.
+     * Callers must apply the returned filter to the row they intend to write —
+     * checking accessAllowed alone is not enough, as it only reports whether the
+     * user can reach any row in the table at all.
+     * @param {number} userId User ID to check the rights for
+     * @param {Object} allFilter Starting filters
+     * @param {Object} allAttributes Starting attributes
+     * @param {string} tableName The table to check the rights for
+     * @param {Date} rolesUpdatedAt Date of the last role update of the user
+     * @returns {Promise<Object>} modified filters and attributes + whether access is allowed
+     */
+    async getWriteFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt) {
+        return await this.#buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, false);
+    }
+
+    /**
      * Handles injections of type count by executing COUNT queries and attaching the result to the data
      * @param {Object} injects Instructions on what to inject
      * @param {Object} data Data to query and extend
@@ -649,6 +643,40 @@ module.exports = class Socket {
             }
         }
         return data;
+    }
+
+    /**
+     * Throws unless the user may write to a specific row.
+     * Applies the write filter to the target row: if the row is not reachable
+     * under that filter, the user does not own it and the write is denied.
+     * @param {string} tableName The table being written to
+     * @param {number} id The id of the row being written
+     * @param {Object} options Handler options; options.transaction is passed through
+     *        so rows created earlier in the same transaction remain visible
+     * @returns {Promise<void>} Resolves when access is allowed
+     * @throws {TranslatableError} ACCESS_DENIED when the row is not writable by this user
+     */
+    async assertWriteAccess(tableName, id, options = {}) {
+        // Reject arrays and objects: Sequelize reads {id: [1, 2]} as id IN (1, 2), which would
+        // let a user pass this check on a row they own and write to another in the same call.
+        if (!Number.isInteger(id) && !(typeof id === "string" && /^\d+$/.test(id))) {
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
+        const {filter, accessAllowed} = await this.getWriteFilter(
+            this.userId, {id: id, deleted: false}, {}, tableName, this.rolesUpdatedAt
+        );
+        if (!accessAllowed) {
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
+        const rows = await this.models[tableName].getAll({
+            where: filter,
+            attributes: ["id"],
+            transaction: options.transaction,
+        });
+        if (rows.length === 0) {
+            this.logger.warn("User with id " + this.userId + " tried to write row " + id + " in table " + tableName + " without access");
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
     }
 
     /**
@@ -765,7 +793,7 @@ module.exports = class Socket {
         let allAttributes = {
             exclude: defaultExcludes,
         };
-        const filtersAndAttributes = await this.getFiltersAndAttributes(this.userId, allFilter, allAttributes, tableName, this.rolesUpdatedAt)
+        const filtersAndAttributes = await this.getReadFilter(this.userId, allFilter, allAttributes, tableName, this.rolesUpdatedAt)
         if (!filtersAndAttributes.accessAllowed) {
             return;
         }
@@ -1012,7 +1040,7 @@ module.exports = class Socket {
             }
             let allFilter = {};
             let allAttributes = {};
-            const filtersAndAttributes = await this.getFiltersAndAttributes(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
+            const filtersAndAttributes = await this.getReadFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt)
             if (!filtersAndAttributes.accessAllowed) {
                 continue;
             }
