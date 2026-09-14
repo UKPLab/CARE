@@ -202,8 +202,6 @@
     "totalTokens": "Total Tokens",
     "costUsd": "Cost (USD)",
     "status": {
-      "test": "Test",
-      "success": "Successful",
       "failed": "Failed"
     }
   },
