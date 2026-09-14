@@ -198,8 +198,8 @@ class TriggerSocket extends Socket {
         this.createSocket("triggerUpdate", this.updateTrigger, {}, true);
         this.createSocket("triggerDelete", this.deleteTrigger, {}, true);
         this.createSocket("triggerQueueGetDetails", this.getQueueDetails, {}, false);
-        this.createSocket("triggerQueueRetry", this.retryQueueItem, {}, false);
-        this.createSocket("triggerQueueRerun", this.rerunQueueItem, {}, false);
+        this.createSocket("triggerQueueRetry", this.retryQueueItem, {}, true);
+        this.createSocket("triggerQueueRerun", this.rerunQueueItem, {}, true);
         this.createSocket("triggerQueueCancel", this.cancelQueueItem, {}, true);
     }
 }
