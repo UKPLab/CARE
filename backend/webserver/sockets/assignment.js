@@ -125,6 +125,30 @@ class AssignmentSocket extends Socket {
     }
 
     /**
+     * Socket entry point for adding reviewers to an existing study.
+     * Verifies the caller may manage the target study before delegating to addReviewer,
+     * which is also called internally by createAssignment for a study it just created.
+     *
+     * @socketEvent assignmentAdd
+     * @param {Object} data The data for adding reviewers
+     * @param {number} data.studyId The ID of the study to which reviewers are to be added
+     * @param {Array<Object>} data.reviewer Reviewers to add
+     * @param {Object} options holds the managed transaction of the database
+     * @returns {Promise<void>} Resolves once reviewers have been added
+     * @throws {TranslatableError} If the study does not exist or the caller may not manage it
+     */
+    async addReviewerRequest(data, options) {
+        const study = await this.models["study"].getById(data['studyId'], {transaction: options.transaction});
+        if (!study) {
+            throw new TranslatableError("errors.studies.studyNotFound");
+        }
+        if (!(await this.checkUserAccess(study.userId))) {
+            throw new TranslatableError("errors.studies.noPermissionManageStudies");
+        }
+        return await this.addReviewer(data, options);
+    }
+
+    /**
      * Adds new sessions to a study.
      * 
      * If the number of reviewers being added exceeds the current session limit of the study,
@@ -139,15 +163,8 @@ class AssignmentSocket extends Socket {
      */
     async addReviewer(data, options) {
 
-        const currentStudy = await this.models["study"].getById(data['studyId'], {transaction: options.transaction});
-        if (!currentStudy) {
-            throw new TranslatableError("errors.studies.studyNotFound");
-        }
-        if (!(await this.checkUserAccess(currentStudy.userId))) {
-            throw new TranslatableError("errors.studies.noPermissionManageStudies");
-        }
-
         // update current session count
+        const currentStudy = await this.models["study"].getById(data['studyId'], {transaction: options.transaction});
         if (currentStudy.limitSessions !== 0) {
             const currentSessionCount = await this.models["study_session"].count({
                 where: {studyId: currentStudy.id}, raw: true,
@@ -838,7 +855,7 @@ class AssignmentSocket extends Socket {
 
         this.createSocket("assignmentCreateSingle", this.createAssignmentSingle, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
-        this.createSocket("assignmentAdd", this.addReviewer, {}, true);
+        this.createSocket("assignmentAdd", this.addReviewerRequest, {}, true);
         this.createSocket("assignmentGetInfo", this.getAssignmentInfoFromCourse, {}, false);
     }
 };
