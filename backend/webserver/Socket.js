@@ -545,8 +545,10 @@ module.exports = class Socket {
                 const limitedAccessMap = relevantAccessMap.filter(item => item.limitation);
                 const hasUnlimitedRights = accessRights.length > limitedAccessMap.length;
 
-                if (hasUnlimitedRights) {
-                    // At least one right has no limitation → unlimited row access for that right
+                if (hasUnlimitedRights && publicGrantsAccess) {
+                    // At least one right has no limitation → unlimited row access for that right.
+                    // Read-only: a column-only accessMap entry carries no limitation, so on the
+                    // write path this would grant every user full row access to the table.
                     fullRowAccess = true;
                 } else if (limitedAccessMap.length > 0) {
                     // All rights carry limitations → add each as an additional OR condition
