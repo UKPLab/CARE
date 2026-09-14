@@ -85,7 +85,8 @@ async function loadModelProviderParams(service, aiModelId) {
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Completion fields plus CARE request metadata.
  * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object }} [logOptions]
- *   `providerParams` is reserved for server-side model tests. `testLabel` is prepended to the
+ *   `providerParams` is for server-side callers that already loaded credentials
+ *   (hook runs, admin model tests). `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */

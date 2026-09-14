@@ -211,10 +211,11 @@ async function runHook(service, client, data) {
         const values = await resolveHookReferences(service, rawValues);
         const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
 
-        const { additionalParameters, ...credentialParams } = modelParams;
+        const { additionalParameters, aiModelId, ...resolvedParams } = modelParams;
+        delete resolvedParams.aiCredentialId;
         const completionData = {
             ...additionalParameters,
-            ...credentialParams,
+            aiModelId,
             aiHookId: hookId,
             messages: [{ role: "user", content: promptText }],
             outputMode: hook.outputMode,
@@ -225,10 +226,12 @@ async function runHook(service, client, data) {
 
         service.logger.info(
             `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
-            `aiModelId=${modelParams.aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
+            `aiModelId=${aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
         );
 
-        const result = await chat.chatCompletion(service, client, completionData);
+        const result = await chat.chatCompletion(service, client, completionData, {
+            providerParams: resolvedParams,
+        });
         const content = result.choices?.[0]?.message?.content;
         const output = typeof content === "string" ? content : "";
 

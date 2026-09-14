@@ -85,12 +85,9 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            // Some tables use userId as a business field (e.g. share recipient) rather than ownership.
-            // Such models expose a static validateForeignUserId that performs its own ownership check.
-            const model = this.models[data.table];
-            const bypassAllowed = typeof model.validateForeignUserId === "function"
-                && await model.validateForeignUserId(data.data, this.userId, transaction);
-            if (!bypassAllowed) {
+            // Share tables store the recipient in userId. Parent ownership is
+            // enforced in MetaModel.add / updateById via foreignOwner.
+            if (!this.models[data.table].foreignOwner) {
                 throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table}, "ACCESS_DENIED");
             }
         }

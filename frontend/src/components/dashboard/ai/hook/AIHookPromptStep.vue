@@ -4,7 +4,7 @@
     :fields="fields"
     @update:model-value="$emit('update:modelValue', $event)"
   />
-  <div v-if="selectablePromptTemplates.length === 0" class="text-warning small mt-1">
+  <div v-if="promptTemplates.length === 0" class="text-warning small mt-1">
     {{ $t("ai.hooks.noPromptTemplates") }}
   </div>
 </template>
@@ -21,9 +21,6 @@ export default {
   },
   emits: ["update:modelValue"],
   computed: {
-    selectablePromptTemplates() {
-      return this.promptTemplates.filter((template) => Number(template.type) === 8);
-    },
     fields() {
       return [
         {
@@ -33,7 +30,7 @@ export default {
           required: true,
           options: [
             { value: null, name: this.$t("ai.hooks.selectPromptTemplate") },
-            ...this.selectablePromptTemplates.map((template) => ({
+            ...this.promptTemplates.map((template) => ({
               value: template.id,
               name: template.name,
             })),
