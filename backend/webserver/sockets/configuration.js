@@ -39,16 +39,7 @@ class ConfigurationSocket extends Socket {
     }
 
     // Check if user has access to update this configuration
-    const { accessAllowed } = await this.getReadFilter(
-      this.userId,
-      { id: configurationId },
-      {},
-      "configuration"
-    );
-    
-    if (!accessAllowed) {
-      throw new TranslatableError("errors.configuration.accessDenied");
-    }
+    await this.assertWriteAccess("configuration", configurationId, options);
 
     // Update only the content field
     const updatedConfig = await this.models["configuration"].updateById(
