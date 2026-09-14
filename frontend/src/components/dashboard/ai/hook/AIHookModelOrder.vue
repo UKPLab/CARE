@@ -17,7 +17,7 @@
       </div>
       <BasicButton
         :title="$t('ai.models.addModel')"
-        class="btn btn-primary mb-3"
+        class="btn btn-primary flex-shrink-0 d-inline-flex align-items-center"
         icon="plus"
         :disabled="!modelToAddId"
         @click="addModel"
