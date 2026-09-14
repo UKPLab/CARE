@@ -35,6 +35,7 @@ module.exports = class RPC {
             {
                 reconnection: true,
                 timeout: this.timeout,
+                maxHttpBufferSize: 1e8,
             }
         );
         this.updateEvents(this.socket);
