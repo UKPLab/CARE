@@ -598,38 +598,7 @@ module.exports = class Socket {
         return await this.#buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, true);
     }
 
-    /**
-     * Throws unless the user may write to a specific row.
-     * Applies the write filter to the target row: if the row is not reachable
-     * under that filter, the user does not own it and the write is denied.
-     * @param {string} tableName The table being written to
-     * @param {number} id The id of the row being written
-     * @param {Object} options Handler options; options.transaction is passed through
-     *        so rows created earlier in the same transaction remain visible
-     * @returns {Promise<void>} Resolves when access is allowed
-     * @throws {TranslatableError} ACCESS_DENIED when the row is not writable by this user
-     */
-    async assertWriteAccess(tableName, id, options = {}) {
-        if (!Number.isInteger(id) && typeof id !== "string") {
-            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
-        }
-        const {filter, accessAllowed} = await this.getWriteFilter(
-            this.userId, {id: id, deleted: false}, {}, tableName, this.rolesUpdatedAt
-        );
-        if (!accessAllowed) {
-            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
-        }
-        const rows = await this.models[tableName].getAll({
-            where: filter,
-            attributes: ["id"],
-            transaction: options.transaction,
-        });
-        if (rows.length === 0) {
-            this.logger.warn("User with id " + this.userId + " tried to write row " + id + " in table " + tableName + " without access");
-            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
-        }
-    }
-
+    
     /**
      * Row filters and column attributes for writing to a table.
      * Unlike the read path, publicTable and public rows grant nothing.
@@ -674,6 +643,40 @@ module.exports = class Socket {
             }
         }
         return data;
+    }
+
+    /**
+     * Throws unless the user may write to a specific row.
+     * Applies the write filter to the target row: if the row is not reachable
+     * under that filter, the user does not own it and the write is denied.
+     * @param {string} tableName The table being written to
+     * @param {number} id The id of the row being written
+     * @param {Object} options Handler options; options.transaction is passed through
+     *        so rows created earlier in the same transaction remain visible
+     * @returns {Promise<void>} Resolves when access is allowed
+     * @throws {TranslatableError} ACCESS_DENIED when the row is not writable by this user
+     */
+    async assertWriteAccess(tableName, id, options = {}) {
+        // Reject arrays and objects: Sequelize reads {id: [1, 2]} as id IN (1, 2), which would
+        // let a user pass this check on a row they own and write to another in the same call.
+        if (!Number.isInteger(id) && !(typeof id === "string" && /^\d+$/.test(id))) {
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
+        const {filter, accessAllowed} = await this.getWriteFilter(
+            this.userId, {id: id}, {}, tableName, this.rolesUpdatedAt
+        );
+        if (!accessAllowed) {
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
+        const rows = await this.models[tableName].getAll({
+            where: filter,
+            attributes: ["id"],
+            transaction: options.transaction,
+        });
+        if (rows.length === 0) {
+            this.logger.warn("User with id " + this.userId + " tried to write row " + id + " in table " + tableName + " without access");
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
     }
 
     /**
