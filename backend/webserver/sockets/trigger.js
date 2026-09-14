@@ -1,7 +1,6 @@
 "use strict";
 const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
-const { queueStatusLabel } = require("../../utils/triggerQueueStatus");
 
 /**
  * Handle trigger rules through websocket.
@@ -98,7 +97,7 @@ class TriggerSocket extends Socket {
     }
 
     /**
-     * Load a queue log entry with related trigger and catalog labels.
+     * Load a queue log entry with its trigger row.
      *
      * @socketEvent triggerQueueGetDetails
      * @param {Object} data Must contain `id` (queue item id)
@@ -118,21 +117,10 @@ class TriggerSocket extends Socket {
         }
 
         const trigger = await this.models["trigger"].getById(item.triggerId, {}, true);
-        let eventLabel = "-";
-        let actionLabel = "-";
-        if (trigger) {
-            const event = await this.models["trigger_event"].getById(trigger.triggerEventId, {}, true);
-            const action = await this.models["trigger_action"].getById(trigger.triggerActionId, {}, true);
-            eventLabel = event?.configuration?.label || event?.name || "-";
-            actionLabel = action?.configuration?.label || action?.name || "-";
-        }
 
         return {
             item,
             trigger: trigger || null,
-            eventLabel,
-            actionLabel,
-            statusLabel: queueStatusLabel(item.status),
         };
     }
 

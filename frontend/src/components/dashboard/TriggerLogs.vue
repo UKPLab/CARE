@@ -216,7 +216,7 @@ export default {
           if (res.success) {
             const d = res.data;
             this.errorFormData = {
-              summary: `${(!d.trigger?.deleted && d.trigger?.name) || this.$t("triggers.logs.deletedTrigger")} - ${this.statusMaps.keyMapping[d.item.status] || d.statusLabel}`,
+              summary: `${(!d.trigger?.deleted && d.trigger?.name) || this.$t("triggers.logs.deletedTrigger")} - ${this.statusMaps.keyMapping[d.item.status] || d.item.status}`,
               errorMessage: this.resolveStoredError(d.item.errorMessage),
             };
           } else {
