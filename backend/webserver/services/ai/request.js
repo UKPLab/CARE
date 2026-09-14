@@ -70,11 +70,14 @@ async function beginRequest(service, request, options = {}) {
         let skipModelShare = false;
         if (aiHookId) {
             const hook = await service.server.db.models["ai_hook"].findByPk(aiHookId, {
-                attributes: ["userId", "deleted"],
+                attributes: ["userId", "deleted", "enabled"],
                 raw: true,
             });
             if (!hook || hook.deleted) {
                 return deny("AI hook is not available", "errors.ai.hook.notAvailable");
+            }
+            if (!hook.enabled) {
+                return deny("AI hook is disabled", "errors.ai.hook.disabled");
             }
             const isHookOwner = hook.userId === accessHolderId;
             hookShare = await _findActiveShare(service, "ai_hook_share", "aiHookId", accessHolderId, aiHookId);
