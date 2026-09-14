@@ -418,6 +418,10 @@
   "ai": {
     "requestAlreadyPending": "In dieser Sitzung steht bereits eine KI-Anfrage von Ihnen aus.",
     "studyOwnerUnavailable": "Der Besitzer der Studie konnte nicht ermittelt werden.",
+    "sessionAccessDenied": "Sie haben keinen Zugriff auf diese Studiensitzung.",
+    "log": {
+      "updateNotAllowed": "KI-Protokolle können nicht vom Client geändert werden."
+    },
     "serviceUnavailable": "Der KI-Dienst ist nicht verfügbar.",
     "serviceNotConnected": "Der KI-Dienst ist nicht verbunden.",
     "requestNotAbortable": "Die Anfrage wurde nicht gefunden oder kann nicht mehr abgebrochen werden.",

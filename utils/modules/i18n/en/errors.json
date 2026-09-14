@@ -418,6 +418,10 @@
     "ai": {
         "requestAlreadyPending": "You already have a pending AI request in this session.",
         "studyOwnerUnavailable": "The study owner could not be resolved.",
+        "sessionAccessDenied": "You do not have access to this study session.",
+        "log": {
+            "updateNotAllowed": "AI logs cannot be changed from the client."
+        },
         "serviceUnavailable": "The AI service is not available.",
         "serviceNotConnected": "The AI service is not connected.",
         "requestNotAbortable": "The request was not found or can no longer be stopped.",

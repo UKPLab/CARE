@@ -194,7 +194,7 @@ const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
  *
  * @param {Object} service - AIService runtime.
  * @param {Object} client - Authenticated RPC client triggering the hook.
- * @param {Object} data - Hook execution payload (hookId, values, studyId, studySessionId, studyStepId, documentId).
+ * @param {Object} data - Hook execution payload (hookId, values, studySessionId, studyStepId, documentId).
  * @returns {Promise<{choices: unknown[], output: string|null}>} Provider choices plus first-choice content (text or JSON string), or null on study soft-skip.
  * @throws {Error} If the hook id is invalid, or (for non-study callers) hook/model/credential is unavailable.
  */
@@ -218,7 +218,6 @@ async function runHook(service, client, data) {
             aiHookId: hookId,
             messages: [{ role: "user", content: promptText }],
             outputMode: hook.outputMode,
-            studyId: data?.studyId,
             studySessionId: data?.studySessionId,
             studyStepId: data?.studyStepId,
             documentId: data?.documentId,

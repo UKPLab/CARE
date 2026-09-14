@@ -21,7 +21,8 @@ function deny(reason, key, params = {}) {
  * Blocks a second request from the same user in the same session while one is still running.
  *
  * @param {Object} service - AIService, used for DB access.
- * @param {Object} request - The request being made (user, model, hook, study, etc).
+ * @param {Object} request - The request being made (user, model, hook, session, etc).
+ *   Client `studyId` is ignored. Study access is resolved from `studySessionId`.
  * @param {Object} [options] - Optional flags.
  * @param {boolean} [options.bypassChecks] - Skip the access + cap checks (used for admin test prompts).
  * @returns {Promise<{ allowed: boolean, logId?: number, reason?: string }>}
@@ -29,7 +30,7 @@ function deny(reason, key, params = {}) {
 async function beginRequest(service, request, options = {}) {
     const {
         userId, aiModelId, aiHookId, requestId, input,
-        studyId, studySessionId, studyStepId, documentId,
+        studySessionId, studyStepId, documentId,
     } = request || {};
 
     if (await _hasInflight(service, userId, studySessionId)) {
@@ -40,6 +41,13 @@ async function beginRequest(service, request, options = {}) {
     }
 
     if (!options.bypassChecks) {
+        // NlpRequest never sends studyId, and a client studyId is not a membership proof.
+        const studyContext = await _resolveStudyContext(service, {
+            studySessionId, studyStepId, userId,
+        });
+        if (studyContext.error) return studyContext.error;
+        const studyId = studyContext.studyId;
+
         const model = await service.server.db.models["ai_model"].findByPk(aiModelId, { raw: true });
         if (!model || model.deleted || !model.enabled) {
             return deny("AI model is not available", "errors.ai.model.notAvailable");
@@ -57,22 +65,10 @@ async function beginRequest(service, request, options = {}) {
             );
         }
 
-        const isModelOwner = model.userId === accessHolderId;
-        const modelShare = await _findActiveShare(service, "ai_model_share", "aiModelId", accessHolderId, aiModelId);
-        if (!isModelOwner && !modelShare) {
-            return studyId
-                ? deny(
-                    "Study creator no longer has access to this AI model",
-                    "errors.ai.model.studyOwnerAccessDenied"
-                )
-                : deny(
-                    "You do not have access to this AI model",
-                    "errors.ai.model.accessDenied"
-                );
-        }
-
-        // Model access does not imply hook access, a hook must be owned by, or actively shared with
+        // A shared hook already binds its model. Requiring a separate model share
+        // would block study steps that only received the hook.
         let hookShare = null;
+        let skipModelShare = false;
         if (aiHookId) {
             const hook = await service.server.db.models["ai_hook"].findByPk(aiHookId, {
                 attributes: ["userId", "deleted"],
@@ -92,6 +88,33 @@ async function beginRequest(service, request, options = {}) {
                     : deny(
                         "You do not have access to this AI hook",
                         "errors.ai.hook.accessDenied"
+                    );
+            }
+            skipModelShare = true;
+            const hookModel = await service.server.db.models["ai_hook_models"].findOne({
+                where: { aiHookId, deleted: false },
+                order: [["priority", "ASC"]],
+                attributes: ["aiModelId"],
+                raw: true,
+            });
+            if (hookModel && Number(hookModel.aiModelId) !== Number(aiModelId)) {
+                return deny("AI hook model mismatch", "errors.ai.hook.modelNotFound");
+            }
+        }
+
+        let modelShare = null;
+        if (!skipModelShare) {
+            const isModelOwner = model.userId === accessHolderId;
+            modelShare = await _findActiveShare(service, "ai_model_share", "aiModelId", accessHolderId, aiModelId);
+            if (!isModelOwner && !modelShare) {
+                return studyId
+                    ? deny(
+                        "Study creator no longer has access to this AI model",
+                        "errors.ai.model.studyOwnerAccessDenied"
+                    )
+                    : deny(
+                        "You do not have access to this AI model",
+                        "errors.ai.model.accessDenied"
                     );
             }
         }
@@ -184,6 +207,44 @@ async function _hasInflight(service, userId, studySessionId) {
         attributes: ["id"],
     });
     return existing !== null;
+}
+
+// Study access comes from the session row. Ignore any client studyId.
+async function _resolveStudyContext(service, { studySessionId, studyStepId, userId }) {
+    const sessionId = Number(studySessionId);
+    if (!Number.isInteger(sessionId) || sessionId <= 0) {
+        return { studyId: null };
+    }
+
+    const session = await service.server.db.models["study_session"].findByPk(sessionId, {
+        attributes: ["id", "studyId", "userId", "deleted"],
+        raw: true,
+    });
+    if (!session || session.deleted) {
+        return { error: deny("Study session is not available", "errors.ai.sessionAccessDenied") };
+    }
+
+    const studyId = Number(session.studyId);
+    const ownerId = await _getStudyOwnerId(service, studyId);
+    const callerId = Number(userId);
+    const isParticipant = Number(session.userId) === callerId;
+    const isOwner = ownerId === callerId;
+    if (!isParticipant && !isOwner) {
+        return { error: deny("You do not have access to this study session", "errors.ai.sessionAccessDenied") };
+    }
+
+    const stepId = Number(studyStepId);
+    if (Number.isInteger(stepId) && stepId > 0) {
+        const step = await service.server.db.models["study_step"].findByPk(stepId, {
+            attributes: ["id", "studyId", "deleted"],
+            raw: true,
+        });
+        if (!step || step.deleted || Number(step.studyId) !== studyId) {
+            return { error: deny("Study step does not belong to this session", "errors.ai.sessionAccessDenied") };
+        }
+    }
+
+    return { studyId };
 }
 
 // Returns the userId of the study's owner, or null if the study is gone.
