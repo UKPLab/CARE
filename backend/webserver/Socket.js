@@ -663,7 +663,7 @@ module.exports = class Socket {
             throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
         }
         const {filter, accessAllowed} = await this.getWriteFilter(
-            this.userId, {id: id}, {}, tableName, this.rolesUpdatedAt
+            this.userId, {id: id, deleted: false}, {}, tableName, this.rolesUpdatedAt
         );
         if (!accessAllowed) {
             throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
