@@ -146,12 +146,6 @@ export default {
     getStatusBadge(status) {
       const statusText = status ? status.toString() : this.$t("ai.common.unknown");
       const normalized = statusText.toLowerCase();
-      if (normalized.includes("test")) {
-        return { text: this.$t("ai.log.status.test"), class: "bg-info" };
-      }
-      if (normalized.includes("success")) {
-        return { text: this.$t("ai.log.status.success"), class: "bg-success" };
-      }
       if (normalized.includes("fail") || normalized.includes("error")) {
         return { text: this.$t("ai.log.status.failed"), class: "bg-danger" };
       }
