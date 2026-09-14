@@ -84,9 +84,10 @@ async function loadModelProviderParams(service, aiModelId) {
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Completion fields plus CARE request metadata.
- * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object }} [logOptions]
+ * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object, hookModelId?: number }} [logOptions]
  *   `providerParams` is for server-side callers that already loaded credentials
- *   (hook runs, admin model tests). `testLabel` is prepended to the
+ *   (hook runs, admin model tests). `hookModelId` proves which server-selected
+ *   fallback row is running. `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
@@ -126,6 +127,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         documentId: data?.documentId,
     }, {
         bypassChecks: !!logOptions.bypassChecks,
+        hookModelId: logOptions.hookModelId,
     });
     if (!guard.allowed) {
         if (guard.key) {

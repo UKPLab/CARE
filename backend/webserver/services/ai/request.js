@@ -25,6 +25,7 @@ function deny(reason, key, params = {}) {
  *   Client `studyId` is ignored. Study access is resolved from `studySessionId`.
  * @param {Object} [options] - Optional flags.
  * @param {boolean} [options.bypassChecks] - Skip the access + cap checks (used for admin test prompts).
+ * @param {number} [options.hookModelId] - Server-selected hook model row for hook executions.
  * @returns {Promise<{ allowed: boolean, logId?: number, reason?: string }>}
  */
 async function beginRequest(service, request, options = {}) {
@@ -65,8 +66,6 @@ async function beginRequest(service, request, options = {}) {
             );
         }
 
-        // A shared hook already binds its model. Requiring a separate model share
-        // would block study steps that only received the hook.
         let hookShare = null;
         let skipModelShare = false;
         if (aiHookId) {
@@ -90,15 +89,18 @@ async function beginRequest(service, request, options = {}) {
                         "errors.ai.hook.accessDenied"
                     );
             }
-            skipModelShare = true;
-            const hookModel = await service.server.db.models["ai_hook_models"].findOne({
-                where: { aiHookId, deleted: false },
-                order: [["priority", "ASC"]],
-                attributes: ["aiModelId"],
-                raw: true,
-            });
-            if (hookModel && Number(hookModel.aiModelId) !== Number(aiModelId)) {
-                return deny("AI hook model mismatch", "errors.ai.hook.modelNotFound");
+            if (options.hookModelId) {
+                const hookModel = await service.server.db.models["ai_hook_models"].findOne({
+                    where: {id: options.hookModelId, aiHookId, aiModelId, deleted: false},
+                    attributes: ["id"],
+                    raw: true,
+                });
+                if (!hookModel) {
+                    return deny("AI hook model mismatch", "errors.ai.hook.modelNotFound");
+                }
+                // The server selected this bound model. A shared hook is enough;
+                // study participants do not also need a model share.
+                skipModelShare = true;
             }
         }
 
