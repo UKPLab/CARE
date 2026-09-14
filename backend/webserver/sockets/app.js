@@ -466,7 +466,6 @@ class AppSocket extends Socket {
             await this.models["user_setting"].set(key, value, data.userId, { bypassSystemSettingCheck: true });
         } else {
             // Default: set for current user and refresh their settings
-            console.log(`Setting ${key} for user ${this.userId} to ${value}`);
             await this.models["user_setting"].set(key, value, this.userId);
             await this.sendSettings();
         }   
