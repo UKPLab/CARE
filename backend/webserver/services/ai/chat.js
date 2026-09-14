@@ -206,7 +206,11 @@ async function abortChatCompletion(service, client, data) {
         };
     }
 
-    return rpc.abortChatCompletion(data && data.requestId, data && data.reason);
+    const result = await rpc.abortChatCompletion(data && data.requestId, data && data.reason);
+    if (result?.aborted) {
+        await request.cancelRequest(service, log.id);
+    }
+    return result;
 }
 
 /**
