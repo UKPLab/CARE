@@ -133,9 +133,6 @@ export default {
       if (this.shareForm.mode === "roles") return this.$t("ai.common.roles");
       return this.$t("ai.common.users");
     },
-    resourceLabelLower() {
-      return this.resourceLabel.toLowerCase();
-    },
     roleOptions() {
       return (this.$store.getters["table/user_role/getAll"] || [])
         .filter((role) => !role.deleted)
