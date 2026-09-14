@@ -89,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
             if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
                 return;
             }
-            const ownerUserId = Number(aiHook.userId ?? aiHook._previousDataValues?.userId);
+            const ownerUserId = Number(aiHook._previousDataValues?.userId ?? aiHook.userId);
             if (ownerUserId !== currentUserId) {
                 throw new TranslatableError("errors.ai.hook.updateNotAllowed");
             }
