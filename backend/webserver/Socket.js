@@ -608,6 +608,9 @@ module.exports = class Socket {
      * @throws {TranslatableError} ACCESS_DENIED when the row is not writable by this user
      */
     async assertWriteAccess(tableName, id, options = {}) {
+        if (!Number.isInteger(id) && typeof id !== "string") {
+            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: tableName}, "ACCESS_DENIED");
+        }
         const {filter, accessAllowed} = await this.getWriteFilter(
             this.userId, {id: id, deleted: false}, {}, tableName, this.rolesUpdatedAt
         );
