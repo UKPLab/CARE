@@ -139,8 +139,15 @@ class AssignmentSocket extends Socket {
      */
     async addReviewer(data, options) {
 
-        // update current session count
         const currentStudy = await this.models["study"].getById(data['studyId'], {transaction: options.transaction});
+        if (!currentStudy) {
+            throw new TranslatableError("errors.studies.studyNotFound");
+        }
+        if (!(await this.checkUserAccess(currentStudy.userId))) {
+            throw new TranslatableError("errors.studies.noPermissionManageStudies");
+        }
+
+        // update current session count
         if (currentStudy.limitSessions !== 0) {
             const currentSessionCount = await this.models["study_session"].count({
                 where: {studyId: currentStudy.id}, raw: true,
