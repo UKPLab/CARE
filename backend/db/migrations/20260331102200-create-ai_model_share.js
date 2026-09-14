@@ -66,6 +66,20 @@ module.exports = {
         defaultValue: Sequelize.fn('NOW'),
       },
     });
+
+    // Per-request share lookup is model + user or role. Visibility loads by userId or roleId.
+    await queryInterface.addIndex('ai_model_share', ['aiModelId', 'userId'], {
+      name: 'ai_model_share_aiModelId_userId_index',
+    });
+    await queryInterface.addIndex('ai_model_share', ['aiModelId', 'roleId'], {
+      name: 'ai_model_share_aiModelId_roleId_index',
+    });
+    await queryInterface.addIndex('ai_model_share', ['userId'], {
+      name: 'ai_model_share_userId_index',
+    });
+    await queryInterface.addIndex('ai_model_share', ['roleId'], {
+      name: 'ai_model_share_roleId_index',
+    });
   },
 
   async down(queryInterface, Sequelize) {

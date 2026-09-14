@@ -129,6 +129,23 @@ module.exports = {
         defaultValue: Sequelize.fn('NOW'),
       },
     });
+
+    // Inflight check, model spend sums, share attribution, session spend, abort by requestId.
+    await queryInterface.addIndex('ai_log', ['userId', 'studySessionId', 'status', 'createdAt'], {
+      name: 'ai_log_userId_studySessionId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['aiModelId', 'status', 'createdAt'], {
+      name: 'ai_log_aiModelId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['aiModelId', 'userId', 'status', 'createdAt'], {
+      name: 'ai_log_aiModelId_userId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['studySessionId', 'status', 'createdAt'], {
+      name: 'ai_log_studySessionId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['requestId'], {
+      name: 'ai_log_requestId_index',
+    });
   },
 
   async down(queryInterface, Sequelize) {
