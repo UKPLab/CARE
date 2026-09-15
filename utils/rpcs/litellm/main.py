@@ -346,7 +346,6 @@ def create_app():
         """
         data = data or {}
         provider = str(data.get("provider") or "").strip().lower()
-        provider = provider.replace(" inference", "").replace(" ", "_")
         api_key = data.get("apiKey")
         api_base = data.get("apiBaseUrl")
         api_version = data.get("apiVersion")
