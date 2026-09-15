@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
+const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 
 module.exports = (sequelize, DataTypes) => {
 	class Assignment extends MetaModel {
@@ -135,6 +136,7 @@ module.exports = (sequelize, DataTypes) => {
 			}
 			return filter;
 		}
+
 		static associate(models) {
 
 			Assignment.belongsTo(models["configuration"], {
@@ -174,6 +176,17 @@ module.exports = (sequelize, DataTypes) => {
 			sequelize,
 			modelName: 'assignment',
 			tableName: 'assignment',
+			hooks: {
+				beforeCreate: (assignment) => {
+					assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
+				},
+				beforeUpdate: (assignment) => {
+					// Close/disable/delete omit start/end; skip so existing inverted rows can still be closed.
+					if (assignment.changed("start") || assignment.changed("end")) {
+						assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
+					}
+				},
+			},
 		}
 	);
 

@@ -1,6 +1,7 @@
 'use strict';
 
 const TranslatableError = require("../../utils/TranslatableError");
+const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 
@@ -424,7 +425,8 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             beforeCreate: async (study, options) => {
-            // Set default projectId from user settings if not provided
+                assertStartBeforeEnd(study, "errors.studies.startAfterEnd");
+                // Set default projectId from user settings if not provided
                 const userId = study.dataValues.userId;
                 const defaultProjectId = await sequelize.models.user_setting.get('projects.default', userId);        
                 if (defaultProjectId) {
@@ -440,6 +442,11 @@ module.exports = (sequelize, DataTypes) => {
                 await Study.createStudySteps(study, options);
             }, 
             beforeUpdate: async (study, options) => {
+                // Close/restart omit start/end; skip so existing inverted rows can still be closed.
+                if (study.changed("start") || study.changed("end")) {
+                    assertStartBeforeEnd(study, "errors.studies.startAfterEnd");
+                }
+
                 // Keep close metadata in model layer to avoid transport-specific logic.
                 if (study.changed("closed") && study.closed && !study.userIdClosed) {
                     const closingUserId = options.context?.currentUserId;
