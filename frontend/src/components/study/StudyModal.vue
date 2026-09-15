@@ -3,7 +3,7 @@
       ref="modal"
       :props="$props"
       disable-keyboard
-      lg
+      :size="showSessions ? 'lg' : 'md'"
       name="studyStart"
       :remove-close="!studyClosed"
   >
