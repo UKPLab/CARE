@@ -210,14 +210,16 @@ export default {
           }
         }
 
-        // Save / update the hook-level cost limit via appDataUpdate.
+        // Save, update, or soft-delete the hook-level cost limit.
         const costLimitValue = Number(this.hookForm.costLimit);
+        const existing = this.findExistingCapRow(hookId);
         if (Number.isFinite(costLimitValue) && costLimitValue > 0) {
-          const existing = this.findExistingCapRow(hookId);
           const capData = existing
             ? { id: existing.id, costLimit: costLimitValue }
             : { aiHookId: Number(hookId), limitType: 0, costLimit: costLimitValue };
           await this.emitUpdate("ai_budget", capData);
+        } else if (existing) {
+          await this.emitUpdate("ai_budget", { id: existing.id, deleted: true });
         }
 
         this.$refs.hookStepper.close();

@@ -304,18 +304,19 @@ export default {
           sharedIds.push(shareId);
         }
 
-        // Apply the per-recipient cost limit to every share row created/refreshed in this
-        // batch, via the standard appDataUpdate path.
+        // Apply or clear the per-recipient cap on every share in this batch.
         const costLimitValue = Number(this.shareForm.costLimit);
         const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
-        if (wantsCap) {
-          const shareKey = this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
-          for (const shareId of sharedIds) {
-            const existingCap = this.findExistingShareCap(shareKey, shareId);
+        const shareKey = this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
+        for (const shareId of sharedIds) {
+          const existingCap = this.findExistingShareCap(shareKey, shareId);
+          if (wantsCap) {
             const capData = existingCap
               ? { id: existingCap.id, costLimit: costLimitValue }
               : { [shareKey]: Number(shareId), limitType: 0, costLimit: costLimitValue };
             await this.emitAppDataUpdate("ai_budget", capData);
+          } else if (existingCap) {
+            await this.emitAppDataUpdate("ai_budget", { id: existingCap.id, deleted: true });
           }
         }
 

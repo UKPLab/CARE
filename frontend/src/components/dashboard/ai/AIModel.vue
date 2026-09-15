@@ -305,12 +305,18 @@ export default {
           && hasCostLimit
           && Number.isFinite(costLimitValue)
           && costLimitValue >= 0;
-        // Standard appDataUpdate chain: save the model, then update or create the ai_budget row.
+        // Update, create, or soft-delete the cap. An empty field or a free model
+        // must drop the old row, or request.js still enforces it.
+        const existing = this.findExistingCapRow(savedModelId);
+        let capData = null;
         if (wantsCap) {
-          const existing = this.findExistingCapRow(savedModelId);
-          const capData = existing
+          capData = existing
             ? { id: existing.id, costLimit: costLimitValue }
             : { aiModelId: Number(savedModelId), limitType: 0, costLimit: costLimitValue };
+        } else if (existing) {
+          capData = { id: existing.id, deleted: true };
+        }
+        if (capData) {
           this.$socket.emit("appDataUpdate", { table: "ai_budget", data: capData }, (capResult) => {
             if (!capResult?.success) {
               this.toastError(resolveApiMessage(capResult, "ai.errors.saveCostLimit"));
