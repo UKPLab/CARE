@@ -410,7 +410,8 @@
         "studySessionOwnerNotSelectedReviewer": "Study session owner (User ID: {reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.",
         "invalidMode": "Invalid mode provided for assignment creation.",
         "firstStepNotSubmission": "First step selected does not map to a submission.",
-        "latestSubmissionNotFound": "The latest version of the chosen submission could not be found."
+        "latestSubmissionNotFound": "The latest version of the chosen submission could not be found.",
+        "startAfterEnd": "Start time must be before end time."
     },
     "socketProfiler": {
         "noSessionsSelected": "At least one session must be selected",

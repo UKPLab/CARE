@@ -410,7 +410,8 @@
     "studySessionOwnerNotSelectedReviewer": "Der Besitzer der Studiensitzung (Benutzer-ID: {reviewerId}) ist nicht in der ausgewählten Reviewerliste. Bitte fügen Sie ihn zur Reviewerauswahl hinzu.",
     "invalidMode": "Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben.",
     "firstStepNotSubmission": "Der ausgewählte erste Schritt ist keiner Einreichung zugeordnet.",
-    "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden."
+    "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden.",
+    "startAfterEnd": "Die Startzeit muss vor der Endzeit liegen."
   },
   "socketProfiler": {
     "noSessionsSelected": "Es muss mindestens eine Sitzung ausgewählt werden",
