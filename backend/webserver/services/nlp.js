@@ -1,6 +1,6 @@
 const {io: io_client} = require("socket.io-client");
 const Service = require("../Service.js");
-const fs = require("fs");
+const fs = require("fs").promises;
 const path = require("path");
 const yaml = require('js-yaml')
 
@@ -98,8 +98,9 @@ module.exports = class NLPService extends Service {
 
         // Handle connection errors
         nlpSocket.on("connect_error", async () => {
-            if (this.fallback === "true") {
+            if (self.fallback === "true") {
                 await self.loadFallbacks();
+                self.sendAll("skillUpdate", self.skills);
             }
             setTimeout(() => {
                 if (nlpSocket) {
@@ -126,31 +127,27 @@ module.exports = class NLPService extends Service {
         // deal with broken connection
         nlpSocket.on("disconnect", async () => {
             self.logger.error(`Connection to NLP server disrupted: ${!self.nlpSocket.connected}`);
-            if (this.fallback === "true") {
-                // wait for self.skills to populate and then send updated skills to the frontend
-                await new Promise(resolve => {
-                    self.loadFallbacks();
-                    const checkInterval = setInterval(() => {
-                        if (self.skills.length > 0) {
-                            clearInterval(checkInterval);
-                            resolve();
-                        }
-                    }, 50);
-                });
+            if (self.fallback === "true") {
+                await self.loadFallbacks();
                 self.sendAll("skillUpdate", self.skills);
             }
         });
 
         // receives a list of objects, where each indicates a skill name and the number of nodes that provide it
         // we store this information in the this.skills attribute to keep track of available skills.
-        nlpSocket.on("skillUpdate", (data) => {
+        nlpSocket.on("skillUpdate", async (data) => {
             // update cache with deep copy of data
             const skills = JSON.parse(JSON.stringify(data));
             self.#updateSkillCache(skills);
 
-            // check for configs for skills without them
-            self.skills.filter(s => !self.#hasConfig(s))
-                .map(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
+            // Broker may connect with zero live nodes — fall back to local SDF skills.
+            if (self.skills.length === 0 && self.fallback === "true") {
+                await self.loadFallbacks();
+            } else {
+                // check for configs for skills without them
+                self.skills.filter(s => !self.#hasConfig(s))
+                    .map(s => nlpSocket.emit("skillGetConfig", {name: s.name}));
+            }
 
             self.sendAll("skillUpdate", self.skills);
         });
@@ -191,6 +188,11 @@ module.exports = class NLPService extends Service {
      * @param data
      */
     async connectClient(client, data) {
+        // Broker can be connected yet still have no skills; load SDF fallbacks so
+        // clients (SkillSelector) receive NLP skills alongside AI hooks.
+        if (this.skills.length === 0 && this.fallback === "true") {
+            await this.loadFallbacks();
+        }
         await this.send(client, "skillUpdate", this.skills);
         await super.connectClient(client, data);
     }
@@ -338,7 +340,8 @@ module.exports = class NLPService extends Service {
     }
 
     /**
-     * Overwrite method to handle incoming requests
+     * Overwrite method to handle incoming requests.
+     * Forwards skill requests to the NLP broker.
      * @param client
      * @param data
      * @return {Promise<void>}
@@ -363,21 +366,26 @@ module.exports = class NLPService extends Service {
      * @return {Promise<*>}
      */
     async loadFallbacks() {
-        this.skills = [];
-        await fs.readdir(path.resolve(__dirname, "../../../files/sdf"), async (err, files) => {
-            await Promise.all(files.filter(file => file.endsWith(".yaml")).map(async file => {
-                if (file.endsWith(".yaml")) {
-                    fs.readFile(path.join(path.resolve(__dirname, "../../../files/sdf"), file), "utf8", (err, data) => {
-                        if (err) {
-                            this.logger.error(err)
-                            return null;
-                        }
-                        const skill = yaml.load(data);
-                        this.skills.push({config: skill, nodes: 1, "fallback": true, name: skill.name});
-                    });
+        const dir = path.resolve(__dirname, "../../../files/sdf");
+        try {
+            const files = (await fs.readdir(dir)).filter((file) => file.endsWith(".yaml"));
+            const skills = [];
+            for (const file of files) {
+                try {
+                    const data = await fs.readFile(path.join(dir, file), "utf8");
+                    const skill = yaml.load(data);
+                    if (skill?.name) {
+                        skills.push({config: skill, nodes: 1, fallback: true, name: skill.name});
+                    }
+                } catch (err) {
+                    this.logger.error(err);
                 }
-            }));
-        });
+            }
+            this.skills = skills;
+        } catch (err) {
+            this.logger.error(err);
+            this.skills = [];
+        }
     }
 
 }

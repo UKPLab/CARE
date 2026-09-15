@@ -48,7 +48,7 @@
       /**
        * Fields configuration for the coordinator, derived from the store
        * but filtered locally for:
-       * - type: non-admins can only create document templates (4, 5)
+       * - type: non-admins can only create document/prompt templates (4, 5, 8)
        * - defaultLanguage: limited to languages that have content when editing
        */
       coordinatorFields() {

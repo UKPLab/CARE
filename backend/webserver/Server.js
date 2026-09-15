@@ -20,6 +20,7 @@ const nodemailer = require('nodemailer');
 const { setupDevAdmin } = require('./utils/devAdmin');
 const { initializeAuth } = require("./auth");
 const { parseUserAgent } = require("../utils/helper/generic");
+const TriggerManager = require("../utils/helper/trigger/manager.js");
 const { flagDisconnectedRecording, recoverInterruptedRecordings, scheduleOwnerAbandonCheck } = require("../utils/recording-recovery");
 
 /**
@@ -49,6 +50,7 @@ module.exports = class Server {
         this.availSockets = {};
         this.services = {};
         this.documentQueues = new Map();
+        this.triggers = new TriggerManager(this);
         this.authProviderStatus = {
             local: { ready: false, reason: "not-initialized" },
             orcid: { ready: false, reason: "not-initialized" },
@@ -132,7 +134,7 @@ module.exports = class Server {
                 this.logger.warn("Error during stats flush on shutdown: " + e);
             } finally {
                 try {
-                    this.stop();
+                    await this.stop();
                 } catch (e2) {
                     this.logger.warn("Error during server stop on shutdown: " + e2);
                 }
@@ -221,14 +223,14 @@ module.exports = class Server {
             mailOptions.text = body;
         }
 
-        this.mailer.sendMail(mailOptions, (err, info) => {
-            if (err) {
-                this.logger.error(err);
-            } else {
-                this.logger.info("Message send: " + info.messageId);
-                console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); //TODO: for testing remove when using actual mail server
-            }
-        });
+        try {
+            const info = await this.mailer.sendMail(mailOptions);
+            this.logger.info("Message send: " + info.messageId);
+            console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info)); //TODO: for testing remove when using actual mail server
+        } catch (err) {
+            this.logger.error(err);
+            throw err;
+        }
     }
 
     /**
@@ -511,6 +513,9 @@ module.exports = class Server {
      */
     start(port) {
         this.logger.debug("Start Webserver...");
+        this.triggers.start().catch((error) => {
+            this.logger.error(`Failed to start trigger queue: ${error.message}`, error);
+        });
         this.http = this.httpServer.listen(port, () => {
             this.logger.info("Server started on port " + port);
         });
@@ -530,11 +535,13 @@ module.exports = class Server {
 
     /**
      * Stop the webserver
+     * @returns {Promise<void>}
      */
-    stop() {
-        Object.entries(this.services).forEach(([name, service]) => {
-            service.close();
-        });
+    async stop() {
+        await this.triggers.close();
+        await Promise.allSettled(
+            Object.values(this.services).map((service) => service.close())
+        );
         this.io.close();
         if (this.http) {
             this.http.close();

@@ -38,6 +38,8 @@ For a live demo, visit https://demo.care.ukp.informatik.tu-darmstadt.de. Join ou
 
    for_researchers/basics
    for_researchers/interface_language
+   for_researchers/ai_features
+   for_researchers/triggers
    for_researchers/apply_skill_preprocessing
    for_researchers/exporting
    for_researchers/study/study

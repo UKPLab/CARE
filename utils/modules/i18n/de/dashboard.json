@@ -515,5 +515,8 @@
       "maxStep": "Max. Schritt",
       "numberOfSteps": "Anzahl der Schritte"
     }
+  },
+  "ai": {
+    "loadModels": "Modelle laden"
   }
 }

@@ -12,3 +12,6 @@ services:
   rpc_pdf:
     ports:
       - ${RPC_PDF_PORT}:8082
+  rpc_litellm:
+    ports:
+      - ${RPC_LITELLM_PORT}:8083
