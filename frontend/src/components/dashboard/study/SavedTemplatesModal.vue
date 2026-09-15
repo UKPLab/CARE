@@ -31,7 +31,7 @@
             icon="download"
             text=""
             :title="$t('modals.importExport.wiring.studyTemplates.exportAllTooltip')"
-            @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
+            @click="$refs.exportFormatModal.open(null, 'study', 'study_step', { filter: (s) => s.template === true })"
           />
         </template>
       </BasicTable>
