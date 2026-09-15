@@ -38,21 +38,21 @@
               <FormDefault
                   :model-value="String(skill.capTotal || '')"
                   :options="{ key: 'capTotal', label: 'nlp.services.totalCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.totalCostLimitHelp' }"
-                  @update:model-value="skill.capTotal = $event ? Number($event) : null; emitServices()"
+                  @update:model-value="setHookCap(skill, 'capTotal', $event)"
               />
             </div>
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capPerSession || '')"
                   :options="{ key: 'capPerSession', label: 'nlp.services.sessionCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.sessionCostLimitHelp' }"
-                  @update:model-value="skill.capPerSession = $event ? Number($event) : null; emitServices()"
+                  @update:model-value="setHookCap(skill, 'capPerSession', $event)"
               />
             </div>
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capPerUser || '')"
                   :options="{ key: 'capPerUser', label: 'nlp.services.userCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.userCostLimitHelp' }"
-                  @update:model-value="skill.capPerUser = $event ? Number($event) : null; emitServices()"
+                  @update:model-value="setHookCap(skill, 'capPerUser', $event)"
               />
             </div>
           </div>
@@ -125,16 +125,14 @@ export default {
     return {
       selectedSkills: services.map((service) => {
         if (service.hookId) {
-          // Cap values come from ai_budget (the authority), not the
-          // step config JSONB. 
-          const caps = this.lookupStepHookCaps(service.hookId);
           return {
             skillName: `hook:${service.hookId}`,
             dataInput: service.inputs || {},
             dataOutput: service.outputs || {},
-            capTotal: caps.total,
-            capPerSession: caps.perSession,
-            capPerUser: caps.perUser,
+            capTotal: service.capTotal ?? null,
+            capPerSession: service.capPerSession ?? null,
+            capPerUser: service.capPerUser ?? null,
+            capsLocked: false,
           };
         }
         if (service.skill) {
@@ -171,11 +169,20 @@ export default {
         });
       });
     },
+    budgetRefreshCount() {
+      return this.$store.getters["table/ai_budget/refreshCount"] ?? 0;
+    },
   },
   watch: {
     isValid: {
       handler(newVal) {
         this.$emit("validation-change", newVal);
+      },
+      immediate: true,
+    },
+    budgetRefreshCount: {
+      handler() {
+        this.hydrateHookCapsFromStore();
       },
       immediate: true,
     },
@@ -207,6 +214,39 @@ export default {
         if (Number(row.limitType) === 2) out.perUser = value;
       }
       return out;
+    },
+    /** Copies ai_budget caps into hook slots after the table refresh. User edits stay. */
+    hydrateHookCapsFromStore() {
+      let changed = false;
+      const next = this.selectedSkills.map((skill) => {
+        if (!this.isHook(skill) || skill.capsLocked) return skill;
+        const caps = this.lookupStepHookCaps(this.hookIdFor(skill));
+        if (caps.total == null && caps.perSession == null && caps.perUser == null) {
+          return skill;
+        }
+        if (
+          skill.capTotal === caps.total
+          && skill.capPerSession === caps.perSession
+          && skill.capPerUser === caps.perUser
+        ) {
+          return skill;
+        }
+        changed = true;
+        return {
+          ...skill,
+          capTotal: caps.total,
+          capPerSession: caps.perSession,
+          capPerUser: caps.perUser,
+        };
+      });
+      if (!changed) return;
+      this.selectedSkills = next;
+      this.emitServices();
+    },
+    setHookCap(skill, key, value) {
+      skill[key] = value ? Number(value) : null;
+      skill.capsLocked = true;
+      this.emitServices();
     },
     /** Parses the hook id from a `hook:<id>` selection, or null for skills. */
     hookIdFor(skill) {
@@ -248,7 +288,14 @@ export default {
     /** Resets the slot's mappings when the chosen skill/hook changes, then emits. */
     onSkillChange(index, value) {
       const updated = [...this.selectedSkills];
-      updated[index] = {...updated[index], skillName: value, dataInput: {}, dataOutput: {}};
+      const next = {skillName: value, dataInput: {}, dataOutput: {}, capsLocked: false};
+      if (this.isHook(next)) {
+        const caps = this.lookupStepHookCaps(this.hookIdFor(next));
+        next.capTotal = caps.total;
+        next.capPerSession = caps.perSession;
+        next.capPerUser = caps.perUser;
+      }
+      updated[index] = next;
       this.selectedSkills = updated;
       this.emitServices();
     },

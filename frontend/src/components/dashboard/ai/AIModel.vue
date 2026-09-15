@@ -32,6 +32,7 @@
         />
         <BasicButton
           class="btn btn-primary"
+          :disabled="isSaving"
           :text="modelForm.id ? $t('ai.common.update') : $t('ai.common.add')"
           @click="saveModel"
         />
@@ -52,6 +53,8 @@ import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
+const APP_DATA_TIMEOUT_MS = 10000;
+
 export default {
   name: "AIModel",
   components: { BasicModal, BasicForm, BasicButton },
@@ -67,6 +70,7 @@ export default {
       modelForm: {},
       isTestingModel: false,
       isLoadingModels: false,
+      isSaving: false,
       modelOptions: [],
       modelLookupError: "",
     };
@@ -231,6 +235,7 @@ export default {
       this.modelForm = {};
       this.isTestingModel = false;
       this.isLoadingModels = false;
+      this.isSaving = false;
       this.clearModelOptions();
       this.eventBus.emit("resetFormField");
     },
@@ -275,8 +280,31 @@ export default {
         this.isLoadingModels = false;
       }
     },
-    saveModel() {
-      if (!this.$refs.form.validate()) return;
+    emitAppDataUpdate(table, data, errorKey) {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          reject(new Error(this.$t("ai.errors.requestTimeout", {
+            timeoutMs: APP_DATA_TIMEOUT_MS,
+            command: table,
+          })));
+        }, APP_DATA_TIMEOUT_MS);
+        this.$socket.emit("appDataUpdate", { table, data }, (result) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (result?.success) {
+            resolve(result.data);
+          } else {
+            reject(new Error(resolveApiMessage(result, errorKey)));
+          }
+        });
+      });
+    },
+    async saveModel() {
+      if (!this.$refs.form.validate() || this.isSaving) return;
 
       const payload = {
         id: this.modelForm.id || 0,
@@ -289,15 +317,10 @@ export default {
         freeModel: !!this.modelForm.freeModel,
       };
 
-      this.$socket.emit("appDataUpdate", {
-        table: "ai_model",
-        data: payload,
-      }, (result) => {
-        if (!result.success) {
-          this.toastError(resolveApiMessage(result, "ai.errors.saveModel"));
-          return;
-        }
-        const savedModelId = result.data?.id || result.data || this.modelForm.id;
+      this.isSaving = true;
+      try {
+        const saved = await this.emitAppDataUpdate("ai_model", payload, "ai.errors.saveModel");
+        const savedModelId = saved?.id || saved || this.modelForm.id;
         const rawCostLimit = this.modelForm.costLimit;
         const hasCostLimit = rawCostLimit !== "" && rawCostLimit !== null && rawCostLimit !== undefined;
         const costLimitValue = Number(rawCostLimit);
@@ -317,15 +340,15 @@ export default {
           capData = { id: existing.id, deleted: true };
         }
         if (capData) {
-          this.$socket.emit("appDataUpdate", { table: "ai_budget", data: capData }, (capResult) => {
-            if (!capResult?.success) {
-              this.toastError(resolveApiMessage(capResult, "ai.errors.saveCostLimit"));
-            }
-          });
+          await this.emitAppDataUpdate("ai_budget", capData, "ai.errors.saveCostLimit");
         }
         this.$refs.modal.close();
         this.toastSuccess(this.modelForm.id ? this.$t("ai.messages.modelUpdated") : this.$t("ai.messages.modelCreated"));
-      });
+      } catch (error) {
+        this.toastError(error?.message || resolveApiMessage(error, "ai.errors.saveModel"));
+      } finally {
+        this.isSaving = false;
+      }
     },
     async testModel() {
       if (!this.$refs.form.validate()) return;
