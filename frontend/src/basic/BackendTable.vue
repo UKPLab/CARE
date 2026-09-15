@@ -2240,15 +2240,22 @@ export default {
       }
       return false;
     },
+    refetchCurrentWindow() {
+      if (!this.queryMode) return;
+      if (this.isInfiniteMode) {
+        this.scheduleWindowRefetch();
+        return;
+      }
+      this.fetchQueryPage({nav: this.currentNav()});
+    },
     handleStale(payload = {}) {
       this.$emit("stale", payload);
       if (this.isInfiniteMode) {
-        // No banner here: reload the window in place and keep the viewport on its anchor row.
         this.scheduleWindowRefetch();
         return;
       }
       if (this.isOwnSocket(payload.originSocketId)) {
-        this.fetchQueryPage({nav: this.currentNav()});
+        this.refetchCurrentWindow();
       } else {
         this.pendingStructural = true;
       }
@@ -2326,7 +2333,7 @@ export default {
         }
 
         if (own) {
-          this.fetchQueryPage({nav: this.currentNav()});
+          this.refetchCurrentWindow();
           return;
         }
 

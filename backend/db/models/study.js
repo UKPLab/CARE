@@ -325,10 +325,21 @@ module.exports = (sequelize, DataTypes) => {
             delete newStudyData.hash;
             newStudyData.parentStudyId = study.id;
             // Create the new study version
-            await Study.add(newStudyData, {
+            const created = await Study.add(newStudyData, {
                 transaction: options.transaction,
                 context: options.context
             });
+            // Sequelize cloneDeep's update options, so mutating context is lost.
+            // The transaction object is shared for the whole appDataUpdate call.
+            if (created) {
+                const published = {id: created.id, hash: created.hash};
+                if (options.transaction) {
+                    options.transaction.versionedStudy = published;
+                }
+                if (options.context) {
+                    options.context.versionedStudy = published;
+                }
+            }
 
             study.setDataValue("closed", new Date());
 
@@ -337,6 +348,33 @@ module.exports = (sequelize, DataTypes) => {
 
             // Specify which fields to be updated. (If fields is provided, only those columns will be saved)
             options.fields = ["closed"];
+        }
+
+        /**
+         * Success modal needs the live study {id, hash}. Create and versioning
+         * return that; delete / close / restart stay a numeric id.
+         */
+        static async resolveAppDataResult({data, transaction, context, entry}) {
+            const published = transaction?.versionedStudy || context?.versionedStudy;
+            if (published?.hash) {
+                return published;
+            }
+            const originalId = data?.id;
+            const isCreate = !originalId || originalId === 0;
+            if (!isCreate && context?.stepDocuments) {
+                const child = await Study.findOne({
+                    where: {parentStudyId: originalId, deleted: false},
+                    order: [["id", "DESC"]],
+                    transaction,
+                });
+                if (child?.hash) {
+                    return {id: child.id, hash: child.hash};
+                }
+            }
+            if (isCreate && entry?.hash) {
+                return {id: entry.id, hash: entry.hash};
+            }
+            return entry?.id;
         }
 
         /**

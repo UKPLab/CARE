@@ -23,7 +23,7 @@
             text="Publish Assessment"
             title="Publish Assessment"
             icon="clipboard-data"
-            @click="$refs.publishAssessmentModal.open()"
+            @click="openPublishAssessment"
           />
           <BasicButton
               v-if="canAddBulkAssignments"
@@ -65,14 +65,14 @@
         />
       </template>
     </Card>
-    <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator" @hide="modals.studyCoordinator = false"/>
+    <StudyModal v-if="modals.studyCoordinator" ref="studyCoordinator" @hide="modals.studyCoordinator = false" @published="refreshStudies"/>
     <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
     <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
     <ManageStudiesModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
     <StudyCloseModal ref="studyCloseModal" />
     <AssignmentModal v-if="modals.assignment" ref="assignmentModal" @hide="modals.assignment = false"/>
-    <PublishAssessmentModal ref="publishAssessmentModal"/>
+    <PublishAssessmentModal v-if="modals.publishAssessment" ref="publishAssessmentModal" @hide="modals.publishAssessment = false"/>
     <InformationModal v-if="modals.information" ref="informationModal" @hide="modals.information = false"/>
     <SavedTemplatesModal v-if="modals.savedTemplates" ref="savedTemplatesModal" @hide="modals.savedTemplates = false"/>
   </span>
@@ -119,13 +119,12 @@ export default {
     }
   },
   props: {},
-  // Do not subscribe the full `study` table: queryTable already pages the grid, and an
-  // unfiltered sendTable would dump every row into Vuex (tens of thousands locally).
-  // Templates are a small subset and still live in the store for Saved Templates / assignments.
+  // queryTable pages the grid. Do not subscribe the full `study` table.
+  // Templates stay in Vuex for Saved Templates / assignments.
+  // Documents and study_step load when Edit/Add opens (coordinator), not here.
   subscribeTable: [
     {table: "study", filter: [{key: "template", value: true}]},
-    "document",
-    "study_session", "workflow", "workflow_step", "study_step", "template"],
+    "study_session", "workflow", "workflow_step", "template"],
   data() {
     return {
       modals: {
@@ -137,6 +136,7 @@ export default {
         assignment: false,
         information: false,
         savedTemplates: false,
+        publishAssessment: false,
       },
       options: {
         striped: true,
@@ -469,9 +469,8 @@ export default {
       this.$store.commit("table/study/SOCKET_studyRefresh", [row]);
     },
     openStudyCoordinator(id = 0, linkOnly = false, row = null) {
-      if (row) this.seedStudyRow(row);
       this.modals.studyCoordinator = true;
-      this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly));
+      this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly, false, false, row));
     },
     openStudySessionModal(studyId, row = null) {
       if (row) this.seedStudyRow(row);
@@ -576,6 +575,13 @@ export default {
     },
     openSavedTemplates() {
       this.openSavedTemplatesModal();
+    },
+    refreshStudies() {
+      this.$refs.studiesBackendTable?.refetchCurrentWindow?.();
+    },
+    openPublishAssessment() {
+      this.modals.publishAssessment = true;
+      this.$nextTick(() => this.$refs.publishAssessmentModal?.open());
     },
     add() {
       this.openStudyCoordinator(0);

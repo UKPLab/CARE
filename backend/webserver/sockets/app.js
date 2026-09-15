@@ -78,18 +78,20 @@ class AppSocket extends Socket {
         let newEntry = null;
 
 
+        const writeContext = {...data.data, currentUserId: this.userId};
+
         if (("id" in data.data && data.data.id !== 0) &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
                 {
-                    context: {...data.data, currentUserId: this.userId},
+                    context: writeContext,
                     transaction: transaction
                 }
             );
             // if the entry is destroyed then it wont return an id
-            return newEntry?.id;
+            return await this.resolveUpdateResult(data, transaction, writeContext, newEntry);
         }
 
         // check or set user information
@@ -125,7 +127,7 @@ class AppSocket extends Socket {
                 data.data.userId = this.userId;
             }
             newEntry = await this.models[data.table].add(data.data, {
-                context: {...data.data, currentUserId: this.userId},
+                context: writeContext,
                 transaction: transaction
             });
         } else {
@@ -133,7 +135,7 @@ class AppSocket extends Socket {
                 data.data.id,
                 data.data,
                 {
-                    context: {...data.data, currentUserId: this.userId},
+                    context: writeContext,
                     transaction: transaction
                 }
             );
@@ -164,8 +166,28 @@ class AppSocket extends Socket {
                     })
             );
         }
-        return newEntry.id;
+        return await this.resolveUpdateResult(data, transaction, writeContext, newEntry);
 
+    }
+
+    /**
+     * Default appDataUpdate result is the row id. A model may override via
+     * `resolveAppDataResult`
+     */
+    async resolveUpdateResult(data, transaction, writeContext, newEntry) {
+        const model = this.models[data.table];
+        if (typeof model.resolveAppDataResult === "function") {
+            const custom = await model.resolveAppDataResult({
+                data: data.data,
+                transaction,
+                context: writeContext,
+                entry: newEntry,
+            });
+            if (custom !== undefined) {
+                return custom;
+            }
+        }
+        return newEntry?.id;
     }
 
     /**

@@ -20,6 +20,7 @@ module.exports = class MetaModel extends Model {
      * - static getQueryTableSearchColumns(ctx) → whitelist of searchable keys
      * - static getQueryTableFilterColumns(ctx) → filterable keys for the table search bar
      * - static getQueryTableSortColumns() → { [uiKey]: { field } } JOIN sort via a sidecar view
+     * - static resolveAppDataResult({data, transaction, context, entry}) → custom appDataUpdate payload; default is entry.id
      */
 
     /**
@@ -226,6 +227,7 @@ module.exports = class MetaModel extends Model {
             }
 
             const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
+            if (this.cache) this.cache.clear();
             return createdObject.get({plain: true});
 
         } catch (err) {

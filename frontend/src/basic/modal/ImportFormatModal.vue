@@ -311,6 +311,7 @@ export default {
           importedCount++;
 
           if (this.childTable && children.length > 0 && !this.socketOptions.name) {
+            const parentId = result.data?.id ?? result.data;
             const fkField = `${tableCamel}Id`;
             const previousField = `${childTableCamel}Previous`;
             let previousId = null;
@@ -321,10 +322,10 @@ export default {
               );
               const childResult = await this.socketEmit("appDataUpdate", {
                 table: this.childTable,
-                data: { ...childData, [fkField]: result.data, [previousField]: previousId },
+                data: { ...childData, [fkField]: parentId, [previousField]: previousId },
               });
               if (childResult.success) {
-                previousId = childResult.data;
+                previousId = childResult.data?.id ?? childResult.data;
               } else {
                 this.eventBus.emit("toast", {
                   title: "Import Error",
