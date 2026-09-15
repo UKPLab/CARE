@@ -1,59 +1,66 @@
 <template>
   <div>
-  <Card :title="$t('users.title')">
-    <template #headerElements>
-      <div class="d-flex align-items-center flex-wrap gap-2">
+  <DashboardListPage
+      :title="$t('users.title')"
+      :columns="columns"
+      :data="users"
+      :buttons="buttons"
+      :table-options="options"
+      @action="chooseAction"
+  >
+    <template #headerActions>
+      <div class="btn-group gap-2 flex-wrap">
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.liveSessions')"
             :text="$t('users.liveSessions')"
             icon="people-fill"
             @click="openSessionDetailsModal()"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.downloadUsers')"
             :text="$t('users.downloadUsers')"
             icon="download"
             @click="downloadUsers"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.rights.managementTitle')"
             :text="$t('users.rights.managementTitle')"
             icon="shield-lock"
             @click="openRightsManagementModal"
         />
         <BasicButton
-          class="btn btn-secondary btn-sm"
+          class="btn-secondary btn-sm"
           :title="$t('users.roleManagement.button')"
           :text="$t('users.roleManagement.button')"
           icon="person-plus"
           @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.uploadPassword')"
             :text="$t('users.uploadPassword')"
             icon="key"
             @click="openUploadModal"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.importCsv')"
             :text="$t('users.importCsv')"
             icon="filetype-csv"
             @click="openImportModal('csv')"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
+            class="btn-secondary btn-sm"
             :title="$t('users.importViaMoodle')"
             :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
             @click="openImportModal('moodle')"
         />
         <BasicButton
-            class="btn btn-primary btn-sm"
+            class="btn-primary btn-sm"
             :title="$t('users.addUser')"
             :text="$t('users.addUser')"
             icon="person-plus"
@@ -61,17 +68,7 @@
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="users"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="chooseAction"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <DetailsModal
       v-if="modals.details"
       ref="detailsModal"
@@ -110,8 +107,6 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
@@ -124,6 +119,9 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 /**
  * Display user list by users' role
@@ -134,8 +132,7 @@ export default {
   name: "DashboardUsers",
   subscribeTable: ["user"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     DetailsModal,
     PasswordModal,
     RightsModal,
@@ -168,19 +165,12 @@ export default {
         confirm: false,
         activeSessions: false,
       },
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
+      options: withSearch({
         sort: {
           column: "id",
           order: "ASC",
         },
-      },
+      }),
       // Possible values for role here are all the roles in the DB.
       role: "all",
     };
@@ -257,77 +247,42 @@ export default {
     },
     buttons() {
       return [
-        {
+        dashboardRowAction("edit", {
           title: this.$t('users.editUser'),
           action: "editUser",
           stats: {
             userId: "id",
           },
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowAction("rights", {
           title: this.$t('users.viewRights'),
           action: "viewRights",
           stats: {
             userId: "id",
           },
-          icon: "card-list",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowButton("person-lock", {
           title: this.$t('users.resetPassword'),
           action: "resetPassword",
           stats: {
             userId: "id",
           },
-          icon: "person-lock",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowButton("display", {
           title: this.$t('users.viewSessions'),
           action: "viewSessions",
           stats: {
             userId: "id",
           },
-          icon: "display",
           filter: [{ key: "isActive", value: true }],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
+        }),
+        dashboardRowAction("delete", {
           title: this.$t('users.deleteUser'),
           action: "deleteUser",
           stats: {
             userId: "id",
           },
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
+        }),
       ];
     },
   },

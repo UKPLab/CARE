@@ -13,6 +13,8 @@
   "topbar": {
     "goBack": "Zurück...",
     "projectTitle": "Projekt: {name}",
-    "signedInAs": "Angemeldet als {username}"
+    "signedInAs": "Angemeldet als {username}",
+    "lightMode": "Heller Modus",
+    "darkMode": "Dunkler Modus"
   }
 }

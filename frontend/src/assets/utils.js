@@ -504,3 +504,49 @@ export async function extractTextFromPDF(pdfDocument) {
     
     return fullText;
 }
+
+/**
+ * Applies a colour theme to the document root and caches it locally so the
+ * correct theme is used on first paint before user settings load.
+ *
+ * @param {string} mode - The theme to apply, "light" or "dark"
+ * @returns {void}
+ */
+export function applyTheme(mode) {
+    document.documentElement.setAttribute("data-bs-theme", mode);
+    localStorage.setItem("care.theme", mode);
+}
+
+
+/**
+ * Shifts a colour towards black or white, whichever gives a visible change.
+ * Dark colours are lightened, light colours are darkened, so a hover state is
+ * noticeable regardless of the base colour.
+ *
+ * @param {string} hexColor - The base colour as "#RRGGBB"
+ * @param {number} amount - How far to shift, between 0 and 1
+ * @returns {string} The shifted colour as "#RRGGBB"
+ */
+export function shadeColor(hexColor, amount) {
+    const hex = (hexColor || "").replace(/^#/, "");
+    if (hex.length !== 6) return hexColor;
+    const channels = [0, 2, 4].map((i) => parseInt(hex.substring(i, i + 2), 16));
+    const isDark = getContrastColor(hexColor) === "#ffffff";
+    const shifted = channels.map((c) =>
+        isDark ? Math.round(c + (255 - c) * amount) : Math.round(c * (1 - amount))
+    );
+    return "#" + shifted.map((c) => c.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Resolves which theme should be shown, preferring the saved user setting, then
+ * the locally cached value, then the browser's colour scheme preference.
+ *
+ * @param {string|null} saved - The saved user setting, or null if not yet loaded
+ * @returns {string} "light" or "dark"
+ */
+export function resolveTheme(saved) {
+    const cached = localStorage.getItem("care.theme");
+    const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return saved || cached || (osPrefersDark ? "dark" : "light");
+}

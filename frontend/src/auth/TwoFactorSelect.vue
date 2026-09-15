@@ -225,7 +225,7 @@ form {
 }
 
 .method-card {
-  border: 2px solid #dee2e6;
+  border: 2px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   padding: 16px;
   margin-bottom: 12px;
@@ -234,13 +234,13 @@ form {
 }
 
 .method-card:hover {
-  background-color: #f8f9fa;
-  border-color: #0d6efd;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-color: var(--bs-primary, #0d6efd);
 }
 
 .method-card.selected {
-  border-color: #0d6efd;
-  background-color: #e7f1ff;
+  border-color: var(--bs-primary, #0d6efd);
+  background-color: var(--bs-primary-bg-subtle, #e7f1ff);
 }
 </style>
 

@@ -44,6 +44,7 @@
         "ai_budget": "AI Budget",
         "triggers": "Triggers",
         "trigger_logs": "Trigger Logs",
+        "socket_profiler": "Socket Profiler",
         "groups": {
             "default": "Default",
             "admin": "Admin",

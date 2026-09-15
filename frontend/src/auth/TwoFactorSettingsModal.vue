@@ -633,7 +633,7 @@ export default {
 
 <style scoped>
 .method-section {
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   padding-bottom: 1rem;
 }
 
@@ -642,10 +642,10 @@ export default {
 }
 
 .totp-setup-section {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 16px;
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   margin-top: 12px;
 }
 
@@ -654,7 +654,7 @@ export default {
   padding: 12px;
   background-color: white;
   border-radius: 8px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .qr-code-image {

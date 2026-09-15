@@ -58,7 +58,7 @@ export default {
   min-height: 150px;
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 0.375rem;
 }
 </style>

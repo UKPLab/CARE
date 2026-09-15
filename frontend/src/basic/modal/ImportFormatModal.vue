@@ -216,7 +216,7 @@ export default {
      * @param {object}      [options={}]                - Optional configuration.
      * @param {object}      [options.overrides={}]      - Fields merged into each imported item, overriding values from the file.
      * @param {object}      [options.socket={}]         - Custom socket options (defaults to appDataUpdate with standard payload).
-     * @param {string}      [options.socket.name]       - Custom socket event name instead of "appDataUpdate".
+     * @param {string}      [options.socket.name]       - Custom socket event name instead of "appDataUpdate". Nested child records go on the item payload.
      * @param {string}      [options.socket.dataKey]    - Key under which item data is nested in the payload. If omitted, item data is spread directly into the top-level payload.
      * @param {object}      [options.socket.extra={}]   - Extra top-level fields merged into the socket payload.
      */
@@ -327,6 +327,13 @@ export default {
           const dataKey = this.socketOptions.dataKey;
           const extra = this.socketOptions.extra || {};
           const itemPayload = { ...itemData, ...this.overrides, userId: this.userId };
+          if (this.childTable && children.length > 0) {
+            itemPayload[this.childTable] = children.map((child) =>
+              Object.fromEntries(
+                Object.entries(child).filter(([key]) => !attributesToDelete.includes(key))
+              )
+            );
+          }
           result = await this.socketEmit(this.socketOptions.name, dataKey
             ? { ...extra, [dataKey]: itemPayload }
             : { ...extra, ...itemPayload }

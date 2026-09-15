@@ -504,7 +504,7 @@ input.custom-invalid {
 
 input:focus.custom-invalid {
   outline: none;
-  border: 1px solid #ced4da;
+  border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 0.25rem;
 }
 

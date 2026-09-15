@@ -90,6 +90,15 @@ module.exports = (sequelize, DataTypes) => {
 				required: false,
 				help: "assignments.fields.notifyOnSubmissionUpload.help",
 			},
+			{
+				key: "submissionWarning",
+				label: "assignments.fields.submissionWarning.label",
+				placeholder: "e.g. This assignment must be submitted in German.",
+				type: "textarea",
+				required: false,
+				default: "",
+				help: "assignments.fields.submissionWarning.help",
+			},
 		];
 
 		/**
@@ -154,6 +163,7 @@ module.exports = (sequelize, DataTypes) => {
 			parentAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
 			notifyOnSubmissionUpload: DataTypes.BOOLEAN,
+			submissionWarning: DataTypes.TEXT,
 			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,
 			deletedAt: DataTypes.DATE,

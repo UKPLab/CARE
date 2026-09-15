@@ -28,6 +28,7 @@ import templates from './templates.json'
 import assignments from './assignments.json'
 import ai from './ai.json'
 import triggers from './triggers.json'
+import socketProfiler from './socketProfiler.json'
 
 export default {
   common,
@@ -59,5 +60,6 @@ export default {
   templates,
   assignments,
   ai,
-  triggers
+  triggers,
+  socketProfiler
 }
