@@ -179,6 +179,23 @@ export default {
 					return value !== null && value !== undefined && value !== "";
 				});
 		},
+		/**
+		 * True when both times are set and start is not before end.
+		 * Either field empty is allowed.
+		 */
+		isStartOnOrAfterEnd() {
+			const start = this.formData.start;
+			const end = this.formData.end;
+			if (!start || !end) {
+				return false;
+			}
+			const startMs = new Date(start).getTime();
+			const endMs = new Date(end).getTime();
+			if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+				return false;
+			}
+			return startMs >= endMs;
+		},
 		modalTitle() {
 			if (this.isCopy) return this.$t("assignments.dashboard.modal.titles.copy");
 			return this.assignmentId !== 0
@@ -264,6 +281,15 @@ export default {
 		submit() {
 			const isValidated = this.$refs.assignmentForm?.validate?.() ?? false;
 			if (!isValidated) return;
+
+			if (this.isStartOnOrAfterEnd) {
+				this.eventBus.emit("toast", {
+					title: this.$t("assignments.dashboard.modal.toasts.saveFailed"),
+					message: this.$t("errors.assignment.startAfterEnd"),
+					variant: "danger",
+				});
+				return;
+			}
 
 			this.$refs.stepperModal.setWaiting(true);
 
