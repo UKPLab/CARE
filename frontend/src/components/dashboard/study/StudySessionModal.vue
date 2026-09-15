@@ -2,6 +2,7 @@
   <AddAssignmentModal
     ref="addAssignmentModal"
     name="addAssignmentModal"
+    @hide="onNestedModalHide"
   />
   <BasicModal
     ref="studySessionModal"
@@ -9,6 +10,8 @@
     size="lg"
     name="studySessionModal"
     remove-close
+    @show="onSessionModalShow"
+    @hide="onSessionModalHide"
   >
     <template #title>
       <span> Study Sessions of {{ studyName }} </span>
@@ -16,6 +19,7 @@
     <template #body>
       <StudySessionTable
         :study-id="studyId"
+        :study="study"
         :current-user-only="false"
         :show-all="true"
         @update="$emit('update')"
@@ -64,15 +68,20 @@ export default {
       mainModal: computed(() => this.$refs.studySessionModal),
     };
   },
-  emits: ["update", "session-deleted", "session-opened"],
+  emits: ["update", "session-deleted", "session-opened", "hide"],
   data() {
     return {
       studyId: 0,
+      studyRecord: null,
+      nestedModalOpen: false,
     };
   },
   computed: {
     study() {
-      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+      if (this.studyRecord && Number(this.studyRecord.id) === Number(this.studyId)) {
+        return this.studyRecord;
+      }
+      return null;
     },
     studyName() {
       return this.study ? this.study.name : "unknown";
@@ -85,23 +94,49 @@ export default {
     },
   },
   methods: {
-    open(studyId) {
+    open(studyId, studyRow = null) {
       this.studyId = studyId;
-      this.load();
-      this.$socket.emit("studySessionSubscribe", { studyId: studyId });
+      this.studyRecord = studyRow ? { ...studyRow } : null;
       this.$refs.studySessionModal.open();
     },
     close() {
-      this.$socket.emit("studySessionUnsubscribe", { studyId: this.studyId });
       this.$refs.studySessionModal.close();
     },
-    addSingleAssignment() {
-      this.$refs.addAssignmentModal.open(this.studyId);
-    },
-    load() {
-      if (!this.study) {
-        this.$socket.emit("studyGetById", { studyId: this.studyId });
+    loadStudySessions() {
+      if (this.studyId) {
+        this.$socket.emit("studySessionSubscribe", { studyId: this.studyId });
       }
+    },
+    onSessionModalShow() {
+      this.loadStudySessions();
+    },
+    onSessionModalHide() {
+      // Nested Add Reviewer only suspends this modal. Do not wipe Vuex then.
+      if (this.nestedModalOpen) {
+        return;
+      }
+      this.dropStudySessions();
+      this.$emit("hide");
+    },
+    onNestedModalHide() {
+      this.nestedModalOpen = false;
+      this.loadStudySessions();
+    },
+    dropStudySessions() {
+      if (this.studyId) {
+        this.$socket.emit("studySessionUnsubscribe", { studyId: this.studyId });
+        const sessions = this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId) || [];
+        if (sessions.length) {
+          this.$store.commit(
+            "table/study_session/SOCKET_study_sessionRefresh",
+            sessions.map((session) => ({id: session.id, deleted: true}))
+          );
+        }
+      }
+    },
+    addSingleAssignment() {
+      this.nestedModalOpen = true;
+      this.$refs.addAssignmentModal.open(this.studyId);
     },
   },
 };

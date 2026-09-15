@@ -48,6 +48,7 @@ export default {
     BasicButton,
     BasicTable,
   },
+  emits: ["hide"],
   inject: {
     mainModal: {
       default: null
@@ -98,16 +99,14 @@ export default {
   },
   methods: {
     open(id) {
+      this.studyId = id;
+      this.mainModal?.suspendByChild();
       this.$refs.assignmentModal.open();
-      this.mainModal?.hide()
-      this.studyId = id
-    },
-    showMainModal() {
-      this.mainModal?.show()
     },
     resetModal() {
       this.selectedReviewer = [];
-      this.showMainModal();
+      this.mainModal?.resumeFromChild();
+      this.$emit("hide");
     },
     addReviewers() {
       this.$refs.assignmentModal.waiting = true;
@@ -118,7 +117,6 @@ export default {
         this.$refs.assignmentModal.waiting = false;
         if (res.success) {
           this.$refs.assignmentModal.close();
-          this.showMainModal();
           this.eventBus.emit("toast", {
             title: "Reviewers added",
             message: "The reviewers have been added successfully",

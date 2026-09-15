@@ -121,10 +121,10 @@ export default {
   props: {},
   // queryTable pages the grid. Do not subscribe the full `study` table.
   // Templates stay in Vuex for Saved Templates / assignments.
-  // Documents and study_step load when Edit/Add opens (coordinator), not here.
+  // Documents and study_step load when Edit/Add opens. Sessions load on Inspect.
   subscribeTable: [
     {table: "study", filter: [{key: "template", value: true}]},
-    "study_session", "workflow", "workflow_step", "template"],
+    "workflow", "workflow_step", "template"],
   data() {
     return {
       modals: {
@@ -460,22 +460,13 @@ export default {
       study.showTemplateButton = this.isAdmin || study.userId === this.userId;
       return study;
     },
-    /**
-     * Put one study into Vuex so coordinators / session UI that still `table/study/get` can
-     * see it. The grid no longer dumps the whole table; only the row you opened is seeded.
-     */
-    seedStudyRow(row) {
-      if (!row?.id) return;
-      this.$store.commit("table/study/SOCKET_studyRefresh", [row]);
-    },
     openStudyCoordinator(id = 0, linkOnly = false, row = null) {
       this.modals.studyCoordinator = true;
       this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly, false, false, row));
     },
     openStudySessionModal(studyId, row = null) {
-      if (row) this.seedStudyRow(row);
       this.modals.studySession = true;
-      this.$nextTick(() => this.$refs.studySessionModal?.open(studyId));
+      this.$nextTick(() => this.$refs.studySessionModal?.open(studyId, row));
     },
     openDeleteConfModal(name, message, warning, cb) {
       this.modals.deleteConf = true;

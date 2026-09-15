@@ -284,6 +284,22 @@ export default {
         this.parentModal.hide();
       }
     },
+    suspendByChild() {
+      if (this.suspendedByChild) return;
+      const el = this.$refs && this.$refs.Modal;
+      if (el) {
+        el.classList.add('nested-suspended');
+      }
+      this.suspendedByChild = true;
+    },
+    resumeFromChild() {
+      if (!this.suspendedByChild) return;
+      const el = this.$refs && this.$refs.Modal;
+      if (el) {
+        el.classList.remove('nested-suspended');
+      }
+      this.suspendedByChild = false;
+    },
     suspendParentModal() {
       if (!this.parentModal || this.parentModal.suspendedByChild) return;
       const el = this.parentModal.$refs && this.parentModal.$refs.Modal;

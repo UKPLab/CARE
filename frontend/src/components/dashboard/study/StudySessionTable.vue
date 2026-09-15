@@ -24,12 +24,16 @@ import AssignUserModal from "@/components/dashboard/study/AssignUserStudySession
  */
 export default {
   name: "StudySessionTable",
-  subscribeTable: ["user", "study_session"],
+  subscribeTable: ["user"],
   components: { BasicTable, ConfirmModal, AssignUserModal },
   props: {
     studyId: {
       type: Number,
       required: true,
+    },
+    study: {
+      type: Object,
+      default: null,
     },
     currentUserOnly: {
       type: Boolean,
@@ -229,18 +233,21 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    study() {
-      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+    studyRecord() {
+      if (this.study && Number(this.study.id) === Number(this.studyId)) {
+        return this.study;
+      }
+      return null;
     },
     hasCopiedSessions() {
-      if (!this.study) return false;
+      if (!this.studyRecord) return false;
 
       return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).some(
         (session) => session.parentStudySessionId !== null
       );
     },
     studySessions() {
-      if (!this.study) return [];
+      if (!this.studyRecord) return [];
       if(this.showAll) {
         return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId).map((s) => this.processSession(s));
       }
@@ -262,29 +269,21 @@ export default {
       return sessions.map((s) => this.processSession(s));
     },
     studyResumable() {
-      return this.study ? this.study.resumable : false;
+      return this.studyRecord ? this.studyRecord.resumable : false;
     },
     studyClosed() {
-      if (this.study) {
-        if (this.study.closed) {
+      if (this.studyRecord) {
+        if (this.studyRecord.closed) {
           return true;
         }
-        if (!this.study.multipleSubmit && this.study.end && new Date(this.study.end) < Date.now()) {
+        if (!this.studyRecord.multipleSubmit && this.studyRecord.end && new Date(this.studyRecord.end) < Date.now()) {
           return true;
         }
       }
       return false;
     },
   },
-  mounted() {
-    this.load();
-  },
   methods: {
-    load() {
-      if (!this.study) {
-        this.$socket.emit("studyGetById", { studyId: this.studyId });
-      }
-    },
     processSession(session) {
       const processedSession = { ...session };
 
@@ -298,12 +297,12 @@ export default {
         processedSession.resumable = this.studyResumable;
 
         processedSession.showResumeButton = (this.studyResumable && session.start !== undefined && session.start !== null && !this.studyClosed) || (this.studyResumable && session.start !== undefined && session.start !== null && canResumeOrStart);
-        processedSession.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
+        processedSession.showDeleteButton = this.userId === this.studyRecord.createdByUserId && this.userId !== this.studyRecord.userId;
         processedSession.showStartButton = (!session.start && !this.studyClosed) || (!session.start && canResumeOrStart);
         processedSession.showInspectButton = this.showClosed && !canResumeOrStart;
       } else {
         processedSession.showDeleteButton =
-          this.$store.getters["auth/getUserId"] === this.study.createdByUserId || this.$store.getters["auth/isAdmin"];
+          this.$store.getters["auth/getUserId"] === this.studyRecord.createdByUserId || this.$store.getters["auth/isAdmin"];
         if (this.canReadPrivateInformation) {
           this.addUserInfo(processedSession);
         }

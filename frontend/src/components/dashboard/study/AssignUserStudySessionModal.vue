@@ -70,7 +70,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
  */
 export default {
   name: "AssignUserStudySessionModal",
-  subscribeTable: ["user", "study_session"],
+  subscribeTable: ["user"],
   components: {StepperModal, BasicTable},
   data() {
     return {
