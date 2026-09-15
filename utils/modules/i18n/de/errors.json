@@ -200,6 +200,7 @@
     "studyEnded": "Diese Studie ist beendet",
     "studyNotFound": "Studie nicht gefunden",
     "studyNotStarted": "Diese Studie wurde noch nicht gestartet",
+    "startAfterEnd": "Die Startzeit muss vor der Endzeit liegen.",
     "sessionLimitExceeded": "Es können nicht mehr als {limit} Sitzungen erstellt werden.",
     "sessionLimitPerUserExceeded": "Es können nicht mehr als {limit} Sitzungen für diesen Benutzer erstellt werden.",
     "missingContextOrStepDocuments": "Kontext oder Schrittdokumente in den Optionen fehlen. Transaktion wird abgebrochen.",

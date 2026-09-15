@@ -197,6 +197,29 @@ module.exports = (sequelize, DataTypes) => {
         },];
 
         /**
+         * Refuse inverted or zero-length study windows. Either date may be null.
+         *
+         * @param {object} study - Sequelize study instance or plain row with start/end.
+         * @returns {void}
+         * @throws {TranslatableError} If both dates are set and start is not before end.
+         */
+        static assertStartBeforeEnd(study) {
+            const start = study.start;
+            const end = study.end;
+            if (!start || !end) {
+                return;
+            }
+            const startMs = new Date(start).getTime();
+            const endMs = new Date(end).getTime();
+            if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
+                return;
+            }
+            if (startMs >= endMs) {
+                throw new TranslatableError("errors.studies.startAfterEnd");
+            }
+        }
+
+        /**
          * Check if a study is still open
          * @param studyId
          * @returns {Promise<void>}
@@ -424,7 +447,8 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             beforeCreate: async (study, options) => {
-            // Set default projectId from user settings if not provided
+                Study.assertStartBeforeEnd(study);
+                // Set default projectId from user settings if not provided
                 const userId = study.dataValues.userId;
                 const defaultProjectId = await sequelize.models.user_setting.get('projects.default', userId);        
                 if (defaultProjectId) {
@@ -440,6 +464,11 @@ module.exports = (sequelize, DataTypes) => {
                 await Study.createStudySteps(study, options);
             }, 
             beforeUpdate: async (study, options) => {
+                // Close/restart omit start/end; skip so existing inverted rows can still be closed.
+                if (study.changed("start") || study.changed("end")) {
+                    Study.assertStartBeforeEnd(study);
+                }
+
                 // Keep close metadata in model layer to avoid transport-specific logic.
                 if (study.changed("closed") && study.closed && !study.userIdClosed) {
                     const closingUserId = options.context?.currentUserId;

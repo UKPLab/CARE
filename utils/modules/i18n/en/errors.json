@@ -200,6 +200,7 @@
         "studyEnded": "This study has ended",
         "studyNotFound": "Study not found",
         "studyNotStarted": "This study has not started yet",
+        "startAfterEnd": "Start time must be before end time.",
         "sessionLimitExceeded": "Cannot create more than {limit} sessions for this study.",
         "sessionLimitPerUserExceeded": "Cannot create more than {limit} sessions for this user.",
         "missingContextOrStepDocuments": "Missing context or stepDocuments in options. Cancelling transaction.",
