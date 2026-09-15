@@ -197,6 +197,21 @@ export default {
       );
       return matches.length > 0 ? matches[0] : null;
     },
+    shareCapKey() {
+      return this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
+    },
+    findExistingResourceShareCap(resourceId) {
+      const shares = this.getShareRows((share) =>
+        Number(share[this.resourceIdKey]) === Number(resourceId) && !share.deleted
+      );
+      const shareKey = this.shareCapKey();
+      for (const share of shares) {
+        const cap = this.findExistingShareCap(shareKey, share.id);
+        const value = cap ? Number(cap.costLimit) : NaN;
+        if (Number.isFinite(value)) return value;
+      }
+      return null;
+    },
     findExistingShare(resourceId, recipient) {
       const matches = this.getShareRows((share) =>
         Number(share[this.resourceIdKey]) === Number(resourceId)
@@ -241,7 +256,7 @@ export default {
         this.shareForm = {
           mode: config.mode,
           expiryDate: config.expiryDate ? this.toDateInputString(config.expiryDate) : "",
-          costLimit: null,
+          costLimit: this.findExistingResourceShareCap(row.id),
         };
         this.selectedUserIds = config.userIds;
         this.selectedRoleIds = config.roleIds;
@@ -307,7 +322,7 @@ export default {
         // Apply or clear the per-recipient cap on every share in this batch.
         const costLimitValue = Number(this.shareForm.costLimit);
         const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
-        const shareKey = this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
+        const shareKey = this.shareCapKey();
         for (const shareId of sharedIds) {
           const existingCap = this.findExistingShareCap(shareKey, shareId);
           if (wantsCap) {

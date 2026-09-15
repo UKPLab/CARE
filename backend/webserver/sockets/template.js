@@ -530,7 +530,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.notFound");
     }
     const isAdmin = await this.isAdmin();
-    const isEmailTemplate = [1, 2, 3, 6].includes(template.type);
+    const isEmailTemplate = [1, 2, 3, 6, 7].includes(template.type);
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
 

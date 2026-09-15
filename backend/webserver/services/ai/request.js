@@ -143,19 +143,31 @@ async function beginRequest(service, request, options = {}) {
         }
     }
 
-    const log = await service.server.db.models["ai_log"].add({
-        userId,
-        aiModelId,
-        aiHookId: aiHookId || null,
-        documentId: documentId || null,
-        studySessionId: studySessionId || null,
-        studyStepId: studyStepId || null,
-        requestId,
-        input,
-        status: "in_progress",
-        requestStart: new Date(),
-    });
-    return { allowed: true, logId: log.id };
+    try {
+        const log = await service.server.db.models["ai_log"].add({
+            userId,
+            aiModelId,
+            aiHookId: aiHookId || null,
+            documentId: documentId || null,
+            studySessionId: studySessionId || null,
+            studyStepId: studyStepId || null,
+            requestId,
+            input,
+            status: "in_progress",
+            requestStart: new Date(),
+        });
+        return { allowed: true, logId: log.id };
+    } catch (err) {
+        // Unique index ai_log_one_inflight_per_user_session: a concurrent beginRequest
+        // passed _hasInflight() before either insert landed.
+        if (/duplicate key|unique constraint/i.test(String(err.message))) {
+            return deny(
+                "You already have a pending AI request in this session",
+                "errors.ai.requestAlreadyPending"
+            );
+        }
+        throw err;
+    }
 }
 
 /**
