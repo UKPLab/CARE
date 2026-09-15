@@ -402,7 +402,7 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
     if (!template) {
         throw new TranslatableError("errors.templates.notFound");
     }
-    if (![1, 2, 3, 6, 7].includes(template.type)) {
+    if (!models["template"].emailTemplateTypes.includes(template.type)) {
         return;
     }
 

@@ -29,6 +29,7 @@
 import Modal from "@/basic/Modal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
+import { otherTemplateTypes } from "@/assets/templateTypes";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
@@ -68,8 +69,10 @@ export default {
         .filter(t => t.userId === this.userId && !t.deleted);
     },
     publicTemplates() {
+      const isAdmin = this.$store.getters["auth/isAdmin"];
       return this.$store.getters["table/template/getAll"]
         .filter(t => t.public && t.userId !== this.userId && !t.deleted)
+        .filter(t => isAdmin || otherTemplateTypes.includes(t.type))
         .map(t => {
           const alreadyCopied = this.ownTemplates.some(
             own => own.sourceId === t.id

@@ -61,6 +61,7 @@
   import DashboardListPage from "@/basic/dashboard/ListPage.vue";
   import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
   import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+  import { emailTemplateTypes } from "@/assets/templateTypes";
   import { resolveApiMessage } from "@/assets/utils";
   /**
    * Templates dashboard component
@@ -113,7 +114,7 @@
               ...t,
               typeName: this.typeName(t.type),
               // Public email templates (types 1, 2, 3, 6, 7) cannot be deleted
-              canDelete: !(t.public && [1, 2, 3, 6, 7].includes(t.type)),
+              canDelete: !(t.public && emailTemplateTypes.includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,
