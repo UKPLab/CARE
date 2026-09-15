@@ -1,7 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
-const TranslatableError = require("../../utils/TranslatableError");
+const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 
 module.exports = (sequelize, DataTypes) => {
 	class Assignment extends MetaModel {
@@ -136,28 +136,6 @@ module.exports = (sequelize, DataTypes) => {
 			}
 			return filter;
 		}
-		/**
-		 * Refuse inverted or zero-length assignment windows. Either date may be null.
-		 *
-		 * @param {object} assignment - Sequelize assignment instance or plain row with start/end.
-		 * @returns {void}
-		 * @throws {TranslatableError} If both dates are set and start is not before end.
-		 */
-		static assertStartBeforeEnd(assignment) {
-			const start = assignment.start;
-			const end = assignment.end;
-			if (!start || !end) {
-				return;
-			}
-			const startMs = new Date(start).getTime();
-			const endMs = new Date(end).getTime();
-			if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
-				return;
-			}
-			if (startMs >= endMs) {
-				throw new TranslatableError("errors.assignment.startAfterEnd");
-			}
-		}
 
 		static associate(models) {
 
@@ -200,12 +178,12 @@ module.exports = (sequelize, DataTypes) => {
 			tableName: 'assignment',
 			hooks: {
 				beforeCreate: (assignment) => {
-					Assignment.assertStartBeforeEnd(assignment);
+					assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
 				},
 				beforeUpdate: (assignment) => {
 					// Close/disable/delete omit start/end; skip so existing inverted rows can still be closed.
 					if (assignment.changed("start") || assignment.changed("end")) {
-						Assignment.assertStartBeforeEnd(assignment);
+						assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
 					}
 				},
 			},

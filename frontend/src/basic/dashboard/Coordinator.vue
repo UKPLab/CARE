@@ -223,15 +223,6 @@ export default {
         return;
       }
 
-      if (this.table === "study" && this.isStartOnOrAfterEnd(this.data)) {
-        this.eventBus.emit("toast", {
-          title: this.$t("coordinator.errors.saveFailed"),
-          message: this.$t("errors.studies.startAfterEnd"),
-          variant: "danger",
-        });
-        return;
-      }
-
       const data = { ...this.data };
       this.$emit("submit", data);
 
@@ -261,26 +252,6 @@ export default {
         }
       );
       this.$refs.coordinatorModal.waiting = true;
-    },
-    /**
-     * True when both times are set and start is not before end.
-     * Either field empty is allowed.
-     *
-     * @param {object} data - Coordinator form payload.
-     * @returns {boolean}
-     */
-    isStartOnOrAfterEnd(data) {
-      const start = data.start;
-      const end = data.end;
-      if (!start || !end) {
-        return false;
-      }
-      const startMs = new Date(start).getTime();
-      const endMs = new Date(end).getTime();
-      if (Number.isNaN(startMs) || Number.isNaN(endMs)) {
-        return false;
-      }
-      return startMs >= endMs;
     },
     showSuccess() {
       this.$refs.coordinatorModal.waiting = false;
