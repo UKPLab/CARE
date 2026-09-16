@@ -44,6 +44,10 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    validationConfigurationIds: {
+      type: Array,
+      default: null,
+    },
   },
   emits: ["update:modelValue", "update:valid", "update:validationConfigurations"],
   data() {
@@ -59,6 +63,17 @@ export default {
       return this.$store.getters["table/submission/getAll"] || [];
     },
     groupedSubmissions() {
+      if (this.validationConfigurationIds?.length) {
+        return this.validationConfigurationIds
+            .filter((id) => id != null)
+            .map((validationConfigurationId) => ({
+              validationConfigurationId,
+              submissionEntries: [],
+              name: this.getValidationConfigurationName(validationConfigurationId),
+              fileTypeOptions: this.getFileTypeOptions(validationConfigurationId),
+            }));
+      }
+
       const rawData = this.selectedFiles[this.baseFileParameter];
 
       let submissionIds = [];

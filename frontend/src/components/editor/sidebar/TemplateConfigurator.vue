@@ -5,9 +5,18 @@
         <strong>{{ $t("templates.placeholders.warning") }}</strong>
         {{ $t("templates.placeholders.invalidPlaceholdersMessage", { templateType: templateTypeName }) }}
         <ul class="mb-0 mt-2">
-          <li v-for="ph in invalidPlaceholders" :key="ph">~{{ ph }}~</li>
+          <li v-for="ph in invalidPlaceholders" :key="ph">{{ ph }}</li>
         </ul>
         {{ $t("templates.placeholders.invalidPlaceholdersIgnored") }}
+      </div>
+
+      <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.duplicateBracketIds") }}
+        <ul class="mb-0 mt-2">
+          <li v-for="ph in duplicatePlaceholders" :key="ph">{{ ph }}</li>
+        </ul>
+        {{ $t("templates.placeholders.duplicateBracketIdsHelp") }}
       </div>
   
       <div class="card shadow mb-4 configurator">
@@ -63,6 +72,15 @@
   import FormHelp from "@/basic/form/Help.vue";
   import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
   import BasicButton from "@/basic/Button.vue";
+  import {
+    countPlaceholdersByKey,
+    formatDuplicatePlaceholderToken,
+    formatPlaceholderToken,
+    getDuplicatePlaceholderIndexes,
+    getNextPlaceholderIndex,
+    parsePlaceholderMatch,
+    PLACEHOLDER_TOKEN_REGEX,
+  } from "@/components/editor/template/placeholderTokens.js";
   /**
    * Template Configurator sidebar component
    *
@@ -96,9 +114,12 @@
           5: { placeholders: [] }, // Document - Study (no placeholders)
           6: { placeholders: [] }, // Email - Study Close
           7: { placeholders: [] }, // Email - Submission upload
+          8: { placeholders: [] }, // Prompt
         },
         placeholderCounts: {},
         invalidPlaceholders: [],
+        duplicatePlaceholders: [],
+        lastEditorContent: "",
       };
     },
     computed: {
@@ -118,6 +139,7 @@
           5: this.$t("templates.types.documentStudy"),
           6: this.$t("templates.types.emailStudyClose"),
           7: this.$t("templates.types.emailSubmissionUpload"),
+          8: this.$t("templates.types.prompt"),
         };
         return types[this.templateType] || this.$t("common.unknown");
       },
@@ -127,9 +149,12 @@
         }
         return this.placeholderConfigs[this.templateType].placeholders;
       },
-      allowedPlaceholderTexts() {
+      allowedPlaceholderKeys() {
         if (!this.availablePlaceholders) return [];
-        return this.availablePlaceholders.map(p => p.text);
+        return this.availablePlaceholders.map((p) => p.id);
+      },
+      placeholderCountOptions() {
+        return { bracketOnly: this.templateType === 8 };
       },
     },
     mounted() {
@@ -139,6 +164,7 @@
       // Listen for editor content updates
       this.editorContentHandler = (data) => {
         if (data.templateId === this.templateId) {
+          this.lastEditorContent = data.content || "";
           this.updatePlaceholderCounts(data.content);
           this.validatePlaceholders(data.content);
         }
@@ -148,7 +174,6 @@
       if (this.templateId && this.templateId > 0) {
         this.$socket.emit("templatePlaceholderGetAll", { templateId: this.templateId }, (result) => {
           if (result.success){
-            // Always update placeholders from backend (even if empty array for document types)
             const fetchedPlaceholders = (result.data || []).map(ph => ({
               id: ph.placeholderKey,
               text: `~${ph.placeholderKey}~`,
@@ -186,6 +211,7 @@
           3: "emailAssignment",
           6: "emailStudyClose",
           7: "emailSubmissionUpload",
+          8: "prompt",
         }[this.templateType];
         if (typeSlug && placeholder.id) {
           const helpKey = `templates.placeholders.help.${typeSlug}.${placeholder.id}`;
@@ -203,51 +229,53 @@
         this.placeholderCounts = counts;
       },
       updatePlaceholderCounts(editorContent) {
-        // Reset counts
         this.initializePlaceholderCounts();
-  
-        // Count placeholders in the content
-        if (editorContent && this.availablePlaceholders) {
-          this.availablePlaceholders.forEach(placeholder => {
-            const regex = new RegExp(this.escapeRegex(placeholder.text), 'g');
-            const matches = editorContent.match(regex);
-            if (matches) {
-              this.placeholderCounts[placeholder.id] = matches.length;
-            }
-          });
+
+        if (!editorContent || !this.availablePlaceholders) {
+          return;
         }
+
+        const countsByKey = countPlaceholdersByKey(editorContent, this.placeholderCountOptions);
+        this.availablePlaceholders.forEach((placeholder) => {
+          this.placeholderCounts[placeholder.id] = countsByKey[placeholder.id] || 0;
+        });
       },
       validatePlaceholders(editorContent) {
         if (!editorContent || !this.templateType) {
           this.invalidPlaceholders = [];
+          this.duplicatePlaceholders = [];
           return;
         }
-  
-        // Extract all placeholders from content using regex
-        const placeholderRegex = /~([^~]+)~/g;
-        const foundPlaceholders = [];
+
+        const allowedKeys = new Set(this.allowedPlaceholderKeys);
+        const invalid = [];
+        const regex = new RegExp(PLACEHOLDER_TOKEN_REGEX.source, "g");
         let match;
-        
-        while ((match = placeholderRegex.exec(editorContent)) !== null) {
-          foundPlaceholders.push(match[1]);
+
+        while ((match = regex.exec(editorContent)) !== null) {
+          const parsed = parsePlaceholderMatch(match);
+          if (!parsed.baseKey) {
+            continue;
+          }
+          if (this.templateType === 8 && parsed.index == null) {
+            invalid.push(`~${parsed.baseKey}~`);
+            continue;
+          }
+          if (!allowedKeys.has(parsed.baseKey)) {
+            invalid.push(match[0]);
+          }
         }
-  
-        // Find invalid placeholders (not in allowed list)
-        const invalid = foundPlaceholders.filter(ph => {
-          const placeholderText = `~${ph}~`;
-          return !this.allowedPlaceholderTexts.includes(placeholderText);
-        });
-  
-        // Remove duplicates
+
         this.invalidPlaceholders = [...new Set(invalid)];
-      },
-      escapeRegex(str) {
-        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        this.duplicatePlaceholders = getDuplicatePlaceholderIndexes(editorContent)
+          .filter((entry) => allowedKeys.has(entry.key))
+          .map((entry) => formatDuplicatePlaceholderToken(entry));
       },
       handlePlaceholderClick(placeholder) {
+        const nextIndex = getNextPlaceholderIndex(this.lastEditorContent || "", placeholder.id);
         this.eventBus.emit("editorInsertText", {
           templateId: this.templateId,
-          text: placeholder.text,
+          text: formatPlaceholderToken(placeholder.id, nextIndex),
         });
       },
       getPlaceholderIcon(placeholderType) {
@@ -271,6 +299,10 @@
   
   .list-group-item {
     padding: 0.825rem;
+  }
+
+  .list-group-item:last-child {
+    padding-bottom: 1.5rem;
   }
   
   .icon-container {

@@ -4,7 +4,7 @@ const TranslatableError = require("../../utils/TranslatableError");
 const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
 const emailTemplateTypes = Object.freeze([1, 2, 3, 6, 7]);
-const otherTemplateTypes = Object.freeze([4, 5]);
+const otherTemplateTypes = Object.freeze([4, 5, 8]);
 const allTemplateTypes = Object.freeze([...emailTemplateTypes, ...otherTemplateTypes]);
 
 module.exports = (sequelize, DataTypes) => {
@@ -75,6 +75,24 @@ module.exports = (sequelize, DataTypes) => {
             const orList = Array.isArray(baseFilter[Op.or]) ? [...baseFilter[Op.or]] : [baseFilter[Op.or]];
             orList.push({ id: { [Op.in]: sourceIds } });
             return { ...baseFilter, [Op.or]: orList };
+        }
+
+        /**
+         * Bump updatedAt without changing any column, so copies see "Update available"
+         * after their source content changes.
+         *
+         * Uses an instance save because neither Model.update() nor updateById() persists
+         * updatedAt on its own.
+         *
+         * @param {number} id
+         * @param {Object} [options]
+         * @returns {Promise<void>}
+         */
+        static async touch(id, options = {}) {
+            const instance = await this.findByPk(id, {transaction: options.transaction});
+            if (!instance) return;
+            instance.changed('updatedAt', true);
+            await instance.save({fields: ['updatedAt'], transaction: options.transaction});
         }
 
         /**
@@ -174,6 +192,10 @@ module.exports = (sequelize, DataTypes) => {
                     {
                         name: "templates.fields.type.options.documentStudy",
                         value: 5
+                    },
+                    {
+                        name: "templates.fields.type.options.prompt",
+                        value: 8
                     }
                 ],
             },

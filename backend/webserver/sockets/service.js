@@ -43,33 +43,43 @@ class ServiceSocket extends Socket {
 
     /**
      * Request a service (with default command)
-     * 
+     *
+     * The return value of the service's `request` method is forwarded to the
+     * socket.io ack callback (via Socket.createSocket) so services that
+     * follow the new ack-based pattern can respond directly instead of
+     * pushing `serviceRefresh` events.
+     *
      * @socketEvent serviceRequest
      * @param {Object} data The input data
      * @param {string} data.service The name of the service to disconnect
      * @param {Object} data.data Additional data to pass to the service
      * @param {Object} options Additional configuration parameters (currently unused).
-     * @returns {Promise<void>} A promise that resolves (with no value) once the service request attempt is complete.
+     * @returns {Promise<*>} The result returned by the service, if any.
      */
     async requestService(data, options) {
         if (this.server.services[data.service]) {
-            await this.server.services[data.service].request(this, data.data);
+            return await this.server.services[data.service].request(this, data.data);
         }
     }
 
     /**
      * Request a service but with a specific command
-     * 
+     *
+     * The return value of the service's `command` method is forwarded to the
+     * socket.io ack callback (via Socket.createSocket). Services using the
+     * legacy push flow can still return undefined without affecting clients
+     * that do not pass a callback.
+     *
      * @socketEvent serviceCommand
      * @param {Object} data The input data
      * @param {string} data.service The name of the service to disconnect
      * @param {Object} data.data Additional data to pass to the service
      * @param {Object} options Additional configuration parameters (currently unused).
-     * @returns {Promise<void>} A promise that resolves (with no value) once the service command attempt is complete.
+     * @returns {Promise<*>} The result returned by the service, if any.
      */
     async serviceCommand(data, options) {
         if (this.server.services[data.service]) {
-            await this.server.services[data.service].command(this, data.command, data.data);
+            return await this.server.services[data.service].command(this, data.command, data.data);
         }
     }
 

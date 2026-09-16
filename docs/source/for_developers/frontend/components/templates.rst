@@ -1,7 +1,7 @@
 Templates
 =========
 
-The **Templates** system provides email and document content templates that can be used for system emails, session and assignment notifications, study-closed emails, submission-upload emails, and pre-filled document content.
+The **Templates** system provides email, document, and prompt content templates that can be used for system emails, session and assignment notifications, study-closed emails, submission-upload emails, pre-filled document content, and AI hooks.
 Templates are edited in the same Quill-based Editor as documents. The backend fills placeholders when the template is used.
 
 Key features include:
@@ -18,7 +18,7 @@ Templates are listed and created from **Dashboard → Templates**. See the :doc:
 
 Location: ``frontend/src/components/dashboard/Templates.vue``
 
-When you open a template for editing, the Editor loads with ``templateId`` provided. It renders the :doc:`editor` (TemplateEditor) for the main content. For email types (1, 2, 3, 6, 7) it also shows a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~``).
+When you open a template for editing, the Editor loads with ``templateId`` provided. It renders the :doc:`editor` (TemplateEditor) for the main content. For email types (1, 2, 3, 6, 7) and prompt templates (type 8) it also shows a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts).
 
 Location: ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
 
@@ -32,7 +32,7 @@ Backend storage:
 Location: ``backend/utils/helper/templateResolver.js``
 
 Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).
-Only keys stored in the ``placeholder`` table for that type are substituted at runtime.
+Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only those keys for ``context.templateType``.
 
 Implementing the Template Editor
 ---------------------------------
@@ -119,6 +119,39 @@ At resolution time, only the placeholder keys listed in the following table are 
        ``submissionId``, ``timestamp``
      - Submission upload emails: settings ``email.template.submissionUpload``,
        ``email.template.submissionUploadConfirmation`` in ``document.js``.
+   * - Prompt
+     - 8
+     - ``pdfText``, ``editorText``, ``assessmentResult``,
+       ``inlineComments``, ``nlpAssessmentSuggestion``,
+       ``previousAssessmentResult``, ``assessmentConfiguration``,
+       ``submissionFiles``, ``studyContext``
+     - Study/NLP prompt templates: ``templateResolve`` in
+       ``backend/webserver/sockets/template.js`` (see below).
+
+Prompt templates (type 8)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _prompt-templates-ref:
+
+Prompt templates use the same Placeholders sidebar and ``placeholder`` table as email templates.
+
+Location: ``backend/webserver/sockets/template.js`` (``templateResolve``)
+
+At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes ``placeholderExample`` from the
+``placeholder`` row (sample text only, not live data). Every current placeholder has an example.
+At runtime, ``buildPromptPlaceholderValues`` in ``backend/utils/helper/templateResolver.js`` loads real values from
+``context`` and the database. Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
+if they are missing, those tokens resolve to an empty string.
+
+``~nlpAssessmentSuggestion~`` is the NLP draft assessment for the current step (same ``document_data`` as the
+Assessment sidebar pre-fill), not the saved rubric in ``assessment_result`` (use ``~assessmentResult~`` for that).
+Resolution is implemented in ``backend/utils/studyNlpDocumentData.js``.
+
+``~editorText~`` is plain text from the HTML or modal document (``resolveEditorText`` in
+``backend/utils/helper/templateResolver.js``): base ``.delta`` plus session draft edits, including earlier steps in the same
+session. Pass ``context.editorText`` on ``templateResolve`` to override (capped at 15k characters). Call
+``templateResolve`` after step loading (``loadingReady``) or on user action—not in the same pass as NLP
+``insertIntoEditor`` unless ``context.editorText`` is set explicitly.
 
 Adding a New Template Type or Placeholder
 -----------------------------------------
@@ -130,15 +163,28 @@ Adding a New Template Type or Placeholder
    fails on editor save, publish, or Settings assignment until it is added. Required
    keys are rows in the ``placeholder`` table with ``required: true``.
 
+Email placeholders (types 1, 2, 3, 6, 7) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
+Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` (often from ``document_data`` or
+``study_step``). For type 8, new keys must also be listed in the ``promptKeys`` array in ``buildReplacementMap`` so
+that function is invoked.
+
 Adding a placeholder
 ~~~~~~~~~~~~~~~~~~~~
 
 For an existing type (example: ``studyEndDate`` on type 6):
 
-- Add a ``placeholder`` row in a migration (``type``, ``placeholderKey``, label, required, etc.).
-- Fill ``~studyEndDate~`` in ``buildReplacementMap`` in
+- Add a ``placeholder`` row in a migration (``type``, ``placeholderKey``, label, required, and optionally ``placeholderExample`` for editor preview).
+- **Email:** fill ``~studyEndDate~`` in ``buildReplacementMap`` in
   ``backend/utils/helper/templateResolver.js``. The call site (e.g.
   ``sendStudyClosedEmails`` in ``study.js``) must pass the value in the resolver context.
+- **Prompt (e.g. ``myNewField`` for type 8):** add ``"myNewField"`` to ``promptKeys`` in ``buildReplacementMap``,
+  then in ``buildPromptPlaceholderValues``, when ``allow("myNewField")``::
+
+      promptValues["~myNewField~"] = context.myNewField || "";
+
+  For database-backed values, follow existing placeholders such as ``assessmentResult`` or
+  ``nlpAssessmentSuggestion``. Ensure ``templateResolve`` passes the needed ``context`` fields (often
+  ``documentId``, ``studySessionId``, ``studyStepId``).
 - Optional sidebar help: ``longDescriptions`` in
   ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``.
 
@@ -150,6 +196,7 @@ Adding a template type
 - Add the option to ``fields`` on ``backend/db/models/template.js``.
 - Put the type in ``emailTemplateTypes`` or ``otherTemplateTypes`` in
   ``backend/db/models/template.js`` and ``frontend/src/assets/templateTypes.js``.
+  Prompt templates (type 8) belong in ``otherTemplateTypes`` so non-admins can create them.
 - Add an empty ``placeholderConfigs`` entry in ``TemplateConfigurator.vue``
   so the sidebar can load keys for that type.
 - Add the label in the ``typeName`` maps in ``Templates.vue``,
