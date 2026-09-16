@@ -200,6 +200,7 @@
         "studyEnded": "This study has ended",
         "studyNotFound": "Study not found",
         "studyNotStarted": "This study has not started yet",
+        "startAfterEnd": "Start time must be before end time.",
         "sessionLimitExceeded": "Cannot create more than {limit} sessions for this study.",
         "sessionLimitPerUserExceeded": "Cannot create more than {limit} sessions for this user.",
         "missingContextOrStepDocuments": "Missing context or stepDocuments in options. Cancelling transaction.",
@@ -417,7 +418,8 @@
         "invalidMode": "Invalid mode provided for assignment creation.",
         "firstStepNotSubmission": "First step selected does not map to a submission.",
         "latestSubmissionNotFound": "The latest version of the chosen submission could not be found.",
-        "selectedNotResolved": "The selected assignment {assignmentId} could not be resolved."
+        "selectedNotResolved": "The selected assignment {assignmentId} could not be resolved.",
+        "startAfterEnd": "Start time must be before end time."
     },
     "ai": {
         "requestAlreadyPending": "You already have a pending AI request in this session.",
