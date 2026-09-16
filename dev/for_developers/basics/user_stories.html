@@ -153,6 +153,12 @@
 <li class="toctree-l4"><a class="reference internal" href="#anonymise-author-in-zip-export">Anonymise Author in ZIP Export</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#ai-and-automation">AI and Automation</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#manage-ai-credentials-and-models">Manage AI Credentials and Models</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#configure-and-monitor-ai-use">Configure and Monitor AI Use</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#automate-events-with-triggers">Automate Events with Triggers</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#admin-features">Admin Features</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#customise-the-platform-logo">Customise the Platform Logo</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#admin-settings">Admin Settings</a></li>
@@ -204,12 +210,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email, Document, and Prompt Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -1865,6 +1873,75 @@ files.</p>
 anonymise author information.</p></li>
 <li><p>When enabled, <code class="docutils literal notranslate"><span class="pre">\author{}</span></code> fields in <code class="docutils literal notranslate"><span class="pre">.tex</span></code> files within the ZIP are replaced
 with anonymised names.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="ai-and-automation">
+<h2>AI and Automation<a class="headerlink" href="#ai-and-automation" title="Link to this heading"></a></h2>
+<hr class="docutils" />
+<section id="manage-ai-credentials-and-models">
+<h3>Manage AI Credentials and Models<a class="headerlink" href="#manage-ai-credentials-and-models" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As a <strong>Participant</strong>, I want to configure AI provider credentials and models, so that
+I can use approved models in CARE.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p>I can create, edit, disable, and delete my credentials and models.</p></li>
+<li><p>I can test a model before using it and share a model with users or roles.</p></li>
+<li><p>Only the owner can change a credential, model, or its sharing.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="configure-and-monitor-ai-use">
+<h3>Configure and Monitor AI Use<a class="headerlink" href="#configure-and-monitor-ai-use" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As a <strong>Participant</strong>, I want to configure AI hooks and spending limits and inspect AI
+usage, so that model calls are controlled and auditable.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p>I can create a hook from a prompt template, choose ordered models, and set its output
+type.</p></li>
+<li><p>I can manage cost limits for models, hooks, studies, and study steps.</p></li>
+<li><p>The AI log shows request status, token usage, and cost.</p></li>
+<li><p>A hook cannot be saved without a prompt template and at least one model.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="automate-events-with-triggers">
+<h3>Automate Events with Triggers<a class="headerlink" href="#automate-events-with-triggers" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As an <strong>Admin</strong>, I want to run configured actions when CARE events occur, so that
+recurring work can be automated.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p>I can create, edit, enable, disable, and delete a trigger by selecting an event and
+action.</p></li>
+<li><p>Trigger Logs shows each run, its status, attempts, and any error message.</p></li>
+<li><p>I can cancel pending or running jobs, retry failed or cancelled jobs, and re-run
+completed jobs.</p></li>
+<li><p>I can set how often the trigger queue worker polls for leftover jobs in Settings.
+The default is 5 minutes. New jobs still start when the event fires. A server
+restart is required after changing this setting.</p></li>
+<li><p>Non-admin users cannot manage triggers or trigger logs.</p></li>
 </ul>
 </dd>
 </dl>

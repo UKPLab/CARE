@@ -83,6 +83,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#example-lifecycle">Example Lifecycle</a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#ai-service-and-trigger-events">AI Service and Trigger Events</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#socket-functions">Socket functions</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#annotation-socket-functions-annotation-js">Annotation Socket Functions (<cite>annotation.js</cite>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#app-socket-functions-app-js">App Socket Functions (<cite>app.js</cite>)</a></li>
@@ -92,6 +93,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#document-socket-functions-document-js">Document Socket Functions (<cite>document.js</cite>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#logger-socket-functions-log-js">Logger Socket Functions (<cite>log.js</cite>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#service-socket-functions-service-js">Service Socket Functions (<cite>service.js</cite>)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#trigger-socket-functions-trigger-js">Trigger Socket Functions (<cite>trigger.js</cite>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#setting-socket-functions-setting-js">Setting Socket Functions (<cite>setting.js</cite>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#statistic-socket-functions-statistic-js">Statistic Socket Functions (<cite>statistic.js</cite>)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#study-session-socket-functions-study-session-js">Study Session Socket Functions (<cite>study_session.js</cite>)</a></li>
@@ -115,12 +117,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email, Document, and Prompt Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -662,6 +666,30 @@ error so the admin is notified and the temp file is left for manual recovery.</p
 </li>
 </ol>
 </section>
+</section>
+<section id="ai-service-and-trigger-events">
+<h2>AI Service and Trigger Events<a class="headerlink" href="#ai-service-and-trigger-events" title="Link to this heading"></a></h2>
+<p>AI requests use the existing <code class="docutils literal notranslate"><span class="pre">serviceCommand</span></code> event with <code class="docutils literal notranslate"><span class="pre">service:</span> <span class="pre">&quot;AIService&quot;</span></code>:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">this</span><span class="p">.</span><span class="nx">$socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;serviceCommand&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">service</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;AIService&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">command</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;chatCompletion&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">model</span><span class="p">,</span><span class="w"> </span><span class="nx">messages</span><span class="p">},</span>
+<span class="p">},</span><span class="w"> </span><span class="nx">callback</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Supported commands are <code class="docutils literal notranslate"><span class="pre">chatCompletion</span></code>, <code class="docutils literal notranslate"><span class="pre">runHook</span></code>, <code class="docutils literal notranslate"><span class="pre">abortChatCompletion</span></code>,
+<code class="docutils literal notranslate"><span class="pre">getStatus</span></code>, <code class="docutils literal notranslate"><span class="pre">testModel</span></code>, <code class="docutils literal notranslate"><span class="pre">getProviders</span></code>, and <code class="docutils literal notranslate"><span class="pre">getValidModels</span></code>. Frontend
+components should use the <code class="docutils literal notranslate"><span class="pre">this.$ai</span></code> helpers where available.</p>
+<p>The admin-only trigger socket provides:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">triggerCreate</span></code>: create a trigger from an event, action, and configuration.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">triggerUpdate</span></code> and <code class="docutils literal notranslate"><span class="pre">triggerDelete</span></code>: update or soft-delete a trigger by <code class="docutils literal notranslate"><span class="pre">id</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">triggerQueueGetDetails</span></code>: return details for a queue item by <code class="docutils literal notranslate"><span class="pre">id</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">triggerQueueRetry</span></code>: retry a failed or cancelled queue item.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">triggerQueueRerun</span></code>: create a new run from a completed queue item.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">triggerQueueCancel</span></code>: cancel a pending or running queue item.</p></li>
+</ul>
+<p>All events use the standard <a class="reference internal" href="#createsocket"><span class="std std-ref">createSocket: How it works</span></a> callback response.</p>
 </section>
 <section id="socket-functions">
 <h2>Socket functions<a class="headerlink" href="#socket-functions" title="Link to this heading"></a></h2>
@@ -2248,6 +2276,10 @@ so the admin is notified (temp file is left for manual recovery).</p>
 <span class="sig-prename descclassname"><span class="n"><span class="pre">ServiceSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">requestService</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ServiceSocket.requestService" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>serviceRequest</cite></p>
 <p>Request a service (with default command)</p>
+<p>The return value of the service’s <cite>request</cite> method is forwarded to the
+socket.io ack callback (via Socket.createSocket) so services that
+follow the new ack-based pattern can respond directly instead of
+pushing <cite>serviceRefresh</cite> events.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2258,7 +2290,7 @@ so the admin is notified (temp file is left for manual recovery).</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong> – A promise that resolves (with no value) once the service request attempt is complete.</p>
+<dd class="field-even"><p><strong>Promise.&lt;*&gt;</strong> – The result returned by the service, if any.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2268,6 +2300,10 @@ so the admin is notified (temp file is left for manual recovery).</p>
 <span class="sig-prename descclassname"><span class="n"><span class="pre">ServiceSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">serviceCommand</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#ServiceSocket.serviceCommand" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>serviceCommand</cite></p>
 <p>Request a service but with a specific command</p>
+<p>The return value of the service’s <cite>command</cite> method is forwarded to the
+socket.io ack callback (via Socket.createSocket). Services using the
+legacy push flow can still return undefined without affecting clients
+that do not pass a callback.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -2278,7 +2314,141 @@ so the admin is notified (temp file is left for manual recovery).</p>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong> – A promise that resolves (with no value) once the service command attempt is complete.</p>
+<dd class="field-even"><p><strong>Promise.&lt;*&gt;</strong> – The result returned by the service, if any.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="trigger-socket-functions-trigger-js">
+<h3>Trigger Socket Functions (<cite>trigger.js</cite>)<a class="headerlink" href="#trigger-socket-functions-trigger-js" title="Link to this heading"></a></h3>
+<dl class="js class">
+<dt class="sig sig-object js" id="TriggerSocket">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="n"><span class="pre">TriggerSocket</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket" title="Link to this definition"></a></dt>
+<dd><p>Handle trigger rules through websocket.</p>
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.cancelQueueItem">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">cancelQueueItem</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.cancelQueueItem" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerQueueCancel</cite></p>
+<p>Cancel a pending or running trigger execution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – Must contain <cite>id</cite> (queue item id)</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Holds the managed transaction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.createTrigger">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">createTrigger</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.createTrigger" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerCreate</cite></p>
+<p>Create a new trigger rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The trigger payload (event, action, settings, configuration)</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Holds the managed transaction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong> – The created trigger</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.deleteTrigger">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">deleteTrigger</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.deleteTrigger" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerDelete</cite></p>
+<p>Soft-delete a trigger rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – Must contain <cite>id</cite>.</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Holds the managed transaction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.getQueueDetails">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getQueueDetails</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.getQueueDetails" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerQueueGetDetails</cite></p>
+<p>Load a queue log entry with its trigger row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – Must contain <cite>id</cite> (queue item id)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.rerunQueueItem">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">rerunQueueItem</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.rerunQueueItem" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerQueueRerun</cite></p>
+<p>Create a new execution from a completed trigger log.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – Must contain <cite>id</cite> (queue item id)</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Holds the managed transaction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.retryQueueItem">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">retryQueueItem</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.retryQueueItem" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerQueueRetry</cite></p>
+<p>Re-queue a failed or cancelled trigger execution for another run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – Must contain <cite>id</cite> (queue item id)</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Holds the managed transaction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="TriggerSocket.updateTrigger">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">TriggerSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">updateTrigger</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#TriggerSocket.updateTrigger" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>triggerUpdate</cite></p>
+<p>Update an existing trigger rule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – Must contain <cite>id</cite>; any other trigger fields are updated.</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Holds the managed transaction</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong> – The updated trigger</p>
 </dd>
 </dl>
 </dd></dl>

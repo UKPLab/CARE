@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Email and Document Templates &mdash; CARE  documentation</title>
+  <title>Email, Document, and Prompt Templates &mdash; CARE  documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
@@ -64,12 +64,14 @@
 <li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Email and Document Templates</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Email, Document, and Prompt Templates</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#when-to-use-which-template-type">When to Use Which Template Type</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#flow-to-create-and-use-a-template">Flow to Create and Use a Template</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkboxes-so-emails-actually-get-sent">Checkboxes So Emails Actually Get Sent</a></li>
@@ -101,7 +103,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Email and Document Templates</li>
+      <li class="breadcrumb-item active">Email, Document, and Prompt Templates</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/for_researchers/templates.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -111,9 +113,9 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="email-and-document-templates">
-<h1>Email and Document Templates<a class="headerlink" href="#email-and-document-templates" title="Link to this heading"></a></h1>
-<p>This section describes <strong>email and document content templates</strong> in CARE.
+  <section id="email-document-and-prompt-templates">
+<h1>Email, Document, and Prompt Templates<a class="headerlink" href="#email-document-and-prompt-templates" title="Link to this heading"></a></h1>
+<p>This section describes <strong>email, document, and prompt content templates</strong> in CARE.
 These are different from <strong>study templates</strong> (saved study configurations): content templates define the text of emails (e.g. password reset, session links, study closed) and the initial body of documents created from a template.</p>
 <p>You manage content templates from <strong>Dashboard → Templates</strong>.
 They are used for:</p>
@@ -123,6 +125,7 @@ They are used for:</p>
 <li><p>Assignment emails (when a reviewer is assigned to a task)</p></li>
 <li><p>Study-closed emails (when a study is closed and participants with open sessions are notified)</p></li>
 <li><p>Pre-filled document content when creating a new document from a template</p></li>
+<li><p>AI prompts</p></li>
 </ul>
 <section id="when-to-use-which-template-type">
 <h2>When to Use Which Template Type<a class="headerlink" href="#when-to-use-which-template-type" title="Link to this heading"></a></h2>
@@ -143,13 +146,17 @@ Placeholders that are replaced: <code class="docutils literal notranslate"><span
 <p><strong>Document - General (type 4)</strong> and <strong>Document - Study (type 5)</strong>
 Used when creating a new document and pre-filling its content from a template. No placeholders are replaced; use these for static boilerplate.
 Type 4 is for general documents; type 5 is for documents used in studies.</p>
+<p id="prompt-templates-user"><strong>Prompt (type 8)</strong>
+Used by <a class="reference internal" href="ai_features.html"><span class="doc">AI hooks</span></a> to prepare instructions and study or document context
+for a model. Insert the available placeholders from the <strong>Placeholders</strong> sidebar; CARE
+replaces them when the hook runs.</p>
 </section>
 <section id="flow-to-create-and-use-a-template">
 <h2>Flow to Create and Use a Template<a class="headerlink" href="#flow-to-create-and-use-a-template" title="Link to this heading"></a></h2>
 <ol class="arabic simple">
 <li><p><strong>Create:</strong> In the Dashboard, open <strong>Templates</strong> and click <strong>Add</strong>. Choose the <strong>type</strong> and enter a name (and description).</p></li>
-<li><p><strong>Edit:</strong> Open the template. Write the body; for email types, use the <strong>Placeholders</strong> sidebar to insert allowed placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) where they should be replaced.</p></li>
-<li><p><strong>Assign:</strong> In <strong>Dashboard → Settings</strong>, open the section that contains the <strong>email template</strong> settings. You will see one setting per email use (e.g. password reset, session start, session finish, assignment, study closed). Each is a <strong>dropdown</strong>: choose a template from the list, or leave <strong>None (use default email)</strong> to use the built-in text. For <strong>document templates</strong> (types 4 and 5), you do not assign them in Settings; choose a template when <strong>creating a document</strong> (e.g. Dashboard → Documents → Create).</p></li>
+<li><p><strong>Edit:</strong> Open the template. Write the body; for email and prompt types, use the <strong>Placeholders</strong> sidebar to insert allowed placeholders where they should be replaced.</p></li>
+<li><p><strong>Assign:</strong> Assign email templates in <strong>Dashboard → Settings</strong>. Choose document templates when creating a document. Select prompt templates when creating an AI hook.</p></li>
 <li><p><strong>Publish (optional):</strong> Publishing makes the template visible to other users. Once published, it cannot be unpublished or deleted (see below).</p></li>
 </ol>
 <p>If you leave a template setting at <strong>None (use default email)</strong> or the system cannot load the template, CARE uses a <strong>default (fallback) email</strong> for that feature, so the action (e.g. sending the email) still completes with built-in text. To use your own text, assign a template and ensure the relevant checkbox below is enabled.</p>
@@ -165,6 +172,50 @@ Type 4 is for general documents; type 5 is for documents used in studies.</p>
 </section>
 <section id="where-templates-are-used">
 <h2>Where Templates Are Used<a class="headerlink" href="#where-templates-are-used" title="Link to this heading"></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 25.0%" />
+<col style="width: 25.0%" />
+<col style="width: 50.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Template type</p></th>
+<th class="head"><p>Where it is used</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Email - General (type 1)</p></td>
+<td><p>Auth/system emails</p></td>
+<td><p>Password reset, verification, and registration; configured through
+<code class="docutils literal notranslate"><span class="pre">email.template.*</span></code> settings.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Email - Study Session (type 2)</p></td>
+<td><p>Session start/finish emails</p></td>
+<td><p>Requires <strong>Enable Email Notifications</strong> on the study.</p></td>
+</tr>
+<tr class="row-even"><td><p>Email - Assignment (type 3)</p></td>
+<td><p>Assignment emails</p></td>
+<td><p>Requires the notification option in the assignment modal.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Document - General (type 4)</p></td>
+<td><p>Document creation</p></td>
+<td><p>Pre-fills a new document.</p></td>
+</tr>
+<tr class="row-even"><td><p>Document - Study (type 5)</p></td>
+<td><p>Study documents</p></td>
+<td><p>Pre-fills documents used in studies.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Email - Study Close (type 6)</p></td>
+<td><p>Study-closed emails</p></td>
+<td><p>Requires <strong>Enable Study Close Email Notifications</strong> on the study.</p></td>
+</tr>
+<tr class="row-even"><td><p>Prompt (type 8)</p></td>
+<td><p>AI hooks</p></td>
+<td><p>Supplies instructions and placeholders to configured models.</p></td>
+</tr>
+</tbody>
+</table>
 </section>
 <section id="publishing-and-deletion">
 <h2>Publishing and Deletion<a class="headerlink" href="#publishing-and-deletion" title="Link to this heading"></a></h2>

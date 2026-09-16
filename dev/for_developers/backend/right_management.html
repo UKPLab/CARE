@@ -87,12 +87,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../for_researchers/templates.html">Email, Document, and Prompt Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -270,6 +272,30 @@ Admins can do everything, so they are not listed separately in each row.</p>
 <tr class="row-odd"><td><p>View My Sessions dashboard</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.my_sessions.view</span></code></p></td>
 <td><p>guest, user</p></td>
+</tr>
+<tr class="row-even"><td><p>View AI Log dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.ai_log.view</span></code></p></td>
+<td><p>user</p></td>
+</tr>
+<tr class="row-odd"><td><p>View AI Models and Credentials dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.ai_models.view</span></code></p></td>
+<td><p>user</p></td>
+</tr>
+<tr class="row-even"><td><p>View AI Hooks dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.ai_hooks.view</span></code></p></td>
+<td><p>user</p></td>
+</tr>
+<tr class="row-odd"><td><p>View AI Budget dashboard</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.ai_budget.view</span></code></p></td>
+<td><p>user</p></td>
+</tr>
+<tr class="row-even"><td><p>Manage Triggers</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.triggers.view</span></code></p></td>
+<td><p>None (admin only)</p></td>
+</tr>
+<tr class="row-odd"><td><p>View Trigger Logs</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.trigger_logs.view</span></code></p></td>
+<td><p>None (admin only)</p></td>
 </tr>
 <tr class="row-even"><td><p>View Studies</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.studies.view</span></code></p></td>

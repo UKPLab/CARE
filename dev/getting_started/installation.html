@@ -49,6 +49,7 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#build">Build</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#litellm-rpc">LiteLLM RPC</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#install-the-mailserver">Install the mailserver</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#updating-the-instance-and-backing-up-the-database">Updating the Instance and Backing Up the Database</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rebuilding-only-the-moodle-rpc-container">Rebuilding only the Moodle RPC container</a></li>
@@ -77,12 +78,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_researchers/templates.html">Email, Document, and Prompt Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -160,6 +163,18 @@ To build the containers, run the following command:</p>
 <p class="admonition-title">Note</p>
 <p>The credentials for the admin user can be also found in the .env file!</p>
 </div>
+</section>
+<section id="litellm-rpc">
+<h2>LiteLLM RPC<a class="headerlink" href="#litellm-rpc" title="Link to this heading"></a></h2>
+<p>AI models and hooks use the <code class="docutils literal notranslate"><span class="pre">rpc_litellm</span></code> service included in
+<code class="docutils literal notranslate"><span class="pre">docker-compose.yml</span></code>. Configure these variables in the selected environment file:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>RPC_LITELLM_HOST=rpc_litellm
+RPC_LITELLM_PORT=8083
+</pre></div>
+</div>
+<p>The host must be reachable from the backend container. Provider API credentials are
+entered in the <strong>AI Models</strong> dashboard and must not be committed to an environment file.
+See <a class="reference internal" href="../for_researchers/ai_features.html"><span class="doc">Using AI Features</span></a> for dashboard setup.</p>
 </section>
 <section id="install-the-mailserver">
 <h2>Install the mailserver<a class="headerlink" href="#install-the-mailserver" title="Link to this heading"></a></h2>

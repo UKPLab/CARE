@@ -90,12 +90,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/templates.html">Email, Document, and Prompt Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -132,7 +134,7 @@
              
   <section id="templates">
 <h1>Templates<a class="headerlink" href="#templates" title="Link to this heading"></a></h1>
-<p>The <strong>Templates</strong> system provides email and document content templates that can be used for system emails, session and assignment notifications, study-closed emails, submission-upload emails, and pre-filled document content.
+<p>The <strong>Templates</strong> system provides email, document, and prompt content templates that can be used for system emails, session and assignment notifications, study-closed emails, submission-upload emails, pre-filled document content, and AI hooks.
 Templates are edited in the same Quill-based Editor as documents. The backend fills placeholders when the template is used.</p>
 <p>Key features include:</p>
 <blockquote>
@@ -147,7 +149,7 @@ Templates are edited in the same Quill-based Editor as documents. The backend fi
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
 <p>Templates are listed and created from <strong>Dashboard → Templates</strong>. See the <a class="reference internal" href="dashboard.html"><span class="doc">dashboard</span></a> documentation for navigation details.</p>
 <p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/dashboard/Templates.vue</span></code></p>
-<p>When you open a template for editing, the Editor loads with <code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided. It renders the <a class="reference internal" href="editor.html"><span class="doc">Quill Editor</span></a> (TemplateEditor) for the main content. For email types (1, 2, 3, 6, 7) it also shows a <strong>Placeholders</strong> sidebar so you can insert allowed placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>).</p>
+<p>When you open a template for editing, the Editor loads with <code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided. It renders the <a class="reference internal" href="editor.html"><span class="doc">Quill Editor</span></a> (TemplateEditor) for the main content. For email types (1, 2, 3, 6, 7) and prompt templates (type 8) it also shows a <strong>Placeholders</strong> sidebar so you can insert allowed placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code> for emails, or <code class="docutils literal notranslate"><span class="pre">~nlpAssessmentSuggestion~</span></code>, <code class="docutils literal notranslate"><span class="pre">~assessmentResult~</span></code> for prompts).</p>
 <p>Location: <code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/sidebar/TemplateConfigurator.vue</span></code></p>
 <p>Backend storage:</p>
 <ul class="simple">
@@ -158,7 +160,7 @@ Templates are edited in the same Quill-based Editor as documents. The backend fi
 </ul>
 <p>Location: <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code></p>
 <p>Placeholder resolution is implemented there: <code class="docutils literal notranslate"><span class="pre">resolveTemplate</span></code> (returns HTML for emails) and <code class="docutils literal notranslate"><span class="pre">resolveTemplateToDelta</span></code> (returns Delta for document creation).
-Only keys stored in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table for that type are substituted at runtime.</p>
+Allowed placeholders per template type come from the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> database table; <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> / <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> substitute only those keys for <code class="docutils literal notranslate"><span class="pre">context.templateType</span></code>.</p>
 </section>
 <section id="implementing-the-template-editor">
 <h2>Implementing the Template Editor<a class="headerlink" href="#implementing-the-template-editor" title="Link to this heading"></a></h2>
@@ -249,8 +251,35 @@ TemplateEditor and TemplateConfigurator are used inside this Editor when editing
 <td><p>Submission upload emails: settings <code class="docutils literal notranslate"><span class="pre">email.template.submissionUpload</span></code>,
 <code class="docutils literal notranslate"><span class="pre">email.template.submissionUploadConfirmation</span></code> in <code class="docutils literal notranslate"><span class="pre">document.js</span></code>.</p></td>
 </tr>
+<tr class="row-odd"><td><p>Prompt</p></td>
+<td><p>8</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pdfText</span></code>, <code class="docutils literal notranslate"><span class="pre">editorText</span></code>, <code class="docutils literal notranslate"><span class="pre">assessmentResult</span></code>,
+<code class="docutils literal notranslate"><span class="pre">inlineComments</span></code>, <code class="docutils literal notranslate"><span class="pre">nlpAssessmentSuggestion</span></code>,
+<code class="docutils literal notranslate"><span class="pre">previousAssessmentResult</span></code>, <code class="docutils literal notranslate"><span class="pre">assessmentConfiguration</span></code>,
+<code class="docutils literal notranslate"><span class="pre">submissionFiles</span></code>, <code class="docutils literal notranslate"><span class="pre">studyContext</span></code></p></td>
+<td><p>Study/NLP prompt templates: <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> in
+<code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> (see below).</p></td>
+</tr>
 </tbody>
 </table>
+</section>
+<section id="prompt-templates-type-8">
+<h3>Prompt templates (type 8)<a class="headerlink" href="#prompt-templates-type-8" title="Link to this heading"></a></h3>
+<p id="prompt-templates-ref">Prompt templates use the same Placeholders sidebar and <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table as email templates.</p>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> (<code class="docutils literal notranslate"><span class="pre">templateResolve</span></code>)</p>
+<p>At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes <code class="docutils literal notranslate"><span class="pre">placeholderExample</span></code> from the
+<code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row (sample text only, not live data). Every current placeholder has an example.
+At runtime, <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code> loads real values from
+<code class="docutils literal notranslate"><span class="pre">context</span></code> and the database. Many placeholders need <code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>, and <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>;
+if they are missing, those tokens resolve to an empty string.</p>
+<p><code class="docutils literal notranslate"><span class="pre">~nlpAssessmentSuggestion~</span></code> is the NLP draft assessment for the current step (same <code class="docutils literal notranslate"><span class="pre">document_data</span></code> as the
+Assessment sidebar pre-fill), not the saved rubric in <code class="docutils literal notranslate"><span class="pre">assessment_result</span></code> (use <code class="docutils literal notranslate"><span class="pre">~assessmentResult~</span></code> for that).
+Resolution is implemented in <code class="docutils literal notranslate"><span class="pre">backend/utils/studyNlpDocumentData.js</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">~editorText~</span></code> is plain text from the HTML or modal document (<code class="docutils literal notranslate"><span class="pre">resolveEditorText</span></code> in
+<code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code>): base <code class="docutils literal notranslate"><span class="pre">.delta</span></code> plus session draft edits, including earlier steps in the same
+session. Pass <code class="docutils literal notranslate"><span class="pre">context.editorText</span></code> on <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> to override (capped at 15k characters). Call
+<code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> after step loading (<code class="docutils literal notranslate"><span class="pre">loadingReady</span></code>) or on user action—not in the same pass as NLP
+<code class="docutils literal notranslate"><span class="pre">insertIntoEditor</span></code> unless <code class="docutils literal notranslate"><span class="pre">context.editorText</span></code> is set explicitly.</p>
 </section>
 </section>
 <section id="adding-a-new-template-type-or-placeholder">
@@ -262,14 +291,27 @@ If a required placeholder is missing from stable content in any language, valida
 fails on editor save, publish, or Settings assignment until it is added. Required
 keys are rows in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table with <code class="docutils literal notranslate"><span class="pre">required:</span> <span class="pre">true</span></code>.</p>
 </div>
+<p>Email placeholders (types 1, 2, 3, 6, 7) are resolved in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> from values on the resolver <code class="docutils literal notranslate"><span class="pre">context</span></code>.
+Prompt placeholders (type 8) are resolved in <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> (often from <code class="docutils literal notranslate"><span class="pre">document_data</span></code> or
+<code class="docutils literal notranslate"><span class="pre">study_step</span></code>). For type 8, new keys must also be listed in the <code class="docutils literal notranslate"><span class="pre">promptKeys</span></code> array in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> so
+that function is invoked.</p>
 <section id="adding-a-placeholder">
 <h3>Adding a placeholder<a class="headerlink" href="#adding-a-placeholder" title="Link to this heading"></a></h3>
 <p>For an existing type (example: <code class="docutils literal notranslate"><span class="pre">studyEndDate</span></code> on type 6):</p>
-<ul class="simple">
-<li><p>Add a <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row in a migration (<code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">placeholderKey</span></code>, label, required, etc.).</p></li>
-<li><p>Fill <code class="docutils literal notranslate"><span class="pre">~studyEndDate~</span></code> in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> in
+<ul>
+<li><p>Add a <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row in a migration (<code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">placeholderKey</span></code>, label, required, and optionally <code class="docutils literal notranslate"><span class="pre">placeholderExample</span></code> for editor preview).</p></li>
+<li><p><strong>Email:</strong> fill <code class="docutils literal notranslate"><span class="pre">~studyEndDate~</span></code> in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> in
 <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code>. The call site (e.g.
 <code class="docutils literal notranslate"><span class="pre">sendStudyClosedEmails</span></code> in <code class="docutils literal notranslate"><span class="pre">study.js</span></code>) must pass the value in the resolver context.</p></li>
+<li><p><strong>Prompt (e.g. ``myNewField`` for type 8):</strong> add <code class="docutils literal notranslate"><span class="pre">&quot;myNewField&quot;</span></code> to <code class="docutils literal notranslate"><span class="pre">promptKeys</span></code> in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code>,
+then in <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code>, when <code class="docutils literal notranslate"><span class="pre">allow(&quot;myNewField&quot;)</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">promptValues</span><span class="p">[</span><span class="s2">&quot;~myNewField~&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">myNewField</span> <span class="o">||</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>For database-backed values, follow existing placeholders such as <code class="docutils literal notranslate"><span class="pre">assessmentResult</span></code> or
+<code class="docutils literal notranslate"><span class="pre">nlpAssessmentSuggestion</span></code>. Ensure <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> passes the needed <code class="docutils literal notranslate"><span class="pre">context</span></code> fields (often
+<code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>, <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>).</p>
+</li>
 <li><p>Optional sidebar help: <code class="docutils literal notranslate"><span class="pre">longDescriptions</span></code> in
 <code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/sidebar/TemplateConfigurator.vue</span></code>.</p></li>
 </ul>
@@ -280,7 +322,8 @@ keys are rows in the <code class="docutils literal notranslate"><span class="pre
 <ul class="simple">
 <li><p>Add the option to <code class="docutils literal notranslate"><span class="pre">fields</span></code> on <code class="docutils literal notranslate"><span class="pre">backend/db/models/template.js</span></code>.</p></li>
 <li><p>Put the type in <code class="docutils literal notranslate"><span class="pre">emailTemplateTypes</span></code> or <code class="docutils literal notranslate"><span class="pre">otherTemplateTypes</span></code> in
-<code class="docutils literal notranslate"><span class="pre">backend/db/models/template.js</span></code> and <code class="docutils literal notranslate"><span class="pre">frontend/src/assets/templateTypes.js</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">backend/db/models/template.js</span></code> and <code class="docutils literal notranslate"><span class="pre">frontend/src/assets/templateTypes.js</span></code>.
+Prompt templates (type 8) belong in <code class="docutils literal notranslate"><span class="pre">otherTemplateTypes</span></code> so non-admins can create them.</p></li>
 <li><p>Add an empty <code class="docutils literal notranslate"><span class="pre">placeholderConfigs</span></code> entry in <code class="docutils literal notranslate"><span class="pre">TemplateConfigurator.vue</span></code>
 so the sidebar can load keys for that type.</p></li>
 <li><p>Add the label in the <code class="docutils literal notranslate"><span class="pre">typeName</span></code> maps in <code class="docutils literal notranslate"><span class="pre">Templates.vue</span></code>,

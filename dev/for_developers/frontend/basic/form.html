@@ -73,6 +73,7 @@
 <li class="toctree-l3"><a class="reference internal" href="basic.html#icon">Icon</a></li>
 <li class="toctree-l3"><a class="reference internal" href="basic.html#loading">Loading</a></li>
 <li class="toctree-l3"><a class="reference internal" href="basic.html#modal">Modal</a></li>
+<li class="toctree-l3"><a class="reference internal" href="basic.html#details">Details</a></li>
 <li class="toctree-l3"><a class="reference internal" href="basic.html#table">Table</a></li>
 <li class="toctree-l3"><a class="reference internal" href="basic.html#timer">Timer</a></li>
 <li class="toctree-l3"><a class="reference internal" href="basic.html#toast">Toast</a></li>
@@ -94,12 +95,14 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html">Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/interface_language.html">Interface Language</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/ai_features.html">Using AI Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/triggers.html">Using Triggers</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/exporting.html">Exporting Data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/study/study.html">Studies</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/editor_usage.html">Quill Editor</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/workflow_management.html">Workflow Management</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/templates.html">Email and Document Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/templates.html">Email, Document, and Prompt Templates</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/validation_schemas.html">Validation Schemas</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../for_researchers/moodle_usage.html">Moodle API</a></li>
 </ul>
@@ -272,6 +275,18 @@ There are three kinds of properties:</p>
 <td><p>null</p></td>
 <td><p>Object</p></td>
 </tr>
+<tr class="row-odd"><td><p>wrapperClass</p></td>
+<td><p>Extra CSS class on the field’s column wrapper (alongside <code class="docutils literal notranslate"><span class="pre">col-md-*</span></code> / <code class="docutils literal notranslate"><span class="pre">col-12</span></code>)</p></td>
+<td><p>false</p></td>
+<td><p>“”</p></td>
+<td><p>String</p></td>
+</tr>
+<tr class="row-even"><td><p>labelButton</p></td>
+<td><p>Optional button rendered next to the field label. Clicks emit <code class="docutils literal notranslate"><span class="pre">button-click</span></code> with <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">key,</span> <span class="pre">action,</span> <span class="pre">field</span> <span class="pre">}</span></code>. Object keys: <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">tooltip</span></code>, <code class="docutils literal notranslate"><span class="pre">icon</span></code>, <code class="docutils literal notranslate"><span class="pre">class</span></code>, <code class="docutils literal notranslate"><span class="pre">disabled</span></code>, <code class="docutils literal notranslate"><span class="pre">action</span></code>.</p></td>
+<td><p>false</p></td>
+<td><p>null</p></td>
+<td><p>Object</p></td>
+</tr>
 </tbody>
 </table>
 <table class="docutils align-default" id="id3">
@@ -396,6 +411,24 @@ There are three kinds of properties:</p>
 <td><p>N</p></td>
 <td><p>N</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#form-type-json"><span class="std std-ref">json</span></a></p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#form-type-button"><span class="std std-ref">button</span></a></p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+<td><p>Y</p></td>
+<td><p>N</p></td>
+<td><p>N</p></td>
+</tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#form-type-default"><span class="std std-ref">default (*)</span></a></p></td>
 <td><p>Y</p></td>
 <td><p>Y</p></td>
@@ -446,6 +479,15 @@ There are three kinds of properties:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
+<p>Optional searchable mode (useful for long option lists):</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;select&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">search</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w">          </span><span class="c1">// enables type-to-filter combobox UI</span>
+<span class="w">    </span><span class="nx">placeholder</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Select...&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="w"> </span><span class="cm">/* ... */</span><span class="w"> </span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 <p>Using autotable:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
 <span class="w">    </span><span class="nx">options</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
@@ -474,6 +516,37 @@ There are three kinds of properties:</p>
 </div>
 <hr class="docutils" />
 <p id="form-type-textarea"><cite>Textarea</cite>: No specific options.</p>
+<hr class="docutils" />
+<p id="form-type-json"><cite>JSON</cite>: A textarea that stores a parsed object (or array) instead of a string. Invalid JSON is shown on the field and is not written to <code class="docutils literal notranslate"><span class="pre">v-model</span></code>.</p>
+<p>Additional options:</p>
+<ul class="simple">
+<li><p>rows — textarea height (default <code class="docutils literal notranslate"><span class="pre">5</span></code>, or <code class="docutils literal notranslate"><span class="pre">20</span></code> when <code class="docutils literal notranslate"><span class="pre">large</span></code> is true)</p></li>
+</ul>
+<hr class="docutils" />
+<p id="form-type-button"><cite>Button</cite>: Not a data field. Renders a <code class="docutils literal notranslate"><span class="pre">BasicButton</span></code> in the form grid. Clicks are forwarded as <code class="docutils literal notranslate"><span class="pre">button-click</span></code> on <code class="docutils literal notranslate"><span class="pre">BasicForm</span></code>.</p>
+<div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">BasicForm</span>
+    <span class="na">v-model</span><span class="o">=</span><span class="s">&quot;data&quot;</span>
+    <span class="na">:fields</span><span class="o">=</span><span class="s">&quot;fields&quot;</span>
+    <span class="err">@</span><span class="na">button-click</span><span class="o">=</span><span class="s">&quot;onFormButton&quot;</span>
+<span class="p">/&gt;</span>
+</pre></div>
+</div>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">    </span><span class="nx">key</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;loadModels&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;button&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">text</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Load models&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;loadModelOptions&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="kd">class</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;btn-outline-secondary&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">disabled</span><span class="o">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nx">onFormButton</span><span class="p">({</span><span class="w"> </span><span class="nx">key</span><span class="p">,</span><span class="w"> </span><span class="nx">action</span><span class="p">,</span><span class="w"> </span><span class="nx">field</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// action is the field.action string</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Optional keys: <code class="docutils literal notranslate"><span class="pre">icon</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">tooltip</span></code>, <code class="docutils literal notranslate"><span class="pre">text</span></code>, <code class="docutils literal notranslate"><span class="pre">class</span></code>, <code class="docutils literal notranslate"><span class="pre">disabled</span></code>, <code class="docutils literal notranslate"><span class="pre">action</span></code>.</p>
+<p>Label-row buttons use the same event via <code class="docutils literal notranslate"><span class="pre">labelButton</span></code> on a normal field (see Extended form properties).</p>
 <hr class="docutils" />
 <p id="form-type-table"><cite>Table</cite>: Tables are a bit more complex, example:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>

@@ -1,0 +1,211 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Using AI Features &mdash; CARE  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_js.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Using Triggers" href="triggers.html" />
+    <link rel="prev" title="Interface Language" href="interface_language.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            CARE
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../getting_started/installation.html">Installation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/contributing.html">Open-Source Contributor Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/before_you_start.html">Before You Start</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/basics/basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/i18n.html">Internationalization (i18n)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/frontend/frontend.html">Frontend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/backend/backend.html">Backend Development</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/examples/examples.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../for_developers/debugging/index.html">Debugging</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For Researchers</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="basics.html">Basics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="basics.html#nlp-model-debugging">NLP Model Debugging</a></li>
+<li class="toctree-l1"><a class="reference internal" href="interface_language.html">Interface Language</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Using AI Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ai-credentials">AI Credentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ai-models">AI Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ai-hooks">AI Hooks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ai-budget">AI Budget</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ai-log">AI Log</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="triggers.html">Using Triggers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="apply_skill_preprocessing.html">Applying NLP Skills to Documents</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exporting.html">Exporting Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="study/study.html">Studies</a></li>
+<li class="toctree-l1"><a class="reference internal" href="editor_usage.html">Quill Editor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="workflow_management.html">Workflow Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">Email, Document, and Prompt Templates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="validation_schemas.html">Validation Schemas</a></li>
+<li class="toctree-l1"><a class="reference internal" href="moodle_usage.html">Moodle API</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">History of the project</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../project_info.html">Information About the Project</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">CARE</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Using AI Features</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/for_researchers/ai_features.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="using-ai-features">
+<h1>Using AI Features<a class="headerlink" href="#using-ai-features" title="Link to this heading"></a></h1>
+<p>CARE provides dashboards for configuring AI access, controlling costs, and reviewing
+usage. These features require the LiteLLM RPC service described in
+<a class="reference internal" href="../getting_started/installation.html"><span class="doc">Installation</span></a>.</p>
+<section id="ai-credentials">
+<h2>AI Credentials<a class="headerlink" href="#ai-credentials" title="Link to this heading"></a></h2>
+<p>Credentials are managed in <strong>AI &gt; AI Models</strong>.</p>
+<ul class="simple">
+<li><p>Select <strong>Add Credential</strong>, enter a name and provider, then supply an API key or compatible
+base URL.</p></li>
+<li><p>Use the optional API version only when the provider requires it.</p></li>
+<li><p>Disable a credential to prevent its linked models from being used.</p></li>
+<li><p>When editing, leave the API key empty to keep the existing key.</p></li>
+</ul>
+<p>Only the credential owner can edit or delete it.</p>
+</section>
+<section id="ai-models">
+<h2>AI Models<a class="headerlink" href="#ai-models" title="Link to this heading"></a></h2>
+<p>Models are also managed in <strong>AI &gt; AI Models</strong>.</p>
+<ul class="simple">
+<li><p>Select <strong>Add Model</strong>, choose an enabled credential, and load or enter the provider’s model
+identifier.</p></li>
+<li><p>Optional parameters such as <code class="docutils literal notranslate"><span class="pre">temperature</span></code> can be supplied as JSON.</p></li>
+<li><p>Use <strong>Test</strong> to verify the credential and model before saving.</p></li>
+<li><p>A model can be enabled, disabled, shared with users or roles, or given a total cost limit.</p></li>
+<li><p>Mark a self-hosted or free model as free only when its requests should bypass spending
+limits.</p></li>
+</ul>
+<p>Only the owner can edit, share, or delete a model. Shared models are shown with their owner.</p>
+</section>
+<section id="ai-hooks">
+<h2>AI Hooks<a class="headerlink" href="#ai-hooks" title="Link to this heading"></a></h2>
+<p>An AI hook combines a prompt template with one or more models.</p>
+<ol class="arabic simple">
+<li><p>Create a <a class="reference internal" href="templates.html#prompt-templates-user"><span class="std std-ref">prompt template</span></a>.</p></li>
+<li><p>Open <strong>AI &gt; AI Hooks</strong> and select <strong>Add AI Hook</strong>.</p></li>
+<li><p>Select the prompt template and place models in fallback priority order.</p></li>
+<li><p>Choose <strong>Text</strong> or <strong>JSON</strong> output, optionally set a total cost limit, and save.</p></li>
+</ol>
+<p>Hook owners can reorder models, enable or disable the hook, and share it with users or roles.
+A hook requires a name, prompt template, and at least one model.</p>
+</section>
+<section id="ai-budget">
+<h2>AI Budget<a class="headerlink" href="#ai-budget" title="Link to this heading"></a></h2>
+<p><strong>AI &gt; AI Budget</strong> lists cost limits for models, hooks, studies, and study steps.</p>
+<ul class="simple">
+<li><p>Edit a limit to change the allowed cost.</p></li>
+<li><p>Set a limit to <code class="docutils literal notranslate"><span class="pre">0</span></code> to block usage at that level.</p></li>
+<li><p>Reset the spending window without changing the limit.</p></li>
+<li><p>Remove the cap to allow usage without that limit.</p></li>
+</ul>
+<p>The dashboard groups limits by models, hooks, and studies and shows whether each limit is
+total, per session, or per user.</p>
+</section>
+<section id="ai-log">
+<h2>AI Log<a class="headerlink" href="#ai-log" title="Link to this heading"></a></h2>
+<p><strong>AI &gt; AI Log</strong> provides an audit summary and request history.</p>
+<ul class="simple">
+<li><p>The summary shows total requests, input and output tokens, and total cost.</p></li>
+<li><p>Each row shows the request time, model, status, token counts, and cost.</p></li>
+<li><p>Search and sorting can be used to investigate failed or expensive requests.</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="interface_language.html" class="btn btn-neutral float-left" title="Interface Language" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="triggers.html" class="btn btn-neutral float-right" title="Using Triggers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022-2026 Team CARE.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
