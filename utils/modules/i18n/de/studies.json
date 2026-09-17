@@ -96,10 +96,12 @@
   "loading": {
     "title": "Lade Studienschritt",
     "nlpError": "Fehler bei der Verarbeitung der NLP-Ergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die NLP-Unterstützung.",
+    "serviceError": "Fehler bei der Verarbeitung der Dienstergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die Dienst-Unterstützung.",
     "generalError": "Beim Laden des Studienschritts ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
     "buttons": {
       "tryAgain": "Erneut versuchen",
-      "skip": "NLP-Unterstützung überspringen"
+      "skip": "NLP-Unterstützung überspringen",
+      "skipService": "Dienst-Unterstützung überspringen"
     },
     "messages": [
       "Denke über Ihre Anfrage nach...",
@@ -119,6 +121,8 @@
     "errorTitle": "Fehler beim Laden des Studienschritts",
     "processingTitle": "NLP-Anfragen werden verarbeitet",
     "failedTitle": "NLP-Anfragen fehlgeschlagen",
+    "processingServiceTitle": "Dienstanfragen werden verarbeitet",
+    "failedServiceTitle": "Dienstanfragen fehlgeschlagen",
     "readyTitle": "Studienschritt bereit"
   },
   "dashboard": {
@@ -231,6 +235,18 @@
     "multipleSubmit": {
       "label": "Mehrfache Abgaben erlauben?",
       "help": "Geben Sie an, ob Teilnehmer ihre Studie mehrmals abgeben können."
+    },
+    "aiCostLimitTotal": {
+      "label": "KI-Kostenlimit - gesamt ($):",
+      "help": "Gesamte erlaubte KI-Ausgaben für diese Studie über alle Teilnehmer hinweg. Leer lassen, um kein Limit festzulegen."
+    },
+    "aiCostLimitPerSession": {
+      "label": "Pro Sitzung ($):",
+      "help": "Erlaubte KI-Ausgaben in einer einzelnen Sitzung. Leer lassen, um kein Sitzungslimit festzulegen."
+    },
+    "aiCostLimitPerUser": {
+      "label": "Pro Teilnehmer ($):",
+      "help": "Erlaubte KI-Ausgaben pro Teilnehmer in dieser Studie. Leer lassen, um kein Teilnehmerlimit festzulegen."
     },
     "step": {
       "documentId": {

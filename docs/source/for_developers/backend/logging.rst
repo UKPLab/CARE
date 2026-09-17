@@ -51,7 +51,7 @@ For this purpose the environment variables can be adjusted:
 
 See the **.env** file in the root directory more information!
 
-During logging, three files are created in the specified folder:
+Application logging creates three rotating files in the specified folder:
 
 
 .. list-table::
@@ -66,6 +66,10 @@ During logging, three files are created in the specified folder:
       - Contains all logs (by log level ENV *LOGGING_LEVEL*)
 
 In addition, all logs based on the environment variable *LOGGING_LEVEL* are entered into the database.
+
+In production, Sequelize writes SQL statements only to the rotating
+``sequelize-%DATE%.log`` file. Repeated ``SELECT`` statements that read from
+``trigger_queue`` are excluded from this file.
 
 Logging with user information
 -----------------------------

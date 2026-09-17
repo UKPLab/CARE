@@ -77,6 +77,10 @@
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
 import { buildScoresFromState, calculateAssessmentScore } from "assessment-score";
+import {
+  ASSESSMENT_RESULT_KEY,
+  getAssessmentResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "AssessmentSidebar",
@@ -84,13 +88,16 @@ export default {
     AssessmentRubric,
     FloatingInfoPanel,
   },
-  subscribeTable: [{
-    table: "configuration",
-    filter: [{
-      key: "type",
-      value: 0
-    }],
-  }],
+  subscribeTable: [
+    {
+      table: "configuration",
+      filter: [{
+        key: "type",
+        value: 0
+      }],
+    },
+    "ai_hook",
+  ],
   inject: {
     documentId: {
       type: Number,
@@ -186,35 +193,26 @@ export default {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Try to find the exact NLP assessment service
       const svc =
           cfg.services.find(
               (s) =>
-                  s.skill && (
-                      s.name === "nlpAssessment" ||
-                      s.type === "nlpRequest"
-                  )
+                 ((s.skill || s.hookId) && (
+                s.name === "nlpAssessment" &&
+                s.type === "nlpRequest"
+            )) 
           ) || cfg.services[0];
 
       return svc || null;
     },
-
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
-      if (!svc || !svc.skill) return [];
-
-      const keys = [
-        svc.name && svc.skill ? `${svc.name}_${svc.skill}_assessment` : null,
-        svc.type && svc.skill ? `${svc.type}_${svc.skill}_assessment` : null,
-      ].filter(Boolean);
-
-      return keys;
+      return getAssessmentResultKeyCandidates(svc);
     },
     preprocessedAssessmentRaw() {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
         return null;
       }
-      const items = Object.keys(this.documentData).filter(item =>
+      const items = Object.keys(this.documentData || {}).filter(item =>
           this.preprocessedAssessmentKeyCandidates.includes(item)
       );
 
@@ -232,7 +230,7 @@ export default {
       return null;
     },
     assessmentDataKey() {
-      return "assessment_result";
+      return ASSESSMENT_RESULT_KEY;
     },
     areAllCriteriaSaved() {
       if (!this.configuration || !this.configuration.rubrics) return false;
@@ -300,6 +298,11 @@ export default {
         this.loadSavedAssessmentData();
       },
       immediate: true,
+    },
+    preprocessedAssessmentRaw: {
+      handler() {
+        this.loadSavedAssessmentData();
+      },
     },
   },
   mounted() {

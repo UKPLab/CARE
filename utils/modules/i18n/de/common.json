@@ -104,6 +104,7 @@
     "summarize": "Zusammenfassen",
     "apply": "Anwenden",
     "unknown": "Unbekannt",
+    "selectPlaceholder": "Auswählen...",
     "use": "Verwenden",
     "hideReplies": "Antworten verbergen",
     "showReplies": "Antworten anzeigen ({count})",
@@ -140,5 +141,8 @@
     "finished": "Beendet",
     "nlp": {
         "serviceRequest": "NLP-Dienstanfrage"
-    }
+    },
+    "search": "Suchen...",
+    "searchOptions": "Optionen durchsuchen",
+    "noMatches": "Keine Treffer"
 }

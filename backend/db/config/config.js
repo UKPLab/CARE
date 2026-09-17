@@ -3,6 +3,8 @@
  *
  * @author Nils Dycke
  */
+const {logSequelizeToFile} = require("../../utils/logger.js");
+
 module.exports = {
     development: {
         username: 'postgres',
@@ -55,6 +57,6 @@ module.exports = {
             acquire: 60000, //default 60000
             idle: 10000 //default 10000
         },
-        logging: false
+        logging: logSequelizeToFile
     },
 };

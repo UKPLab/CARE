@@ -11,12 +11,30 @@
       </div>
     </div>
     <div v-else>
-      <label
+      <div
         v-if="'label' in options"
-        :for="options.key"
-        class="form-label"
-      >{{ translateMaybeKey(options.label) }}</label>
+        class="d-flex justify-content-between align-items-center mb-1"
+      >
+        <div>
+          <label
+            :for="options.key"
+            class="form-label mb-0"
+          >{{ translateMaybeKey(options.label) }}</label>
+          <FormHelp :help="translateMaybeKey(options.help)" />
+        </div>
+        <BasicButton
+          v-if="options.labelButton"
+          :icon="options.labelButton.icon"
+          :title="translateMaybeKey(options.labelButton.title)"
+          :text="translateMaybeKey(options.labelButton.text)"
+          :tooltip="translateMaybeKey(options.labelButton.tooltip)"
+          :disabled="options.labelButton.disabled || false"
+          :class="options.labelButton.class"
+          @click="handleLabelButtonClick"
+        />
+      </div>
       <FormHelp
+        v-else
         :help="translateMaybeKey(options.help)"
       />
       <div class="input-group">
@@ -46,6 +64,7 @@
 <script>
 import FormHelp from "@/basic/form/Help.vue"
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import { translateMaybeKey } from "@/assets/utils";
 
 /**
@@ -55,7 +74,12 @@ import { translateMaybeKey } from "@/assets/utils";
  */
 export default {
   name: "BasicElement",
-  components: {FormHelp, LoadIcon},
+  components: {BasicButton, FormHelp, LoadIcon},
+  inject: {
+    formButtonClick: {
+      default: null,
+    },
+  },
   props: {
     options: {
       type: Object,
@@ -81,6 +105,16 @@ export default {
     this.eventBus.off('resetFormField', this.resetFieldState)
   },
   methods: {
+    handleLabelButtonClick() {
+      const payload = {
+        key: this.options.key,
+        action: this.options.labelButton?.action,
+        field: this.options,
+      };
+      if (this.formButtonClick) {
+        this.formButtonClick(payload);
+      }
+    },
     translateMaybeKey,
     validate(data) {
       if (data === true) {

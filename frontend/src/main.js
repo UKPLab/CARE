@@ -90,4 +90,9 @@ import subscribeTable from "@/plugins/subscribeTable";
 
 app.use(subscribeTable);
 
+// Expose `this.$ai` to every component for AI / LLM requests via ack callbacks
+import ai from "@/plugins/ai";
+
+app.use(ai);
+
 router.isReady().then(() => app.mount('#app'));

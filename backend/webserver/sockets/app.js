@@ -75,7 +75,7 @@ class AppSocket extends Socket {
         }
 
         if (isExistingRow &&
-            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data)) {
+            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data || 'enabled' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
@@ -90,7 +90,11 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table}, "ACCESS_DENIED");
+            // Share tables store the recipient in userId. Parent ownership is
+            // enforced in MetaModel.add / updateById via foreignOwner.
+            if (!this.models[data.table].foreignOwner) {
+                throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table}, "ACCESS_DENIED");
+            }
         }
 
         // check data exists for required fields
@@ -464,7 +468,6 @@ class AppSocket extends Socket {
             await this.models["user_setting"].set(key, value, data.userId, { bypassSystemSettingCheck: true });
         } else {
             // Default: set for current user and refresh their settings
-            console.log(`Setting ${key} for user ${this.userId} to ${value}`);
             await this.models["user_setting"].set(key, value, this.userId);
             await this.sendSettings();
         }   
