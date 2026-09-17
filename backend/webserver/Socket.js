@@ -570,6 +570,13 @@ module.exports = class Socket {
             }
         }
 
+        // No condition grants this user any row: deny rather than returning an
+        // unrestricted filter, which would otherwise mean no restriction at all.
+        if (!fullRowAccess && rowVisibilityConditions.length === 0) {
+            this.logger.warn("User with id " + userId + " requested table " + tableName + " without any row access");
+            return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+        }
+
         // Apply row-visibility: baseFilter AND (condition1 OR condition2 OR ...)
         // Skipped entirely when fullRowAccess is true (no row restriction needed).
         if (!fullRowAccess && rowVisibilityConditions.length > 0) {
