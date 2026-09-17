@@ -633,7 +633,6 @@ module.exports = class Socket {
         return await this.#buildAccessFilter(userId, allFilter, allAttributes, tableName, rolesUpdatedAt, true);
     }
 
-    
     /**
      * Row filters and column attributes for writing to a table.
      * Unlike the read path, publicTable and public rows grant nothing.
