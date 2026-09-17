@@ -34,11 +34,11 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Grants row visibility to anyone with an active direct-user or role-based
-         * ai_model_share grant for this model, in addition to the owner (handled by
-         * the base autoTable userId rule).
+         * ai_model_share grant for this model, in addition to the owner
+         * (returned as owned; shared rows are read-only).
          *
          * @param {number} userId Viewer's id.
-         * @returns {Promise<object>}
+         * @returns {Promise<{owned: object, shared: object|null}>}
          */
         static async getUserFilter(userId) {
             const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
@@ -56,7 +56,10 @@ module.exports = (sequelize, DataTypes) => {
             });
             const modelIds = [...new Set(shareRows.map((row) => Number(row.aiModelId)))]
                 .filter((id) => Number.isInteger(id) && id > 0);
-            return modelIds.length > 0 ? {id: {[Op.in]: modelIds}} : {id: -1};
+            return {
+                owned: {userId},
+                shared: modelIds.length > 0 ? {id: {[Op.in]: modelIds}} : null,
+            };
         }
 
         /**
