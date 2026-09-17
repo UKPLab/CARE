@@ -542,12 +542,15 @@ module.exports = class Socket {
         if (!fullRowAccess) {
             // --- User-level row filter (authoritative when present, e.g. template type rules) ---
             if (hasModelUserFilter) {
-                const userFilter = await model.getUserFilter(userId, isAdmin);
-                if (Reflect.ownKeys(userFilter).length > 0) {
-                    rowVisibilityConditions.push(userFilter);
-                } else {
-                    // getUserFilter returns {} → grants full row access (e.g. for admins)
-                    fullRowAccess = true;
+                // owned: rows the user owns. shared: rows only visible to them (public or shared).
+                // Read-only: shared rows may be seen, but never written.
+                // If neither is set, no condition is added and the fail-closed check below denies.
+                const {owned, shared} = await model.getUserFilter(userId, isAdmin);
+                if (owned) {
+                    rowVisibilityConditions.push(owned);
+                }
+                if (publicGrantsAccess && shared) {
+                    rowVisibilityConditions.push(shared);
                 }
             } else {
                 // --- Ownership: user always sees their own rows when table has userId ---
