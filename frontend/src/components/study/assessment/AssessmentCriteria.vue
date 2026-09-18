@@ -214,6 +214,7 @@ export default {
   data() {
     return {
       localAssessment: "",
+      uid: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     };
   },
   computed: {
@@ -252,7 +253,7 @@ export default {
      * @returns {string} unique panel id
      */
     panelId() {
-      return `criterion-panel-${this._uid ?? this.$.uid}`;
+      return `criterion-panel-${this.uid}`;
     },
     isEditing() {
       return !!this.state.isEditing;
@@ -351,18 +352,18 @@ export default {
       this.$nextTick(() => this.focusEl("editButton"));
     },
     /**
-     * Focus the native element behind a BasicButton ref.
-     * BasicButton has a single root <button>, so $el is that button.
-     *
-     * @param {string} refName - name of the ref to focus
-     */
-    /**
      * Move keyboard focus to this criterion's header.
      * Called by the parent rubric after an advance, never on a plain expand.
      */
     focusHeader() {
       this.$refs.criterionHeader?.focus();
     },
+    /**
+     * Focus the native element behind a BasicButton ref.
+     * BasicButton has a single root <button>, so $el is that button.
+     *
+     * @param {string} refName - name of the ref to focus
+     */
     focusEl(refName) {
       const c = this.$refs[refName];
       const el = c && c.$el ? c.$el : c;
