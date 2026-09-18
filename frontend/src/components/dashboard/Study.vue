@@ -57,6 +57,7 @@
             :columns="columns"
             :query-filter="studyQueryFilter"
             :query-filter-schema="studyFilterSchema"
+            :query-search-columns="studySearchColumns"
             :enrich-row="(row) => enrichStudyRow(row)"
             :options="options"
             :buttons="buttons"
@@ -69,7 +70,9 @@
     <StudySessionModal v-if="modals.studySession" ref="studySessionModal" @hide="modals.studySession = false"/>
     <ConfirmModal v-if="modals.deleteConf" ref="deleteConf" @hide="modals.deleteConf = false"/>
     <ConfirmModal v-if="modals.confirm" ref="confirmModal" @hide="modals.confirm = false"/>
-    <ManageStudiesModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="modals.bulkConfirm = false"/>
+    <!-- Stays mounted after closing (the delete confirmation lives inside it); both tables query
+         the same socket, so the grid refetches its window when the modal is done. -->
+    <ManageStudiesModal v-if="modals.bulkConfirm" ref="bulkConfirmModal" @hide="refreshStudies"/>
     <StudyCloseModal ref="studyCloseModal" />
     <AssignmentModal v-if="modals.assignment" ref="assignmentModal" @hide="modals.assignment = false"/>
     <PublishAssessmentModal v-if="modals.publishAssessment" ref="publishAssessmentModal" @hide="modals.publishAssessment = false"/>
@@ -182,6 +185,18 @@ export default {
         multipleSubmit: {label: "Multiple Submissions", type: "boolean"},
         enableEmailNotifications: {label: "Session Start/Finish Emails", type: "boolean"},
       };
+    },
+    /**
+     * Free text stays on the columns this grid shows. The model also allows workflowName
+     * (Manage Studies lists a Workflow column); without this the grid would match on a title
+     * it does not display.
+     */
+    studySearchColumns() {
+      const columns = ["id", "name", "sessions", "state"];
+      if (this.canReadPrivateInformation) {
+        columns.push("firstName", "lastName");
+      }
+      return columns;
     },
     studyQueryFilter() {
       // Ownership (userId / createdByUserId) is applied server-side via study.getUserFilter.

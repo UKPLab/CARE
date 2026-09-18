@@ -45,7 +45,8 @@ function viewSearchFields(model) {
  * @param {string[]} params.allowedAttributeNames columns the viewer may see
  * @param {Array<Object>} [params.injects] queryTable injects (parent / count)
  * @param {string[]} [params.searchColumns] whitelist of searchable keys (visible table columns);
- *   when set, only these DB attributes / inject targets / computed keys are searched
+ *   when set, only these DB attributes / inject targets / computed keys are searched.
+ *   Model-defined extra conditions get it as `canSearch(key)`.
  * @returns {Object|null} WHERE fragment or null if search is empty
  */
 function buildQueryTableSearch({
@@ -157,7 +158,7 @@ function buildQueryTableSearch({
     }
 
     if (typeof model.getQueryTableSearchConditions === "function") {
-        const extra = model.getQueryTableSearchConditions(needle);
+        const extra = model.getQueryTableSearchConditions(needle, {canSearch});
         if (Array.isArray(extra)) {
             conditions.push(...extra.filter(Boolean));
         } else if (extra) {

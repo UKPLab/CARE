@@ -489,11 +489,35 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<string[]>}
          */
         static async getQueryTableSearchColumns(ctx) {
-            const columns = ["id", "name", "sessions", "state"];
+            const columns = ["id", "name", "sessions", "state", "workflowName"];
             if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
                 columns.push("firstName", "lastName");
             }
             return columns;
+        }
+
+        /**
+         * Free-text match on the workflow title, which is not a study column.
+         * Only applied for consumers that show a Workflow column (Manage Studies).
+         * @param {string} needle already lowercased and length-capped
+         * @param {Object} [ctx]
+         * @param {function(string): boolean} [ctx.canSearch]
+         * @returns {Array<Object>}
+         */
+        static getQueryTableSearchConditions(needle, ctx = {}) {
+            if (typeof ctx.canSearch === "function" && !ctx.canSearch("workflowName")) {
+                return [];
+            }
+            const escaped = sequelize.escape(needle);
+            return [{
+                workflowId: {
+                    [Op.in]: sequelize.literal(
+                        "(SELECT \"workflow\".\"id\" FROM \"workflow\"" +
+                        ` WHERE STRPOS(LOWER("workflow"."name"), ${escaped}) > 0` +
+                        " AND \"workflow\".\"deleted\" = false)"
+                    ),
+                },
+            }];
         }
 
         /**
@@ -509,12 +533,15 @@ module.exports = (sequelize, DataTypes) => {
 
         /**
          * Keys the Studies search bar may filter on.
-         * state / sessions read the materialized view; other keys are study columns.
+         * state / sessions read the materialized view; workflowName / ownerName are correlated
+         * subqueries; other keys are study columns.
          * A filter token for anything outside this spec is dropped server-side.
+         * @param {Object} [ctx]
+         * @param {function(string): Promise<boolean>} [ctx.hasAccess]
          * @returns {Promise<Object>}
          */
-        static async getQueryTableFilterColumns() {
-            return {
+        static async getQueryTableFilterColumns(ctx = {}) {
+            const spec = {
                 state: {type: "enum", values: STATES, viewField: "state"},
                 id: {type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
                 createdAt: {type: "date"},
@@ -522,11 +549,34 @@ module.exports = (sequelize, DataTypes) => {
                 limitSessions: {type: "numeric"},
                 limitSessionsPerUser: {type: "numeric"},
                 workflow: {type: "exists", field: "workflowId"},
+                workflowName: {
+                    type: "text",
+                    sql: "(SELECT \"workflow\".\"name\" FROM \"workflow\"" +
+                        " WHERE \"workflow\".\"id\" = \"study\".\"workflowId\")",
+                },
                 collab: {type: "boolean"},
                 resumable: {type: "boolean"},
                 multipleSubmit: {type: "boolean"},
                 enableEmailNotifications: {type: "boolean"},
             };
+            // Owner name is the same gated data as the firstName / lastName inject.
+            if (typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                spec.ownerName = {
+                    type: "text",
+                    sql: "(SELECT TRIM(CONCAT_WS(' ', \"user\".\"firstName\", \"user\".\"lastName\"))" +
+                        " FROM \"user\" WHERE \"user\".\"id\" = \"study\".\"userId\")",
+                };
+            }
+            return spec;
+        }
+
+        /**
+         * Columns a client may ask distinct values for (dropdown options within the current query).
+         * @returns {string[]}
+         */
+        static getQueryTableDistinctColumns() {
+            return ["workflowId"];
         }
 
     }

@@ -2,6 +2,21 @@ const {inject} = require("../utils/helper/generic");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
+const {mergeFilter} = require("../utils/helper/data.js");
+const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("../utils/helper/queryTableSearch.js");
+const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../utils/helper/queryTableColumnFilters.js");
+const {dashboardSortInclude} = require("../utils/helper/queryTableJoinSort.js");
+const {ensureStudyDashboardSortFresh} = require("../db/studyDashboardSortRefresh.js");
+
+// Upper bound for a query-scoped bulk ("select all matching"). Above this the client has to narrow
+// the filter — the per-id transactions of runBulkWithProgress would otherwise run for minutes.
+const MAX_BULK_SELECTION = 100000;
+
+// Upper bound for an explicit id list sent by the client (one page / a few pages of picks).
+const MAX_EXPLICIT_SELECTION = 10000;
+
+// Rows a single broadcast may animate row by row in query-mode; above this the client refetches.
+const MAX_DELTA_ROWS = 100;
 /**
  * Defines as new Socket class
  *
@@ -142,6 +157,9 @@ module.exports = class Socket {
     async runBulkWithProgress(items, progressId, action) {
         let count = 0;
         const total = items.length;
+        // A progress bar cannot show more than ~100 steps; a select-all over the whole table would
+        // otherwise emit one event per row.
+        const progressEvery = Math.max(1, Math.floor(total / 100));
 
         for (let i = 0; i < total; i++) {
             const item = items[i];
@@ -155,7 +173,7 @@ module.exports = class Socket {
                 await transaction.rollback();
             }
 
-            if (progressId) {
+            if (progressId && ((i + 1) % progressEvery === 0 || i + 1 === total)) {
                 this.socket.emit("progressUpdate", { id: progressId, current: i + 1, total });
             }
         }
@@ -608,6 +626,217 @@ module.exports = class Socket {
             };
         }
         return {filter: allFilter, attributes: allAttributes, accessAllowed: true};
+    }
+
+    /**
+     * Row scope of one queryTable request: ACL filter + client filter + search-bar tokens + free text.
+     *
+     * Everything that decides *which rows match* lives here, so a query-scoped bulk (select all
+     * matching) resolves exactly the rows the same viewer can list — sorting and paging are the
+     * caller's business.
+     *
+     * @param {Object} params
+     * @param {string} params.table autoTable name
+     * @param {Array} [params.filter] subscribeAppData-style filter items from the client
+     * @param {Object} [params.query] { search, columnFilters, searchColumns }
+     * @returns {Promise<Object>} model, attributes, where, allAttributes, allowedAttributeNames,
+     *   injectCtx, filterSpec, columnFilters, search, searchColumns, needsViewJoin, usesStateView
+     */
+    async resolveQueryTableScope({table, filter = [], query = {}}) {
+        if (!table) {
+            throw new Error("Table name is required");
+        }
+        if (!this.models[table] || !this.models[table].autoTable) {
+            throw new Error(`${table} is not an autoTable`);
+        }
+
+        const model = this.models[table];
+        const attributes = model.getAttributes();
+
+        let allFilter = {deleted: false};
+        const mergedClientFilter = mergeFilter([Array.isArray(filter) ? filter : []], attributes);
+        if (mergedClientFilter.length > 0) {
+            allFilter[Op.or] = mergedClientFilter;
+        }
+
+        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        let allAttributes = {exclude: defaultExcludes};
+        // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
+        const filtersAndAttributes = await this.getFiltersAndAttributes(
+            this.userId, allFilter, allAttributes, table, this.rolesUpdatedAt
+        );
+        if (!filtersAndAttributes.accessAllowed) {
+            throw new Error("Access denied");
+        }
+        allFilter = filtersAndAttributes.filter;
+        allAttributes = filtersAndAttributes.attributes;
+
+        const allowedAttributeNames = Array.isArray(allAttributes)
+            ? allAttributes
+            : Object.keys(attributes).filter((name) => !(allAttributes.exclude || []).includes(name));
+        const injectCtx = {
+            userId: this.userId,
+            rolesUpdatedAt: this.rolesUpdatedAt,
+            hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
+        };
+
+        // Search-bar filter tokens. Which keys are filterable is the model's decision, not the client's.
+        const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
+            ? query.columnFilters
+            : null;
+        let filterSpec = null;
+        if (columnFilters && Object.keys(columnFilters).length > 0) {
+            filterSpec = typeof model.getQueryTableFilterColumns === "function"
+                ? await model.getQueryTableFilterColumns(injectCtx)
+                : null;
+            const columnWhere = buildQueryTableColumnFilters({
+                model,
+                columnFilters,
+                filterSpec,
+                allowedAttributeNames,
+            });
+            if (columnWhere) {
+                allFilter = {[Op.and]: [allFilter, columnWhere]};
+            }
+        }
+
+        const search = typeof query.search === "string"
+            ? query.search.trim().slice(0, MAX_SEARCH_LENGTH)
+            : "";
+        let searchColumns = null;
+        if (search) {
+            const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
+            searchColumns = typeof model.getQueryTableSearchColumns === "function"
+                ? await model.getQueryTableSearchColumns(injectCtx)
+                : null;
+            searchColumns = this.narrowSearchColumns(searchColumns, query.searchColumns);
+            const searchWhere = buildQueryTableSearch({
+                model,
+                search,
+                allowedAttributeNames,
+                injects,
+                searchColumns,
+            });
+            if (searchWhere) {
+                allFilter = {[Op.and]: [allFilter, searchWhere]};
+            }
+        }
+
+        const viewFields = viewSearchFields(model);
+        const searchNeedsView = !!(search && viewFields.some((spec) => !searchColumns || searchColumns.includes(spec.key)));
+        const needsViewJoin = columnFiltersNeedViewJoin(filterSpec, columnFilters) || searchNeedsView;
+        const usesStateView = !!(filterSpec && columnFilters && Object.keys(columnFilters).some(
+            (key) => filterSpec[key]?.viewField === "state"
+        )) || !!(search && viewFields.some((spec) => spec.field === "state"
+            && (!searchColumns || searchColumns.includes(spec.key))));
+
+        return {
+            model,
+            attributes,
+            where: allFilter,
+            allAttributes,
+            allowedAttributeNames,
+            injectCtx,
+            filterSpec,
+            columnFilters,
+            search,
+            searchColumns,
+            needsViewJoin,
+            usesStateView,
+        };
+    }
+
+    /**
+     * Narrow the model's searchable keys to the columns a consumer actually shows.
+     *
+     * The model list stays the outer bound (a client cannot widen it); a table that renders fewer
+     * columns passes its own subset so free text never matches a field the user cannot see there.
+     * @param {string[]|null} modelColumns
+     * @param {*} requested client-sent allow-list
+     * @returns {string[]|null}
+     */
+    narrowSearchColumns(modelColumns, requested) {
+        if (!Array.isArray(modelColumns) || !Array.isArray(requested) || requested.length === 0) {
+            return modelColumns;
+        }
+        const wanted = new Set(requested.filter((key) => typeof key === "string"));
+        const narrowed = modelColumns.filter((key) => wanted.has(key));
+        // An empty intersection means the request was nonsense; fall back to the model list instead
+        // of searching nothing (which would silently match every row).
+        return narrowed.length > 0 ? narrowed : modelColumns;
+    }
+
+    /**
+     * Ids of every row a query matches — the server-side form of "select all matching".
+     *
+     * Never trusts the client's row list: `includeIds` is intersected with the same ACL scope the
+     * list query uses, and `excludeIds` (rows the user unchecked after select-all) is subtracted.
+     *
+     * @param {Object} params
+     * @param {string} params.table autoTable name
+     * @param {Array} [params.filter] client filter items (same as queryTable)
+     * @param {Object} [params.query] { search, columnFilters, searchColumns }
+     * @param {Array<number>} [params.excludeIds] rows unchecked after select-all
+     * @param {Array<number>} [params.includeIds] restrict to these ids (explicit selection)
+     * @returns {Promise<number[]>}
+     */
+    async resolveQueryTableIds({table, filter = [], query = {}, excludeIds = [], includeIds = null}) {
+        const scope = await this.resolveQueryTableScope({table, filter, query});
+        const conditions = [scope.where];
+
+        const excluded = this.sanitizeIds(excludeIds, MAX_BULK_SELECTION);
+        if (excluded.length > 0) {
+            conditions.push({id: {[Op.notIn]: excluded}});
+        }
+        if (includeIds !== null) {
+            const included = this.sanitizeIds(includeIds, MAX_EXPLICIT_SELECTION);
+            if (included.length === 0) {
+                return [];
+            }
+            conditions.push({id: {[Op.in]: included}});
+        }
+
+        const findOptions = {
+            where: conditions.length === 1 ? conditions[0] : {[Op.and]: conditions},
+            attributes: ["id"],
+            order: [["id", "ASC"]],
+            raw: true,
+            limit: MAX_BULK_SELECTION + 1,
+        };
+        if (scope.needsViewJoin) {
+            const sortModel = this.models["study_dashboard_sort"];
+            if (!sortModel) {
+                throw new Error("study_dashboard_sort is not available");
+            }
+            await ensureStudyDashboardSortFresh(
+                this.server.db.sequelize,
+                scope.usesStateView ? "stateRank" : "sessions"
+            );
+            findOptions.include = [dashboardSortInclude(sortModel)];
+            findOptions.subQuery = false;
+        }
+
+        const rows = await scope.model.findAll(findOptions);
+        if (rows.length > MAX_BULK_SELECTION) {
+            throw new Error(`Selection too large (more than ${MAX_BULK_SELECTION} rows) — narrow the filter first`);
+        }
+        return rows.map((row) => row.id);
+    }
+
+    /**
+     * Positive integer ids only; duplicates dropped, length capped.
+     * @param {*} ids
+     * @param {number} max
+     * @returns {number[]}
+     */
+    sanitizeIds(ids, max) {
+        if (!Array.isArray(ids)) {
+            return [];
+        }
+        const clean = [...new Set(
+            ids.map((id) => Number(id)).filter((id) => Number.isSafeInteger(id) && id > 0)
+        )];
+        return clean.slice(0, max);
     }
 
     /**
@@ -1074,7 +1303,8 @@ module.exports = class Socket {
             // Helper: send this socket either Stale (mixed ops) or one Delta per row.
             const emitQueryMode = async (filteredRows) => {
                 // No operation (e.g. mixed delete+update in one txn) → Stale, not stacked Deltas.
-                if (!operation) {
+                // Same for a bulk bigger than a page: one refetch beats thousands of row events.
+                if (!operation || filteredRows.length > MAX_DELTA_ROWS) {
                     this.io.to(socket.id).emit(tableName + "Stale", {
                         originSocketId,
                     });

@@ -5,9 +5,7 @@ const {v4: uuidv4} = require("uuid");
 const {mergeFilter} = require("../../utils/helper/data.js");
 const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
-const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("../../utils/helper/queryTableSearch.js");
-const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../../utils/helper/queryTableColumnFilters.js");
-const {Op} = require("sequelize");
+const {col} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
 const {paginateJoinSort, dashboardSortInclude, serializeCursor} = require("../../utils/helper/queryTableJoinSort.js");
 const {ensureStudyDashboardSortFresh} = require("../../db/studyDashboardSortRefresh.js");
@@ -15,6 +13,9 @@ const {ensureStudyDashboardSortFresh} = require("../../db/studyDashboardSortRefr
 // Upper bound for one queryTable page. The infinite-scroll window asks for its whole
 // loaded size in one request, so this is above a page size but far below a full table.
 const MAX_QUERY_TABLE_LIMIT = 200;
+
+// Upper bound for a distinct-value dropdown. Above this a filter list is unusable anyway.
+const MAX_DISTINCT_VALUES = 500;
 
 /**
  * Send data for building the frontend app
@@ -471,6 +472,8 @@ class AppSocket extends Socket {
      * @param {Object} [data.query.sort] { column, direction }
      * @param {string} [data.query.search] case-insensitive substring across visible + injected columns
      * @param {Object} [data.query.columnFilters] search-bar filter tokens: { key: {operator, value} }
+     * @param {string[]} [data.query.searchColumns] narrow free text to the columns this table shows
+     *        (intersected with the model whitelist — a client cannot widen it)
      * @param {string} [data.query.after] endCursor of previous result → next page
      * @param {string} [data.query.before] startCursor of previous result → previous page
      * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
@@ -480,83 +483,11 @@ class AppSocket extends Socket {
      */
     async queryTable(data) {
         const {table, query = {}, filter = []} = data || {};
-        if (!table) {
-            throw new Error("Table name is required");
-        }
-        if (!this.models[table] || !this.models[table].autoTable) {
-            throw new Error(`${table} is not an autoTable`);
-        }
 
-        const model = this.models[table];
-        const attributes = model.getAttributes();
-
-        let allFilter = {deleted: false};
-        const mergedClientFilter = mergeFilter([(filter) ? filter : []], attributes);
-        if (mergedClientFilter.length > 0) {
-            allFilter[Op.or] = mergedClientFilter;
-        }
-
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
-        let allAttributes = {exclude: defaultExcludes};
-        // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
-        const filtersAndAttributes = await this.getFiltersAndAttributes(
-            this.userId, allFilter, allAttributes, table, this.rolesUpdatedAt
-        );
-        if (!filtersAndAttributes.accessAllowed) {
-            throw new Error("Access denied");
-        }
-        allFilter = filtersAndAttributes.filter;
-        allAttributes = filtersAndAttributes.attributes;
-
-        const allowedAttributeNames = Array.isArray(allAttributes)
-            ? allAttributes
-            : Object.keys(attributes).filter((name) => !(allAttributes.exclude || []).includes(name));
-        const injectCtx = {
-            userId: this.userId,
-            rolesUpdatedAt: this.rolesUpdatedAt,
-            hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
-        };
-
-        // Search-bar filter tokens. Which keys are filterable is the model's decision, not the client's.
-        const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
-            ? query.columnFilters
-            : null;
-        let filterSpec = null;
-        if (columnFilters && Object.keys(columnFilters).length > 0) {
-            filterSpec = typeof model.getQueryTableFilterColumns === "function"
-                ? await model.getQueryTableFilterColumns(injectCtx)
-                : null;
-            const columnWhere = buildQueryTableColumnFilters({
-                model,
-                columnFilters,
-                filterSpec,
-                allowedAttributeNames,
-            });
-            if (columnWhere) {
-                allFilter = {[Op.and]: [allFilter, columnWhere]};
-            }
-        }
-
-        const search = typeof query.search === "string"
-            ? query.search.trim().slice(0, MAX_SEARCH_LENGTH)
-            : "";
-        let searchColumns = null;
-        if (search) {
-            const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
-            searchColumns = typeof model.getQueryTableSearchColumns === "function"
-                ? await model.getQueryTableSearchColumns(injectCtx)
-                : null;
-            const searchWhere = buildQueryTableSearch({
-                model,
-                search,
-                allowedAttributeNames,
-                injects,
-                searchColumns,
-            });
-            if (searchWhere) {
-                allFilter = {[Op.and]: [allFilter, searchWhere]};
-            }
-        }
+        // Row scope (ACL + client filter + search bar) is shared with query-scoped bulk actions.
+        const scope = await this.resolveQueryTableScope({table, filter, query});
+        const {model, attributes, allAttributes, columnFilters, search} = scope;
+        const allFilter = scope.where;
 
         // Rows per page (default 10). Clamped: "All" in the UI is a sliding window, never the whole table.
         const limit = Math.min(Number(query.limit) > 0 ? Number(query.limit) : 10, MAX_QUERY_TABLE_LIMIT);
@@ -590,23 +521,14 @@ class AppSocket extends Socket {
         let edges;
         let total;
 
-        const viewFields = viewSearchFields(model);
-        const searchNeedsView = !!(search && viewFields.some((spec) => !searchColumns || searchColumns.includes(spec.key)));
-        const needsViewJoin = Boolean(derivedSortSpec)
-            || columnFiltersNeedViewJoin(filterSpec, columnFilters)
-            || searchNeedsView;
+        const needsViewJoin = Boolean(derivedSortSpec) || scope.needsViewJoin;
 
         const sortModel = needsViewJoin ? this.models["study_dashboard_sort"] : null;
         if (needsViewJoin) {
             if (!sortModel) {
                 throw new Error("study_dashboard_sort is not available");
             }
-            const usesStateView = derivedSortSpec?.field === "stateRank"
-                || !!(filterSpec && columnFilters && Object.keys(columnFilters).some(
-                    (key) => filterSpec[key]?.viewField === "state"
-                ))
-                || !!(search && viewFields.some((spec) => spec.field === "state"
-                    && (!searchColumns || searchColumns.includes(spec.key))));
+            const usesStateView = derivedSortSpec?.field === "stateRank" || scope.usesStateView;
             await ensureStudyDashboardSortFresh(
                 this.server.db.sequelize,
                 usesStateView ? "stateRank" : "sessions"
@@ -752,6 +674,60 @@ class AppSocket extends Socket {
     }
 
     /**
+     * Distinct values of one column within the same row scope as queryTable.
+     *
+     * Feeds dropdowns that used to read unique values from a full Vuex table dump (e.g. the
+     * Manage Studies workflow filter). The column has to be offered by the model
+     * (`getQueryTableDistinctColumns`) and readable by the viewer.
+     *
+     * @socketEvent queryTableDistinct
+     * @param {Object} data
+     * @param {string} data.table autoTable name
+     * @param {string} data.column column to read distinct values from
+     * @param {Array} [data.filter] same filter items as queryTable
+     * @param {Object} [data.query] { search, columnFilters, searchColumns }
+     * @returns {Promise<{values: Array}>} at most MAX_DISTINCT_VALUES values, nulls dropped
+     */
+    async queryTableDistinct(data) {
+        const {table, column, query = {}, filter = []} = data || {};
+        if (!column || typeof column !== "string") {
+            throw new Error("Column name is required");
+        }
+
+        const scope = await this.resolveQueryTableScope({table, filter, query});
+        const distinctColumns = typeof scope.model.getQueryTableDistinctColumns === "function"
+            ? (await scope.model.getQueryTableDistinctColumns(scope.injectCtx)) || []
+            : [];
+        if (!distinctColumns.includes(column) || !scope.allowedAttributeNames.includes(column)) {
+            throw new Error(`Column ${column} is not available for distinct values`);
+        }
+
+        const findOptions = {
+            where: scope.where,
+            attributes: [[col(`${scope.model.tableName}.${column}`), "value"]],
+            group: [col(`${scope.model.tableName}.${column}`)],
+            order: [[col(`${scope.model.tableName}.${column}`), "ASC"]],
+            limit: MAX_DISTINCT_VALUES,
+            raw: true,
+        };
+        if (scope.needsViewJoin) {
+            const sortModel = this.models["study_dashboard_sort"];
+            if (!sortModel) {
+                throw new Error("study_dashboard_sort is not available");
+            }
+            await ensureStudyDashboardSortFresh(
+                this.server.db.sequelize,
+                scope.usesStateView ? "stateRank" : "sessions"
+            );
+            findOptions.include = [dashboardSortInclude(sortModel)];
+            findOptions.subQuery = false;
+        }
+
+        const rows = await scope.model.findAll(findOptions);
+        return {values: rows.map((row) => row.value).filter((value) => value !== null && value !== undefined)};
+    }
+
+    /**
      * Updates a single user-specific setting and then broadcasts the complete, refreshed settings to the client.
      * 
      * Saves the key–value pair for the current user in the database, then triggers an update
@@ -791,6 +767,7 @@ class AppSocket extends Socket {
         this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
         this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);
         this.createSocket("queryTable", this.queryTable, {}, false);
+        this.createSocket("queryTableDistinct", this.queryTableDistinct, {}, false);
         this.createSocket("appInit", this.sendInit, {}, false);
         this.createSocket("appSettingSet", this.sendOverallSetting, {}, false);
     }

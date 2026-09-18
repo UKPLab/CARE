@@ -54,6 +54,7 @@
                 class="form-check-input"
                 type="checkbox"
                 :checked="isAllRowsSelected"
+                :indeterminate="isSelectionPartial"
                 @change="selectAllRows"
               />
             </div>
@@ -484,12 +485,11 @@ export default {
       required: false,
       default: 0,
     },
+    /** Selected rows. */
     modelValue: {
-      type: Object,
+      type: [Array, Object],
       required: false,
-      default: () => {
-        return {};
-      },
+      default: () => [],
     },
     buttons: {
       type: Array,
@@ -522,6 +522,15 @@ export default {
       required: false,
       default: () => ({}),
     },
+    /**
+     * Columns the free-text part of the search bar may hit, for tables that show fewer columns
+     * than the model offers. Intersected with the model whitelist server-side.
+     */
+    querySearchColumns: {
+      type: Array,
+      required: false,
+      default: null,
+    },
     /** Optional (row) => enrichedRow mapper (e.g. Study computed fields) */
     enrichRow: {
       type: Function,
@@ -529,7 +538,7 @@ export default {
       default: null,
     },
   },
-  emits: ["action", "update:modelValue", "paginationUpdate", "delta", "stale"],
+  emits: ["action", "update:modelValue", "paginationUpdate", "delta", "stale", "selectionChange"],
   data: function () {
     return {
       tableClass: {
@@ -558,6 +567,11 @@ export default {
       allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
       allChunkSize: 50, // Append the next 50 items on scroll
       allObserver: null,
+      // Select-all in query-mode: the selection is the query, not a copy of the loaded rows.
+      // `allMatching` carries the intention ("every row this query matches"), `excludeIds` the
+      // rows unticked afterwards. Both are resolved again on the server when the action runs.
+      allMatching: false,
+      excludeIds: [],
       // queryTable / Delta (issue #88)
       queryItems: [],
       queryMeta: {total: 0, page: 0, pageSize: 10, totalPages: 1},
@@ -769,10 +783,17 @@ export default {
       return this.sourceData && this.sourceData.length > 0;
     },
     isAllRowsSelected() {
+      if (this.queryMode) {
+        return this.allMatching && this.excludeIds.length === 0;
+      }
       // Use the existing method to get filtered data across all pages
       const allFilteredData = this.getFilteredAndSortedData();
       const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
       return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
+    },
+    /** Dash instead of a tick: all matching rows are selected except a few unticked ones. */
+    isSelectionPartial() {
+      return this.queryMode && this.allMatching && this.excludeIds.length > 0;
     },
     tableWrapperStyle() {
       const style = {};
@@ -930,12 +951,25 @@ export default {
       };
     },
     selectedCount() {
+      if (this.queryMode && this.allMatching) {
+        return Math.max(0, this.total - this.excludeIds.length);
+      }
       return this.currentData.length;
     },
     totalSelectableCount() {
       if (!this.selectableRows) return 0;
+      if (this.queryMode) return this.total;
       const allFilteredData = this.getFilteredAndSortedData();
       return allFilteredData.filter((r) => !r.isDisabled).length;
+    },
+    /** What an action should run on: either these rows, or "the query minus excludeIds". */
+    selectionState() {
+      return {
+        allMatching: this.queryMode && this.allMatching,
+        excludeIds: [...this.excludeIds],
+        rows: this.currentData,
+        count: this.selectedCount,
+      };
     },
   },
   watch: {
@@ -1004,6 +1038,7 @@ export default {
       handler() {
         if (this.queryMode) {
           this.currentPage = 1;
+          this.resetSelection();
           this.fetchQueryPage();
         }
       },
@@ -1013,10 +1048,19 @@ export default {
       handler() {
         if (!this.queryMode) return;
         clearTimeout(this.searchDebounceTimer);
+        this.resetSelection();
         this.searchDebounceTimer = setTimeout(() => {
           this.currentPage = 1;
           this.fetchQueryPage({nav: {}});
         }, 300);
+      },
+      deep: true,
+    },
+    selectionState: {
+      handler(value) {
+        if (this.selectableRows) {
+          this.$emit("selectionChange", value);
+        }
       },
       deep: true,
     },
@@ -1339,7 +1383,8 @@ export default {
       return data;
     },
     updateValues(data) {
-      return data;
+      // Selection is always a row list; a consumer that binds nothing starts empty.
+      return Array.isArray(data) ? data : [];
     },
     sort(column) {
       if (this.sortColumn && this.sortColumn === column) {
@@ -1370,23 +1415,50 @@ export default {
         }
     },
     selectRow(row) {
-      if (this.selectableRows) {
-        if (!this.isRowSelected(row)) {
-          // check if selected
-          if (this.options && this.options.singleSelect) {
-            this.currentData = [row];
-          } else {
-            this.currentData.push(row);
-          }
+      if (!this.selectableRows) return;
+      if (this.allMatching && this.queryMode) {
+        // Ticks are inverted while "all matching" is on: unticking a row excludes it.
+        const index = this.excludeIds.indexOf(row.id);
+        if (index >= 0) {
+          this.excludeIds.splice(index, 1);
+        } else if (row.id !== undefined) {
+          this.excludeIds.push(row.id);
+        }
+        if (this.total > 0 && this.excludeIds.length >= this.total) {
+          // Unticking the last row is the same as clearing the selection.
+          this.resetSelection();
+        }
+        return;
+      }
+      if (!this.isRowSelected(row)) {
+        // check if selected
+        if (this.options && this.options.singleSelect) {
+          this.currentData = [row];
         } else {
-          const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
-          if (toRemove >= 0) {
-            this.currentData.splice(toRemove, 1);
-          }
+          this.currentData.push(row);
+        }
+      } else {
+        const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
+        if (toRemove >= 0) {
+          this.currentData.splice(toRemove, 1);
         }
       }
     },
     selectAllRows() {
+      if (this.queryMode) {
+        // Three header states: empty → select everything the query matches; dash → back to
+        // everything (drop the exclusions); tick → clear the selection.
+        if (!this.allMatching) {
+          this.allMatching = true;
+          this.excludeIds = [];
+          this.currentData = [];
+        } else if (this.excludeIds.length > 0) {
+          this.excludeIds = [];
+        } else {
+          this.allMatching = false;
+        }
+        return;
+      }
       if (this.isAllRowsSelected) {
         this.currentData = [];
       } else {
@@ -1395,6 +1467,36 @@ export default {
         // Select all filtered rows that are not disabled
         this.currentData = [...allFilteredData.filter((t) => !t.isDisabled)];
       }
+    },
+    /** Drop the selection — a different query means different matching rows. */
+    resetSelection() {
+      this.allMatching = false;
+      this.excludeIds = [];
+      this.currentData = [];
+    },
+    /**
+     * Selection as the server takes it: either explicit ids, or the current query plus the rows
+     * the user unticked after select-all.
+     * @returns {{allMatching: boolean, excludeIds: number[], ids: number[], rows: Array,
+     *   count: number, filter: Array, query: Object}}
+     */
+    getSelection() {
+      const payload = this.buildQueryPayload();
+      // Copies: the caller keeps this snapshot after the table is gone (e.g. a wizard step).
+      const rows = [...this.currentData];
+      return {
+        allMatching: this.selectionState.allMatching,
+        excludeIds: this.selectionState.excludeIds,
+        rows,
+        ids: rows.map((row) => row.id).filter((id) => id !== undefined),
+        count: this.selectedCount,
+        filter: payload.filter,
+        query: {
+          search: payload.query.search,
+          columnFilters: payload.query.columnFilters,
+          searchColumns: payload.query.searchColumns,
+        },
+      };
     },
     paginationPageChange(page) {
       if (!this.queryMode) {
@@ -1643,6 +1745,9 @@ export default {
     },
 
     isRowSelected(row) {
+      if (this.allMatching && this.queryMode) {
+        return !this.excludeIds.includes(row.id);
+      }
       if (row.id !== undefined) {
         return this.currentData.some(r => r.id === row.id);
       }
@@ -1705,6 +1810,9 @@ export default {
       if (search) query.search = search;
       if (Object.keys(this.activeColumnFilters).length > 0) {
         query.columnFilters = this.activeColumnFilters;
+      }
+      if (this.querySearchColumns && this.querySearchColumns.length > 0) {
+        query.searchColumns = this.querySearchColumns;
       }
       // Keyset navigation: absence of all three → first page.
       if (nav.after) query.after = nav.after;
@@ -1973,15 +2081,18 @@ export default {
     },
     passesCurrentFilter(row) {
       const q = this.currentQuery || {};
+      // Check the row as it is displayed: derived columns (e.g. a workflow title looked up on the
+      // client) are what the server matched on, so a raw delta row would look like a miss.
+      const candidate = this.applyEnrich(row);
       if (q.search) {
         const needle = String(q.search).toLowerCase();
-        const hit = Object.values(row).some(
+        const hit = Object.values(candidate).some(
           (v) => v != null && String(v).toLowerCase().includes(needle)
         );
         if (!hit) return false;
       }
       for (const [col, filter] of Object.entries(q.columnFilters || {})) {
-        if (!this.matchesColumnFilter(row, col, filter)) return false;
+        if (!this.matchesColumnFilter(candidate, col, filter)) return false;
       }
       // Client base filters from queryFilter
       for (const f of this.queryFilter || []) {
