@@ -56,8 +56,7 @@
     "vue-tab": "^0.0.0",
     "vue3-observe-visibility": "^1.0.7",
     "vue3-tabs-component": "^1.4.0",
-    "vuex": "^4.1.0",
-    "xstate": "^5.32.6"
+    "vuex": "^4.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
