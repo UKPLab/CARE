@@ -474,7 +474,6 @@ export default {
     }
   },
   methods: {
-    
     /**
      * Move keyboard focus to the forward control after the final assessment
      * criterion is marked done. Under forcedAssessment the button is enabled

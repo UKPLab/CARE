@@ -12,10 +12,10 @@
         "saved": "Bewertung gespeichert",
         "save": "Bewertung speichern",
         "saveEdit": "Speichern",
+        "cancel": "Abbrechen",
         "keyboardHint": "{mod}+Enter zum Speichern · Umschalt+Enter für eine neue Zeile · Esc zum Abbrechen",
         "modCtrl": "Strg",
-        "modCmd": "Cmd",
-        "cancel": "Abbrechen"
+        "modCmd": "Cmd"
     },
     "save": {
         "failedTitle": "Speichern fehlgeschlagen",

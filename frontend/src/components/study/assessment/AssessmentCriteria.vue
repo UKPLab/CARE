@@ -75,7 +75,7 @@
                 @input="autoResizeTextarea"
                 @keydown.ctrl.enter.exact.prevent="saveEdit"
                 @keydown.meta.enter.exact.prevent="saveEdit"
-                @keydown.esc.prevent="cancelEdit"
+                @keydown.esc.exact.prevent="cancelEdit"
             ></textarea>
             <small class="text-muted assessment-hint">
               {{ $t('assessment.criteria.keyboardHint', { mod: modifierKey }) }}

@@ -12,10 +12,10 @@
         "saved": "Assessment saved",
         "save": "Save assessment",
         "saveEdit": "Save",
+        "cancel": "Cancel",
         "keyboardHint": "{mod}+Enter to save · Shift+Enter for a new line · Esc to cancel",
         "modCtrl": "Ctrl",
-        "modCmd": "Cmd",
-        "cancel": "Cancel"
+        "modCmd": "Cmd"
     },
     "save": {
         "failedTitle": "Save failed",
