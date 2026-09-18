@@ -5,7 +5,7 @@ const { faker } = require('@faker-js/faker');
 const JSZip = require('jszip');
 const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
-const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
+const { calculateAssessmentScore, scoresFromStoredValue } = require('assessment-score');
 
 const ASSESSMENT_RESULT_KEY = "assessment_result";
 
@@ -340,19 +340,27 @@ module.exports = function (server) {
     }
 
     /**
-     * Parses an assessment state payload when it is stored as JSON text.
+     * Prefer human-saved assessment_result when it has a real score, otherwise the hook/NLP row.
      *
-     * @param {string} rawAssessmentState - The raw JSON string from document_data.
-     * @returns {Object} The parsed assessment state or an empty object on failure.
+     * @param {Array<Object>} rows - document_data rows for one document/session/step group
+     * @returns {Object} Flat map of criterion name to score
      */
-    function parseAssessmentState(rawAssessmentState) {
-        try {
-            const parsed = JSON.parse(rawAssessmentState);
-            return parsed && typeof parsed === "object" ? parsed : {};
-        } catch (error) {
-            console.warn("Failed to parse assessment state:", error.message);
-            return {};
+    function pickScoresFromGradeRows(rows) {
+        let savedScores = {};
+        let hookScores = {};
+        for (const row of rows) {
+            const scores = scoresFromStoredValue(row.value);
+            if (!Object.keys(scores).length) continue;
+            if (row.key === ASSESSMENT_RESULT_KEY) {
+                savedScores = scores;
+            } else if (!Object.keys(hookScores).length) {
+                hookScores = scores;
+            }
         }
+        if (Object.values(savedScores).some((value) => Number(value) !== 0)) {
+            return savedScores;
+        }
+        return Object.keys(hookScores).length ? hookScores : savedScores;
     }
 
     /**
@@ -483,8 +491,8 @@ module.exports = function (server) {
     }
 
     /**
-     * Loads the related entities needed to turn raw assessment_result rows into
-     * export-ready grade records. 
+     * Loads the related entities needed to turn assessment document_data rows into
+     * export-ready grade records.
      *
      * @param {Object} server - The server instance with Sequelize models.
      * @param {Array<Object>} gradeRows - Assessment result rows with attached documents.
@@ -503,7 +511,34 @@ module.exports = function (server) {
             : [];
         const sessionsById = new Map(studySessions.map((session) => [session.id, session]));
 
-        const studyIds = [...new Set(studySessions.map((session) => session.studyId).filter(Boolean))];
+        const studyStepIds = [...new Set(gradeRows.map((row) => row.studyStepId).filter(Boolean))];
+        const documentIdsMissingStep = [...new Set(
+            gradeRows
+                .filter((row) => row.studyStepId == null)
+                .map((row) => row.documentId || row.document?.id)
+                .filter(Boolean)
+        )];
+        const studyStepWhere = [];
+        if (studyStepIds.length) studyStepWhere.push({ id: { [Op.in]: studyStepIds } });
+        if (documentIdsMissingStep.length) studyStepWhere.push({ documentId: { [Op.in]: documentIdsMissingStep } });
+        const studySteps = studyStepWhere.length > 0
+            ? await server.db.models.study_step.findAll({
+                where: { deleted: false, [Op.or]: studyStepWhere },
+                raw: true
+            })
+            : [];
+        const studyStepsById = new Map(studySteps.map((studyStep) => [studyStep.id, studyStep]));
+        const studyStepsByDocumentId = new Map();
+        studySteps.forEach((studyStep) => {
+            if (studyStep.documentId != null && !studyStepsByDocumentId.has(studyStep.documentId)) {
+                studyStepsByDocumentId.set(studyStep.documentId, studyStep);
+            }
+        });
+
+        const studyIds = [...new Set([
+            ...studySessions.map((session) => session.studyId),
+            ...studySteps.map((studyStep) => studyStep.studyId),
+        ].filter(Boolean))];
         const studies = studyIds.length > 0
             ? await server.db.models.study.findAll({
                 where: { id: { [Op.in]: studyIds }, deleted: false },
@@ -511,15 +546,6 @@ module.exports = function (server) {
             })
             : [];
         const studiesById = new Map(studies.map((study) => [study.id, study]));
-
-        const studyStepIds = [...new Set(gradeRows.map((row) => row.studyStepId).filter(Boolean))];
-        const studySteps = studyStepIds.length > 0
-            ? await server.db.models.study_step.findAll({
-                where: { id: { [Op.in]: studyStepIds }, deleted: false },
-                raw: true
-            })
-            : [];
-        const studyStepsById = new Map(studySteps.map((studyStep) => [studyStep.id, studyStep]));
 
         const configurationIds = [...new Set(
             studySteps
@@ -549,6 +575,7 @@ module.exports = function (server) {
             sessionsById,
             studiesById,
             studyStepsById,
+            studyStepsByDocumentId,
             configurationsById,
             usersById
         };
@@ -585,9 +612,12 @@ module.exports = function (server) {
         const { Op } = server.db.Sequelize;
         const gradeRows = await server.db.models.document_data.findAll({
             where: {
-                key: ASSESSMENT_RESULT_KEY,
                 deleted: false,
-                studySessionId: { [Op.ne]: null }
+                [Op.or]: [
+                    { key: ASSESSMENT_RESULT_KEY },
+                    { key: { [Op.like]: "aiHook_%" } },
+                    { key: { [Op.like]: "%_assessment" } },
+                ],
             },
             include: [{
                 model: server.db.models.document,
@@ -613,9 +643,26 @@ module.exports = function (server) {
             sessionsById,
             studiesById,
             studyStepsById,
+            studyStepsByDocumentId,
             configurationsById,
             usersById
         } = await loadGradeExportContext(server, gradeRows, users);
+
+        const rowsByGroup = new Map();
+        const documentFallbackRows = new Map();
+        const documentsWithSessionRows = new Set();
+        for (const row of gradeRows) {
+            const documentId = row.documentId || row.document?.id;
+            const groupKey = `${documentId}:${row.studySessionId ?? "null"}:${row.studyStepId ?? "null"}`;
+            if (!rowsByGroup.has(groupKey)) rowsByGroup.set(groupKey, []);
+            rowsByGroup.get(groupKey).push(row);
+            if (row.studySessionId == null) {
+                if (!documentFallbackRows.has(documentId)) documentFallbackRows.set(documentId, []);
+                documentFallbackRows.get(documentId).push(row);
+            } else {
+                documentsWithSessionRows.add(documentId);
+            }
+        }
 
         const recordsByUser = new Map();
         // Grade export currently assumes that all exported rows point to one assessment config.
@@ -623,8 +670,13 @@ module.exports = function (server) {
             key: null,
             reference: null
         };
-        for (const row of gradeRows) {
+        for (const rows of rowsByGroup.values()) {
+            const row = rows[0];
             const document = row.document;
+            const documentId = row.documentId || document?.id;
+            if (row.studySessionId == null && documentsWithSessionRows.has(documentId)) {
+                continue;
+            }
             const ownerUser = usersById.get(document.userId);
             if (!ownerUser) {
                 console.warn("Skipping grade export row because the document owner could not be resolved.", {
@@ -637,19 +689,22 @@ module.exports = function (server) {
             }
             const session = sessionsById.get(row.studySessionId);
             const reviewerUser = session ? usersById.get(session.userId) : null;
-            const study = session ? studiesById.get(session.studyId) : null;
+            const studyStep = studyStepsById.get(row.studyStepId) || studyStepsByDocumentId.get(documentId);
+            const study = session
+                ? studiesById.get(session.studyId)
+                : studiesById.get(studyStep?.studyId);
             const graderUser = study ? usersById.get(study.userId) : null;
-            const studyStep = studyStepsById.get(row.studyStepId);
             const submission = document.submission;
             const studyStepConfiguration = studyStep?.configuration;
             // configurationId is exported as metadata; assessmentConfig is the rubric content
             // needed for score calculation and criteria_reference.json.
             const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
-            const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
+            const studyName = study?.name || `study_${session?.studyId || studyStep?.studyId || "unknown"}`;
 
-            const scoreObject = row.value || {};
-            const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(scoreObject) : scoreObject;
-            const flatScores = buildScoresFromState(assessmentState);
+            let flatScores = pickScoresFromGradeRows(rows);
+            if (!Object.keys(flatScores).length && row.studySessionId != null) {
+                flatScores = pickScoresFromGradeRows(documentFallbackRows.get(documentId) || []);
+            }
             const assessmentConfig = resolveAssessmentConfigurationContent(
                 studyStepConfiguration,
                 configurationsById
@@ -671,7 +726,7 @@ module.exports = function (server) {
                 submissionId: submission?.id ?? document.submissionId ?? null,
                 submissionExtId: submission?.extId ?? null,
                 studySessionId: row.studySessionId ?? null,
-                studyStepId: row.studyStepId ?? null,
+                studyStepId: row.studyStepId ?? studyStep?.id ?? null,
                 configurationId,
                 studyName,
                 sessionHash: session?.hash ?? null,
