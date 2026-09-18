@@ -1,9 +1,16 @@
 <template>
   <div>
     <div
+        ref="criterionHeader"
         class="d-flex justify-content-between align-items-center py-2"
         style="cursor: pointer"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isExpanded"
+        :aria-controls="panelId"
         @click="$emit('toggle')"
+        @keydown.enter.exact.prevent="$emit('toggle')"
+        @keydown.space.exact.prevent="$emit('toggle')"
     >
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
@@ -42,6 +49,7 @@
 
     <div
         v-if="isExpanded"
+        :id="panelId"
         class="criterion-assessment mt-2 px-3 pb-2"
     >
       <div class="assessment-text">
@@ -65,7 +73,13 @@
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
                 @input="autoResizeTextarea"
+                @keydown.ctrl.enter.exact.prevent="saveEdit"
+                @keydown.meta.enter.exact.prevent="saveEdit"
+                @keydown.esc.exact.prevent="cancelEdit"
             ></textarea>
+            <small class="text-muted assessment-hint">
+              {{ $t('assessment.criteria.keyboardHint', { mod: modifierKey }) }}
+            </small>
           </div>
         </div>
       </div>
@@ -80,6 +94,7 @@
           <div>
             <BasicButton
                 v-if="!readOnly"
+                ref="editButton"
                 class="btn-outline-primary btn-sm"
                 :title="$t('assessment.criteria.edit')"
                 text=""
@@ -91,6 +106,7 @@
 
           <div v-if="!readOnly" class="d-flex align-items-center gap-2">
             <select
+                ref="scoreSelect"
                 v-model.number="scoreProxy"
                 class="form-select form-select-sm score-dropdown"
                 :title="$t('assessment.criteria.changeScore')"
@@ -119,6 +135,7 @@
             </select>
 
             <BasicButton
+                ref="markDoneButton"
                 :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
                 :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
                 text=""
@@ -197,6 +214,7 @@ export default {
   data() {
     return {
       localAssessment: "",
+      uid: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     };
   },
   computed: {
@@ -214,6 +232,28 @@ export default {
     },
     isSaved() {
       return !!this.state.isSaved;
+    },
+    /**
+     * Label for the save modifier key in the shortcut hint.
+     * macOS users press Cmd, everyone else presses Ctrl. Both are bound.
+     *
+     * @returns {string} translated modifier label
+     */
+    modifierKey() {
+      const platform = navigator.userAgentData?.platform || navigator.platform || "";
+      return /mac/i.test(platform)
+          ? this.$t("assessment.criteria.modCmd")
+          : this.$t("assessment.criteria.modCtrl");
+    },
+    /**
+     * Unique DOM id for this criterion's panel, used by aria-controls.
+     * Uses the component uid so it cannot collide, regardless of how the
+     * assessment configuration names its criteria.
+     *
+     * @returns {string} unique panel id
+     */
+    panelId() {
+      return `criterion-panel-${this.uid}`;
     },
     isEditing() {
       return !!this.state.isEditing;
@@ -289,6 +329,7 @@ export default {
       };
       this.$nextTick(() => {
         this.autoResizeTextarea();
+        this.$refs.assessmentTextarea?.focus();
       });
     },
     saveEdit() {
@@ -299,6 +340,7 @@ export default {
         isEditing: false,
         isSaved: false,
       };
+      this.$nextTick(() => this.focusEl("scoreSelect"));
     },
     cancelEdit() {
       if (this.readOnly) return;
@@ -307,6 +349,25 @@ export default {
         isEditing: false,
       };
       this.localAssessment = this.state.assessment || "";
+      this.$nextTick(() => this.focusEl("editButton"));
+    },
+    /**
+     * Move keyboard focus to this criterion's header.
+     * Called by the parent rubric after an advance, never on a plain expand.
+     */
+    focusHeader() {
+      this.$refs.criterionHeader?.focus();
+    },
+    /**
+     * Focus the native element behind a BasicButton ref.
+     * BasicButton has a single root <button>, so $el is that button.
+     *
+     * @param {string} refName - name of the ref to focus
+     */
+    focusEl(refName) {
+      const c = this.$refs[refName];
+      const el = c && c.$el ? c.$el : c;
+      if (el && typeof el.focus === "function") el.focus();
     },
     saveAssessment() {
       if (this.readOnly) return;
@@ -370,6 +431,12 @@ export default {
 
 .assessment-edit-form {
   margin-top: 12px;
+}
+
+.assessment-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
 }
 
 .assessment-textarea {
