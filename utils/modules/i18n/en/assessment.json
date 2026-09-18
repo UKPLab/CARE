@@ -12,6 +12,9 @@
         "saved": "Assessment saved",
         "save": "Save assessment",
         "saveEdit": "Save",
+        "keyboardHint": "{mod}+Enter to save · Shift+Enter for a new line · Esc to cancel",
+        "modCtrl": "Ctrl",
+        "modCmd": "Cmd",
         "cancel": "Cancel"
     },
     "save": {

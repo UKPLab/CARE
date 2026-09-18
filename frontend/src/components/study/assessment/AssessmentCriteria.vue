@@ -77,6 +77,9 @@
                 @keydown.meta.enter.exact.prevent="saveEdit"
                 @keydown.esc.prevent="cancelEdit"
             ></textarea>
+            <small class="text-muted assessment-hint">
+              {{ $t('assessment.criteria.keyboardHint', { mod: modifierKey }) }}
+            </small>
           </div>
         </div>
       </div>
@@ -228,6 +231,18 @@ export default {
     },
     isSaved() {
       return !!this.state.isSaved;
+    },
+    /**
+     * Label for the save modifier key in the shortcut hint.
+     * macOS users press Cmd, everyone else presses Ctrl. Both are bound.
+     *
+     * @returns {string} translated modifier label
+     */
+    modifierKey() {
+      const platform = navigator.userAgentData?.platform || navigator.platform || "";
+      return /mac/i.test(platform)
+          ? this.$t("assessment.criteria.modCmd")
+          : this.$t("assessment.criteria.modCtrl");
     },
     /**
      * Unique DOM id for this criterion's panel, used by aria-controls.
@@ -415,6 +430,12 @@ export default {
 
 .assessment-edit-form {
   margin-top: 12px;
+}
+
+.assessment-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
 }
 
 .assessment-textarea {
