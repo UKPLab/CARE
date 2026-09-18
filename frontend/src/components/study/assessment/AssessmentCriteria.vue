@@ -103,6 +103,7 @@
 
           <div v-if="!readOnly" class="d-flex align-items-center gap-2">
             <select
+                ref="scoreSelect"
                 v-model.number="scoreProxy"
                 class="form-select form-select-sm score-dropdown"
                 :title="$t('assessment.criteria.changeScore')"
@@ -323,7 +324,7 @@ export default {
         isEditing: false,
         isSaved: false,
       };
-      this.$nextTick(() => this.focusEl("markDoneButton"));
+      this.$nextTick(() => this.focusEl("scoreSelect"));
     },
     cancelEdit() {
       if (this.readOnly) return;
