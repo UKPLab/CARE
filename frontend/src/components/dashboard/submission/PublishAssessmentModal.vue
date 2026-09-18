@@ -245,65 +245,12 @@
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { calculateAssessmentScore } from "assessment-score";
+import { calculateAssessmentScore, scoresFromStoredValue } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {
   ASSESSMENT_RESULT_KEY,
   getAssessmentResultKeyCandidates,
 } from "@/assets/serviceDocumentDataKeys.js";
-
-function scoresFromStoredValue(value) {
-  let parsed = value;
-  if (typeof parsed === "string") {
-    const trimmed = parsed.trim();
-    const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-    try {
-      parsed = JSON.parse(fenced ? fenced[1].trim() : trimmed);
-    } catch (_error) {
-      return {};
-    }
-  }
-  if (typeof parsed === "string") {
-    try {
-      parsed = JSON.parse(parsed);
-    } catch (_error) {
-      return {};
-    }
-  }
-  if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && parsed.output != null && parsed.assessment == null) {
-    return scoresFromStoredValue(parsed.output);
-  }
-  if (!parsed || typeof parsed !== "object") return {};
-
-  const list = Array.isArray(parsed)
-    ? parsed
-    : Array.isArray(parsed.assessment)
-      ? parsed.assessment
-      : Array.isArray(parsed.criteria)
-        ? parsed.criteria
-        : Array.isArray(parsed.results)
-          ? parsed.results
-          : null;
-  const scores = {};
-  if (list) {
-    list.forEach((item) => {
-      if (!item || typeof item !== "object") return;
-      const name = item.name || item.criterion || item.criterionName || item.title;
-      const raw = Number(item.currentScore ?? item.score ?? item.points);
-      if (name && Number.isFinite(raw)) scores[name] = raw;
-    });
-    return scores;
-  }
-  Object.entries(parsed).forEach(([name, stored]) => {
-    if (typeof stored === "number" && Number.isFinite(stored)) {
-      scores[name] = stored;
-      return;
-    }
-    const raw = Number(stored?.currentScore);
-    if (Number.isFinite(raw)) scores[name] = raw;
-  });
-  return scores;
-}
 
 /**
  * Modal for publishing assessment data with CSV export

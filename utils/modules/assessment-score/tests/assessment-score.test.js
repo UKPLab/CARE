@@ -1,4 +1,20 @@
-const { calculateAssessmentScore, buildScoresFromState } = require("../index");
+const { calculateAssessmentScore, buildScoresFromState, scoresFromStoredValue } = require("../index");
+
+describe("scoresFromStoredValue", () => {
+    test("flattens NLP assessment arrays", () => {
+        expect(
+            scoresFromStoredValue([
+                { name: "Clarity", score: 4 },
+                { criterion: "Sources", points: 2 },
+            ])
+        ).toEqual({ Clarity: 4, Sources: 2 });
+    });
+
+    test("flattens numeric maps and currentScore state", () => {
+        expect(scoresFromStoredValue({ Clarity: 4, Sources: 2 })).toEqual({ Clarity: 4, Sources: 2 });
+        expect(scoresFromStoredValue({ Clarity: { currentScore: 3 } })).toEqual({ Clarity: 3 });
+    });
+});
 
 describe("buildScoresFromState", () => {
     test("extracts numeric currentScore values", () => {
