@@ -364,7 +364,7 @@ export default {
     },
     columns() {
       let cols = [
-        {name: "ID", key: "id", fixed: "left" },
+        {name: "ID", key: "id", fixed: "left", style: {minWidth: "4.5rem", whiteSpace: "nowrap"} },
         {name: "Name", key: "name", fixed: "left", scroll: true, maxChars: 40 },
         {
           name: "Status",

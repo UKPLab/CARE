@@ -1121,6 +1121,9 @@ export default {
         if (window.ResizeObserver && this.$refs.tableWrapper) {
           this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
           this.resizeObserver.observe(this.$refs.tableWrapper);
+          if (this.$refs.tableElement) {
+            this.resizeObserver.observe(this.$refs.tableElement);
+          }
         } else {
           // Fallback to window resize
           window.addEventListener("resize", this.debouncedComputeFixedColumns);
