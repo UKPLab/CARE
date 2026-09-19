@@ -445,8 +445,8 @@ export default {
         this.runBulk(action, payload);
         return;
       }
-      // Delete asks a second time; the payload is captured before the stepper closes.
-      this.$refs.manageStudiesModal.close();
+      // Keep the stepper open so startProgress() is visible after ConfirmModal closes.
+      // Closing it first left the progress bar on a hidden modal (delete looked "background").
       this.$refs.deleteConf.open(
         "Delete Studies",
         "",
@@ -454,8 +454,6 @@ export default {
         (confirmed) => {
           if (confirmed) {
             this.runBulk(action, payload);
-          } else {
-            this.$refs.manageStudiesModal.open();
           }
         }
       );
