@@ -179,7 +179,6 @@ export default {
         sessions: {label: "Sessions", type: "numeric"},
         limitSessions: {label: "Session Limit", type: "numeric"},
         limitSessionsPerUser: {label: "Session Limit per User", type: "numeric"},
-        workflow: {label: "Workflow", type: "exists", field: "workflowId"},
         collab: {label: "Collaborative", type: "boolean"},
         resumable: {label: "Resumable", type: "boolean"},
         multipleSubmit: {label: "Multiple Submissions", type: "boolean"},
