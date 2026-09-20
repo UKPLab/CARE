@@ -2,8 +2,8 @@
   <BasicCoordinator
       ref="coordinator"
       table="study"
-      :title="isTemplateMode ? 'Template' : 'Study'"
-      :text-add="isTemplateMode ? 'Create' : 'Add'"
+      :title="isTemplateMode ? $t('studies.template') : $t('studies.study')"
+      :textAdd="isTemplateMode ? $t('common.create') : $t('common.add')"
       :custom-submit="isTemplateMode"
       :default-value="{ isTemplateMode: isTemplateMode }"
       @success="success"
@@ -15,11 +15,11 @@
     </template>
     <template #success>
       <div v-if="isTemplateMode">
-        Template has been successfully created.
+        {{ $t('studies.messages.templateCreatedSuccess') }}
       </div>
       <div v-else>
-        The study has been successfully published<br>
-        Participants can join the study under the following link:<br><br>
+        {{ $t('studies.messages.studyPublishedSuccess') }}<br>
+        {{ $t('studies.messages.participantsCanJoin') }}<br><br>
         <a
             :href="link"
             target="_blank"
@@ -30,7 +30,7 @@
       <BasicButton
           v-if="!isTemplateMode"
           class="btn btn-primary"
-          text="Copy Link"
+          :text="$t('studies.copyLink')"
           @click="copyURL"
       />
     </template>
@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils";
 import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
 import BasicButton from "@/basic/Button.vue";
 
@@ -50,6 +51,7 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "CoordinatorStudy",
   emits: ["published"],
+  subscribeTable: ['document', 'tag_set', 'ai_budget'],
   components: {BasicCoordinator, BasicButton},
   data() {
     return {
@@ -82,15 +84,21 @@ export default {
       return window.location.origin + "/study/" + this.study.hash;
     },
     modalTitle() {
-      const prefix = this.isUsingTemplate ? 'Create' : (this.studyId !== 0 ? 'Edit' : 'New');
-      const suffix = this.isTemplateMode ? 'Template' : 'Study';
-      return `${prefix} ${suffix}`;
+      if (this.isUsingTemplate) {
+        return this.isTemplateMode ? this.$t('studies.modalTitle.createTemplate') : this.$t('studies.modalTitle.createStudy');
+      } 
+
+      if (this.studyId !== 0) {
+        return this.isTemplateMode ? this.$t('studies.modalTitle.editTemplate') : this.$t('studies.modalTitle.editStudy');
+      }
+
+      return this.isTemplateMode ? this.$t('studies.modalTitle.newTemplate') : this.$t('studies.modalTitle.newStudy');
     },
   },
   methods: {
     subscribeAppData(payload) {
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error("Timed out loading form data")), 20000);
+        const timer = setTimeout(() => reject(new Error(this.$t('errors.studies.formLoadTimeout'))), 20000);
         this.$socket.emit("subscribeAppData", payload, (result) => {
           clearTimeout(timer);
           if (result?.success) {
@@ -100,7 +108,7 @@ export default {
             }
             resolve(result.data);
           } else {
-            reject(new Error(result?.message || "Failed to load form data"));
+            reject(new Error(resolveApiMessage(result)));
           }
         });
       });
@@ -135,7 +143,7 @@ export default {
           await this.$nextTick();
         } catch (err) {
           this.eventBus.emit("toast", {
-            title: "Could not load study form",
+            title: this.$t('errors.studies.formLoadFailed'),
             message: err.message,
             variant: "danger",
           });
@@ -146,13 +154,30 @@ export default {
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
+      const aiOverrides = studyId !== 0 ? this.findExistingStudyCaps(studyId) : {};
       this.$refs.coordinator.open(
         studyId,
         {documentId: this.documentId, isTemplateMode: templateMode},
         copy,
-        {},
+        aiOverrides,
         this.studyRecord
       );
+    },
+    findExistingStudyCaps(studyId) {
+      const getter = this.$store.getters["table/ai_budget/getFiltered"];
+      if (!getter) return {};
+      const rows = getter(
+        (b) => !b.deleted && Number(b.studyId) === Number(studyId) && !b.studyStepId
+      );
+      const out = {};
+      for (const row of rows) {
+        const value = Number(row.costLimit);
+        if (!Number.isFinite(value)) continue;
+        if (Number(row.limitType) === 0) out.aiCostLimitTotal = value;
+        if (Number(row.limitType) === 1) out.aiCostLimitPerSession = value;
+        if (Number(row.limitType) === 2) out.aiCostLimitPerUser = value;
+      }
+      return out;
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
@@ -163,14 +188,14 @@ export default {
           this.$refs.coordinator.$refs.coordinatorModal.waiting = false;
           if (!result.success) {
             this.eventBus.emit('toast', {
-              title: "Template Creation Failed",
-              message: result.message,
+              title: this.$t('errors.studies.templateCreationFailed'),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           } else {
             this.eventBus.emit('toast', {
-              title: "Template Created",
-              message: "The template has been created successfully.",
+              title: this.$t('studies.messages.templateCreated'),
+              message: this.$t('studies.messages.templateCreatedMessage'),
               variant: "success",
             });
             this.studyId = result.data;
@@ -235,18 +260,18 @@ export default {
       try {
         await navigator.clipboard.writeText(this.link);
         this.eventBus.emit('toast', {
-          title: "Link copied",
-          message: "Document link copied to clipboard!",
+          title: this.$t('studies.messages.linkCopied'),
+          message: this.$t('studies.messages.linkCopiedMessage'),
           variant: "success"
         });
       } catch (_error) {
         this.eventBus.emit('toast', {
-          title: "Link not copied",
-          message: "Could not copy document link to clipboard!",
+          title: this.$t('errors.clipboard.linkNotCopied'),
+          message: this.$t('errors.clipboard.copyFailed'),
           variant: "danger"
         });
       }
-    }
+    },
   }
 }
 </script>

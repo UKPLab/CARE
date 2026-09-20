@@ -11,7 +11,7 @@
           <li v-for="edit in group" :key="edit.id" class="list-group-item">
             <SideCard>
               <template #header>
-                {{ edit.timeLabel }} - Created by User {{ edit.userId }}
+                {{ edit.timeLabel }} - {{ $t('annotator.createdByUser', { userId: edit.userId }) }}
               </template>
               <template #body>
                 <p>{{ edit.text }}</p>
@@ -19,7 +19,7 @@
               <template #footer>
                 <BasicButton
                   class="btn btn-primary btn-sm"
-                  text="Show"
+                  :text="$t('common.show')"
                   @click="handleEditClick(edit)"
                 />
               </template>
@@ -37,11 +37,11 @@
           <LoadIcon
             icon-name="lock-fill"
             :size="20"
-            color="#6c757d"
+            color="var(--bs-secondary-color)"
             class="mb-1"
           />
-          <h6 class="card-title mb-0">Read-Only Mode</h6>
-          <p class="card-text text-muted small mb-0">Annotations are view-only</p>
+          <h6 class="card-title mb-0">{{ $t('annotator.readOnlyMode') }}</h6>
+          <p class="card-text text-muted small mb-0">{{ $t('annotator.annotationsViewOnly') }}</p>
         </div>
       </div>
     </li>
@@ -66,7 +66,7 @@
       <BasicButton
         class="btn btn-light"
         icon="plus-lg"
-        text="Document Note"
+        :text="$t('annotator.documentNote')"
         @click="createDocumentComment"
       />
     </li>
@@ -77,9 +77,8 @@
 import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import { resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
-
-
 
 /** Sidebar component of the Annotator
  *
@@ -356,8 +355,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Comment not updated",
-            message: res.message,
+            title: this.$t('errors.annotator.commentNotUpdated'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -388,7 +387,7 @@ export default {
 
 #addPageNote .btn {
   border: none;
-  color: #575757;
+  color: var(--bs-secondary-color, #575757);
 }
 
 .readonly-notice {
@@ -397,7 +396,7 @@ export default {
 }
 
 .readonly-notice .card {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -407,7 +406,7 @@ export default {
 }
 
 .readonly-notice .card-title {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -418,7 +417,7 @@ export default {
 
 .edits-section {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--bs-border-color, #ddd);
   margin-bottom: 10px;
 }
 

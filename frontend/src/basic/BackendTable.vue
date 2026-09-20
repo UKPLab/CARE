@@ -73,7 +73,7 @@
             {{ c.name }}
             <span
               v-if="c.sortable"
-              title="Sort By"
+              :title="$t('common.sortBy')"
             >
               <LoadIcon
                 v-if="c.sortable"
@@ -159,7 +159,7 @@
             :class="getManageColumnClass()"
             :style="manageColumnLayoutStyle"
           >
-            Manage
+            {{ $t('common.manage') }}
             <!-- Keeps the column as wide as the full button group while cells are empty
                  (skeleton / not yet loaded). Otherwise max-content shrinks to the header
                  label and jumps when TButtonGroup mounts. -->
@@ -181,7 +181,7 @@
             :colspan="emptyColspan"
             class="text-center"
           >
-            Loading data from server...
+            {{ $t('common.loadingFromServer') }}
           </td>
         </tr>
         <tr v-else-if="!showPlaceholderRows && (!sourceData || sourceData.length === 0)">
@@ -189,7 +189,7 @@
             :colspan="emptyColspan"
             class="text-center"
           >
-            No data
+            {{ $t('common.noData') }}
           </td>
         </tr>
         <tr
@@ -268,7 +268,7 @@
                 @action="actionEmitter"
               />
               <span v-else-if="c.type === 'datetime'">
-                {{ new Date(r[c.key]).toLocaleString() }}
+                {{ formatLocalizedDateTime(r[c.key]) }}
               </span>
 
               <span v-else-if="c.type === 'icon-selector'">
@@ -363,7 +363,7 @@
   >
     <Loader
       :loading="true"
-      text="Loading..."
+      :text="$t('common.loading')"
     />
   </div>
   </div>
@@ -387,7 +387,7 @@
     v-if="selectableRows && !(options && options.singleSelect)"
     class="text-end text-muted small mb-2"
   >
-    {{ selectedCount }} of {{ totalSelectableCount }} selected
+    {{ $t('common.selectedCount', { selected: selectedCount, total: totalSelectableCount }) }}
   </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
@@ -416,6 +416,7 @@ import TableSearch from "./table/Search.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import Loader from "./Loading.vue";
 import { tooltip } from "@/assets/tooltip.js";
+import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
 
 /**
@@ -772,9 +773,10 @@ export default {
     },
     pendingBannerText() {
       if (this.pendingInserts > 0) {
-        return `${this.pendingInserts} new entr${this.pendingInserts === 1 ? "y" : "ies"} available — click to load`;
+        const key = this.pendingInserts === 1 ? "common.pendingInsertOne" : "common.pendingInsertMany";
+        return this.$t(key, { count: this.pendingInserts });
       }
-      return "Table updated — click to refresh";
+      return this.$t("common.tableUpdatedRefresh");
     },
     sourceData() {
       return this.queryMode ? this.queryItems : this.data;
@@ -1114,6 +1116,7 @@ export default {
     this.exitInfiniteMode();
   },
   methods: {
+    formatLocalizedDateTime,
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();

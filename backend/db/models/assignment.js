@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
+const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 
 module.exports = (sequelize, DataTypes) => {
 	class Assignment extends MetaModel {
@@ -14,38 +15,38 @@ module.exports = (sequelize, DataTypes) => {
 		static fields = [
 			{
 				key: "name",
-				label: "Assignment Name:",
-				placeholder: "Assignment 1",
+				label: "assignments.fields.name.label",
+				placeholder: "assignments.fields.name.placeholder",
 				type: "text",
 				required: true,
 				default: "",
 			},
 			{
 				key: "description",
-				label: "Description:",
-				help: "Optional description shown for this assignment.",
+				label: "assignments.fields.description.label",
+				help: "assignments.fields.description.help",
 				type: "textarea",
 				required: false,
 			},
 			{
 				key: "maxRevisions",
-				label: "Maximum Revisions:",
+				label: "assignments.fields.maxRevisions.label",
 				type: "slider",
 				class: "custom-slider-class",
-				min: 1,
+				min: 0,
 				max: 20,
 				step: 1,
-				unit: "revision(s)",
+				unit: "assignments.fields.maxRevisions.unit",
 				unlimitedAtMax: true,
-				unlimitedLabel: "unlimited",
-				unlimitedStoredValue: 0,
+				unlimitedLabel: "assignments.fields.maxRevisions.unlimitedLabel",
+				unlimitedStoredValue: -1,
 				required: true,
 				default: 1,
-				help: "Maximum number of allowed revision copies for this assignment. Move to the end for unlimited.",
+				help: "assignments.fields.maxRevisions.help",
 			},
 			{
 				key: "start",
-				label: "Start Time:",
+				label: "assignments.fields.start.label",
 				type: "datetime",
 				size: 6,
 				default: null,
@@ -53,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
 			},
 			{
 				key: "end",
-				label: "End Time:",
+				label: "assignments.fields.end.label",
 				type: "datetime",
 				size: 6,
 				default: null,
@@ -61,7 +62,7 @@ module.exports = (sequelize, DataTypes) => {
 			},
 			{
 				key: "validationConfigurationId",
-				label: "Validation Configuration:",
+				label: "assignments.fields.validationConfigurationId.label",
 				type: "select",
 				options: {
 					table: "configuration",
@@ -72,23 +73,32 @@ module.exports = (sequelize, DataTypes) => {
 					],
 				},
 				required: true,
-				help: "Validation is applied before submission upload.",
+				help: "assignments.fields.validationConfigurationId.help",
 			},
 			{
 				key: "allowReUpload",
-				label: "Allow Re-Upload:",
+				label: "assignments.fields.allowReUpload.label",
 				type: "switch",
 				default: false,
 				required: false,
-				help: "If enabled, users can replace or delete uploaded submissions.",
+				help: "assignments.fields.allowReUpload.help",
 			},
 			{
 				key: "notifyOnSubmissionUpload",
-				label: "Notify on Submission Upload:",
+				label: "assignments.fields.notifyOnSubmissionUpload.label",
 				type: "switch",
 				default: false,
 				required: false,
-				help: "If enabled, sends an email when a student uploads or re-uploads a submission.",
+				help: "assignments.fields.notifyOnSubmissionUpload.help",
+			},
+			{
+				key: "submissionWarning",
+				label: "assignments.fields.submissionWarning.label",
+				placeholder: "e.g. This assignment must be submitted in German.",
+				type: "textarea",
+				required: false,
+				default: "",
+				help: "assignments.fields.submissionWarning.help",
 			},
 		];
 
@@ -126,6 +136,7 @@ module.exports = (sequelize, DataTypes) => {
 			}
 			return filter;
 		}
+
 		static associate(models) {
 
 			Assignment.belongsTo(models["configuration"], {
@@ -154,6 +165,7 @@ module.exports = (sequelize, DataTypes) => {
 			parentAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
 			notifyOnSubmissionUpload: DataTypes.BOOLEAN,
+			submissionWarning: DataTypes.TEXT,
 			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,
 			deletedAt: DataTypes.DATE,
@@ -164,6 +176,17 @@ module.exports = (sequelize, DataTypes) => {
 			sequelize,
 			modelName: 'assignment',
 			tableName: 'assignment',
+			hooks: {
+				beforeCreate: (assignment) => {
+					assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
+				},
+				beforeUpdate: (assignment) => {
+					// Close/disable/delete omit start/end; skip so existing inverted rows can still be closed.
+					if (assignment.changed("start") || assignment.changed("end")) {
+						assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
+					}
+				},
+			},
 		}
 	);
 

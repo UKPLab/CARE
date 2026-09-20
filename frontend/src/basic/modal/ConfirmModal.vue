@@ -4,7 +4,7 @@
     :name="'confirm'+name"
   >
     <template #title>
-      Confirm {{ name }}
+      {{ $t('modals.confirmName', { name }) }}
     </template>
     <template #body>
       <!-- eslint-disable-next-line vue/no-v-html -->
@@ -17,26 +17,25 @@
       </div>
     </template>
     <template #footer>
-      <button
-        class="btn btn-secondary"
-        type="button"
-        @click="abort()"
-      >
-        Abort
-      </button>
-      <button
-        class="btn btn-primary"
-        type="button"
-        @click="confirm()"
-      >
-        Confirm
-      </button>
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :title="$t('common.abort')"
+          @click="abort()"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :title="$t('common.confirm')"
+          @click="confirm()"
+        />
+      </span>
     </template>
   </Modal>
 </template>
 
 <script>
 import Modal from "../Modal.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Modal for confirming a critical action
@@ -56,13 +55,13 @@ import Modal from "../Modal.vue";
  */
 export default {
   name: "ConfirmModal",
-  components: {Modal},
+  components: {Modal, BasicButton},
   emits: ['response'],
   data() {
     return {
       cb: null,
       name: "",
-      message: "Please confirm",
+      message: "",
       warning: null
     }
   },
@@ -84,7 +83,7 @@ export default {
     open(name, message, warning = null, cb) {
       this.cb = cb;
       this.name = name;
-      this.message = message;
+      this.message = message || this.$t('modals.pleaseConfirm');
       this.warning = warning;
 
       this.$refs.confirmation.openModal();

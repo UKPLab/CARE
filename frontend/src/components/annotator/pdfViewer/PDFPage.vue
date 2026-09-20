@@ -22,7 +22,7 @@
       >
         <Loader
           :loading="!isRendered"
-          :text="'Loading Page ' + pageNumber"
+          :text="$t('annotator.pdfPage.loadingPage', { pageNumber })"
           class="pageLoader"
         />
 
@@ -59,6 +59,7 @@ import * as pdfjsLib from 'pdfjs-dist'
 import {ObserveVisibility} from 'vue3-observe-visibility'
 import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
+import "pdfjs-dist/web/pdf_viewer.css";
 // import { PDFFindController, EventBus } from "pdfjs-dist/web/pdf_viewer.mjs";
 
 
@@ -375,7 +376,7 @@ export default {
 <style>
 .pageContainer {
   position: relative;
-  border-bottom-style: solid;
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .pageLoader {

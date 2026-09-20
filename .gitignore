@@ -14,6 +14,7 @@ backend/sessions
 backend/node_modules
 backend/logs
 backend/coverage
+logs/
 
 # ignore build files
 dist/
@@ -50,3 +51,4 @@ utils/rpcs/moodleAPI/moodle_api/__pycache__
 email-mappings.py
 gitleaks-clean.sh
 .mailmap
+.DS_Store

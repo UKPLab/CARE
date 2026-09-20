@@ -5,7 +5,7 @@
     name="ExportFormatModal"
   >
     <template #title>
-      {{ title }}
+      {{ modalTitle }}
     </template>
     <template #body>
       <div class="d-grid gap-2">
@@ -26,7 +26,7 @@
     <template #footer>
       <BasicButton
         class="btn btn-secondary"
-        title="Cancel"
+        :title="$t('common.cancel')"
         @click="close()"
       />
     </template>
@@ -51,7 +51,7 @@ export default {
   props: {
     title: {
       type: String,
-      default: "Export",
+      default: null,
     },
   },
   emits: ['formatSelected'],
@@ -65,8 +65,15 @@ export default {
     };
   },
   computed: {
+    modalTitle() {
+      return this.title || this.$t('modals.importExport.export.defaultTitle');
+    },
     supportedFormats() {
-      return getSupportedExportFormats();
+      return getSupportedExportFormats().map((format) => ({
+        ...format,
+        label: this.$t(format.label),
+        description: this.$t(format.description),
+      }));
     },
   },
   methods: {
@@ -76,7 +83,8 @@ export default {
      * @param {number|null} id                          - ID of a single record to export. If null, all records in the table are exported.
      * @param {string|null} table                       - Table name to export from (e.g. "tag_set", "workflow").
      * @param {string|null} childTable                  - Optional child table to nest under each parent record (e.g. "tag", "workflow_step").
-     * @param {object|null} tableOptions                - Options for the parent table export (currently unused, reserved for future use).
+     * @param {object|null} tableOptions                - Options for the parent table export.
+     * @param {Function}    [tableOptions.filter]       - Extra predicate for parent rows (e.g. templates only).
      * @param {object|null} childTableOptions           - Options for child table export.
      * @param {string}      [childTableOptions.key]     - Key name to nest children under in the exported object. Defaults to the childTable name.
      */
@@ -90,6 +98,14 @@ export default {
     },
     close() {
       this.$refs.modal.close();
+    },
+    /**
+     * Turns an internal table id (snake_case) into display text for toasts and step titles.
+     *  e.g. "tag_set" → "Tag Set"
+     */
+    humanizeTableName(table) {
+      if (!table) return "";
+      return table.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     },
     selectFormat(format) {
       this.close();
@@ -112,7 +128,8 @@ export default {
       const tableName = this.table;
       const childTableName = this.childTable;
       const items = this.$store.getters[`table/${tableName}/getFiltered`](
-        (w) => (this.filterId === null || w.id === this.filterId));
+        (w) => (this.filterId === null || w.id === this.filterId)
+          && (!this.tableOptions?.filter || this.tableOptions.filter(w)));
 
       let result = items;
 
@@ -131,9 +148,17 @@ export default {
         ? `${tableName}_${this.filterId}_${Date.now()}`
         : `${tableName}s_${Date.now()}`;
       downloadObjectsAs(result, filename, format);
+
+      const displayTable = this.humanizeTableName(tableName);
+      const successKey = this.filterId
+        ? 'modals.importExport.export.success.single'
+        : 'modals.importExport.export.success.multiple';
       this.eventBus.emit("toast", {
-        title: "Export Successful",
-        message: `${tableName}${this.filterId ? '' : 's'} exported successfully in ${format.toUpperCase()} format`,
+        title: this.$t('modals.importExport.export.success.title'),
+        message: this.$t(successKey, {
+          table: displayTable,
+          format: format.toUpperCase(),
+        }),
         variant: "success",
       });
     },

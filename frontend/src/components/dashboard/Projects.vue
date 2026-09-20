@@ -1,35 +1,32 @@
 <template>
-  <Card title="Projects">
-    <template #headerElements>
+  <DashboardListPage
+    :title="$t('dashboard.projects.title')"
+    :columns="columns"
+    :data="projects"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
-        title="Create project"
-        text="Create"
+        :title="$t('dashboard.projects.createTooltip')"
+        :text="$t('common.create')"
         icon="plus"
         @click="$refs.projectModal.open(0)"
       />
       <BasicButton
         v-if="isAdmin"
         class="btn-secondary btn-sm"
-        title="Assign projects"
-        text="Assign projects"
+        :title="$t('dashboard.projects.assignTooltip')"
+        :text="$t('dashboard.projects.assignButton')"
         icon="people-fill"
         @click="$refs.assignProjectModal.open()"
       />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-        :columns="columns"
-        :data="projects"
-        :options="options"
-        :buttons="buttons"
-        :max-table-height="'65vh'"
-        @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
   <ConfirmModal ref="deleteConf"/>
@@ -38,13 +35,15 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Project list component
@@ -58,8 +57,7 @@ export default {
   subscribeTable: ["project"],
   components: {
     ExportModal,
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ProjectModal,
     ConfirmModal,
@@ -67,24 +65,19 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
-      columns: [
-        {name: "", key: "select", type: "icon-selector"},
-        {name: "Project name", key: "name"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Public", key: "published", type: "badge"},
-        {name: "Closed", key: "closed", type: "badge"},
-      ],
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
     };
   },
   computed: {
+    columns() {
+      return [
+        {name: "", key: "select", type: "icon-selector"},
+        {name: this.$t('dashboard.projects.columns.name'), key: "name"},
+        {name: this.$t('common.createdAt'), key: "createdAt"},
+        {name: this.$t('dashboard.projects.columns.public'), key: "published", type: "badge"},
+        {name: this.$t('dashboard.projects.columns.closed'), key: "closed", type: "badge"},
+      ];
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -93,86 +86,52 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "clipboard",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
-          title: "Copy project",
+        dashboardRowAction("copy", {
+          title: this.$t('dashboard.projects.actions.copy'),
           action: "copy",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
-          filter: [
-            {key: "userId", value: this.userId},
-          ],
-          title: "Edit project",
+        }),
+        dashboardRowAction("edit", {
+          title: this.$t('dashboard.projects.actions.edit'),
           action: "edit",
-          stats: {
-            projectId: "id",
-          }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
           filter: [
             {key: "userId", value: this.userId},
           ],
-          title: "Delete project",
-          action: "delete",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          icon: "share",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("delete", {
+          title: this.$t('dashboard.projects.actions.delete'),
+          action: "delete",
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          stats: {
+            projectId: "id",
+          }
+        }),
+        dashboardRowAction("share", {
+          title: this.$t('dashboard.projects.actions.share'),
+          action: "publish",
           filter: [
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
-          title: "Share project",
-          action: "publish",
+          filterMode: "and",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
-          title: "Export data",
-          icon: "download",
+        }),
+        dashboardRowAction("download", {
+          title: this.$t('dashboard.projects.actions.export'),
           action: "export",
           stats: {
             projectId: "id",
           }
-        }
+        }),
       ];
       return buttons;
     },
@@ -181,16 +140,16 @@ export default {
         .map((d) => {
           let newD = {...d};
           newD.published = {
-            text: newD.public || newD.userId === null ? "Yes" : "No",
-            class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
+            text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
+            class: DASHBOARD_BADGES.publicPrivate[!!(newD.public || newD.userId === null)],
           };
           newD.closed = {
-            text: newD.closed ? "Yes" : "No",
+            text: newD.closed ? this.$t('common.yes') : this.$t('common.no'),
             class: newD.closed ? "bg-danger" : "bg-success",
           };
           newD.select = {
             icon: (newD.id === this.projectId) ? "star-fill" : "star",
-            title: "Select project as default",
+            title: this.$t('dashboard.projects.selectAsDefault'),
             action: "select",
             selected: newD.id === this.projectId,
           };
@@ -242,31 +201,24 @@ export default {
         warning += `There ${documents.length !== 1 ? "are" : "is"} currently ${documents.length} ${documents.length !== 1 ? "documents" : "document"} linked to this project. Deleting the project will also delete the ${documents.length !== 1 ? "documents" : "document"}.\n`;
       }
 
-      this.$refs.deleteConf.open(
-        "Delete Project",
-        "Are you sure you want to delete this project?",
-        warning,
-        (val) => {
-          if (val) {
-            this.$socket.emit("appDataUpdate", {
-              table: "project",
-              data: {
-                id: params.id,
-                deleted: true
-              }
-            }, (result) => {
-              if (!result.success) {
-                this.eventBus.emit('toast', {
-                  title: "Project delete failed",
-                  message: result.message,
-                  variant: "danger"
-                });
-              }
-            });
-          }
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "project",
+          id: params.id,
+          title: this.$t('dashboard.projects.delete.title'),
+          message: this.$t('dashboard.projects.delete.message'),
+          warning,
+          failTitle: this.$t('dashboard.projects.toasts.deleteFailed'),
+          onSuccess: () => {
+            this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
+          },
         }
       );
-      this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
       this.$socket.emit("appDataUpdate", {
@@ -278,15 +230,15 @@ export default {
       }, (result) => {
         if (!result.success) {
           this.eventBus.emit('toast', {
-            title: "Project publish failed",
-            message: result.message,
+            title: this.$t('dashboard.projects.toasts.publishFailed'),
+            message: resolveApiMessage(result),
             variant: "danger"
           });
         }
         else {
           this.eventBus.emit('toast', {
-            title: "Project published",
-            message: "The project has been successfully published.",
+            title: this.$t('dashboard.projects.toasts.publishedTitle'),
+            message: this.$t('dashboard.projects.toasts.publishedMessage'),
             variant: "success"
           });
         }
@@ -299,8 +251,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>
+<style scoped></style>

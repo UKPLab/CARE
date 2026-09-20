@@ -2,19 +2,19 @@
   <div>
     <BasicForm ref="selectionModeForm" v-model="reviewerSelectionMode" :fields="reviewerSelectionModeFields" />
     <div v-if="reviewerSelectionMode.mode === 'role'">
-      <p class="mt-2">Define the number of reviews that each user of the role should perform:</p>
+      <p class="mt-2">{{ $t('dashboard.study.defineTheNumberOfReviews') }}</p>
       <BasicForm v-if="roleSelectionFields.length > 0" ref="roleBasedSelectionForm" v-model="roleSelection" class="mt-4" :fields="roleSelectionFields" />
       <div v-else>
-        <p class="text-center text-danger mt-4">There are no roles available!</p>
-        <p class="text-center">Please select reviewers with roles or change selection mode!</p>
+        <p class="text-center text-danger mt-4">{{ $t('dashboard.study.noRolesAvailable') }}</p>
+        <p class="text-center">{{ $t('dashboard.study.selectReviewersOrChangeMode') }}</p>
       </div>
     </div>
     <div v-else-if="reviewerSelectionMode.mode === 'reviewer'">
-      <p class="mt-2">Distribute the documents between the selected reviewers:</p>
-      <p class="mb-4">Remaining Assignments: <strong>{{ remainingAssignments }}</strong></p>
+      <p class="mt-2">{{ $t('dashboard.study.discontributeDocuments') }}</p>
+      <p class="mb-4">{{ $t('dashboard.study.remainingAssignments') }} <strong>{{ remainingAssignments }}</strong></p>
       <BasicForm ref="reviewerBasedSelectionForm" v-model="reviewerSelection" :fields="reviewerSelectionFields" />
     </div>
-    <p v-else>Please select a reviewer selection mode</p>
+    <p v-else>{{ $t('dashboard.study.selectMode') }}</p>
   </div>
 </template>
 
@@ -61,13 +61,13 @@ export default {
         const role = this.roles.find(r => r.id === roleId);
         return {
           key: role.id,
-          label: "Number of reviews for role: " + role.name,
+          label: this.$t("dashboard.study.numberOfReviewsForRole", { name: role.name }),
           type: "slider",
           class: 'custom-slider-class',
           min: 0,
           max: 10,
           step: 1,
-          unit: 'review(s)',
+          unit: this.$t("dashboard.study.reviews"),
         };
       });
     },
@@ -82,13 +82,15 @@ export default {
     reviewerSelectionFields() {
       return this.selectedReviewer.map(user => ({
         key: user.id,
-        label: "Number of reviews for user: " + user.firstName + " " + user.lastName,
+        label: this.$t("dashboard.study.numberOfReviewsForUser", {
+          name: `${user.firstName} ${user.lastName}`,
+        }),
         type: "slider",
         class: 'custom-slider-class',
         min: 0,
         max: Number(this.remainingAssignments + Number(this.reviewerSelection[user.id])),
         step: 1,
-        unit: 'review(s)',
+        unit: this.$t("dashboard.study.reviews"),
       }));
     },
     selectionValid() {

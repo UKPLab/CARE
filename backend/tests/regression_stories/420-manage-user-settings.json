@@ -1,0 +1,758 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:47:42.906Z",
+  "traceCount": 34,
+  "recording": {
+    "name": "420-manage-user-settings",
+    "status": "finished",
+    "startTime": "2026-08-10T23:46:32.166Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "90oWDZwTlp-h7ZFKAAAZ"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:46:52.686Z"
+  },
+  "traces": [
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 26,
+          "name": "Recording 8/11/2026, 1:46:32 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:46:32.167Z",
+          "startTime": "2026-08-10T23:46:32.166Z",
+          "updatedAt": "2026-08-10T23:46:32.167Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "90oWDZwTlp-h7ZFKAAAZ"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:46:32.186Z",
+      "endTime": "2026-08-10T23:46:32.186Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:33.781Z",
+      "endTime": "2026-08-10T23:46:33.781Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/settings",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.242Z",
+      "endTime": "2026-08-10T23:46:36.242Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "af48eb7b-cc92-476b-a68e-172dad5f3d10",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.261Z",
+      "endTime": "2026-08-10T23:46:36.261Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "5d67b8e1-bc45-46a9-abe0-a436ec9f0295",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.261Z",
+      "endTime": "2026-08-10T23:46:36.261Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "b85c249f-6884-4b41-bf7c-01107acdb106",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.263Z",
+      "endTime": "2026-08-10T23:46:36.263Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "0003ee30-38c0-4efe-be28-e91cad728de1",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.263Z",
+      "endTime": "2026-08-10T23:46:36.263Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "be2988f3-f843-4fde-b8e3-2ac996e5c5df",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.266Z",
+      "endTime": "2026-08-10T23:46:36.266Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.273Z",
+      "endTime": "2026-08-10T23:46:36.273Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "ad2f485b-2e8e-44f8-9b63-203a608b6a17",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.263Z",
+      "endTime": "2026-08-10T23:46:36.263Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "settingGetData",
+      "payload": null,
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.274Z",
+      "endTime": "2026-08-10T23:46:36.274Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 230,
+          "clientY": 356,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:36.470Z",
+      "endTime": "2026-08-10T23:46:36.470Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userGetByRole",
+      "payload": {
+        "role": "all"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:37.545Z",
+      "endTime": "2026-08-10T23:46:37.545Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "sliders",
+          "title": "Change User Settings"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:37.550Z",
+      "endTime": "2026-08-10T23:46:37.550Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userByRole",
+      "payload": {
+        "users": [
+          {
+            "id": 2,
+            "email": "noreply@localhost",
+            "extId": null,
+            "roles": [],
+            "deleted": false,
+            "orcidId": null,
+            "lastName": "user",
+            "userName": "Bot",
+            "createdAt": "2026-08-10T22:35:47.557Z",
+            "deletedAt": null,
+            "firstName": "Bot",
+            "updatedAt": "2026-08-10T22:35:47.557Z",
+            "acceptedAt": null,
+            "resetToken": null,
+            "samlNameId": null,
+            "totpSecret": null,
+            "acceptStats": true,
+            "acceptTerms": true,
+            "lastLoginAt": null,
+            "ldapUsername": null,
+            "twoFactorOtp": null,
+            "emailVerified": true,
+            "rolesUpdatedAt": null,
+            "initialPassword": null,
+            "twoFactorMethods": [],
+            "acceptDataSharing": false,
+            "twoFactorOtpExpiresAt": null,
+            "emailVerificationToken": null,
+            "lastVerificationEmailSent": null,
+            "lastPasswordResetEmailSent": null
+          },
+          {
+            "id": 3,
+            "email": "guest@guest.com",
+            "extId": null,
+            "roles": [
+              6
+            ],
+            "deleted": false,
+            "orcidId": null,
+            "lastName": "user",
+            "userName": "guest",
+            "createdAt": "2026-08-10T22:35:47.558Z",
+            "deletedAt": null,
+            "firstName": "guest",
+            "updatedAt": "2026-08-10T23:33:07.056Z",
+            "acceptedAt": null,
+            "resetToken": null,
+            "samlNameId": null,
+            "totpSecret": null,
+            "acceptStats": true,
+            "acceptTerms": true,
+            "lastLoginAt": "2026-08-10T23:33:07.056Z",
+            "ldapUsername": null,
+            "twoFactorOtp": null,
+            "emailVerified": true,
+            "rolesUpdatedAt": null,
+            "initialPassword": null,
+            "twoFactorMethods": [],
+            "acceptDataSharing": false,
+            "twoFactorOtpExpiresAt": null,
+            "emailVerificationToken": null,
+            "lastVerificationEmailSent": null,
+            "lastPasswordResetEmailSent": null
+          },
+          {
+            "id": 4,
+            "email": "admin@admin.com",
+            "extId": null,
+            "roles": [
+              1,
+              2
+            ],
+            "deleted": false,
+            "orcidId": null,
+            "lastName": "User",
+            "userName": "admin",
+            "createdAt": "2026-08-10T22:35:59.284Z",
+            "deletedAt": null,
+            "firstName": "admin",
+            "updatedAt": "2026-08-10T23:36:41.437Z",
+            "acceptedAt": null,
+            "resetToken": null,
+            "samlNameId": null,
+            "totpSecret": null,
+            "acceptStats": true,
+            "acceptTerms": true,
+            "lastLoginAt": "2026-08-10T23:36:41.437Z",
+            "ldapUsername": null,
+            "twoFactorOtp": null,
+            "emailVerified": true,
+            "rolesUpdatedAt": "2026-08-10T22:35:59.294Z",
+            "initialPassword": null,
+            "twoFactorMethods": [],
+            "acceptDataSharing": false,
+            "twoFactorOtpExpiresAt": null,
+            "emailVerificationToken": null,
+            "lastVerificationEmailSent": null,
+            "lastPasswordResetEmailSent": null
+          },
+          {
+            "id": 5,
+            "email": "jojos@email.com",
+            "extId": null,
+            "roles": [
+              1
+            ],
+            "deleted": false,
+            "orcidId": null,
+            "lastName": "Joestar",
+            "userName": "jojo",
+            "createdAt": "2026-08-10T23:44:15.840Z",
+            "deletedAt": null,
+            "firstName": "Joseph",
+            "updatedAt": "2026-08-10T23:44:15.855Z",
+            "acceptedAt": null,
+            "resetToken": null,
+            "samlNameId": null,
+            "totpSecret": null,
+            "acceptStats": false,
+            "acceptTerms": false,
+            "lastLoginAt": null,
+            "ldapUsername": null,
+            "twoFactorOtp": null,
+            "emailVerified": false,
+            "rolesUpdatedAt": "2026-08-10T23:44:15.855Z",
+            "initialPassword": null,
+            "twoFactorMethods": [],
+            "acceptDataSharing": false,
+            "twoFactorOtpExpiresAt": null,
+            "emailVerificationToken": null,
+            "lastVerificationEmailSent": null,
+            "lastPasswordResetEmailSent": null
+          }
+        ],
+        "success": true
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:46:37.553Z",
+      "endTime": "2026-08-10T23:46:37.553Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "email": "noreply@localhost",
+          "extId": null,
+          "roles": [],
+          "deleted": false,
+          "orcidId": null,
+          "lastName": "user",
+          "userName": "Bot",
+          "createdAt": "2026-08-10T22:35:47.557Z",
+          "deletedAt": null,
+          "firstName": "Bot",
+          "updatedAt": "2026-08-10T22:35:47.557Z",
+          "acceptedAt": null,
+          "resetToken": null,
+          "samlNameId": null,
+          "totpSecret": null,
+          "acceptStats": true,
+          "acceptTerms": true,
+          "lastLoginAt": null,
+          "ldapUsername": null,
+          "twoFactorOtp": null,
+          "emailVerified": true,
+          "rolesUpdatedAt": null,
+          "initialPassword": null,
+          "twoFactorMethods": [],
+          "acceptDataSharing": false,
+          "twoFactorOtpExpiresAt": null,
+          "emailVerificationToken": null,
+          "lastVerificationEmailSent": null,
+          "lastPasswordResetEmailSent": null
+        },
+        {
+          "id": 3,
+          "email": "guest@guest.com",
+          "extId": null,
+          "roles": [
+            6
+          ],
+          "deleted": false,
+          "orcidId": null,
+          "lastName": "user",
+          "userName": "guest",
+          "createdAt": "2026-08-10T22:35:47.558Z",
+          "deletedAt": null,
+          "firstName": "guest",
+          "updatedAt": "2026-08-10T23:33:07.056Z",
+          "acceptedAt": null,
+          "resetToken": null,
+          "samlNameId": null,
+          "totpSecret": null,
+          "acceptStats": true,
+          "acceptTerms": true,
+          "lastLoginAt": "2026-08-10T23:33:07.056Z",
+          "ldapUsername": null,
+          "twoFactorOtp": null,
+          "emailVerified": true,
+          "rolesUpdatedAt": null,
+          "initialPassword": null,
+          "twoFactorMethods": [],
+          "acceptDataSharing": false,
+          "twoFactorOtpExpiresAt": null,
+          "emailVerificationToken": null,
+          "lastVerificationEmailSent": null,
+          "lastPasswordResetEmailSent": null
+        },
+        {
+          "id": 4,
+          "email": "admin@admin.com",
+          "extId": null,
+          "roles": [
+            1,
+            2
+          ],
+          "deleted": false,
+          "orcidId": null,
+          "lastName": "User",
+          "userName": "admin",
+          "createdAt": "2026-08-10T22:35:59.284Z",
+          "deletedAt": null,
+          "firstName": "admin",
+          "updatedAt": "2026-08-10T23:36:41.437Z",
+          "acceptedAt": null,
+          "resetToken": null,
+          "samlNameId": null,
+          "totpSecret": null,
+          "acceptStats": true,
+          "acceptTerms": true,
+          "lastLoginAt": "2026-08-10T23:36:41.437Z",
+          "ldapUsername": null,
+          "twoFactorOtp": null,
+          "emailVerified": true,
+          "rolesUpdatedAt": "2026-08-10T22:35:59.294Z",
+          "initialPassword": null,
+          "twoFactorMethods": [],
+          "acceptDataSharing": false,
+          "twoFactorOtpExpiresAt": null,
+          "emailVerificationToken": null,
+          "lastVerificationEmailSent": null,
+          "lastPasswordResetEmailSent": null
+        },
+        {
+          "id": 5,
+          "email": "jojos@email.com",
+          "extId": null,
+          "roles": [
+            1
+          ],
+          "deleted": false,
+          "orcidId": null,
+          "lastName": "Joestar",
+          "userName": "jojo",
+          "createdAt": "2026-08-10T23:44:15.840Z",
+          "deletedAt": null,
+          "firstName": "Joseph",
+          "updatedAt": "2026-08-10T23:44:15.855Z",
+          "acceptedAt": null,
+          "resetToken": null,
+          "samlNameId": null,
+          "totpSecret": null,
+          "acceptStats": false,
+          "acceptTerms": false,
+          "lastLoginAt": null,
+          "ldapUsername": null,
+          "twoFactorOtp": null,
+          "emailVerified": false,
+          "rolesUpdatedAt": "2026-08-10T23:44:15.855Z",
+          "initialPassword": null,
+          "twoFactorMethods": [],
+          "acceptDataSharing": false,
+          "twoFactorOtpExpiresAt": null,
+          "emailVerificationToken": null,
+          "lastVerificationEmailSent": null,
+          "lastPasswordResetEmailSent": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:46:37.554Z",
+      "endTime": "2026-08-10T23:46:37.554Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:38.016Z",
+      "endTime": "2026-08-10T23:46:38.016Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 598,
+          "clientY": 222,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:38.688Z",
+      "endTime": "2026-08-10T23:46:38.688Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:42.378Z",
+      "endTime": "2026-08-10T23:46:42.378Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 716,
+          "clientY": 317,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:43.721Z",
+      "endTime": "2026-08-10T23:46:43.721Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:45.112Z",
+      "endTime": "2026-08-10T23:46:45.112Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "appSettingSet",
+      "payload": {
+        "key": "annotator.comments.votes.enabled",
+        "value": "true",
+        "userIds": [
+          3
+        ]
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:46.547Z",
+      "endTime": "2026-08-10T23:46:46.547Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Apply"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:46.551Z",
+      "endTime": "2026-08-10T23:46:46.551Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:46.557Z",
+      "endTime": "2026-08-10T23:46:46.557Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard",
+          "from": "/dashboard/settings"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.159Z",
+      "endTime": "2026-08-10T23:46:50.159Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "e06dd248-34fc-4fcd-8564-573b137cc634",
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.165Z",
+      "endTime": "2026-08-10T23:46:50.165Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.181Z",
+      "endTime": "2026-08-10T23:46:50.181Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.191Z",
+      "endTime": "2026-08-10T23:46:50.191Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.191Z",
+      "endTime": "2026-08-10T23:46:50.191Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.191Z",
+      "endTime": "2026-08-10T23:46:50.191Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.191Z",
+      "endTime": "2026-08-10T23:46:50.191Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.191Z",
+      "endTime": "2026-08-10T23:46:50.191Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 792,
+          "clientY": 2,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:50.920Z",
+      "endTime": "2026-08-10T23:46:50.920Z"
+    },
+    {
+      "recordingId": 26,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:46:51.047Z",
+      "endTime": "2026-08-10T23:46:51.047Z"
+    }
+  ]
+}

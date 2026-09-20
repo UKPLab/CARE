@@ -7,15 +7,15 @@
     @submit="handleSubmit"
   >
     <template #title>
-      <h5 class="modal-title">Publish Assessment</h5>
+      <h5 class="modal-title">{{ $t("submission.publishAssessment.title") }}</h5>
     </template>
 
     <!-- STEP 1: Configuration Selection -->
     <template #step-1>
       <div class="mb-3">
-        <label class="form-label"><b>Select Assessment Configuration:</b></label>
+        <label class="form-label"><b>{{ $t("submission.publishAssessment.selectConfiguration") }}</b></label>
         <p class="small text-muted mb-3">
-          Choose which assessment configuration you want to export data for.
+          {{ $t("submission.publishAssessment.selectConfigurationDescription") }}
         </p>
         <BasicTable
           v-model="selectedConfigurations"
@@ -30,10 +30,9 @@
     <!-- STEP 2: Workflow Selection -->
     <template #step-2>
       <div class="mb-3">
-        <label class="form-label"><b>Select Workflows:</b></label>
+        <label class="form-label"><b>{{ $t("submission.publishAssessment.selectWorkflows") }}</b></label>
         <p class="small text-muted mb-3">
-          Select one or more workflow steps that use the selected configuration.
-          You can see how many sessions (open/closed) are available for each step.
+          {{ $t("submission.publishAssessment.selectWorkflowsDescription") }}
         </p>
         <BasicTable
           v-model="selectedWorkflows"
@@ -48,13 +47,14 @@
     <!-- STEP 3: Session Selection -->
     <template #step-3>
       <div class="mb-3">
-        <label class="form-label"><b>Select Sessions:</b></label>
+        <label class="form-label"><b>{{ $t("submission.publishAssessment.selectSessions") }}</b></label>
         <p class="small text-muted mb-3">
-          Select which study sessions to include in the assessment export.
-          Please note only <strong>closed study sessions</strong> are displayed here.
+          {{ $t("submission.publishAssessment.selectSessionsDescriptionPrefix") }}
+          <strong>{{ $t("submission.publishAssessment.closedStudySessions") }}</strong>
+          {{ $t("submission.publishAssessment.selectSessionsDescriptionSuffix") }}
         </p>
         <div v-if="sessionsTable.length === 0" class="alert alert-warning">
-          No sessions found matching the selected workflows and configuration.
+          {{ $t("submission.publishAssessment.noSessionsFound") }}
         </div>
         <BasicTable
           v-else
@@ -73,18 +73,18 @@
         <label
           for="linkCollection"
           class="form-label"
-        ><b>Hash Collection:</b></label>
+        ><b>{{ $t("submission.publishAssessment.hashCollection") }}</b></label>
         <select
           id="linkCollection"
           v-model="linkCollection"
           class="form-select"
         >
-          <option value="studies">based on Studies (session hashes for each study)</option>
-          <option value="sessions">based on Sessions (hashes for own sessions)</option>
+          <option value="studies">{{ $t("submission.publishAssessment.hashCollectionStudies") }}</option>
+          <option value="sessions">{{ $t("submission.publishAssessment.hashCollectionSessions") }}</option>
         </select>
       </div>
       <div class="mb-3">
-        <p><b>Hashes:</b></p>
+        <p><b>{{ $t("submission.publishAssessment.hashes") }}</b></p>
         <ul v-if="linkCollection === 'studies'">
           <li
             v-for="study in formattedStudies"
@@ -129,7 +129,7 @@
     <!-- STEP 5: Publishing Options -->
     <template #step-5>
       <div class="mb-3">
-        <label for="publishMethod" class="form-label"><b>Publishing Method:</b></label>
+        <label for="publishMethod" class="form-label"><b>{{ $t("submission.publishAssessment.publishingMethod") }}</b></label>
         <select
           id="publishMethod"
           v-model="publishMethod"
@@ -158,10 +158,10 @@
               class="form-check-label"
               for="reviewUrl"
             >
-              <b>Include review URL in Moodle feedback</b>
+              <b>{{ $t("submission.publishAssessment.includeReviewUrl") }}</b>
             </label>
             <p class="small text-muted mt-1">
-              If checked, the review URL will be included as feedback text in Moodle for each published grade.
+              {{ $t("submission.publishAssessment.includeReviewUrlDescription") }}
             </p>
           </div>
         </div>
@@ -175,12 +175,12 @@
           v-if="selectedSessions.length > 0 && selectedConfigurationContent"
           class="mt-4"
         >
-          <label class="form-label"><b>Moodle Grade Publishing Overview:</b></label>
+          <label class="form-label"><b>{{ $t("submission.publishAssessment.moodleGradePublishingOverview") }}</b></label>
           <div class="card">
             <div class="card-body">
               <div class="row mb-2">
                 <div class="col-6">
-                  <strong>Number of grades to publish:</strong>
+                  <strong>{{ $t("submission.publishAssessment.numberOfGradesToPublish") }}</strong>
                 </div>
                 <div class="col-6">
                   {{ gradeInformation.numberOfGrades }}
@@ -188,36 +188,43 @@
               </div>
               <div class="row mb-2">
                 <div class="col-6">
-                  <strong>Assessment scale (current scores):</strong>
+                  <strong>{{ $t("submission.publishAssessment.assessmentScaleCurrentScores") }}</strong>
                 </div>
                 <div class="col-6">
-                  from {{ gradeInformation.totalMinPoints }} to
-                  {{ gradeInformation.totalMaxPoints }} points
+                  {{ $t("submission.publishAssessment.pointsRange", {
+                    from: gradeInformation.totalMinPoints,
+                    to: gradeInformation.totalMaxPoints
+                  }) }}
                 </div>
               </div>
               <div class="row mb-2">
                 <div class="col-6">
-                  <strong>Moodle grade scale (target):</strong>
+                  <strong>{{ $t("submission.publishAssessment.moodleGradeScaleTarget") }}</strong>
                 </div>
                 <div class="col-6">
                   <template v-if="moodleOptions?.assignmentID">
-                    from 0 to {{ gradeInformation.maxGradeFromMoodle }} points
+                    {{ $t("submission.publishAssessment.pointsRange", {
+                      from: 0,
+                      to: gradeInformation.maxGradeFromMoodle
+                    }) }}
                   </template>
                   <template v-else>
-                    select an assignment to view this information
+                    {{ $t("submission.publishAssessment.selectAssignmentForInformation") }}
                   </template>
                 </div>
               </div>
               <div class="row">
                 <div class="col-6">
-                  <strong>Conversion factor:</strong>
+                  <strong>{{ $t("submission.publishAssessment.conversionFactor") }}</strong>
                 </div>
                 <div class="col-6">
                   <template v-if="moodleOptions?.assignmentID">
-                    1 assessment point = {{ gradeInformation.conversionFactor }} Moodle points
+                    {{ $t("submission.publishAssessment.conversionFactorValue", {
+                      factor: gradeInformation.conversionFactor
+                    }) }}
                   </template>
                   <template v-else>
-                    select an assignment to view this information
+                    {{ $t("submission.publishAssessment.selectAssignmentForInformation") }}
                   </template>
                 </div>
               </div>
@@ -225,8 +232,7 @@
           </div>
           <p class="small text-muted mt-2">
             <em>
-              Note: All selected assessment scores will be converted linearly from the
-              assessment scale to the Moodle grade scale using the factor shown above.
+              {{ $t("submission.publishAssessment.conversionNote") }}
             </em>
           </p>
         </div>
@@ -240,7 +246,11 @@ import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
+import {
+  ASSESSMENT_RESULT_KEY,
+  getAssessmentResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys.js";
 
 /**
  * Modal for publishing assessment data with CSV export
@@ -277,11 +287,11 @@ export default {
   computed: {
     steps() {
       return [
-        { title: "Configuration" },
-        { title: "Workflow" },
-        { title: "Session" },
-        { title: "Confirmation" },
-        { title: "Publishing" },
+        { title: this.$t("submission.publishAssessment.steps.configuration") },
+        { title: this.$t("submission.publishAssessment.steps.workflow") },
+        { title: this.$t("submission.publishAssessment.steps.session") },
+        { title: this.$t("submission.publishAssessment.steps.confirmation") },
+        { title: this.$t("submission.publishAssessment.steps.publishing") },
       ];
     },
     stepValid() {
@@ -465,9 +475,10 @@ export default {
           result.push({
             id: result.length + 1,
             workflowId: workflow.id,
-            workflowName: workflow.name || `Workflow ${workflow.id}`,
+            workflowName: translateMaybeKey(workflow.name)
+              || this.$t("submission.publishAssessment.workflowFallback", { id: workflow.id }),
             stepNumber: parseInt(stepNum),
-            description: workflow.description || "-",
+            description: translateMaybeKey(workflow.description) || "-",
             openSessions: openSessions,
             closedSessions: closedSessions,
             totalSessions: openSessions + closedSessions,
@@ -485,13 +496,13 @@ export default {
     },
     workflowTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "Workflow ID", key: "workflowId" },
-        { name: "Workflow Name", key: "workflowName" },
-        { name: "Step", key: "stepNumber" },
-        { name: "Open Sessions", key: "openSessions" },
-        { name: "Closed Sessions", key: "closedSessions" },
-        { name: "Total Sessions", key: "totalSessions" },
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("submission.publishAssessment.columns.workflowId"), key: "workflowId" },
+        { name: this.$t("submission.publishAssessment.columns.workflowName"), key: "workflowName" },
+        { name: this.$t("submission.publishAssessment.columns.step"), key: "stepNumber" },
+        { name: this.$t("submission.publishAssessment.columns.openSessions"), key: "openSessions" },
+        { name: this.$t("submission.publishAssessment.columns.closedSessions"), key: "closedSessions" },
+        { name: this.$t("submission.publishAssessment.columns.totalSessions"), key: "totalSessions" },
       ];
     },
     configurationsTable() {
@@ -504,9 +515,9 @@ export default {
     },
     configurationTableColumns() {
       return [
-        { name: "ID", key: "id" },
-        { name: "Name", key: "name" },
-        { name: "Created", key: "createdAt" },
+        { name: this.$t("common.id"), key: "id" },
+        { name: this.$t("common.name"), key: "name" },
+        { name: this.$t("submission.publishAssessment.columns.created"), key: "createdAt" },
       ];
     },
     
@@ -534,7 +545,7 @@ export default {
       return this.selectedConfiguration?.content || null;
     },
     selectedConfigurationName() {
-      return this.selectedConfiguration?.name || "unknown";
+      return this.selectedConfiguration?.name || this.$t("common.unknown");
     },
     criteriaNames() {
       const cfg = this.selectedConfigurationContent;
@@ -610,10 +621,10 @@ export default {
           return {
             sessionId: session.id,
             studyId: session.studyId,
-            studyName: study?.name || "Unknown",
+            studyName: study?.name || this.$t("common.unknown"),
             userId: session.userId,
-            firstName: user?.firstName || "Unknown",
-            lastName: user?.lastName || "Unknown",
+            firstName: user?.firstName || this.$t("common.unknown"),
+            lastName: user?.lastName || this.$t("common.unknown"),
             userName: user?.userName || "-",
             ownerFirstName: owner?.firstName || "-",
             ownerLastName: owner?.lastName || "-",
@@ -630,12 +641,12 @@ export default {
     },
     sessionTableColumns() {
       return [
-        { name: "Study", key: "studyName" },
-        { name: "Reviewer First Name", key: "firstName" },
-        { name: "Reviewer Last Name", key: "lastName" },
-        { name: "Owner First Name", key: "ownerFirstName" },
-        { name: "Owner Last Name", key: "ownerLastName" },
-        { name: "Submission ExtId", key: "submissionExtId" },
+        { name: this.$t("submission.publishAssessment.columns.study"), key: "studyName" },
+        { name: this.$t("submission.publishAssessment.columns.reviewerFirstName"), key: "firstName" },
+        { name: this.$t("submission.publishAssessment.columns.reviewerLastName"), key: "lastName" },
+        { name: this.$t("submission.publishAssessment.columns.ownerFirstName"), key: "ownerFirstName" },
+        { name: this.$t("submission.publishAssessment.columns.ownerLastName"), key: "ownerLastName" },
+        { name: this.$t("submission.publishAssessment.columns.submissionExtId"), key: "submissionExtId" },
       ];
     },
     formattedStudies() {
@@ -672,9 +683,9 @@ export default {
     },
     publishMethodOptions() {
       return [
-        { value: "csv", label: "Download CSV", disabled: false },
-        { value: "moodle", label: "Moodle", disabled: false },
-        { value: "email", label: "Email", disabled: true },
+        { value: "csv", label: this.$t("submission.publishAssessment.publishMethods.downloadCsv"), disabled: false },
+        { value: "moodle", label: this.$t("submission.publishAssessment.publishMethods.moodle"), disabled: false },
+        { value: "email", label: this.$t("submission.publishAssessment.publishMethods.email"), disabled: true },
       ];
     },
     // Grade information computed properties
@@ -765,22 +776,19 @@ export default {
       const cfg = studyStep.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Find any service with a skill (name and type can be anything)
-      const svc = cfg.services.find((s) => s.skill) || cfg.services[0];
+      // Find any configured NLP skill or AI hook.
+      const svc = cfg.services.find((s) => s.skill || s.hookId) || cfg.services[0];
 
       return svc || null;
     },
     /**
      * Get assessment data key for a study step.
-     * Returns AI key if AI workflow detected (format: ${svc.name}_${svc.skill}_assessment),
-     * otherwise "assessment_result".
+     * Returns canonical AI/NLP keys, otherwise "assessment_result".
      */
     getAssessmentDataKeys(studyStep) {
       const svc = this.getNlpServiceForStudyStep(studyStep);
-      if (svc && svc.skill && svc.name) {
-        return [`${svc.name}_${svc.skill}_assessment`];
-      }
-      return ["assessment_result"];
+      const keys = getAssessmentResultKeyCandidates(svc);
+      return keys.length ? keys : [ASSESSMENT_RESULT_KEY];
     },
     /**
      * @deprecated Since the user can select a specific step directly, 
@@ -822,7 +830,7 @@ export default {
       return roleMatchings
         .map((urm) => {
           const role = this.userRoles.find((ur) => ur.id === urm.userRoleId);
-          return role ? role.name : "Unknown";
+          return role ? role.name : this.$t("common.unknown");
         })
         .join(", ");
     },
@@ -860,8 +868,8 @@ export default {
       const configContent = this.selectedConfigurationContent;
       if (!configContent) {
         this.eventBus.emit("toast", {
-          title: "Configuration missing",
-          message: "Selected configuration content could not be loaded.",
+          title: this.$t("submission.publishAssessment.toasts.configurationMissing.title"),
+          message: this.$t("submission.publishAssessment.toasts.configurationMissing.message"),
           variant: "danger",
         });
         return false;
@@ -890,8 +898,10 @@ export default {
       // fetch document_data for this session and study step
       // Try both AI workflow keys and non-AI key (assessment_result)
       const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
-      const documentDataItem = documentDataArray.find((dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === "assessment_result");
-      const assessmentRaw = documentDataItem.value || {};
+      const documentDataItem = documentDataArray.find(
+        (dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === ASSESSMENT_RESULT_KEY
+      );
+      const assessmentRaw = documentDataItem?.value || {};
 
       const scoreState = assessmentRaw || {};
       const scores = buildScoresFromState(scoreState);
@@ -947,14 +957,14 @@ export default {
           if (res.success) {
             this.$refs.assessmentStepper.close();
             this.eventBus.emit("toast", {
-              title: "Grades published",
-              message: "The selected sessions' grades have been published to the assignment",
+              title: this.$t("submission.publishAssessment.toasts.gradesPublished.title"),
+              message: this.$t("submission.publishAssessment.toasts.gradesPublished.message"),
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to publish grades",
-              message: res.message,
+              title: this.$t("submission.publishAssessment.toasts.failedToPublishGrades.title"),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           }
@@ -1019,8 +1029,8 @@ export default {
       downloadObjectsAs(rows, fileBaseName, "csv");
 
       this.eventBus.emit("toast", {
-        title: "CSV Export",
-        message: "Assessment data CSV successfully generated and exported",
+        title: this.$t("submission.publishAssessment.toasts.csvExport.title"),
+        message: this.$t("submission.publishAssessment.toasts.csvExport.message"),
         variant: "success",
       });
     },

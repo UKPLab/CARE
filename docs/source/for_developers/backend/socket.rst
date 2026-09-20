@@ -445,6 +445,25 @@ In these cases, you can register a manual `afterCommit` hook on the transaction 
    When using ``autoTable`` models, commit-time change tracking and ``<table>Refresh`` emits are automatic.
    Details in :ref:`Store Updates & <table>Refresh> Events <table-refresh-events>`.
 
+.. _document-replace-file:
+
+documentReplaceFile
+~~~~~~~~~~~~~~~~~~~
+
+Admin-only socket used by the Admin Tools dashboard to correct a wrong PDF or ZIP on disk
+without creating a new document row.
+
+- Event name: ``documentReplaceFile``
+- Registered with ``createSocket(..., true)`` (transactional)
+- Input: ``documentId``, ``file`` (binary), ``name`` (original filename for extension checks)
+- Keeps the same document ``id`` and ``hash``; overwrites ``files/{hash}.pdf`` or ``files/{hash}.zip``
+- Only PDF and ZIP documents are supported; the upload extension must match the document type
+- For PDFs: soft-deletes existing CARE annotations and comments on that document, and best-effort
+  strips embedded PDF annotations via PDFRPC (falls back to the raw upload if strip fails)
+- Writes ``files/{hash}.{ext}.replace-tmp`` before commit (failure rolls back DB changes); renames
+  onto the live hash path in ``afterCommit``. If rename fails after commit, the socket returns an
+  error so the admin is notified and the temp file is left for manual recovery.
+
 .. _document-create-example:
 
 Example Lifecycle
@@ -532,6 +551,34 @@ Here is a full example showing how the backend and frontend work together when u
    - The frontend receives ``{ success: false, message: "..." }`` with the error message
    - An error toast is displayed using that message
 
+AI Service and Trigger Events
+-----------------------------
+
+AI requests use the existing ``serviceCommand`` event with ``service: "AIService"``:
+
+.. code-block:: javascript
+
+    this.$socket.emit("serviceCommand", {
+        service: "AIService",
+        command: "chatCompletion",
+        data: {model, messages},
+    }, callback);
+
+Supported commands are ``chatCompletion``, ``runHook``, ``abortChatCompletion``,
+``getStatus``, ``testModel``, ``getProviders``, and ``getValidModels``. Frontend
+components should use the ``this.$ai`` helpers where available.
+
+The admin-only trigger socket provides:
+
+- ``triggerCreate``: create a trigger from an event, action, and configuration.
+- ``triggerUpdate`` and ``triggerDelete``: update or soft-delete a trigger by ``id``.
+- ``triggerQueueGetDetails``: return details for a queue item by ``id``.
+- ``triggerQueueRetry``: retry a failed or cancelled queue item.
+- ``triggerQueueRerun``: create a new run from a completed queue item.
+- ``triggerQueueCancel``: cancel a pending or running queue item.
+
+All events use the standard :ref:`createSocket` callback response.
+
 Socket functions
 -------------------------
 
@@ -573,6 +620,11 @@ Logger Socket Functions (`log.js`)
 Service Socket Functions (`service.js`)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. js:autoclass:: ServiceSocket
+   :members:
+
+Trigger Socket Functions (`trigger.js`)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. js:autoclass:: TriggerSocket
    :members:
 
 Setting Socket Functions (`setting.js`)

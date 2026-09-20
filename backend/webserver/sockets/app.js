@@ -9,6 +9,7 @@ const {col} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
 const {paginateJoinSort, dashboardSortInclude, serializeCursor} = require("../../utils/helper/queryTableJoinSort.js");
 const {ensureStudyDashboardSortFresh} = require("../../db/studyDashboardSortRefresh.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 // Upper bound for one queryTable page. The infinite-scroll window asks for its whole
 // loaded size in one request, so this is above a page size but far below a full table.
@@ -82,7 +83,7 @@ class AppSocket extends Socket {
         const writeContext = {...data.data, currentUserId: this.userId};
 
         if (("id" in data.data && data.data.id !== 0) &&
-            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data)) {
+            ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data || 'enabled' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
                 data.data,
@@ -97,7 +98,11 @@ class AppSocket extends Socket {
 
         // check or set user information
         if ("userId" in data.data && !await this.checkUserAccess(data.data.userId)) {
-            throw new Error("You are not allowed to update the table " + data.table + " for another user!");
+            // Share tables store the recipient in userId. Parent ownership is
+            // enforced in MetaModel.add / updateById via foreignOwner.
+            if (!this.models[data.table].foreignOwner) {
+                throw new TranslatableError("errors.permission.cannotUpdateOtherUserTable", {dataTable: data.table}, "ACCESS_DENIED");
+            }
         }
 
         // check data exists for required fields
@@ -108,9 +113,7 @@ class AppSocket extends Socket {
                     data.data[field.key] === null ||
                     data.data[field.key] === ""
                 ) {
-                    {
-                        throw new Error("Required field missing: " + field.key);
-                    }
+                    throw new TranslatableError("errors.validation.requiredFieldMissing", {fieldKey: field.key}, "VALIDATION_ERROR");
                 }
             }
             // defaults
@@ -143,7 +146,7 @@ class AppSocket extends Socket {
         }
 
         if (!newEntry) {
-            throw new Error("Failed to update data");
+            throw generateError("UPDATE_FAILED", "errors.database.failedToUpdateData");
         }
 
         // check if table has a field with table options
@@ -343,7 +346,7 @@ class AppSocket extends Socket {
 
         if (!record) {
             // Record doesn't exist or was deleted
-            throw generateError("NOT_FOUND", "The requested resource does not exist or has been deleted.");
+            throw generateError("NOT_FOUND", "errors.common.resourceNotFound");
         }
 
         // Now check permissions by attempting to send via filtered sendTable
@@ -354,7 +357,7 @@ class AppSocket extends Socket {
 
         if (result.length === 0) {
             // Record exists but user doesn't have permission
-            throw generateError("ACCESS_DENIED", "You do not have rights to access this data.");
+            throw generateError("ACCESS_DENIED", "errors.common.accessDenied");
         }
     }
 
@@ -377,7 +380,7 @@ class AppSocket extends Socket {
      */
     async subscribeAppData(data, options) {
         if (!data.table) {
-            throw new Error("Table name is required");
+            throw generateError("VALIDATION_ERROR", "errors.validation.tableNameRequired");
         }
 
         // add subscription to the list
@@ -691,7 +694,7 @@ class AppSocket extends Socket {
     async queryTableDistinct(data) {
         const {table, column, query = {}, filter = []} = data || {};
         if (!column || typeof column !== "string") {
-            throw new Error("Column name is required");
+            throw new TranslatableError("errors.queryTable.columnRequired");
         }
 
         const scope = await this.resolveQueryTableScope({table, filter, query});
@@ -699,7 +702,7 @@ class AppSocket extends Socket {
             ? (await scope.model.getQueryTableDistinctColumns(scope.injectCtx)) || []
             : [];
         if (!distinctColumns.includes(column) || !scope.allowedAttributeNames.includes(column)) {
-            throw new Error(`Column ${column} is not available for distinct values`);
+            throw new TranslatableError("errors.queryTable.columnNotDistinct", {column});
         }
 
         const findOptions = {
@@ -743,16 +746,27 @@ class AppSocket extends Socket {
      */
     async sendOverallSetting(data, options) {
         const { key, value } = data;
+
+        // Users with disableLanguageSelection cannot save app.locale as a user preference
+        if (
+            key === "app.locale"
+            && !(await this.isAdmin())
+            && await this.hasAccess("frontend.preferences.disableLanguageSelection")
+        ) {
+            throw new TranslatableError("errors.settings.cannotChangeLanguage");
+        }
+
         // Admin can set settings for other users (single or bulk)
         if (Array.isArray(data.userIds) && data.userIds.length > 0 && await this.isAdmin()) {
             for (const uid of data.userIds) {
-                await this.models["user_setting"].set(key, value, uid);
+                // Admin may assign any key; skip allowUserOverride guard in user_setting hooks
+                await this.models["user_setting"].set(key, value, uid, { bypassSystemSettingCheck: true });
             }
         } else if (data.userId && await this.isAdmin()) {
-            await this.models["user_setting"].set(key, value, data.userId);
+            // Admin may assign any key; skip allowUserOverride guard in user_setting hooks
+            await this.models["user_setting"].set(key, value, data.userId, { bypassSystemSettingCheck: true });
         } else {
             // Default: set for current user and refresh their settings
-            console.log(`Setting ${key} for user ${this.userId} to ${value}`);
             await this.models["user_setting"].set(key, value, this.userId);
             await this.sendSettings();
         }   

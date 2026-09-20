@@ -1,0 +1,24 @@
+{
+    "documentNote": "Document Note",
+    "createdByUser": "Created by User {userId}",
+    "annotations": "Annotations",
+    "submitReview": "Submit Review",
+    "report": "Report",
+    "accept": "Accept",
+    "reject": "Reject",
+    "hideStudyComments": "Hide study comments",
+    "showStudyComments": "Show study comments",
+    "deactivateNlpSupport": "Deactivate NLP support",
+    "activateNlpSupport": "Activate NLP support",
+    "downloadAnnotations": "Download Annotations",
+    "documentSubscribeError": "Document subscribe error",
+    "pdfPage": {
+        "loadingPage": "Loading Page {pageNumber}"
+    },
+    "readOnlyMode": "Read-Only Mode",
+    "annotationsViewOnly": "Annotations are view-only",
+    "card": {
+        "markedCheckedClickToUncheck": "Marked as checked - Click to uncheck",
+        "clickToMarkChecked": "Click to mark as checked"
+    }
+}

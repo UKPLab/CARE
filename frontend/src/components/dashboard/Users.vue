@@ -1,77 +1,74 @@
 <template>
   <div>
-  <Card title="Users">
-    <template #headerElements>
-      <div class="d-flex align-items-center flex-wrap gap-2">
+  <DashboardListPage
+      :title="$t('users.title')"
+      :columns="columns"
+      :data="users"
+      :buttons="buttons"
+      :table-options="options"
+      @action="chooseAction"
+  >
+    <template #headerActions>
+      <div class="btn-group gap-2 flex-wrap">
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            title="Live Sessions"
-            text="Live Sessions"
+            class="btn-secondary btn-sm"
+            :title="$t('users.liveSessions')"
+            :text="$t('users.liveSessions')"
             icon="people-fill"
             @click="openSessionDetailsModal()"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            title="Download Users"
-            text="Download Users"
+            class="btn-secondary btn-sm"
+            :title="$t('users.downloadUsers')"
+            :text="$t('users.downloadUsers')"
             icon="download"
             @click="downloadUsers"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            title="Rights Management"
-            text="Rights Management"
+            class="btn-secondary btn-sm"
+            :title="$t('users.rights.managementTitle')"
+            :text="$t('users.rights.managementTitle')"
             icon="shield-lock"
             @click="openRightsManagementModal"
         />
         <BasicButton
-          class="btn btn-secondary btn-sm"
-          title="Role Management"
-          text="Role Management"
+          class="btn-secondary btn-sm"
+          :title="$t('users.roleManagement.button')"
+          :text="$t('users.roleManagement.button')"
           icon="person-plus"
           @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            title="Upload Password"
-            text="Upload Password"
+            class="btn-secondary btn-sm"
+            :title="$t('users.uploadPassword')"
+            :text="$t('users.uploadPassword')"
             icon="key"
             @click="openUploadModal"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            title="Import via CSV"
-            text="Import CSV"
+            class="btn-secondary btn-sm"
+            :title="$t('users.importCsv')"
+            :text="$t('users.importCsv')"
             icon="filetype-csv"
             @click="openImportModal('csv')"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            title="Import via Moodle"
-            text="Import via Moodle"
+            class="btn-secondary btn-sm"
+            :title="$t('users.importViaMoodle')"
+            :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
             @click="openImportModal('moodle')"
         />
         <BasicButton
-            class="btn btn-primary btn-sm"
-            title="Add User"
-            text="Add User"
+            class="btn-primary btn-sm"
+            :title="$t('users.addUser')"
+            :text="$t('users.addUser')"
             icon="person-plus"
             @click="openUserAddModal"
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="users"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="chooseAction"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <DetailsModal
       v-if="modals.details"
       ref="detailsModal"
@@ -110,8 +107,6 @@
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
@@ -122,8 +117,11 @@ import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 /**
  * Display user list by users' role
@@ -134,8 +132,7 @@ export default {
   name: "DashboardUsers",
   subscribeTable: ["user"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     DetailsModal,
     PasswordModal,
     RightsModal,
@@ -168,46 +165,50 @@ export default {
         confirm: false,
         activeSessions: false,
       },
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
+      options: withSearch({
         sort: {
           column: "id",
           order: "ASC",
         },
-      },
-      columns: [
-        { name: '', key: 'activeIndicator', filterKey: 'isActive', type: 'icon', sortable: true, sortKey: 'isActive', width: 1, fixed: "left",
-          style: { width: '1px', whiteSpace: "nowrap", textAlign: "center" },
-          typeOptions: { size: 6 }, 
-          filter: [
-                { key:'true',name:'active'},
-                { key:'false',name:'inactive'},
-          ]},
-        {name: "ID", key: "id", sortable: true, fixed: "left"},
-        {name: "First Name", key: "firstName", fixed: "left"},
-        {name: "Last Name", key: "lastName"},
-        {name: "User", key: "userName"},
-        {name: "Email", key: "email"},
-        {name: "Accept Terms", key: "acceptTerms", sortable: true},
-        {name: "Accept Stats", key: "acceptStats", sortable: true},
-        {name: "Accept Data Sharing", key: "acceptDataSharing", sortable: true},
-        {name: "Verified", key: "emailVerified"},
-        {name: "Last Login", key: "lastLoginAt", sortable: true},
-      ],
+      }),
       // Possible values for role here are all the roles in the DB.
       role: "all",
     };
   },
   computed: {
+    columns() {
+      return [
+        {
+          name: '',
+          key: 'activeIndicator',
+          filterKey: 'isActive',
+          type: 'icon',
+          sortable: true,
+          sortKey: 'isActive',
+          width: 1,
+          fixed: 'left',
+          style: { width: '1px', whiteSpace: 'nowrap', textAlign: 'center' },
+          typeOptions: { size: 6 },
+          filter: [
+            { key: 'true', name: this.$t('common.active') },
+            { key: 'false', name: this.$t('common.inactive') },
+          ],
+        },
+        {name: this.$t('common.id'), key: "id", sortable: true, fixed: "left"},
+        {name: this.$t('users.columns.firstName'), key: "firstName", fixed: "left"},
+        {name: this.$t('users.columns.lastName'), key: "lastName"},
+        {name: this.$t('users.columns.userName'), key: "userName"},
+        {name: this.$t('users.columns.email'), key: "email"},
+        {name: this.$t('users.columns.acceptTerms'), key: "acceptTerms", sortable: true},
+        {name: this.$t('users.columns.acceptStats'), key: "acceptStats", sortable: true},
+        {name: this.$t('users.columns.acceptDataSharing'), key: "acceptDataSharing", sortable: true},
+        {name: this.$t('users.columns.verified'), key: "emailVerified"},
+        {name: this.$t('users.columns.lastLogin'), key: "lastLoginAt", sortable: true},
+      ];
+    },
     monitorStats() {
-    return this.$store.getters["admin/getMonitorStats"];
-  },
+      return this.$store.getters["admin/getMonitorStats"];
+    },
     users() {
       const activeIds = new Set(this.monitorStats.connectedUsers.map(u => u.userId));
       return this.$store.getters["table/user/getAll"].map((user) => {
@@ -216,8 +217,8 @@ export default {
           ...this.formatUserData(user),
           isActive,
           activeIndicator: isActive
-            ? { icon: 'circle-fill', color: '#198754', title: 'Online' }
-            : { icon: 'circle', color: '#6c757d', title: 'Offline' },
+            ? { icon: 'circle-fill', color: '#198754', title: this.$t('common.online') }
+            : { icon: 'circle', color: '#6c757d', title: this.$t('common.offline') },
         };
       });
     },
@@ -246,77 +247,42 @@ export default {
     },
     buttons() {
       return [
-        {
-          title: "Edit User",
+        dashboardRowAction("edit", {
+          title: this.$t('users.editUser'),
           action: "editUser",
           stats: {
             userId: "id",
           },
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
-          title: "View Rights",
+        }),
+        dashboardRowAction("rights", {
+          title: this.$t('users.viewRights'),
           action: "viewRights",
           stats: {
             userId: "id",
           },
-          icon: "card-list",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
-          title: "Reset Password",
+        }),
+        dashboardRowButton("person-lock", {
+          title: this.$t('users.resetPassword'),
           action: "resetPassword",
           stats: {
             userId: "id",
           },
-          icon: "person-lock",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
-          title: "View Sessions",
+        }),
+        dashboardRowButton("display", {
+          title: this.$t('users.viewSessions'),
           action: "viewSessions",
           stats: {
             userId: "id",
           },
-          icon: "display",
           filter: [{ key: "isActive", value: true }],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
-          title: "Delete User",
+        }),
+        dashboardRowAction("delete", {
+          title: this.$t('users.deleteUser'),
           action: "deleteUser",
           stats: {
             userId: "id",
           },
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
+        }),
       ];
     },
   },
@@ -363,7 +329,7 @@ export default {
       this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
     },
     formatUserData(user) {
-      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+      const formatDate = (date) => (date ? formatLocalizedDate(date) : "-");
 
       return {
         ...user,
@@ -402,7 +368,7 @@ export default {
       this.openPasswordModal(user.id);
     },
     deleteUser(user) {
-      this.openConfirmModal("Delete User", "Are you sure you want to delete this user?", null, (val) => {
+      this.openConfirmModal(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {
         if (val) {
           this.$socket.emit(
               "appDataUpdate",
@@ -416,14 +382,14 @@ export default {
               (result) => {
                 if (result.success) {
                   this.eventBus.emit("toast", {
-                    title: "User deleted",
-                    message: "User has been deleted",
+                    title: this.$t('users.messages.userDeleted'),
+                    message: this.$t('users.messages.userDeletedMessage'),
                     variant: "success",
                   });
                 } else {
                   this.eventBus.emit("toast", {
-                    title: "User not deleted",
-                    message: result.message,
+                    title: this.$t('errors.users.userNotDeleted'),
+                    message: resolveApiMessage(result),
                     variant: "danger",
                   });
                 }

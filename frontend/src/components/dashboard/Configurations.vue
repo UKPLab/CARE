@@ -1,11 +1,18 @@
 <template>
-  <Card title="Configuration Files">
-    <template #headerElements>
+  <DashboardListPage
+      :title="$t('basic.configuration.filesTitle')"
+      :columns="columns"
+      :data="configurationsTable"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            text="Import Configuration"
-            title="Import configuration file"
+            class="btn-secondary btn-sm"
+            :text="$t('basic.configuration.uploadButton')"
+            :title="$t('basic.configuration.uploadTooltip')"
             icon="upload"
             @click="$refs.importFormatModal.open('configuration', null, {
               socket:{
@@ -14,36 +21,26 @@
             })"
         />
         <BasicButton
-            class="btn btn-secondary btn-sm"
-            text="Export All"
-            title="Export all configurations"
+            class="btn-secondary btn-sm"
+            :text="$t('common.exportAll')"
+            :title="$t('modals.importExport.wiring.configuration.exportAllTooltip')"
             icon="download"
             @click="$refs.exportFormatModal.open(null, 'configuration')"
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="configurationsTable"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
 
   <!-- Upload Modal for JSON configuration files -->
-  <ImportFormatModal ref="importFormatModal" title="Import Configuration" />
-  <ExportFormatModal ref="exportFormatModal" title="Export Configuration" />
+  <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.configuration.importTitle')" />
+  <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.configuration.exportTitle')" />
 
   <ConfirmModal ref="deleteModal"/>
 
   <!-- JSON Configuration Viewer Modal -->
   <Modal ref="viewModal" name="json-viewer" size="xl">
     <template #title>
-      Configuration: {{ selectedConfig?.name }}
+      {{ $t('basic.configuration.viewer.title', { name: selectedConfig?.name }) }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-viewer-container">
@@ -55,7 +52,7 @@
   <!-- JSON Configuration Editor Modal -->
   <Modal ref="editModal" name="json-editor" size="xl">
     <template #title>
-      Edit Configuration: {{ selectedConfig?.name }}
+      {{ $t('basic.configuration.editor.title', { name: selectedConfig?.name }) }}
     </template>
     <template #body>
       <div v-if="selectedConfig" class="json-editor-container">
@@ -69,13 +66,14 @@
       <div class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('common.cancel')"
           data-bs-dismiss="modal"
           @click="$refs.editModal.close()"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Save"
+          :text="$t('common.save')"
+          :loading="saving"
           :disabled="saving"
           @click="saveConfiguration"
         />
@@ -85,14 +83,16 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import {Editor} from "@/components/editor/editorStore.js";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import {resolveApiMessage} from "@/assets/utils";
 
 /**
  * Configuration Files Dashboard Component
@@ -104,8 +104,7 @@ export default {
   name: "ConfigurationsManagement",
   subscribeTable: ["configuration"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ExportFormatModal,
     ImportFormatModal,
@@ -119,66 +118,42 @@ export default {
       editableConfigContent: null,
       quillEditor: null,
       saving: false,
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
-      columns: [
-        {name: "Name", key: "name", sortable: true},
-        {name: "Created", key: "createdAt", sortable: true, type: "datetime"},
-        {name: "Updated", key: "updatedAt", sortable: true, type: "datetime"},
-        {name: "Type", key: "typeName", sortable: true},
-      ],
-      buttons: [
-        {
-          icon: "eye",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-secondary": true},
-          },
-          title: "View configuration",
-          action: "view",
-        },
-        {
-          icon: "pencil-square",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-primary": true},
-          },
-          title: "Edit configuration",
-          action: "edit",
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-secondary": true},
-          },
-          title: "Export configuration",
-          action: "export",
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {"btn-outline-danger": true},
-          },
-          title: "Delete configuration",
-          action: "delete",
-        },
-      ],
+      options: withSearch(),
     };
   },
   computed: {
+    columns() {
+      return [
+        {name: this.$t('common.name'), key: "name", sortable: true},
+        {name: this.$t('common.created'), key: "createdAt", sortable: true, type: "datetime"},
+        {name: this.$t('common.updated'), key: "updatedAt", sortable: true, type: "datetime"},
+        {name: this.$t('common.type'), key: "typeName", sortable: true},
+      ];
+    },
+    buttons() {
+      return [
+        dashboardRowAction("view", {
+          title: this.$t('basic.configuration.tooltips.view'),
+          action: "view",
+        }),
+        dashboardRowAction("edit", {
+          title: this.$t('basic.configuration.tooltips.edit'),
+          action: "edit",
+        }),
+        dashboardRowAction("download", {
+          title: this.$t('basic.configuration.tooltips.export'),
+          action: "export",
+        }),
+        dashboardRowAction("delete", {
+          title: this.$t('basic.configuration.tooltips.delete'),
+          action: "delete",
+        }),
+      ];
+    },
     configurationsTable() {
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.typeName = cfg.type === 0 ? "Assessment" : "Validation";
+        newC.typeName = cfg.type === 0 ? this.$t('basic.configuration.types.assessment') : this.$t('basic.configuration.types.validation');
         return newC;
       });
     },
@@ -217,15 +192,15 @@ export default {
 
       try {
         if (!config || !config.content) {
-          throw new Error("No configuration content available");
+          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
         }
         const jsonContent = config.content;
         this.configContent = JSON.stringify(jsonContent, null, 2);
         this.$refs.viewModal.openModal();
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "Failed to load configuration content: " + error.message,
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.loadErrorMessage', { error: error.message }),
           variant: "danger",
         });
       }
@@ -236,7 +211,7 @@ export default {
 
       try {
         if (!config || !config.content) {
-          throw new Error("No configuration content available");
+          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
         }
         this.editableConfigContent = JSON.stringify(config.content, null, 2);
         this.$refs.editModal.openModal();
@@ -247,8 +222,8 @@ export default {
         });
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "Failed to load configuration content: " + error.message,
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.loadErrorMessage', { error: error.message }),
           variant: "danger",
         });
       }
@@ -261,7 +236,7 @@ export default {
           modules: {
             toolbar: false // No toolbar for JSON editing
           },
-          placeholder: "Edit JSON content here..."
+          placeholder: this.$t('basic.configuration.editor.placeholder')
         });
 
         // Set the formatted JSON content
@@ -272,8 +247,8 @@ export default {
     saveConfiguration() {
       if (!this.quillEditor) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "Editor not initialized",
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.editorNotInit'),
           variant: "danger",
         });
         return;
@@ -284,8 +259,8 @@ export default {
 
       if (!editorContent) {
         this.eventBus.emit("toast", {
-          title: "Configuration Error",
-          message: "No configuration content to save",
+          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
+          message: this.$t('basic.configuration.toasts.noContent'),
           variant: "danger",
         });
         return;
@@ -296,8 +271,8 @@ export default {
         JSON.parse(editorContent);
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Invalid JSON",
-          message: "Please check your JSON syntax: " + error.message,
+          title: this.$t('basic.configuration.toasts.invalidJsonTitle'),
+          message: this.$t('basic.configuration.toasts.invalidJsonMessage', { error: error.message }),
           variant: "danger",
         });
         return;
@@ -315,18 +290,17 @@ export default {
 
             if (response && response.success) {
               this.eventBus.emit("toast", {
-                title: "Configuration Updated",
-                message: "Configuration file has been successfully updated",
+                title: this.$t('basic.configuration.toasts.updatedTitle'),
+                message: this.$t('basic.configuration.toasts.updatedMessage'),
                 variant: "success",
               });
               setTimeout(() => {
                 this.$refs.editModal.close();
               }, 100);
             } else {
-              const errorMessage = response && response.message ? response.message : "Failed to update configuration";
               this.eventBus.emit("toast", {
-                title: "Configuration Update Error",
-                message: errorMessage,
+                title: this.$t('basic.configuration.toasts.updateErrorTitle'),
+                message: resolveApiMessage(response, 'errors.documents.documentEditFailed'),
                 variant: "danger",
               });
             }
@@ -335,33 +309,20 @@ export default {
     },
 
     deleteConfiguration(config) {
-      this.$refs.deleteModal.open(
-          "Delete Configuration",
-          `Are you sure you want to delete "${config.name}"?`,
-          null,
-          (confirmed) => {
-            if (confirmed) {
-              this.$socket.emit(
-                  "appDataUpdate",
-                  {
-                    table: "configuration",
-                    data: {
-                      id: config.id,
-                      deleted: true,
-                    },
-                  },
-                  (result) => {
-                    if (!result.success) {
-                      this.eventBus.emit("toast", {
-                        title: "Configuration delete failed",
-                        message: result.message,
-                        variant: "danger",
-                      });
-                    }
-                  }
-              );
-            }
-          });
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteModal,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "configuration",
+          id: config.id,
+          title: this.$t('basic.configuration.delete.title'),
+          message: this.$t('basic.configuration.delete.message', { name: config.name }),
+          failTitle: this.$t('basic.configuration.toasts.deleteFailedTitle'),
+        }
+      );
     },
 
     cleanupQuillEditor() {
@@ -380,8 +341,8 @@ export default {
 }
 
 .json-content {
-  background-color: #f8f9fa;
-  border: 1px solid #dee2e6;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 1rem;
   margin: 0;
@@ -390,7 +351,7 @@ export default {
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
-  color: #212529;
+  color: var(--bs-body-color, #212529);
 }
 
 .json-editor-container {
@@ -406,11 +367,11 @@ export default {
   font-family: 'Courier New', monospace !important;
   font-size: 0.875rem !important;
   line-height: 1.5 !important;
-  background-color: #f8f9fa !important;
-  border: 1px solid #dee2e6 !important;
+  background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
+  border: 1px solid var(--bs-border-color, #dee2e6) !important;
   border-radius: 0.375rem !important;
   padding: 1rem !important;
-  color: #212529 !important;
+  color: var(--bs-body-color, #212529) !important;
   min-height: 400px !important;
 }
 

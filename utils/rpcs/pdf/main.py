@@ -17,7 +17,8 @@ def create_app():
     logger = logging.getLogger('gunicorn.error')
     logger.setLevel(logging.INFO)
 
-    sio = socketio.Server(async_mode='threading')
+    # Default is 1 MB; CARE's webserver already allows 100 MB for the same PDFs.
+    sio = socketio.Server(async_mode='threading', max_http_buffer_size=100_000_000)
 
     @sio.event
     def connect(sid, environ, auth):
@@ -30,24 +31,17 @@ def create_app():
         """
         logger.info(f"Connection established with {sid}")
 
-    @sio.on("call")
-    def call(sid, data):
+    @sio.on("healthy")
+    def healthy(sid, data):
         """
-        Handles a generic 'call' event for testing connectivity.
-        Args:
-            sid: Session ID.
-            data: Incoming data.
-        Returns:
-            A simple hello world response.
+        Liveness probe. Reports that the PDF RPC process is up and responsive.
         """
-        logger.info(f"Received call: {data} from {sid}")
+        logger.info(f"Health check from {sid}")
         try:
-            response = {"success": True, "data": "Hello World!"}
-            return response
+            return {"success": True, "data": {"status": "ok"}}
         except Exception as e:
-            logger.error(f"Error: {e}")
-            response = {"success": False, "message": "error: " + str(e)}
-            return response
+            logger.error(f"Health check error: {e}")
+            return {"success": False, "message": str(e)}
 
     @sio.on("test")
     def test(sid, data):
@@ -194,6 +188,7 @@ def create_app():
                 "message": "Annotations extracted successfully.",
                 "data": {
                     "annotations": annotations,
+                    "wholeText": whole_text,
                 }
             }
 

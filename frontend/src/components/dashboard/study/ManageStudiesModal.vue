@@ -9,14 +9,14 @@
     @hide="onHide">
 
     <template #title>
-      <h5 class="modal-title">Bulk Manage Studies</h5>
+      <h5 class="modal-title">{{ $t('dashboard.study.manageTitle') }}</h5>
     </template>
 
     <template #step-1>
       <div class="mode-selection-container">
-        <h5 class="mb-3">Select Action</h5>
+        <h5 class="mb-3">{{ $t('dashboard.study.selectAction') }}</h5>
         <p class="text-muted mb-4">
-          Choose the action you want to perform on the selected studies:
+          {{ $t('dashboard.study.selectActionHint') }}
         </p>
         <BasicForm
           class="mb-3"
@@ -30,14 +30,14 @@
     <template #step-2>
       <div class="filters-container mb-3">
         <div class="d-flex align-items-center gap-2 flex-wrap">
-          <label for="workflowSelect" class="mb-0 fw-bold">Filter Workflows:</label>
+          <label for="workflowSelect" class="mb-0 fw-bold">{{ $t('dashboard.study.filterWorkflows') }}</label>
           <select
             id="workflowSelect"
             v-model="workflowFilter"
             class="form-select form-select-sm"
             style="width: auto;"
           >
-            <option value="all">All Workflows</option>
+            <option value="all">{{ $t('dashboard.sessionOverview.allWorkflows') }}</option>
             <option
               v-for="workflow in workflowOptions"
               :key="workflow.value"
@@ -74,37 +74,49 @@
           class="mt-4"
         />
         <div v-if="selectedMode.mode === 'bulkClose'" class="confirmation-content">
-          <h6>Studies to Close</h6>
-          <p class="text-muted">You are about to close <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}{{ selection.allMatching ? '' : ':' }}</p>
+          <h6>{{ $t('dashboard.study.studiesToClose') }}</h6>
+          <p class="text-muted">{{ $t('dashboard.study.aboutToClose', { count: selectedCount }) }}</p>
           <p v-if="selection.allMatching" class="text-muted">{{ selectionSummary }}</p>
           <ul v-else class="selected-items-list">
             <li v-for="study in selection.rows" :key="study.id">
-              {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
+              {{ $t('dashboard.study.studyListItem', {
+                name: study.name,
+                workflow: study.workflowName,
+                owner: study.ownerName,
+              }) }}
             </li>
           </ul>
           <div v-if="notificationSettings.notifySessions" class="alert alert-warning mt-3">
-            <i class="fas fa-envelope"></i> Email notifications will be sent to participants with open sessions.
+            <i class="fas fa-envelope"></i> {{ $t('dashboard.study.notifyOpenSessionsAlert') }}
           </div>
         </div>
 
         <div v-else-if="selectedMode.mode === 'bulkOpen'" class="confirmation-content">
-          <h6>Studies to Open</h6>
-          <p class="text-muted">You are about to open <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}{{ selection.allMatching ? '' : ':' }}</p>
+          <h6>{{ $t('dashboard.study.studiesToOpen') }}</h6>
+          <p class="text-muted">{{ $t('dashboard.study.aboutToOpen', { count: selectedCount }) }}</p>
           <p v-if="selection.allMatching" class="text-muted">{{ selectionSummary }}</p>
           <ul v-else class="selected-items-list">
             <li v-for="study in selection.rows" :key="study.id">
-              {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
+              {{ $t('dashboard.study.studyListItem', {
+                name: study.name,
+                workflow: study.workflowName,
+                owner: study.ownerName,
+              }) }}
             </li>
           </ul>
         </div>
 
         <div v-else-if="selectedMode.mode === 'bulkDelete'" class="confirmation-content delete-warning-container">
-          <h6>Studies to Delete</h6>
-          <p class="text-muted">You are about to <strong>permanently delete</strong> <strong>{{ selectedCount }}</strong> {{ selectedCount === 1 ? 'study' : 'studies' }}{{ selection.allMatching ? '' : ':' }}</p>
+          <h6>{{ $t('dashboard.study.studiesToDelete') }}</h6>
+          <p class="text-muted">{{ $t('dashboard.study.aboutToDelete', { count: selectedCount }) }}</p>
           <p v-if="selection.allMatching" class="text-muted">{{ selectionSummary }}</p>
           <ul v-else class="selected-items-list">
             <li v-for="study in selection.rows" :key="study.id">
-              {{ study.name }} ({{ study.workflowName }}) - Owner: {{ study.ownerName }}
+              {{ $t('dashboard.study.studyListItem', {
+                name: study.name,
+                workflow: study.workflowName,
+                owner: study.ownerName,
+              }) }}
             </li>
           </ul>
         </div>
@@ -119,6 +131,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import BasicForm from "@/basic/Form.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * One bulk action per mode. Everything that differs between close / open / delete is a string,
@@ -128,35 +141,35 @@ const BULK_ACTIONS = {
   bulkClose: {
     event: "studyCloseBulk",
     countKey: "closedCount",
-    emptyTitle: "Nothing to close",
-    emptyMessage: "Select at least one open study from the table.",
-    doneTitle: "Studies closed",
-    doneVerb: "closed",
-    unchangedTitle: "Bulk close finished",
-    unchangedMessage: "No studies were updated (they may already be closed).",
-    failTitle: "Bulk close failed",
+    emptyTitleKey: "dashboard.study.nothingToClose",
+    emptyMessageKey: "dashboard.study.selectOpenStudy",
+    doneTitleKey: "dashboard.study.closedTitle",
+    doneMessageKey: "dashboard.study.closedMessage",
+    unchangedTitleKey: "dashboard.study.closeFinishedTitle",
+    unchangedMessageKey: "dashboard.study.noneClosed",
+    failTitleKey: "dashboard.study.closeFailed",
   },
   bulkOpen: {
     event: "studyOpenBulk",
     countKey: "openedCount",
-    emptyTitle: "Nothing to open",
-    emptyMessage: "Select at least one study from the table.",
-    doneTitle: "Studies opened",
-    doneVerb: "opened",
-    unchangedTitle: "Bulk open finished",
-    unchangedMessage: "No studies were updated.",
-    failTitle: "Bulk open failed",
+    emptyTitleKey: "dashboard.study.nothingToOpen",
+    emptyMessageKey: "dashboard.study.selectStudy",
+    doneTitleKey: "dashboard.study.openedTitle",
+    doneMessageKey: "dashboard.study.openedMessage",
+    unchangedTitleKey: "dashboard.study.openFinishedTitle",
+    unchangedMessageKey: "dashboard.study.noneOpened",
+    failTitleKey: "dashboard.study.openFailed",
   },
   bulkDelete: {
     event: "studyDeleteBulk",
     countKey: "deletedCount",
-    emptyTitle: "Nothing to delete",
-    emptyMessage: "Select at least one study from the table.",
-    doneTitle: "Studies deleted",
-    doneVerb: "permanently deleted",
-    unchangedTitle: "Bulk delete finished",
-    unchangedMessage: "No studies were deleted.",
-    failTitle: "Bulk delete failed",
+    emptyTitleKey: "dashboard.study.nothingToDelete",
+    emptyMessageKey: "dashboard.study.selectStudy",
+    doneTitleKey: "dashboard.study.deletedTitle",
+    doneMessageKey: "dashboard.study.deletedMessage",
+    unchangedTitleKey: "dashboard.study.deleteFinishedTitle",
+    unchangedMessageKey: "dashboard.study.noneDeleted",
+    failTitleKey: "dashboard.study.deleteFailed",
   },
 };
 
@@ -208,34 +221,46 @@ export default {
         selectableRows: true,
         sort: {column: "name", order: "ASC"},
       },
-      modeSelectionFields: [
+    };
+  },
+  computed: {
+    modeSelectionFields() {
+      return [
         {
           key: "mode",
           type: "checkbox",
           selectionMode: "single",
           options: [
-            { value: "bulkClose", label: "Close Studies" },
-            { value: "bulkOpen", label: "Open Studies" },
-            { value: "bulkDelete", label: "Delete Studies" },
+            { value: "bulkClose", label: this.$t("dashboard.study.closeStudies") },
+            { value: "bulkOpen", label: this.$t("dashboard.study.openStudies") },
+            { value: "bulkDelete", label: this.$t("dashboard.study.deleteStudies") },
           ],
-        }
-      ],
-      notificationFields: [
+        },
+      ];
+    },
+    notificationFields() {
+      return [
         {
           key: "notifySessions",
-          label: "Send email notifications to participants with active sessions",
+          label: this.$t("dashboard.study.notifyActiveSessions"),
           type: "switch",
           required: false,
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     steps() {
         return [
-          { title: "Select Action" },
-          { title: "Select Studies" },
-          { title: "Confirm" + (this.selectedMode.mode === "bulkDelete" ? " Delete" : this.selectedMode.mode === "bulkClose" ? " Close" : this.selectedMode.mode === "bulkOpen" ? " Open" : "") },
+          { title: this.$t("dashboard.study.selectAction") },
+          { title: this.$t("dashboard.study.selectStudies") },
+          {
+            title: this.selectedMode.mode === "bulkDelete"
+              ? this.$t("dashboard.study.confirmDelete")
+              : this.selectedMode.mode === "bulkClose"
+                ? this.$t("dashboard.study.confirmClose")
+                : this.selectedMode.mode === "bulkOpen"
+                  ? this.$t("dashboard.study.confirmOpen")
+                  : this.$t("dashboard.study.confirm"),
+          },
         ];
     },
     stepValid() {
@@ -276,12 +301,12 @@ export default {
      */
     studyFilterSchema() {
       const schema = {
-        id: {label: "ID", type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
-        workflowName: {label: "Workflow", type: "text"},
-        createdAt: {label: "Created", type: "date"},
+        id: {label: this.$t("common.id"), type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
+        workflowName: {label: this.$t("dashboard.study.workflowCol"), type: "text"},
+        createdAt: {label: this.$t("dashboard.study.createdCol"), type: "date"},
       };
       if (this.canReadPrivateInformation) {
-        schema.ownerName = {label: "User", type: "text"};
+        schema.ownerName = {label: this.$t("dashboard.study.userCol"), type: "text"};
       }
       return schema;
     },
@@ -299,20 +324,20 @@ export default {
           const wf = this.$store.getters["table/workflow/get"](id);
           return {
             value: id,
-            name: wf?.name || `Workflow ${id}`,
+            name: wf?.name || this.$t("dashboard.study.workflowFallback", { id }),
           };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
     },
     columns() {
       return [
-        { name: "ID", key: "id", sortable: true, width: 1 },
-        { name: "Study", key: "name", sortable: true, multiline: true, width: 3 },
+        { name: this.$t("common.id"), key: "id", sortable: true, width: 1 },
+        { name: this.$t("studies.study"), key: "name", sortable: true, multiline: true, width: 3 },
         // Workflow / User are not study columns — server-side sorting would silently sort by
         // something else, so they stay unsortable (filter them through the search bar instead).
-        { name: "Workflow", key: "workflowName", sortable: false, multiline: true, width: 3 },
-        { name: "User", key: "ownerName", sortable: false, width: 2 },
-        { name: "Created", key: "createdAt", type: "datetime", sortable: true, width: 2 },
+        { name: this.$t("dashboard.study.workflowCol"), key: "workflowName", sortable: false, multiline: true, width: 3 },
+        { name: this.$t("dashboard.study.userCol"), key: "ownerName", sortable: false, width: 2 },
+        { name: this.$t("dashboard.study.createdCol"), key: "createdAt", type: "datetime", sortable: true, width: 2 },
       ];
     },
     selectedCount() {
@@ -322,22 +347,23 @@ export default {
     selectionSummary() {
       const parts = [];
       if (this.selectedMode.mode === "bulkClose") {
-        parts.push("all open studies");
+        parts.push(this.$t("dashboard.study.allOpenStudies"));
       } else if (this.selectedMode.mode === "bulkOpen") {
-        parts.push("all closed studies");
+        parts.push(this.$t("dashboard.study.allClosedStudies"));
       } else {
-        parts.push("all studies");
+        parts.push(this.$t("dashboard.study.allStudies"));
       }
       const workflow = this.workflowOptions.find((o) => o.value.toString() === this.workflowFilter);
-      parts.push(workflow ? `workflow "${workflow.name}"` : "all workflows");
+      parts.push(workflow
+        ? this.$t("dashboard.study.workflowNamed", { name: workflow.name })
+        : this.$t("dashboard.study.allWorkflowsInFilter"));
       if (this.selection.query?.search) {
-        parts.push(`search "${this.selection.query.search}"`);
+        parts.push(this.$t("dashboard.study.searchQuoted", { search: this.selection.query.search }));
       }
       if (this.selection.excludeIds.length > 0) {
-        const excluded = this.selection.excludeIds.length;
-        parts.push(`${excluded} ${excluded === 1 ? "study" : "studies"} you unselected`);
+        parts.push(this.$t("dashboard.study.unselectedCount", { count: this.selection.excludeIds.length }));
       }
-      return `Matching the current filter: ${parts.join(", ")}.`;
+      return this.$t("dashboard.study.matchingFilter", { parts: parts.join(", ") });
     },
   },
   methods: {
@@ -396,9 +422,9 @@ export default {
       const ownerParts = [row.firstName, row.lastName].filter(Boolean);
       return {
         ...row,
-        name: row.name || `Study ${row.id}`,
-        workflowName: workflow?.name || `Workflow ${row.workflowId ?? "-"}`,
-        ownerName: ownerParts.length ? ownerParts.join(" ") : `User ${row.userId}`,
+        name: row.name || this.$t("dashboard.study.studyFallback", { id: row.id }),
+        workflowName: workflow?.name || this.$t("dashboard.study.workflowFallback", { id: row.workflowId ?? "-" }),
+        ownerName: ownerParts.length ? ownerParts.join(" ") : this.$t("dashboard.study.userFallback", { id: row.userId }),
       };
     },
     /**
@@ -431,8 +457,8 @@ export default {
       const payload = this.buildBulkPayload();
       if (!payload) {
         this.eventBus.emit("toast", {
-          title: action.emptyTitle,
-          message: action.emptyMessage,
+          title: this.$t(action.emptyTitleKey),
+          message: this.$t(action.emptyMessageKey),
           variant: "warning",
         });
         return;
@@ -448,9 +474,9 @@ export default {
       // Keep the stepper open so startProgress() is visible after ConfirmModal closes.
       // Closing it first left the progress bar on a hidden modal (delete looked "background").
       this.$refs.deleteConf.open(
-        "Delete Studies",
+        this.$t("dashboard.study.deleteStudies"),
         "",
-        "Are you sure you want to delete these studies?",
+        this.$t("dashboard.study.deleteConfirmPrompt"),
         (confirmed) => {
           if (confirmed) {
             this.runBulk(action, payload);
@@ -469,18 +495,17 @@ export default {
         if (res.success) {
           const count = res.data?.[action.countKey] ?? 0;
           this.eventBus.emit("toast", {
-            title: count > 0 ? action.doneTitle : action.unchangedTitle,
-            message:
-              count > 0
-                ? `${count} ${count === 1 ? "study" : "studies"} ${action.doneVerb}.`
-                : action.unchangedMessage,
+            title: this.$t(count > 0 ? action.doneTitleKey : action.unchangedTitleKey),
+            message: count > 0
+              ? this.$t(action.doneMessageKey, { count })
+              : this.$t(action.unchangedMessageKey),
             variant: count > 0 ? "success" : "info",
           });
           this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: action.failTitle,
-            message: res.message,
+            title: this.$t(action.failTitleKey),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -503,9 +528,9 @@ export default {
 }
 
 .confirmation-content .alert-warning {
-  background-color: #fff8e1;
-  border-color: #ffc107;
-  color: #856404;
+  background-color: var(--bs-warning-bg-subtle);
+  border-color: var(--bs-warning-border-subtle);
+  color: var(--bs-warning-text-emphasis);
 }
 
 .confirmation-content .alert strong {
@@ -519,9 +544,9 @@ export default {
 
 .filters-container {
   padding: 1rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
-  border-left: 3px solid #6c757d;
+  border-left: 3px solid var(--bs-secondary-color, #6c757d);
 }
 
 .confirmation-container {
@@ -529,17 +554,17 @@ export default {
 }
 
 .confirmation-content {
-  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  background-color: var(--bs-body-bg, #ffffff);
   border-radius: 0.5rem;
   padding: 1.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .confirmation-content h6 {
   margin-bottom: 1.25rem;
   font-weight: 700;
-  color: #212529;
+  color: var(--bs-body-color, #212529);
   font-size: 1.1rem;
 }
 
@@ -551,42 +576,42 @@ export default {
 
 .confirmation-content .text-muted strong {
   font-weight: 700;
-  background-color: #e7f3ff;
+  background-color: var(--bs-primary-bg-subtle, #e7f3ff);
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
-  color: #0056b3;
+  color: var(--bs-primary-text-emphasis, #0056b3);
 }
 
 .mode-selection-container {
   padding: 1.5rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
   border-left: 4px solid #007bff;
 }
 
 .mode-selection-container h5 {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
 .selected-items-list {
   max-height: 350px;
   overflow-y: auto;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
   padding: 1rem;
-  background-color: white;
+  background-color: var(--bs-body-bg, white);
   margin-bottom: 1.5rem;
   list-style: none;
 }
 
 .selected-items-list li {
   padding: 0.75rem 0.875rem;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--bs-border-color, #f0f0f0);
   font-size: 0.95rem;
   border-left: 3px solid #0d6efd;
   margin-bottom: 0.5rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
 }
 
@@ -601,15 +626,15 @@ export default {
 }
 
 .selected-items-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bs-tertiary-bg, #f1f1f1);
 }
 
 .selected-items-list::-webkit-scrollbar-thumb {
-  background: #888;
+  background: var(--bs-secondary-color, #888);
   border-radius: 3px;
 }
 
 .selected-items-list::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--bs-body-color, #555);
 }
 </style>

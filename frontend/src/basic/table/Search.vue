@@ -135,7 +135,7 @@
           <div class="token-date-picker-head">
             <button
               :disabled="!canShiftPicker(-1)"
-              aria-label="Previous"
+              :aria-label="$t('common.previous')"
               class="token-date-nav"
               type="button"
               @click="shiftPicker(-1)"
@@ -169,7 +169,7 @@
             </div>
             <button
               :disabled="!canShiftPicker(1)"
-              aria-label="Next"
+              :aria-label="$t('common.next')"
               class="token-date-nav"
               type="button"
               @click="shiftPicker(1)"
@@ -248,7 +248,7 @@
     </div>
     <button
       v-if="hasBarQuery"
-      :title="copied ? 'Query copied' : 'Copy this search query'"
+      :title="copied ? $t('common.queryCopied') : $t('common.copySearchQuery')"
       class="btn btn-outline-secondary search-bar-btn"
       type="button"
       @click="copyQuery"
@@ -258,7 +258,7 @@
     <button
       v-if="hasBarQuery"
       class="btn btn-outline-secondary search-bar-btn"
-      title="Clear search"
+      :title="$t('common.clearSearch')"
       type="button"
       @click="clearAll"
     >
@@ -270,8 +270,10 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
+import { formatLocalizedDate } from "@/assets/utils";
 import {
   OPERATOR_LABELS,
+  OPERATOR_LABEL_KEYS,
   OPERATOR_HINTS,
   DATE_OPERATOR_HINTS,
   coerceValue,
@@ -287,13 +289,6 @@ import {
   tokenLabel,
   unquote,
 } from "./searchTokens.js";
-
-const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function pad2(value) {
   return String(value).padStart(2, "0");
@@ -330,7 +325,7 @@ export default {
     placeholder: {
       type: String,
       required: false,
-      default: "Type to filter table...",
+      default: "",
     },
   },
   emits: ["update:modelValue"],
@@ -363,12 +358,12 @@ export default {
       // A picked operator on a typed-value key (Sessions ≥ …) is not a filter until a value arrives.
       if (this.stage === "value" && this.pending.key && needsTypedValue(this.schema, this.pending.key)) {
         const type = this.schema[this.pending.key].type;
-        if (type === "numeric") return "Type a number, then Enter or Space";
-        if (type === "date") return "Pick a date or type YYYY-MM-DD";
-        return "Type a value, then Enter or Space";
+        if (type === "numeric") return this.$t("common.typeNumberHint");
+        if (type === "date") return this.$t("common.typeDateHint");
+        return this.$t("common.typeValueHint");
       }
       if (this.tokens.length > 0 || this.pending.key) return "";
-      return this.hasSchema ? "Search or filter..." : this.placeholder;
+      return this.hasSchema ? this.$t("common.searchOrFilter") : (this.placeholder || this.$t("common.typeToFilter"));
     },
     payload() {
       const columnFilters = {};
@@ -399,7 +394,11 @@ export default {
     },
     pendingLabel() {
       if (!this.pending.key) return "";
-      const operator = this.pending.operator ? OPERATOR_LABELS[this.pending.operator] : "";
+      const operator = this.pending.operator
+        ? (OPERATOR_LABEL_KEYS[this.pending.operator]
+          ? this.$t(OPERATOR_LABEL_KEYS[this.pending.operator])
+          : (OPERATOR_LABELS[this.pending.operator] || this.pending.operator))
+        : "";
       return `${keyLabel(this.schema, this.pending.key)} ${operator}`.trim();
     },
     suggestions() {
@@ -414,11 +413,11 @@ export default {
             type: "operator",
             value: operator,
             label: operator,
-            hint: hints[operator] || "",
+            hint: hints[operator] ? this.$t(hints[operator]) : "",
           }));
       }
       if (this.stage === "value" && this.pending.key) {
-        return optionsFor(this.schema, this.pending.key)
+        return optionsFor(this.schema, this.pending.key, this.$t.bind(this))
           .filter((option) => this.matchesDraft(option.label))
           .map((option) => ({type: "value", value: option.value, label: option.label}));
       }
@@ -433,7 +432,10 @@ export default {
         && this.schema[this.pending.key]?.type === "date";
     },
     weekdays() {
-      return WEEKDAYS;
+      this.$i18n.locale;
+      return Array.from({length: 7}, (_, index) => (
+        formatLocalizedDate(new Date(2024, 0, 1 + index), {weekday: "short"})
+      ));
     },
     menuOpen() {
       return this.suggestionsOpen && (this.suggestions.length > 0 || this.showDatePicker);
@@ -451,10 +453,14 @@ export default {
       return parseIsoDate(this.draft.trim());
     },
     pickerMonthLabel() {
-      return MONTH_NAMES[this.pickerMonth];
+      this.$i18n.locale;
+      return formatLocalizedDate(new Date(this.pickerYear, this.pickerMonth, 1), {month: "long"});
     },
     monthShortNames() {
-      return MONTH_SHORT;
+      this.$i18n.locale;
+      return Array.from({length: 12}, (_, index) => (
+        formatLocalizedDate(new Date(2000, index, 1), {month: "short"})
+      ));
     },
     pickerYearBlockStart() {
       return Math.floor(this.pickerYear / 12) * 12;
@@ -510,7 +516,7 @@ export default {
     editText(text) {
       if (this.editIndex === null) return;
       const current = this.tokens[this.editIndex];
-      const parsed = parseToken(this.schema, text.trim());
+      const parsed = parseToken(this.schema, text.trim(), this.$t.bind(this));
       if (!current || !parsed) return;
       if (current.key === parsed.key && current.operator === parsed.operator && current.value === parsed.value) {
         return;
@@ -560,7 +566,7 @@ export default {
   },
   methods: {
     chipLabel(token) {
-      return tokenLabel(this.schema, token);
+      return tokenLabel(this.schema, token, this.$t.bind(this));
     },
     pickerCell(date, inMonth) {
       const value = localIsoDate(date);
@@ -779,7 +785,7 @@ export default {
         return;
       }
       if (this.pending.key) {
-        const value = coerceValue(this.schema, this.pending.key, unquote(this.draft.trim()));
+        const value = coerceValue(this.schema, this.pending.key, unquote(this.draft.trim()), this.$t.bind(this));
         if (value !== null) {
           this.commitPending(value);
           return;
@@ -879,7 +885,7 @@ export default {
       if (!match) return false;
       const word = unquote(match[1]);
       const rest = match[3].trimStart();
-      const coerced = coerceValue(this.schema, this.pending.key, word);
+      const coerced = coerceValue(this.schema, this.pending.key, word, this.$t.bind(this));
       if (coerced !== null) {
         this.commitPending(coerced);
         if (rest) this.draft = rest;
@@ -926,7 +932,7 @@ export default {
       if (!trimmed) return;
       const first = (trimmed.match(/^\S+/) || [])[0];
       if (!first) return;
-      const complete = parseToken(this.schema, first);
+      const complete = parseToken(this.schema, first, this.$t.bind(this));
       if (complete) {
         this.addToken(complete);
         this.draft = trimmed.slice(first.length).trimStart();
@@ -1152,7 +1158,7 @@ export default {
         this.tokens.splice(index, 1);
         result = "removed";
       } else {
-        const parsed = parseToken(this.schema, text);
+        const parsed = parseToken(this.schema, text, this.$t.bind(this));
         if (parsed) {
           this.tokens.splice(index, 1, {...parsed, uid: token.uid});
           this.dedupeKey(index);
@@ -1183,7 +1189,7 @@ export default {
     },
     /** Pull every complete token out of the draft and leave the rest as free text. */
     absorbTokens() {
-      const {tokens, text} = parseQuery(this.schema, this.draft);
+      const {tokens, text} = parseQuery(this.schema, this.draft, this.$t.bind(this));
       if (tokens.length === 0) return;
       tokens.forEach((token) => this.addToken(token));
       this.draft = text.length > 0 ? `${text.join(" ")} ` : "";

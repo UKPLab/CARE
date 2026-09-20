@@ -15,7 +15,7 @@
         <div class="input-group">
           <span
             class="input-group-text"
-            title="Items per page">
+            :title="$t('common.itemsPerPage')">
             <LoadIcon icon-name="list-ul"/>
           </span>
           <select
@@ -33,7 +33,7 @@
               v-if="allowAll"
               :value="0"
             >
-              All
+              {{ $t('common.all') }}
             </option>
           </select>
         </div>
@@ -41,7 +41,7 @@
       <div
         v-if="itemsPerPageSelect !== 0"
         class="col-md-auto">
-        <nav aria-label="Pagination">
+        <nav :aria-label="$t('common.pagination')">
           <ul class="pagination mb-0">
             <!-- First Page Link -->
             <li
@@ -53,7 +53,7 @@
                 :disabled="currentPage === 1"
                 @click="changePage(1)"
               >
-                First
+                {{ $t('common.first') }}
               </button>
             </li>
             <!-- Previous Page Link -->
@@ -66,7 +66,7 @@
                 :disabled="currentPage === 1"
                 @click="changePage(currentPage - 1)"
               >
-                Prev
+                {{ $t('common.paginationPrevious') }}
               </button>
             </li>
             <!-- Next Page Link -->
@@ -79,7 +79,7 @@
                 :disabled="currentPage === pages"
                 @click="changePage(currentPage + 1)"
               >
-                Next
+                {{ $t('common.next') }}
               </button>
             </li>
             <!-- Last Page Link -->
@@ -92,7 +92,7 @@
                 :disabled="currentPage === pages"
                 @click="changePage(pages)"
               >
-                Last
+                {{ $t('common.last') }}
               </button>
             </li>
           </ul>
@@ -175,15 +175,23 @@ export default {
       // "All" scrolls a window over the result set, so report what is on screen.
       if (this.itemsPerPageSelect === 0) {
         if (this.windowFirst > 0 && this.windowLast >= this.windowFirst) {
-          return `Showing ${this.windowFirst}-${Math.min(this.windowLast, this.totalItems)} of ${this.totalItems}`;
+          return this.$t('common.paginationRange', {
+            start: this.windowFirst,
+            end: Math.min(this.windowLast, this.totalItems),
+            total: this.totalItems,
+          });
         }
-        return `${this.totalItems} entries`;
+        return this.$t('common.paginationEntries', {total: this.totalItems});
       }
 
       const startItem = (this.currentPage - 1) * this.itemsPerPageSelect + 1;
       const endItem = Math.min(this.currentPage * this.itemsPerPageSelect, this.totalItems);
 
-      return `Showing ${startItem}-${endItem} of ${this.totalItems}`;
+      return this.$t('common.paginationRange', {
+        start: startItem,
+        end: endItem,
+        total: this.totalItems,
+      });
     },
   },
   watch: {

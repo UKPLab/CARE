@@ -15,31 +15,36 @@
 export const OPERATOR_LABELS = {
   "=": "=",
   "!=": "!=",
-  "~": "contains",
+  "~": "~",
   ">": ">",
   ">=": "\u2265",
   "<": "<",
   "<=": "\u2264",
 };
 
-/** Right-hand words in the operator dropdown (GitLab: symbol left, "is" / "is not" right). */
+/** Chip text for `~` (symbols stay as symbols). */
+export const OPERATOR_LABEL_KEYS = {
+  "~": "common.searchOp.contains",
+};
+
+/** Right-hand words in the operator dropdown (GitLab: symbol left, hint right). */
 export const OPERATOR_HINTS = {
-  "=": "is",
-  "!=": "is not",
-  "~": "contains",
-  ">": "greater than",
-  ">=": "greater or equal",
-  "<": "less than",
-  "<=": "less or equal",
+  "=": "common.searchOp.is",
+  "!=": "common.searchOp.isNot",
+  "~": "common.searchOp.contains",
+  ">": "common.searchOp.greaterThan",
+  ">=": "common.searchOp.greaterOrEqual",
+  "<": "common.searchOp.lessThan",
+  "<=": "common.searchOp.lessOrEqual",
 };
 
 /** Right-hand words in the operator dropdown for a calendar date. */
 export const DATE_OPERATOR_HINTS = {
-  "=": "on",
-  ">": "after",
-  ">=": "on or after",
-  "<": "before",
-  "<=": "on or before",
+  "=": "common.searchOp.on",
+  ">": "common.searchOp.after",
+  ">=": "common.searchOp.onOrAfter",
+  "<": "common.searchOp.before",
+  "<=": "common.searchOp.onOrBefore",
 };
 
 // Types whose value is typed rather than picked from a list — the token stays incomplete until a
@@ -68,6 +73,31 @@ const SEGMENT_PATTERN = /[^\s"]*"[^"]*"|\S+/g;
 const TRUTHY = ["yes", "true", "1"];
 const FALSY = ["no", "false", "0"];
 
+function operatorDisplay(operator, t) {
+  const key = OPERATOR_LABEL_KEYS[operator];
+  if (key && typeof t === "function") return t(key);
+  if (key) return "contains";
+  return OPERATOR_LABELS[operator] || operator;
+}
+
+function yesNoLabels(t) {
+  if (typeof t === "function") {
+    return {yes: t("common.yes"), no: t("common.no")};
+  }
+  return {yes: "yes", no: "no"};
+}
+
+function matchesBoolWord(value, t) {
+  const lower = value.toLowerCase();
+  if (TRUTHY.includes(lower)) return true;
+  if (FALSY.includes(lower)) return false;
+  if (typeof t === "function") {
+    if (lower === String(t("common.yes")).toLowerCase()) return true;
+    if (lower === String(t("common.no")).toLowerCase()) return false;
+  }
+  return null;
+}
+
 /** Label to show for a key; falls back to the raw key. */
 export function keyLabel(schema, key) {
   return schema[key]?.label || key;
@@ -84,13 +114,14 @@ export function defaultOperator(schema, key) {
 }
 
 /** Values that can be picked from the dropdown; numeric, date, and text keys are typed instead. */
-export function optionsFor(schema, key) {
+export function optionsFor(schema, key, t) {
   const entry = schema[key];
   if (!entry) return [];
   if (entry.type === "boolean" || entry.type === "exists") {
+    const labels = yesNoLabels(t);
     return [
-      {value: true, label: "yes"},
-      {value: false, label: "no"},
+      {value: true, label: labels.yes},
+      {value: false, label: labels.no},
     ];
   }
   if (entry.type === "enum") {
@@ -129,16 +160,14 @@ export function parseIsoDate(value) {
  * Text from the bar → typed value for that key, or null when it does not fit.
  * @returns {*|null}
  */
-export function coerceValue(schema, key, raw) {
+export function coerceValue(schema, key, raw, t) {
   const entry = schema[key];
   if (!entry) return null;
   const value = String(raw ?? "").trim();
   if (!value) return null;
 
   if (entry.type === "boolean" || entry.type === "exists") {
-    if (TRUTHY.includes(value.toLowerCase())) return true;
-    if (FALSY.includes(value.toLowerCase())) return false;
-    return null;
+    return matchesBoolWord(value, t);
   }
   if (entry.type === "numeric") {
     // Digits only — no Number("0x10") / Number("1e2") / eval. Values go to SQL via Sequelize binds.
@@ -150,7 +179,7 @@ export function coerceValue(schema, key, raw) {
     return parseIsoDate(value);
   }
   if (entry.type === "enum") {
-    const options = optionsFor(schema, key);
+    const options = optionsFor(schema, key, t);
     if (options.length === 0) return value;
     const match = options.find((option) => (
       String(option.label).toLowerCase() === value.toLowerCase() ||
@@ -162,21 +191,22 @@ export function coerceValue(schema, key, raw) {
 }
 
 /** Value as shown in a chip and written to the copyable query. */
-export function displayValue(schema, token) {
+export function displayValue(schema, token, t) {
   const entry = schema[token.key];
   if (entry && (entry.type === "boolean" || entry.type === "exists")) {
-    return token.value ? "yes" : "no";
+    const labels = yesNoLabels(t);
+    return token.value ? labels.yes : labels.no;
   }
   if (entry && entry.type === "enum") {
-    const match = optionsFor(schema, token.key).find((option) => option.value === token.value);
+    const match = optionsFor(schema, token.key, t).find((option) => option.value === token.value);
     if (match) return match.label;
   }
   return String(token.value);
 }
 
-export function tokenLabel(schema, token) {
-  const operator = OPERATOR_LABELS[token.operator] || token.operator;
-  return `${keyLabel(schema, token.key)} ${operator} ${displayValue(schema, token)}`;
+export function tokenLabel(schema, token, t) {
+  const operator = operatorDisplay(token.operator, t);
+  return `${keyLabel(schema, token.key)} ${operator} ${displayValue(schema, token, t)}`;
 }
 
 /**
@@ -195,12 +225,12 @@ export function serializeToken(schema, token) {
  * Parse a single `key:operator value` segment.
  * @returns {{key: string, operator: string, value: *}|null} null when it is plain search text
  */
-export function parseToken(schema, segment) {
+export function parseToken(schema, segment, t) {
   const match = TOKEN_PATTERN.exec(segment);
   if (!match) return null;
   const [, key, operator, rawValue] = match;
   if (!schema[key]) return null;
-  const value = coerceValue(schema, key, unquote(rawValue));
+  const value = coerceValue(schema, key, unquote(rawValue), t);
   if (value === null) return null;
   const resolved = operator || defaultOperator(schema, key);
   if (!operatorsFor(schema, key).includes(resolved)) return null;
@@ -211,12 +241,12 @@ export function parseToken(schema, segment) {
  * Split text into tokens and leftover free-text words (quoted values stay in one piece).
  * @returns {{tokens: Array<Object>, text: string[]}}
  */
-export function parseQuery(schema, text) {
+export function parseQuery(schema, text, t) {
   const segments = String(text || "").match(SEGMENT_PATTERN) || [];
   const tokens = [];
   const rest = [];
   segments.forEach((segment) => {
-    const token = parseToken(schema, segment);
+    const token = parseToken(schema, segment, t);
     if (token) {
       tokens.push(token);
     } else {
