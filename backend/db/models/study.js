@@ -826,11 +826,6 @@ module.exports = (sequelize, DataTypes) => {
                 fields: ["userId", "template"]
             },
             {
-                unique: false,
-                name: "study_project_list_created",
-                fields: ["projectId", "deleted", "template", "createdAt", "id"]
-            },
-            {
                 unique: true,
                 fields: ["id"]
             }
