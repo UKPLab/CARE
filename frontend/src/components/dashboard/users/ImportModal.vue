@@ -11,79 +11,16 @@
       <span>Bulk Import Users</span>
     </template>
     <template #step="{ step }">
-      <div class="file-upload-container">
-        <template v-if="step.key === 'source' && importType === 'csv'">
-          <div
-            class="drag-drop-area"
-            @dragover.prevent
-            @drop.prevent="handleDrop"
-            @click="$refs.fileInput.click()"
-          >
-            <input
-              ref="fileInput"
-              type="file"
-              accept=".csv"
-              style="display: none"
-              @change="handleFileUpload"
-            />
-            <BasicIcon
-              icon-name="cloud-arrow-up"
-              size="64"
-            />
-            <p>Drag and drop CSV file here<br />or click to upload</p>
-          </div>
-          <p>
-            Please check the format or
-            <a
-              class="template-link"
-              @click="downloadTemplateCSV"
-            >
-              download the template
-            </a>
-            here.
-          </p>
-          <template v-if="file.state === 1">
-            <div
-              v-if="file.name !== '' && file.errors.length === 0"
-              class="file-info-container"
-            >
-              <div class="file-info">
-                <BasicIcon
-                  icon-name="file-earmark"
-                  size="20"
-                />
-                <strong>{{ file.name }}</strong>
-                <span>({{ file.size }} KB)</span>
-              </div>
-              <BasicButton
-                icon="x-circle-fill"
-                tooltip="Clear file"
-                @click="clearFile"
-              />
-            </div>
-            <div
-              v-else
-              class="scrollable-error-container"
-            >
-              <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
-              <ul>
-                <li
-                  v-for="(error, index) in file.errors"
-                  :key="index"
-                >
-                  {{ error }}
-                </li>
-              </ul>
-            </div>
-          </template>
-        </template>
-        <template v-else-if="step.key === 'source'">
-          <MoodleOptions
-            ref="moodleOptionsForm"
-            v-model="moodleOptions"
-          />
-        </template>
-      </div>
+      <ImportSourceStep
+        v-if="step.key === 'source'"
+        ref="importSourceStep"
+        v-model="moodleOptions"
+        :file="file"
+        :import-type="importType"
+        @update:file="file = $event"
+        @users-loaded="handleUsersLoaded"
+        @clear="clearImportedUsers"
+      />
 
       <RoleMappingStep
         v-if="step.key === 'roleMapping'"
@@ -93,100 +30,38 @@
         :source-label="importSourceLabel"
       />
 
-      <div
+      <ImportPreviewStep
         v-if="step.key === 'preview'"
-        class="preview-table-container"
-      >
-        <BasicTable
-          v-model="selectedUsers"
-          :columns="columns"
-          :data="users"
-          :options="tableOptions"
-          :max-table-height="400"
-        />
-      </div>
+        v-model="selectedUsers"
+        :users="users"
+      />
 
-      <div
+      <ImportConfirmStep
         v-if="step.key === 'confirm'"
-        class="confirm-container"
-      >
-        <BasicIcon
-          icon-name="person-fill-up"
-          size="64"
-        />
-        <p>
-          Are you sure you want to bulk create <strong>{{ userCount.new }}</strong> users <br />
-          and overwrite <strong>{{ userCount.duplicate }}</strong> users?
-        </p>
-      </div>
+        :new-count="userCount.new"
+        :duplicate-count="userCount.duplicate"
+      />
 
-      <div
+      <ImportResultStep
         v-if="step.key === 'result'"
-        class="result-container"
-      >
-        <div
-          v-if="updatedUserCount"
-          class="result-status"
-        >
-          <p class="result-summary">
-            Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
-          </p>
-          <div
-            v-if="createdErrors.length > 0"
-            class="error-container"
-          >
-            Failed to create the following users:
-            <ul
-              v-for="(error, index) in createdErrors"
-              :key="index"
-            >
-              <li>User with external Id {{ error.extId }} cannot be added: {{ error.message }}</li>
-            </ul>
-          </div>
-        </div>
-        <div
-          v-if="importType === 'moodle'"
-          class="moodle-publish-intro"
-        >
-          <h3>Send login credentials to Moodle</h3>
-          <p>
-            CARE generated usernames and initial passwords for the imported users.
-            Select the Moodle assignment where these credentials should be posted as feedback,
-            or download them as a CSV file.
-          </p>
-        </div>
-        <MoodleOptions
-          v-if="importType === 'moodle'"
-          ref="moodleOptionsForm"
-          v-model="moodleOptions"
-          with-assignment-id
-        />
-        <div class="link-container">
-          <BasicButton
-            v-if="importType === 'moodle'"
-            class="btn btn-outline-info"
-            title="Send to Moodle"
-            @click="uploadToMoodle"
-          />
-          <BasicButton
-            class="btn btn-outline-primary"
-            title="Download CSV"
-            @click="downloadFileAsCSV"
-          />
-        </div>
-      </div>
+        v-model:moodle-options="moodleOptions"
+        :import-type="importType"
+        :updated-user-count="updatedUserCount"
+        :created-errors="createdErrors"
+        @upload-to-moodle="uploadToMoodle"
+        @download-csv="downloadFileAsCSV"
+      />
     </template>
   </StepperModal>
 </template>
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import BasicButton from "@/basic/Button.vue";
-import BasicIcon from "@/basic/Icon.vue";
-import BasicTable from "@/basic/Table.vue";
-import Papa from "papaparse";
 import { downloadObjectsAs } from "@/assets/utils.js";
-import MoodleOptions from "@/basic/form/MoodleOptions.vue";
+import ImportConfirmStep from "@/components/dashboard/users/ImportConfirmStep.vue";
+import ImportPreviewStep from "@/components/dashboard/users/ImportPreviewStep.vue";
+import ImportResultStep from "@/components/dashboard/users/ImportResultStep.vue";
+import ImportSourceStep from "@/components/dashboard/users/ImportSourceStep.vue";
 import RoleMappingStep from "@/components/dashboard/users/RoleMappingStep.vue";
 import { buildInitialRoleMappings, formatRoleList, getRoleRows, normalizeImportUsers } from "@/components/dashboard/users/roleMapping.js";
 
@@ -196,7 +71,14 @@ import { buildInitialRoleMappings, formatRoleList, getRoleRows, normalizeImportU
  */
 export default {
   name: "ImportModal",
-  components: { RoleMappingStep, MoodleOptions, StepperModal, BasicButton, BasicIcon, BasicTable },
+  components: {
+    ImportConfirmStep,
+    ImportPreviewStep,
+    ImportResultStep,
+    ImportSourceStep,
+    RoleMappingStep,
+    StepperModal,
+  },
   emits: ["updateUser"],
   data() {
     return {
@@ -210,35 +92,6 @@ export default {
       moodleOptions: {},
       users: [],
       selectedUsers: [],
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        search: true,
-        pagination: 10,
-        selectableRows: true,
-      },
-      columns: [
-        {
-          name: "Duplicate",
-          key: "exists",
-          type: "badge",
-          typeOptions: {
-            keyMapping: { true: "Yes", default: "No" },
-          },
-          filter: [
-            { key: false, name: "New" },
-            { key: true, name: "Duplicate" },
-          ],
-        },
-        { name: "extId", key: "extId" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Email", key: "email" },
-        { name: "Roles", key: "displayRoles" },
-      ],
       updatedUserCount: null,
       createdUsers: [],
       createdErrors: [],
@@ -303,19 +156,6 @@ export default {
       }));
       downloadObjectsAs(users, filename, "csv");
     },
-    downloadTemplateCSV() {
-      const filename = "users_template";
-      const users = [
-        {
-          extId: "123456",
-          firstName: "Test",
-          lastName: "User",
-          email: "test.user@example.com",
-          roles: "student",
-        },
-      ];
-      downloadObjectsAs(users, filename, "csv");
-    },
     uploadToMoodle() {
       const users = this.createdUsers.map(({ extId, userName, initialPassword }) => ({ extId, userName, password: initialPassword }));
       this.$socket.emit("userPublishMoodle", { options: this.moodleOptions, users }, (res) => {
@@ -358,6 +198,16 @@ export default {
         this.eventBus.emit("resetFormField");
       }
     },
+    handleUsersLoaded(users) {
+      this.users = normalizeImportUsers(users);
+      this.selectedUsers = [];
+      this.roleMappings = buildInitialRoleMappings(this.users, this.roleMappings);
+    },
+    clearImportedUsers() {
+      this.users = [];
+      this.selectedUsers = [];
+      this.roleMappings = {};
+    },
     handleStepChange(step) {
       const stepKey = this.steps[step]?.key;
       switch (stepKey) {
@@ -386,7 +236,7 @@ export default {
     },
     prepareUserImport() {
       if (this.importType === "moodle") {
-        if (!this.hasRequiredMoodleOptions(this.moodleOptions) || (this.$refs.moodleOptionsForm && !this.$refs.moodleOptionsForm.validate())) return;
+        if (!this.hasRequiredMoodleOptions(this.moodleOptions) || (this.$refs.importSourceStep && !this.$refs.importSourceStep.validate())) return;
         this.$refs.importStepper?.setWaiting(true);
         this.$socket.emit("userMoodleUserGetAll", this.moodleOptions, (res) => {
           this.$refs.importStepper?.setWaiting(false);
@@ -436,110 +286,6 @@ export default {
         }
       });
     },
-    handleDrop(event) {
-      const file = event.dataTransfer.files[0];
-      this.processFile(file);
-    },
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      this.processFile(file);
-    },
-    async validateCSV(file) {
-      return new Promise((resolve, reject) => {
-        Papa.parse(file, {
-          header: true,
-          complete: function (results) {
-            const { data: rows, meta } = results;
-            const { fields: fileHeaders } = meta;
-            const requiredHeaders = ["extId", "firstName", "lastName", "email", "roles"];
-            const seenIds = new Set();
-            const seenEmails = new Set();
-            // src: https://www.mailercheck.com/articles/email-validation-javascript
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            const errors = [];
-            // Check headers
-            if (!requiredHeaders.every((header) => fileHeaders.includes(header))) {
-              errors.push("CSV does not contain all required headers");
-            }
-            rows.forEach((row, index) => {
-              // Check if every cell has value
-              for (const [key, value] of Object.entries(row)) {
-                if (value === null || value === "") {
-                  errors.push(`Empty value found for ${key} at index ${index + 1}`);
-                }
-              }
-              // Check for duplicate id
-              if (seenIds.has(row.extId)) {
-                errors.push(`Duplicate id found: ${row.extId} at index ${index + 1}`);
-              } else {
-                seenIds.add(row.extId);
-              }
-
-              // Check for duplicate email
-              if (seenEmails.has(row.email)) {
-                errors.push(`Duplicate email found: ${row.email} at index ${index + 1}`);
-              } else {
-                seenEmails.add(row.email);
-              }
-
-              // Check if the email is in a valid format
-              if (!emailRegex.test(row.email)) {
-                errors.push(`Invalid email format for id ${row.id} at index ${index + 1}: ${row.email}`);
-              }
-            });
-
-            if (errors.length > 0) {
-              reject(errors);
-            } else {
-              resolve(rows);
-            }
-          },
-          error: function (error) {
-            reject(["Error parsing file: " + error.message]);
-          },
-        });
-      });
-    },
-    async processFile(file) {
-      if (file && file.name.endsWith(".csv")) {
-        try {
-          const parsingResults = normalizeImportUsers(await this.validateCSV(file));
-          this.users = parsingResults;
-          this.selectedUsers = [];
-          this.roleMappings = buildInitialRoleMappings(parsingResults, this.roleMappings);
-          this.file = {
-            state: 1,
-            name: file.name,
-            size: file.size,
-            errors: [],
-          };
-          this.eventBus.emit("toast", {
-            title: "Validation completed",
-            message: "CSV is valid!",
-            variant: "success",
-          });
-        } catch (errors) {
-          this.file = {
-            state: 1,
-            errors,
-          };
-        }
-      } else {
-        alert("Please upload a CSV file");
-      }
-    },
-    clearFile() {
-      this.file = {
-        state: 0,
-        name: "",
-        size: 0,
-        errors: [],
-      };
-      this.users = [];
-      this.selectedUsers = [];
-      this.roleMappings = {};
-      this.$refs.fileInput.value = "";
-    },
     checkDuplicateUsers() {
       this.selectedUsers = [];
       this.$socket.emit("userCheckExistsByMail", this.users, (res) => {
@@ -558,123 +304,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-/* Upload */
-.file-upload-container {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.drag-drop-area {
-  margin-bottom: 0.5rem;
-  border: 2px dashed #ccc;
-  border-radius: 4px;
-  padding: 1.25rem;
-  text-align: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.drag-drop-area:hover {
-  background-color: #f0f0f0;
-}
-
-.drag-drop-area p {
-  margin: 0;
-  font-size: 0.925rem;
-  color: #666;
-}
-
-.template-link {
-  cursor: pointer;
-}
-
-.file-info-container {
-  margin-top: 0.9375rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid #dee2e6;
-  background: #f2f2f2;
-  border-radius: 4px;
-}
-
-.file-info {
-  margin-left: 0.5rem;
-  font-size: 0.925rem;
-}
-
-.file-info-container strong {
-  margin: 0 0.5rem;
-  color: #333;
-}
-
-.file-info-container button {
-  background-color: transparent;
-  color: firebrick;
-  border: none;
-  padding: 5px 10px;
-  cursor: pointer;
-}
-
-.confirm-container,
-.result-container {
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-}
-
-.link-container {
-  margin-top: 15px;
-
-  button:first-child {
-    margin-right: 0.5rem;
-  }
-}
-
-.result-status {
-  width: 100%;
-  text-align: center;
-}
-
-.result-summary {
-  margin-bottom: 0;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.moodle-publish-intro {
-  width: 100%;
-  max-width: 500px;
-  margin-top: 1.25rem;
-  margin-bottom: 0.75rem;
-  padding-top: 1rem;
-  border-top: 1px solid #dee2e6;
-  text-align: left;
-}
-
-.moodle-publish-intro h3 {
-  margin-bottom: 0.35rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.moodle-publish-intro p {
-  margin-bottom: 0;
-  color: #555;
-  font-size: 0.925rem;
-}
-
-.error-container {
-  margin: 0.25rem auto 0.5rem;
-  color: firebrick;
-
-  ul {
-    margin-bottom: 0.25rem;
-  }
-}
-</style>
