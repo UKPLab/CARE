@@ -6,6 +6,7 @@ const {Op} = require("sequelize");
 const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
+const ADMIN_ROLE_NAME = "admin";
 
 /**
  * Handle user through websocket
@@ -209,6 +210,48 @@ class UserSocket extends Socket {
     }
 
     /**
+     * Load roles that the bulk import flow may assign from client-provided mappings.
+     * Admin is intentionally excluded because the import UI also hides it.
+     *
+     * @returns {Promise<Set<string>>}
+     */
+    async getAllowedBulkCreateRoleNames() {
+        const roles = await this.models["user_role"].findAll({
+            where: {
+                deleted: false,
+                name: {[Op.ne]: ADMIN_ROLE_NAME},
+            },
+            attributes: ["name"],
+            raw: true,
+        });
+        return new Set(roles.map((role) => role.name).filter(Boolean));
+    }
+
+    /**
+     * Keep only client role mappings whose target CARE role is allowed for bulk import.
+     *
+     * @param {Object<string, string>} roleMap Raw client-provided external-role to CARE-role map
+     * @param {Set<string>} allowedRoleNames Backend-authoritative assignable role names
+     * @returns {Object<string, string>}
+     */
+    sanitizeBulkCreateRoleMap(roleMap, allowedRoleNames) {
+        if (!roleMap || typeof roleMap !== "object" || Array.isArray(roleMap)) {
+            return {};
+        }
+
+        return Object.fromEntries(
+            Object.entries(roleMap)
+                .map(([externalRole, careRole]) => [
+                    externalRole,
+                    typeof careRole === "string" ? careRole.trim() : "",
+                ])
+                .filter(([externalRole, careRole]) =>
+                    externalRole && careRole && allowedRoleNames.has(careRole)
+                )
+        );
+    }
+
+    /**
      * Creates or updates a list of users in bulk.
      * Each user is processed in an isolated database transaction. Errors for individual users are caught,
      * logged, and added to an error array without halting the entire process. Progress is reported to the client.
@@ -220,8 +263,15 @@ class UserSocket extends Socket {
      * @returns {Promise<{createdUsers: Array, errors: Array}>} An object containing the created users and errors
      */
     async bulkCreateUsers(data) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+
         const users = data["users"];
-        const roleMap = data["roleMap"];
+        const roleMap = this.sanitizeBulkCreateRoleMap(
+            data["roleMap"],
+            await this.getAllowedBulkCreateRoleNames()
+        );
 
         const createdUsers = [];
         const errors = [];
