@@ -5,6 +5,7 @@ const stepTypes = Object.freeze({
     STEP_TYPE_ANNOTATOR: 1,
     STEP_TYPE_EDITOR: 2,
     STEP_TYPE_MODAL: 3,
+    STEP_TYPE_DIALOGUE: 4,
 });
 
 
@@ -31,7 +32,8 @@ module.exports = (sequelize, DataTypes) => {
             options: [
                 { value: 1, name: "Annotator" },
                 { value: 2, name: "Editor" },
-                { value: 3, name: "Modal" }
+                { value: 3, name: "Modal" },
+                { value: 4, name: "Dialogue" }
             ],
             icon: "list",
             required: true,
