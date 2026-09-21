@@ -18,7 +18,7 @@
         </div>
         <!-- Input mapping and optional output mapping -->
         <InputMap
-            v-if="skill.skillName"
+            v-if="skill.skillName && serviceAt(index).inputMapping !== false"
             :skill-name="skill.skillName"
             :hook-id="hookIdFor(skill)"
             :study-based="true"
@@ -33,7 +33,7 @@
             @update:model-value="handleInputMappingUpdate(index, $event)"
             @validation-change="handleInputValidationChange(index, $event)"
         />
-        <!-- Hook-only budget caps: total / per session / per user -->
+        <!-- AI hook budget caps: total / per session / per user -->
         <div v-if="isHook(skill)" class="cap-fields mt-2">
           <h6 class="text-secondary">Cost limits (optional)</h6>
           <div class="row g-2">
@@ -167,7 +167,8 @@ export default {
       return this.selectedSkills?.every((skill, index) => {
         if (!skill.skillName) return !this.isServiceRequired(index);
         if (this.isTemplateMode) return true;
-        if (this.isAiChatService(index)) return skill.inputMappingValid;
+        if (this.serviceAt(index).inputMapping === false) return true;
+        if (this.isAIAssistantService(index)) return skill.inputMappingValid;
         // Hook: only requires a chosen hook (inputs are optional, like template mode for skills).
         if (this.isHook(skill)) return true;
         // Normal mode: require all skill inputs to be mapped.
@@ -197,12 +198,12 @@ export default {
       return this.modelValue.services[index] || {};
     },
     /**
-     * Check whether an AI Chat service is configured at an index.
+     * Check whether an AI assistant service is configured at an index.
      * @param {number} index Service index
-     * @returns {boolean} Whether the service is AI Chat
+     * @returns {boolean} Whether the service is handled by the AI assistant flow
      */
-    isAiChatService(index) {
-      return this.serviceAt(index).type === "aiChat";
+    isAIAssistantService(index) {
+      return ["aiChat", "aiDialogue"].includes(this.serviceAt(index).type);
     },
     /**
      * Check whether a service selection is required.
@@ -256,11 +257,15 @@ export default {
       const base = {
         name: existing.name || "",
         type: existing.type || "nlpRequest",
+        purpose: existing.purpose,
         required: existing.required !== false,
         inputs: skill.dataInput || {},
       };
       if (existing.outputMapping !== undefined) {
         base.outputMapping = existing.outputMapping;
+      }
+      if (existing.inputMapping !== undefined) {
+        base.inputMapping = existing.inputMapping;
       }
       if (existing.outputMapping !== false) {
         base.outputs = skill.dataOutput || {};

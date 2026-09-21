@@ -180,6 +180,10 @@ export default {
     generalFields() {
       return this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings?.fields || [];
     },
+    isDialogueStep() {
+      const step = this.workflowSteps.find(s => s.id === this.studyStepId);
+      return Number(step?.stepType) === 4;
+    },
   },
   mounted() {
     this.stepConfig = this.modelValue;
@@ -188,7 +192,7 @@ export default {
     openModal(evt) {
       evt.preventDefault();
       const isTemplateMode = this.formData?.isTemplateMode || false;
-      if (!this.documentId && !isTemplateMode) {
+      if (!this.documentId && !isTemplateMode && !this.isDialogueStep) {
         this.eventBus.emit("toast", {
           title: "Document Error",
           message: "You need to select a document.",

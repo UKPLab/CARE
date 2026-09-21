@@ -47,17 +47,17 @@ export default {
       return all.filter((hook) =>
         hook.enabled
         && !hook.deleted
-        && (!this.isAiChat || Number(hook.outputMode ?? 0) === 0)
+        && (!this.isAIAssistantService || Number(hook.outputMode ?? 0) === 0)
       );
     },
-    isAiChat() {
-      return this.serviceType === "aiChat";
+    isAIAssistantService() {
+      return ["aiChat", "aiDialogue"].includes(this.serviceType);
     },
     selectorLabel() {
-      return this.isAiChat ? "Select AI Hook" : "Select Skill";
+      return this.isAIAssistantService ? "Select AI Hook" : "Select Skill";
     },
     skillOptions() {
-      const skillOpts = this.isAiChat
+      const skillOpts = this.isAIAssistantService
         ? []
         : this.nlpSkills.map((skill) => ({
           value: skill.name,

@@ -606,6 +606,11 @@ export default {
             break;
           case 3: // Modal
             break;
+          case 4: // Dialogue
+            if (stepIndex === currentWorkflowStepIndex && this.isHook) {
+              sources.push(...this.getDialogueDocumentSources(stepIndex));
+            }
+            break;
         }
         // get assessment from previous steps
         if (stepIndex < currentWorkflowStepIndex) {
@@ -621,6 +626,32 @@ export default {
       sources.push(...this.configurationSources);
 
       return sources;
+    },
+    /**
+     * Returns document and submission inputs from earlier Annotator steps.
+     * @param {number} currentWorkflowStepIndex Current Dialogue step index.
+     * @returns {Object[]} Available input sources.
+     */
+    getDialogueDocumentSources(currentWorkflowStepIndex) {
+      return this.orderedWorkflowSteps.slice(0, currentWorkflowStepIndex).flatMap((step, stepIndex) => {
+        if (Number(step.stepType) !== 1) return [];
+        return [
+          {
+            value: `document_step${stepIndex}`,
+            name: `<Document> Workflow Step ${stepIndex + 1}`,
+            type: 'document',
+            table: 'document',
+            stepIndex,
+          },
+          {
+            value: `submission_step${stepIndex}`,
+            name: `<Submission> Workflow Step ${stepIndex + 1}`,
+            type: 'submission',
+            table: 'submission',
+            stepIndex,
+          },
+        ];
+      });
     },
     getAssessmentSources(currentWorkflowStepIndex) {
       const sources = [];

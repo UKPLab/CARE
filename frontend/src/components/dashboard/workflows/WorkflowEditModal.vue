@@ -68,6 +68,7 @@ function getColorForStepType(stepType) {
     case 1: return '#4e79a7'; // Annotater - blue
     case 2: return '#59a14f'; // Editor - green
     case 3: return '#f28e2b'; // Modal - orange
+    case 4: return '#9c755f'; // Dialogue - brown
     default: return '#6c757d';
   }
 }
@@ -116,6 +117,10 @@ export default {
           },
           "Modal": {
             label: "Modal Step",
+            target: "workflow_step",
+          },
+          "Dialogue": {
+            label: "Dialogue Step",
             target: "workflow_step",
           },
         }
@@ -233,6 +238,8 @@ export default {
           return "Editor";
         case 3: // STEP_TYPE_MODAL
           return "Modal";
+        case 4: // STEP_TYPE_DIALOGUE
+          return "Dialogue";
         default:
           return "Annotater"; // Default to annotater
       }
