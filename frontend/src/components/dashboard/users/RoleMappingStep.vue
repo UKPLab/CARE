@@ -1,5 +1,11 @@
 <template>
   <div class="role-mapping-container">
+    <div
+      class="alert alert-warning"
+      role="alert"
+    >
+      Re-importing an existing user replaces their current CARE roles. Each user will receive the basic User role plus the CARE roles mapped below. Selecting “No extra CARE role” does not preserve previous roles.
+    </div>
     <table class="table table-sm align-middle">
       <thead>
         <tr><th>{{ sourceLabel }} Role</th><th>Users</th><th>CARE Role</th></tr>
@@ -73,7 +79,7 @@ export default {
           value: role.name,
           label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
         })),
-        { value: "", label: "Do not assign additional role" }
+        { value: "", label: "No extra CARE role" }
       ];
     },
     roleRows() {
