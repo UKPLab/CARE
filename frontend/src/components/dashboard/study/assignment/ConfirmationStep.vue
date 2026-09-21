@@ -34,9 +34,17 @@
       <div><strong>Workflow:</strong> {{ workflow && workflow.name }}</div>
       <div><strong>Assignment Type:</strong> Study Session</div>
       <div><strong>Target Workflow:</strong> {{ targetWorkflowName }}</div>
-      <div>
+      <div v-if="orderedSelectedAssignments.length <= 1">
         <strong>Selected Study Session:</strong>
         {{ selectedAssignments.length > 0 ? `Session ${selectedAssignments[0].id}` : 'None' }}
+      </div>
+      <div v-else>
+        <strong>Selected Study Sessions:</strong>
+        <ul>
+          <li v-for="(session, index) in orderedSelectedAssignments" :key="session.id">
+            Source Session {{ session.sourceSessionSlot || index + 1 }}: Session {{ session.id }}
+          </li>
+        </ul>
       </div>
       <div>
         <strong>Reviewers:</strong>
@@ -77,8 +85,20 @@
           <div class="col-8">{{ workflow && workflow.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Documents:</strong></div>
-          <div class="col-8">{{ selectedAssignments.length }}</div>
+          <div class="col-2"><strong>{{ usesMultipleSourceSessions ? 'Assignments:' : 'Documents:' }}</strong></div>
+          <div class="col-8">{{ assignmentCount ?? selectedAssignments.length }}</div>
+        </div>
+        <div v-if="usesMultipleSourceSessions" class="row mb-2">
+          <div class="col-2"><strong>Source sessions:</strong></div>
+          <div class="col-8">
+            <p>Sessions within each assignment are ordered oldest to newest.</p>
+            <ul>
+              <li v-for="group in sourceSessionGroups" :key="group[0].sourceSessionUserId">
+                {{ group[0].completeUserName || 'User ' + group[0].sourceSessionUserId }}:
+                {{ group.map(session => 'Session ' + session.id).join(' → ') }}
+              </li>
+            </ul>
+          </div>
         </div>
         <div class="row mb-2">
           <div class="col-2"><strong>Reviewers:</strong></div>
@@ -122,7 +142,7 @@
  * Supports four variants: doc-sub-single, doc-sub-bulk, session-single, and session-bulk,
  * each rendering an appropriate summary layout. Also warns when reviewers lack matching
  * study sessions in session_user mode.
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
  */
 export default {
   name: "ConfirmationStep",
@@ -132,6 +152,9 @@ export default {
     assignmentType: { type: String, required: false, default: 'document' },
     targetWorkflowId: { type: Number, required: false, default: null },
     selectedAssignments: { type: Array, required: false, default: () => [] },
+    assignmentCount: { type: Number, required: false, default: null },
+    usesMultipleSourceSessions: { type: Boolean, required: false, default: false },
+    sourceSessionGroups: { type: Array, required: false, default: () => [] },
     selectedReviewer: { type: Array, required: false, default: () => [] },
     reviewerSelectionMode: { type: Object, required: false, default: () => ({}) },
     workflowStepsAssignments: { type: Array, required: false, default: () => [] },
@@ -151,6 +174,11 @@ export default {
     },
   },
   computed: {
+    orderedSelectedAssignments() {
+      return [...this.selectedAssignments].sort(
+          (a, b) => (a.sourceSessionSlot || 1) - (b.sourceSessionSlot || 1)
+      );
+    },
     targetWorkflowName() {
       if (!this.targetWorkflowId) return 'Unknown';
       const workflow = this.$store.getters["table/workflow/get"](this.targetWorkflowId);

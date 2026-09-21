@@ -2,11 +2,12 @@ const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
 const {getEmailContent} = require("../../utils/helper/email");
+const {stepTypes, sourceOptionalStepTypes} = require("../../db/models/study_step");
 
 /**
  * Handle user through websocket
  *
- * @author Dennis Zyska, Alexander Bürkle
+ * @author Dennis Zyska, Alexander Bürkle, Mohammed Rawhani
  * @type {AssignmentSocket}
  * @class AssignmentSocket
  */
@@ -80,7 +81,7 @@ class AssignmentSocket extends Socket {
                     contextData,
                     options
                 );
-                
+
                 stepDocuments.push({
                     id: step.workflowStepId,
                     documentId: stepDocumentId,
@@ -98,7 +99,9 @@ class AssignmentSocket extends Socket {
             hash: undefined,
             closed: undefined,
             userIdClosed: undefined,
-            parentStudyId: data.assignmentType === 'study_session' ? data['assignment'].studyId : null,
+            parentStudyId: data.assignmentType === 'study_session'
+                ? (data.assignment.parentStudyId !== undefined ? data.assignment.parentStudyId : data.assignment.studyId)
+                : null,
             limitSessions: data["reviewer"].length,
             limitSessionsPerUser: 1,
             resumable: true,
@@ -215,7 +218,9 @@ class AssignmentSocket extends Socket {
         // first shuffle the assignments, we use the Fisher-Yates shuffle algorithm from lodash
         // we also need to make sure that the documents array is shuffled in the same way
         if(data.assignmentType === "study_session"){  
-            data["documents"] = await this.duplicate(data, options);
+            const prepared = await this.prepareStudySessionAssignments(data, options, true);
+            data.selectedAssignments = prepared.assignments;
+            data.documents = prepared.documents;
         };
        
         const shuffledAssignments = _.shuffle(data.selectedAssignments.map((assignment, index) => ({
@@ -573,10 +578,137 @@ class AssignmentSocket extends Socket {
         data["assignment"] = data.selectedAssignments[0];
 
         if(data.assignmentType === "study_session"){
-            const documents= await this.duplicate(data, options);
-            data["documents"] = documents[0];
+            const prepared = await this.prepareStudySessionAssignments(data, options);
+            data.assignment = prepared.assignments[0];
+            data.documents = prepared.documents[0];
         };
         return await this.createAssignment(data, options);
+    }
+
+    /**
+     * Validates source selections and reuses duplicate() for each session.
+     * @param {Object} data Assignment request with selectedAssignments and workflowMapping.
+     * @param {number[]} [data.sourceSessionSlots=[1]] Source positions per assignment.
+     * @param {Object} options Carries the assignment's database transaction.
+     * @param {boolean} [bulk=false] Group sessions by participant, oldest first.
+     * @returns {Promise<{assignments: Object[], documents: Object[][]}>} Sources and copied documents.
+     * @throws {Error} If explicit mappings or selected sessions do not match the declared slots.
+     */
+    async prepareStudySessionAssignments(data, options, bulk = false) {
+        const sourceSessionSlots = data.sourceSessionSlots ?? [1];
+        if (Array.isArray(sourceSessionSlots) && sourceSessionSlots.length === 1 && sourceSessionSlots[0] === 1
+            && Object.values(data.workflowMapping).every(mapping => typeof mapping !== "object")) {
+            return {assignments: data.selectedAssignments, documents: await this.duplicate(data, options)};
+        }
+        const {workflowMappingsBySlot, sessionGroups, selectionById} = await this.validateAssignmentSources(data, options, bulk);
+        const assignments = [];
+        const documents = [];
+        for (const sessionsBySlot of sessionGroups) {
+            const currentDocuments = [];
+            for (const [slot, workflowMapping] of workflowMappingsBySlot) {
+                const [copiedDocuments] = await this.duplicate({
+                    ...data, selectedAssignments: [sessionsBySlot.get(slot)], workflowMapping,
+                }, options);
+                currentDocuments.push(...copiedDocuments);
+            }
+            const sourceSession = sessionsBySlot.get(1);
+            assignments.push({
+                ...sourceSession,
+                ...selectionById.get(sourceSession.id),
+                studyId: sourceSession.studyId,
+                parentStudyId: [...sessionsBySlot.values()].every(session => session.studyId === sourceSession.studyId)
+                    ? sourceSession.studyId : null,
+            });
+            documents.push(currentDocuments);
+        }
+        return {assignments, documents};
+    }
+
+    /**
+     * Checks explicit source mappings and selections before any documents are copied.
+     * @param {Object} data Assignment request with sourceSessionSlots, workflowMapping, and selectedAssignments.
+     * @param {Object} options Carries the assignment's database transaction.
+     * @param {boolean} [bulk=false] Group sessions by participant, oldest first.
+     * @returns {Promise<{workflowMappingsBySlot: Map, sessionGroups: Map[], selectionById: Map}>} Validated mappings and selections.
+     * @throws {Error} If mappings, workflows, participants, or source positions do not match.
+     */
+    async validateAssignmentSources(data, options, bulk = false) {
+        const sourceSessionSlots = data.sourceSessionSlots ?? [1];
+        if (!Array.isArray(sourceSessionSlots) || sourceSessionSlots.length === 0
+            || sourceSessionSlots.some((slot, index) => slot !== index + 1)) {
+            throw new Error("Source session slots must be consecutive integers starting at 1.");
+        }
+
+        const workflowMappingsBySlot = new Map(sourceSessionSlots.map(slot => [slot, {}]));
+        const destinationSteps = await this.models["workflow_step"].getSortedWorkflowSteps(data.template.workflowId);
+        const sourceSteps = await this.models["workflow_step"].getSortedWorkflowSteps(Number(data.targetWorkflowId));
+        for (const step of destinationSteps) {
+            const mapping = data.workflowMapping[step.id];
+            if (mapping === null && sourceOptionalStepTypes.includes(step.stepType)) {
+                continue;
+            }
+            const sourceSessionSlot = typeof mapping === "object" ? mapping?.sourceSessionSlot : 1;
+            const workflowStepId = typeof mapping === "object" ? mapping?.workflowStepId : mapping;
+            const slotMapping = workflowMappingsBySlot.get(sourceSessionSlot);
+            if (!slotMapping) {
+                throw new Error(`New workflow step ${step.id} must use a declared source session slot.`);
+            }
+            if (workflowStepId === "previousSubmission") {
+                if (step.stepType !== stepTypes.STEP_TYPE_ANNOTATOR || Object.keys(slotMapping).length === 0) {
+                    throw new Error("A revised document requires an earlier source step in the same session and an Annotator destination.");
+                }
+            } else if (!sourceSteps.some(source => source.id === Number(workflowStepId) && source.stepType === step.stepType)) {
+                throw new Error(`New workflow step ${step.id} requires a compatible source step.`);
+            }
+            slotMapping[step.id] = workflowStepId;
+        }
+        if ([...workflowMappingsBySlot.values()].some(mapping => Object.keys(mapping).length === 0)) {
+            throw new Error("Each declared source session slot must be used by the workflow mapping.");
+        }
+
+        const sessionIds = data.selectedAssignments.map(selection => Number(selection.id));
+        if (!sessionIds.length || sessionIds.some(id => !Number.isInteger(id))) {
+            throw new Error("Select at least one valid source study session.");
+        }
+        if (new Set(sessionIds).size !== sessionIds.length) {
+            throw new Error("Each source study session must be different.");
+        }
+        const sessions = await Promise.all(sessionIds.map(id =>
+            this.models["study_session"].getById(id, {transaction: options.transaction})
+        ));
+        if (sessions.some(session => !session)) {
+            throw new Error("A selected source study session could not be found.");
+        }
+        const sourceStudies = await Promise.all(sessions.map(session =>
+            this.models["study"].getById(session.studyId, {transaction: options.transaction})
+        ));
+        if (sourceStudies.some(study => !study || study.workflowId !== Number(data.targetWorkflowId))) {
+            throw new Error("All source study sessions must use the selected previous workflow.");
+        }
+        const selectionById = new Map(data.selectedAssignments.map(selection => [Number(selection.id), selection]));
+        const groups = bulk
+            ? sourceSessionSlots.length > 1 ? Object.values(_.groupBy(sessions, "userId")) : sessions.map(session => [session])
+            : [sessions];
+        const sessionGroups = groups.map(group => {
+            if (new Set(group.map(session => session.userId)).size !== 1) {
+                throw new Error("All source study sessions must belong to the same user.");
+            }
+            if (group.length !== sourceSessionSlots.length) {
+                throw new Error(`Select exactly ${sourceSessionSlots.length} source sessions per participant.`);
+            }
+            if (bulk && new Set(group.map(session => Number(selectionById.get(session.id).userId))).size > 1) {
+                throw new Error("The selected sessions have different study owners. Choose \"User of the study session\" as the new study owner.");
+            }
+            const ordered = bulk ? _.sortBy(group, [session => new Date(session.createdAt).getTime(), "id"]) : group;
+            const sessionsBySlot = new Map(ordered.map((session, index) => [
+                bulk ? index + 1 : selectionById.get(session.id).sourceSessionSlot ?? (sourceSessionSlots.length === 1 ? 1 : null), session,
+            ]));
+            if (sourceSessionSlots.some(slot => !sessionsBySlot.has(slot))) {
+                throw new Error("Select exactly one study session for each declared source position.");
+            }
+            return sessionsBySlot;
+        });
+        return {workflowMappingsBySlot, sessionGroups, selectionById};
     }
     /**
      * Recursively processes template markers in a configuration object and adds appropriate ID properties.
