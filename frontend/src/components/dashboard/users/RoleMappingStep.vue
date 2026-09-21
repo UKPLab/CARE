@@ -69,7 +69,7 @@ export default {
   computed: {
     careRoleOptions() {
       return [
-        ...this.systemRoles.filter((role) => !role.deleted && role.name !== "admin").map((role) => ({
+        ...this.systemRoles.filter((role) => role.name !== "admin").map((role) => ({
           value: role.name,
           label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
         })),
