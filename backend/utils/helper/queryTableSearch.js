@@ -174,6 +174,7 @@ function buildQueryTableSearch({
 
 module.exports = {
     buildQueryTableSearch,
+    includesCondition,
     viewSearchFields,
     MAX_SEARCH_LENGTH,
 };

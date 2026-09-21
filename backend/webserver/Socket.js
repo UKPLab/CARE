@@ -709,10 +709,12 @@ module.exports = class Socket {
      * @param {string} params.table autoTable name
      * @param {Array} [params.filter] subscribeAppData-style filter items from the client
      * @param {Object} [params.query] { search, columnFilters, searchColumns }
+     * @param {Object} [params.scope] consumer scope a filter item cannot express (e.g. Publish
+     *   Assessment's configuration + workflow-step selection); the model reads it
      * @returns {Promise<Object>} model, attributes, where, allAttributes, allowedAttributeNames,
      *   injectCtx, filterSpec, columnFilters, search, searchColumns, needsViewJoin, usesStateView
      */
-    async resolveQueryTableScope({table, filter = [], query = {}}) {
+    async resolveQueryTableScope({table, filter = [], query = {}, scope = null}) {
         if (!table) {
             throw new TranslatableError("errors.validation.tableNameRequired");
         }
@@ -749,6 +751,15 @@ module.exports = class Socket {
             rolesUpdatedAt: this.rolesUpdatedAt,
             hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
         };
+
+        // Rows a wizard step means but a filter item cannot name (join over other tables). The model
+        // validates the request and owns the SQL; an unusable scope must throw there, not widen the list.
+        if (scope && typeof model.getQueryTableScopeFilter === "function") {
+            const scopeWhere = await model.getQueryTableScopeFilter(scope, injectCtx);
+            if (scopeWhere) {
+                allFilter = {[Op.and]: [allFilter, scopeWhere]};
+            }
+        }
 
         // Search-bar filter tokens. Which keys are filterable is the model's decision, not the client's.
         const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
@@ -846,12 +857,13 @@ module.exports = class Socket {
      * @param {string} params.table autoTable name
      * @param {Array} [params.filter] client filter items (same as queryTable)
      * @param {Object} [params.query] { search, columnFilters, searchColumns }
+     * @param {Object} [params.scope] consumer scope
      * @param {Array<number>} [params.excludeIds] rows unchecked after select-all
      * @param {Array<number>} [params.includeIds] restrict to these ids (explicit selection)
      * @returns {Promise<number[]>}
      */
-    async resolveQueryTableIds({table, filter = [], query = {}, excludeIds = [], includeIds = null}) {
-        const scope = await this.resolveQueryTableScope({table, filter, query});
+    async resolveQueryTableIds({table, filter = [], query = {}, scope: scopeParams = null, excludeIds = [], includeIds = null}) {
+        const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
         const conditions = [scope.where];
 
         const excluded = this.sanitizeIds(excludeIds, MAX_BULK_SELECTION);
@@ -951,10 +963,11 @@ module.exports = class Socket {
 
     /**
      * Handles injections for queryTable rows and legacy sendTable snapshots.
-     * Supports count (related row counts) and parent (flatten parent columns onto each row).
+     * Supports count (related row counts), parent (flatten parent columns onto each row) and
+     * sql (model-owned scalar expressions for values no single parent hop can reach).
      * @param {Object} injects Instructions on what to inject
      * @param {Object} data Data to query and extend
-     * @returns {Object} data with attached COUNT / parent-field results
+     * @returns {Object} data with attached COUNT / parent-field / expression results
      */
     async handleInjections(injects, data) {
         if (!data?.length) {
@@ -1010,6 +1023,29 @@ module.exports = class Socket {
                     for (const field of fields) {
                         // Always set the key so FE visibleColumns (hasOwnProperty) keeps the column
                         d[field] = parent ? parent[field] : null;
+                    }
+                    return d;
+                });
+            } else if (injection.type === "sql") {
+                // Values behind more than one hop (e.g. a session's study owner or submission).
+                // `fields` is {alias: SQL expression} written by the model — never by a client.
+                const fields = Object.entries(injection.fields || {});
+                const sourceKey = injection.on || "id";
+                const keys = [...new Set(data.map((d) => d[sourceKey]).filter((id) => id != null))];
+                if (!fields.length || !keys.length) {
+                    continue;
+                }
+                const sqlModel = this.models[injection.table];
+                const rows = await sqlModel.findAll({
+                    where: {[sourceKey]: {[Op.in]: keys}},
+                    attributes: [sourceKey, ...fields.map(([alias, sql]) => [Sequelize.literal(sql), alias])],
+                    raw: true,
+                });
+                const byKey = new Map(rows.map((row) => [row[sourceKey], row]));
+                data = data.map((d) => {
+                    const extra = byKey.get(d[sourceKey]);
+                    for (const [alias] of fields) {
+                        d[alias] = extra ? extra[alias] : null;
                     }
                     return d;
                 });

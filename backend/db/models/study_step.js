@@ -290,6 +290,19 @@ module.exports = (sequelize, DataTypes) => {
 
 
         /**
+         * SQL for the assessment configuration a step runs. Coordinator writes it to
+         * `settings.configurationId`; older rows keep it at the top level.
+         * Shared by the Publish Assessment workflow list and the study_session scope filter so
+         * both decide "this step belongs to that configuration" the same way.
+         * @param {string} [alias] table alias of study_step in the surrounding query
+         * @returns {string}
+         */
+        static assessmentConfigurationSql(alias = "study_step") {
+            const column = `"${alias}"."configuration"`;
+            return `COALESCE(${column}#>>'{settings,configurationId}', ${column}#>>'{configurationId}')`;
+        }
+
+        /**
          * Helper method for defining associations.
          * This method is not a part of Sequelize lifecycle.
          * The `models/index` file will call this method automatically.

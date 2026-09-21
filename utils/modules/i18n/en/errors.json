@@ -403,7 +403,8 @@
     "queryTable": {
         "columnRequired": "Column name is required",
         "columnNotDistinct": "Column {column} is not available for distinct values",
-        "selectionTooLarge": "Too many rows selected (more than {limit}). Narrow the filter first."
+        "selectionTooLarge": "Too many rows selected (more than {limit}). Narrow the filter first.",
+        "scopeInvalid": "This selection is no longer valid. Go back and choose the workflow steps again."
     },
     "backgroundTask": {
         "noDocumentSocketForClient": "No DocumentSocket found for client",

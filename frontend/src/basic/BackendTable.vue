@@ -515,6 +515,17 @@ export default {
       default: () => [],
     },
     /**
+     * Rows a filter item cannot name because they depend on other tables (e.g. Publish Assessment:
+     * sessions of closed studies running one assessment configuration). The model resolves it
+     * server-side (getQueryTableScopeFilter); it travels with the selection so a query-scoped
+     * action runs on the same rows.
+     */
+    queryScope: {
+      type: Object,
+      required: false,
+      default: null,
+    },
+    /**
      * Filterable keys offered by the search bar, per table (see basic/table/Search.vue).
      * The backend validates the same keys again — this only drives the UI.
      */
@@ -637,6 +648,9 @@ export default {
   computed: {
     queryMode() {
       return !!(this.table && this.serverSidePagination);
+    },
+    hasQueryScope() {
+      return !!(this.queryScope && Object.keys(this.queryScope).length > 0);
     },
     pendingBannerVisible() {
       // Infinite scroll absorbs inserts with the spacers, so it never needs the banner.
@@ -1037,6 +1051,16 @@ export default {
       }
     },
     queryFilter: {
+      handler() {
+        if (this.queryMode) {
+          this.currentPage = 1;
+          this.resetSelection();
+          this.fetchQueryPage();
+        }
+      },
+      deep: true,
+    },
+    queryScope: {
       handler() {
         if (this.queryMode) {
           this.currentPage = 1;
@@ -1497,6 +1521,7 @@ export default {
         ids: rows.map((row) => row.id).filter((id) => id !== undefined),
         count: this.selectedCount,
         filter: payload.filter,
+        scope: payload.scope || null,
         query: {
           search: payload.query.search,
           columnFilters: payload.query.columnFilters,
@@ -1826,11 +1851,15 @@ export default {
       if (nav.fromEnd) query.fromEnd = true;
       // Absolute position, used only by the infinite window (jump / refetch in place).
       if (nav.offset > 0) query.offset = nav.offset;
-      return {
+      const payload = {
         table: this.table,
         filter: this.queryFilter || [],
         query,
       };
+      if (this.hasQueryScope) {
+        payload.scope = this.queryScope;
+      }
+      return payload;
     },
     applyQueryResult(result, {highlightNewFrom = null, requestedNav = {}} = {}) {
       const items = (result.items || []).map((row) => this.applyEnrich(row));
@@ -2086,6 +2115,11 @@ export default {
       }
     },
     passesCurrentFilter(row) {
+      // A scope is resolved server-side only (it joins other tables). A row we never loaded cannot
+      // be checked here, so it stays out instead of entering the page on a guess.
+      if (this.hasQueryScope && !this.queryItems.some((item) => item.id === row.id)) {
+        return false;
+      }
       const q = this.currentQuery || {};
       // Check the row as it is displayed: derived columns (e.g. a workflow title looked up on the
       // client) are what the server matched on, so a raw delta row would look like a miss.

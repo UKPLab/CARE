@@ -477,6 +477,8 @@ class AppSocket extends Socket {
      * @param {Object} [data.query.columnFilters] search-bar filter tokens: { key: {operator, value} }
      * @param {string[]} [data.query.searchColumns] narrow free text to the columns this table shows
      *        (intersected with the model whitelist — a client cannot widen it)
+     * @param {Object} [data.scope] consumer scope resolved by the model (getQueryTableScopeFilter),
+     *        for rows a filter item cannot name (e.g. Publish Assessment's workflow-step selection)
      * @param {string} [data.query.after] endCursor of previous result → next page
      * @param {string} [data.query.before] startCursor of previous result → previous page
      * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
@@ -485,10 +487,10 @@ class AppSocket extends Socket {
      * @returns {Promise<{items: Array, meta: Object}>} meta has total, pageSize, startCursor, endCursor, hasNext, hasPrev, offset
      */
     async queryTable(data) {
-        const {table, query = {}, filter = []} = data || {};
+        const {table, query = {}, filter = [], scope: scopeParams = null} = data || {};
 
         // Row scope (ACL + client filter + search bar) is shared with query-scoped bulk actions.
-        const scope = await this.resolveQueryTableScope({table, filter, query});
+        const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
         const {model, attributes, allAttributes, columnFilters, search} = scope;
         const allFilter = scope.where;
 
@@ -689,15 +691,16 @@ class AppSocket extends Socket {
      * @param {string} data.column column to read distinct values from
      * @param {Array} [data.filter] same filter items as queryTable
      * @param {Object} [data.query] { search, columnFilters, searchColumns }
+     * @param {Object} [data.scope] same consumer scope as queryTable
      * @returns {Promise<{values: Array}>} at most MAX_DISTINCT_VALUES values, nulls dropped
      */
     async queryTableDistinct(data) {
-        const {table, column, query = {}, filter = []} = data || {};
+        const {table, column, query = {}, filter = [], scope: scopeParams = null} = data || {};
         if (!column || typeof column !== "string") {
             throw new TranslatableError("errors.queryTable.columnRequired");
         }
 
-        const scope = await this.resolveQueryTableScope({table, filter, query});
+        const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
         const distinctColumns = typeof scope.model.getQueryTableDistinctColumns === "function"
             ? (await scope.model.getQueryTableDistinctColumns(scope.injectCtx)) || []
             : [];
