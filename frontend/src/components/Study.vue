@@ -120,6 +120,7 @@
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal
+                v-if="step.stepType !== 4"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
                 :config="step.configuration"
@@ -216,6 +217,19 @@
                 @update:data="updateStudyData(step.id, 'modal', $event)"
             />
 
+            <Dialogue
+                v-if="step.stepType === 4"
+                :study-session-id="studySessionId"
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :study-data="studyData"
+                :ordered-study-steps="orderedStudySteps"
+                :read-only="readOnlyComputed"
+                @update:ready="stepsReady[step.id] = $event"
+                @update:data="updateStudyData(step.id, 'dialogue', $event)"
+            />
+
           </div>
         </div>
       </div>
@@ -244,11 +258,13 @@ import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
 import AiConversation from "@/components/aiAssistant/AiConversation.vue";
+import Dialogue from "@/components/dialogue/Dialogue.vue";
 
 export default {
   name: "StudyRoute",
   components: {
     AiConversation,
+    Dialogue,
     SidebarTemplate,
     Assessment,
     LoadIcon,
@@ -340,11 +356,12 @@ export default {
         const prev = steps[i - 1];
         const prevLoaded = this.isStepLoaded(prev.id);
         const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
+        const prevRequiresReady = prevHasAssessment || Number(prev.stepType) === 4;
 
         const readyMap = this.stepsReady || {};
         const hasEntry = Object.hasOwn(readyMap, prev.id);
 
-        const prevReady = prevHasAssessment
+        const prevReady = prevRequiresReady
             ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
             : true;                                  // no assessment → always ready
 
@@ -548,6 +565,10 @@ export default {
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
+      const step = this.studySteps.find((entry) => Number(entry.id) === Number(stepId));
+      if (Number(step?.stepType) === 4) {
+        return true;
+      }
       if (stepId in this.loadingReady) {
         return this.loadingReady[stepId];
       }

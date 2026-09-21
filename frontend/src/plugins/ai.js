@@ -190,6 +190,15 @@ export default {
                         },
 
                         /**
+                         * Loads a study-session Dialogue snapshot.
+                         * @param {object} params
+                         * @returns {Promise<object>}
+                         */
+                        getDialogueConversation(params) {
+                            return emitAssistantCommand(socket, "getDialogueConversation", params, {timeout: 10000});
+                        },
+
+                        /**
                          * Sends one user message and waits for the assistant response.
                          * @param {object} params
                          * @param {object} [opts]
@@ -205,13 +214,48 @@ export default {
                         },
 
                         /**
+                         * Stores one Dialogue answer and waits for the next adaptive response if needed.
+                         * @param {object} params
+                         * @param {object} [opts]
+                         * @returns {Promise<object>}
+                         */
+                        sendDialogueAnswer(params, opts = {}) {
+                            return emitAssistantCommand(
+                                socket,
+                                "sendDialogueAnswer",
+                                params,
+                                {...opts, abortCommand: "abortDialogueMessage"},
+                            );
+                        },
+
+                        /**
                          * Retries one failed or aborted assistant response.
                          * @param {object} params
                          * @param {object} [opts]
                          * @returns {Promise<object>}
                          */
                         retryConversationMessage(params, opts = {}) {
-                            return emitAssistantCommand(socket, "retryConversationMessage", params, opts);
+                            return emitAssistantCommand(
+                                socket,
+                                "retryConversationMessage",
+                                params,
+                                {...opts, abortCommand: "abortConversationMessage"},
+                            );
+                        },
+
+                        /**
+                         * Retries one failed or aborted Dialogue response.
+                         * @param {object} params
+                         * @param {object} [opts]
+                         * @returns {Promise<object>}
+                         */
+                        retryDialogueMessage(params, opts = {}) {
+                            return emitAssistantCommand(
+                                socket,
+                                "retryDialogueMessage",
+                                params,
+                                {...opts, abortCommand: "abortDialogueMessage"},
+                            );
                         },
 
                         /**
@@ -221,6 +265,15 @@ export default {
                          */
                         abortConversationMessage(params) {
                             return emitAssistantCommand(socket, "abortConversationMessage", params, {timeout: 10000});
+                        },
+
+                        /**
+                         * Aborts one pending Dialogue response.
+                         * @param {object} params
+                         * @returns {Promise<object>}
+                         */
+                        abortDialogueMessage(params) {
+                            return emitAssistantCommand(socket, "abortDialogueMessage", params, {timeout: 10000});
                         },
                     };
                 },
