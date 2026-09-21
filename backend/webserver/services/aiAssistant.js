@@ -2,6 +2,7 @@
 
 const Service = require("../Service.js");
 const conversation = require("./aiAssistant/conversation.js");
+const dialogue = require("./aiAssistant/dialogue.js");
 
 /**
  * Manages AI assistant workflows.
@@ -20,6 +21,10 @@ module.exports = class AIAssistantService extends Service {
                 "sendConversationMessage",
                 "retryConversationMessage",
                 "abortConversationMessage",
+                "getDialogueConversation",
+                "sendDialogueAnswer",
+                "retryDialogueMessage",
+                "abortDialogueMessage",
             ],
             resTypes: [],
         });
@@ -39,6 +44,10 @@ module.exports = class AIAssistantService extends Service {
             sendConversationMessage: () => conversation.sendConversationMessage(this, client, data),
             retryConversationMessage: () => conversation.retryConversationMessage(this, client, data),
             abortConversationMessage: () => conversation.abortConversationMessage(this, client, data),
+            getDialogueConversation: () => dialogue.getDialogueConversation(this, client, data),
+            sendDialogueAnswer: () => dialogue.sendDialogueAnswer(this, client, data),
+            retryDialogueMessage: () => dialogue.retryDialogueMessage(this, client, data),
+            abortDialogueMessage: () => dialogue.abortDialogueMessage(this, client, data),
         };
         if (handlers[command]) {
             return handlers[command]();

@@ -100,7 +100,7 @@ async function resolveHookModelParams(service, hookId, aiModelId = null) {
  * @param {Object} service - AIService runtime with DB access.
  * @param {number} hookId - Target `ai_hook` primary key.
  * @param {Object} rawValues - Placeholder values supplied by the caller.
- * @returns {Promise<{hook: Object, promptText: string}>} Hook row and resolved prompt.
+ * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Prompt and resolved inputs.
  */
 async function resolveHookPrompt(service, hookId, rawValues = {}) {
     const hook = await loadEnabledHook(service, hookId);
@@ -110,7 +110,7 @@ async function resolveHookPrompt(service, hookId, rawValues = {}) {
         values,
         service.server.db.models,
     );
-    return {hook, promptText};
+    return {hook, promptText, resolvedValues: values};
 }
 
 /**
@@ -138,7 +138,12 @@ async function resolveServiceInput(service, input) {
             return config.content;
         }
         case "submission": {
-            const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
+            const { selectedFiles = [], pdfText, filePatterns = {} } = input;
+            let {submissionId} = input;
+            if (!submissionId && input.pdfDocumentId) {
+                const document = await service.server.db.models["document"].getById(input.pdfDocumentId);
+                submissionId = document?.submissionId;
+            }
             if (!submissionId || !selectedFiles.length) return "";
 
             const parts = [];
