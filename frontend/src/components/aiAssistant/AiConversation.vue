@@ -3,6 +3,7 @@
     <AiConversationHeader
         :conversations="conversations"
         :active-conversation-id="activeConversationId"
+        :include-context="conversationSnapshot.includeContext"
         :busy="isBusy"
         :read-only="readOnly"
         @new="startNewConversation"
@@ -12,6 +13,7 @@
     <AiConversationBody
         ref="body"
         :messages="visibleMessages"
+        :include-context="conversationSnapshot.includeContext"
         :loading="loading"
         :busy="isBusy"
         :retryable-message-id="retryableMessageId"
@@ -31,7 +33,7 @@
         :read-only="readOnly"
         :quote="quote"
         @send="sendMessage"
-        @abort="abortMessage"
+        @abort="abortActiveRequest"
         @clear-quote="clearQuote"
         @paste="trackInputPaste"
     />
@@ -60,24 +62,16 @@ import AiAssistantRequest from "@/basic/service/AiAssistantRequest.vue";
 import AiConversationHeader from "@/components/aiAssistant/AiConversationHeader.vue";
 import AiConversationBody from "@/components/aiAssistant/AiConversationBody.vue";
 import AiConversationComposer from "@/components/aiAssistant/AiConversationComposer.vue";
-
-const MESSAGE_ROLES = Object.freeze({
-  USER: 1,
-  ASSISTANT: 2,
-});
-
-const MESSAGE_STATUSES = Object.freeze({
-  PENDING: 0,
-  COMPLETED: 1,
-  FAILED: 2,
-  ABORTED: 3,
-});
+import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
+import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
 
 const emptyConversationSnapshot = () => ({
   conversations: [],
   activeConversationId: null,
+  includeContext: true,
   messages: [],
   introducedContextStepIds: [],
+  introducedContextSourceKeys: [],
   models: [],
   defaultModelId: null,
 });
@@ -95,6 +89,7 @@ export default {
     AiConversationBody,
     AiConversationComposer,
   },
+  mixins: [aiRequestMixin],
   props: {
     studySessionId: {
       type: Number,
@@ -129,53 +124,24 @@ export default {
   data() {
     return {
       conversationSnapshot: emptyConversationSnapshot(),
+      newConversationSelected: false,
       selectedModelId: null,
       draft: "",
       quote: null,
-      activeRequest: null,
-      loading: false,
-      aborting: false,
       pendingContent: "",
-      errorMessage: "",
+      requestFailedText: "AI chat request failed",
+      abortFailedText: "Failed to abort AI chat request",
     };
   },
   computed: {
     conversations() {
       return this.conversationSnapshot.conversations || [];
     },
-    activeConversationId() {
-      return this.conversationSnapshot.activeConversationId;
-    },
     introducedContextStepIds() {
       return this.conversationSnapshot.introducedContextStepIds || [];
     },
-    messages() {
-      return this.conversationSnapshot.messages || [];
-    },
     models() {
       return this.conversationSnapshot.models || [];
-    },
-    isBusy() {
-      return this.loading || this.sending || this.aborting;
-    },
-    sending() {
-      return !!this.activeRequest && !this.aborting;
-    },
-    latestAssistantId() {
-      const assistants = this.messages.filter(
-          (message) => Number(message.role) === MESSAGE_ROLES.ASSISTANT
-      );
-      return assistants.length ? Number(assistants[assistants.length - 1].id) : null;
-    },
-    retryableMessageId() {
-      const latest = this.messages.find(
-          (message) => Number(message.id) === this.latestAssistantId
-      );
-      if (!latest) return null;
-      const status = Number(latest.status);
-      return [MESSAGE_STATUSES.FAILED, MESSAGE_STATUSES.ABORTED].includes(status)
-          ? Number(latest.id)
-          : null;
     },
     visibleMessages() {
       if (!this.pendingContent) return this.messages;
@@ -205,12 +171,11 @@ export default {
     },
   },
   watch: {
-    studySessionId() {
-      this.loadConversation();
-    },
-    studyStepId() {
-      this.loadConversation();
-    },
+    studySessionId() { this.changeContext(); },
+    studyStepId() { this.changeContext(); },
+  },
+  sockets: {
+    connect() { this.loadConversation({silent: true}); },
   },
   created() {
     // Reading selections are broadcast globally; keep only this step's quotes.
@@ -223,6 +188,16 @@ export default {
     this.eventBus.off("aiChatQuote", this.onQuote);
   },
   methods: {
+    /** Cancels preparation and loads the newly selected study context. */
+    changeContext() {
+      this.$refs.aiAssistantRequest?.abortRequest().catch(() => {});
+      this.clearActiveRequest();
+      this.stopRecovery();
+      this.conversationSnapshot = emptyConversationSnapshot();
+      this.newConversationSelected = false;
+      this.loadConversation();
+    },
+
     /**
      * Updates the loaded conversation snapshot.
      *
@@ -259,32 +234,43 @@ export default {
      *
      * @returns {Promise<void>}
      */
-    async loadConversation({silent = false} = {}) {
-      // Silent refresh re-syncs server state after an error without the
-      // full-screen spinner or clearing the error already shown to the user.
+    async loadConversation({silent = false, conversationId = this.activeConversationId} = {}) {
+      if (silent && this.newConversationSelected && !this.activeRequest && !this.recoverableRequest) return false;
+      const context = this.beginSnapshotLoad();
       if (!silent) {
         this.loading = true;
         this.errorMessage = "";
       }
       try {
         const result = await this.$aiAssistant.getConversation({
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          conversationId: this.activeConversationId,
+          studySessionId: context.studySessionId,
+          studyStepId: context.studyStepId,
+          conversationId,
         });
+        if (!this.isCurrentSnapshotLoad(context)) return false;
+        // Keep an unsaved choice until recovery finds the new conversation.
+        if (silent && this.newConversationSelected && (!result.activeConversationId
+            || this.conversations.some((conversation) => Number(conversation.id) === Number(result.activeConversationId)))) return false;
         this.setConversationSnapshot({
           activeConversationId: result.activeConversationId,
+          includeContext: result.includeContext !== false,
           conversations: result.conversations || [],
           introducedContextStepIds: result.introducedContextStepIds || [],
+          introducedContextSourceKeys: result.introducedContextSourceKeys || [],
           messages: result.messages || [],
           models: result.models || [],
           defaultModelId: result.defaultModelId || null,
         });
         this.selectedModelId = this.resolveSelectedModel(result.defaultModelId);
+        if (result.activeConversationId) this.newConversationSelected = false;
+        if (this.reconcileRequest()) this.clearActiveRequest();
+        return true;
       } catch (error) {
+        if (!this.isCurrentSnapshotLoad(context)) return false;
         this.errorMessage = error.message || "Failed to load AI chat";
+        return false;
       } finally {
-        if (!silent) this.loading = false;
+        if (context.loadId === this.snapshotLoadId) this.loading = false;
         // Scroll after loading clears so the messages are rendered, not the spinner.
         this.scrollToBottom();
       }
@@ -292,39 +278,24 @@ export default {
     /**
      * Clears the current thread so the next message starts a new conversation.
      *
+     * @param {boolean} [includeContext=true] - Whether to add configured study context.
      * @returns {void}
      */
-    startNewConversation() {
-      if (this.isBusy) return;
+    startNewConversation(includeContext = true) {
+      if (this.isBusy || this.readOnly) return;
+      this.stopRecovery();
+      this.snapshotLoadId += 1;
+      this.newConversationSelected = true;
       this.setConversationSnapshot({
         activeConversationId: null,
+        includeContext,
         messages: [],
         introducedContextStepIds: [],
+        introducedContextSourceKeys: [],
       });
       this.pendingContent = "";
       this.quote = null;
       this.errorMessage = "";
-    },
-    /**
-     * Adds a newly created conversation to the history list so it shows up
-     * without a full reload. The backend re-sorts the list on the next load.
-     *
-     * @param {number} conversationId - Conversation returned by the send.
-     * @param {string} [createdAt] - Server timestamp of the first message.
-     * @param {string} [title] - First message text, used as the list label.
-     * @returns {void}
-     */
-    ensureConversationListed(conversationId, createdAt, title) {
-      if (!conversationId) return;
-      const id = Number(conversationId);
-      if (this.conversations.some((conversation) => Number(conversation.id) === id)) return;
-      const timestamp = createdAt || new Date().toISOString();
-      this.setConversationSnapshot({
-        conversations: [
-          {id, createdAt: timestamp, updatedAt: timestamp, title: title || null},
-          ...this.conversations,
-        ],
-      });
     },
     /**
      * Loads a past conversation selected from the history menu.
@@ -334,12 +305,12 @@ export default {
      */
     selectConversation(conversationId) {
       if (this.isBusy || conversationId === this.activeConversationId) return;
+      this.stopRecovery();
       this.trackChatEvent("aiChatConversationSwitch", {
         fromConversationId: this.activeConversationId,
         toConversationId: Number(conversationId),
       });
-      this.setConversationSnapshot({activeConversationId: conversationId});
-      this.loadConversation();
+      this.loadConversation({conversationId});
     },
     /**
      * Keeps the current selected model if it is still available.
@@ -422,18 +393,19 @@ export default {
       const quote = this.quote;
       const content = quote ? `${this.formatQuote(quote.text)}\n\n${question}` : question;
       const requestId = this.$aiAssistant.createRequestId();
-      this.draft = "";
-      this.quote = null;
       this.pendingContent = content;
       this.scrollToBottom();
       this.errorMessage = "";
-      this.activeRequest = {
+      this.startRequest({
         type: "send",
+        draft: this.draft,
+        submittedContent: content,
         requestId,
         conversationId: this.activeConversationId,
         content: question,
+        includeContext: this.conversationSnapshot.includeContext,
         quote,
-      };
+      });
     },
     /**
      * Retries the selected assistant message.
@@ -442,39 +414,27 @@ export default {
      * @returns {Promise<void>}
      */
     async retryMessage(message) {
+      if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) return;
       this.errorMessage = "";
       const requestId = this.$aiAssistant.createRequestId();
       this.trackChatEvent("aiChatRetryClick", {
         assistantMessageId: message.id,
       });
-      this.activeRequest = {
+      this.startRequest({
         type: "retry",
         requestId,
         assistantMessageId: message.id,
-      };
+      });
     },
     /**
-     * Aborts the currently pending assistant request.
+     * Tracks the abort click before the request is stopped (aiRequestMixin hook).
      *
-     * @returns {Promise<void>}
+     * @returns {void}
      */
-    async abortMessage() {
-      if (!this.activeRequest) return;
-      this.aborting = true;
-      try {
-        this.trackChatEvent("aiChatAbortClick", {
-          requestId: this.activeRequest.requestId,
-        });
-        const request = this.$refs.aiAssistantRequest;
-        if (!request) return;
-        await request.abortRequest();
-        await this.loadConversation({silent: true});
-        this.clearActiveRequest();
-      } catch (error) {
-        this.errorMessage = error.message || "Failed to abort AI chat request";
-      } finally {
-        this.aborting = false;
-      }
+    onBeforeAbort() {
+      this.trackChatEvent("aiChatAbortClick", {
+        requestId: this.activeRequest.requestId,
+      });
     },
     /**
      * Applies one completed assistant request.
@@ -483,81 +443,42 @@ export default {
      * @returns {void}
      */
     handleRequestComplete(result) {
-      const request = this.activeRequest;
-      this.setConversationSnapshot({
-        activeConversationId: result.conversationId || this.activeConversationId,
-      });
-      this.upsertMessages([result.userMessage, result.assistantMessage]);
-      if (request?.type === "send") {
-        this.markCurrentStepIntroduced();
-        this.ensureConversationListed(
-            result.conversationId,
-            result.userMessage?.createdAt,
-            this.pendingContent,
-        );
-      }
+      this.applyConversationResult(result);
+      this.newConversationSelected = false;
+      if (result.selectedModelId) this.selectedModelId = result.selectedModelId;
+      this.acceptPendingInput(this.activeRequest);
       this.clearActiveRequest();
-    },
-    /**
-     * Handles one failed assistant request.
-     *
-     * @param {Error} error - Request error.
-     * @returns {Promise<void>}
-     */
-    async handleRequestFailed(error) {
-      this.errorMessage = error.message || "AI chat request failed";
-      await this.loadConversation({silent: true});
-      this.clearActiveRequest();
-    },
-    /**
-     * Clears the pending request state.
-     *
-     * @returns {void}
-     */
-    clearActiveRequest() {
-      this.activeRequest = null;
-      this.aborting = false;
-      this.pendingContent = "";
-    },
-    /**
-     * Inserts or replaces returned messages.
-     *
-     * @param {Object[]} messages - Messages returned by the backend.
-     * @returns {void}
-     */
-    upsertMessages(messages) {
-      const byId = new Map(this.messages.map((message) => [Number(message.id), message]));
-      messages.filter(Boolean).forEach((message) => {
-        byId.set(Number(message.id), message);
-      });
-      this.setConversationSnapshot({
-        messages: [...byId.values()].sort((a, b) => Number(a.id) - Number(b.id)),
-      });
+      this.errorMessage = "";
       this.scrollToBottom();
     },
     /**
-     * Marks the current step context as introduced after a successful turn.
-     *
+     * Clears only the submitted draft after its user row was accepted.
+     * @param {Object} request - Accepted request.
      * @returns {void}
      */
-    markCurrentStepIntroduced() {
-      const stepId = Number(this.studyStepId);
-      if (!this.introducedContextStepIds.includes(stepId)) {
-        this.setConversationSnapshot({
-          introducedContextStepIds: [...this.introducedContextStepIds, stepId],
-        });
-      }
+    acceptPendingInput(request) {
+      if (request?.type !== "send") return;
+      if (this.draft === request.draft) this.draft = "";
+      if (this.quote === request.quote) this.quote = null;
     },
     /**
-     * Scrolls the message list to the newest message.
+     * Re-fetches the conversation snapshot (aiRequestMixin contract).
+     *
+     * @param {Object} [options] - Loading options.
+     * @returns {Promise<void>}
+     */
+    reloadConversation(options) {
+      return this.loadConversation(options);
+    },
+    /**
+     * Clears the pending draft state (aiRequestMixin contract).
      *
      * @returns {void}
      */
-    scrollToBottom() {
-      this.$nextTick(() => {
-        this.$refs.body?.scrollToBottom();
-      });
+    resetPending() {
+      this.pendingContent = "";
     },
+
   },
 };
 </script>

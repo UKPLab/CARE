@@ -1,15 +1,45 @@
 <template>
   <div class="conversation-header d-flex align-items-center justify-content-between border-bottom bg-body px-3 py-2">
-    <span class="fw-semibold small text-body">Study chat</span>
+    <div class="d-flex flex-column">
+      <span class="fw-semibold small text-body">Study chat</span>
+      <span class="small text-muted">{{ includeContext ? "With study context" : "Fresh conversation" }}</span>
+    </div>
 
     <div class="d-flex align-items-center gap-1">
-      <BasicButton
-          class="btn btn-sm header-button"
-          icon="plus-lg"
-          tooltip="New chat"
-          :disabled="busy || readOnly"
-          @click="$emit('new')"
-      />
+      <div class="dropdown">
+        <BasicButton
+            class="btn btn-sm header-button"
+            icon="plus-lg"
+            tooltip="New conversation"
+            aria-label="New conversation"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            :disabled="busy || readOnly"
+        />
+        <ul class="dropdown-menu dropdown-menu-end conversation-menu">
+          <li><h6 class="dropdown-header">New conversation</h6></li>
+          <li>
+            <BasicButton
+                class="dropdown-item text-wrap"
+                :disabled="busy || readOnly"
+                @click="$emit('new', true)"
+            >
+              <span class="d-block fw-semibold">With study context</span>
+              <span class="d-block small text-muted">Includes the study's configured materials.</span>
+            </BasicButton>
+          </li>
+          <li>
+            <BasicButton
+                class="dropdown-item text-wrap"
+                :disabled="busy || readOnly"
+                @click="$emit('new', false)"
+            >
+              <span class="d-block fw-semibold">Fresh conversation</span>
+              <span class="d-block small text-muted">No study context is added automatically.</span>
+            </BasicButton>
+          </li>
+        </ul>
+      </div>
 
       <div class="dropdown">
         <BasicButton
@@ -20,7 +50,7 @@
             aria-expanded="false"
             :disabled="busy"
         />
-        <ul class="dropdown-menu dropdown-menu-end history-menu">
+        <ul class="dropdown-menu dropdown-menu-end conversation-menu">
           <li><h6 class="dropdown-header">Recent chats</h6></li>
           <li v-for="conversation in conversations" :key="conversation.id">
             <BasicButton
@@ -31,7 +61,9 @@
             >
               <span class="history-text flex-grow-1">
                 <span class="history-title text-truncate">{{ title(conversation) }}</span>
-                <span class="history-date text-truncate small text-muted">{{ dateLabel(conversation) }}</span>
+                <span class="history-date text-truncate small text-muted">
+                  <template v-if="conversation.includeContext === false">Fresh · </template>{{ dateLabel(conversation) }}
+                </span>
               </span>
               <BasicIcon
                   v-if="Number(conversation.id) === activeConversationId"
@@ -62,6 +94,11 @@ export default {
   name: "AiConversationHeader",
   components: {BasicButton, BasicIcon},
   props: {
+    includeContext: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
     conversations: {
       type: Array,
       required: false,
@@ -114,13 +151,13 @@ export default {
 }
 
 /* Roomier menu with consistent padding, rounded rows, a quiet section title. */
-.history-menu {
+.conversation-menu {
   min-width: 16rem;
   max-width: 22rem;
   padding: 0.35rem;
 }
 
-.history-menu .dropdown-header {
+.conversation-menu .dropdown-header {
   padding: 0.25rem 0.75rem 0.4rem;
   font-size: 0.7rem;
   letter-spacing: 0.03em;
@@ -128,7 +165,7 @@ export default {
   color: var(--bs-secondary-color);
 }
 
-.history-menu :deep(.dropdown-item) {
+.conversation-menu :deep(.dropdown-item) {
   padding: 0.4rem 0.75rem;
   border-radius: var(--bs-border-radius);
 }

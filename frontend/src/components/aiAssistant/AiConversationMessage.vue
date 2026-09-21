@@ -25,6 +25,7 @@
           icon="arrow-clockwise"
           title="Retry"
           :loading="busy"
+          :disabled="busy"
           @click="$emit('retry', message)"
       />
     </div>
@@ -40,23 +41,12 @@
 import {defineAsyncComponent} from "vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
+import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
 
 // Lazy so markdown-it + DOMPurify load only when an assistant reply renders.
 const AiMessageMarkdown = defineAsyncComponent(
     () => import("@/components/aiAssistant/AiMessageMarkdown.vue")
 );
-
-const MESSAGE_ROLES = Object.freeze({
-  USER: 1,
-  ASSISTANT: 2,
-});
-
-const MESSAGE_STATUSES = Object.freeze({
-  PENDING: 0,
-  COMPLETED: 1,
-  FAILED: 2,
-  ABORTED: 3,
-});
 
 /**
  * One visible AI conversation message.

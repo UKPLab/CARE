@@ -1,44 +1,28 @@
 <template>
-  <div ref="messageList" class="conversation-body flex-grow-1 p-3">
-    <div
-        v-if="loading"
-        class="conversation-state text-center text-muted"
-    >
-      <div class="spinner-border spinner-border-sm mb-2" role="status">
-        <span class="visually-hidden">Loading chat...</span>
-      </div>
-      <div>Loading chat...</div>
-    </div>
-
-    <div
-        v-else-if="messages.length === 0"
-        class="conversation-state text-center text-muted"
-    >
-      <div class="empty-icon rounded-circle mx-auto mb-3">
-        <BasicIcon icon-name="chat-dots" :size="28" />
-      </div>
-      <div class="fw-semibold text-body">Start a study chat</div>
-      <div class="small mt-1">
-        Ask about the current document or previous step context.
-      </div>
-    </div>
-
-    <template v-else>
-      <AiConversationMessage
-          v-for="message in messages"
-          :key="message.id"
-          :message="message"
-          :retryable="retryableMessageId === Number(message.id)"
-          :busy="busy"
-          @retry="$emit('retry', $event)"
-          @copy="$emit('copy', $event)"
-      />
-    </template>
-  </div>
+  <ConversationBodyShell
+      ref="shell"
+      :loading="loading"
+      :empty="messages.length === 0"
+      loading-text="Loading chat..."
+      :empty-title="includeContext ? 'Start a study chat' : 'Start a fresh conversation'"
+      :empty-subtitle="includeContext
+          ? 'Ask about the current document or previous step context.'
+          : 'Discuss any topic. No study context is added automatically.'"
+  >
+    <AiConversationMessage
+        v-for="message in messages"
+        :key="message.id"
+        :message="message"
+        :retryable="retryableMessageId === Number(message.id)"
+        :busy="busy"
+        @retry="$emit('retry', $event)"
+        @copy="$emit('copy', $event)"
+    />
+  </ConversationBodyShell>
 </template>
 
 <script>
-import BasicIcon from "@/basic/Icon.vue";
+import ConversationBodyShell from "@/components/aiAssistant/ConversationBodyShell.vue";
 import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 
 /**
@@ -48,8 +32,13 @@ import AiConversationMessage from "@/components/aiAssistant/AiConversationMessag
  */
 export default {
   name: "AiConversationBody",
-  components: {AiConversationMessage, BasicIcon},
+  components: {ConversationBodyShell, AiConversationMessage},
   props: {
+    includeContext: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
     messages: {
       type: Array,
       required: true,
@@ -78,36 +67,8 @@ export default {
      * @returns {void}
      */
     scrollToBottom() {
-      this.$nextTick(() => {
-        const list = this.$refs.messageList;
-        if (list) list.scrollTop = list.scrollHeight;
-      });
+      this.$refs.shell?.scrollToBottom();
     },
   },
 };
 </script>
-
-<style scoped>
-.conversation-body {
-  min-height: 0;
-  overflow-y: auto;
-  background: var(--bs-body-bg);
-}
-
-.conversation-state {
-  display: flex;
-  min-height: 260px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-icon {
-  display: flex;
-  width: 56px;
-  height: 56px;
-  align-items: center;
-  justify-content: center;
-  background: var(--bs-secondary-bg);
-}
-</style>
