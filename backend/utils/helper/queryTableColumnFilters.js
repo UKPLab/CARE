@@ -8,16 +8,11 @@ const OPERATORS = {
     ">=": Op.gte,
     "<": Op.lt,
     "<=": Op.lte,
-    eq: Op.eq,
-    ne: Op.ne,
-    gt: Op.gt,
-    gte: Op.gte,
-    lt: Op.lt,
-    lte: Op.lte,
 };
 
 const TRUTHY = new Set(["true", "yes", "1"]);
 const FALSY = new Set(["false", "no", "0"]);
+const IN_OPERATORS = new Set(["=", "!="]);
 
 /** Calendar day `YYYY-MM-DD`, or null when the text is not a real date. */
 function parseIsoDate(value) {
@@ -80,19 +75,14 @@ function dateRangeOps(operator, day) {
     const end = new Date(`${nextIsoDate(day)}T00:00:00.000Z`);
     switch (operator) {
         case "=":
-        case "eq":
             return {[Op.gte]: start, [Op.lt]: end};
         case ">":
-        case "gt":
             return {[Op.gte]: end};
         case ">=":
-        case "gte":
             return {[Op.gte]: start};
         case "<":
-        case "lt":
             return {[Op.lt]: start};
         case "<=":
-        case "lte":
             return {[Op.lt]: end};
         default:
             return null;
@@ -114,6 +104,147 @@ function wrapCondition(entry, condition) {
         return where(literal(entry.sql), condition);
     }
     return {[entry.field]: condition};
+}
+
+function cellTextSql(entry) {
+    if (entry.viewField) {
+        return `"${SORT_ALIAS}"."${entry.viewField}"`;
+    }
+    if (entry.sql) {
+        return `(${entry.sql})`;
+    }
+    return `"${entry.table}"."${entry.field}"`;
+}
+
+/** Sorted text[] of cell tokens: `2,3` / `[1, 2]` / `2` / empty when missing. */
+function cellTokenArraySql(entry) {
+    const cell = cellTextSql(entry);
+    return `(
+        SELECT COALESCE(array_agg(DISTINCT btrim(tok) ORDER BY btrim(tok)), ARRAY[]::text[])
+        FROM unnest(regexp_split_to_array(
+            regexp_replace(COALESCE(btrim((${cell})::text), ''), '^\\[|\\]$', '', 'g'),
+            ','
+        )) AS tok
+        WHERE btrim(tok) <> '' AND btrim(tok) !~* '^null$'
+    )`;
+}
+
+function sqlTextArray(values) {
+    if (!values.length) {
+        return "ARRAY[]::text[]";
+    }
+    const inner = values
+        .map((item) => `'${String(item).replace(/'/g, "''")}'`)
+        .join(", ");
+    return `ARRAY[${inner}]::text[]`;
+}
+
+function sortedTextTokens(values) {
+    return [...new Set(values.map((item) => String(item)))].sort();
+}
+
+/**
+ * Search-bar lists: `=` exact set, `~` has all, `%` has any, `!=` none of.
+ * Mixed `[1,null]` is invalid on `=` / `~`.
+ * @returns {Object|null}
+ */
+function tokenListCondition(entry, operator, values) {
+    const hasEmpty = values.some((item) => item === "");
+    const nonempty = values.filter((item) => item !== "");
+    const tokens = cellTokenArraySql(entry);
+    const missingSql = `cardinality(${tokens}) = 0`;
+    const overlapSql = nonempty.length > 0
+        ? `${tokens} && ${sqlTextArray(nonempty)}`
+        : "FALSE";
+    const containsAllSql = nonempty.length > 0
+        ? `${tokens} @> ${sqlTextArray(sortedTextTokens(nonempty))}`
+        : "FALSE";
+
+    if (operator === "%") {
+        const parts = [];
+        if (nonempty.length) {
+            parts.push(literal(overlapSql));
+        }
+        if (hasEmpty) {
+            parts.push(literal(missingSql));
+        }
+        if (!parts.length) {
+            return null;
+        }
+        return parts.length === 1 ? parts[0] : {[Op.or]: parts};
+    }
+    if (operator === "~") {
+        if (hasEmpty && nonempty.length > 0) {
+            return null;
+        }
+        if (hasEmpty) {
+            return literal(missingSql);
+        }
+        return literal(containsAllSql);
+    }
+    if (operator === "!=") {
+        const parts = [];
+        if (nonempty.length) {
+            parts.push(literal(`NOT (${overlapSql})`));
+        }
+        if (hasEmpty) {
+            parts.push(literal(`NOT (${missingSql})`));
+        }
+        if (!parts.length) {
+            return null;
+        }
+        return parts.length === 1 ? parts[0] : {[Op.and]: parts};
+    }
+    if (hasEmpty && nonempty.length > 0) {
+        return null;
+    }
+    if (hasEmpty) {
+        return literal(missingSql);
+    }
+    return literal(`${tokens} = ${sqlTextArray(sortedTextTokens(nonempty))}`);
+}
+
+/**
+ * Bindable IN-list: numbers stay numbers, enums match the spec, everything else is trimmed text.
+ * @param {Object} entry
+ * @param {Array} value
+ * @returns {Array}
+ */
+function normalizeInList(entry, value) {
+    const isMissing = (item) => item === null || item === "";
+    if (entry.type === "numeric") {
+        return value
+            .map((item) => {
+                if (isMissing(item) || (typeof item === "string" && /^null$/i.test(item.trim()))) {
+                    return "";
+                }
+                return typeof item === "number" ? item : Number(
+                    /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/.test(String(item).trim()) ? String(item).trim() : NaN,
+                );
+            })
+            .filter((item) => item === "" || Number.isFinite(item));
+    }
+    if (entry.type === "boolean") {
+        return value
+            .map((item) => (isMissing(item) ? "" : toBoolean(item)))
+            .filter((item) => item === "" || item !== null);
+    }
+    if (entry.type === "enum" && entry.values) {
+        return value
+            .map((item) => {
+                if (isMissing(item) || (typeof item === "string" && /^null$/i.test(item.trim()))) {
+                    return "";
+                }
+                return entry.values.find((allowed) => String(allowed).toLowerCase() === String(item).toLowerCase());
+            })
+            .filter((item) => item !== undefined);
+    }
+    return value.map((item) => {
+        if (isMissing(item) || (typeof item === "string" && /^null$/i.test(item.trim()))) {
+            return "";
+        }
+        return String(item).trim();
+    });
 }
 
 function filterExpression(entry) {
@@ -138,13 +269,28 @@ function filterExpression(entry) {
 function buildCondition({entry, operator, value}) {
     const wrap = (condition) => wrapCondition(entry, condition);
 
-    if (entry.type === "exists") {
-        const wanted = toBoolean(value);
-        if (wanted === null) {
+    // Chip value is a list: `[1, 2]`, `[null]`, …
+    if (Array.isArray(value)) {
+        if (entry.type === "date") {
+            const parts = value
+                .map((item) => parseIsoDate(item))
+                .filter(Boolean)
+                .map((day) => applyOps(entry, dateRangeOps("=", day)))
+                .filter(Boolean);
+            if (parts.length === 0) {
+                return null;
+            }
+            // `=` is one calendar day. Two days cannot both be "equal".
+            return parts.length === 1 ? parts[0] : literal("FALSE");
+        }
+        const values = normalizeInList(entry, value);
+        if (values.length === 0) {
             return null;
         }
-        const present = operator === "!=" ? !wanted : wanted;
-        return wrap(present ? {[Op.ne]: null} : {[Op.is]: null});
+        if (operator !== "~" && operator !== "%" && !IN_OPERATORS.has(operator)) {
+            return null;
+        }
+        return tokenListCondition(entry, operator, values);
     }
 
     if (entry.type === "boolean") {
@@ -155,15 +301,6 @@ function buildCondition({entry, operator, value}) {
         return wrap({[operator === "!=" ? Op.ne : Op.eq]: boolValue});
     }
 
-    if (Array.isArray(value)) {
-        // Checkbox funnel form: any of the selected values.
-        const values = entry.values ? value.filter((item) => entry.values.includes(item)) : value;
-        if (values.length === 0) {
-            return null;
-        }
-        return wrap({[operator === "!=" ? Op.notIn : Op.in]: values});
-    }
-
     if (entry.type === "numeric") {
         // Bind a finite decimal only — never interpolate the raw string into SQL.
         const number = typeof value === "number" ? value : Number(
@@ -172,15 +309,14 @@ function buildCondition({entry, operator, value}) {
         if (!Number.isFinite(number)) {
             return null;
         }
+        if (operator === "~" || operator === "%") {
+            return tokenListCondition(entry, operator, [number]);
+        }
         const op = OPERATORS[operator];
         return op ? wrap({[op]: number}) : null;
     }
 
     if (entry.type === "date") {
-        // No "!=" — excluding a single day is not offered; use before/after instead.
-        if (operator === "!=" || operator === "ne") {
-            return null;
-        }
         const day = parseIsoDate(value);
         if (!day) {
             return null;
@@ -191,10 +327,14 @@ function buildCondition({entry, operator, value}) {
 
     if (entry.type === "enum") {
         const text = String(value);
-        if (entry.values && !entry.values.includes(text)) {
-            return null;
+        let canonical = text;
+        if (entry.values) {
+            canonical = entry.values.find((item) => String(item).toLowerCase() === text.toLowerCase());
+            if (canonical === undefined) {
+                return null;
+            }
         }
-        return wrap({[operator === "!=" ? Op.ne : Op.eq]: text});
+        return wrap({[operator === "!=" ? Op.ne : Op.eq]: canonical});
     }
 
     // text
@@ -205,16 +345,14 @@ function buildCondition({entry, operator, value}) {
     if (operator === "~") {
         return containsCondition(filterExpression(entry), text.toLowerCase());
     }
+    if (operator === "%") {
+        return tokenListCondition(entry, "%", [text]);
+    }
     return wrap({[operator === "!=" ? Op.ne : Op.eq]: text});
 }
 
 /**
- * Build a WHERE clause from the search bar's filter tokens.
- *
- * The client sends `{ key: {operator, value} }` (or `{ key: [values] }` for checkbox filters), but
- * the keys it may use come from the model's own `getQueryTableFilterColumns` spec — a request for
- * anything outside that spec, or outside the viewer's readable attributes, is dropped. Values reach
- * SQL only through Sequelize operators, never through string interpolation.
+ * Search chips to a WHERE. Skip keys not in the spec or hidden from this viewer.
  *
  * @param {Object} params
  * @param {import("sequelize").Model} params.model
@@ -251,16 +389,13 @@ function buildQueryTableColumnFilters({model, columnFilters, filterSpec, allowed
             continue;
         }
 
-        const isArray = Array.isArray(requested);
-        const operator = isArray ? "=" : (requested.operator || "=");
-        const value = isArray ? requested : requested.value;
-        if (!isArray && (value === null || value === undefined || value === "")) {
-            continue;
-        }
-        if (spec.operators && !spec.operators.includes(operator)) {
-            continue;
-        }
-        if (!isArray && !(operator in OPERATORS) && operator !== "~") {
+        const operator = requested.operator;
+        const value = requested.value;
+        if (spec.operators) {
+            if (!spec.operators.includes(operator)) {
+                continue;
+            }
+        } else if (!(operator in OPERATORS) && operator !== "~" && operator !== "%") {
             continue;
         }
 

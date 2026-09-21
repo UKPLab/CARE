@@ -38,7 +38,6 @@
           @blur="onRawBlur"
           @keydown="onRawKeydown($event, index)"
           @keydown.enter.prevent="commitRaw(true)"
-          @keydown.esc.prevent="commitRaw(true)"
         />
         <span
           v-else
@@ -86,16 +85,15 @@
           class="token-input"
           type="text"
           @focus="onFocus"
-          @blur="closeSuggestions"
+          @blur="onDraftBlur"
           @click.stop
           @keydown.down.prevent="moveHighlight(1)"
           @keydown.up.prevent="moveHighlight(-1)"
           @keydown.enter.prevent="onEnter"
           @keydown.left="onDraftLeft"
           @keydown.right="onDraftRight"
-          @keydown.esc="closeSuggestions"
           @keydown.delete="onBackspace"
-          @paste.prevent="onPaste"
+          @paste="onPaste"
         />
       </span>
       <ul
@@ -128,122 +126,14 @@
       </ul>
       <div
         v-else-if="menuOpen && showDatePicker"
-        class="dropdown-menu show token-suggestions token-suggestions-date"
-        @mousedown.prevent
+        class="dropdown-menu show token-suggestions token-suggestions-form-date"
       >
-        <div class="token-date-picker">
-          <div class="token-date-picker-head">
-            <button
-              :disabled="!canShiftPicker(-1)"
-              :aria-label="$t('common.previous')"
-              class="token-date-nav"
-              type="button"
-              @click="shiftPicker(-1)"
-            >
-              <LoadIcon
-                :size="12"
-                icon-name="chevron-left"
-              />
-            </button>
-            <div class="token-date-picker-titles">
-              <button
-                v-if="pickerView === 'days'"
-                class="token-date-title-btn"
-                type="button"
-                @click="pickerView = 'months'"
-              >
-                {{ pickerMonthLabel }}
-              </button>
-              <button
-                v-if="pickerView !== 'years'"
-                class="token-date-title-btn"
-                type="button"
-                @click="pickerView = 'years'"
-              >
-                {{ pickerYear }}
-              </button>
-              <span
-                v-else
-                class="token-date-picker-title"
-              >{{ pickerYearRangeLabel }}</span>
-            </div>
-            <button
-              :disabled="!canShiftPicker(1)"
-              :aria-label="$t('common.next')"
-              class="token-date-nav"
-              type="button"
-              @click="shiftPicker(1)"
-            >
-              <LoadIcon
-                :size="12"
-                icon-name="chevron-right"
-              />
-            </button>
-          </div>
-          <div
-            v-if="pickerView === 'days'"
-            class="token-date-picker-grid"
-          >
-            <span
-              v-for="weekday in weekdays"
-              :key="weekday"
-              class="token-date-picker-dow"
-            >{{ weekday }}</span>
-            <template
-              v-for="(week, weekIndex) in pickerWeeks"
-              :key="weekIndex"
-            >
-              <button
-                v-for="cell in week"
-                :key="cell.value"
-                :aria-label="cell.value"
-                :class="{
-                  muted: !cell.inMonth,
-                  'is-today': cell.isToday,
-                  'is-selected': cell.isSelected,
-                }"
-                :disabled="cell.disabled"
-                class="token-date-picker-day"
-                type="button"
-                @click="pickPickerDate(cell.value)"
-              >
-                {{ cell.day }}
-              </button>
-            </template>
-          </div>
-          <div
-            v-else-if="pickerView === 'months'"
-            class="token-date-picker-grid token-date-picker-grid-months"
-          >
-            <button
-              v-for="(name, index) in monthShortNames"
-              :key="name"
-              :class="{'is-selected': index === pickerMonth}"
-              :disabled="isFutureMonth(pickerYear, index)"
-              class="token-date-picker-cell"
-              type="button"
-              @click="pickPickerMonth(index)"
-            >
-              {{ name }}
-            </button>
-          </div>
-          <div
-            v-else
-            class="token-date-picker-grid token-date-picker-grid-years"
-          >
-            <button
-              v-for="year in pickerYears"
-              :key="year"
-              :class="{'is-selected': year === pickerYear}"
-              :disabled="year > currentYear"
-              class="token-date-picker-cell"
-              type="button"
-              @click="pickPickerYear(year)"
-            >
-              {{ year }}
-            </button>
-          </div>
-        </div>
+        <DatetimePicker
+          :model-value="formDateValue"
+          :options="formDatePickerOptions"
+          date-only
+          @update:model-value="onFormDatePicked"
+        />
       </div>
     </div>
     <button
@@ -270,7 +160,7 @@
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
-import { formatLocalizedDate } from "@/assets/utils";
+import DatetimePicker from "@/basic/form/DatetimePicker.vue";
 import {
   OPERATOR_LABELS,
   OPERATOR_LABEL_KEYS,
@@ -285,6 +175,7 @@ import {
   parseQuery,
   parseIsoDate,
   parseToken,
+  PENDING_TOKEN_PATTERN,
   serializeToken,
   tokenLabel,
   unquote,
@@ -299,16 +190,13 @@ function localIsoDate(date) {
 }
 
 /**
- * Table search bar with GitLab-style filter tokens.
+ * Interactive table search bar with GitLab-style filter tokens.
  *
- * Tokens can be picked from the dropdown or typed/pasted as `key:operator value`; both become
- * chips and serialize back to a copyable string. Caret leaving a chip lands in the gap between
- * filters first so Backspace drops the whole token. Schema is per table; this component only
- * knows the generic token types in searchTokens.js. Empty schema → plain search input.
+ * @author Andrii Nikitin
  */
 export default {
   name: "BasicTableSearch",
-  components: {LoadIcon},
+  components: {LoadIcon, DatetimePicker},
   props: {
     /** `{search, columnFilters}` — columnFilters maps a schema key to `{operator, value}` */
     modelValue: {
@@ -336,8 +224,8 @@ export default {
       suggestionsOpen: false,
       stage: "key", // key → operator → value
       pending: {key: null, operator: null},
-      highlight: -1, // keyboard focus in the suggestion list; -1 = arrows have not landed
-      hoverIndex: -1, // pointer hover; separate from keyboard so the two styles do not mix
+      highlight: -1, // keyboard focus in the suggestion list; 
+      hoverIndex: -1, // pointer hover;
       editIndex: null, // token currently expanded to its raw form
       editText: "",
       movingFocus: false, // suppresses blur handlers while focus moves between zones
@@ -345,9 +233,8 @@ export default {
       copied: false,
       copiedTimer: null,
       menuLeft: 0,
-      pickerYear: new Date().getFullYear(),
-      pickerMonth: new Date().getMonth(),
-      pickerView: "days",
+      formDateValue: null,
+      formDatePickerOptions: {key: "search-date"},
     };
   },
   computed: {
@@ -356,11 +243,21 @@ export default {
     },
     inputPlaceholder() {
       // A picked operator on a typed-value key (Sessions ≥ …) is not a filter until a value arrives.
-      if (this.stage === "value" && this.pending.key && needsTypedValue(this.schema, this.pending.key)) {
-        const type = this.schema[this.pending.key].type;
-        if (type === "numeric") return this.$t("common.typeNumberHint");
-        if (type === "date") return this.$t("common.typeDateHint");
-        return this.$t("common.typeValueHint");
+      if (this.stage === "value" && this.pending.key) {
+        const operator = this.pending.operator || defaultOperator(this.schema, this.pending.key);
+        let listHint = "";
+        if (operator === "=") listHint = this.$t("common.typeExactListHint");
+        else if (operator === "!=") listHint = this.$t("common.typeNoneOfHint");
+        else if (operator === "~") listHint = this.$t("common.typeContainsListHint");
+        else if (operator === "%") listHint = this.$t("common.typeContainsAnyListHint");
+        if (needsTypedValue(this.schema, this.pending.key)) {
+          const type = this.schema[this.pending.key].type;
+          let hint = this.$t("common.typeValueHint");
+          if (type === "numeric") hint = this.$t("common.typeNumberHint");
+          else if (type === "date") hint = this.$t("common.typeDateHint");
+          if (type === "date" || !listHint) return hint;
+          return `${hint}. ${listHint}`;
+        }
       }
       if (this.tokens.length > 0 || this.pending.key) return "";
       return this.hasSchema ? this.$t("common.searchOrFilter") : (this.placeholder || this.$t("common.typeToFilter"));
@@ -431,71 +328,8 @@ export default {
         && !!this.pending.key
         && this.schema[this.pending.key]?.type === "date";
     },
-    weekdays() {
-      this.$i18n.locale;
-      return Array.from({length: 7}, (_, index) => (
-        formatLocalizedDate(new Date(2024, 0, 1 + index), {weekday: "short"})
-      ));
-    },
     menuOpen() {
       return this.suggestionsOpen && (this.suggestions.length > 0 || this.showDatePicker);
-    },
-    todayIso() {
-      return localIsoDate(new Date());
-    },
-    currentYear() {
-      return new Date().getFullYear();
-    },
-    currentMonth() {
-      return new Date().getMonth();
-    },
-    typedDate() {
-      return parseIsoDate(this.draft.trim());
-    },
-    pickerMonthLabel() {
-      this.$i18n.locale;
-      return formatLocalizedDate(new Date(this.pickerYear, this.pickerMonth, 1), {month: "long"});
-    },
-    monthShortNames() {
-      this.$i18n.locale;
-      return Array.from({length: 12}, (_, index) => (
-        formatLocalizedDate(new Date(2000, index, 1), {month: "short"})
-      ));
-    },
-    pickerYearBlockStart() {
-      return Math.floor(this.pickerYear / 12) * 12;
-    },
-    pickerYears() {
-      const start = this.pickerYearBlockStart;
-      return Array.from({length: 12}, (_, index) => start + index);
-    },
-    pickerYearRangeLabel() {
-      const start = this.pickerYearBlockStart;
-      return `${start}–${start + 11}`;
-    },
-    pickerWeeks() {
-      const year = this.pickerYear;
-      const month = this.pickerMonth;
-      const first = new Date(year, month, 1);
-      const lead = (first.getDay() + 6) % 7;
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const cells = [];
-      for (let offset = 0; offset < lead; offset += 1) {
-        cells.push(this.pickerCell(new Date(year, month, 1 - (lead - offset)), false));
-      }
-      for (let day = 1; day <= daysInMonth; day += 1) {
-        cells.push(this.pickerCell(new Date(year, month, day), true));
-      }
-      let next = 1;
-      while (cells.length % 7 !== 0) {
-        cells.push(this.pickerCell(new Date(year, month + 1, next), false));
-        next += 1;
-      }
-      const weeks = [];
-      for (let index = 0; index < cells.length; index += 7) {
-        weeks.push(cells.slice(index, index + 7));
-      }
-      return weeks;
     },
   },
   watch: {
@@ -509,7 +343,6 @@ export default {
       this.tryPromoteDraftKey();
       this.highlight = -1;
       this.hoverIndex = -1;
-      this.syncPickerMonth();
       this.emitUpdate();
     },
     /** Editing the raw form applies straight away, so `>=5` → `>=6` refilters while you type. */
@@ -548,9 +381,9 @@ export default {
     },
     showDatePicker(open) {
       if (open) {
-        this.pickerView = "days";
-        this.syncPickerMonth(true);
         this.syncMenuPosition();
+        const day = parseIsoDate(this.draft.trim());
+        this.formDateValue = day ? `${day}T00:00:00` : null;
       }
     },
   },
@@ -567,79 +400,6 @@ export default {
   methods: {
     chipLabel(token) {
       return tokenLabel(this.schema, token, this.$t.bind(this));
-    },
-    pickerCell(date, inMonth) {
-      const value = localIsoDate(date);
-      return {
-        value,
-        day: date.getDate(),
-        inMonth,
-        isToday: value === this.todayIso,
-        isSelected: value === this.typedDate,
-        disabled: value > this.todayIso,
-      };
-    },
-    isFutureMonth(year, month) {
-      return year > this.currentYear || (year === this.currentYear && month > this.currentMonth);
-    },
-    canShiftPicker(delta) {
-      if (delta < 0) return true;
-      if (this.pickerView === "days") {
-        const next = new Date(this.pickerYear, this.pickerMonth + 1, 1);
-        return !this.isFutureMonth(next.getFullYear(), next.getMonth());
-      }
-      if (this.pickerView === "months") {
-        return this.pickerYear < this.currentYear;
-      }
-      return this.pickerYearBlockStart + 12 <= this.currentYear;
-    },
-    shiftPicker(delta) {
-      if (!this.canShiftPicker(delta)) return;
-      if (this.pickerView === "days") {
-        const date = new Date(this.pickerYear, this.pickerMonth + delta, 1);
-        this.pickerYear = date.getFullYear();
-        this.pickerMonth = date.getMonth();
-        return;
-      }
-      if (this.pickerView === "months") {
-        this.pickerYear += delta;
-        return;
-      }
-      this.pickerYear = this.pickerYearBlockStart + (delta * 12);
-    },
-    pickPickerMonth(month) {
-      if (this.isFutureMonth(this.pickerYear, month)) return;
-      this.pickerMonth = month;
-      this.pickerView = "days";
-    },
-    pickPickerYear(year) {
-      if (year > this.currentYear) return;
-      this.pickerYear = year;
-      if (this.isFutureMonth(year, this.pickerMonth)) {
-        this.pickerMonth = this.currentMonth;
-      }
-      this.pickerView = "months";
-    },
-    syncPickerMonth(force = false) {
-      if (!this.showDatePicker && !force) return;
-      const day = parseIsoDate(this.draft.trim());
-      if (day) {
-        this.pickerYear = Number(day.slice(0, 4));
-        this.pickerMonth = Number(day.slice(5, 7)) - 1;
-        return;
-      }
-      if (!force) return;
-      const now = new Date();
-      this.pickerYear = now.getFullYear();
-      this.pickerMonth = now.getMonth();
-    },
-    pickPickerDate(value) {
-      if (value > this.todayIso) return;
-      this.commitPending(value);
-      this.highlight = -1;
-      this.hoverIndex = -1;
-      this.suggestionsOpen = true;
-      this.focusDraft("end");
     },
     matchesDraft(label) {
       const needle = this.draft.trim().toLowerCase();
@@ -690,6 +450,19 @@ export default {
       if (!this.pending.key) this.stage = "key";
       this.suggestionsOpen = true;
       this.syncMenuPosition();
+    },
+    onDraftBlur() {
+      if (this.movingFocus) return;
+      if (this.showDatePicker) return;
+      this.closeSuggestions();
+    },
+    onFormDatePicked(iso) {
+      if (!iso) return;
+      this.commitPending(localIsoDate(new Date(iso)));
+      this.highlight = -1;
+      this.hoverIndex = -1;
+      this.suggestionsOpen = true;
+      this.focusDraft("end");
     },
     /** Clicking the field background focuses the draft; clicks inside the input keep a text selection. */
     onFieldClick(event) {
@@ -785,7 +558,13 @@ export default {
         return;
       }
       if (this.pending.key) {
-        const value = coerceValue(this.schema, this.pending.key, unquote(this.draft.trim()), this.$t.bind(this));
+        const value = coerceValue(
+          this.schema,
+          this.pending.key,
+          unquote(this.draft.trim()),
+          this.$t.bind(this),
+          this.pending.operator || defaultOperator(this.schema, this.pending.key),
+        );
         if (value !== null) {
           this.commitPending(value);
           return;
@@ -881,11 +660,29 @@ export default {
      */
     tryFinishPendingValue() {
       if (!this.pending.key || this.stage !== "value") return false;
+      const operator = this.pending.operator || defaultOperator(this.schema, this.pending.key);
+      const trimmed = this.draft.trimStart();
+      // `[1, 2, 3]` may contain spaces; wait for the closing `]` before committing.
+      if (trimmed.startsWith("[")) {
+        const close = trimmed.indexOf("]");
+        if (close === -1) return false;
+        const after = trimmed.slice(close + 1);
+        if (after && !/^\s/.test(after)) return false;
+        const list = unquote(trimmed.slice(0, close + 1));
+        const rest = after.trimStart();
+        const coerced = coerceValue(this.schema, this.pending.key, list, this.$t.bind(this), operator);
+        if (coerced !== null && (after.length > 0 || /\s$/.test(this.draft))) {
+          this.commitPending(coerced);
+          this.draft = rest;
+          return true;
+        }
+        return false;
+      }
       const match = this.draft.match(/^(\S+)(\s+)([\s\S]*)$/);
       if (!match) return false;
       const word = unquote(match[1]);
       const rest = match[3].trimStart();
-      const coerced = coerceValue(this.schema, this.pending.key, word, this.$t.bind(this));
+      const coerced = coerceValue(this.schema, this.pending.key, word, this.$t.bind(this), operator);
       if (coerced !== null) {
         this.commitPending(coerced);
         if (rest) this.draft = rest;
@@ -938,7 +735,7 @@ export default {
         this.draft = trimmed.slice(first.length).trimStart();
         return;
       }
-      const tokenMatch = /^([A-Za-z_][A-Za-z0-9_]*):(!=|>=|<=|~|=|>|<)$/.exec(first);
+      const tokenMatch = PENDING_TOKEN_PATTERN.exec(first);
       if (tokenMatch && this.schema[tokenMatch[1]]) {
         this.revivePendingFromDraft();
       }
@@ -948,7 +745,7 @@ export default {
       const trimmed = this.draft.trimStart();
       if (!trimmed) return false;
       const first = (trimmed.match(/^\S+/) || [])[0];
-      const tokenMatch = /^([A-Za-z_][A-Za-z0-9_]*):(!=|>=|<=|~|=|>|<)$/.exec(first);
+      const tokenMatch = PENDING_TOKEN_PATTERN.exec(first);
       if (!tokenMatch || !this.schema[tokenMatch[1]]) return false;
       const key = tokenMatch[1];
       const operator = tokenMatch[2];
@@ -984,11 +781,6 @@ export default {
         this.removeFromGap(index);
         return;
       }
-      if (event.key === "Escape") {
-        event.preventDefault();
-        this.focusDraft("end");
-        return;
-      }
       if (event.key === "Enter") {
         event.preventDefault();
         this.focusDraft("end");
@@ -1021,7 +813,7 @@ export default {
         event.preventDefault();
         return;
       }
-      if (event.key === "Escape" || event.key === "Enter") {
+      if (event.key === "Enter") {
         event.preventDefault();
         this.focusDraft("end");
         return;
@@ -1057,7 +849,7 @@ export default {
     onGapPaste(event) {
       const text = event.clipboardData?.getData("text") || "";
       if (!text) return;
-      this.draft = `${text}${this.draft}`;
+      this.draft = this.draft ? `${text} ${this.draft}` : text;
       this.movingFocus = true;
       this.$nextTick(() => {
         const el = this.$refs.input;
@@ -1181,11 +973,11 @@ export default {
       }
       return result;
     },
-    onPaste(event) {
-      const text = event.clipboardData?.getData("text") || "";
-      this.draft = this.draft ? `${this.draft} ${text}` : text;
-      this.absorbTokens();
-      this.emitUpdate();
+    onPaste() {
+      this.$nextTick(() => {
+        this.absorbTokens();
+        this.emitUpdate();
+      });
     },
     /** Pull every complete token out of the draft and leave the rest as free text. */
     absorbTokens() {
@@ -1445,155 +1237,8 @@ export default {
   border-radius: 0.25rem;
 }
 
-.token-suggestions-date {
-  max-height: none;
-  overflow: hidden;
-  padding: 0;
-}
-
-.token-date-picker {
-  width: 17.5rem;
-  padding: 0.5rem 0.6rem 0.65rem;
-}
-
-.token-date-picker-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
-}
-
-.token-date-picker-title {
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.token-date-picker-titles {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.token-date-title-btn {
-  border: 0;
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  font-weight: 600;
-  font-size: 0.85rem;
-  padding: 0.15rem 0.35rem;
-}
-
-.token-date-title-btn:hover {
-  background-color: #e0e0e0;
-}
-
-.token-date-nav {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  padding: 0;
-  border: 0;
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-}
-
-.token-date-nav:hover:not(:disabled) {
-  background-color: #e0e0e0;
-}
-
-.token-date-nav:disabled {
-  opacity: 0.35;
-}
-
-.token-date-picker-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 0.1rem;
-  text-align: center;
-}
-
-.token-date-picker-dow {
-  font-size: 0.7rem;
-  color: var(--bs-secondary-color, #6c757d);
-  padding: 0.2rem 0;
-}
-
-.token-date-picker-day {
-  border: 0;
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  padding: 0.3rem 0;
-  line-height: 1;
-}
-
-.token-date-picker-day.muted {
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-.token-date-picker-day.is-today {
-  font-weight: 600;
-}
-
-.token-date-picker-day:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 2px #222;
-}
-
-.token-date-picker-day.is-selected {
-  background-color: #e0e0e0;
-  box-shadow: inset 2px 0 0 #222;
-}
-
-.token-date-picker-day.is-selected:hover {
-  box-shadow: inset 2px 0 0 #222, inset 0 0 0 2px #222;
-}
-
-.token-date-picker-day:disabled,
-.token-date-picker-cell:disabled {
-  opacity: 0.35;
-  cursor: default;
-  box-shadow: none;
-}
-
-.token-date-picker-day:disabled:hover,
-.token-date-picker-cell:disabled:hover {
-  box-shadow: none;
-}
-
-.token-date-picker-grid-months,
-.token-date-picker-grid-years {
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.25rem;
-  min-height: 11.5rem;
-  align-content: stretch;
-}
-
-.token-date-picker-cell {
-  border: 0;
-  border-radius: 0.25rem;
-  background: transparent;
-  color: inherit;
-  padding: 0.55rem 0;
-  font-size: 0.85rem;
-}
-
-.token-date-picker-cell:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 2px #222;
-}
-
-.token-date-picker-cell.is-selected {
-  background-color: #e0e0e0;
-}
-
-.token-date-picker-cell.is-selected:hover:not(:disabled) {
-  box-shadow: inset 0 0 0 2px #222;
+.token-suggestions-form-date {
+  padding: 0.5rem 0.65rem;
+  min-width: 18rem;
 }
 </style>

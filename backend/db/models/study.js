@@ -684,10 +684,9 @@ module.exports = (sequelize, DataTypes) => {
                 state: {type: "enum", values: STATES, viewField: "state"},
                 id: {type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
                 createdAt: {type: "date"},
-                sessions: {type: "numeric", viewField: "sessions"},
-                limitSessions: {type: "numeric"},
-                limitSessionsPerUser: {type: "numeric"},
-                workflow: {type: "exists", field: "workflowId"},
+                sessions: {type: "numeric", viewField: "sessions", operators: ["=", "!=", ">", ">=", "<", "<="]},
+                limitSessions: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<="]},
+                limitSessionsPerUser: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<="]},
                 workflowName: {
                     type: "text",
                     sql: "(SELECT \"workflow\".\"name\" FROM \"workflow\"" +

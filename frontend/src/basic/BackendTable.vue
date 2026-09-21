@@ -418,6 +418,7 @@ import Loader from "./Loading.vue";
 import { tooltip } from "@/assets/tooltip.js";
 import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
+import { matchesTokenList } from "./table/searchTokens.js";
 
 /**
  * generic table with feature-rich API
@@ -2045,19 +2046,23 @@ export default {
      */
     matchesColumnFilter(row, key, filter) {
       const entry = this.queryFilterSchema[key] || {};
-      const field = entry.type === "exists" ? (entry.field || key) : key;
-      if (!Object.prototype.hasOwnProperty.call(row, field)) return true;
-      const value = row[field];
+      if (!Object.prototype.hasOwnProperty.call(row, key)) return true;
+      const value = row[key];
 
       if (Array.isArray(filter)) {
         return filter.length === 0 || filter.map(String).includes(String(value));
       }
       if (!filter?.operator) return true;
 
-      if (entry.type === "exists") {
-        const equal = (value !== null && value !== undefined) === Boolean(filter.value);
-        return filter.operator === "!=" ? !equal : equal;
+      if (Array.isArray(filter.value)) {
+        if (entry.type === "date") {
+          const days = filter.value.map((item) => String(item || "").slice(0, 10)).filter(Boolean);
+          const rowDay = this.rowCalendarDay(value);
+          return days.length === 1 && rowDay === days[0];
+        }
+        return matchesTokenList(value, filter.operator, filter.value);
       }
+
       if (entry.type === "boolean") {
         const equal = Boolean(value) === Boolean(filter.value);
         return filter.operator === "!=" ? !equal : equal;
@@ -2097,7 +2102,12 @@ export default {
         case "ne":
           return String(value) !== String(filter.value);
         case "~":
+          if (entry.type === "numeric") {
+            return matchesTokenList(value, "~", [filter.value]);
+          }
           return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+        case "%":
+          return matchesTokenList(value, "%", [filter.value]);
         case ">":
         case "gt":
           return Number(value) > Number(filter.value);
@@ -2385,9 +2395,7 @@ export default {
           ? filter.length > 0
           : !!(filter && (filter.operator || filter.value != null && filter.value !== ""));
         if (!active) continue;
-        const entry = this.queryFilterSchema[col] || {};
-        const field = entry.type === "exists" ? (entry.field || col) : col;
-        if (oldRow[field] !== newRow[field]) return true;
+        if (oldRow[col] !== newRow[col]) return true;
       }
       return false;
     },
