@@ -359,32 +359,11 @@ import deepEqual from "deep-equal";
 import { matchesTokenList } from "./table/searchTokens.js";
 
 /**
- * generic table with feature-rich API
+ * Server-paginated table (queryTable + Delta). Same column, button, and selection API as
+ * BasicTable; rows come from the socket instead of a Vuex dump. Search tokens filter the
+ * query; "All" uses an infinite scroll window.
  *
- * Use this component for tabulating data with a diverse API for interactions like buttons or row selection.
- *
- * @example
- * // Example of using numeric filter
- * const columns = [{
- *   key: "documentCount",
- *   name: "Document Count",
- *   filter: {
- *     type: "numeric",
- *     defaultValue: 0, // Optional
- *     defaultOperator: 'gt', // Optional
- *   }
- * }]
- * // Example of using checkbox filter
- * const columns = [{
- *   key: "role",
- *   name: "Role",
- *   filter: [
- *     { key: "admin", name: "Admin" },
- *     { key: "user", name: "User" },
- *   ],
- * }]
- *
- * @author Dennis Zyska, Nils Dycke, Linyin Huang
+ * @author Andrii Nikitin
  */
 export default {
   name: "BackendTable",
@@ -506,7 +485,7 @@ export default {
       currentData: [],
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
-      filter: null, // Can be assigned an object or an array, see example above.
+      filter: null,
       searchQuery: {search: "", columnFilters: {}},
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
@@ -1040,7 +1019,6 @@ export default {
         }
       }
     }
-    // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
     this.filter = Object.assign(
       {},
       ...this.columns
@@ -1048,8 +1026,8 @@ export default {
         .map((c) => ({
           [c.key]:
             c.filter.type === "numeric"
-              ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" } // initialize numeric filter
-              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))), // initialize checkbox filter
+              ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" }
+              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))),
         }))
     );
 
