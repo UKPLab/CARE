@@ -13,7 +13,7 @@
   <TableSearch
     v-if="options && options['search']"
     v-model="searchQuery"
-    :schema="queryMode ? queryFilterSchema : {}"
+    :schema="queryFilterSchema"
   >
     <template #additional-buttons>
       <slot name="additional-buttons"/>
@@ -275,14 +275,6 @@
             />
           </td>
         </tr>
-        <tr v-if="isAllMode && !queryMode && allRenderLimit < total" ref="loadMoreSentinel">
-          <td 
-            :colspan="emptyColspan" 
-            style="height: 1px; 
-            padding: 0; 
-            border: 0;">
-          </td>
-        </tr>
       </tbody>
     </table>
     <div
@@ -385,11 +377,6 @@ export default {
     },
   },
   props: {
-    data: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
     columns: {
       type: Array,
       required: true,
@@ -398,11 +385,6 @@ export default {
       type: Object,
       required: false,
       default: () => {},
-    },
-    count: {
-      type: Number,
-      required: false,
-      default: 0,
     },
     /** Selected rows. */
     modelValue: {
@@ -468,7 +450,7 @@ export default {
       default: null,
     },
   },
-  emits: ["action", "update:modelValue", "paginationUpdate", "delta", "stale", "selectionChange"],
+  emits: ["action", "update:modelValue", "delta", "stale", "selectionChange"],
   data: function () {
     return {
       tableClass: {
@@ -485,7 +467,6 @@ export default {
       currentData: [],
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
-      filter: null,
       searchQuery: {search: "", columnFilters: {}},
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
@@ -494,9 +475,6 @@ export default {
       debouncedComputeFixedColumns: null,
       hasHorizontalOverflow: false,
       resizeObserver: null,
-      allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
-      allChunkSize: 50, // Append the next 50 items on scroll
-      allObserver: null,
       // Select-all in query-mode: the selection is the query, not a copy of the loaded rows.
       // `allMatching` carries the intention ("every row this query matches"), `excludeIds` the
       // rows unticked afterwards. Both are resolved again on the server when the action runs.
@@ -515,7 +493,6 @@ export default {
       enteringIds: [],
       enteringTopIds: [],
       enteringBottomIds: [],
-      enteringFrom: null, // legacy unused; kept clear for safety
       pendingLoadPhase: null, // null | 'out' | 'in'
       processedDeleteIds: new Set(),
       searchDebounceTimer: null,
@@ -526,7 +503,6 @@ export default {
       _pendingLoadBusy: false,
       _enteringClearTimer: null,
       _pendingBackfillCount: 0,
-      _pendingBackfillSlots: [], // unused (kept for HMR safety)
       _backfillTimer: null,
       _backfillBusy: false,
       _hopBusy: false,
@@ -711,19 +687,10 @@ export default {
       return this.$t("common.tableUpdatedRefresh");
     },
     sourceData() {
-      return this.queryMode ? this.queryItems : this.data;
-    },
-    hasFilterableData() {
-      return this.sourceData && this.sourceData.length > 0;
+      return this.queryItems;
     },
     isAllRowsSelected() {
-      if (this.queryMode) {
-        return this.allMatching && this.excludeIds.length === 0;
-      }
-      // Use the existing method to get filtered data across all pages
-      const allFilteredData = this.getFilteredAndSortedData();
-      const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
-      return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
+      return this.allMatching && this.excludeIds.length === 0;
     },
     /** Dash instead of a tick: all matching rows are selected except a few unticked ones. */
     isSelectionPartial() {
@@ -766,13 +733,7 @@ export default {
       return colspan;
     },
     total() {
-      if (this.queryMode) {
-        return this.queryMeta.total;
-      }
-      if (this.serverSidePagination) {
-        return this.options.pagination.total;
-      }
-      return this.data.length;
+      return this.queryMeta.total;
     },
     isAllMode() {
       return this.itemsPerPage === 0;
@@ -781,8 +742,8 @@ export default {
       // if manually set, use that
       if (this.itemsPerPage !== null) {
         if (this.itemsPerPage === 0) {
-          // "All" on the server streams one block per scroll; only the client copy slices memory.
-          return this.queryMode ? this.infiniteBlockSize : Math.min(this.total, this.allRenderLimit);
+          // "All" streams one block per scroll.
+          return this.infiniteBlockSize;
         }
         return this.itemsPerPage;
       }
@@ -801,18 +762,7 @@ export default {
       if (this.isAllMode) {
         return 1;
       }
-      if (this.serverSidePagination) {
-        return Math.ceil(this.total / this.limit);
-      }
-      // For client-side pagination, use filtered data length
-      return Math.ceil(this.filteredDataLength / this.limit);
-    },
-    filteredDataLength() {
-      if (this.serverSidePagination) {
-        return this.total;
-      }
-      
-      return this.getFilteredAndSortedData().length;
+      return Math.ceil(this.total / this.limit);
     },
     sortIcon() {
       return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
@@ -823,35 +773,7 @@ export default {
         // Only the rows around the viewport reach the DOM; the rest of the window stays in memory.
         return this.queryItems.slice(this.virtualStart, this.virtualEnd);
       }
-      if (this.serverSidePagination) {
-        return this.sourceData;
-      }
-      
-      let data = this.getFilteredAndSortedData();
-
-      if (this.options && this.options.pagination && !this.isAllMode) {
-        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
-      } else if (this.isAllMode) {
-        // In "All" mode we render a growing prefix (0..limit)
-        data = data.slice(0, this.limit);
-      }
-      return data;
-    },
-    sequelizeFilter() {
-      let sequelizeFilter = Object.assign(
-        {},
-        ...Object.entries(this.filter).map(([k, v]) => ({
-          [k]: Object.entries(v)
-            .filter(([_k, v]) => v)
-            .map(([k, _v]) => k),
-        }))
-      );
-      return Object.assign(
-        {},
-        ...Object.entries(sequelizeFilter)
-          .filter(([_k, v]) => v.length > 0)
-          .map(([k, v]) => ({ [k]: v }))
-      );
+      return this.sourceData;
     },
     /** Free-text part of the search bar. */
     search() {
@@ -892,9 +814,7 @@ export default {
     },
     totalSelectableCount() {
       if (!this.selectableRows) return 0;
-      if (this.queryMode) return this.total;
-      const allFilteredData = this.getFilteredAndSortedData();
-      return allFilteredData.filter((r) => !r.isDisabled).length;
+      return this.total;
     },
     /** What an action should run on: either these rows, or "the query minus excludeIds". */
     selectionState() {
@@ -928,12 +848,6 @@ export default {
         this.currentPage = val;
       }
     },
-    filter: {
-      handler() {
-        this.paginationUpdate();
-      },
-      deep: true,
-    },
     manageColumnActive: {
       handler(val) {
         this.hasManageButtons = val;
@@ -954,12 +868,8 @@ export default {
         if (this.queryMode) {
           // The fetch itself comes from paginationUpdate() / setupQueryMode().
           this.enterInfiniteMode();
-        } else {
-          this.allRenderLimit = this.allChunkSize;
-          this.$nextTick(() => this.setupAllObserver());
         }
       } else {
-        this.cleanupAllObserver();
         this.exitInfiniteMode();
       }
     },
@@ -1019,17 +929,6 @@ export default {
         }
       }
     }
-    this.filter = Object.assign(
-      {},
-      ...this.columns
-        .filter((c) => "filter" in c)
-        .map((c) => ({
-          [c.key]:
-            c.filter.type === "numeric"
-              ? { operator: c.filter.defaultOperator ?? "gte", value: c.filter.defaultValue ?? "" }
-              : Object.assign({}, ...c.filter.map((f) => ({ [f.filterKey ?? f.key]: false }))),
-        }))
-    );
 
     // Consumers may open a query-mode table directly in "All" (infinite scroll).
     if (this.queryMode && this.options?.pagination?.itemsPerPage === 0) {
@@ -1053,7 +952,6 @@ export default {
     clearTimeout(this._enteringClearTimer);
     clearTimeout(this._backfillTimer);
     this.cleanupFixedColumns();
-    this.cleanupAllObserver();
     this.exitInfiniteMode();
   },
   methods: {
@@ -1227,108 +1125,6 @@ export default {
         }, wait);
       };
     },
-    getFilteredAndSortedData() {
-      let data = this.sourceData.map((d) => d);
-
-      // Apply search filter
-      if (this.search && this.search !== "") {
-        data = data.filter((d) => {
-          for (const [_key, value] of Object.entries(d)) {
-            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
-              return true;
-            }
-          }
-          return false;
-        });
-      }
-
-      // Apply sorting (pre-group)
-      if (this.sortColumn) {
-        if (this.sortDirection === "ASC") {
-          data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
-        } else {
-          data = data.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
-        }
-      }
-
-      // Apply filters
-      if (this.filter) {
-        data = data.filter((d) => {
-          for (const [key, filterValue] of Object.entries(this.filter)) {
-            if (typeof filterValue === "object" && "operator" in filterValue) {
-              const value = parseFloat(d[key]);
-              const compareValue = parseFloat(filterValue.value);
-
-              switch (filterValue.operator) {
-                case "gt":
-                  if (!(value > compareValue)) return false;
-                  break;
-                case "lt":
-                  if (!(value < compareValue)) return false;
-                  break;
-                case "gte":
-                  if (!(value >= compareValue)) return false;
-                  break;
-                case "lte":
-                  if (!(value <= compareValue)) return false;
-                  break;
-                case "eq":
-                  if (value !== compareValue) return false;
-                  break;
-              }
-            } else {
-              // only selected filter
-              const filter = Object.entries(filterValue)
-                .filter(([_k, v]) => v)
-                .map(([k, _v]) => k);
-              if (filter.length > 0) {
-                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
-                const hasMatch = dataValues.some((val) =>
-                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
-                );
-
-                if (!hasMatch) {
-                  return false;
-                }
-              }
-            }
-          }
-          return true;
-        });
-      }
-
-      // Group rows if requested
-      if (this.options && this.options.groupBy) {
-        const groupBy = this.options.groupBy;
-        const groupKey = typeof groupBy === "string" ? groupBy : groupBy.key;
-        const groups = {};
-        for (const row of data) {
-          const key = row[groupKey];
-          if (!(key in groups)) groups[key] = [];
-          groups[key].push(row);
-        }
-        let aggregated = Object.values(groups).map((rows) => {
-          if (typeof groupBy === "object" && typeof groupBy.aggregate === "function") {
-            return groupBy.aggregate(rows);
-          }
-          // Default: use first row of the group
-          return rows[0];
-        });
-
-        // Re-apply sorting on aggregated rows to respect current sort
-        if (this.sortColumn) {
-          if (this.sortDirection === "ASC") {
-            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
-          } else {
-            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
-          }
-        }
-
-        return aggregated;
-      }
-
-      return data;
-    },
     updateValues(data) {
       // Selection is always a row list; a consumer that binds nothing starts empty.
       return Array.isArray(data) ? data : [];
@@ -1392,27 +1188,17 @@ export default {
       }
     },
     selectAllRows() {
-      if (this.queryMode) {
-        // Three header states: empty → select everything the query matches; dash → back to
-        // everything (drop the exclusions); tick → clear the selection.
-        if (!this.allMatching) {
-          this.allMatching = true;
-          this.excludeIds = [];
-          this.currentData = [];
-        } else if (this.excludeIds.length > 0) {
-          this.excludeIds = [];
-        } else {
-          this.allMatching = false;
-        }
-        return;
-      }
-      if (this.isAllRowsSelected) {
+      if (!this.queryMode) return;
+      // Three header states: empty → select everything the query matches; dash → back to
+      // everything (drop the exclusions); tick → clear the selection.
+      if (!this.allMatching) {
+        this.allMatching = true;
+        this.excludeIds = [];
         this.currentData = [];
+      } else if (this.excludeIds.length > 0) {
+        this.excludeIds = [];
       } else {
-        // Use the existing method to get filtered data across all pages
-        const allFilteredData = this.getFilteredAndSortedData();
-        // Select all filtered rows that are not disabled
-        this.currentData = [...allFilteredData.filter((t) => !t.isDisabled)];
+        this.allMatching = false;
       }
     },
     /** Drop the selection — a different query means different matching rows. */
@@ -1447,11 +1233,7 @@ export default {
       };
     },
     paginationPageChange(page) {
-      if (!this.queryMode) {
-        this.currentPage = page;
-        this.paginationUpdate();
-        return;
-      }
+      if (!this.queryMode) return;
       // Keyset navigation. First / Prev / Next / Last
       const pages = this.pages || 1;
       const target = Math.min(Math.max(1, page), pages);
@@ -1498,22 +1280,12 @@ export default {
       }
     },
     paginationUpdate() {
-      if (this.serverSidePagination) {
-        const payload = {
-          page: this.currentPage - 1,
-          limit: this.limit,
-          order: this.sortColumn ? [[this.sortColumn, this.sortDirection]] : null,
-          filter: this.sequelizeFilter,
-        };
-        this.$emit("paginationUpdate", payload);
-        if (this.queryMode) {
-          // Sort / filter / page-size change the keyset: always restart from the first page.
-          // Otherwise currentPage stays e.g. 2 while fetchQueryPage() (empty nav) already
-          // loaded page 1 — clicking First then only changes the number, not the rows.
-          this.currentPage = 1;
-          this.fetchQueryPage({nav: {}});
-        }
-      }
+      if (!this.queryMode) return;
+      // Sort / page-size change the keyset: always restart from the first page.
+      // Otherwise currentPage stays e.g. 2 while fetchQueryPage() (empty nav) already
+      // loaded page 1 — clicking First then only changes the number, not the rows.
+      this.currentPage = 1;
+      this.fetchQueryPage({nav: {}});
     },
     paginationItemsPerPageChange(value) {
       this.itemsPerPage = value;
@@ -1554,9 +1326,6 @@ export default {
           });
         }
       });
-    },
-    getFilteredButtons(row) {
-      return this.rowButtons(row);
     },
     isScrollColumn(column) {
       return !!(column?.scroll || column?.maxChars);
@@ -1656,42 +1425,6 @@ export default {
         "--line-clamp": lines,
       };
     },
-    setupAllObserver() {
-      this.cleanupAllObserver();
-
-      const wrapper = this.$refs.tableWrapper;
-      const sentinel = this.$refs.loadMoreSentinel;
-      if (!sentinel) return;
-
-      // If there is a scroll container (maxTableHeight), observe within it.
-      // Otherwise observe in the viewport.
-      const root = wrapper && this.maxTableHeight ? wrapper : null;
-
-      this.allObserver = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (!entry?.isIntersecting) return;
-
-          if (this.allRenderLimit < this.total) {
-            this.allRenderLimit = Math.min(this.total, this.allRenderLimit + this.allChunkSize);
-          }
-        },
-        { 
-          root, 
-          threshold: 0.1,
-        }
-      );
-
-      this.allObserver.observe(sentinel);
-    },
-
-    cleanupAllObserver() {
-      if (this.allObserver) {
-        this.allObserver.disconnect();
-        this.allObserver = null;
-      }
-    },
-
     isRowSelected(row) {
       if (this.allMatching && this.queryMode) {
         return !this.excludeIds.includes(row.id);
@@ -1811,12 +1544,10 @@ export default {
           .map((row) => row.id);
         this.enteringTopIds = [];
         this.enteringBottomIds = [];
-        this.enteringFrom = null;
       } else {
         this.enteringIds = [];
         this.enteringTopIds = [];
         this.enteringBottomIds = [];
-        this.enteringFrom = null;
       }
       if (this.isInfiniteMode) {
         // A fresh window: sort / search / filter / page-size changes all land here.
@@ -2185,7 +1916,6 @@ export default {
       const remaining = this.queryItems.filter((row) => !placeholders.has(row.id));
       const need = pageSize - remaining.length;
       this._pendingBackfillCount = 0;
-      this._pendingBackfillSlots = [];
 
       if (need <= 0) {
         if (placeholders.size) {
@@ -2488,7 +2218,6 @@ export default {
     // height of the rows that moved in or out.
 
     enterInfiniteMode() {
-      this.cleanupAllObserver();
       this.rowsBefore = 0;
       this.virtualStart = 0;
       this.virtualEnd = this.queryItems.length;
