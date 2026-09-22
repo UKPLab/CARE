@@ -63,10 +63,10 @@ export function needsTypedValue(schema, key) {
 }
 
 const OPERATORS_BY_TYPE = {
-  boolean: ["=", "!="],
-  enum: ["=", "!="],
-  numeric: ["=", "!=", ">", ">=", "<", "<="],
-  date: ["=", ">", ">=", "<", "<="],
+  boolean: ["=", "!=", "%"],
+  enum: ["=", "!=", "%"],
+  numeric: ["=", "!=", ">", ">=", "<", "<=", "%"],
+  date: ["=", ">", ">=", "<", "<=", "%"],
   text: ["=", "!=", "~", "%"],
 };
 

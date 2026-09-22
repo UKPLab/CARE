@@ -301,7 +301,7 @@ export default {
      */
     studyFilterSchema() {
       const schema = {
-        id: {label: this.$t("common.id"), type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
+        id: {label: this.$t("common.id"), type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
         workflowName: {label: this.$t("dashboard.study.workflowCol"), type: "text"},
         createdAt: {label: this.$t("dashboard.study.createdCol"), type: "date"},
       };

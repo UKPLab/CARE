@@ -494,7 +494,7 @@ export default {
         submissionExtId: {
           label: this.$t("submission.publishAssessment.columns.submissionExtId"),
           type: "numeric",
-          operators: ["=", ">", ">=", "<", "<="],
+          operators: ["=", ">", ">=", "<", "<=", "%"],
         },
       };
       if (this.canReadPrivateInformation) {

@@ -1,28 +1,56 @@
 <template>
   <div>
-    <div v-if="bulk" class="form-check">
-      <input id="filterHasDocumentsCheckbox" v-model="filterHasDocuments" class="form-check-input" type="checkbox">
+    <div v-if="bulk" class="form-check mb-2">
+      <input
+        id="filterHasDocumentsCheckbox"
+        v-model="filterHasDocuments"
+        class="form-check-input"
+        type="checkbox"
+      >
       <label class="form-check-label" for="filterHasDocumentsCheckbox">
-        {{ $t('dashboard.study.filterUsersWithDocuments') }}
+        {{ $t("dashboard.study.filterUsersWithDocuments") }}
       </label>
       <br>
-      <input id="filterSelectedDocumentsCheckbox" v-model="filterSelectedDocuments" class="form-check-input" type="checkbox">
+      <input
+        id="filterSelectedDocumentsCheckbox"
+        v-model="filterSelectedDocuments"
+        class="form-check-input"
+        type="checkbox"
+      >
       <label class="form-check-label" for="filterSelectedDocumentsCheckbox">
-        {{ $t('dashboard.study.filterUsersFromPreviousDocuments') }}
+        {{ $t("dashboard.study.filterUsersFromPreviousDocuments") }}
       </label>
     </div>
-    <BasicTable
-        v-model="selectedReviewer"
-        :columns="reviewerTableColumns"
-        :data="reviewerTable"
-        :options="reviewerTableOptions"
-        :max-table-height="400"
+    <BackendTable
+      ref="reviewerTable"
+      table="user"
+      :columns="reviewerTableColumns"
+      :query-scope="reviewerQueryScope"
+      :query-filter="reviewerQueryFilter"
+      :query-filter-schema="reviewerFilterSchema"
+      :query-search-columns="reviewerSearchColumns"
+      :options="reviewerTableOptions"
+      :max-table-height="'50vh'"
+      @selection-change="onSelectionChange"
     />
   </div>
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
+import BackendTable from "@/basic/BackendTable.vue";
+
+function emptySelection() {
+  return {
+    allMatching: false,
+    excludeIds: [],
+    ids: [],
+    rows: [],
+    count: 0,
+    filter: [],
+    scope: null,
+    query: {},
+  };
+}
 
 /**
  * Step component for selecting which users will act as reviewers in the assignment.
@@ -33,136 +61,162 @@ import BasicTable from "@/basic/Table.vue";
  */
 export default {
   name: "ReviewerSelectionStep",
-  components: { BasicTable },
+  components: { BackendTable },
+  inject: {
+    assignmentType: {from: "assignmentType", default: "document"},
+  },
   props: {
-    selectedAssignmentUserIds: {
-      type: Array,
-      default: () => [],
-    },
     bulk: {
       type: Boolean,
       default: true,
     },
-    modalValue: {
+    /** Session BackendTable getSelection() snapshot (study_session path). */
+    assignmentSelection: {
+      type: Object,
+      default: null,
+    },
+    /** Document/submission owner ids still resolved on the client. */
+    selectedAssignmentUserIds: {
       type: Array,
       default: () => [],
     },
   },
+  emits: ["update:selection", "update:isValid"],
   data() {
     return {
       filterHasDocuments: false,
       filterSelectedDocuments: false,
-      selectedReviewer: [...(this.modalValue || [])],
-      reviewerTableOptions: {
+      selection: emptySelection(),
+    };
+  },
+  computed: {
+    reviewerTableOptions() {
+      return {
         striped: true,
         hover: true,
         bordered: false,
         borderless: false,
         small: false,
         selectableRows: true,
-        scrollY: true,
-        scrollX: true,
+        singleSelect: false,
         onlyOneRowSelectable: false,
+        pagination: {
+          serverSide: true,
+          itemsPerPage: 10,
+          total: 0,
+        },
         search: true,
-        pagination: 10,
-      },
-    };
-  },
-  computed: {
-    roles() {
-      return this.$store.getters["admin/getSystemRoles"] || [];
-    },
-    documents() {
-      return this.$store.getters["table/document/getFiltered"](d => d.readyForReview);
-    },
-    allUsers() {
-      return this.$store.getters["table/user/getAll"];
-    },
-    reviewerRoles() {
-      return [...new Set(this.reviewerTable.flatMap(obj => {
-        return obj.rolesNames.split(/,\s*/).filter(n => n !== "");
-      }))];
-    },
-    selectedReviewerRoles() {
-      return [...new Set(this.selectedReviewer.flatMap(obj => obj.roles))];
-    },
-    reviewerTable() {
-      return this.allUsers.map(r => {
-        let newR = { ...r };
-        newR.studySessions = this.userStudySessions(r.id).filter(s => this.isStudyClosed(s.studyId)).length;
-        newR.documents = this.documents.filter(d => d.userId === r.id).length;
-        newR.rolesNames = (r.roles || [])
-            .map(role => {
-              const foundRole = (this.roles || []).find(roleObj => roleObj.id === role);
-              return foundRole ? foundRole.name : null;
-            })
-            .filter(name => name !== null)
-            .join(", ");
-        return newR;
-      }).filter(reviewer => {
-        if (!this.filterHasDocuments && !this.filterSelectedDocuments) return true;
-        if (this.filterHasDocuments && reviewer.documents < 1) return false;
-        return !(this.filterSelectedDocuments && !this.selectedAssignmentUserIds.includes(reviewer.id));
-      });
+        sort: {column: "id", order: "ASC"},
+      };
     },
     reviewerTableColumns() {
       return [
-        { name: this.$t("common.id"), key: "id" },
-        { name: this.$t("dashboard.projects.extId"), key: "extId" },
-        { name: this.$t("common.firstName"), key: "firstName" },
-        { name: this.$t("common.lastName"), key: "lastName" },
-        { name: this.$t("dashboard.projects.numberOfAssignments"), key: "studySessions" },
-        {
-          name: this.$t("dashboard.study.documents"),
-          key: "documents",
-          filter: { type: "numeric", defaultOperator: "gte", defaultValue: 0 },
-        },
-        {
-          name: this.$t("dashboard.study.roles"),
-          key: "rolesNames",
-          filter: this.reviewerRoles.map(r => ({ key: r, name: r })),
-        },
+        {name: this.$t("common.id"), key: "id"},
+        {name: this.$t("dashboard.projects.extId"), key: "extId"},
+        {name: this.$t("common.firstName"), key: "firstName"},
+        {name: this.$t("common.lastName"), key: "lastName"},
+        {name: this.$t("dashboard.projects.numberOfAssignments"), key: "studySessions"},
+        {name: this.$t("dashboard.study.documents"), key: "documents"},
+        {name: this.$t("dashboard.study.roles"), key: "rolesNames"},
       ];
     },
+    reviewerFilterSchema() {
+      return {
+        id: {
+          label: this.$t("common.id"),
+          type: "numeric",
+          operators: ["=", ">", ">=", "<", "<=", "%"],
+        },
+        extId: {
+          label: this.$t("dashboard.projects.extId"),
+          type: "numeric",
+          operators: ["=", ">", ">=", "<", "<=", "%"],
+        },
+        studySessions: {
+          label: this.$t("dashboard.projects.numberOfAssignments"),
+          type: "numeric",
+          operators: ["=", ">", ">=", "<", "<=", "%"],
+        },
+        documents: {
+          label: this.$t("dashboard.study.documents"),
+          type: "numeric",
+          operators: ["=", ">", ">=", "<", "<=", "%"],
+        },
+        rolesNames: {label: this.$t("dashboard.study.roles"), type: "text"},
+      };
+    },
+    reviewerSearchColumns() {
+      return ["id", "extId", "firstName", "lastName", "studySessions", "documents", "rolesNames"];
+    },
+    reviewerQueryScope() {
+      const assignmentReviewer = {};
+      if (this.filterHasDocuments) {
+        assignmentReviewer.hasDocuments = true;
+      }
+      if (this.filterSelectedDocuments) {
+        if (this.assignmentType === "study_session" && this.assignmentSelection) {
+          assignmentReviewer.fromSessions = {
+            allMatching: this.assignmentSelection.allMatching,
+            excludeIds: this.assignmentSelection.excludeIds || [],
+            ids: this.assignmentSelection.ids || [],
+            filter: this.assignmentSelection.filter || [],
+            query: this.assignmentSelection.query || {},
+            scope: this.assignmentSelection.scope || null,
+          };
+        } else if (this.selectedAssignmentUserIds.length > 0) {
+          assignmentReviewer.userIds = this.selectedAssignmentUserIds;
+        } else {
+          assignmentReviewer.userIds = [];
+        }
+      }
+      if (Object.keys(assignmentReviewer).length === 0) {
+        return {assignmentReviewer: {}};
+      }
+      return {assignmentReviewer};
+    },
+    reviewerQueryFilter() {
+      return [];
+    },
     isValid() {
-      return this.selectedReviewer.length > 0;
+      return this.selection.count > 0;
     },
   },
   watch: {
-    selectedReviewer: {
-      handler(val) {
-        this.$emit('update:selectedReviewer', val);
-        this.$emit('update:selectedReviewerRoles', this.selectedReviewerRoles);
+    isValid(val) {
+      this.$emit("update:isValid", val);
+    },
+    filterHasDocuments() {
+      this.resetEmittedSelection();
+    },
+    filterSelectedDocuments() {
+      this.resetEmittedSelection();
+    },
+    assignmentSelection: {
+      handler() {
+        if (this.filterSelectedDocuments) {
+          this.resetEmittedSelection();
+        }
       },
       deep: true,
     },
-    selectedReviewerRoles(val) {
-      this.$emit('update:selectedReviewerRoles', val);
-    },
-    isValid(val) {
-      this.$emit('update:isValid', val);
-    },
   },
   mounted() {
-    this.$emit('update:isValid', this.isValid);
-    if (this.selectedReviewer.length > 0) {
-      this.$emit('update:selectedReviewer', this.selectedReviewer);
-      this.$emit('update:selectedReviewerRoles', this.selectedReviewerRoles);
-    }
+    this.$emit("update:isValid", this.isValid);
   },
   methods: {
-    userStudySessions(userId) {
-      return this.$store.getters["table/study_session/getFiltered"](s => s.userId === userId);
+    resetEmittedSelection() {
+      this.selection = emptySelection();
+      this.$emit("update:selection", this.selection);
+      this.$emit("update:isValid", false);
     },
-    isStudyClosed(studyId) {
-      const study = this.$store.getters["table/study/get"](studyId);
-      if (!study) return false;
-      return study.closed === null;
+    onSelectionChange() {
+      const selection = this.$refs.reviewerTable?.getSelection();
+      this.selection = selection ? {...selection} : emptySelection();
+      this.$emit("update:selection", this.selection);
     },
-    reset() {
-      this.filterHasDocuments = false;
-      this.filterSelectedDocuments = false;
-      this.selectedReviewer = [];
+    getSelection() {
+      const live = this.$refs.reviewerTable?.getSelection();
+      return live ? {...live} : {...this.selection};
     },
   },
 };

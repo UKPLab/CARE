@@ -89,68 +89,6 @@
                 @click="sort('sortKey' in c ? c.sortKey : c.key)"
               />
             </span>
-            <span v-if="filter && c.filter && hasFilterableData">
-              <span
-                aria-expanded="true"
-                aria-haspopup="true"
-                data-bs-toggle="dropdown"
-                role="button"
-                style="cursor: pointer"
-              >
-                <LoadIcon
-                  :id="'filterDropDown_' + c.key"
-                  :color="c.key in sequelizeFilter ? 'blue' : ''"
-                  :icon-name="
-                    c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'
-                  "
-                />
-              </span>
-              <template v-if="!c.filter.type">
-                <ul
-                  :aria-labelledby="'filterDropDown_' + c.key"
-                  class="dropdown-menu p-1"
-                  @click.stop=""
-                >
-                  <li
-                    v-for="f in c.filter"
-                    :key="f.key"
-                    class="form-check"
-                  >
-                    <input
-                      :id="'filterDropDown_' + c.key + '_label_' + f.key"
-                      v-model="filter[c.key][f.key]"
-                      class="form-check-input"
-                      type="checkbox"
-                    />
-                    <label
-                      :for="'filterDropDown_' + c.key + '_label_' + f.key"
-                      class="form-check-label"
-                      >{{ f.name }}</label
-                    >
-                  </li>
-                </ul>
-              </template>
-              <template v-else-if="c.filter.type === 'numeric'">
-                <div class="dropdown-menu p-2">
-                  <select
-                    v-model="filter[c.key].operator"
-                    class="form-select form-select-sm mb-2"
-                  >
-                    <option value="gt">&gt;</option>
-                    <option value="lt">&lt;</option>
-                    <option value="gte">&ge;</option>
-                    <option value="lte">&le;</option>
-                    <option value="eq">=</option>
-                  </select>
-                  <input
-                    v-model="filter[c.key].value"
-                    class="form-control form-control-sm"
-                    type="number"
-                    min="0"
-                  />
-                </div>
-              </template>
-            </span>
           </th>
           <th
             v-if="manageColumnActive"
@@ -2058,6 +1996,9 @@ export default {
         if (entry.type === "date") {
           const days = filter.value.map((item) => String(item || "").slice(0, 10)).filter(Boolean);
           const rowDay = this.rowCalendarDay(value);
+          if (filter.operator === "%") {
+            return days.includes(rowDay);
+          }
           return days.length === 1 && rowDay === days[0];
         }
         return matchesTokenList(value, filter.operator, filter.value);
@@ -2072,22 +2013,17 @@ export default {
         const rowDay = this.rowCalendarDay(value);
         switch (filter.operator) {
           case "=":
-          case "eq":
+          case "%":
             return rowDay === day;
           case "!=":
-          case "ne":
             return rowDay !== day;
           case ">":
-          case "gt":
             return rowDay > day;
           case ">=":
-          case "gte":
             return rowDay >= day;
           case "<":
-          case "lt":
             return rowDay < day;
           case "<=":
-          case "lte":
             return rowDay <= day;
           default:
             return true;
@@ -2096,10 +2032,8 @@ export default {
 
       switch (filter.operator) {
         case "=":
-        case "eq":
           return String(value) === String(filter.value);
         case "!=":
-        case "ne":
           return String(value) !== String(filter.value);
         case "~":
           if (entry.type === "numeric") {
@@ -2109,16 +2043,12 @@ export default {
         case "%":
           return matchesTokenList(value, "%", [filter.value]);
         case ">":
-        case "gt":
           return Number(value) > Number(filter.value);
         case ">=":
-        case "gte":
           return Number(value) >= Number(filter.value);
         case "<":
-        case "lt":
           return Number(value) < Number(filter.value);
         case "<=":
-        case "lte":
           return Number(value) <= Number(filter.value);
         default:
           return true;
@@ -2475,9 +2405,22 @@ export default {
           } else {
             this.replaceRow(row);
           }
-        } else if (structural) {
-          // Off-page row moved by sort/filter key → may enter this page
-          this.showBannerOrApply(own, () => this.fetchQueryPage({nav: this.currentNav()}));
+          return;
+        }
+
+        // Off-page. Unrelated fields (status while the chip is id) must not banner.
+        // Only a narrowed query can pull a row into this window; after/before stay silent.
+        const queryNarrowed = !!(this.search || Object.keys(this.activeColumnFilters).length);
+        if (!queryNarrowed) {
+          return;
+        }
+        if (this.isAfterCurrentPage(row)) {
+          return;
+        }
+        if (own) {
+          this.refetchCurrentWindow();
+        } else {
+          this.pendingInserts += 1;
         }
         return;
       }
@@ -2496,16 +2439,9 @@ export default {
           return;
         }
 
-        if (this.isBeforeAnchor(row)) {
-          // Insert above the keyset window: our cursor keeps the same rows visible,
-          // so nothing shifts — just bump the count, no banner.
-          this.bumpTotal(1);
-        } else {
-          // Insert inside the current window (between anchor and last row) → it would
-          // push our last row out; offer a banner to reveal it.
-          this.pendingInserts += 1;
-          this.bumpTotal(1);
-        }
+        // This page or before it: numbered pages would shift. After this page: next fetch.
+        this.pendingInserts += 1;
+        this.bumpTotal(1);
       }
     },
     loadPendingChanges() {

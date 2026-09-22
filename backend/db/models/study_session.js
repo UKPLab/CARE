@@ -45,12 +45,12 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * SQL for study / reviewer / owner / submission identity on Publish Assessment rows.
+         * Shared correlated subqueries for study / session-user / study-owner / submission.
          *
          * @param {boolean} [privateInfo] viewer may read user names / extIds
          * @returns {Object<string, string>} alias → SQL expression
          */
-        static assessmentColumnSql(privateInfo = false) {
+        static sessionIdentitySql(privateInfo = false) {
             const studyField = (field) =>
                 `(SELECT "study"."${field}" FROM "study" WHERE "study"."id" = "study_session"."studyId")`;
             const reviewerField = (field) =>
@@ -75,11 +75,18 @@ module.exports = (sequelize, DataTypes) => {
 
             const columns = {
                 studyName: studyField("name"),
+                studyUserId: studyField("userId"),
                 userName: reviewerField("userName"),
                 ownerUserName: ownerField("userName"),
+                workflowType: '(SELECT "workflow"."name" FROM "workflow"'
+                    + ` WHERE "workflow"."id" = ${studyField("workflowId")})`,
                 submissionId,
                 submissionExtId: `(SELECT "submission"."extId" FROM "submission"`
                     + ` WHERE "submission"."id" = ${submissionId})`,
+                
+                submissionGroup: `(SELECT COALESCE("submission"."group"::text, '') FROM "submission"`
+                    + ` WHERE "submission"."id" = ${submissionId})`,
+                status: 'CASE WHEN "study_session"."end" IS NULL THEN \'Running\' ELSE \'Finished\' END',
             };
             if (privateInfo) {
                 columns.firstName = reviewerField("firstName");
@@ -87,20 +94,43 @@ module.exports = (sequelize, DataTypes) => {
                 columns.ownerFirstName = ownerField("firstName");
                 columns.ownerLastName = ownerField("lastName");
                 columns.ownerExtId = ownerField("extId");
+                columns.completeUserName =
+                    `TRIM(CONCAT_WS(' ', ${reviewerField("firstName")}, ${reviewerField("lastName")}))`;
+                columns.studyCompleteUserName =
+                    `TRIM(CONCAT_WS(' ', ${ownerField("firstName")}, ${ownerField("lastName")}))`;
             }
             return columns;
         }
 
         /**
-         * Rows of the Publish Assessment session step: sessions of closed studies that run the
-         * picked assessment configuration in one of the picked workflow steps.
+         * Rows of a scoped study_session queryTable.
+         *
+         * - `scope.assessment`: Publish Assessment — closed studies running a configuration at
+         *   picked workflow steps.
+         * - `scope.assignmentBulk`: Add Bulk/Single Assignment — sessions whose study uses the
+         *   mapped target workflow.
          *
          * @param {Object} scope
-         * @param {Object} scope.assessment {configurationId, projectId, steps: [{workflowId, stepNumber}]}
-         * @returns {Promise<Object|null>} WHERE fragment, or null when this is not an assessment scope
-         * @throws {TranslatableError} when the assessment scope is unusable (never widens the list)
+         * @returns {Promise<Object|null>} WHERE fragment, or null when no known scope key is set
+         * @throws {TranslatableError} when a known scope key is present but unusable
          */
         static async getQueryTableScopeFilter(scope) {
+            if (scope?.assignmentBulk) {
+                const workflowId = positiveInt(scope.assignmentBulk.workflowId);
+                if (!workflowId) {
+                    throw new TranslatableError("errors.queryTable.scopeInvalid");
+                }
+                return {
+                    studyId: {
+                        [Op.in]: sequelize.literal(
+                            '(SELECT "study"."id" FROM "study"'
+                            + ' WHERE "study"."deleted" = false'
+                            + ` AND "study"."workflowId" = ${workflowId})`
+                        ),
+                    },
+                };
+            }
+
             const assessment = scope?.assessment;
             if (!assessment) {
                 return null;
@@ -150,18 +180,21 @@ module.exports = (sequelize, DataTypes) => {
                 type: "sql",
                 table: "study_session",
                 on: "id",
-                fields: StudySession.assessmentColumnSql(privateInfo),
+                fields: StudySession.sessionIdentitySql(privateInfo),
             }];
         }
 
         /**
-         * Free-text keys for the session step columns.
+         * Free-text keys for session picker columns
          * @param {Object} ctx
          * @param {function(string): Promise<boolean>} ctx.hasAccess
          * @returns {Promise<string[]>}
          */
         static async getQueryTableSearchColumns(ctx) {
-            const columns = ["studyName", "userName", "ownerUserName"];
+            const columns = [
+                "studyName", "userName", "ownerUserName",
+                "completeUserName", "studyCompleteUserName", "workflowType", "submissionGroup", "status",
+            ];
             if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
                 columns.push("firstName", "lastName", "ownerFirstName", "ownerLastName");
             }
@@ -169,25 +202,33 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Free text on identity expressions (not submissionId / submissionExtId integers).
+         * Free text on identity expressions 
          */
         static getQueryTableSearchConditions(needle, ctx = {}) {
             const canSearch = typeof ctx.canSearch === "function" ? ctx.canSearch : () => true;
-            return Object.entries(StudySession.assessmentColumnSql(true))
-                .filter(([key]) => !["submissionId", "submissionExtId"].includes(key) && canSearch(key))
+            const skip = new Set(["submissionId", "submissionExtId", "studyUserId"]);
+            return Object.entries(StudySession.sessionIdentitySql(true))
+                .filter(([key]) => !skip.has(key) && canSearch(key))
                 .map(([, sql]) => includesCondition(literal(sql), needle));
         }
 
         /**
-         * Session search-bar chips: ExtId numeric + name text chips when private info is allowed.
+         * Session search-bar chips
          */
         static async getQueryTableFilterColumns(ctx = {}) {
             const privateInfo = typeof ctx.hasAccess === "function"
                 && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
-            const columns = StudySession.assessmentColumnSql(privateInfo);
-            const spec = {};
-            for (const key of ["userName", "ownerUserName",
-                "firstName", "lastName", "ownerFirstName", "ownerLastName"]) {
+            const columns = StudySession.sessionIdentitySql(privateInfo);
+            const spec = {
+                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+                createdAt: {type: "date"},
+                status: {type: "enum", values: ["Running", "Finished"], sql: columns.status},
+            };
+            for (const key of [
+                "userName", "ownerUserName", "completeUserName", "studyCompleteUserName",
+                "workflowType", "submissionGroup",
+                "firstName", "lastName", "ownerFirstName", "ownerLastName",
+            ]) {
                 if (columns[key]) {
                     spec[key] = {type: "text", sql: columns[key]};
                 }
@@ -195,7 +236,7 @@ module.exports = (sequelize, DataTypes) => {
             if (columns.submissionId) {
                 spec.submissionExtId = {
                     type: "numeric",
-                    operators: ["=", ">", ">=", "<", "<="],
+                    operators: ["=", ">", ">=", "<", "<=", "%"],
                     sql: `(SELECT "submission"."extId" FROM "submission"`
                         + ` WHERE "submission"."id" = ${columns.submissionId})`,
                 };

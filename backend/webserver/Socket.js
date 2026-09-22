@@ -10,8 +10,7 @@ const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../ut
 const {dashboardSortInclude} = require("../utils/helper/queryTableJoinSort.js");
 const {ensureStudyDashboardSortFresh} = require("../db/studyDashboardSortRefresh.js");
 
-// Upper bound for a query-scoped bulk ("select all matching"). Above this the client has to narrow
-// the filter — the per-id transactions of runBulkWithProgress would otherwise run for minutes.
+// Upper bound for a query-scoped bulk ("select all matching")
 const MAX_BULK_SELECTION = 100000;
 
 // Upper bound for an explicit id list sent by the client (one page / a few pages of picks).
@@ -19,6 +18,7 @@ const MAX_EXPLICIT_SELECTION = 10000;
 
 // Rows a single broadcast may animate row by row in query-mode; above this the client refetches.
 const MAX_DELTA_ROWS = 100;
+
 /**
  * Defines as new Socket class
  *
@@ -750,6 +750,9 @@ module.exports = class Socket {
             userId: this.userId,
             rolesUpdatedAt: this.rolesUpdatedAt,
             hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
+            // Nested scopes (e.g. reviewer "from previous sessions") re-resolve another table's
+            // query-scoped selection without shipping id lists through the client.
+            resolveQueryTableIds: (params) => this.resolveQueryTableIds(params),
         };
 
         // Rows a wizard step means but a filter item cannot name (join over other tables). The model
@@ -761,7 +764,7 @@ module.exports = class Socket {
             }
         }
 
-        // Search-bar filter tokens. Which keys are filterable is the model's decision, not the client's.
+        // Search-bar filter tokens
         const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
             ? query.columnFilters
             : null;
@@ -1028,7 +1031,6 @@ module.exports = class Socket {
                 });
             } else if (injection.type === "sql") {
                 // Values behind more than one hop (e.g. a session's study owner or submission).
-                // `fields` is {alias: SQL expression} written by the model — never by a client.
                 const fields = Object.entries(injection.fields || {});
                 const sourceKey = injection.on || "id";
                 const keys = [...new Set(data.map((d) => d[sourceKey]).filter((id) => id != null))];

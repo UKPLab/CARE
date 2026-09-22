@@ -4,7 +4,8 @@
       :steps="steps"
       :validation="stepValid"
       size="xl"
-      @submit="bulk ? createBulkAssignments() : createSingleAssignment()">
+      @submit="bulk ? createBulkAssignments() : createSingleAssignment()"
+      @step-change="onStepChange">
     <template #title>
       <h5 class="modal-title">
         {{ bulk ? $t('dashboard.study.createBulkAssignment') : $t('dashboard.study.createSingleAssignmentTitle') }}
@@ -65,6 +66,7 @@
           :modalValue="assignmentModalValue"
           @update:modalValue="assignmentModalValue = $event"
           @update:selectedAssignmentUserIds="selectedAssignmentUserIds = $event"
+          @update:selection="onAssignmentSelection"
           @update:isValid="assignmentSelectionValid = $event"
       />
       <ReviewerSelectionStep
@@ -72,10 +74,9 @@
           :key="`reviewer-step3-${stepResetKey}`"
           ref="reviewerSelectionStep3"
           :selected-assignment-user-ids="selectedAssignmentUserIds"
+          :assignment-selection="assignmentSelection"
           :bulk="bulk"
-          :modalValue="selectedReviewer"
-          @update:selectedReviewer="selectedReviewer = $event"
-          @update:selectedReviewerRoles="selectedReviewerRoles = $event"
+          @update:selection="onReviewerSelection"
           @update:isValid="reviewerSelectionValid = $event"
       />
     </template>
@@ -87,10 +88,9 @@
           :key="`reviewer-step4-${stepResetKey}`"
           ref="reviewerSelectionStep4"
           :selected-assignment-user-ids="selectedAssignmentUserIds"
+          :assignment-selection="assignmentSelection"
           :bulk="bulk"
-          :modalValue="selectedReviewer"
-          @update:selectedReviewer="selectedReviewer = $event"
-          @update:selectedReviewerRoles="selectedReviewerRoles = $event"
+          @update:selection="onReviewerSelection"
           @update:isValid="reviewerSelectionValid = $event"
       />
       <DistributionStep
@@ -153,9 +153,22 @@ import ReviewerSelectionStep from "./assignment/ReviewerSelectionStep.vue";
 import DistributionStep from "./assignment/DistributionStep.vue";
 import ConfirmationStep from "./assignment/ConfirmationStep.vue";
 
+function emptySelection() {
+  return {
+    allMatching: false,
+    excludeIds: [],
+    ids: [],
+    rows: [],
+    count: 0,
+    filter: [],
+    scope: null,
+    query: {},
+  };
+}
+
 /**
  * Modal for bulk creating assignments
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Andrii Nikitin
  */
 export default {
   name: "ImportModal",
@@ -169,10 +182,26 @@ export default {
     ConfirmationStep,
   },
   subscribeTable: [
-    { table: "document", filter: [{ key: "readyForReview", value: true }] },
-    { table: "user" },
+    {
+      table: "document",
+      filter: [{ key: "readyForReview", value: true }],
+      inject: [{
+        type: "parent",
+        table: "user",
+        by: "userId",
+        fields: ["firstName", "lastName", "userName"],
+      }],
+    },
+    {
+      table: "submission",
+      inject: [{
+        type: "parent",
+        table: "user",
+        by: "userId",
+        fields: ["firstName", "lastName", "userName"],
+      }],
+    },
     { table: "study", filter: [{ key: "template", value: true }] },
-    "submission",
     { table: "template" },
   ],
   provide() {
@@ -189,11 +218,13 @@ export default {
       workflowStepsAssignments: computed(() => this.workflowStepsAssignments),
       numberOfReviews: computed(() => this.numberOfReviews),
       reviewerSelectionModeFields: computed(() => this.reviewerSelectionModeFields),
-      reviewer: computed(() => this.reviewer),
+      reviewer: computed(() => this.selectedReviewer),
       documents: computed(() => this.documents),
       roles: computed(() => this.roles),
       roleSelection: computed(() => this.roleSelection),
       reviewerSelection: computed(() => this.reviewerSelection),
+      assignmentCount: computed(() => this.assignmentCount),
+      reviewerCount: computed(() => this.reviewerCount),
     };
   },
   data() {
@@ -222,6 +253,8 @@ export default {
       // Step 2/3: AssignmentSelectionStep
       assignmentModalValue: [],
       selectedAssignmentUserIds: [],
+      assignmentSelection: emptySelection(),
+      reviewerQuerySelection: emptySelection(),
 
       // Step 3/4: ReviewerSelectionStep
       selectedReviewer: [],
@@ -240,6 +273,8 @@ export default {
       assignmentSelectionValid: false,
       reviewerSelectionValid: false,
       distributionValid: false,
+
+      resolveLoading: false,
     };
   },
   computed: {
@@ -247,14 +282,20 @@ export default {
     templates() {
       return this.$store.getters["table/study/getFiltered"](item => item.template === true);
     },
-    reviewer() {
-      return this.$store.getters["table/user/getAll"];
-    },
     documents() {
       return this.$store.getters["table/document/getFiltered"](d => d.readyForReview);
     },
     roles() {
       return this.$store.getters["admin/getSystemRoles"] || [];
+    },
+    assignmentCount() {
+      if (this.assignmentType === 'study_session') {
+        return this.assignmentSelection.count || this.assignmentModalValue.length;
+      }
+      return this.assignmentModalValue.length;
+    },
+    reviewerCount() {
+      return this.reviewerQuerySelection.count || this.selectedReviewer.length;
     },
     reviewerSelectionModeFields() {
       const baseOptions = [
@@ -320,7 +361,7 @@ export default {
           { title: this.$t("common.confirmation") },
         ];
       }
-      const selectionTitle = this.assignmentType === 'submission'
+      const selectionTitle = this.assignmentType === "submission"
         ? this.$t("dashboard.study.submissionSelection")
         : this.$t("dashboard.study.documentSelection");
       return [
@@ -339,8 +380,8 @@ export default {
       };
     },
     workflowStepsAssignments() {
-      if (this.assignmentType === 'submission') {
-        return this.assignmentModalValue.map(submission => {
+      if (this.assignmentType === "submission") {
+        return this.assignmentModalValue.map((submission) => {
           return this.workflowSteps.map((c, index) => {
             if (index === 0) {
               const primaryDocId = this.getPrimaryDocumentId(submission.id);
@@ -350,7 +391,7 @@ export default {
           });
         });
       }
-      return this.assignmentModalValue.map(document => {
+      return this.assignmentModalValue.map((document) => {
         return this.workflowSteps.map((c, index) => ({
           documentId: index === 0 ? document.id : null,
           workflowStepId: c.id,
@@ -379,8 +420,7 @@ export default {
     },
     reset() {
       this.stepResetKey++;
-
-      this.assignmentType = 'document';
+      this.assignmentType = "document";
       this.workflowSteps = [];
       this.workflowStepsAssignment = [];
       this.template = null;
@@ -390,6 +430,8 @@ export default {
       this.isWorkflowMappingComplete = false;
       this.assignmentModalValue = [];
       this.selectedAssignmentUserIds = [];
+      this.assignmentSelection = emptySelection();
+      this.reviewerQuerySelection = emptySelection();
       this.selectedReviewer = [];
       this.selectedReviewerRoles = [];
       this.reviewerSelectionMode = {};
@@ -402,6 +444,71 @@ export default {
       this.assignmentSelectionValid = false;
       this.reviewerSelectionValid = false;
       this.distributionValid = false;
+    },
+    onAssignmentSelection(selection) {
+      this.assignmentSelection = selection ? {...selection} : emptySelection();
+    },
+    onReviewerSelection(selection) {
+      this.reviewerQuerySelection = selection ? {...selection} : emptySelection();
+    },
+    /**
+     * Before Distribution / Confirm: turn queryTable selection (including select-all)
+     * into row arrays. Distribution still builds sliders from selectedReviewer objects.
+     */
+    onStepChange(stepIndex) {
+      const panel = this.stepContent[stepIndex];
+      if (panel === "distribution" || panel === "confirmation") {
+        this.resolveSelectionsForDownstream();
+      }
+    },
+    resolvePayload() {
+      const payload = {
+        assignmentType: this.assignmentType,
+        newStudyOwner: this.workflowMappingStepModalValue?.newStudyOwner ?? "session_owner",
+        selectedAssignments: this.assignmentModalValue,
+        selectedReviewer: this.selectedReviewer,
+        reviewerQuerySelection: this.snapshotReviewerSelection(),
+      };
+      if (this.assignmentType === "study_session") {
+        payload.assignmentSelection = this.snapshotAssignmentSelection();
+      }
+      return payload;
+    },
+    snapshotAssignmentSelection() {
+      const live = this.$refs.assignmentSelectionStep3?.getSelection?.();
+      return live ? {...live} : {...this.assignmentSelection};
+    },
+    snapshotReviewerSelection() {
+      const ref = this.$refs.reviewerSelectionStep3 || this.$refs.reviewerSelectionStep4;
+      const live = ref?.getSelection?.();
+      return live ? {...live} : {...this.reviewerQuerySelection};
+    },
+    resolveSelectionsForDownstream() {
+      // Reviewers always come from BackendTable, so resolve them into rows before
+      // Distribution / Confirmation. Sessions only for the study_session path;
+      // documents / submissions stay the Vuex rows in selectedAssignments.
+      if (this.resolveLoading) {
+        return;
+      }
+      this.resolveLoading = true;
+      this.$refs.assignmentStepper?.setWaiting?.(true);
+      this.$socket.emit("assignmentBulkResolveSelection", this.resolvePayload(), (res) => {
+        this.resolveLoading = false;
+        this.$refs.assignmentStepper?.setWaiting?.(false);
+        if (!res?.success) {
+          this.eventBus.emit("toast", {
+            title: this.$t("dashboard.study.failedToCreateAssignment"),
+            message: resolveApiMessage(res),
+            variant: "danger",
+          });
+          return;
+        }
+        this.assignmentModalValue = res.data?.selectedAssignments || [];
+        this.selectedReviewer = res.data?.selectedReviewer || [];
+        this.selectedReviewerRoles = [...new Set(
+          this.selectedReviewer.flatMap((user) => user.roles || [])
+        )];
+      });
     },
     onSuccess() {
       this.$refs.assignmentStepper.close();
@@ -422,27 +529,41 @@ export default {
     createSingleAssignment() {
       this.$refs.assignmentStepper.startProgress();
 
-      const socketData = {
-        template: this.template,
-        selectedAssignments: this.assignmentModalValue,
-        reviewer: this.selectedReviewer,
-        assignmentType: this.assignmentType,
-        enableEmailNotification: this.templateStepModalValue?.enableEmailNotification ?? false,
-      };
-
-      if (this.assignmentType === 'study_session') {
-        socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
-      } else {
-        socketData.documents = this.workflowStepsAssignments[0];
-      }
-
-      this.$socket.emit("assignmentCreateSingle", socketData, (res) => {
-        this.$refs.assignmentStepper.stopProgress();
-        if (res.success) {
-          this.onSuccess();
-        } else {
-          this.onError(res);
+      this.$socket.emit("assignmentBulkResolveSelection", this.resolvePayload(), (resolveRes) => {
+        if (!resolveRes?.success) {
+          this.onError(resolveRes);
+          return;
         }
+        const assignments = resolveRes.data?.selectedAssignments?.length
+          ? resolveRes.data.selectedAssignments
+          : this.assignmentModalValue;
+        const reviewers = resolveRes.data?.selectedReviewer?.length
+          ? resolveRes.data.selectedReviewer
+          : this.selectedReviewer;
+
+        const socketData = {
+          template: this.template,
+          selectedAssignments: assignments,
+          reviewer: reviewers,
+          assignmentType: this.assignmentType,
+          enableEmailNotification: this.templateStepModalValue?.enableEmailNotification ?? false,
+          newStudyOwner: this.workflowMappingStepModalValue?.newStudyOwner ?? "session_owner",
+        };
+
+        if (this.assignmentType === "study_session") {
+          socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
+        } else {
+          socketData.documents = this.workflowStepsAssignments[0];
+        }
+
+        this.$socket.emit("assignmentCreateSingle", socketData, (res) => {
+          this.$refs.assignmentStepper.stopProgress();
+          if (res.success) {
+            this.onSuccess();
+          } else {
+            this.onError(res);
+          }
+        });
       });
     },
     createBulkAssignments() {
@@ -459,11 +580,14 @@ export default {
         assignmentType: this.assignmentType,
         enableEmailNotification: this.templateStepModalValue?.enableEmailNotification ?? false,
         progressId: progressId,
+        newStudyOwner: this.workflowMappingStepModalValue?.newStudyOwner ?? "session_owner",
+        reviewerQuerySelection: this.snapshotReviewerSelection(),
       };
 
-      if (this.assignmentType === 'study_session') {
+      if (this.assignmentType === "study_session") {
         socketData.targetWorkflowId = this.workflowMappingStepModalValue?.targetWorkflowId;
         socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
+        socketData.assignmentSelection = this.snapshotAssignmentSelection();
       } else {
         socketData.documents = this.workflowStepsAssignments;
       }
@@ -471,27 +595,32 @@ export default {
       this.$socket.emit("assignmentCreateBulk", socketData, (res) => {
         this.$refs.assignmentStepper.stopProgress();
         if (res.success) {
-          if (this.reviewerSelectionMode.mode === 'role') {
+          if (this.reviewerSelectionMode.mode === "role") {
             const filename = "assignments";
-            const returnData = Object.keys(res.data).map(assignmentId => {
-              const assignmentUser = this.assignmentModalValue.find(u => u.id === Number(assignmentId));
-              if (!assignmentUser) {
-                console.error(`Assignment with ID ${assignmentId} not found.`);
-                return null;
-              }
-              const csv = {
-                assignedToName: `${assignmentUser.firstName} ${assignmentUser.lastName}`,
-                assignedToFirstName: assignmentUser.firstName,
-                assignedToLastName: assignmentUser.lastName,
-              };
-              res.data[assignmentId].forEach((reviewerId, index) => {
-                const reviewerUser = this.selectedReviewer.find(u => u.id === Number(reviewerId));
-                csv[`reviewer_${index + 1}`] = reviewerUser
-                  ? `${reviewerUser.firstName} ${reviewerUser.lastName}` : '';
-              });
-              return csv;
-            });
-            downloadObjectsAs(returnData, filename, "csv");
+            const csvRows = res.data?.csvRows;
+            if (Array.isArray(csvRows)) {
+              downloadObjectsAs(csvRows, filename, "csv");
+            } else {
+              const distribution = res.data?.distribution || res.data || {};
+              const returnData = Object.keys(distribution).map((assignmentId) => {
+                const assignmentUser = this.assignmentModalValue.find((u) => u.id === Number(assignmentId));
+                if (!assignmentUser) {
+                  return null;
+                }
+                const csv = {
+                  assignedToName: `${assignmentUser.firstName} ${assignmentUser.lastName}`,
+                  assignedToFirstName: assignmentUser.firstName,
+                  assignedToLastName: assignmentUser.lastName,
+                };
+                distribution[assignmentId].forEach((reviewerId, index) => {
+                  const reviewerUser = this.selectedReviewer.find((u) => u.id === Number(reviewerId));
+                  csv[`reviewer_${index + 1}`] = reviewerUser
+                    ? `${reviewerUser.firstName} ${reviewerUser.lastName}` : "";
+                });
+                return csv;
+              }).filter(Boolean);
+              downloadObjectsAs(returnData, filename, "csv");
+            }
           }
           this.onSuccess();
         } else {

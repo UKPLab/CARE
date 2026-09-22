@@ -280,6 +280,9 @@ function buildCondition({entry, operator, value}) {
             if (parts.length === 0) {
                 return null;
             }
+            if (operator === "%") {
+                return parts.length === 1 ? parts[0] : {[Op.or]: parts};
+            }
             // `=` is one calendar day. Two days cannot both be "equal".
             return parts.length === 1 ? parts[0] : literal("FALSE");
         }
@@ -297,6 +300,9 @@ function buildCondition({entry, operator, value}) {
         const boolValue = toBoolean(value);
         if (boolValue === null) {
             return null;
+        }
+        if (operator === "%") {
+            return tokenListCondition(entry, "%", [boolValue]);
         }
         return wrap({[operator === "!=" ? Op.ne : Op.eq]: boolValue});
     }
@@ -321,7 +327,7 @@ function buildCondition({entry, operator, value}) {
         if (!day) {
             return null;
         }
-        const ops = dateRangeOps(operator, day);
+        const ops = dateRangeOps(operator === "%" ? "=" : operator, day);
         return ops ? applyOps(entry, ops) : null;
     }
 
@@ -333,6 +339,9 @@ function buildCondition({entry, operator, value}) {
             if (canonical === undefined) {
                 return null;
             }
+        }
+        if (operator === "%") {
+            return tokenListCondition(entry, "%", [canonical]);
         }
         return wrap({[operator === "!=" ? Op.ne : Op.eq]: canonical});
     }

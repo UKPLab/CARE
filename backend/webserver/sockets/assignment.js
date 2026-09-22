@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
+const {Op} = require("sequelize");
 const {getEmailContent} = require("../../utils/helper/email");
 const TranslatableError = require("../../utils/TranslatableError");
 
@@ -178,6 +179,110 @@ class AssignmentSocket extends Socket {
     }
 
     /**
+     * Resolve query-scoped session / reviewer selections into the row arrays createAssignmentBulk
+     * already walks (id, userId, roles, names). Document/submission keep the client arrays.
+     * @param {Object} data
+     * @returns {Promise<{selectedAssignments: Array, selectedReviewer: Array}>}
+     */
+    async resolveBulkAssignmentSelections(data) {
+        let selectedAssignments = Array.isArray(data.selectedAssignments) ? data.selectedAssignments : [];
+        let selectedReviewer = Array.isArray(data.selectedReviewer) ? data.selectedReviewer : [];
+
+        if (data.assignmentType === "study_session" && data.assignmentSelection) {
+            const sel = data.assignmentSelection;
+            const sessionIds = await this.resolveQueryTableIds({
+                table: "study_session",
+                filter: sel.filter || [],
+                query: sel.query || {},
+                scope: sel.scope || null,
+                excludeIds: sel.excludeIds || [],
+                includeIds: sel.allMatching ? null : (sel.ids || []),
+            });
+            if (sessionIds.length === 0) {
+                throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
+            }
+            const sessions = await this.models["study_session"].findAll({
+                where: {id: {[Op.in]: sessionIds}, deleted: false},
+                raw: true,
+            });
+            const enriched = await this.enrichQueryTableItems(
+                "study_session", sessions, this.userId, this.rolesUpdatedAt
+            );
+            const newStudyOwner = data.newStudyOwner === "study_owner" ? "study_owner" : "session_owner";
+            selectedAssignments = enriched.map((session) => ({
+                id: session.id,
+                studyId: session.studyId,
+                userId: newStudyOwner === "study_owner"
+                    ? Number(session.studyUserId)
+                    : Number(session.userId),
+                sessionUserId: Number(session.userId),
+                firstName: session.firstName || "",
+                lastName: session.lastName || "",
+                completeUserName: session.completeUserName || "",
+            }));
+        }
+
+        if (data.reviewerQuerySelection) {
+            const sel = data.reviewerQuerySelection;
+            const userIds = await this.resolveQueryTableIds({
+                table: "user",
+                filter: sel.filter || [],
+                query: sel.query || {},
+                scope: sel.scope || null,
+                excludeIds: sel.excludeIds || [],
+                includeIds: sel.allMatching ? null : (sel.ids || []),
+            });
+            if (userIds.length === 0) {
+                throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "reviewer"});
+            }
+            selectedReviewer = await this.models["user"].getAll({
+                where: {id: {[Op.in]: userIds}, deleted: false},
+            });
+        }
+
+        return {selectedAssignments, selectedReviewer};
+    }
+
+    /**
+     * Load resolved assignment + reviewer rows for Distribution
+     * @socketEvent assignmentBulkResolveSelection
+     */
+    async resolveBulkSelectionForClient(data) {
+        return this.resolveBulkAssignmentSelections(data);
+    }
+
+    /**
+     * CSV rows for role-mode bulk: names come from the resolved rows
+     * @param {Object} finalAssignments assignmentId → reviewerId[]
+     * @param {Array} selectedAssignments
+     * @param {Array} selectedReviewer
+     * @returns {Array<Object>}
+     */
+    buildRoleBulkCsvRows(finalAssignments, selectedAssignments, selectedReviewer) {
+        const reviewersById = Object.fromEntries(
+            (selectedReviewer || []).map((user) => [String(user.id), user])
+        );
+        const assignmentsById = Object.fromEntries(
+            (selectedAssignments || []).map((row) => [String(row.id), row])
+        );
+        return Object.keys(finalAssignments).map((assignmentId) => {
+            const assignmentUser = assignmentsById[String(assignmentId)] || {};
+            const csv = {
+                assignedToName: `${assignmentUser.firstName || ""} ${assignmentUser.lastName || ""}`.trim(),
+                assignedToFirstName: assignmentUser.firstName || "",
+                assignedToLastName: assignmentUser.lastName || "",
+            };
+            (finalAssignments[assignmentId] || []).forEach((reviewerId, index) => {
+                const reviewerUser = reviewersById[String(reviewerId)];
+                csv[`reviewer_${index + 1}`] = reviewerUser
+                    ? `${reviewerUser.firstName || ""} ${reviewerUser.lastName || ""}`.trim()
+                    : "";
+            });
+            return csv;
+        });
+    }
+
+    /**
      * Creates multiple assignments based on the provided data.
      * 
      * Two assignment modes are supported:
@@ -212,6 +317,9 @@ class AssignmentSocket extends Socket {
      *  If the underlying `this.createAssignment` method fails.
      */
     async createAssignmentBulk(data, options) {
+        const resolved = await this.resolveBulkAssignmentSelections(data);
+        data.selectedAssignments = resolved.selectedAssignments;
+        data.selectedReviewer = resolved.selectedReviewer;
 
         // first shuffle the assignments, we use the Fisher-Yates shuffle algorithm from lodash
         // we also need to make sure that the documents array is shuffled in the same way
@@ -391,7 +499,12 @@ class AssignmentSocket extends Socket {
                 }
             }
 
-            return finalAssignments;
+            return {
+                distribution: finalAssignments,
+                csvRows: this.buildRoleBulkCsvRows(
+                    finalAssignments, data.selectedAssignments, data.selectedReviewer
+                ),
+            };
 
         } else if (data.mode === "reviewer") {
             const finalAssignments = {};
@@ -841,6 +954,7 @@ class AssignmentSocket extends Socket {
 
         this.createSocket("assignmentCreateSingle", this.createAssignmentSingle, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
+        this.createSocket("assignmentBulkResolveSelection", this.resolveBulkSelectionForClient, {}, false);
         this.createSocket("assignmentAdd", this.addReviewer, {}, true);
         this.createSocket("assignmentGetInfo", this.getAssignmentInfoFromCourse, {}, false);
     }

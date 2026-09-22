@@ -682,11 +682,11 @@ module.exports = (sequelize, DataTypes) => {
         static async getQueryTableFilterColumns(ctx = {}) {
             const spec = {
                 state: {type: "enum", values: STATES, viewField: "state"},
-                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<="]},
+                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
                 createdAt: {type: "date"},
-                sessions: {type: "numeric", viewField: "sessions", operators: ["=", "!=", ">", ">=", "<", "<="]},
-                limitSessions: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<="]},
-                limitSessionsPerUser: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<="]},
+                sessions: {type: "numeric", viewField: "sessions", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
+                limitSessions: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
+                limitSessionsPerUser: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
                 workflowName: {
                     type: "text",
                     sql: "(SELECT \"workflow\".\"name\" FROM \"workflow\"" +
