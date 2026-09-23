@@ -57,9 +57,10 @@ async function requireOwnedCredential(models, credentialId, userId) {
  * @param {Object} data Forwarded verbatim to LiteLLM except `__requestId` (optional override).
  * @param {{ bypassChecks?: boolean, testLabel?: string, aiMessageId?: number, input?: string }} [logOptions] `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
+ * @param {{onDelta?: function(string): void}} [options] Internal temporary text callback.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
-async function chatCompletion(service, client, data, logOptions = {}) {
+async function chatCompletion(service, client, data, logOptions = {}, options = {}) {
     const requestStartedAt = Date.now();
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
@@ -112,7 +113,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         response = await rpc.chatCompletion({
             ...completionParams,
             __requestId: requestId,
-        });
+        }, {onDelta: options.onDelta});
     } catch (error) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`

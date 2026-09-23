@@ -394,6 +394,7 @@ async function completeConversationTurn(service, client, context, turn, modelPar
         const messages = await service.server.db.models["ai_message"].getModelMessages(turn.conversation.id);
         const content = await turns.requestAssistantCompletion(
             service, client, context, modelParams, requestId, messages, turn.assistantMessage.id,
+            {onDelta: createConversationStream(service, client, context, turn, requestId)},
         );
         return {content};
     });
@@ -401,6 +402,28 @@ async function completeConversationTurn(service, client, context, turn, modelPar
     return {
         ...result,
         introducedContextSourceKeys: await service.server.db.models["ai_message"].getIntroducedContextSourceKeys(turn.conversation.id),
+    };
+}
+
+/**
+ * Forwards temporary chat text to the requesting socket.
+ * @param {Object} service - Assistant service.
+ * @param {Object} client - Authenticated client.
+ * @param {Object} context - Validated study context.
+ * @param {Object} turn - Persisted conversation and assistant message.
+ * @param {string} requestId - Current request identifier.
+ * @returns {function(string): void} Temporary text callback.
+ */
+function createConversationStream(service, client, context, turn, requestId) {
+    return (text) => {
+        service.send(client, "conversationDelta", {
+            requestId,
+            conversationId: turn.conversation.id,
+            assistantMessageId: turn.assistantMessage.id,
+            studySessionId: context.studySession.id,
+            studyStepId: context.studyStep.id,
+            text,
+        }).catch((error) => service.server.logger.error("Failed to send AI chat text: " + error.message));
     };
 }
 

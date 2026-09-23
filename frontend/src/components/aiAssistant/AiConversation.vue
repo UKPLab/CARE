@@ -52,7 +52,7 @@
         :ordered-study-steps="orderedStudySteps"
         :selected-model-id="selectedModelId"
         @complete="handleRequestComplete"
-        @failed="handleRequestFailed"
+        @failed="handleChatRequestFailed"
     />
   </div>
 </template>
@@ -63,6 +63,7 @@ import AiConversationHeader from "@/components/aiAssistant/AiConversationHeader.
 import AiConversationBody from "@/components/aiAssistant/AiConversationBody.vue";
 import AiConversationComposer from "@/components/aiAssistant/AiConversationComposer.vue";
 import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
+import aiStreamingMixin from "@/components/aiAssistant/aiStreamingMixin";
 import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
 
 const emptyConversationSnapshot = () => ({
@@ -89,7 +90,7 @@ export default {
     AiConversationBody,
     AiConversationComposer,
   },
-  mixins: [aiRequestMixin],
+  mixins: [aiRequestMixin, aiStreamingMixin],
   props: {
     studySessionId: {
       type: Number,
@@ -144,8 +145,8 @@ export default {
       return this.conversationSnapshot.models || [];
     },
     visibleMessages() {
-      if (!this.pendingContent) return this.messages;
-      return [
+      if (!this.pendingContent) return this.withStreamingMessage(this.messages);
+      return this.withStreamingMessage([
         ...this.messages,
         {
           id: "pending-user",
@@ -159,7 +160,7 @@ export default {
           content: "",
           status: MESSAGE_STATUSES.PENDING,
         },
-      ];
+      ]);
     },
     canSend() {
       return (
@@ -176,6 +177,8 @@ export default {
   },
   sockets: {
     connect() { this.loadConversation({silent: true}); },
+    disconnect() { this.clearStream(); },
+    serviceRefresh(data) { this.handleConversationDelta(data); },
   },
   created() {
     // Reading selections are broadcast globally; keep only this step's quotes.
@@ -188,6 +191,15 @@ export default {
     this.eventBus.off("aiChatQuote", this.onQuote);
   },
   methods: {
+    /**
+     * Discards the preview before recovering the persisted failure state.
+     * @param {Error} error - Request failure.
+     * @returns {Promise<void>}
+     */
+    async handleChatRequestFailed(error) {
+      this.clearStream();
+      await this.handleRequestFailed(error);
+    },
     /** Cancels preparation and loads the newly selected study context. */
     changeContext() {
       this.$refs.aiAssistantRequest?.abortRequest().catch(() => {});

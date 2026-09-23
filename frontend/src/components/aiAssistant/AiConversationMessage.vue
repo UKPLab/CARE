@@ -6,7 +6,7 @@
     </div>
 
     <!-- Assistant is responding: a light animated indicator, no bubble. -->
-    <div v-else-if="isPending" class="assistant-thinking">
+    <div v-else-if="isPending && !displayContent" class="assistant-thinking">
       <span>Thinking</span>
       <span class="thinking-dots"><span /><span /><span /></span>
     </div>
@@ -30,7 +30,7 @@
       />
     </div>
 
-    <!-- Completed assistant reply: plain rendered markdown, no bubble. -->
+    <!-- Streamed and completed assistant text share the Markdown renderer. -->
     <div v-else class="assistant-message" @copy="onCopy">
       <AiMessageMarkdown :text="displayContent" />
     </div>

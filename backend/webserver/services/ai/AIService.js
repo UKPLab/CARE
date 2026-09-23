@@ -67,7 +67,7 @@ module.exports = class AIService extends Service {
      */
     async call(action, client, data = {}, options = {}) {
         const actions = {
-            chatCompletion: () => chat.chatCompletion(this, client, data, options.log),
+            chatCompletion: () => chat.chatCompletion(this, client, data, options.log, {onDelta: options.onDelta}),
             abortChatCompletion: () => chat.abortChatCompletion(this, data),
             cancelRequest: () => request.cancelRequest(this, data?.logId, options.db),
             loadHook: () => hook.loadEnabledHook(this, data?.hookId),

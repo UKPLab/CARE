@@ -38,6 +38,7 @@ async function requireNoPendingMessage(service, userId, studySessionId, options 
  * @param {string} requestId - Request identifier used for logging and abort.
  * @param {Object[]} messages - Complete model messages.
  * @param {number|null} [aiMessageId] - Message linked to the AI log.
+ * @param {{onDelta?: function(string): void}} [options] - Internal streaming callback.
  * @returns {Promise<string>} Model response content.
  */
 async function requestAssistantCompletion(
@@ -48,6 +49,7 @@ async function requestAssistantCompletion(
     requestId,
     messages,
     aiMessageId = null,
+    options = {},
 ) {
     const {additionalParameters, ...credentialParams} = modelParams;
     const result = await core.getAIService(service).call("chatCompletion", client, {
@@ -61,6 +63,7 @@ async function requestAssistantCompletion(
         __requestId: requestId,
         messages,
     }, {
+        onDelta: options.onDelta,
         log: {
             aiMessageId,
             input: serviceHelpers.serializeMessages(messages),
