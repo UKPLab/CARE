@@ -579,8 +579,14 @@ module.exports = class Socket {
                     // write path this would grant every user full row access to the table.
                     fullRowAccess = true;
                 } else if (limitedAccessMap.length > 0) {
-                    // All rights carry limitations → add each as an additional OR condition
-                    limitedAccessMap.forEach(a => {
+                    // All rights carry limitations → add each as an additional OR condition.
+                    // Write path: only table rules with by "id" grant write. They collect ids of rows
+                    // the user owns in the other table (ownership, e.g. study_session → study).
+                    // Rules with another "by" collect what the user's own rows point to (membership,
+                    // e.g. study ← study_session): participating in a study must not allow writing it.
+                    limitedAccessMap
+                        .filter(a => publicGrantsAccess || a.access.by === "id")
+                        .forEach(a => {
                         const idField = a.access.target || 'id';
                         rowVisibilityConditions.push({[idField]: {[Op.in]: [...new Set(a.limitation)]}});
                     });
