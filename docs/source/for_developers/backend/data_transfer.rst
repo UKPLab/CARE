@@ -72,8 +72,12 @@ The ``appDataUpdate`` socket is the generic way to **create or update rows** in 
 Before updating an existing row, ``updateData`` calls ``assertWriteAccess``, which
 applies ``getWriteFilter`` to that row. ``getWriteFilter`` uses the same rules as
 ``getReadFilter`` with public access removed: ``publicTable``, ``public`` rows, shared
-rows returned by a model's ``getUserFilter`` and column-only ``accessMap`` rights grant
-read access only, never write access. Models implementing ``getUserFilter`` return
+rows returned by a model's ``getUserFilter``, column-only ``accessMap`` rights and
+``accessMap`` table rules whose ``by`` is not ``id`` grant read access only, never write
+access. A table rule with ``by: "id"`` collects rows the user owns in the other table
+(e.g. ``study_session`` → ``study``) and grants write; any other ``by`` collects what the
+user's own rows point to (e.g. ``study`` ← ``study_session``), which is membership, not
+ownership. Models implementing ``getUserFilter`` return
 ``{owned, shared}`` so the socket applies ``shared`` on the read path only.
 
 .. code-block:: javascript
