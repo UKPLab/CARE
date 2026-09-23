@@ -9,6 +9,7 @@
           :key="index"
           class="skill-item mb-3"
       >
+        <h6>{{ getServiceLabel(serviceAt(index).name) }}</h6>
         <div class="skill-selection mb-2">
           <SkillSelector
               v-model="skill.skillName"
@@ -189,6 +190,27 @@ export default {
     },
   },
   methods: {
+    /**
+     * Return the display label for a service name.
+     * @param {string} serviceName Service name
+     * @returns {string} Service display label
+     */
+    getServiceLabel(serviceName) {
+      switch (serviceName) {
+        case "nlpAssessment":
+          return "NLP Assessment";
+        case "textualFeedback":
+          return "Textual Feedback";
+        case "aiChat":
+          return "AI Chat";
+        case "dialogueContext":
+          return "Dialogue Context";
+        case "dialogueDecision":
+          return "Dialogue Decision";
+        default:
+          return serviceName;
+      }
+    },
     /**
      * Return the service declaration at an index.
      * @param {number} index Service index
