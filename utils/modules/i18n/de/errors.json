@@ -209,13 +209,15 @@
     "studyAlreadyClosed": "Studie ist bereits geschlossen",
     "noPermissionManageStudies": "Keine Berechtigung, Studien zu verwalten",
     "noPermissionCloseStudy": "Keine Berechtigung, diese Studie zu schließen",
+    "noPermissionModifyStudy": "Keine Berechtigung, diese Studie zu ändern",
     "notAllowedToSeeStudy": "Sie dürfen diese Studie nicht sehen",
     "errorTitle": "Fehler",
     "studySession": {
       "notFound": "Studiensitzung nicht gefunden",
       "idRequired": "studySessionId ist erforderlich",
       "alreadyFinished": "Studiensitzung wurde bereits beendet",
-      "cannotFinishClosedStudy": "Sitzung kann nicht beendet werden: Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
+      "cannotFinishClosedStudy": "Sitzung kann nicht beendet werden: Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird.",
+      "noPermission": "Keine Berechtigung, diese Studiensitzung zu ändern"
     },
     "studyStep": {
       "notFound": "Kein erster Schritt für diese Studie gefunden",

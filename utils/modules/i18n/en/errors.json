@@ -209,13 +209,15 @@
         "studyAlreadyClosed": "Study is already closed",
         "noPermissionManageStudies": "No permission to manage studies",
         "noPermissionCloseStudy": "No permission to close this study",
+        "noPermissionModifyStudy": "No permission to modify this study",
         "notAllowedToSeeStudy": "You are not allowed to see this study",
         "errorTitle": "Error",
         "studySession": {
             "notFound": "Study session not found",
             "idRequired": "studySessionId is required",
             "alreadyFinished": "Study session has already been finished",
-            "cannotFinishClosedStudy": "Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed."
+            "cannotFinishClosedStudy": "Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed.",
+            "noPermission": "No permission to modify this study session"
         },
         "studyStep": {
             "notFound": "No first step found for this study",

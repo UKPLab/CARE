@@ -32,6 +32,20 @@ class StudySocket extends Socket {
     }
 
     /**
+     * Throws unless the current user owns the study or is an admin.
+     * Used by the bulk handlers, which skip (roll back) any study that fails this check.
+     * @param {number} studyId The ID of the study
+     * @param {Object} transaction A Sequelize DB transaction object
+     * @returns {Promise<void>}
+     */
+    async assertStudyOwnership(studyId, transaction) {
+        const study = await this.models["study"].getById(studyId, {transaction});
+        if (!study || !(await this.checkUserAccess(study.userId))) {
+            throw new TranslatableError("errors.studies.noPermissionModifyStudy");
+        }
+    }
+
+    /**
      * Creates a new study template based on an existing study or directly from data.
      * This operation is restricted to the owner of the original study or an administrator.
      * 
@@ -211,6 +225,7 @@ class StudySocket extends Socket {
         const notifySessions = data.notifySessions === true;
 
         const closedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.assertStudyOwnership(id, transaction);
             await this.models["study"].updateById(
                 id,
                 { closed: true, userIdClosed: this.userId },
@@ -245,6 +260,7 @@ class StudySocket extends Socket {
         await this.hasManageStudiesPermission();
 
         const openedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.assertStudyOwnership(id, transaction);
             await this.models["study"].updateById(
                 id,
                 { closed: null, userIdClosed: null },
@@ -270,6 +286,7 @@ class StudySocket extends Socket {
         await this.hasManageStudiesPermission();
 
         const deletedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+            await this.assertStudyOwnership(id, transaction);
             await this.models["study"].updateById(
                 id,
                 { deleted: true },

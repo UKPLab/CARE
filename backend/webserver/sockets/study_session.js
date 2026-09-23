@@ -49,6 +49,9 @@ class StudySessionSocket extends Socket {
             if (!existing) {
                 throw new TranslatableError("errors.studies.studySession.notFound");
             }
+            if (!(await this.checkUserAccess(existing.userId))) {
+                throw new TranslatableError("errors.studies.studySession.noPermission");
+            }
             shouldSendSessionStartEmail = existing.start == null;
             session = await this.models["study_session"].updateById(data.studySessionId,
                 {start: Date.now()},
@@ -192,6 +195,10 @@ class StudySessionSocket extends Socket {
         }
 
         const study = await this.models["study"].getById(session.studyId, {transaction: options.transaction});
+        // The session owner, the study owner, or an admin may finish a session
+        if (this.userId !== session.userId && !(study && await this.checkUserAccess(study.userId))) {
+            throw new TranslatableError("errors.studies.studySession.noPermission");
+        }
         if (study && study.closed) {
             throw new TranslatableError("errors.studies.studySession.cannotFinishClosedStudy");
         }
