@@ -60,6 +60,8 @@
             :allow-skip="allowSkip"
             @send="$emit('send', $event)"
             @abort="$emit('abort')"
+            @typing-started="$emit('typing-started', $event)"
+            @paste="$emit('paste', $event)"
         />
 
         <div
@@ -101,6 +103,8 @@
               :allow-skip="allowSkip"
               @send="$emit('send', $event)"
               @abort="$emit('abort')"
+              @typing-started="$emit('typing-started', $event)"
+              @paste="$emit('paste', $event)"
           />
         </div>
       </div>
@@ -178,7 +182,7 @@ export default {
       default: false,
     },
   },
-  emits: ["send", "abort", "retry"],
+  emits: ["send", "abort", "retry", "typing-started", "paste"],
   computed: {
     anchoredQuestionParts() {
       return splitDialogueQuestionText(this.turn.question);
@@ -211,6 +215,7 @@ export default {
         text: message.content || "",
         answerType: dialogueMetadata.answerType || "text",
         options: dialogueMetadata.options || [],
+        followUpIndex: dialogueMetadata.followUpIndex || 0,
       };
     },
     /** Returns the visible value for a stored answer. */

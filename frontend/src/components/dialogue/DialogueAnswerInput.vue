@@ -52,6 +52,8 @@
           rows="3"
           placeholder="Write your answer..."
           :aria-label="question.text || 'Dialogue answer'"
+          @input="handleTyping"
+          @paste="handlePaste"
       />
     </fieldset>
 
@@ -153,12 +155,13 @@ export default {
       default: false,
     },
   },
-  emits: ["send", "abort"],
+  emits: ["send", "abort", "typing-started", "paste"],
   data() {
     return {
       answerDraft: "",
       selectedOption: null,
       selectedOptions: [],
+      typingStarted: false,
     };
   },
   computed: {
@@ -196,7 +199,41 @@ export default {
       return !this.readOnly && !this.isBusy && !!this.answerText;
     },
   },
+  watch: {
+    "question.id"() {
+      this.typingStarted = false;
+    },
+  },
   methods: {
+    /**
+     * Records the first typed character for this question.
+     *
+     * @param {InputEvent} event - Textarea input event.
+     * @returns {void}
+     */
+    handleTyping(event) {
+      if (this.typingStarted || event.inputType === "insertFromPaste") return;
+      this.typingStarted = true;
+      this.$emit("typing-started", {
+        questionId: this.question.id,
+        followUpIndex: this.question.followUpIndex || 0,
+      });
+    },
+    /**
+     * Records text pasted into this question.
+     *
+     * @param {ClipboardEvent} event - Textarea paste event.
+     * @returns {void}
+     */
+    handlePaste(event) {
+      const pastedText = (event.clipboardData || window.clipboardData).getData("text");
+      if (!pastedText) return;
+      this.$emit("paste", {
+        questionId: this.question.id,
+        followUpIndex: this.question.followUpIndex || 0,
+        pastedLength: pastedText.length,
+      });
+    },
     /**
      * Builds a stable input id for one option.
      *
