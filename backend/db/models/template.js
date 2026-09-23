@@ -78,6 +78,45 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Templates this user owns, each with its saved language bodies.
+         * Same set as the dashboard table, including copies. Another user's
+         * public template is not included. template_content is not in the client store.
+         *
+         * @param {number} userId
+         * @param {boolean} isAdmin
+         * @param {number|null} [templateId]
+         * @param {Object} [options]
+         * @returns {Promise<Object>}
+         */
+        static async findOwnedWithContent(userId, isAdmin, templateId = null, options = {}) {
+            const {Op} = require("sequelize");
+            const where = {
+                deleted: false,
+                userId,
+            };
+            if (!isAdmin) {
+                where.type = { [Op.in]: otherTemplateTypes };
+            }
+            if (templateId) {
+                where.id = templateId;
+            }
+            return this.findAll({
+                where,
+                include: [{
+                    model: this.sequelize.models.template_content,
+                    as: "template_contents",
+                    where: { deleted: false },
+                    required: false,
+                }],
+                order: [
+                    ["id", "ASC"],
+                    [{ model: this.sequelize.models.template_content, as: "template_contents" }, "id", "ASC"],
+                ],
+                transaction: options.transaction,
+            });
+        }
+
+        /**
          * Bump updatedAt without changing any column, so copies see "Update available"
          * after their source content changes.
          *
