@@ -424,6 +424,20 @@ module.exports = (sequelize, DataTypes) => {
             modelName: 'document',
             tableName: 'document',
             hooks: {
+                beforeUpdate: (document, options) => {
+                    if (options.allowSubmissionDocumentDelete) {
+                        return;
+                    }
+                    const previousSubmissionId = document._previousDataValues.submissionId;
+                    const becomingDeleted = document.deleted && !document._previousDataValues.deleted;
+                    const submissionId = previousSubmissionId != null ? previousSubmissionId : document.submissionId;
+                    const unlinkingSubmission = previousSubmissionId != null && document.submissionId !== previousSubmissionId;
+                    // A plain Documents delete has no flag. Clearing submissionId first would
+                    // make the next delete look like a normal document.
+                    if ((becomingDeleted && submissionId != null) || unlinkingSubmission) {
+                        throw new TranslatableError("errors.documents.submissionFileNotDeletable");
+                    }
+                },
                 afterDestroy: async (document, options) => {
                     await Document.deleteDocumentFile(document);
                 },

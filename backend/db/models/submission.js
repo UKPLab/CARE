@@ -280,7 +280,10 @@ module.exports = (sequelize, DataTypes) => {
                         const documents = await sequelize.models.document.getAllByKey("submissionId", submission.id);
 
                         for (const document of documents) {
-                            await sequelize.models["document"].deleteById(document.id);
+                            await sequelize.models["document"].deleteById(document.id, {
+                                allowSubmissionDocumentDelete: true,
+                                transaction: options.transaction,
+                            });
                         }
                     }
                 },
