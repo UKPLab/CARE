@@ -27,6 +27,8 @@
             @send="sendAnswer"
             @abort="abortActiveRequest"
             @retry="retryMessage"
+            @typing-started="trackDialogueEvent('dialogueTypingStarted', $event)"
+            @paste="trackDialogueEvent('dialogueInputPaste', $event)"
         />
 
         <AiAssistantRequest
@@ -35,7 +37,6 @@
             ref="aiAssistantRequest"
             request-mode="dialogue"
             :request="activeRequest"
-            :conversation-snapshot="conversationSnapshot"
             :study-session-id="studySessionId"
             :study-step-id="studyStepId"
             :document-id="documentId"
@@ -63,7 +64,7 @@ import {
 import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
 
 const emptyConversationSnapshot = () => ({
-  conversations: [], activeConversationId: null, messages: [], introducedContextStepIds: [],
+  conversations: [], activeConversationId: null, messages: [],
 });
 
 /**
@@ -92,6 +93,7 @@ export default {
       complete: false,
       pendingAnswer: "",
       pendingSkipped: false,
+      shownQuestionKeys: new Set(),
       plan: {},
       requestFailedText: "Dialogue request failed",
       abortFailedText: "Failed to stop Dialogue request",
@@ -149,6 +151,12 @@ export default {
   watch: {
     studySessionId() { this.changeContext(); },
     studyStepId() { this.changeContext(); },
+    activeQuestionMessageId: {
+      handler(messageId) {
+        if (messageId) this.$nextTick(() => this.trackQuestionShown(messageId));
+      },
+      immediate: true,
+    },
     complete: {
       handler(value) {
         this.$emit("update:ready", value);
@@ -171,7 +179,45 @@ export default {
       this.conversationSnapshot = emptyConversationSnapshot();
       this.currentQuestion = null;
       this.complete = false;
+      this.shownQuestionKeys.clear();
       this.loadDialogue();
+    },
+
+    /**
+     * Logs one Dialogue process event through CARE statistics.
+     *
+     * @param {string} action - Statistic action name.
+     * @param {Object} data - Event metadata.
+     * @returns {void}
+     */
+    trackDialogueEvent(action, data = {}) {
+      this.$socket.emit("stats", {
+        action,
+        data: {
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          ...(this.activeConversationId != null ? {conversationId: this.activeConversationId} : {}),
+          ...data,
+        },
+      });
+    },
+    /**
+     * Logs a question the first time its message becomes active.
+     *
+     * @param {string|number} messageId - Active question message id.
+     * @returns {void}
+     */
+    trackQuestionShown(messageId) {
+      const message = this.visibleMessages.find((entry) => String(entry.id) === String(messageId));
+      if (!message) return;
+      const dialogue = message.metadata?.dialogue || {};
+      const key = [dialogue.kind, dialogue.questionId, dialogue.followUpIndex || 0].join(":");
+      if (this.shownQuestionKeys.has(key)) return;
+      this.shownQuestionKeys.add(key);
+      this.trackDialogueEvent("dialogueQuestionShown", {
+        questionId: dialogue.questionId,
+        followUpIndex: dialogue.followUpIndex || 0,
+      });
     },
 
     /**
@@ -198,7 +244,6 @@ export default {
           conversations: result.conversations || [],
           activeConversationId: result.activeConversationId,
           messages: result.messages || [],
-          introducedContextStepIds: result.introducedContextStepIds || [],
         };
         const settled = this.reconcileRequest();
         if (!this.activeRequest || settled) {
@@ -231,6 +276,10 @@ export default {
       if (this.readOnly || this.isBusy || !this.currentQuestion || this.retryableMessageId) return;
       if (answer.skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) return;
       const requestId = this.$aiAssistant.createRequestId();
+      this.trackDialogueEvent("dialogueAnswerSubmitted", {
+        requestId,
+        questionId: this.currentQuestion.id,
+      });
       this.pendingAnswer = answer.skipped ? "Skipped" : answer.answerText;
       this.pendingSkipped = answer.skipped === true;
       this.startRequest({

@@ -221,9 +221,6 @@ async function getDialogueConversation(service, client, data) {
         conversations,
         activeConversationId: existing?.id || null,
         messages,
-        introducedContextStepIds: existing
-            ? await service.server.db.models["ai_message"].getIntroducedContextStepIds(existing.id)
-            : [],
         plan: {
             title: context.plan.title,
             adaptive: context.plan.adaptive,
@@ -269,7 +266,7 @@ async function resolveDialogueSystemPrompt(service, client, context, values) {
 }
 
 /**
- * Adds the initial system context message, when configured and missing.
+ * Adds the initial system context message when configured.
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} context - Dialogue context.
@@ -288,10 +285,6 @@ async function addSystemContextIfNeeded(
     options,
 ) {
     if (!context.contextHookId) return;
-    const existing = await service.server.db.models["ai_message"].getSystemMessage(
-        currentConversation.id, context.studyStep.id, options,
-    );
-    if (existing) return;
     if (systemPrompt === null) {
         throw new Error("Dialogue context is missing for this study step");
     }
@@ -336,14 +329,9 @@ async function ensureConversation(
         type: AI_CONVERSATION_TYPES.DIALOGUE,
         title: context.plan.title,
     }, options);
-    await addSystemContextIfNeeded(
-        service,
-        context,
-        row,
-        systemPrompt,
-        anchorSources,
-        options,
-    );
+    if (!currentConversation) {
+        await addSystemContextIfNeeded(service, context, row, systemPrompt, anchorSources, options);
+    }
     return row;
 }
 
@@ -516,10 +504,7 @@ async function sendDialogueAnswer(service, client, data) {
         : await findDialogueConversation(service, context.userId, context.studySession.id);
     const messages = currentConversation ? await service.server.db.models["ai_message"].getVisibleMessages(currentConversation.id, context.studyStep.id) : [];
     const question = requireCurrentQuestion(context.plan, messages, data?.questionId);
-    const systemMessage = currentConversation && context.contextHookId
-        ? await service.server.db.models["ai_message"].getSystemMessage(currentConversation.id, context.studyStep.id)
-        : null;
-    const resolvedContext = systemMessage
+    const resolvedContext = currentConversation
         ? {systemPrompt: null, anchorSources: {pr1: [], pr2: []}}
         : await resolveDialogueSystemPrompt(service, client, context, data?.values || {});
     const turn = await createDialogueTurn(

@@ -63,7 +63,7 @@ function buildUserContent(content, metadata) {
  * @param {Object|null} conversation - Existing conversation, or null for a new one.
  * @param {string} content - User message content.
  * @param {Object} modelParams - Resolved hook model parameters.
- * @param {Object|null} systemContext - Rendered prompt and new source keys for this step.
+ * @param {Object|null} systemContext - Rendered context for a new conversation.
  * @param {Object|null} userMetadata - Optional user-message metadata.
  * @returns {Promise<Object>} Conversation, user message, and assistant placeholder.
  */
@@ -88,10 +88,7 @@ async function createConversationTurn(service, context, conversation, content, m
             }, {transaction});
         }
 
-        const existingSystemMessage = context.includeContext
-            ? await models["ai_message"].getSystemMessage(currentConversation.id, context.studyStep.id, {transaction})
-            : null;
-        if (context.includeContext && !existingSystemMessage) {
+        if (!conversation && context.includeContext) {
             if (systemContext === null) {
                 throw new Error("AI Chat context is missing for this study step");
             }
@@ -101,7 +98,6 @@ async function createConversationTurn(service, context, conversation, content, m
                 aiModelId: modelParams.aiModelId,
                 role: AI_MESSAGE_ROLES.SYSTEM,
                 content: systemContext.promptText,
-                metadata: {contextSourceKeys: systemContext.contextSourceKeys},
                 status: AI_MESSAGE_STATUSES.COMPLETED,
             }, {transaction});
         }
@@ -249,12 +245,6 @@ async function getConversation(service, client, data) {
         activeConversationId: activeConversation?.id || null,
         includeContext: activeConversation?.includeContext !== false,
         messages: activeConversation ? await service.server.db.models["ai_message"].getVisibleMessages(activeConversation.id) : [],
-        introducedContextStepIds: activeConversation
-            ? await service.server.db.models["ai_message"].getIntroducedContextStepIds(activeConversation.id)
-            : [],
-        introducedContextSourceKeys: activeConversation
-            ? await service.server.db.models["ai_message"].getIntroducedContextSourceKeys(activeConversation.id)
-            : [],
         models,
         defaultModelId: models[0]?.id || null,
     };
@@ -297,26 +287,15 @@ async function sendConversationMessage(service, client, data) {
         {hookId: context.hookId, aiModelId: data?.aiModelId},
     );
 
-    const systemMessage = context.includeContext && conversation
-        ? await service.server.db.models["ai_message"].getSystemMessage(conversation.id, context.studyStep.id)
-        : null;
     let systemContext = null;
-    if (context.includeContext && !systemMessage) {
-        const introducedKeys = conversation
-            ? await service.server.db.models["ai_message"].getIntroducedContextSourceKeys(conversation.id)
-            : [];
-        const {values, contextSources} = core.buildContextPromptValues(
-            context.serviceConfig.inputs, data?.values, context.studyStep.documentId, introducedKeys,
-        );
+    if (context.includeContext && !conversation) {
+        const values = core.buildPromptValues(context.serviceConfig.inputs, data?.values);
         const prompt = await core.getAIService(service).call(
             "resolveHookPrompt",
             client,
             {hookId: context.hookId, values},
         );
-        systemContext = {
-            promptText: prompt.promptText,
-            contextSourceKeys: core.getRenderedContextSourceKeys(contextSources, prompt),
-        };
+        systemContext = {promptText: prompt.promptText};
     }
 
     const turn = await createConversationTurn(
@@ -398,11 +377,7 @@ async function completeConversationTurn(service, client, context, turn, modelPar
         );
         return {content};
     });
-    const result = await turns.buildTurnResult(service, turn, assistantMessage);
-    return {
-        ...result,
-        introducedContextSourceKeys: await service.server.db.models["ai_message"].getIntroducedContextSourceKeys(turn.conversation.id),
-    };
+    return turns.buildTurnResult(service, turn, assistantMessage);
 }
 
 /**

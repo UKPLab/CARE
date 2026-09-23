@@ -109,10 +109,6 @@ export default {
         conversations: [...conversations.values()].sort((a, b) =>
           new Date(b.updatedAt) - new Date(a.updatedAt) || Number(b.id) - Number(a.id)),
         messages: result.messages || this.mergeMessages([result.userMessage, result.assistantMessage], existing),
-        introducedContextStepIds: result.introducedContextStepIds
-            || this.conversationSnapshot.introducedContextStepIds,
-        introducedContextSourceKeys: result.introducedContextSourceKeys
-            || this.conversationSnapshot.introducedContextSourceKeys || [],
       };
     },
     /**

@@ -79,48 +79,6 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Lists steps whose system context has been stored.
-         * @param {number} conversationId - Conversation id.
-         * @param {Object} [options] - Database options.
-         * @returns {Promise<number[]>} Introduced step ids.
-         */
-        static async getIntroducedContextStepIds(conversationId, options = {}) {
-            const rows = await this.findAll({
-                where: {
-                    conversationId, role: AI_MESSAGE_ROLES.SYSTEM,
-                    status: AI_MESSAGE_STATUSES.COMPLETED, deleted: false,
-                },
-                attributes: ["studyStepId"],
-                order: [["id", "ASC"]],
-                raw: true,
-                transaction: options.transaction,
-            });
-            return [...new Set(rows.map((row) => Number(row.studyStepId)).filter(Boolean))];
-        }
-
-        /**
-         * Lists sources recorded in completed system context; older untagged rows add none.
-         * @param {number} conversationId - Conversation id.
-         * @param {Object} [options] - Database options.
-         * @returns {Promise<string[]>} Introduced source keys.
-         */
-        static async getIntroducedContextSourceKeys(conversationId, options = {}) {
-            const rows = await this.findAll({
-                where: {
-                    conversationId, role: AI_MESSAGE_ROLES.SYSTEM,
-                    status: AI_MESSAGE_STATUSES.COMPLETED, deleted: false,
-                },
-                attributes: ["metadata"],
-                order: [["id", "ASC"]],
-                raw: true,
-                transaction: options.transaction,
-            });
-            return [...new Set(rows.flatMap((row) => Array.isArray(row.metadata?.contextSourceKeys)
-                ? row.metadata.contextSourceKeys.filter((key) => typeof key === "string" && key.length > 0)
-                : []))];
-        }
-
-        /**
          * Loads the system context for one study step.
          * @param {number} conversationId - Conversation id.
          * @param {number} studyStepId - Study step id.

@@ -21,10 +21,6 @@ export default {
       type: Object,
       required: true,
     },
-    conversationSnapshot: {
-      type: Object,
-      required: true,
-    },
     studySessionId: {
       type: Number,
       required: true,
@@ -72,9 +68,8 @@ export default {
   },
   computed: {
     needsStepContext() {
-      if (this.requestMode === "chat" && this.request.includeContext === false) return false;
-      const introduced = this.conversationSnapshot.introducedContextStepIds || [];
-      return !introduced.includes(Number(this.studyStepId));
+      return !this.request.conversationId
+          && (this.requestMode !== "chat" || this.request.includeContext !== false);
     },
   },
   mounted() {
@@ -178,7 +173,7 @@ export default {
       return result;
     },
     /**
-     * Resolves context only once per study step.
+     * Resolves mapped context when starting a conversation.
      *
      * @returns {Promise<Object|null>} Hook values or null.
      */
@@ -202,9 +197,6 @@ export default {
      */
     async resolveHookInput(spec, documentTexts) {
       if (!spec || typeof spec !== "object") return null;
-      const introduced = this.requestMode === "chat"
-          ? this.conversationSnapshot.introducedContextSourceKeys || []
-          : [];
       const sourceStep = /^(document|submission)_step\d+$/.test(spec.value)
           && Number.isInteger(spec.stepIndex)
           ? this.orderedStudySteps[spec.stepIndex]
@@ -212,7 +204,6 @@ export default {
       switch (spec.type) {
         case "document": {
           const documentId = spec.documentId || sourceStep?.documentId || this.documentId;
-          if (introduced.includes(`document:${Number(documentId)}`)) return null;
           return this.extractDocumentText(documentId, documentTexts);
         }
         case "configuration":
@@ -223,18 +214,11 @@ export default {
             ...spec,
             pdfDocumentId: pdfDocumentId || null,
           };
-          const selectedFiles = (resolvedSpec.selectedFiles || []).filter((file) => {
-            const key = file === "pdf"
-                ? `document:${Number(resolvedSpec.pdfDocumentId)}`
-                : `submission:${Number(resolvedSpec.submissionId)}:${encodeURIComponent(file)}:${encodeURIComponent(resolvedSpec.filePatterns?.[file] || "")}`;
-            return !introduced.includes(key);
-          });
-          if (resolvedSpec.selectedFiles?.length && !selectedFiles.length) return null;
           let pdfText = null;
-          if (selectedFiles.includes("pdf") && resolvedSpec.pdfDocumentId) {
+          if (resolvedSpec.selectedFiles?.includes("pdf") && resolvedSpec.pdfDocumentId) {
             pdfText = await this.extractDocumentText(resolvedSpec.pdfDocumentId, documentTexts);
           }
-          return {type: "serviceReplacement", input: {...resolvedSpec, selectedFiles, pdfText}};
+          return {type: "serviceReplacement", input: {...resolvedSpec, pdfText}};
         }
         case "assessment":
         case "annotator":

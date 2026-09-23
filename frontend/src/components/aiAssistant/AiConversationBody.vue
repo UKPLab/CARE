@@ -6,7 +6,7 @@
       loading-text="Loading chat..."
       :empty-title="includeContext ? 'Start a study chat' : 'Start a fresh conversation'"
       :empty-subtitle="includeContext
-          ? 'Ask about the current document or previous step context.'
+          ? 'A new chat uses the context configured for this step.'
           : 'Discuss any topic. No study context is added automatically.'"
   >
     <AiConversationMessage

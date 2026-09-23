@@ -43,7 +43,6 @@
         :key="activeRequest.requestId"
         ref="aiAssistantRequest"
         :request="activeRequest"
-        :conversation-snapshot="conversationSnapshot"
         :study-session-id="studySessionId"
         :study-step-id="studyStepId"
         :document-id="documentId"
@@ -71,8 +70,6 @@ const emptyConversationSnapshot = () => ({
   activeConversationId: null,
   includeContext: true,
   messages: [],
-  introducedContextStepIds: [],
-  introducedContextSourceKeys: [],
   models: [],
   defaultModelId: null,
 });
@@ -137,9 +134,6 @@ export default {
   computed: {
     conversations() {
       return this.conversationSnapshot.conversations || [];
-    },
-    introducedContextStepIds() {
-      return this.conversationSnapshot.introducedContextStepIds || [];
     },
     models() {
       return this.conversationSnapshot.models || [];
@@ -267,8 +261,6 @@ export default {
           activeConversationId: result.activeConversationId,
           includeContext: result.includeContext !== false,
           conversations: result.conversations || [],
-          introducedContextStepIds: result.introducedContextStepIds || [],
-          introducedContextSourceKeys: result.introducedContextSourceKeys || [],
           messages: result.messages || [],
           models: result.models || [],
           defaultModelId: result.defaultModelId || null,
@@ -302,8 +294,6 @@ export default {
         activeConversationId: null,
         includeContext,
         messages: [],
-        introducedContextStepIds: [],
-        introducedContextSourceKeys: [],
       });
       this.pendingContent = "";
       this.quote = null;

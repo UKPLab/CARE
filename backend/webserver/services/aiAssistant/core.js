@@ -112,81 +112,9 @@ function buildPromptValues(inputMappings, suppliedValues) {
     return values;
 }
 
-/**
- * Identifies a stored file mapping independently of its prompt placeholder.
- * @param {Object} mapping - Stored input mapping.
- * @param {number} documentId - Current step document id.
- * @param {string} [file] - Selected submission part.
- * @returns {string|null} Source key, or null without a usable source id.
- */
-function getContextFileKey(mapping, documentId, file) {
-    const id = Number(mapping.type === "document" ? mapping.documentId || documentId
-        : file === "pdf" ? mapping.pdfDocumentId : mapping.submissionId);
-    if (!Number.isInteger(id) || id <= 0) return null;
-    return mapping.type === "document" || file === "pdf" ? `document:${id}`
-        : `submission:${id}:${encodeURIComponent(file)}:${encodeURIComponent(mapping.filePatterns?.[file] || "")}`;
-}
-
-/**
- * Reuses sources already present in chat history while keeping new step inputs.
- * @param {Object} inputMappings - Stored input mappings.
- * @param {Object} suppliedValues - Frontend-resolved content.
- * @param {number} documentId - Current step document id.
- * @param {string[]} [introducedKeys] - Source keys read from owned system messages.
- * @returns {Object} Trusted values and source candidates to verify after rendering.
- */
-function buildContextPromptValues(inputMappings, suppliedValues, documentId, introducedKeys = []) {
-    const known = new Set(introducedKeys);
-    const contextSources = [];
-    const values = {};
-    for (const [placeholder, mapping] of Object.entries(inputMappings || {})) {
-        let input = mapping;
-        let sources = [];
-        if (mapping?.type === "document") {
-            sources = [{key: getContextFileKey(mapping, documentId)}];
-        } else if (mapping?.type === "submission" && mapping.selectedFiles?.length) {
-            sources = mapping.selectedFiles.map((file) => ({key: getContextFileKey(mapping, documentId, file), file}));
-            input = {...mapping, selectedFiles: sources.filter((source) => !known.has(source.key)).map((source) => source.file)};
-        }
-        const sourceKeys = sources.map((source) => source.key);
-        if (sourceKeys.length && sourceKeys.every((key) => key && known.has(key))) {
-            values[placeholder] = `Use the context already provided in this conversation (${sourceKeys.join(", ")}).`;
-            continue;
-        }
-        const value = buildPromptValues({[placeholder]: input}, suppliedValues)[placeholder];
-        if (input?.type === "submission" && !input.selectedFiles?.includes("pdf")) {
-            value.input.pdfText = null;
-        }
-        values[placeholder] = value;
-        for (const source of sources) {
-            if (source.key && !known.has(source.key)) {
-                contextSources.push({key: source.key, placeholder});
-            }
-        }
-    }
-    return {values, contextSources};
-}
-
-/**
- * Records finalized file inputs used in the rendered system prompt.
- * @param {Object[]} sources - Candidates derived from stored mappings.
- * @param {Object} prompt - Rendered prompt and resolved input content.
- * @returns {string[]} Successfully introduced source keys.
- */
-function getRenderedContextSourceKeys(sources, prompt) {
-    const keys = sources.filter(({placeholder}) => {
-        const value = prompt.resolvedValues?.[placeholder];
-        const text = value == null ? "" : typeof value === "string" ? value : JSON.stringify(value);
-        return text && prompt.promptText.includes(text);
-    }).map((source) => source.key);
-    return [...new Set(keys)];
-}
-
 module.exports = {
     loadStudyStepContext,
     loadOwnedConversation,
     getAIService,
     buildPromptValues,
-    buildContextPromptValues,
-    getRenderedContextSourceKeys,
 };
