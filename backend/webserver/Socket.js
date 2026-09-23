@@ -587,9 +587,9 @@ module.exports = class Socket {
                     limitedAccessMap
                         .filter(a => publicGrantsAccess || a.access.by === "id")
                         .forEach(a => {
-                        const idField = a.access.target || 'id';
-                        rowVisibilityConditions.push({[idField]: {[Op.in]: [...new Set(a.limitation)]}});
-                    });
+                            const idField = a.access.target || 'id';
+                            rowVisibilityConditions.push({[idField]: {[Op.in]: [...new Set(a.limitation)]}});
+                        });
                 }
             }
         }
