@@ -34,6 +34,17 @@ Location: ``backend/utils/helper/templateResolver.js``
 Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).
 Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only those keys for ``context.templateType``.
 
+Dashboard import and export use ``templateExport`` and ``templateImport`` in
+``backend/webserver/sockets/template.js``. The client store only has the
+template row, so export loads each saved ``template_content`` row (language and
+Quill delta) from the server and import writes those rows with the new template.
+Export uses the same format choices as the other dashboard exports. Import
+reads JSON and YAML. Export all
+returns the caller's own rows, the same set as the dashboard table. Drafts in
+``template_edit`` are not in the file. ``sourceId`` is not exported.
+The imported row belongs to the user who imports it, and it is not public.
+Publishing stays on the existing publish action.
+
 Implementing the Template Editor
 ---------------------------------
 
