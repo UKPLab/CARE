@@ -274,7 +274,9 @@
         "resolveContextStepDocumentMismatch": "The study step does not match the selected document.",
         "resolveContextStudySessionNotFound": "The study session was not found.",
         "resolveContextSessionStepMismatch": "The study session does not match the study step.",
-        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once."
+        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once.",
+        "duplicateImportLanguage": "This file repeats the language {language}.",
+        "importDefaultLanguageMissing": "The default language {language} has no content in this file."
     },
     "settings": {
         "errorLoading": "Error Loading Settings",
