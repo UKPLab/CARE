@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const { assertTriggerAdminWrite } = require("../../utils/helper/trigger/adminWrite.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
@@ -27,6 +28,14 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'trigger_action',
         tableName: 'trigger_action',
+        hooks: {
+            beforeCreate: async (_row, options) => {
+                await assertTriggerAdminWrite(sequelize, options);
+            },
+            beforeUpdate: async (_row, options) => {
+                await assertTriggerAdminWrite(sequelize, options);
+            },
+        },
     });
 
     return TriggerAction;

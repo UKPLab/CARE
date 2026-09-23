@@ -98,24 +98,12 @@ async function buildSubmissionUploadContext(server, context, options = {}) {
  * Checks whether a trigger rule applies to an event context.
  *
  * @param {Object} trigger Trigger row with catalog entries.
- * @param {string} eventName Trigger event name.
  * @param {Object} context Resolved event context.
  * @returns {boolean}
  */
-function matchesTrigger(trigger, eventName, context) {
-    const event = trigger.event || {};
-    const action = trigger.action || {};
+function matchesTrigger(trigger, context) {
     const eventConfig = trigger.configuration?.event || {};
 
-    if (
-        event.name !== eventName
-        || event.enabled === false
-        || event.deleted
-        || action.enabled === false
-        || action.deleted
-    ) {
-        return false;
-    }
     if (
         trigger.projectId
         && context.projectId
@@ -156,7 +144,7 @@ async function findMatchingTriggers(server, eventName, context, options = {}) {
         transaction: options.transaction,
     });
 
-    return triggers.filter((trigger) => matchesTrigger(trigger, eventName, context));
+    return triggers.filter((trigger) => matchesTrigger(trigger, context));
 }
 
 /**

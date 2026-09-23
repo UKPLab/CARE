@@ -236,6 +236,18 @@
       "label": "Mehrfache Abgaben erlauben?",
       "help": "Geben Sie an, ob Teilnehmer ihre Studie mehrmals abgeben können."
     },
+    "aiCostLimitTotal": {
+      "label": "KI-Kostenlimit - gesamt ($):",
+      "help": "Gesamte erlaubte KI-Ausgaben für diese Studie über alle Teilnehmer hinweg. Leer lassen, um kein Limit festzulegen."
+    },
+    "aiCostLimitPerSession": {
+      "label": "Pro Sitzung ($):",
+      "help": "Erlaubte KI-Ausgaben in einer einzelnen Sitzung. Leer lassen, um kein Sitzungslimit festzulegen."
+    },
+    "aiCostLimitPerUser": {
+      "label": "Pro Teilnehmer ($):",
+      "help": "Erlaubte KI-Ausgaben pro Teilnehmer in dieser Studie. Leer lassen, um kein Teilnehmerlimit festzulegen."
+    },
     "step": {
       "documentId": {
         "label": "Dokument auswählen",

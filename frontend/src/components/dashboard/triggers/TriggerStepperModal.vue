@@ -2,13 +2,13 @@
   <StepperModal
     ref="stepper"
     size="lg"
-    :steps="STEPPER_STEPS"
-    submit-text="Save"
+    :steps="stepperSteps"
+    :submit-text="$t('triggers.common.save')"
     :validation="stepValid"
     @submit="save"
   >
     <template #title>
-      <h5 class="modal-title">{{ editingId ? "Edit trigger" : "Create trigger" }}</h5>
+      <h5 class="modal-title">{{ editingId ? $t("triggers.editor.editTitle") : $t("triggers.editor.createTitle") }}</h5>
     </template>
     <template #step-1>
       <BasicForm
@@ -59,66 +59,67 @@ import TriggerEventStep from "./TriggerEventStep.vue";
 import TriggerActionStep from "./TriggerActionStep.vue";
 import TriggerReviewStep from "./TriggerReviewStep.vue";
 import TriggerViewModal from "./TriggerViewModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 const STEPPER_STEPS = [
-  { title: "Trigger info" },
-  { title: "Event" },
-  { title: "Action" },
-  { title: "Review & Confirm" },
+  { title: "triggers.steps.info" },
+  { title: "triggers.common.event" },
+  { title: "triggers.common.action" },
+  { title: "triggers.steps.review" },
 ];
 
 const SETTINGS_FORM_SCHEMA = [
   {
     key: "name",
-    label: "Name",
+    label: "triggers.common.name",
     type: "text",
     required: true,
-    help: "Display name for this trigger rule in the Triggers dashboard.",
+    help: "triggers.fields.nameHelp",
   },
   {
     key: "description",
-    label: "Description",
+    label: "triggers.common.description",
     type: "textarea",
     required: true,
-    help: "Short note for admins describing when and why this trigger runs.",
+    help: "triggers.fields.descriptionHelp",
   },
   {
     key: "projectId",
-    label: "Scope to project",
+    label: "triggers.fields.scopeProject",
     type: "select",
     required: true,
-    help: "Limits this trigger to the selected project. Event filters and assignment options use this project.",
+    help: "triggers.fields.scopeProjectHelp",
     optionsSource: { table: "project", labelKey: "name", valueKey: "id" },
   },
   {
     key: "maxRetries",
-    label: "Max retries",
+    label: "triggers.fields.maxRetries",
     type: "number",
     min: 0,
     required: true,
-    help: "How many times a failed run may be retried from the trigger logs before it stays failed.",
+    help: "triggers.fields.maxRetriesHelp",
   },
   {
     key: "parallelLimit",
-    label: "Parallel limit",
+    label: "triggers.fields.parallelLimit",
     type: "number",
     min: 1,
     required: true,
-    help: "Maximum number of executions of this trigger that may run at the same time.",
+    help: "triggers.fields.parallelLimitHelp",
   },
   {
     key: "timeout",
-    label: "Timeout (seconds)",
+    label: "triggers.fields.timeoutSeconds",
     type: "number",
     min: 1,
     required: true,
-    help: "Maximum seconds a single execution may run before it is treated as timed out.",
+    help: "triggers.fields.timeoutHelp",
   },
 ];
 
 const EVENT_FIELD = {
   key: "triggerEventId",
-  label: "When (event)",
+  label: "triggers.fields.whenEvent",
   type: "select",
   required: true,
   optionsSource: {
@@ -132,7 +133,7 @@ const EVENT_FIELD = {
 
 const ACTION_FIELD = {
   key: "triggerActionId",
-  label: "Then (action)",
+  label: "triggers.fields.thenAction",
   type: "select",
   required: true,
   optionsSource: {
@@ -170,7 +171,6 @@ export default {
   emits: ["saved"],
   data() {
     return {
-      STEPPER_STEPS,
       triggerForm: {},
       eventData: {},
       actionData: {},
@@ -179,6 +179,9 @@ export default {
     };
   },
   computed: {
+    stepperSteps() {
+      return STEPPER_STEPS.map((step) => ({ title: this.$t(step.title) }));
+    },
     selectedEvent() {
       return this.findCatalog("trigger_event", this.triggerForm.triggerEventId);
     },
@@ -189,17 +192,17 @@ export default {
       return this.selectedAction?.configuration?.handler === "nlp_preprocess";
     },
     settingsFields() {
-      return SETTINGS_FORM_SCHEMA.map((field) => this.resolveField(field));
+      return SETTINGS_FORM_SCHEMA.map((field) => this.resolveField(this.localizeField(field)));
     },
     eventFields() {
-      return [this.resolveField(EVENT_FIELD)];
+      return [this.resolveField(this.localizeField(EVENT_FIELD))];
     },
     eventConfigFields() {
       return (this.selectedEvent?.configuration?.formSchema || [])
         .map((field) => this.resolveField(field));
     },
     actionSelectFields() {
-      return [this.resolveField(ACTION_FIELD, { event: this.selectedEvent })];
+      return [this.resolveField(this.localizeField(ACTION_FIELD), { event: this.selectedEvent })];
     },
     actionConfigFields() {
       return (this.selectedAction?.configuration?.formSchema || [])
@@ -245,6 +248,13 @@ export default {
     },
   },
   methods: {
+    localizeField(field) {
+      return {
+        ...field,
+        label: this.$t(field.label),
+        ...(field.help ? { help: this.$t(field.help) } : {}),
+      };
+    },
     sameValue(a, b) {
       return a == null || b == null ? a === b : String(a) === String(b);
     },
@@ -370,11 +380,11 @@ export default {
         }
         this.eventBus.emit("toast", {
           title: res.success
-            ? (editing ? "Trigger updated" : "Trigger created")
-            : (editing ? "Failed to update trigger" : "Failed to create trigger"),
+            ? (editing ? this.$t("triggers.messages.updatedTitle") : this.$t("triggers.messages.createdTitle"))
+            : (editing ? this.$t("triggers.errors.updateTitle") : this.$t("triggers.errors.createTitle")),
           message: res.success
-            ? `The trigger has been ${editing ? "updated" : "created"} successfully.`
-            : (res.message || "Unknown error"),
+            ? (editing ? this.$t("triggers.messages.updated") : this.$t("triggers.messages.created"))
+            : resolveApiMessage(res, editing ? "triggers.errors.update" : "triggers.errors.create"),
           variant: res.success ? "success" : "danger",
         });
       });

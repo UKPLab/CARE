@@ -1,12 +1,12 @@
 Templates
 =========
 
-The **Templates** system provides email and document content templates that can be used for system emails, session and assignment notifications, study-closed emails, and pre-filled document content.  
-Templates are edited in the same Quill-based Editor as documents; placeholder resolution is done by the backend when the template is used.
+The **Templates** system provides email, document, and prompt content templates that can be used for system emails, session and assignment notifications, study-closed emails, submission-upload emails, pre-filled document content, and AI hooks.
+Templates are edited in the same Quill-based Editor as documents. The backend fills placeholders when the template is used.
 
 Key features include:
 
-  - **Template types** with fixed placeholder sets and usage locations (see table below).
+  - **Template types** with per-type placeholder sets and usage locations (see table below).
   - **Multi-language content** stored in ``template_content``; default language on the ``template`` row.
   - **TemplateEditor** and **TemplateConfigurator** (Placeholders sidebar) shown when the Editor is opened with a template (``templateId`` provided).
   - **Toolbar and editor behavior** controlled by the same settings as the document editor (see :ref:`Editor Settings <editor-settings-ref>`).
@@ -18,7 +18,7 @@ Templates are listed and created from **Dashboard → Templates**. See the :doc:
 
 Location: ``frontend/src/components/dashboard/Templates.vue``
 
-When you open a template for editing, the Editor loads with ``templateId`` provided; it renders the :doc:`editor` (TemplateEditor) for the main content and, for email types (1, 2, 3, 6, 7) and prompt templates (type 8), a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts) into the text.
+When you open a template for editing, the Editor loads with ``templateId`` provided. It renders the :doc:`editor` (TemplateEditor) for the main content. For email types (1, 2, 3, 6, 7) and prompt templates (type 8) it also shows a **Placeholders** sidebar so you can insert allowed placeholders (e.g. ``~username~``, ``~link~`` for emails, or ``~nlpAssessmentSuggestion~``, ``~assessmentResult~`` for prompts).
 
 Location: ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``
 
@@ -32,8 +32,8 @@ Backend storage:
 Location: ``backend/utils/helper/templateResolver.js`` (apply replacements; HTML/Delta output).
 Type 8 value collection: ``backend/utils/helper/templatePromptValues.js``.
 
-Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).  
-Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only keys allowed for ``context.templateType``.
+Placeholder resolution is implemented there: ``resolveTemplate`` (returns HTML for emails) and ``resolveTemplateToDelta`` (returns Delta for document creation).
+Allowed placeholders per template type come from the ``placeholder`` database table; ``buildReplacementMap`` / ``buildPromptPlaceholderValues`` substitute only those keys for ``context.templateType``.
 
 Placeholder token helpers
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,40 +119,59 @@ Template Types, Placeholders, and Usage
 
 At resolution time, only the placeholder keys listed in the following table are substituted.
 
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Template type            | Value  | Placeholders                         | Where used                                                 |
-+==========================+========+======================================+============================================================+
-| Email - General          | 1      | ``username``, ``firstName``,        | Auth/system emails: settings                               |
-|                          |        | ``lastName``, ``link``\*            | ``email.template.passwordReset``,                          |
-|                          |        |                                      | ``email.template.verification``,                           |
-|                          |        |                                      | ``email.template.registration`` in ``auth.js``.            |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Email - Study Session    | 2      | ``username``, ``link``\*            | Session start/finish emails: settings                      |
-|                          |        |                                      | ``email.template.sessionStart``,                           |
-|                          |        |                                      | ``email.template.sessionFinish`` in ``study_session.js``.  |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Email - Assignment       | 3      | ``username``, ``assignmentType``,   | Assignment emails: setting ``email.template.assignment``   |
-|                          |        | ``assignmentName``, ``link``\*      | in ``assignment.js``.                                      |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Document - General       | 4      | none                                 | Pre-fill document content when creating a document with    |
-|                          |        |                                      | ``templateId`` in ``document.js``.                         |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Document - Study         | 5      | none                                 | Document templates for study steps (create from template)  |
-|                          |        |                                      | in ``study_step.js``.                                      |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Email - Study Close      | 6      | ``username``, ``studyName``\*        | Study-closed emails: setting                               |
-|                          |        |                                      | ``email.template.studyClosed`` (``sendStudyClosedEmails``) |
-|                          |        |                                      | in ``study.js``.                                           |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
-| Prompt                   | 8      | ``pdfText``, ``editorText``,         | AI hooks: ``resolveTemplateWithValues`` in                  |
-|                          |        | ``assessmentResult``,                | ``backend/webserver/services/ai/hook.js``.                 |
-|                          |        | ``inlineComments``,                  | ``templateResolve`` in                                      |
-|                          |        | ``nlpAssessmentSuggestion``,       | ``backend/webserver/sockets/template.js`` (see below).     |
-|                          |        | ``previousAssessmentResult``,      |                                                            |
-|                          |        | ``assessmentConfiguration``,         |                                                            |
-|                          |        | ``submissionFiles``,               |                                                            |
-|                          |        | ``studyContext``                     |                                                            |
-+--------------------------+--------+--------------------------------------+------------------------------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 8 30 42
+
+   * - Template type
+     - Value
+     - Placeholders
+     - Where used
+   * - Email - General
+     - 1
+     - ``username``, ``firstName``, ``lastName``, ``link``\*
+     - Auth/system emails: settings ``email.template.passwordReset``,
+       ``email.template.verification``, ``email.template.registration``,
+       ``email.template.twoFactorOtp``, ``email.template.passwordResetSuccess``.
+   * - Email - Study Session
+     - 2
+     - ``username``, ``link``\*
+     - Session start/finish emails: settings ``email.template.sessionStart``,
+       ``email.template.sessionFinish`` in ``study_session.js``.
+   * - Email - Assignment
+     - 3
+     - ``username``, ``assignmentType``, ``assignmentName``, ``link``\*
+     - Assignment emails: setting ``email.template.assignment`` in ``assignment.js``.
+   * - Document - General
+     - 4
+     - none
+     - Pre-fill document content when creating a document with ``templateId`` in ``document.js``.
+   * - Document - Study
+     - 5
+     - none
+     - Study workflow editor steps: type 5 templates in
+       ``frontend/src/basic/form/Select.vue`` (document dropdown when ``stepType`` is 2).
+   * - Email - Study Close
+     - 6
+     - ``username``, ``studyName``\*
+     - Study-closed emails: setting ``email.template.studyClosed``
+       (``sendStudyClosedEmails``) in ``study.js``.
+   * - Email - Submission upload
+     - 7
+     - ``username``, ``assignmentName``\*, ``eventType``, ``assignmentId``,
+       ``submissionId``, ``timestamp``
+     - Submission upload emails: settings ``email.template.submissionUpload``,
+       ``email.template.submissionUploadConfirmation`` in ``document.js``.
+   * - Prompt
+     - 8
+     - ``pdfText``, ``editorText``, ``assessmentResult``,
+       ``inlineComments``, ``nlpAssessmentSuggestion``,
+       ``previousAssessmentResult``, ``assessmentConfiguration``,
+       ``submissionFiles``, ``studyContext``
+     - AI hooks: ``resolveTemplateWithValues`` in
+       ``backend/webserver/services/ai/hook.js``.
+       ``templateResolve`` in
+       ``backend/webserver/sockets/template.js`` (see below).
 
 Prompt templates (type 8)
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -220,51 +239,47 @@ Adding a New Template Type or Placeholder
    enforced via ``getMissingRequiredPlaceholders`` and ``assertStableEmailTemplateContent``
    in ``backend/utils/helper/templateResolver.js``.
 
-Email placeholders (types 1, 2, 3, 6) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
+Email placeholders (types 1, 2, 3, 6, 7) are resolved in ``buildReplacementMap`` from values on the resolver ``context``.
 Prompt placeholders (type 8) are resolved in ``buildPromptPlaceholderValues`` in
 ``backend/utils/helper/templatePromptValues.js`` (often from ``document_data`` or
 ``study_step``). For type 8, new keys must also be listed in the ``promptKeys`` array in ``buildReplacementMap`` so
 that function is invoked.
 
-Here is a concrete example for adding a new placeholder:
+Adding a placeholder
+~~~~~~~~~~~~~~~~~~~~
 
-1. **Backend (DB + resolver):**
+For an existing type (example: ``studyEndDate`` on type 6):
 
-   - Add a row to the ``placeholder`` table via a migration (``type``, ``placeholderKey``, label, description,
-     ``required``, and optionally ``placeholderExample`` for editor preview). For per-token options (e.g. word/page
-     range on retrieved text), set ``placeholderOptions`` on that row (see Prompt placeholder options above).
+- Add a ``placeholder`` row in a migration (``type``, ``placeholderKey``, label, description,
+  ``required``, and optionally ``placeholderExample`` for editor preview). For per-token options
+  (e.g. word/page range on retrieved text), set ``placeholderOptions`` on that row (see Prompt placeholder options above).
+- **Email:** fill ``~studyEndDate~`` in ``buildReplacementMap`` in
+  ``backend/utils/helper/templateResolver.js``. The call site (e.g.
+  ``sendStudyClosedEmails`` in ``study.js``) must pass the value in the resolver context.
+- **Prompt (e.g. ``myNewField`` for type 8):** add ``"myNewField"`` to ``promptKeys`` in ``buildReplacementMap``,
+  then in ``buildPromptPlaceholderValues`` in ``backend/utils/helper/templatePromptValues.js``, when ``allow("myNewField")``::
 
-   - **Email (e.g. ``studyEndDate`` for type 6):** in ``buildReplacementMap``, when ``allow("studyEndDate")``::
+      promptValues["~myNewField~"] = context.myNewField || "";
 
-         replacements["~studyEndDate~"] = context.studyEndDate || "";
+  For database-backed values, follow existing placeholders such as ``assessmentResult`` or
+  ``nlpAssessmentSuggestion``. Ensure ``templateResolve`` passes the needed ``context`` fields (often
+  ``documentId``, ``studySessionId``, ``studyStepId``).
+- Optional sidebar help: ``longDescriptions`` in
+  ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue``.
 
-     Ensure the call site (e.g. ``sendStudyClosedEmails`` in ``study.js``) passes ``studyEndDate`` on ``context``.
+The Placeholders sidebar loads keys from the ``placeholder`` table.
 
-   - **Prompt (e.g. ``myNewField`` for type 8):** add ``"myNewField"`` to ``promptKeys`` in ``buildReplacementMap``,
-     then in ``buildPromptPlaceholderValues``, when ``allow("myNewField")``::
+Adding a template type
+~~~~~~~~~~~~~~~~~~~~~~
 
-         promptValues["~myNewField~"] = context.myNewField || "";
-
-     For database-backed values, follow existing placeholders such as ``assessmentResult`` or
-     ``nlpAssessmentSuggestion``. Ensure ``templateResolve`` passes the needed ``context`` fields (often
-     ``documentId``, ``studySessionId``, ``studyStepId``).
-
-2. **Frontend (editor + sidebar):**
-
-   - The sidebar loads allowed placeholders from the database via ``templatePlaceholderGetAll``; no separate
-     frontend list is required.
-
-   - Optionally extend ``longDescriptions`` in
-     ``frontend/src/components/editor/sidebar/TemplateConfigurator.vue`` for richer tooltip help (types 1, 2, 3, 6,
-     and 8 already define entries; otherwise the sidebar uses ``placeholderDescription`` from the database).
-
-3. **Access / type visibility:**
-
-   - If the new placeholder is tied to a new template type, also update:
-
-     - The template type dropdown in ``frontend/src/components/dashboard/templates/TemplateModal.vue``.
-     - ``getUserFilter`` in ``backend/db/models/template.js`` so that only the correct
-       users (e.g. admins) see or can use that type.
+- Add the option to ``fields`` on ``backend/db/models/template.js``.
+- Put the type in ``emailTemplateTypes`` or ``otherTemplateTypes`` in
+  ``backend/db/models/template.js`` and ``frontend/src/assets/templateTypes.js``.
+  Prompt templates (type 8) belong in ``otherTemplateTypes`` so non-admins can create them.
+- Add an empty ``placeholderConfigs`` entry in ``TemplateConfigurator.vue``
+  so the sidebar can load keys for that type.
+- Add the label in the ``typeName`` maps in ``Templates.vue``,
+  ``PublicTemplatesModal.vue``, and ``TemplateConfigurator.vue``.
 
 Settings
 --------

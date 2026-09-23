@@ -1,0 +1,1907 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:35:56.185Z",
+  "traceCount": 108,
+  "recording": {
+    "name": "220-edit-annotation-tag",
+    "status": "finished",
+    "startTime": "2026-08-10T23:24:54.333Z",
+    "userId": 3,
+    "participantSocketIds": [
+      "o2D2-TTZMejvegnsAAAR"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:25:33.268Z"
+  },
+  "traces": [
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 12,
+          "name": "Recording 8/11/2026, 1:24:54 AM",
+          "status": "recording",
+          "userId": 3,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:24:54.334Z",
+          "startTime": "2026-08-10T23:24:54.333Z",
+          "updatedAt": "2026-08-10T23:24:54.334Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "o2D2-TTZMejvegnsAAAR"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:24:54.354Z",
+      "endTime": "2026-08-10T23:24:54.354Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:55.783Z",
+      "endTime": "2026-08-10T23:24:55.783Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "action": "accessDoc",
+          "params": {
+            "documentId": 1
+          }
+        },
+        "action": "actionClick"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:56.967Z",
+      "endTime": "2026-08-10T23:24:56.967Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/document/8852a746-360e-4c31-add2-4d1c75bfb96d",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.000Z",
+      "endTime": "2026-08-10T23:24:57.000Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "f699ab8b-d8f3-4658-975f-57c906b33520",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.012Z",
+      "endTime": "2026-08-10T23:24:57.012Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "5edd566b-3214-4669-bc11-7cb37eb15ecc",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.012Z",
+      "endTime": "2026-08-10T23:24:57.012Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "73d96476-eb3b-4fa0-83bc-d2fb30126947",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.013Z",
+      "endTime": "2026-08-10T23:24:57.013Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "bf94a2ee-72b1-4ff0-8e56-0715d2ad0394",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.021Z",
+      "endTime": "2026-08-10T23:24:57.021Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "51079b16-f99d-484d-ac02-014f621ce06f",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.022Z",
+      "endTime": "2026-08-10T23:24:57.022Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "f2ad7fe3-e57d-481e-8bda-db8d428b2176",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.022Z",
+      "endTime": "2026-08-10T23:24:57.022Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "b2f6989c-fc06-4d2e-9e54-87c6786c0a44",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.022Z",
+      "endTime": "2026-08-10T23:24:57.022Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "bc922096-365a-4e82-ba18-786f016e474a",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.022Z",
+      "endTime": "2026-08-10T23:24:57.022Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "7768bab0-d7f6-4329-bb0c-8a062ca48696",
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.022Z",
+      "endTime": "2026-08-10T23:24:57.022Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "documentGetByHash",
+      "payload": {
+        "documentHash": "8852a746-360e-4c31-add2-4d1c75bfb96d"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.022Z",
+      "endTime": "2026-08-10T23:24:57.022Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "documentRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "hash": "8852a746-360e-4c31-add2-4d1c75bfb96d",
+          "name": "Showcase Document",
+          "type": 0,
+          "public": false,
+          "userId": 3,
+          "deleted": false,
+          "createdAt": "2026-08-10T22:35:47.569Z",
+          "deletedAt": null,
+          "projectId": 1,
+          "updatedAt": "2026-08-10T22:35:47.569Z",
+          "creator_name": "guest",
+          "submissionId": null,
+          "hideInFrontend": false,
+          "readyForReview": false,
+          "studyUsageCount": 0,
+          "originalFilename": null,
+          "parentDocumentId": null,
+          "uploadedByUserId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:24:57.028Z",
+      "endTime": "2026-08-10T23:24:57.028Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "documentGet",
+      "payload": {
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.036Z",
+      "endTime": "2026-08-10T23:24:57.036Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_vote"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.050Z",
+      "endTime": "2026-08-10T23:24:57.050Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null,
+          "isSidebarVisible": true
+        },
+        "action": "sidebar-visibility"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.050Z",
+      "endTime": "2026-08-10T23:24:57.050Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "annotation"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study_session"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_environment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "documentGetData",
+      "payload": {
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "annotation"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "documentSubscribe",
+      "payload": {
+        "documentId": 1
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRefresh",
+      "payload": {
+        "data": {
+          "name": "sentiment_classification",
+          "input": {
+            "data": {
+              "text": {
+                "type": "string",
+                "required": true,
+                "description": "The text to be classified"
+              }
+            },
+            "example": {
+              "text": "This restaurant is awesome!"
+            }
+          },
+          "output": {
+            "data": {
+              "label": {
+                "type": "string",
+                "description": "The label of the classification"
+              },
+              "score": {
+                "type": "float",
+                "description": "The score of the classification"
+              }
+            },
+            "example": {
+              "label": "pos",
+              "score": 0.9
+            }
+          },
+          "description": "This classifies a given paragraph according to it's sentiment returning a polarity estimate."
+        },
+        "type": "skillConfig",
+        "service": "NLPService"
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:24:57.052Z",
+      "endTime": "2026-08-10T23:24:57.052Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceCommand",
+      "payload": {
+        "data": {
+          "name": "sentiment_classification"
+        },
+        "command": "skillGetConfig",
+        "service": "NLPService"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "configuration"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.051Z",
+      "endTime": "2026-08-10T23:24:57.051Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "text": "ding with NLP-based assistance, such as textclassification, generation or question answer-ing. T",
+          "draft": false,
+          "tagId": 2,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:24:09.738Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 858,
+                    "type": "TextPositionSelector",
+                    "start": 762
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "ding with NLP-based assistance, such as textclassification, generation or question answer-ing. T",
+                    "prefix": "des a framework for enhancingrea",
+                    "suffix": "he extensible behavioral logging"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:24:42.119Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:24:57.118Z",
+      "endTime": "2026-08-10T23:24:57.118Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "tags": "[]",
+          "text": null,
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:24:09.756Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:24:42.123Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 1,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:24:57.118Z",
+      "endTime": "2026-08-10T23:24:57.118Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "comment_voteRefresh",
+      "payload": [],
+      "direction": false,
+      "startTime": "2026-08-10T23:24:57.119Z",
+      "endTime": "2026-08-10T23:24:57.119Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "tagRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "name": "Strength",
+          "public": true,
+          "userId": null,
+          "deleted": false,
+          "tagSetId": 1,
+          "colorCode": "success",
+          "createdAt": "2026-08-10T22:35:47.497Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T22:35:47.497Z",
+          "description": "Strength"
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:24:57.123Z",
+      "endTime": "2026-08-10T23:24:57.123Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.190Z",
+      "endTime": "2026-08-10T23:24:57.190Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.192Z",
+      "endTime": "2026-08-10T23:24:57.192Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.192Z",
+      "endTime": "2026-08-10T23:24:57.192Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.192Z",
+      "endTime": "2026-08-10T23:24:57.192Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.196Z",
+      "endTime": "2026-08-10T23:24:57.196Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.196Z",
+      "endTime": "2026-08-10T23:24:57.196Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.196Z",
+      "endTime": "2026-08-10T23:24:57.196Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.195Z",
+      "endTime": "2026-08-10T23:24:57.195Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.194Z",
+      "endTime": "2026-08-10T23:24:57.194Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "documentId": 1,
+          "studyStepId": null,
+          "windowWidth": 1440,
+          "sidebarVisible": true,
+          "studySessionId": null
+        },
+        "action": "sidebarResize"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.537Z",
+      "endTime": "2026-08-10T23:24:57.537Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "scrollTop": 375,
+          "documentId": 1,
+          "scrollHeight": 22764
+        },
+        "action": "annotatorScrollActivity"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:57.989Z",
+      "endTime": "2026-08-10T23:24:57.989Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 569,
+          "clientY": 402,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:58.473Z",
+      "endTime": "2026-08-10T23:24:58.473Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "scrollTop": 452,
+          "documentId": 1,
+          "scrollHeight": 22764
+        },
+        "action": "annotatorScrollActivity"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:24:59.055Z",
+      "endTime": "2026-08-10T23:24:59.055Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:00.424Z",
+      "endTime": "2026-08-10T23:25:00.424Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:03.685Z",
+      "endTime": "2026-08-10T23:25:03.685Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "text": "Humans use annotations to read and",
+          "documentId": 1,
+          "studyStepId": null,
+          "eventClientX": 798,
+          "eventClientY": 372,
+          "studySessionId": null
+        },
+        "action": "onTextSelect"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:11.467Z",
+      "endTime": "2026-08-10T23:25:11.467Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 798,
+          "clientY": 372,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:11.673Z",
+      "endTime": "2026-08-10T23:25:11.673Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Weakness",
+          "documentId": 1
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:13.114Z",
+      "endTime": "2026-08-10T23:25:13.114Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 3,
+        "anonymous": false,
+        "selectors": {
+          "target": [
+            {
+              "selector": [
+                {
+                  "end": 2517,
+                  "type": "TextPositionSelector",
+                  "start": 2483
+                },
+                {
+                  "type": "TextQuoteSelector",
+                  "exact": "Humans use annotations to read and",
+                  "prefix": "ans in critical text assessment.",
+                  "suffix": " collabo-rate over text, from ha"
+                },
+                {
+                  "type": "PagePositionSelector",
+                  "number": 1
+                }
+              ]
+            }
+          ]
+        },
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:13.116Z",
+      "endTime": "2026-08-10T23:25:13.116Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.129Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:25:13.129Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:13.132Z",
+      "endTime": "2026-08-10T23:25:13.132Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "text": "Humans use annotations to read and",
+          "draft": true,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.124Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2517,
+                    "type": "TextPositionSelector",
+                    "start": 2483
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "Humans use annotations to read and",
+                    "prefix": "ans in critical text assessment.",
+                    "suffix": " collabo-rate over text, from ha"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:25:13.124Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:13.133Z",
+      "endTime": "2026-08-10T23:25:13.133Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "text": "Humans use annotations to read and",
+          "draft": true,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.124Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2517,
+                    "type": "TextPositionSelector",
+                    "start": 2483
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "Humans use annotations to read and",
+                    "prefix": "ans in critical text assessment.",
+                    "suffix": " collabo-rate over text, from ha"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:25:13.124Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:13.135Z",
+      "endTime": "2026-08-10T23:25:13.135Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.129Z",
+          "updatedAt": "2026-08-10T23:25:13.129Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:13.135Z",
+      "endTime": "2026-08-10T23:25:13.135Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:13.137Z",
+      "endTime": "2026-08-10T23:25:13.137Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:13.137Z",
+      "endTime": "2026-08-10T23:25:13.137Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:13.137Z",
+      "endTime": "2026-08-10T23:25:13.137Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 848,
+          "clientY": 304,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:13.322Z",
+      "endTime": "2026-08-10T23:25:13.322Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "studySessionId": null
+        },
+        "action": "pdfScroll"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:14.714Z",
+      "endTime": "2026-08-10T23:25:14.714Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "studySessionId": null
+        },
+        "action": "pdfScroll"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:14.714Z",
+      "endTime": "2026-08-10T23:25:14.714Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "studySessionId": null
+        },
+        "action": "pdfScroll"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:14.714Z",
+      "endTime": "2026-08-10T23:25:14.714Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1086,
+          "clientY": 382,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:15.041Z",
+      "endTime": "2026-08-10T23:25:15.041Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "scrollTop": 690,
+          "documentId": 1,
+          "scrollHeight": 22764
+        },
+        "action": "annotatorScrollActivity"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:15.323Z",
+      "endTime": "2026-08-10T23:25:15.323Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1275,
+          "clientY": 488,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:17.121Z",
+      "endTime": "2026-08-10T23:25:17.121Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 3,
+        "annotationId": 2
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:18.547Z",
+      "endTime": "2026-08-10T23:25:18.547Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "floppy-fill",
+          "props": {
+            "commentId": 2
+          },
+          "title": "Save"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:18.552Z",
+      "endTime": "2026-08-10T23:25:18.552Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentUpdate",
+      "payload": {
+        "tags": "[]",
+        "text": null,
+        "commentId": 2
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:18.551Z",
+      "endTime": "2026-08-10T23:25:18.551Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "text": "Humans use annotations to read and",
+          "draft": false,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.124Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2517,
+                    "type": "TextPositionSelector",
+                    "start": 2483
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "Humans use annotations to read and",
+                    "prefix": "ans in critical text assessment.",
+                    "suffix": " collabo-rate over text, from ha"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:25:18.561Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:18.569Z",
+      "endTime": "2026-08-10T23:25:18.569Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "text": "Humans use annotations to read and",
+          "draft": false,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.124Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2517,
+                    "type": "TextPositionSelector",
+                    "start": 2483
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "Humans use annotations to read and",
+                    "prefix": "ans in critical text assessment.",
+                    "suffix": " collabo-rate over text, from ha"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:25:18.561Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:18.570Z",
+      "endTime": "2026-08-10T23:25:18.570Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "tags": "[]",
+          "text": null,
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.129Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:25:18.568Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:18.574Z",
+      "endTime": "2026-08-10T23:25:18.574Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "tags": "[]",
+          "text": null,
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.129Z",
+          "updatedAt": "2026-08-10T23:25:18.568Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 2,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:18.575Z",
+      "endTime": "2026-08-10T23:25:18.575Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_vote"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:18.583Z",
+      "endTime": "2026-08-10T23:25:18.583Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1361,
+          "clientY": 532,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:18.873Z",
+      "endTime": "2026-08-10T23:25:18.873Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "tag",
+          "props": {
+            "commentId": 2
+          },
+          "title": "Edit main tag"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:20.282Z",
+      "endTime": "2026-08-10T23:25:20.282Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1324,
+          "clientY": 405,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:21.572Z",
+      "endTime": "2026-08-10T23:25:21.572Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 1,
+        "annotationId": 2
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:23.816Z",
+      "endTime": "2026-08-10T23:25:23.816Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "text": "Humans use annotations to read and",
+          "draft": false,
+          "tagId": 1,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.124Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2517,
+                    "type": "TextPositionSelector",
+                    "start": 2483
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "Humans use annotations to read and",
+                    "prefix": "ans in critical text assessment.",
+                    "suffix": " collabo-rate over text, from ha"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:25:23.835Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:23.840Z",
+      "endTime": "2026-08-10T23:25:23.840Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 2,
+          "text": "Humans use annotations to read and",
+          "draft": false,
+          "tagId": 1,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:25:13.124Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 2517,
+                    "type": "TextPositionSelector",
+                    "start": 2483
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "Humans use annotations to read and",
+                    "prefix": "ans in critical text assessment.",
+                    "suffix": " collabo-rate over text, from ha"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:25:23.835Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:25:23.841Z",
+      "endTime": "2026-08-10T23:25:23.841Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1134,
+          "clientY": 567,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:25.222Z",
+      "endTime": "2026-08-10T23:25:25.222Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:27.173Z",
+      "endTime": "2026-08-10T23:25:27.173Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:30.174Z",
+      "endTime": "2026-08-10T23:25:30.174Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1037,
+          "clientY": 0,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:31.440Z",
+      "endTime": "2026-08-10T23:25:31.440Z"
+    },
+    {
+      "recordingId": 12,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:25:32.165Z",
+      "endTime": "2026-08-10T23:25:32.165Z"
+    }
+  ]
+}

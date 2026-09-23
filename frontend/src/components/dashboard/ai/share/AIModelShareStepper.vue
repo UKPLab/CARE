@@ -3,95 +3,39 @@
     ref="shareStepper"
     :steps="shareSteps"
     :validation="shareStepValidation"
-    submit-text="Save"
+    :submit-text="$t('ai.common.save')"
     @submit="saveShare"
   >
     <template #title>
-      Share {{ resourceLabel }}
+      {{ $t("ai.share.title", { resource: resourceLabel }) }}
     </template>
     <template #step-1>
-      <div v-if="selectedShareModel" class="mb-3">
-        <strong>{{ resourceLabel }}:</strong> {{ selectedShareModel.name }}
-      </div>
-      <div class="mb-3">
-        <label class="form-label d-block">Share by</label>
-        <div class="form-check form-check-inline">
-          <input id="shareByUsers" v-model="shareForm.mode" class="form-check-input" type="radio" value="users" />
-          <label class="form-check-label" for="shareByUsers">Users</label>
-        </div>
-        <div class="form-check form-check-inline">
-          <input id="shareByRoles" v-model="shareForm.mode" class="form-check-input" type="radio" value="roles" />
-          <label class="form-check-label" for="shareByRoles">Roles</label>
-        </div>
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="shareExpiryDate">Expiry Date</label>
-        <input
-          id="shareExpiryDate"
-          v-model="shareForm.expiryDate"
-          class="form-control"
-          type="date"
-          :min="minShareExpiryDate"
-        />
-        <small class="text-muted">Required. Access expires on this date.</small>
-      </div>
-      <div class="border rounded p-3 mb-3">
-        <label class="form-label" for="shareCostLimit">Cost limit per recipient ($)</label>
-        <input
-          id="shareCostLimit"
-          v-model.number="shareForm.costLimit"
-          class="form-control"
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="No limit"
-        />
-        <small class="text-muted">Optional. Same limit applied to every selected {{ shareAudienceLabel.toLowerCase() }}.</small>
-      </div>
-      <small class="text-muted">Next step: select {{ shareAudienceLabel.toLowerCase() }}.</small>
+      <AIShareSettingsStep
+        v-model:share-form="shareForm"
+        :resource-label="resourceLabel"
+        :resource-name="selectedShareModel?.name || ''"
+        :audience-label="shareAudienceLabel"
+      />
     </template>
     <template #step-2>
-      <div v-if="isLoadingShareData" class="text-muted mb-2">
-        Loading share options...
-      </div>
-      <div v-else-if="shareForm.mode === 'users'" @click="syncSelectionFromTable" @change="syncSelectionFromTable">
-        <BasicTable
-          ref="shareSelectionTable"
-          :model-value="selectedRowsForTable"
-          :columns="shareSelectionColumns"
-          :data="shareSelectionData"
-          :options="shareSelectionTableOptions"
-          :max-table-height="360"
-          @update:model-value="onSelectionRowsUpdate"
-        />
-      </div>
-      <div v-else-if="shareForm.mode === 'roles'" @click="syncSelectionFromTable" @change="syncSelectionFromTable">
-        <BasicTable
-          ref="shareSelectionTable"
-          :model-value="selectedRowsForTable"
-          :columns="shareSelectionColumns"
-          :data="shareSelectionData"
-          :options="shareSelectionTableOptions"
-          :max-table-height="360"
-          @update:model-value="onSelectionRowsUpdate"
-        />
-      </div>
+      <AIShareSelectStep
+        :loading="isLoadingShareData"
+        :columns="shareSelectionColumns"
+        :rows="shareSelectionData"
+        :selected-rows="selectedRowsForTable"
+        @update:selected-rows="onSelectionRowsUpdate"
+      />
     </template>
     <template #step-3>
-      <div class="mb-3">
-        <div><strong>{{ resourceLabel }}:</strong> {{ selectedShareModel?.name || "-" }}</div>
-        <div><strong>Audience Type:</strong> {{ shareAudienceLabel }}</div>
-        <div><strong>Expiry Date:</strong> {{ shareExpiryDateLabel }}</div>
-        <div>
-          <strong>Cost limit:</strong>
-          {{ shareCostLimitLabel }}{{ shareTotalLimitLabel ? ` (${shareTotalLimitLabel} total)` : '' }}
-        </div>
-      </div>
-      <BasicTable
+      <AIShareReviewStep
+        :resource-label="resourceLabel"
+        :resource-name="selectedShareModel?.name || ''"
+        :audience-label="shareAudienceLabel"
+        :expiry-date="shareForm.expiryDate"
+        :cost-limit="shareForm.costLimit"
+        :selected-count="activeSelectionIds.length"
         :columns="shareSelectionColumns"
-        :data="activeShareSelections"
-        :options="shareReviewTableOptions"
-        :max-table-height="360"
+        :selected-rows="selectedRowsForTable"
       />
     </template>
   </StepperModal>
@@ -104,59 +48,33 @@
  * @author Akash Gundapuneni, Mohamed Rawhani
  */
 
-import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
+import AIShareSettingsStep from "./AIShareSettingsStep.vue";
+import AIShareSelectStep from "./AIShareSelectStep.vue";
+import AIShareReviewStep from "./AIShareReviewStep.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AIModelShareStepper",
   subscribeTable: ["ai_budget", "ai_model_share", "ai_hook_share", "user_role", "user"],
   components: {
-    BasicTable,
     StepperModal,
+    AIShareSettingsStep,
+    AIShareSelectStep,
+    AIShareReviewStep,
   },
   props: {
-    currentUserId: {
-      type: Number,
-      required: true,
-    },
-    resourceLabel: {
-      type: String,
-      required: true,
-    },
-    resourceIdKey: {
-      type: String,
-      required: true,
-    },
-    shareTable: {
-      type: String,
-      required: true,
-    },
-    ownerOnlyMessage: {
-      type: String,
-      required: true,
-    },
+    currentUserId: { type: Number, required: true },
+    resourceLabel: { type: String, required: true },
+    resourceIdKey: { type: String, required: true },
+    shareTable: { type: String, required: true },
   },
   data() {
     return {
       shareForm: this.getEmptyShareForm(),
-      shareTargets: {
-        users: [],
-        roles: [],
-      },
+      shareTargets: { users: [], roles: [] },
       selectedUserIds: [],
       selectedRoleIds: [],
-      shareSelectionTableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-        selectableRows: true,
-        search: true,
-      },
-      shareReviewTableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-      },
       selectedShareModel: null,
       isLoadingShareData: false,
       isSavingShare: false,
@@ -165,9 +83,9 @@ export default {
   computed: {
     shareSteps() {
       return [
-        { title: "Share Settings" },
-        { title: `Select ${this.shareAudienceLabel}` },
-        { title: "Review & Save" },
+        { title: this.$t("ai.share.steps.settings") },
+        { title: this.$t("ai.share.steps.select", { audience: this.shareAudienceLabel }) },
+        { title: this.$t("ai.share.steps.review") },
       ];
     },
     shareStepValidation() {
@@ -180,20 +98,20 @@ export default {
     shareSelectionColumns() {
       if (this.shareForm.mode === "roles") {
         return [
-          { name: "Role", key: "label", sortable: true },
-          { name: "Type", key: "type", sortable: true },
+          { name: this.$t("ai.common.role"), key: "label", sortable: true },
+          { name: this.$t("ai.share.type"), key: "type", sortable: true },
         ];
       }
       return [
-        { name: "Name", key: "label", sortable: true },
-        { name: "Type", key: "type", sortable: true },
+        { name: this.$t("ai.common.name"), key: "label", sortable: true },
+        { name: this.$t("ai.share.type"), key: "type", sortable: true },
       ];
     },
     shareSelectionData() {
       if (this.shareForm.mode === "roles") {
-        return this.shareTargets.roles.map((role) => ({ ...role, type: "Role" }));
+        return this.shareTargets.roles.map((role) => ({ ...role, type: this.$t("ai.common.role") }));
       }
-      return this.shareTargets.users.map((user) => ({ ...user, type: "User" }));
+      return this.shareTargets.users.map((user) => ({ ...user, type: this.$t("ai.common.user") }));
     },
     activeSelectionIds() {
       if (this.shareForm.mode === "roles") {
@@ -211,39 +129,14 @@ export default {
     selectedRowsForTable() {
       return this.shareSelectionData.filter((row) => this.selectedIdSet.has(Number(row.id)));
     },
-    activeShareSelections() {
-      return this.selectedRowsForTable;
-    },
     shareAudienceLabel() {
-      if (this.shareForm.mode === "roles") return "Roles";
-      return "Users";
-    },
-    minShareExpiryDate() {
-      return this.toDateInputString(new Date());
-    },
-    shareExpiryDateLabel() {
-      if (!this.shareForm.expiryDate) return "-";
-      const date = new Date(`${this.shareForm.expiryDate}T00:00:00`);
-      if (Number.isNaN(date.getTime())) return this.shareForm.expiryDate;
-      return date.toLocaleDateString();
-    },
-    shareCostLimitLabel() {
-      const value = Number(this.shareForm.costLimit);
-      if (!Number.isFinite(value) || value <= 0) return "No limit";
-      return `$${value.toFixed(2)}`;
-    },
-    shareTotalLimitLabel() {
-      const value = Number(this.shareForm.costLimit);
-      if (!Number.isFinite(value) || value <= 0 || this.activeSelectionIds.length <= 1) return "";
-      return `$${(value * this.activeSelectionIds.length).toFixed(2)}`;
-    },
-    resourceLabelLower() {
-      return this.resourceLabel.toLowerCase();
+      if (this.shareForm.mode === "roles") return this.$t("ai.common.roles");
+      return this.$t("ai.common.users");
     },
     roleOptions() {
       return (this.$store.getters["table/user_role/getAll"] || [])
         .filter((role) => !role.deleted)
-        .map((role) => ({ id: role.id, label: role.name || `Role ${role.id}` }));
+        .map((role) => ({ id: role.id, label: role.name || this.$t("ai.common.roleNumber", { id: role.id }) }));
     },
   },
   methods: {
@@ -276,13 +169,6 @@ export default {
         this.selectedUserIds = nextIds;
       }
     },
-    syncSelectionFromTable() {
-      const tableRef = this.$refs.shareSelectionTable;
-      const selectedRows = Array.isArray(tableRef?.currentData) ? tableRef.currentData : null;
-      if (selectedRows) {
-        this.onSelectionRowsUpdate(selectedRows);
-      }
-    },
     loadUserOptions() {
       const me = Number(this.currentUserId);
       return (this.$store.getters["table/user/getAll"] || [])
@@ -293,7 +179,7 @@ export default {
       return new Promise((resolve, reject) => {
         this.$socket.emit("appDataUpdate", { table, data }, (result) => {
           if (result?.success) resolve(result.data);
-          else reject(new Error(result?.message || "Failed to update data"));
+          else reject(new Error(resolveApiMessage(result, "ai.errors.updateData")));
         });
       });
     },
@@ -310,6 +196,21 @@ export default {
           && Number(b.limitType) === 0
       );
       return matches.length > 0 ? matches[0] : null;
+    },
+    shareCapKey() {
+      return this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
+    },
+    findExistingResourceShareCap(resourceId) {
+      const shares = this.getShareRows((share) =>
+        Number(share[this.resourceIdKey]) === Number(resourceId) && !share.deleted
+      );
+      const shareKey = this.shareCapKey();
+      for (const share of shares) {
+        const cap = this.findExistingShareCap(shareKey, share.id);
+        const value = cap ? Number(cap.costLimit) : NaN;
+        if (Number.isFinite(value)) return value;
+      }
+      return null;
     },
     findExistingShare(resourceId, recipient) {
       const matches = this.getShareRows((share) =>
@@ -336,11 +237,7 @@ export default {
     },
     async open(row) {
       if (!row?.id) {
-        this.toastError("Invalid model selected");
-        return;
-      }
-      if (Number(row.userId) !== Number(this.currentUserId)) {
-        this.toastError(this.ownerOnlyMessage);
+        this.toastError(this.$t("ai.errors.invalidResourceSelected", { resource: this.resourceLabel }));
         return;
       }
 
@@ -359,23 +256,23 @@ export default {
         this.shareForm = {
           mode: config.mode,
           expiryDate: config.expiryDate ? this.toDateInputString(config.expiryDate) : "",
-          costLimit: null,
+          costLimit: this.findExistingResourceShareCap(row.id),
         };
         this.selectedUserIds = config.userIds;
         this.selectedRoleIds = config.roleIds;
       } catch (error) {
-        this.toastError(error.message || `Failed to load ${this.resourceLabelLower} share data`);
+        this.toastError(resolveApiMessage(error, "ai.errors.loadShareData"));
       } finally {
         this.isLoadingShareData = false;
       }
     },
     async saveShare() {
       if (!this.selectedShareModel?.id) {
-        this.toastError("No model selected");
+        this.toastError(this.$t("ai.errors.noResourceSelected", { resource: this.resourceLabel }));
         return;
       }
       if (!this.shareForm.expiryDate) {
-        this.toastError("Please select an expiry date");
+        this.toastError(this.$t("ai.errors.selectExpiryDate"));
         return;
       }
 
@@ -386,14 +283,14 @@ export default {
       if (this.shareForm.mode === "roles") {
         const roleIds = [...this.selectedRoleIds];
         if (roleIds.length === 0) {
-          this.toastError("Please select at least one role");
+          this.toastError(this.$t("ai.errors.selectRole"));
           return;
         }
         recipients = roleIds.map((roleId) => ({ userId: null, roleId }));
       } else {
         const userIds = [...this.selectedUserIds];
         if (userIds.length === 0) {
-          this.toastError("Please select at least one user");
+          this.toastError(this.$t("ai.errors.selectUser"));
           return;
         }
         recipients = userIds.map((userId) => ({ userId, roleId: null }));
@@ -422,29 +319,30 @@ export default {
           sharedIds.push(shareId);
         }
 
-        // Apply the per-recipient cost limit to every share row created/refreshed in this
-        // batch, via the standard appDataUpdate path.
+        // Apply or clear the per-recipient cap on every share in this batch.
         const costLimitValue = Number(this.shareForm.costLimit);
         const wantsCap = Number.isFinite(costLimitValue) && costLimitValue > 0;
-        if (wantsCap) {
-          const shareKey = this.resourceIdKey === "aiHookId" ? "aiHookShareId" : "aiModelShareId";
-          for (const shareId of sharedIds) {
-            const existingCap = this.findExistingShareCap(shareKey, shareId);
+        const shareKey = this.shareCapKey();
+        for (const shareId of sharedIds) {
+          const existingCap = this.findExistingShareCap(shareKey, shareId);
+          if (wantsCap) {
             const capData = existingCap
               ? { id: existingCap.id, costLimit: costLimitValue }
               : { [shareKey]: Number(shareId), limitType: 0, costLimit: costLimitValue };
             await this.emitAppDataUpdate("ai_budget", capData);
+          } else if (existingCap) {
+            await this.emitAppDataUpdate("ai_budget", { id: existingCap.id, deleted: true });
           }
         }
 
         this.$refs.shareStepper.close();
         this.eventBus.emit("toast", {
-          title: "Success",
-          message: `${this.resourceLabel} sharing updated`,
+          title: this.$t("ai.common.success"),
+          message: this.$t("ai.messages.sharingUpdated", { resource: this.resourceLabel }),
           variant: "success",
         });
       } catch (error) {
-        this.toastError(error.message || `Failed to save ${this.resourceLabelLower} sharing`);
+        this.toastError(resolveApiMessage(error, "ai.errors.saveSharing"));
       } finally {
         this.$refs.shareStepper.setWaiting(false);
         this.isSavingShare = false;
@@ -452,7 +350,7 @@ export default {
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

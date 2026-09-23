@@ -103,13 +103,13 @@ export default {
 
 <style scoped>
 .confirmation-step {
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   padding: 20px;
   border-radius: 8px;
 }
 
 .confirmation-section {
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   padding-bottom: 10px;
 }
 
@@ -125,7 +125,7 @@ export default {
 .confirmation-section p,
 .confirmation-section ul {
   margin-bottom: 0;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .confirmation-section .list-unstyled li {
@@ -133,6 +133,6 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 </style>

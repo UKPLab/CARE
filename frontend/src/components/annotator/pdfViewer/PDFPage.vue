@@ -376,7 +376,7 @@ export default {
 <style>
 .pageContainer {
   position: relative;
-  border-bottom-style: solid;
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .pageLoader {

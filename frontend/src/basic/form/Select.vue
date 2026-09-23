@@ -282,7 +282,7 @@ export default {
     },
     selectedLabel() {
       const selected = this.selectOptions.find((option) => option.value === this.currentData);
-      return selected?.name || this.options.placeholder || "Select...";
+      return selected?.name || this.options.placeholder || this.$t("common.selectPlaceholder");
     },
   },
   watch: {

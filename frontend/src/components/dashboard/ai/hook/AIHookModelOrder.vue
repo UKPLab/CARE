@@ -8,43 +8,23 @@
       @action="onTableAction"
     />
 
-    <div class="mt-3">
-      <label class="form-label" :for="`${idPrefix}ModelToAdd`">
-        Add Model
-        <i
-          class="bi bi-info-circle text-muted ms-1"
-          title="Add models in the order CARE should try them."
-        />
-      </label>
-      <div class="input-group">
-        <select
-          :id="`${idPrefix}ModelToAdd`"
-          v-model.number="modelToAddId"
-          class="form-select"
-        >
-          <option :value="null">Select model</option>
-          <option
-            v-for="model in modelsAvailableToAdd"
-            :key="model.id"
-            :value="model.id"
-          >
-            {{ formatModelLabel(model) }}
-          </option>
-        </select>
-        <BasicButton
-          title="Add Model"
-          class="btn btn-primary"
-          icon="plus"
-          :disabled="!modelToAddId"
-          @click="addModel"
+    <div class="d-flex align-items-end gap-2 mt-3">
+      <div class="flex-grow-1">
+        <FormSelect
+          v-model="modelToAddId"
+          :options="addModelSelectOptions"
         />
       </div>
-      <small class="text-muted">
-        Priority 1 is the primary model. Priority 2 and later are fallback models.
-      </small>
-      <div v-if="selectableModels.length === 0" class="text-warning small mt-1">
-        No enabled AI models are available yet.
-      </div>
+      <BasicButton
+        :title="$t('ai.models.addModel')"
+        class="btn btn-primary flex-shrink-0 d-inline-flex align-items-center"
+        icon="plus"
+        :disabled="!modelToAddId"
+        @click="addModel"
+      />
+    </div>
+    <div v-if="selectableModels.length === 0" class="text-warning small mt-1">
+      {{ $t("ai.hooks.noEnabledModels") }}
     </div>
   </div>
 </template>
@@ -52,10 +32,11 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
+import FormSelect from "@/basic/form/Select.vue";
 
 export default {
   name: "AIHookModelOrder",
-  components: { BasicButton, BasicTable },
+  components: { BasicButton, BasicTable, FormSelect },
   props: {
     modelValue: {
       type: Array,
@@ -78,14 +59,20 @@ export default {
         striped: true,
         hover: true,
       },
-      tableColumns: [
+    };
+  },
+  computed: {
+    tableColumns() {
+      return [
         { name: "#", key: "priority", width: 1 },
-        { name: "Model", key: "modelLabel" },
-      ],
-      tableButtons: [
+        { name: this.$t("ai.common.model"), key: "modelLabel" },
+      ];
+    },
+    tableButtons() {
+      return [
         {
           icon: "arrow-up-short",
-          title: "Move up",
+          title: this.$t("ai.actions.moveUp"),
           action: "moveUp",
           filter: [{ key: "canMoveUp", value: true }],
           options: {
@@ -95,7 +82,7 @@ export default {
         },
         {
           icon: "arrow-down-short",
-          title: "Move down",
+          title: this.$t("ai.actions.moveDown"),
           action: "moveDown",
           filter: [{ key: "canMoveDown", value: true }],
           options: {
@@ -105,17 +92,15 @@ export default {
         },
         {
           icon: "trash",
-          title: "Remove model",
+          title: this.$t("ai.actions.removeModel"),
           action: "remove",
           options: {
             iconOnly: true,
             specifiers: { "btn-outline-danger": true },
           },
         },
-      ],
-    };
-  },
-  computed: {
+      ];
+    },
     modelIds() {
       return this.modelValue.map((id) => Number(id));
     },
@@ -139,10 +124,24 @@ export default {
         id: modelId,
         index,
         priority: index + 1,
-        modelLabel: this.modelLabelById[modelId] || `Model #${modelId}`,
+        modelLabel: this.modelLabelById[modelId] || this.$t("ai.common.modelNumber", { id: modelId }),
         canMoveUp: index > 0,
         canMoveDown: index < this.modelIds.length - 1,
       }));
+    },
+    addModelSelectOptions() {
+      return {
+        key: `${this.idPrefix}ModelToAdd`,
+        label: this.$t("ai.models.addModel"),
+        help: this.$t("ai.hooks.modelOrderHelp"),
+        options: [
+          { value: null, name: this.$t("ai.models.selectModel") },
+          ...this.modelsAvailableToAdd.map((model) => ({
+            value: model.id,
+            name: this.formatModelLabel(model),
+          })),
+        ],
+      };
     },
   },
   methods: {

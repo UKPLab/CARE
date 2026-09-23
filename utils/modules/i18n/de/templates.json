@@ -4,6 +4,8 @@
     "invalidPlaceholdersMessage": "Die folgenden Platzhalter sind für {templateType}-Templates nicht gültig:",
     "invalidPlaceholdersIgnored": "Diese Platzhalter werden ignoriert, wenn das Template verwendet wird.",
     "failedToLoad": "Platzhalter konnten nicht geladen werden",
+    "duplicateBracketIds": "Dieselbe Klammer-ID kommt mehrfach vor (zum Beispiel zwei ~link[2]~-Token):",
+    "duplicateBracketIdsHelp": "Jede ~key[N]~-ID muss eindeutig sein. Ältere ~key~-Token ohne [N] werden hier nicht geprüft und können in älteren E-Mail-Vorlagen weiterhin mehrfach vorkommen. Speichern ist gesperrt, bis alle doppelten Klammer-IDs entfernt wurden.",
     "labels": {
       "emailGeneral": {
         "username": "Benutzername des Empfängers",
@@ -34,6 +36,17 @@
         "assignmentId": "Assignment-ID",
         "submissionId": "Submission-ID",
         "timestamp": "Upload-Zeitstempel"
+      },
+      "prompt": {
+        "pdfText": "PDF-Text",
+        "editorText": "Editor-Text",
+        "assessmentResult": "Bewertungsergebnis",
+        "inlineComments": "Inline-Kommentare",
+        "nlpAssessmentSuggestion": "NLP-Bewertungsvorschlag",
+        "previousAssessmentResult": "Vorheriges Bewertungsergebnis",
+        "assessmentConfiguration": "Bewertungskonfiguration",
+        "submissionFiles": "Einreichungsdatei",
+        "studyContext": "Studienkontext"
       }
     },
     "descriptions": {
@@ -66,6 +79,17 @@
         "assignmentId": "Interne Assignment-Kennung.",
         "submissionId": "Interne Submission-Kennung.",
         "timestamp": "Zeitpunkt des Submission-Uploads."
+      },
+      "prompt": {
+        "pdfText": "Text aus dem PDF im aktuellen Kontext.",
+        "editorText": "Text aus dem aktuellen Editor-Dokument im aktuellen Kontext.",
+        "assessmentResult": "Gespeicherte Rubrik aus der Bewertungsseitenleiste für dieses Dokument und diesen Schritt.",
+        "inlineComments": "Strukturierte Kommentare und Annotationen für dieses Dokument und diesen Schritt.",
+        "nlpAssessmentSuggestion": "Modellentwurf der Bewertung für diesen Schritt, sofern verfügbar.",
+        "previousAssessmentResult": "Gespeicherte Rubrik aus dem vorherigen Schritt, wenn eine Übernahme konfiguriert ist.",
+        "assessmentConfiguration": "In diesem Schritt verwendete Bewertungskonfiguration.",
+        "submissionFiles": "Text aus Einreichungsdateien, die den Slots im Hook-Schritt zugeordnet sind.",
+        "studyContext": "Grundlegende Metadaten aus dem aktuellen Studien-, Schritt- und Dokumentkontext."
       }
     },
     "help": {
@@ -128,6 +152,12 @@
     "copyContent": "Inhalt kopieren",
     "language": "Sprache",
     "newLanguageMessage": "Für dieses Template wird eine neue Sprache hinzugefügt. Soll der aktuelle Inhalt in diese Sprache kopiert werden?<br><br><strong>Beim Verlassen der aktuellen Sprache wird deren Inhalt gespeichert.</strong>",
+    "viewMode": {
+      "title": "Ansichtsmodus",
+      "edit": "Bearbeiten",
+      "preview": "Vorschau",
+      "previewHelp": "Nur Beispielwerte, keine Live-Daten. Das Layout entspricht dem Editor, in dem Platzhalter als Klartext im HTML erscheinen."
+    },
     "leave": {
       "missingPlaceholdersConfirm": "Dieses Template enthält nicht alle erforderlichen Platzhalter; Ihre Änderungen werden nicht gespeichert."
     },

@@ -11,11 +11,12 @@
       </div>
 
       <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
-        <strong>Warning:</strong> The same bracket id appears more than once (e.g. two ~link[2]~):
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.duplicateBracketIds") }}
         <ul class="mb-0 mt-2">
           <li v-for="ph in duplicatePlaceholders" :key="ph">{{ ph }}</li>
         </ul>
-        Each ~key[N]~ id must be unique. Legacy ~key~ tokens without [N] are not checked here and can still repeat in older email templates. Saving is blocked until bracket duplicates are removed.
+        {{ $t("templates.placeholders.duplicateBracketIdsHelp") }}
       </div>
 
       <div v-if="optionApplyWarnings.length > 0" class="alert alert-warning mb-3">
@@ -26,8 +27,8 @@
         Fix the option row and insert another placeholder if you want that option in the template.
       </div>
   
-      <div class="card shadow mb-0 configurator">
-        <div class="card-header bg-white">
+      <div class="card shadow mb-4 configurator">
+        <div class="card-header bg-body">
           <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
@@ -600,7 +601,7 @@
   
   <style scoped>
   .configurator {
-    --bg-color: rgb(219, 234, 254);
+    --bg-color: var(--bs-secondary-bg, rgb(219, 234, 254));
     --icon-container-size: 36px;
   }
   
@@ -619,12 +620,12 @@
     margin-right: 0.625rem;
     align-items: center;
     justify-content: center;
-    color: var(--text-color);
+    color: var(--bs-body-color);
     background-color: var(--bg-color);
   }
   
   .list-group-item:hover {
-    background-color: #f8f9fa;
+    background-color: var(--bs-tertiary-bg, #f8f9fa);
   }
   
   .badge {

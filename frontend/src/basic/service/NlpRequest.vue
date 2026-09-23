@@ -6,7 +6,7 @@
 import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
-import {extractPdfPages} from "@/assets/utils";
+import {extractPdfPages, resolveApiMessage} from "@/assets/utils";
 import {
   buildHookResultKey,
   buildServiceSkillKey,
@@ -94,15 +94,12 @@ export default {
     },
     resultKeyBase() {
       return this.isHook
-        ? buildHookResultKey(this.serviceName)
+        ? buildHookResultKey(this.service.hookId)
         : this.skillKey;
     },
     resultKeyCandidates() {
       if (!this.isHook) return [this.resultKeyBase].filter(Boolean);
-      return getHookResultKeyCandidates(
-        this.serviceName,
-        this.service?.type
-      );
+      return getHookResultKeyCandidates(this.service.hookId);
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -257,8 +254,8 @@ export default {
         this.status = 'completed';
       } catch (error) {
         this.eventBus.emit('toast', {
-          title: "AI Hook Request",
-          message: error.message || "AI hook request failed",
+          title: this.$t("nlp.hooks.requestTitle"),
+          message: resolveApiMessage(error, "nlp.hooks.requestFailed"),
           variant: "danger",
         });
         this.status = 'failed';
@@ -324,14 +321,14 @@ export default {
           studyStepId: this.studyStepId,
         }, (res) => {
           if (res && res.success) resolve(res.data.file);
-          else reject(new Error(res?.message || "Failed to load document"));
+          else reject(new Error(resolveApiMessage(res, "nlp.hooks.documentLoadFailed")));
         });
       });
       const pdf = await pdfjsLib.getDocument(file).promise;
       return extractPdfPages(pdf);
     },
     /**
-     * Persists a hook's single completion to document_data under the service name alone (skill takes multi key).
+     * Persists a hook's single completion to document_data under its hook id key.
      *
      * @param {{ output?: string|null }} response
      * @returns {void}

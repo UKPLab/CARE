@@ -1,6 +1,7 @@
 "use strict";
 
 const { buildStudyHookKey } = require("../../../studyNlpDocumentData.js");
+const TranslatableError = require("../../../TranslatableError.js");
 
 /**
  * Resolves NLP file mappings against event context values.
@@ -20,16 +21,17 @@ function hydrateSkillParameterMappings(mappings, context) {
         }
 
         if (!mapping.fromContext) {
-            throw new Error(
-                `NLP parameter ${paramName} does not define fileIds or fromContext.`
-            );
+            throw new TranslatableError("errors.triggers.preprocessing.mappingSourceMissing", {
+                paramName,
+            });
         }
 
         const fileId = context[mapping.fromContext];
         if (!fileId) {
-            throw new Error(
-                `NLP parameter ${paramName} could not resolve ${mapping.fromContext}.`
-            );
+            throw new TranslatableError("errors.triggers.preprocessing.mappingContextMissing", {
+                paramName,
+                contextKey: mapping.fromContext,
+            });
         }
 
         hydrated[paramName] = {
@@ -73,12 +75,7 @@ async function runAiHookTrigger(server, trigger, context) {
     const baseMapping = inputMappings[config.baseFileParameter];
     const service = server.services["AIService"];
     if (!hookId || !baseMapping || !service) {
-        throw new Error("AI hook trigger is not configured correctly.");
-    }
-
-    const hook = await server.db.models["ai_hook"].getById(hookId);
-    if (!hook || hook.deleted || !hook.name) {
-        throw new Error("AI hook trigger could not resolve its hook name.");
+        throw new TranslatableError("errors.triggers.preprocessing.hookInvalid");
     }
 
     let documentId = Number(baseMapping.documentId || context.documentId);
@@ -99,7 +96,7 @@ async function runAiHookTrigger(server, trigger, context) {
         documentId = resultDocument?.id;
     }
     if (!documentId) {
-        throw new Error("AI hook trigger could not resolve its result document.");
+        throw new TranslatableError("errors.triggers.preprocessing.resultDocumentMissing");
     }
 
     const values = {};
@@ -108,7 +105,9 @@ async function runAiHookTrigger(server, trigger, context) {
             continue;
         }
         if (!["submission", "document", "configuration"].includes(mapping.type)) {
-            throw new Error(`Unsupported AI hook input type "${mapping.type}".`);
+            throw new TranslatableError("errors.triggers.preprocessing.unsupportedHookInput", {
+                type: mapping.type,
+            });
         }
         values[placeholder] = {
             type: "serviceReplacement",
@@ -132,7 +131,7 @@ async function runAiHookTrigger(server, trigger, context) {
         documentId,
         studySessionId: null,
         studyStepId: null,
-        key: buildStudyHookKey("nlpRequest", hook.name),
+        key: buildStudyHookKey(hookId),
         value: result.output ?? "",
     });
 
@@ -158,15 +157,16 @@ async function runAiPreprocessing(server, trigger, context, options = {}) {
 
     const service = server.services["BackgroundTaskService"];
     if (!service) {
-        throw new Error("BackgroundTaskService is not available.");
+        throw new TranslatableError("errors.triggers.preprocessing.serviceUnavailable");
     }
     if (options.signal?.aborted) {
-        throw new Error("Trigger preprocessing was cancelled.");
+        throw new TranslatableError("errors.triggers.preprocessing.cancelled");
     }
 
     const socketId = `trigger:${trigger.id}:${Date.now()}`;
+    const userId = trigger.userId || context.userId;
     const documentSocket = {
-        userId: trigger.userId || context.userId,
+        userId,
         socket: {
             id: socketId,
             emit: async (event, payload) => {
@@ -181,7 +181,14 @@ async function runAiPreprocessing(server, trigger, context, options = {}) {
                 }
             },
         },
-        isAdmin: async () => true,
+        isAdmin: async () => {
+            if (!userId) {
+                return false;
+            }
+            const matching = server.db.models.user_role_matching;
+            const roleIds = await matching.getUserRolesById(userId);
+            return matching.isAdminInUserRoles(roleIds);
+        },
     };
     server.availSockets = server.availSockets || {};
     const previousSocket = server.availSockets[socketId];

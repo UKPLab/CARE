@@ -9,6 +9,7 @@
  */
 
 const {randomUUID} = require("crypto");
+const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const runtime = require("./runtime");
 const request = require("./request");
@@ -37,13 +38,13 @@ async function requireOwnedCredential(models, credentialId, userId) {
         attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled"],
     });
     if (!credential) {
-        throw new Error("Credential not found");
+        throw new TranslatableError("errors.ai.credential.notFound");
     }
     if (!userId || credential.userId !== userId) {
-        throw new Error("You are not allowed to access this credential");
+        throw new TranslatableError("errors.ai.credential.accessDenied");
     }
     if (!credential.enabled) {
-        throw new Error("Credential is disabled");
+        throw new TranslatableError("errors.ai.credential.disabled");
     }
     return credential;
 }
@@ -62,7 +63,7 @@ async function loadModelProviderParams(service, aiModelId) {
         raw: true,
     });
     if (!aiModel || aiModel.deleted || !aiModel.enabled) {
-        throw new Error("AI model is not available");
+        throw new TranslatableError("errors.ai.model.notAvailable");
     }
 
     const credential = await models.ai_credential.findByPk(aiModel.aiCredentialId, {
@@ -70,7 +71,7 @@ async function loadModelProviderParams(service, aiModelId) {
         raw: true,
     });
     if (!credential || credential.deleted || !credential.enabled) {
-        throw new Error("AI model credential is not available");
+        throw new TranslatableError("errors.ai.model.credentialUnavailable");
     }
 
     return helpers.buildLiteLLMParams(credential, aiModel.model);
@@ -83,8 +84,10 @@ async function loadModelProviderParams(service, aiModelId) {
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Completion fields plus CARE request metadata.
- * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object }} [logOptions]
- *   `providerParams` is reserved for server-side model tests. `testLabel` is prepended to the
+ * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object, hookModelId?: number }} [logOptions]
+ *   `providerParams` is for server-side callers that already loaded credentials
+ *   (hook runs, admin model tests). `hookModelId` proves which server-selected
+ *   fallback row is running. `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
@@ -92,11 +95,11 @@ async function chatCompletion(service, client, data, logOptions = {}) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         service.logger.error("LiteLLM RPC is not registered");
-        throw new Error("LiteLLM service is not available");
+        throw new TranslatableError("errors.ai.serviceUnavailable");
     }
     if (!(await rpc.isOnline())) {
         service.logger.error("LiteLLM RPC is not connected");
-        throw new Error("LiteLLM service is not connected");
+        throw new TranslatableError("errors.ai.serviceNotConnected");
     }
 
     const aiModelId = await runtime.resolveAiModelId(service.server, client?.userId, data);
@@ -124,8 +127,12 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         documentId: data?.documentId,
     }, {
         bypassChecks: !!logOptions.bypassChecks,
+        hookModelId: logOptions.hookModelId,
     });
     if (!guard.allowed) {
+        if (guard.key) {
+            throw new TranslatableError(guard.key, guard.params);
+        }
         throw new Error(guard.reason);
     }
 
@@ -186,15 +193,27 @@ async function abortChatCompletion(service, client, data) {
         attributes: ["id"],
     });
     if (!log) {
-        return {aborted: false, message: "Request not found or not abortable"};
+        return {
+            aborted: false,
+            key: "errors.ai.requestNotAbortable",
+            message: "Request not found or not abortable",
+        };
     }
 
     const rpc = runtime.getRPC(service.server);
     if (!rpc || !(await rpc.isOnline())) {
-        return {aborted: false, message: "LiteLLM service is not connected"};
+        return {
+            aborted: false,
+            key: "errors.ai.serviceNotConnected",
+            message: "LiteLLM service is not connected",
+        };
     }
 
-    return rpc.abortChatCompletion(data && data.requestId, data && data.reason);
+    const result = await rpc.abortChatCompletion(data && data.requestId, data && data.reason);
+    if (result?.aborted) {
+        await request.cancelRequest(service, log.id);
+    }
+    return result;
 }
 
 /**
@@ -225,10 +244,10 @@ async function getStatus(service) {
 async function getProviders(service) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
-        throw new Error("LiteLLM service is not available");
+        throw new TranslatableError("errors.ai.serviceUnavailable");
     }
     if (!(await rpc.isOnline())) {
-        throw new Error("LiteLLM service is not connected");
+        throw new TranslatableError("errors.ai.serviceNotConnected");
     }
     return rpc.getProviders();
 }
@@ -244,15 +263,15 @@ async function getProviders(service) {
 async function getValidModels(service, client, data) {
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
-        throw new Error("LiteLLM service is not available");
+        throw new TranslatableError("errors.ai.serviceUnavailable");
     }
     if (!(await rpc.isOnline())) {
-        throw new Error("LiteLLM service is not connected");
+        throw new TranslatableError("errors.ai.serviceNotConnected");
     }
 
     const credentialId = Number(data?.credentialId);
     if (!Number.isInteger(credentialId) || credentialId <= 0) {
-        throw new Error("Missing or invalid credentialId");
+        throw new TranslatableError("errors.ai.credential.invalidId");
     }
 
     const credential = await requireOwnedCredential(
@@ -262,7 +281,7 @@ async function getValidModels(service, client, data) {
     );
     const provider = typeof credential.provider === "string" ? credential.provider.trim().toLowerCase() : "";
     if (!provider) {
-        throw new Error("Credential provider is required to load models");
+        throw new TranslatableError("errors.ai.credential.providerRequired");
     }
 
     return rpc.getValidModels({
@@ -286,10 +305,10 @@ async function testModel(service, client, data) {
     const credentialId = Number(data?.credentialId);
     const model = typeof data?.model === "string" ? data.model.trim() : "";
     if (!Number.isInteger(credentialId) || credentialId <= 0) {
-        throw new Error("Missing or invalid credentialId");
+        throw new TranslatableError("errors.ai.credential.invalidId");
     }
     if (!model) {
-        throw new Error("Missing model");
+        throw new TranslatableError("errors.ai.model.required");
     }
 
     const credential = await requireOwnedCredential(

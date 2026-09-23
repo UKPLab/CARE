@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-2 mb-3 p-3 bg-light border rounded">
+  <div class="mt-2 mb-3 p-3 bg-body-tertiary border rounded">
     <h6 class="mb-3 pb-2 border-bottom text-muted">
       {{ $t('dashboard.projects.exportOptions.title') }}
     </h6>

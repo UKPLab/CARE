@@ -8,6 +8,7 @@
  */
 
 const chat = require("./chat");
+const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
 
@@ -23,53 +24,60 @@ const { resolveTemplateWithValues } = require("../../../utils/helper/templateRes
 async function loadEnabledHook(service, hookId) {
     const hook = await service.server.db.models.ai_hook.getById(hookId);
     if (!hook || hook.deleted) {
-        throw new Error("AI hook not found");
+        throw new TranslatableError("errors.ai.hook.notFound");
     }
     if (!hook.enabled) {
-        throw new Error("AI hook is disabled");
+        throw new TranslatableError("errors.ai.hook.disabled");
     }
     if (!hook.templateId) {
-        throw new Error("AI hook has no prompt template");
+        throw new TranslatableError("errors.ai.hook.templateRequired");
     }
     return hook;
 }
 
 /**
- * Resolves the hook's primary model (priority 1) into the model string plus the owner's
- * credential parameters required by the LiteLLM passthrough.
+ * Loads a hook's models in runtime fallback order.
  *
  * @param {Object} service - AIService runtime with DB access.
- * @param {Object} service.server - CARE webserver instance (DB access).
  * @param {number} hookId - Target `ai_hook` primary key.
- * @returns {Promise<Object>} Model string plus the owner's credential params for the LiteLLM passthrough.
- * @throws {Error} If no usable model/credential is configured for the hook.
+ * @returns {Promise<Object[]>} Active hook-model rows, priority 1 first.
  */
-async function resolveHookModelParams(service, hookId) {
-    const hookModel = await service.server.db.models['ai_hook_models'].findOne({
-        where: { aiHookId: hookId, deleted: false },
+async function loadHookModels(service, hookId) {
+    const hookModels = await service.server.db.models["ai_hook_models"].findAll({
+        where: {aiHookId: hookId, deleted: false},
         order: [["priority", "ASC"]],
         raw: true,
     });
-    if (!hookModel) {
-        throw new Error("AI hook has no configured model");
+    if (!hookModels.length) {
+        throw new TranslatableError("errors.ai.hook.modelRequired");
     }
+    return hookModels;
+}
 
-    const aiModel = await service.server.db.models['ai_model'].getById(hookModel.aiModelId);
+/**
+ * Resolves one hook-model row into LiteLLM provider parameters.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} hookModel - One ordered `ai_hook_models` row.
+ * @returns {Promise<Object>} Model id, row parameters, and credential parameters.
+ */
+async function resolveHookModelParams(service, hookModel) {
+    const aiModel = await service.server.db.models["ai_model"].getById(hookModel.aiModelId);
     if (!aiModel || aiModel.deleted) {
-        throw new Error("AI hook model not found");
+        throw new TranslatableError("errors.ai.hook.modelNotFound");
     }
     if (!aiModel.enabled) {
-        throw new Error("AI hook model is disabled");
+        throw new TranslatableError("errors.ai.hook.modelDisabled");
     }
 
-    const credential = await service.server.db.models['ai_credential'].getById(aiModel.aiCredentialId, {
+    const credential = await service.server.db.models["ai_credential"].getById(aiModel.aiCredentialId, {
         attributes: ["id", "userId", "provider", "apiKey", "apiBaseUrl", "apiVersion", "enabled", "deleted"],
     });
     if (!credential || credential.deleted) {
-        throw new Error("AI hook model credential not found");
+        throw new TranslatableError("errors.ai.hook.credentialNotFound");
     }
     if (!credential.enabled) {
-        throw new Error("AI hook model credential is disabled");
+        throw new TranslatableError("errors.ai.hook.credentialDisabled");
     }
 
     return {
@@ -108,12 +116,31 @@ async function resolveServiceInput(service, input) {
             const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
             if (!submissionId || !selectedFiles.length) return "";
 
-            // Keep PDF.js `{ pages, pageCount }` until `applyTextRangeLimit` in the resolver.
-            if (selectedFiles.includes("pdf")) {
-                return pdfText || "";
+            // `{ pages, pageCount }` must stay intact so applyTextRangeLimit can slice pages.
+            if (pdfText && typeof pdfText === "object" && Array.isArray(pdfText.pages)) {
+                return pdfText;
             }
 
             const parts = [];
+
+            if (selectedFiles.includes("pdf")) {
+                let text = typeof pdfText === "string" ? pdfText : "";
+                if (!text) {
+                    const pdfDoc = await service.server.db.models["document"].findOne({
+                        where: {submissionId, type: 0, deleted: false},
+                        raw: true,
+                    });
+                    const buffer = pdfDoc && await service.server.db.models["document"]
+                        .readDocumentFile(pdfDoc, ".pdf");
+                    if (buffer) {
+                        const pdfRpc = service.server.rpcs["PDFRPC"];
+                        await pdfRpc.wait(500, pdfRpc.timeout);
+                        const extracted = await pdfRpc.getAnnotations({file: buffer});
+                        text = extracted.wholeText;
+                    }
+                }
+                if (text) parts.push(text);
+            }
 
             // Zip-based files (tex, bib, …) — unzip on the backend.
             // filePatterns maps logical name → validation-config regex (e.g. "expose" → "Expose\\.tex$").
@@ -172,53 +199,73 @@ const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
 /**
  * Executes an AI hook for the calling client: fills the hook's prompt template from the
  * caller-supplied placeholder `values` (assembled in the frontend from the input mapping),
- * attaches the hook's primary model credential, and forwards through the shared chat path.
+ * then tries its configured models in ascending priority order.
  *
  * For study sessions (studySessionId/studyStepId present), missing/disabled hook, model, or
  * credential soft-skips with `{ choices: [], output: null }`. Triggers and other callers still fail hard.
  *
  * @param {Object} service - AIService runtime.
  * @param {Object} client - Authenticated RPC client triggering the hook.
- * @param {Object} data - Hook execution payload (hookId, values, studyId, studySessionId, studyStepId, documentId).
+ * @param {Object} data - Hook execution payload (hookId, values, studySessionId, studyStepId, documentId).
  * @returns {Promise<{choices: unknown[], output: string|null}>} Provider choices plus first-choice content (text or JSON string), or null on study soft-skip.
  * @throws {Error} If the hook id is invalid, or (for non-study callers) hook/model/credential is unavailable.
  */
 async function runHook(service, client, data) {
     const hookId = Number(data?.hookId);
     if (!Number.isInteger(hookId) || hookId <= 0) {
-        throw new Error("Missing or invalid hookId");
+        throw new TranslatableError("errors.ai.hook.invalidId");
     }
 
     try {
         const hook = await loadEnabledHook(service, hookId);
-        const modelParams = await resolveHookModelParams(service, hookId);
+        const hookModels = await loadHookModels(service, hookId);
         const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
         const values = await resolveHookReferences(service, rawValues);
         const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
 
-        const { additionalParameters, ...credentialParams } = modelParams;
-        const completionData = {
-            ...additionalParameters,
-            ...credentialParams,
-            aiHookId: hookId,
-            messages: [{ role: "user", content: promptText }],
-            outputMode: hook.outputMode,
-            studyId: data?.studyId,
-            studySessionId: data?.studySessionId,
-            studyStepId: data?.studyStepId,
-            documentId: data?.documentId,
-        };
+        let lastError;
+        for (const [index, hookModel] of hookModels.entries()) {
+            try {
+                const modelParams = await resolveHookModelParams(service, hookModel);
+                const {additionalParameters, aiModelId, ...providerParams} = modelParams;
+                delete providerParams.aiCredentialId;
 
-        service.logger.info(
-            `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
-            `aiModelId=${modelParams.aiModelId} studyStepId=${data?.studyStepId ?? "N/A"}`
-        );
+                service.logger.info(
+                    `runHook: hookId=${hookId} templateId=${hook.templateId} ` +
+                    `aiModelId=${aiModelId} priority=${hookModel.priority} ` +
+                    `studyStepId=${data?.studyStepId ?? "N/A"}`
+                );
 
-        const result = await chat.chatCompletion(service, client, completionData);
-        const content = result.choices?.[0]?.message?.content;
-        const output = typeof content === "string" ? content : "";
+                const result = await chat.chatCompletion(service, client, {
+                    ...additionalParameters,
+                    aiModelId,
+                    aiHookId: hookId,
+                    messages: [{role: "user", content: promptText}],
+                    outputMode: hook.outputMode,
+                    studySessionId: data?.studySessionId,
+                    studyStepId: data?.studyStepId,
+                    documentId: data?.documentId,
+                }, {
+                    providerParams,
+                    hookModelId: hookModel.id,
+                });
+                const content = result.choices?.[0]?.message?.content;
+                const output = typeof content === "string" ? content : "";
 
-        return { choices: result.choices, output };
+                return {choices: result.choices, output};
+            } catch (error) {
+                lastError = error;
+                const hasFallback = index < hookModels.length - 1;
+                if (!hasFallback || !isFallbackError(error)) {
+                    throw error;
+                }
+                service.logger.warn(
+                    `runHook fallback: hookId=${hookId} aiModelId=${hookModel.aiModelId} ` +
+                    `priority=${hookModel.priority} error=${error.message || error}`
+                );
+            }
+        }
+        throw lastError;
     } catch (error) {
         // Study only: deleted/disabled AI stack must not block the session.
         const isStudyCall = Number(data?.studySessionId) > 0 || Number(data?.studyStepId) > 0;
@@ -230,6 +277,27 @@ async function runHook(service, client, data) {
         }
         throw error;
     }
+}
+
+/**
+ * Provider errors and unavailable bound models may use the next configured model.
+ * Access, session, and budget errors are TranslatableErrors and must stop the hook.
+ *
+ * @param {Error} error - Failure from model resolution or chat execution.
+ * @returns {boolean} Whether the next priority may be attempted.
+ */
+function isFallbackError(error) {
+    if (!TranslatableError.is(error)) {
+        return true;
+    }
+    return [
+        "errors.ai.model.notAvailable",
+        "errors.budget.modelExhausted",
+        "errors.ai.hook.modelNotFound",
+        "errors.ai.hook.modelDisabled",
+        "errors.ai.hook.credentialNotFound",
+        "errors.ai.hook.credentialDisabled",
+    ].includes(error.key);
 }
 
 module.exports = {

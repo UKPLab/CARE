@@ -1521,6 +1521,9 @@ Automate Events with Triggers
      - Trigger Logs shows each run, its status, attempts, and any error message.
      - I can cancel pending or running jobs, retry failed or cancelled jobs, and re-run
        completed jobs.
+     - I can set how often the trigger queue worker polls for leftover jobs in Settings.
+       The default is 5 minutes. New jobs still start when the event fires. A server
+       restart is required after changing this setting.
      - Non-admin users cannot manage triggers or trigger logs.
 
 -----

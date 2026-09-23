@@ -7,6 +7,7 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
     class AiCredential extends MetaModel {
@@ -26,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
                 credential._previousDataValues?.userId ?? credential.userId
             );
             if (ownerUserId !== currentUserId) {
-                throw new Error("You are not allowed to update this AI credential");
+                throw new TranslatableError("errors.ai.credential.updateNotAllowed");
             }
         }
 

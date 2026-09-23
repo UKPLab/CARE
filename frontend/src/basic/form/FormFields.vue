@@ -53,6 +53,13 @@
         :options="field"
         @update:model-value="onFieldUpdate(field.key, $event)"
       />
+      <FormRadio
+        v-else-if="field.type === 'radio'"
+        :ref="'ref_' + field.key"
+        :model-value="modelValue[field.key]"
+        :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
+      />
       <FormEditor
         v-else-if="field.type === 'editor' || field.type === 'html'"
         :ref="'ref_' + field.key"
@@ -121,6 +128,7 @@ import FormSwitch from "@/basic/form/Switch.vue";
 import FormSlider from "@/basic/form/Slider.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import FormCheckbox from "@/basic/form/Checkbox.vue";
+import FormRadio from "@/basic/form/Radio.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormPassword from "@/basic/form/Password.vue";
 import FormTextarea from "@/basic/form/Textarea.vue";
@@ -147,6 +155,7 @@ export default {
     FormSlider,
     FormSelect,
     FormCheckbox,
+    FormRadio,
     FormDefault,
     FormPassword,
     FormTextarea,

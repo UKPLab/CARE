@@ -15,21 +15,18 @@ export function buildSkillResultKey(serviceName, skillName, resultField) {
   return `${baseKey}_${resultField}`;
 }
 
-export function buildHookResultKey(serviceName) {
-  return serviceName || null;
+export function buildHookResultKey(hookId) {
+  return hookId ? `aiHook_${hookId}` : null;
 }
 
-export function getHookResultKeyCandidates(serviceName, serviceType) {
-  return [...new Set([
-    buildHookResultKey(serviceName),
-    buildHookResultKey(serviceType),
-  ].filter(Boolean))];
+export function getHookResultKeyCandidates(hookId) {
+  return [buildHookResultKey(hookId)].filter(Boolean);
 }
 
 export function buildServiceResultKey(service, resultField) {
   if (!service) return null;
   if (service.hookId) {
-    return buildHookResultKey(service.name);
+    return buildHookResultKey(service.hookId);
   }
   return buildSkillResultKey(service.name, service.skill, resultField);
 }
@@ -38,7 +35,7 @@ export function getAssessmentResultKeyCandidates(service, resultField = "assessm
   if (!service) return [];
 
   const keys = service.hookId
-    ? getHookResultKeyCandidates(service.name, service.type)
+    ? getHookResultKeyCandidates(service.hookId)
     : [
         buildSkillResultKey(service.name, service.skill, resultField),
         buildSkillResultKey(service.type, service.skill, resultField),

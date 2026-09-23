@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
+const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 
 module.exports = (sequelize, DataTypes) => {
 	class Assignment extends MetaModel {
@@ -90,6 +91,15 @@ module.exports = (sequelize, DataTypes) => {
 				required: false,
 				help: "assignments.fields.notifyOnSubmissionUpload.help",
 			},
+			{
+				key: "submissionWarning",
+				label: "assignments.fields.submissionWarning.label",
+				placeholder: "e.g. This assignment must be submitted in German.",
+				type: "textarea",
+				required: false,
+				default: "",
+				help: "assignments.fields.submissionWarning.help",
+			},
 		];
 
 		/**
@@ -126,6 +136,7 @@ module.exports = (sequelize, DataTypes) => {
 			}
 			return filter;
 		}
+
 		static associate(models) {
 
 			Assignment.belongsTo(models["configuration"], {
@@ -154,6 +165,7 @@ module.exports = (sequelize, DataTypes) => {
 			parentAssignmentId: DataTypes.INTEGER,
 			allowReUpload: DataTypes.BOOLEAN,
 			notifyOnSubmissionUpload: DataTypes.BOOLEAN,
+			submissionWarning: DataTypes.TEXT,
 			closed: DataTypes.DATE,
 			deleted: DataTypes.BOOLEAN,
 			deletedAt: DataTypes.DATE,
@@ -164,6 +176,17 @@ module.exports = (sequelize, DataTypes) => {
 			sequelize,
 			modelName: 'assignment',
 			tableName: 'assignment',
+			hooks: {
+				beforeCreate: (assignment) => {
+					assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
+				},
+				beforeUpdate: (assignment) => {
+					// Close/disable/delete omit start/end; skip so existing inverted rows can still be closed.
+					if (assignment.changed("start") || assignment.changed("end")) {
+						assertStartBeforeEnd(assignment, "errors.assignment.startAfterEnd");
+					}
+				},
+			},
 		}
 	);
 

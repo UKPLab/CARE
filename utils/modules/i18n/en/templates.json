@@ -4,6 +4,8 @@
     "invalidPlaceholdersMessage": "The following placeholders are not valid for {templateType} templates:",
     "invalidPlaceholdersIgnored": "These placeholders will be ignored when the template is used.",
     "failedToLoad": "Failed to load placeholders",
+    "duplicateBracketIds": "The same bracket ID appears more than once (for example, two ~link[2]~ tokens):",
+    "duplicateBracketIdsHelp": "Each ~key[N]~ ID must be unique. Legacy ~key~ tokens without [N] are not checked here and can still repeat in older email templates. Saving is blocked until bracket duplicates are removed.",
     "labels": {
       "emailGeneral": {
         "username": "Recipient username",
@@ -34,6 +36,17 @@
         "assignmentId": "Assignment ID",
         "submissionId": "Submission ID",
         "timestamp": "Upload timestamp"
+      },
+      "prompt": {
+        "pdfText": "PDF text",
+        "editorText": "Editor text",
+        "assessmentResult": "Assessment result",
+        "inlineComments": "Inline comments",
+        "nlpAssessmentSuggestion": "NLP assessment suggestion",
+        "previousAssessmentResult": "Previous assessment result",
+        "assessmentConfiguration": "Assessment configuration",
+        "submissionFiles": "Submission file",
+        "studyContext": "Study context"
       }
     },
     "descriptions": {
@@ -66,6 +79,17 @@
         "assignmentId": "Internal assignment identifier.",
         "submissionId": "Internal submission identifier.",
         "timestamp": "When the submission was uploaded."
+      },
+      "prompt": {
+        "pdfText": "Text from the PDF in the current context.",
+        "editorText": "Text from the current editor document in the current context.",
+        "assessmentResult": "Saved rubric from the assessment sidebar for this document and step.",
+        "inlineComments": "Structured comments and annotations for this document and step.",
+        "nlpAssessmentSuggestion": "Model draft assessment for this step if available.",
+        "previousAssessmentResult": "Saved rubric from the previous step when carry-over is configured.",
+        "assessmentConfiguration": "Assessment rubric configuration used in this step.",
+        "submissionFiles": "Text from submission files mapped per slot in the hook step.",
+        "studyContext": "Basic metadata from the current study, step, and document context."
       }
     },
     "help": {
@@ -128,6 +152,12 @@
     "copyContent": "Copy Content",
     "language": "Language",
     "newLanguageMessage": "A new language is being added for this template. Copy current content into this language?<br><br><strong>Leaving the current language will save the content in it.</strong>",
+    "viewMode": {
+      "title": "View mode",
+      "edit": "Edit",
+      "preview": "Preview",
+      "previewHelp": "Example values only, not live data. The layout matches the editor, where placeholders appear as plain text in HTML."
+    },
     "leave": {
       "missingPlaceholdersConfirm": "This template is missing required placeholders, so your changes will not be saved."
     },

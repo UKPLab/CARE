@@ -1,19 +1,19 @@
 <template>
   <Teleport to="#topbarCenterPlaceholder">
-  <div
-    v-show="templateId && readOnlyOverwrite"
-    :title="$t('common.readOnly')"
-  >
-    <span :style="{ color: '#800000', fontWeight: 'bold' }">
-      {{ $t('common.readOnly') }}
-    </span>
-    <LoadIcon
-      :size="22"
-      :color="'#800000'"
-      icon-name="lock-fill"
-    />
-  </div>
-</Teleport>
+    <div
+      v-show="templateId && readOnlyOverwrite"
+      :title="$t('common.readOnly')"
+    >
+      <span :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }">
+        {{ $t('common.readOnly') }}
+      </span>
+      <LoadIcon
+        :size="22"
+        :color="'var(--bs-danger-text-emphasis)'"
+        icon-name="lock-fill"
+      />
+    </div>
+  </Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
@@ -86,6 +86,7 @@ import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
+import { emailTemplateTypes } from "@/assets/templateTypes";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
@@ -228,7 +229,7 @@ export default {
       // Email templates (types 1, 2, 3, 6, 7) and prompt templates (type 8) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6, 7, 8].includes(this.template.type);
+      return emailTemplateTypes.includes(this.template.type) || this.template.type === 8;
     },
     readOnlyOverwrite() {
       if (this.sidebarContent === 'history' ) {

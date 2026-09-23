@@ -32,27 +32,27 @@
         />
         <!-- Hook-only budget caps: total / per session / per user -->
         <div v-if="isHook(skill)" class="cap-fields mt-2">
-          <h6 class="text-secondary">Cost limits (optional)</h6>
+          <h6 class="text-secondary">{{ $t('nlp.services.costLimits') }}</h6>
           <div class="row g-2">
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capTotal || '')"
-                  :options="{ key: 'capTotal', label: 'Total ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Total spending cap' }"
-                  @update:model-value="skill.capTotal = $event ? Number($event) : null; emitServices()"
+                  :options="{ key: 'capTotal', label: 'nlp.services.totalCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.totalCostLimitHelp' }"
+                  @update:model-value="setHookCap(skill, 'capTotal', $event)"
               />
             </div>
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capPerSession || '')"
-                  :options="{ key: 'capPerSession', label: 'Per session ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Per-session spending cap' }"
-                  @update:model-value="skill.capPerSession = $event ? Number($event) : null; emitServices()"
+                  :options="{ key: 'capPerSession', label: 'nlp.services.sessionCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.sessionCostLimitHelp' }"
+                  @update:model-value="setHookCap(skill, 'capPerSession', $event)"
               />
             </div>
             <div class="col-md-4">
               <FormDefault
                   :model-value="String(skill.capPerUser || '')"
-                  :options="{ key: 'capPerUser', label: 'Per user ($)', type: 'number', min: 0, step: 0.01, placeholder: 'No limit', help: 'Per-user spending cap' }"
-                  @update:model-value="skill.capPerUser = $event ? Number($event) : null; emitServices()"
+                  :options="{ key: 'capPerUser', label: 'nlp.services.userCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.userCostLimitHelp' }"
+                  @update:model-value="setHookCap(skill, 'capPerUser', $event)"
               />
             </div>
           </div>
@@ -125,16 +125,14 @@ export default {
     return {
       selectedSkills: services.map((service) => {
         if (service.hookId) {
-          // Cap values come from ai_budget (the authority), not the
-          // step config JSONB. 
-          const caps = this.lookupStepHookCaps(service.hookId);
           return {
             skillName: `hook:${service.hookId}`,
             dataInput: service.inputs || {},
             dataOutput: service.outputs || {},
-            capTotal: caps.total,
-            capPerSession: caps.perSession,
-            capPerUser: caps.perUser,
+            capTotal: service.capTotal ?? null,
+            capPerSession: service.capPerSession ?? null,
+            capPerUser: service.capPerUser ?? null,
+            capsLocked: false,
           };
         }
         if (service.skill) {
@@ -171,11 +169,20 @@ export default {
         });
       });
     },
+    budgetRefreshCount() {
+      return this.$store.getters["table/ai_budget/refreshCount"] ?? 0;
+    },
   },
   watch: {
     isValid: {
       handler(newVal) {
         this.$emit("validation-change", newVal);
+      },
+      immediate: true,
+    },
+    budgetRefreshCount: {
+      handler() {
+        this.hydrateHookCapsFromStore();
       },
       immediate: true,
     },
@@ -207,6 +214,39 @@ export default {
         if (Number(row.limitType) === 2) out.perUser = value;
       }
       return out;
+    },
+    /** Copies ai_budget caps into hook slots after the table refresh. User edits stay. */
+    hydrateHookCapsFromStore() {
+      let changed = false;
+      const next = this.selectedSkills.map((skill) => {
+        if (!this.isHook(skill) || skill.capsLocked) return skill;
+        const caps = this.lookupStepHookCaps(this.hookIdFor(skill));
+        if (caps.total == null && caps.perSession == null && caps.perUser == null) {
+          return skill;
+        }
+        if (
+          skill.capTotal === caps.total
+          && skill.capPerSession === caps.perSession
+          && skill.capPerUser === caps.perUser
+        ) {
+          return skill;
+        }
+        changed = true;
+        return {
+          ...skill,
+          capTotal: caps.total,
+          capPerSession: caps.perSession,
+          capPerUser: caps.perUser,
+        };
+      });
+      if (!changed) return;
+      this.selectedSkills = next;
+      this.emitServices();
+    },
+    setHookCap(skill, key, value) {
+      skill[key] = value ? Number(value) : null;
+      skill.capsLocked = true;
+      this.emitServices();
     },
     /** Parses the hook id from a `hook:<id>` selection, or null for skills. */
     hookIdFor(skill) {
@@ -248,7 +288,14 @@ export default {
     /** Resets the slot's mappings when the chosen skill/hook changes, then emits. */
     onSkillChange(index, value) {
       const updated = [...this.selectedSkills];
-      updated[index] = {...updated[index], skillName: value, dataInput: {}, dataOutput: {}};
+      const next = {skillName: value, dataInput: {}, dataOutput: {}, capsLocked: false};
+      if (this.isHook(next)) {
+        const caps = this.lookupStepHookCaps(this.hookIdFor(next));
+        next.capTotal = caps.total;
+        next.capPerSession = caps.perSession;
+        next.capPerUser = caps.perUser;
+      }
+      updated[index] = next;
       this.selectedSkills = updated;
       this.emitServices();
     },
@@ -291,44 +338,44 @@ export default {
 }
 
 .section-title {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .services-config {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .skill-item {
-  background-color: #ffffff;
+  background-color: var(--bs-body-bg, #ffffff);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .skill-selection {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .cap-fields {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .form-label {
   font-weight: 500;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   margin-bottom: 0.5rem;
 }
 
@@ -342,7 +389,7 @@ export default {
 }
 
 .form-control:focus {
-  border-color: #0d6efd;
+  border-color: var(--bs-primary, #0d6efd);
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 

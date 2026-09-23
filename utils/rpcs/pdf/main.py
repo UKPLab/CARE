@@ -17,7 +17,8 @@ def create_app():
     logger = logging.getLogger('gunicorn.error')
     logger.setLevel(logging.INFO)
 
-    sio = socketio.Server(async_mode='threading')
+    # Default is 1 MB; CARE's webserver already allows 100 MB for the same PDFs.
+    sio = socketio.Server(async_mode='threading', max_http_buffer_size=100_000_000)
 
     @sio.event
     def connect(sid, environ, auth):
@@ -187,6 +188,7 @@ def create_app():
                 "message": "Annotations extracted successfully.",
                 "data": {
                     "annotations": annotations,
+                    "wholeText": whole_text,
                 }
             }
 

@@ -107,7 +107,7 @@ module.exports = class BackgroundTaskService extends Service {
 
         const activePreprocess = this.backgroundTask.preprocess;
         if (activePreprocess && !activePreprocess.cancelled && !activePreprocess.completed) {
-            throw new Error("Another preprocessing job is already running.");
+            throw new TranslatableError("errors.backgroundTask.alreadyRunning");
         }
 
         await this.initializePreprocessingState();

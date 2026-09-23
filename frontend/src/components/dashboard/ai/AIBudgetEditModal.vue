@@ -1,27 +1,25 @@
 <template>
   <BasicModal ref="modal" name="aiBudgetEditModal" size="md">
     <template #title>
-      Edit cost limit
+      {{ $t("ai.budgets.editTitle") }}
     </template>
     <template #body>
-    
-      <label class="form-label" for="aiBudgetCostLimit">Cost limit ($)</label>
-      <input
-        id="aiBudgetCostLimit"
-        v-model.number="form.costLimit"
-        type="number"
-        min="0"
-        step="0.01"
-        class="form-control"
-        placeholder="0"
-      />
-      <small class="text-muted">
-        Setting to 0 blocks all usage at this level. To remove the cap entirely, close this modal and use the trash icon.
-      </small>
+      <BasicForm v-model="form" :fields="fields" />
     </template>
     <template #footer>
-      <button class="btn btn-secondary" type="button" @click="close">Cancel</button>
-      <button class="btn btn-primary" type="button" :disabled="!isValid" @click="save">Save</button>
+      <span class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :text="$t('ai.common.cancel')"
+          @click="close"
+        />
+        <BasicButton
+          class="btn btn-primary"
+          :text="$t('ai.common.save')"
+          :disabled="!isValid"
+          @click="save"
+        />
+      </span>
     </template>
   </BasicModal>
 </template>
@@ -33,10 +31,13 @@
  * @author Mohammed Rawhani
  */
 import BasicModal from "@/basic/Modal.vue";
+import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AIBudgetEditModal",
-  components: { BasicModal },
+  components: { BasicModal, BasicForm, BasicButton },
   data() {
     return {
       row: null,
@@ -48,15 +49,28 @@ export default {
       const value = Number(this.form.costLimit);
       return Number.isFinite(value) && value >= 0;
     },
+    fields() {
+      return [
+        {
+          key: "costLimit",
+          label: this.$t("ai.budgets.costLimitUsd"),
+          type: "number",
+          min: 0,
+          step: 0.01,
+          placeholder: "0",
+          help: this.$t("ai.budgets.costLimitHelp"),
+        },
+      ];
+    },
   },
   methods: {
     open(row) {
       if (!row?.id) {
-        this.toastError("Invalid budget row");
+        this.toastError(this.$t("ai.errors.invalidBudget"));
         return;
       }
       this.row = row;
-      this.form.costLimit = Number(row.costLimit);
+      this.form = { costLimit: Number(row.costLimit) };
       this.$refs.modal.open();
     },
     close() {
@@ -73,19 +87,19 @@ export default {
         },
         (result) => {
           if (result?.success) {
-            this.toastSuccess("Cap updated");
+            this.toastSuccess(this.$t("ai.messages.capUpdated"));
             this.close();
           } else {
-            this.toastError(result?.message || "Failed to update cap");
+            this.toastError(resolveApiMessage(result, "ai.errors.updateCap"));
           }
         }
       );
     },
     toastSuccess(message) {
-      this.eventBus.emit("toast", { title: "Success", message, variant: "success" });
+      this.eventBus.emit("toast", { title: this.$t("ai.common.success"), message, variant: "success" });
     },
     toastError(message) {
-      this.eventBus.emit("toast", { title: "Error", message, variant: "danger" });
+      this.eventBus.emit("toast", { title: this.$t("ai.common.error"), message, variant: "danger" });
     },
   },
 };

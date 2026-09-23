@@ -6,10 +6,10 @@
       @click="(setting.type === 'boolean' || setting.type === 'bool') && $event.preventDefault()"
     >
       <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-md-end">
-        <span>{{ setting.displayName || setting.key }}</span>
+        <span>{{ translateMaybeKey(setting.displayName || setting.key) }}</span>
         <FormHelp
           v-if="setting.description"
-          :help="setting.description"
+          :help="translateMaybeKey(setting.description)"
           icon-name="info-circle"
           button-class="text-muted flex-shrink-0"
         />
@@ -121,10 +121,12 @@
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
+import { emailTemplateTypes } from "@/assets/templateTypes";
 import { DEFAULT_LOCALE, LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/locale.js";
 
 /**
@@ -148,7 +150,7 @@ export default {
     emailTemplates() {
       // Show only the user's own templates (copies count, since copies have userId === currentUser).
       return this.$store.getters["table/template/getAll"]
-        .filter(t => !t.deleted && [1, 2, 3, 6, 7].includes(t.type) && t.userId === this.user?.id)
+        .filter(t => !t.deleted && emailTemplateTypes.includes(t.type) && t.userId === this.user?.id)
         .map(t => ({ id: t.id, name: t.name, type: t.type }));
     },
     isEmailTemplateSetting() {
@@ -194,6 +196,7 @@ export default {
     },
   },
   methods: {
+    translateMaybeKey,
     updateColorValue(value) {
       const normalized = value && value.startsWith("#") ? value : `#${value || ""}`;
       if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {

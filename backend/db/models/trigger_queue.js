@@ -1,6 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
-const { QUEUE_STATUS } = require("../../utils/triggerQueueStatus.js");
+const { assertTriggerAdminWrite } = require("../../utils/helper/trigger/adminWrite.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
@@ -9,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     class TriggerQueue extends MetaModel {
         static autoTable = true;
-        static STATUS = QUEUE_STATUS;
 
         static associate(models) {
             TriggerQueue.belongsTo(models["trigger"], { foreignKey: "triggerId", as: "trigger" });
@@ -34,6 +33,14 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'trigger_queue',
         tableName: 'trigger_queue',
+        hooks: {
+            beforeCreate: async (_row, options) => {
+                await assertTriggerAdminWrite(sequelize, options);
+            },
+            beforeUpdate: async (_row, options) => {
+                await assertTriggerAdminWrite(sequelize, options);
+            },
+        },
     });
 
     return TriggerQueue;

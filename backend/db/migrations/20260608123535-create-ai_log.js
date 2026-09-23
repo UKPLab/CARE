@@ -29,6 +29,17 @@ module.exports = {
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE',
       },
+      aiHookId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+        references: {
+          model: 'ai_hook',
+          key: 'id',
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE',
+      },
       documentId: {
         type: Sequelize.INTEGER,
         allowNull: true,
@@ -128,6 +139,33 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.fn('NOW'),
       },
+    });
+
+    // Inflight check, model spend sums, share attribution, session spend, abort by requestId.
+    await queryInterface.addIndex('ai_log', ['userId', 'studySessionId', 'status', 'createdAt'], {
+      name: 'ai_log_userId_studySessionId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['aiModelId', 'status', 'createdAt'], {
+      name: 'ai_log_aiModelId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['aiModelId', 'userId', 'status', 'createdAt'], {
+      name: 'ai_log_aiModelId_userId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['studySessionId', 'status', 'createdAt'], {
+      name: 'ai_log_studySessionId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['requestId'], {
+      name: 'ai_log_requestId_index',
+    });
+    // Hook spend sums, step-hook per-session, and hook-share attribution.
+    await queryInterface.addIndex('ai_log', ['aiHookId', 'status', 'createdAt'], {
+      name: 'ai_log_aiHookId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['aiHookId', 'studySessionId', 'status', 'createdAt'], {
+      name: 'ai_log_aiHookId_studySessionId_status_createdAt_index',
+    });
+    await queryInterface.addIndex('ai_log', ['aiHookId', 'userId', 'status', 'createdAt'], {
+      name: 'ai_log_aiHookId_userId_status_createdAt_index',
     });
   },
 

@@ -6,6 +6,7 @@
  * @author Mohammed Rawhani
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 
 // Discriminates ai_budget.limitType. Caps on model / model_share / hook / hook_share are always TOTAL 
 const AI_BUDGET_LIMIT_TYPES = Object.freeze({
@@ -95,8 +96,8 @@ module.exports = (sequelize, DataTypes) => {
             const resolvedOwnerId = await AiBudget._resolveOwnerUserId(
                 aiBudget, sequelize.models, options.transaction
             );
-            if (!resolvedOwnerId) throw new Error("Invalid budget scope");
-            if (resolvedOwnerId !== currentUserId) throw new Error("You do not own this entity");
+            if (!resolvedOwnerId) throw new TranslatableError("errors.budget.invalidScope");
+            if (resolvedOwnerId !== currentUserId) throw new TranslatableError("errors.budget.entityNotOwned");
             aiBudget.userId = resolvedOwnerId;
         }
 
@@ -106,7 +107,7 @@ module.exports = (sequelize, DataTypes) => {
             if (!Number.isInteger(currentUserId) || currentUserId <= 0) return;
 
             const storedOwnerId = Number(aiBudget._previousDataValues?.userId);
-            if (storedOwnerId !== currentUserId) throw new Error("You do not own this budget");
+            if (storedOwnerId !== currentUserId) throw new TranslatableError("errors.budget.notOwned");
         }
     }
 
