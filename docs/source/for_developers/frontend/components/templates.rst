@@ -220,7 +220,13 @@ Omit options to send the full extract.
 **Known limitation:** a single number ``N`` always means “first N units”, not “unit N only”.
 ``pageRange:2`` is pages 1–2, not page 2. Use From/To ``2``–``2`` (``pageRange:2-2``) for one page.
 
-At hook run time, PDF.js supplies ``{ pages, pageCount }`` (``numPages``); the resolver slices that list.
+``pageRange`` cuts real pages only for a study PDF. The browser sends ``{ pages, pageCount }``, and the resolver slices that list.
+When a trigger runs the hook, the PDF text arrives as one string. TeX and zip text do too, so ``pageRange`` treats each of them as a single page.
+``wordRange`` still cuts words in all of those cases, including the one-string extracts.
+
+Use ``pageRange`` when a study step runs the hook and the prompt should see certain pages of the PDF.
+Use ``wordRange`` when the prompt should see a word slice, and when a trigger runs the hook or the text is editor, TeX, or zip, where ``pageRange`` cannot see real pages.
+
 Limits apply when the prompt is resolved, not to text written in the template editor.
 
 Option definitions live in ``placeholder.placeholderOptions`` (seeded by migration). The Placeholders sidebar
