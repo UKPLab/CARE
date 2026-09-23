@@ -4,10 +4,11 @@
       icon-name="person-fill-up"
       size="64"
     />
-    <p>
-      Are you sure you want to bulk create <strong>{{ newCount }}</strong> users <br />
-      and overwrite <strong>{{ duplicateCount }}</strong> users?
-    </p>
+    <i18n-t keypath="dashboard.users.bulkImportConfirm" tag="p">
+      <template #newCount><strong>{{ newCount }}</strong></template>
+      <template #br><br /></template>
+      <template #dupCount><strong>{{ duplicateCount }}</strong></template>
+    </i18n-t>
     <p
       v-if="duplicateCount > 0"
       class="alert alert-warning role-replacement-warning"

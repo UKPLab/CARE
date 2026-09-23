@@ -4,19 +4,20 @@
       v-if="updatedUserCount"
       class="result-status"
     >
-      <p class="result-summary">
-        Successfully created <strong>{{ updatedUserCount.new }}</strong> users and overwrote <strong>{{ updatedUserCount.updated }}</strong> users
-      </p>
+      <i18n-t keypath="dashboard.users.resultSummary" tag="p" class="result-summary">
+        <template #newCount><strong>{{ updatedUserCount.new }}</strong></template>
+        <template #updatedCount><strong>{{ updatedUserCount.updated }}</strong></template>
+      </i18n-t>
       <div
         v-if="createdErrors.length > 0"
         class="error-container"
       >
-        Failed to create the following users:
+        {{ $t('dashboard.users.failedListTitle') }}
         <ul
           v-for="(error, index) in createdErrors"
           :key="index"
         >
-          <li>User with external Id {{ error.extId }} cannot be added: {{ error.message }}</li>
+          <li>{{ $t('dashboard.users.userCannotBeAdded', { extId: error.extId, message: resolveApiMessage(error) }) }}</li>
         </ul>
       </div>
     </div>
@@ -41,12 +42,12 @@
       <BasicButton
         v-if="importType === 'moodle'"
         class="btn btn-outline-info"
-        title="Send to Moodle"
+        :title="$t('dashboard.users.uploadToMoodle')"
         @click="$emit('upload-to-moodle')"
       />
       <BasicButton
         class="btn btn-outline-primary"
-        title="Download CSV"
+        :title="$t('dashboard.users.downloadResultCsv')"
         @click="$emit('download-csv')"
       />
     </div>
@@ -54,6 +55,7 @@
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils.js";
 import BasicButton from "@/basic/Button.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 
@@ -81,6 +83,7 @@ export default {
       required: true,
     },
   },
+  methods: { resolveApiMessage },
   emits: ["update:moodleOptions", "upload-to-moodle", "download-csv"],
 };
 </script>

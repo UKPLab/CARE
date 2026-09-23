@@ -1,5 +1,7 @@
 "use strict";
 
+const TranslatableError = require("../../../utils/TranslatableError");
+
 /**
  * Normalize metadata mappings into a canonical backend shape.
  *
@@ -23,23 +25,23 @@ function normalizeMetadataMappings(mappings = []) {
  * @param {Object[]} [mappings=[]] - Normalized metadata mappings to validate.
  * @param {string} mappings[].metaKey - Target metadata key that must be unique and non-reserved.
  * @returns {void}
- * @throws {Error} If mappings contain duplicate or reserved metaKeys.
+ * @throws {TranslatableError} If mappings contain duplicate or reserved metaKeys.
  */
 function validateMetadataMappings(mappings = []) {
     const reservedSuffixes = [".sourceFile", ".sourceField"];
     const metaKeys = mappings.map((mapping) => mapping.metaKey);
 
     if (new Set(metaKeys).size !== metaKeys.length) {
-        throw new Error("Target metaKeys must be unique.");
+        throw new TranslatableError("errors.documentMetadata.uniqueMetaKeys");
     }
 
     const reservedMetaKeys = metaKeys.filter((metaKey) => (
         reservedSuffixes.some((suffix) => metaKey.endsWith(suffix))
     ));
     if (reservedMetaKeys.length > 0) {
-        throw new Error(
-            `Target metaKeys cannot end with reserved provenance suffixes: ${reservedMetaKeys.join(", ")}`
-        );
+        throw new TranslatableError("errors.documentMetadata.reservedMetaKeySuffixes", {
+            keys: reservedMetaKeys.join(", "),
+        });
     }
 }
 
@@ -95,7 +97,7 @@ function normalizePrimaryKeyValue(rawValue, targetField) {
  * @param {string} primaryKeyMapping.sourceField - Column/key to read from each row.
  * @param {"extId"|"email"} primaryKeyMapping.targetField - Submission-owner field to match against.
  * @returns {void}
- * @throws {Error} If any row has an invalid or duplicate primary-key value.
+ * @throws {TranslatableError} If any row has an invalid or duplicate primary-key value.
  */
 function validatePrimaryKeyValues(rows, primaryKeyMapping) {
     const seen = new Set();
@@ -104,7 +106,7 @@ function validatePrimaryKeyValues(rows, primaryKeyMapping) {
     for (const row of rows) {
         const normalized = normalizePrimaryKeyValue(row?.[primaryKeyMapping.sourceField], primaryKeyMapping.targetField);
         if (normalized == null) {
-            throw new Error("Primary key values must be present and valid for every imported row.");
+            throw new TranslatableError("errors.documentMetadata.primaryKeyValuesInvalid");
         }
 
         if (seen.has(normalized)) {
@@ -115,9 +117,10 @@ function validatePrimaryKeyValues(rows, primaryKeyMapping) {
     }
 
     if (duplicates.size > 0) {
-        throw new Error(
-            `Duplicate primary key values found for ${primaryKeyMapping.targetField}: ${[...duplicates].join(", ")}`
-        );
+        throw new TranslatableError("errors.documentMetadata.duplicatePrimaryKeys", {
+            targetField: primaryKeyMapping.targetField,
+            values: [...duplicates].join(", "),
+        });
     }
 }
 

@@ -1,0 +1,397 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-14T14:37:31.715Z",
+  "traceCount": 25,
+  "recording": {
+    "name": "815-edit-source-template",
+    "status": "finished",
+    "startTime": "2026-08-14T14:34:14.265Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "dPOdV8vggcPC7QXKAABn"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-14T14:34:32.376Z"
+  },
+  "traces": [
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 9,
+          "name": "Recording 8/14/2026, 4:34:14 PM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-14T14:34:14.266Z",
+          "startTime": "2026-08-14T14:34:14.265Z",
+          "updatedAt": "2026-08-14T14:34:14.266Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "dPOdV8vggcPC7QXKAABn"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:34:14.280Z",
+      "endTime": "2026-08-14T14:34:14.280Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:15.699Z",
+      "endTime": "2026-08-14T14:34:15.699Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1032,
+          "clientY": 162,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:17.629Z",
+      "endTime": "2026-08-14T14:34:17.629Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 114,
+          "clientY": 188,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:20.529Z",
+      "endTime": "2026-08-14T14:34:20.529Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/templates",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.713Z",
+      "endTime": "2026-08-14T14:34:21.713Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "unsubscribeAppData",
+      "payload": "7c954953-18c1-4115-b423-7ba7672d386d",
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.725Z",
+      "endTime": "2026-08-14T14:34:21.725Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "unsubscribeAppData",
+      "payload": "93e423f2-df06-4d68-a64c-ee9dcaeaff85",
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.725Z",
+      "endTime": "2026-08-14T14:34:21.725Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "unsubscribeAppData",
+      "payload": "7373a8c6-2c89-44fe-a056-6403c9e5857b",
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.725Z",
+      "endTime": "2026-08-14T14:34:21.725Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "unsubscribeAppData",
+      "payload": "81f4054a-b51e-4b8f-aaf5-e737bcac4cce",
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.736Z",
+      "endTime": "2026-08-14T14:34:21.736Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "unsubscribeAppData",
+      "payload": "a5652c98-867d-47c8-9d0c-6cc1be9c3213",
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.725Z",
+      "endTime": "2026-08-14T14:34:21.725Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "unsubscribeAppData",
+      "payload": "32d58783-2b34-4ec8-8548-0736421b0925",
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.737Z",
+      "endTime": "2026-08-14T14:34:21.737Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.751Z",
+      "endTime": "2026-08-14T14:34:21.751Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.756Z",
+      "endTime": "2026-08-14T14:34:21.756Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:21.757Z",
+      "endTime": "2026-08-14T14:34:21.757Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "templateGetLanguages",
+      "payload": {
+        "templateId": 1
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:23.639Z",
+      "endTime": "2026-08-14T14:34:23.639Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "action": "edit",
+          "params": {}
+        },
+        "action": "actionClick"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:23.646Z",
+      "endTime": "2026-08-14T14:34:23.646Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1201,
+          "clientY": 191,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:23.878Z",
+      "endTime": "2026-08-14T14:34:23.878Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:24.128Z",
+      "endTime": "2026-08-14T14:34:24.128Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 869,
+          "clientY": 258,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:25.111Z",
+      "endTime": "2026-08-14T14:34:25.111Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1064,
+          "clientY": 479,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:27.777Z",
+      "endTime": "2026-08-14T14:34:27.777Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "appDataUpdate",
+      "payload": {
+        "data": {
+          "id": 1,
+          "name": "newtemp",
+          "type": 4,
+          "description": "hi 2",
+          "defaultLanguage": "en"
+        },
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:28.069Z",
+      "endTime": "2026-08-14T14:34:28.069Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "templateRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "name": "newtemp",
+          "type": 4,
+          "public": true,
+          "userId": 4,
+          "deleted": false,
+          "sourceId": null,
+          "createdAt": "2026-08-14T14:20:32.906Z",
+          "updatedAt": "2026-08-14T14:34:28.075Z",
+          "description": "hi 2",
+          "defaultLanguage": "en"
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:34:28.085Z",
+      "endTime": "2026-08-14T14:34:28.085Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "coordinatorModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:28.089Z",
+      "endTime": "2026-08-14T14:34:28.089Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:31.161Z",
+      "endTime": "2026-08-14T14:34:31.161Z"
+    },
+    {
+      "recordingId": 9,
+      "userId": 4,
+      "socketId": "dPOdV8vggcPC7QXKAABn",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1119,
+          "clientY": 6,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:34:31.627Z",
+      "endTime": "2026-08-14T14:34:31.627Z"
+    }
+  ]
+}

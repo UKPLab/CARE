@@ -55,6 +55,21 @@ The application should be available at http://localhost:9090
 
     The credentials for the admin user can be also found in the .env file!
 
+LiteLLM RPC
+-----------
+
+AI models and hooks use the ``rpc_litellm`` service included in
+``docker-compose.yml``. Configure these variables in the selected environment file:
+
+.. code-block:: text
+
+    RPC_LITELLM_HOST=rpc_litellm
+    RPC_LITELLM_PORT=8083
+
+The host must be reachable from the backend container. Provider API credentials are
+entered in the **AI Models** dashboard and must not be committed to an environment file.
+See :doc:`Using AI Features <../for_researchers/ai_features>` for dashboard setup.
+
 Install the mailserver
 ----------------------
 

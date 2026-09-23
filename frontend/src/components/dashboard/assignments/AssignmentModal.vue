@@ -3,7 +3,7 @@
     ref="stepperModal"
     :steps="steps"
     :validation="stepValidation"
-    submit-text="Save Assignment"
+    :submit-text="$t('assignments.dashboard.modal.submitText')"
     @submit="submit"
   >
     <template #title>
@@ -13,7 +13,7 @@
 	<template #step-1>
       <div class="p-3">
         <div class="d-flex align-items-center gap-3 mb-3">
-          <span :class="assignByRole ? 'fw-bold' : 'text-muted'">Roles</span>
+          <span :class="assignByRole ? 'fw-bold' : 'text-muted'">{{ $t('assignments.dashboard.modal.assignMode.roles') }}</span>
           <div class="form-check form-switch mb-0">
             <input
               id="assignModeSwitch"
@@ -25,11 +25,11 @@
             />
             <label class="form-check-label" for="assignModeSwitch" />
           </div>
-          <span :class="assignByUser ? 'fw-bold' : 'text-muted'">Users</span>
+          <span :class="assignByUser ? 'fw-bold' : 'text-muted'">{{ $t('assignments.dashboard.modal.assignMode.users') }}</span>
         </div>
 
         <div v-if="!assignByUser">
-          <p class="text-muted mb-2">Select one or more roles allowed for this assignment.</p>
+          <p class="text-muted mb-2">{{ $t('assignments.dashboard.modal.step1.rolesHint') }}</p>
           <BasicTable
             v-model="selectedRoles"
             :columns="roleColumns"
@@ -40,7 +40,7 @@
         </div>
 
         <div v-else>
-          <p class="text-muted mb-2">Select one or more users allowed for this assignment.</p>
+          <p class="text-muted mb-2">{{ $t('assignments.dashboard.modal.step1.usersHint') }}</p>
           <BasicTable
             v-model="selectedUsers"
             :columns="userColumns"
@@ -59,6 +59,15 @@
 					v-model="formData"
 					:fields="assignmentFields"
 				/>
+				<BasicButton
+					type="button"
+					class="btn btn-outline-secondary mt-3"
+					:disabled="!submissionWarningPreview"
+					@click="previewSubmissionWarning"
+				>
+					Preview Submission Warning
+				</BasicButton>
+				<ConfirmModal ref="warningPreviewModal" />
 			</div>
 		</template>
   </StepperModal>
@@ -68,6 +77,9 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicButton from "@/basic/Button.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Multi-step modal for creating and editing assignments.
@@ -81,7 +93,7 @@ import BasicTable from "@/basic/Table.vue";
  */
 export default {
 	name: "AssignmentModal",
-	components: { StepperModal, BasicForm, BasicTable },
+	components: { StepperModal, BasicForm, BasicTable, BasicButton, ConfirmModal },
 	subscribeTable: ["assignment", "user_role", "user", "assignment_share", "study", "workflow", "configuration"],
 	data() {
 		return {
@@ -90,20 +102,6 @@ export default {
 			formData: {},
 			selectedRoles: [],
 			selectedUsers: [],
-			steps: [
-				{ title: "User Roles" },
-				{ title: "Assignment" },
-			],
-			roleColumns: [
-				{ name: "ID", key: "id", sortable: true },
-				{ name: "Role", key: "name", sortable: true },
-			],
-			userColumns: [
-				{ name: "ID", key: "id", sortable: true },
-				{ name: "Username", key: "userName", sortable: true },
-				{ name: "First Name", key: "firstName", sortable: true },
-				{ name: "Last Name", key: "lastName", sortable: true },
-			],
 			selectionTableOptions: {
 				striped: true,
 				hover: true,
@@ -118,6 +116,26 @@ export default {
 		};
 	},
 	computed: {
+		steps() {
+			return [
+				{ title: this.$t("assignments.dashboard.modal.steps.userRoles") },
+				{ title: this.$t("assignments.dashboard.modal.steps.assignment") },
+			];
+		},
+		roleColumns() {
+			return [
+				{ name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
+				{ name: this.$t("assignments.dashboard.modal.columns.role"), key: "name", sortable: true },
+			];
+		},
+		userColumns() {
+			return [
+				{ name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
+				{ name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName", sortable: true },
+				{ name: this.$t("dashboard.uploadModal.columns.firstName"), key: "firstName", sortable: true },
+				{ name: this.$t("dashboard.uploadModal.columns.lastName"), key: "lastName", sortable: true },
+			];
+		},
 		projectId() {
 		return this.$store.getters["settings/getValueAsInt"]("projects.default");
 		},
@@ -126,6 +144,14 @@ export default {
 		},
 		assignmentFields() {
 			return this.$store.getters["table/assignment/getFields"] || [];
+		},
+		/**
+		 * Trims and nulls-out the submission warning the same way the student-facing upload
+		 * modal does, so the Preview button is only enabled when a warning would actually
+		 * be shown to students.
+		 */
+		submissionWarningPreview() {
+			return (this.formData.submissionWarning || "").trim() || null;
 		},
 		availableRoles() {
 			return (this.$store.getters["table/user_role/getAll"] || []).filter((role) => !role.deleted);
@@ -154,14 +180,36 @@ export default {
 				});
 		},
 		modalTitle() {
-			if (this.isCopy) return "Copy Assignment";
-			return this.assignmentId !== 0 ? "Edit Assignment" : "New Assignment";
+			if (this.isCopy) return this.$t("assignments.dashboard.modal.titles.copy");
+			return this.assignmentId !== 0
+				? this.$t("assignments.dashboard.modal.titles.edit")
+				: this.$t("assignments.dashboard.modal.titles.new");
 		},
 	},
 	methods: {
 		onModeSwitchChange() {
 			this.selectedRoles = [];
 			this.selectedUsers = [];
+		},
+		/**
+		 * Opens the same ConfirmModal, with the same title and message, that
+		 * AssignmentUploadModal.vue's uploadSubmission() shows to students — so instructors
+		 * preview exactly what will be shown, not a re-styled approximation. Keep the title
+		 * and message strings in sync with that method if either changes.
+		 *
+		 * ConfirmModal is declared inside this step's own slot content (not as a sibling of
+		 * StepperModal), so it renders as a genuine descendant of the stepper's BasicModal —
+		 * BasicModal's own parentModal/nested-suspended mechanism then greys out the stepper
+		 * automatically while this dialog is open, with no manual wiring needed here.
+		 */
+		previewSubmissionWarning() {
+			if (!this.submissionWarningPreview) return;
+			this.$refs.warningPreviewModal.open(
+				"Submission",
+				"Please confirm before uploading:",
+				this.submissionWarningPreview,
+				() => {}
+			);
 		},
 		getDefaultFormData() {
 			const defaults = {};
@@ -205,6 +253,7 @@ export default {
 				delete this.formData.id;
 				this.formData.userId = this.currentUserId;
 				this.formData.closed = null;
+				this.formData.parentAssignmentId = assignmentId;
 			}
 
 			this.$refs.stepperModal.open();
@@ -229,8 +278,8 @@ export default {
 				if (!assignmentResult.success) {
 					this.$refs.stepperModal.setWaiting(false);
 					this.eventBus.emit("toast", {
-						title: "Could not save assignment",
-						message: assignmentResult.message,
+						title: this.$t("assignments.dashboard.modal.toasts.saveFailed"),
+						message: resolveApiMessage(assignmentResult),
 						variant: "danger",
 					});
 					return;
@@ -265,8 +314,10 @@ export default {
 				this.$refs.stepperModal.setWaiting(false);
 				this.assignmentId = savedAssignmentId;
 				this.eventBus.emit("toast", {
-					title: "Assignment saved",
-					message: `Assignment has been successfully ${payload.id ? "updated" : "created"}.`,
+					title: this.$t("assignments.dashboard.modal.toasts.saveSuccess.title"),
+					message: payload.id
+						? this.$t("assignments.dashboard.modal.toasts.saveSuccess.messageUpdated")
+						: this.$t("assignments.dashboard.modal.toasts.saveSuccess.messageCreated"),
 					variant: "success",
 				});
 				this.$refs.stepperModal.close();

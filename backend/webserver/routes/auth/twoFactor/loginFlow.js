@@ -19,15 +19,15 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
         const { method } = req.body;
 
         if (!req.session || !req.session.twoFactorPending) {
-            return res.status(400).json({ message: 'No pending 2FA verification found. Please login again.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.noPendingVerification' });
         }
 
         const pending = req.session.twoFactorPending;
         if (!method || !pending.methods || !Array.isArray(pending.methods)) {
-            return res.status(400).json({ message: 'Missing 2FA method selection.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.missingMethodSelection' });
         }
         if (!pending.methods.includes(method)) {
-            return res.status(400).json({ message: 'Selected 2FA method is not enabled for this user.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.selectedMethodNotEnabled' });
         }
 
         const userRecord = await server.db.models['user'].findOne({
@@ -36,7 +36,7 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
         });
         if (!userRecord) {
             delete req.session.twoFactorPending;
-            return res.status(400).json({ message: 'User not found.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.userNotFound' });
         }
 
         pending.method = method;
@@ -46,7 +46,7 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
         try {
             if (method === 'email') {
                 if (!userRecord.email) {
-                    return res.status(400).json({ message: 'Email address not found. Cannot use email 2FA.' });
+                    return res.status(400).json({ message: 'auth.twoFactor.api.emailAddressNotFound' });
                 }
                 await twoFactor.sendEmailOtp(userRecord);
                 twoFactor.resetTwoFactorFailedAttempts(pending);
@@ -56,15 +56,15 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
 
             if (method === 'totp') {
                 if (!userRecord.totpSecret) {
-                    return res.status(400).json({ message: 'TOTP is enabled but not configured (missing secret).' });
+                    return res.status(400).json({ message: 'auth.twoFactor.api.totpMissingSecret' });
                 }
                 return req.session.save(() => res.status(200).json({ requiresTwoFactor: true, method: 'totp' }));
             }
 
-            return res.status(400).json({ message: `Unsupported 2FA method: ${method}` });
+            return res.status(400).json({ message: 'auth.twoFactor.api.unsupportedMethod', params: { method } });
         } catch (error) {
             server.logger.error('Failed to apply 2FA selection: ' + error);
-            return res.status(500).json({ message: 'Failed to start selected 2FA method.' });
+            return res.status(500).json({ message: 'auth.twoFactor.api.startSelectedMethodFailed' });
         }
     });
 
@@ -74,13 +74,13 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
     server.app.post('/auth/2fa/email/verify', async (req, res) => {
         const { otp } = req.body;
         if (!otp) {
-            return res.status(400).json({ message: 'OTP is required.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.otpRequired' });
         }
         if (!req.session || !req.session.twoFactorPending) {
-            return res.status(400).json({ message: 'No pending 2FA verification found. Please login again.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.noPendingVerification' });
         }
         if (req.session.twoFactorPending.method !== 'email') {
-            return res.status(400).json({ message: 'Email 2FA is not the selected method.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.emailNotSelected' });
         }
 
         try {
@@ -91,15 +91,15 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
 
             if (!user) {
                 delete req.session.twoFactorPending;
-                return res.status(400).json({ message: 'User not found.' });
+                return res.status(400).json({ message: 'auth.twoFactor.api.userNotFound' });
             }
 
             if (!user.twoFactorOtp || user.twoFactorOtp !== otp) {
                 return await twoFactor.handleFailedTwoFactorAttempt(req, res, {
                     userId: user.id,
                     clearEmailOtp: true,
-                    errorMessage: 'Invalid OTP code.',
-                    tooManyAttemptsErrorMessage: 'Too many invalid OTP attempts. Please login again.',
+                    errorMessage: 'auth.twoFactor.api.invalidOtpAttemptsRemaining',
+                    tooManyAttemptsErrorMessage: 'auth.twoFactor.api.tooManyInvalidOtpAttempts',
                 });
             }
 
@@ -109,7 +109,7 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
                     { where: { id: user.id } }
                 );
                 delete req.session.twoFactorPending;
-                return res.status(400).json({ message: 'OTP has expired. Please request a new one.' });
+                return res.status(400).json({ message: 'auth.twoFactor.api.otpExpired' });
             }
 
             await server.db.models['user'].update(
@@ -121,7 +121,7 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
             return shared.finalizeLogin(req, res, user, { mode: 'json' });
         } catch (error) {
             server.logger.error('Failed to verify OTP: ' + error);
-            return res.status(500).json({ message: 'Internal server error' });
+            return res.status(500).json({ message: 'auth.twoFactor.api.internalServerError' });
         }
     });
 
@@ -131,10 +131,10 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
     server.app.get('/auth/2fa/email/status', async (req, res) => {
         const pending = req.session?.twoFactorPending;
         if (!pending) {
-            return res.status(400).json({ message: 'No pending 2FA verification found. Please login again.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.noPendingVerification' });
         }
         if (pending.method !== 'email') {
-            return res.status(400).json({ message: 'Email 2FA is not the selected method.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.emailNotSelected' });
         }
 
         return res.status(200).json(twoFactor.getEmailOtpCooldownInfo(pending));
@@ -151,12 +151,12 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
     server.app.post('/auth/2fa/totp/verify', async (req, res, next) => {
         const token = String(req.body.token || '').replace(/\s/g, '');
         if (!token) {
-            return res.status(400).json({ message: 'TOTP token is required.' });
+            return res.status(400).json({ message: 'auth.twoFactor.api.totpTokenRequired' });
         }
 
         const pending = req.session?.twoFactorPending;
         if (!pending?.userId) {
-            return res.status(401).json({ message: 'Invalid TOTP code' });
+            return res.status(401).json({ message: 'auth.twoFactor.api.invalidTotpCodeNoPeriod' });
         }
 
         try {
@@ -170,18 +170,18 @@ function registerTwoFactorLoginFlowRoutes(server, helpers) {
                 return req.session.save((saveErr) => {
                     if (saveErr) {
                         server.logger.error('Failed to save session: ' + saveErr);
-                        return res.status(500).json({ message: 'Session error during 2FA.' });
+                        return res.status(500).json({ message: 'auth.twoFactor.api.sessionErrorDuring2fa' });
                     }
 
-                    return res.status(401).json({ message: 'Invalid TOTP code' });
+                    return res.status(401).json({ message: 'auth.twoFactor.api.invalidTotpCodeNoPeriod' });
                 });
             }
 
             const totp = new TOTP({ secret: user.totpSecret, digits: 6, period: 30 });
             if (totp.validate({ token, window: 1 }) === null) {
                 return await twoFactor.handleFailedTwoFactorAttempt(req, res, {
-                    errorMessage: 'Invalid TOTP code.',
-                    tooManyAttemptsErrorMessage: 'Too many invalid TOTP attempts. Please login again.',
+                    errorMessage: 'auth.twoFactor.api.invalidTotpAttemptsRemaining',
+                    tooManyAttemptsErrorMessage: 'auth.twoFactor.api.tooManyInvalidTotpAttempts',
                 });
             }
 

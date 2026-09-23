@@ -43,26 +43,33 @@ export default {
         pagination: 10,
         selectableRows: true,
       },
-      columns: [
+
+    };
+  },
+  computed: {
+    columns() {
+      return [
         {
-          name: "Duplicate",
+          name: this.$t('common.duplicate'),
           key: "exists",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", default: "No" },
+            keyMapping: { true: this.$t('common.yes'), default: this.$t('common.no') },
           },
           filter: [
-            { key: false, name: "New" },
-            { key: true, name: "Duplicate" },
+            {
+              key: false, name: this.$t('common.new')
+             },
+            { key: true, name: this.$t('common.duplicate') },
           ],
         },
-        { name: "extId", key: "extId" },
-        { name: "First Name", key: "firstName" },
-        { name: "Last Name", key: "lastName" },
-        { name: "Email", key: "email" },
-        { name: "Roles", key: "displayRoles" },
-      ],
-    };
+        { name: this.$t('dashboard.projects.extId'), key: "extId" },
+        { name: this.$t('common.firstName'), key: "firstName" },
+        { name: this.$t('common.lastName'), key: "lastName" },
+        { name: this.$t('users.columns.email'), key: "email" },
+        { name: this.$t('dashboard.projects.roles'), key: "displayRoles" },
+      ];
+    },
   },
 };
 </script>

@@ -14,6 +14,8 @@
 import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 
 /**
  * Table of study session with management buttons
@@ -51,14 +53,7 @@ export default {
   data() {
     return {
       showFinished: true,
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      tableOptions: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
     };
   },
   computed: {
@@ -68,19 +63,19 @@ export default {
     tableColumns() {
       const columns = [
         {
-          name: "ID",
+          name: this.$t('common.id'),
           key: "id",
         },
         {
-          name: "Started",
+          name: this.$t('studies.columns.started'),
           key: "startParsed",
         },
         {
-          name: "Finished",
+          name: this.$t('studies.columns.finished'),
           key: "finished",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", false: "No" },
+            keyMapping: { true: this.$t('common.yes'), false: this.$t('common.no') },
             classMapping: { true: "bg-success", false: "bg-danger" },
           },
         }
@@ -88,18 +83,18 @@ export default {
 
       if (this.hasCopiedSessions) {
         columns.push({
-          name: "Parent Session ID",
+          name: this.$t('studies.columns.parentSessionId'),
           key: "parentStudySessionId",
         });
       }
 
       if (this.currentUserOnly) {
         columns.push({
-          name: "Resumable",
+          name: this.$t('studies.columns.resumable'),
           key: "resumable",
           type: "badge",
           typeOptions: {
-            keyMapping: { true: "Yes", false: "No" },
+            keyMapping: { true: this.$t('common.yes'), false: this.$t('common.no') },
             classMapping: { true: "bg-success", false: "bg-danger" },
           },
         });
@@ -107,122 +102,96 @@ export default {
 
       if (!this.currentUserOnly) {
         columns.unshift({
-          name: "User",
+          name: this.$t('common.user'),
           key: "creator_name",
         });
 
         if (this.canReadPrivateInformation) {
-          columns.splice(1, 0, { name: "FirstName", key: "firstName" }, { name: "LastName", key: "lastName" });
+          columns.splice(1, 0, { name: this.$t('common.firstName'), key: "firstName" }, { name: this.$t('common.lastName'), key: "lastName" });
         }
       }
 
       return columns;
     },
     buttons() {
-      const buttons = [
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
-          filter: this.currentUserOnly ? [{ key: "showResumeButton", value: true }] : [],
-          title: this.currentUserOnly ? "Resume session" : "Open session",
+      const sm = { specifiers: { "btn-sm": true } };
+      const buttons = [];
+
+      if (this.currentUserOnly) {
+        buttons.push(dashboardRowAction("resume", {
+          options: sm,
+          filter: [{ key: "showResumeButton", value: true }],
+          title: this.$t('studies.resumeSession'),
           action: "openSession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
           },
+        }));
+      } else {
+        buttons.push(dashboardRowAction("open", {
+          options: sm,
+          title: this.$t('dashboard.study.openSession'),
+          action: "openSession",
+          stats: {
+            studySessionId: "id",
+          },
+        }));
+      }
+
+      buttons.push(
+        dashboardRowAction("start", {
+          options: sm,
           filter: [{ key: "showStartButton", value: true }],
-          title: "Start session",
+          title: this.$t('studies.startSession'),
           action: "startStudySession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
           },
+        }),
+        dashboardRowAction("inspect", {
+          options: sm,
           filter: [{ key: "showInspectButton", value: true }],
-          title: "Inspect session",
+          title: this.$t('dashboard.study.inspectSession'),
           action: "reviewSession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          } 
-        }
-      ];
-      if (!this.currentUserOnly) {
-        buttons.push({
-          icon: "link-45deg",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
           },
-          title: "Copy session link",
+        }),
+      );
+      if (!this.currentUserOnly) {
+        buttons.push(dashboardRowAction("link", {
+          options: sm,
+          title: this.$t('dashboard.study.copySessionLink'),
           action: "copyStudySessionLink",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }
-        });
+          },
+        }));
       }
       buttons.push(
-        {
-          icon: "copy",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
-          title: "Copy session",
+        dashboardRowAction("copy", {
+          options: sm,
+          title: this.$t('dashboard.study.copySession'),
           action: "copySession",
-          stats:{
+          stats: {
             studySessionId: "id",
-          }     
-        },
-        {
-        icon: "trash",
-        options: {
-          iconOnly: true,
-          specifiers: {
-            "btn-outline-danger": true,
-            "btn-sm": true,
           },
-        },
-        filter: [
-          {
-            key: "showDeleteButton",
-            value: true,
-          },
-        ],
-        title: "Delete session",
-        action: "deleteStudySession",
-        stats:{
+        }),
+        dashboardRowAction("delete", {
+          options: sm,
+          filter: [
+            {
+              key: "showDeleteButton",
+              value: true,
+            },
+          ],
+          title: this.$t('dashboard.study.deleteSession'),
+          action: "deleteStudySession",
+          stats: {
             studySessionId: "id",
-          }
-      });
+          },
+        }),
+      );
 
       return buttons;
     },
@@ -312,7 +281,7 @@ export default {
       return processedSession;
     },
     formatDate(date) {
-      return date ? new Date(date).toLocaleString() : "not yet";
+      return date ? new Date(date).toLocaleString() : this.$t('dashboard.study.notYet');
     },
     addUserInfo(session) {
       const user = this.$store.getters["table/user/get"](session.userId);
@@ -347,34 +316,22 @@ export default {
       }
     },
     confirmDelete(params) {
-      this.$refs.deleteConf.open(
-        "Delete Session",
-        "You are about to delete a session; if you just want to finish the session, please access the session and abort the delete.",
-        null,
-        (confirmed) => {
-          if (confirmed) {
-            this.deleteSession(params.id);
-          }
-        }
-      );
-    },
-    deleteSession(sessionId) {
-      this.$socket.emit(
-        "appDataUpdate",
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
         {
           table: "study_session",
-          data: {
-            id: sessionId,
-            deleted: true,
+          id: params.id,
+          title: this.$t('dashboard.study.deleteSession'),
+          message: this.$t('dashboard.study.deleteSessionNote'),
+          failTitle: this.$t('dashboard.study.studySessionNotDeleted'),
+          onSuccess: () => {
+            this.showSuccessToast(this.$t('dashboard.study.studySessionDeleted'), this.$t('dashboard.study.studySessionHasBeenDeleted'));
+            this.$emit("session-deleted", params.id);
           },
-        },
-        (result) => {
-          if (result.success) {
-            this.showSuccessToast("Study Session deleted", "Study session has been deleted");
-            this.$emit("session-deleted", sessionId);
-          } else {
-            this.showErrorToast("Study Session not deleted", result.message);
-          }
         }
       );
     },
@@ -382,9 +339,9 @@ export default {
       const link = `${window.location.origin}/review/${hash}`;
       try {
         await navigator.clipboard.writeText(link);
-        this.showSuccessToast("Link copied", "Study session link copied to clipboard!");
+        this.showSuccessToast(this.$t('studies.messages.linkCopied'), this.$t('dashboard.study.studySessionCopiedMessage'));
       } catch (_error) {
-        this.showErrorToast("Link not copied", "Could not copy study session link to clipboard!");
+        this.showErrorToast(this.$t('errors.clipboard.linkNotCopied'), this.$t('errors.clipboard.couldNotCopyStudySession'));
       }
     },
     async copySession(params) {

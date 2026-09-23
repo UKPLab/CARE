@@ -3,12 +3,12 @@
     ref="metadataImportStepper"
     :steps="steps"
     :validation="stepValid"
-    submit-text="Close"
+    :submit-text="$t('common.close')"
     @submit="$refs.metadataImportStepper.close()"
     @step-change="handleStepChange"
   >
     <template #title>
-      <span>Import Metadata</span>
+      <span>{{ $t('assignments.metadata.modal.title') }}</span>
     </template>
 
     <template #step-1>
@@ -68,6 +68,7 @@ import StepSelectTarget from "@/components/dashboard/assignments/metadata/StepSe
 import StepMapping from "@/components/dashboard/assignments/metadata/StepMapping.vue";
 import StepPreview from "@/components/dashboard/assignments/metadata/StepPreview.vue";
 import StepResult from "@/components/dashboard/assignments/metadata/StepResult.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Multi-step modal for importing document metadata.
@@ -112,16 +113,18 @@ export default {
       lastPreviewSignature: "",
       lastImportedSignature: "",
       isImportRunning: false,
-      steps: [
-        { title: "Upload" },
-        { title: "Target" },
-        { title: "Mapping" },
-        { title: "Preview" },
-        { title: "Result" },
-      ],
     };
   },
   computed: {
+    steps() {
+      return [
+        { title: this.$t("assignments.metadata.steps.upload") },
+        { title: this.$t("assignments.metadata.steps.target") },
+        { title: this.$t("assignments.metadata.steps.mapping") },
+        { title: this.$t("assignments.metadata.steps.preview") },
+        { title: this.$t("assignments.metadata.steps.result") },
+      ];
+    },
     canViewAllAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.viewAll");
     },
@@ -144,10 +147,13 @@ export default {
       return this.selectedAssignmentId ? this.$store.getters["table/assignment/get"](this.selectedAssignmentId) : null;
     },
     assignmentLabel() {
-      return this.selectedAssignment?.name || `Assignment #${this.selectedAssignmentId}`;
+      return this.selectedAssignment?.name
+        || this.$t("assignments.metadata.fallback.assignmentLabel", { id: this.selectedAssignmentId });
     },
     targetTypeLabel() {
-      return this.targetType === "assignment" ? "Assignment" : this.targetType;
+      return this.targetType === "assignment"
+        ? this.$t("common.assignment")
+        : this.targetType;
     },
     normalizedMetadataMappings() {
       return this.metadataMappings.map((mapping) => ({
@@ -190,31 +196,31 @@ export default {
       const messages = [];
 
       if (!this.primaryKeyMapping.sourceField) {
-        messages.push("Select the uploaded source key used for matching.");
+        messages.push(this.$t("assignments.metadata.validation.selectSourceKey"));
       }
 
       if (!this.primaryKeyMapping.targetField) {
-        messages.push("Select which CARE field the primary key should match against.");
+        messages.push(this.$t("assignments.metadata.validation.selectTargetField"));
       }
 
       if (this.metadataMappings.length === 0) {
-        messages.push("Add at least one metadata mapping.");
+        messages.push(this.$t("assignments.metadata.validation.addMapping"));
       }
 
       if (this.normalizedMetadataMappings.some((mapping) => !mapping.sourceField)) {
-        messages.push("Every metadata mapping needs a source key.");
+        messages.push(this.$t("assignments.metadata.validation.mappingNeedsSource"));
       }
 
       if (this.normalizedMetadataMappings.some((mapping) => !mapping.metaKey)) {
-        messages.push("Every metadata mapping needs a target metaKey.");
+        messages.push(this.$t("assignments.metadata.validation.mappingNeedsMetaKey"));
       }
 
       if (this.hasDuplicateMetaKeys) {
-        messages.push("Target metaKeys must be unique.");
+        messages.push(this.$t("assignments.metadata.validation.uniqueMetaKeys"));
       }
 
       if (this.hasDuplicatePrimaryKeyValues) {
-        messages.push("Primary key values must be present and unique across all uploaded rows.");
+        messages.push(this.$t("assignments.metadata.validation.uniquePrimaryKeys"));
       }
 
       return messages;
@@ -241,15 +247,25 @@ export default {
     importIssues() {
       const issues = [];
       for (const entry of this.result.unmatched || []) {
-        issues.push(`Unmatched value "${entry.primaryKeyValue ?? "unknown"}": ${entry.message}`);
+        const detail = resolveApiMessage(entry);
+        const value = entry.primaryKeyValue ?? this.$t("assignments.metadata.issues.unknownValue");
+        issues.push(this.$t("assignments.metadata.issues.unmatched", { value, detail }));
       }
       for (const entry of this.result.skipped || []) {
-        const prefix = entry.submissionId ? `Submission ${entry.submissionId}` : "Row";
-        issues.push(`${prefix}: ${entry.message}`);
+        const detail = resolveApiMessage(entry);
+        if (entry.submissionId) {
+          issues.push(this.$t("assignments.metadata.issues.submission", { id: entry.submissionId, detail }));
+        } else {
+          issues.push(this.$t("assignments.metadata.issues.row", { detail }));
+        }
       }
       for (const entry of this.result.overwritten || []) {
-        const prefix = entry.submissionId ? `Submission ${entry.submissionId}` : "Import";
-        issues.push(`${prefix}: ${entry.message}`);
+        const detail = resolveApiMessage(entry);
+        if (entry.submissionId) {
+          issues.push(this.$t("assignments.metadata.issues.submission", { id: entry.submissionId, detail }));
+        } else {
+          issues.push(this.$t("assignments.metadata.issues.import", { detail }));
+        }
       }
       return issues;
     },
@@ -366,8 +382,8 @@ export default {
         } else {
           this.$refs.metadataImportStepper.currentStep = 2;
           this.eventBus.emit("toast", {
-            title: "Failed to preview metadata import",
-            message: res.message,
+            title: this.$t("assignments.metadata.toasts.previewFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -391,15 +407,17 @@ export default {
           this.result = res.data || {};
           this.lastImportedSignature = this.payloadSignature;
           this.eventBus.emit("toast", {
-            title: "Metadata imported",
-            message: `Wrote ${res.data?.metadataEntryCount || 0} metadata entries.`,
+            title: this.$t("assignments.metadata.toasts.importSuccess.title"),
+            message: this.$t("assignments.metadata.toasts.importSuccess.message", {
+              count: res.data?.metadataEntryCount || 0,
+            }),
             variant: "success",
           });
         } else {
           this.$refs.metadataImportStepper.currentStep = 3;
           this.eventBus.emit("toast", {
-            title: "Metadata import failed",
-            message: res.message,
+            title: this.$t("assignments.metadata.toasts.importFailed"),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

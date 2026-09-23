@@ -18,18 +18,13 @@
           icon-name="cloud-arrow-up"
           size="64"
         />
-        <p>Drag and drop CSV file here<br />or click to upload</p>
+        <p>{{ $t('dashboard.users.dragAndDropCSV') }}<br />{{ $t('dashboard.users.orClickToUpload') }}</p>
       </div>
-      <p>
-        Please check the format or
-        <a
-          class="template-link"
-          @click="downloadTemplateCSV"
-        >
-          download the template
+      <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
+        <a class="template-link" @click="downloadTemplateCSV">
+          {{ $t('dashboard.users.downloadTemplate') }}
         </a>
-        here.
-      </p>
+      </i18n-t>
       <template v-if="file.state === 1">
         <div
           v-if="file.name && file.errors.length === 0"
@@ -45,7 +40,7 @@
           </div>
           <BasicButton
             icon="x-circle-fill"
-            tooltip="Clear file"
+            :tooltip="$t('dashboard.users.clearFile')"
             @click="clearFile"
           />
         </div>
@@ -53,7 +48,7 @@
           v-else
           class="scrollable-error-container"
         >
-          <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
+          <p>{{ $t('dashboard.users.csvErrorHint') }}</p>
           <ul>
             <li
               v-for="(error, index) in file.errors"
@@ -125,7 +120,7 @@ export default {
       return new Promise((resolve, reject) => {
         Papa.parse(file, {
           header: true,
-          complete: function (results) {
+          complete: (results) => {
             const { data: rows, meta } = results;
             const { fields: fileHeaders } = meta;
             const requiredHeaders = ["extId", "firstName", "lastName", "email", "roles"];
@@ -136,32 +131,32 @@ export default {
             const errors = [];
             // Check headers
             if (!requiredHeaders.every((header) => fileHeaders.includes(header))) {
-              errors.push("CSV does not contain all required headers");
+              errors.push(this.$t('errors.csv.missingRequiredHeaders'));
             }
             rows.forEach((row, index) => {
               // Check if every cell has value
               for (const [key, value] of Object.entries(row)) {
                 if (value === null || value === "") {
-                  errors.push(`Empty value found for ${key} at index ${index + 1}`);
+                  errors.push(this.$t('errors.csv.emptyValue', { key, index: index + 1 }));
                 }
               }
               // Check for duplicate id
               if (seenIds.has(row.extId)) {
-                errors.push(`Duplicate id found: ${row.extId} at index ${index + 1}`);
+                errors.push(this.$t('errors.csv.duplicateId', { extId: row.extId, index: index + 1 }));
               } else {
                 seenIds.add(row.extId);
               }
 
               // Check for duplicate email
               if (seenEmails.has(row.email)) {
-                errors.push(`Duplicate email found: ${row.email} at index ${index + 1}`);
+                errors.push(this.$t('errors.csv.duplicateEmail', { email: row.email, index: index + 1 }));
               } else {
                 seenEmails.add(row.email);
               }
 
               // Check if the email is in a valid format
               if (!emailRegex.test(row.email)) {
-                errors.push(`Invalid email format for id ${row.id} at index ${index + 1}: ${row.email}`);
+                errors.push(this.$t('errors.csv.invalidEmailFormat', { id: row.id, index: index + 1, email: row.email }));
               }
             });
 
@@ -171,15 +166,15 @@ export default {
               resolve(rows);
             }
           },
-          error: function (error) {
-            reject(["Error parsing file: " + error.message]);
+          error: (error) => {
+            reject([this.$t('errors.csv.parseError', { message: error.message })]);
           },
         });
       });
     },
     async processFile(file) {
       if (!file || !file.name.endsWith(".csv")) {
-        alert("Please upload a CSV file");
+        alert(this.$t('dashboard.users.pleaseUploadCsv'));
         return;
       }
       try {
@@ -192,8 +187,8 @@ export default {
         });
         this.$emit("users-loaded", users);
         this.eventBus.emit("toast", {
-          title: "Validation completed",
-          message: "CSV is valid!",
+          title: this.$t('dashboard.users.validationCompleted'),
+          message: this.$t('dashboard.users.validationCompletedMessage'),
           variant: "success",
         });
       } catch (errors) {
@@ -218,7 +213,7 @@ export default {
 
 .drag-drop-area {
   margin-bottom: 0.5rem;
-  border: 2px dashed #ccc;
+  border: 2px dashed var(--bs-border-color, #ccc);
   border-radius: 4px;
   padding: 1.25rem;
   text-align: center;
@@ -227,13 +222,13 @@ export default {
 }
 
 .drag-drop-area:hover {
-  background-color: #f0f0f0;
+  background-color: var(--bs-tertiary-bg, #f0f0f0);
 }
 
 .drag-drop-area p {
   margin: 0;
   font-size: 0.925rem;
-  color: #666;
+  color: var(--bs-secondary-color, #666);
 }
 
 .template-link {
@@ -245,8 +240,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border: 1px solid #dee2e6;
-  background: #f2f2f2;
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  background: var(--bs-tertiary-bg, #f2f2f2);
   border-radius: 4px;
 }
 
@@ -257,7 +252,7 @@ export default {
 
 .file-info-container strong {
   margin: 0 0.5rem;
-  color: #333;
+  color: var(--bs-body-color, #333);
 }
 
 .file-info-container button {

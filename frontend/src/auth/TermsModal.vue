@@ -5,7 +5,7 @@
     lg
   >
     <template #title>
-      Terms
+      {{ $t('auth.termsOfService') }}
     </template>
     <template #body>
       <BasicEditor :model-value="terms" :read-only="true" />
@@ -13,7 +13,7 @@
     <template #footer>
       <BasicButton
         class="btn btn-secondary"
-        text="Close"
+        :title="$t('common.close')"
         @click="cancel"
       />
     </template>

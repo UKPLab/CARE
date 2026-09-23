@@ -8,16 +8,15 @@
   >
     <template #title>
       <slot name="title">
-        <span v-if="data.id">Edit</span>
-        <span v-else>New</span>
-        {{ title }}
+        <span v-if="data.id">{{ $t('common.editItem', { item: title }) }}</span>
+        <span v-else>{{ $t('common.newItem', { item: title }) }}</span>
       </slot>
     </template>
     <template #body>
       <span v-if="success">
         <slot name="success">
-          <span v-if="data.id"> The entry is successfully updated!</span>
-          <span v-else>The entry is successfully added!</span>
+          <span v-if="data.id"> {{$t('coordinator.entryUpdated')}}</span>
+          <span v-else>{{$t('coordinator.entryAdded')}}</span>
         </slot>
       </span>
       <span v-else>
@@ -36,34 +35,28 @@
       >
         <slot name="success-footer">
           <slot name="buttons" />
-          <button
+          <BasicButton
             class="btn btn-secondary"
+            :title="$t('common.close')"
             @click="$refs.coordinatorModal.close()"
-          >
-            Close
-          </button>
+          />
         </slot>
       </span>
-      <span
-        v-else
-        class="btn-group"
-      >
+      <span v-else>
         <slot name="footer">
-          <slot name="buttons" />
-          <button
-            class="btn btn-secondary"
-            type="button"
-            @click="$refs.coordinatorModal.close()"
-          >
-            {{ textCancel }}
-          </button>
-          <button
-            class="btn btn-primary me-2"
-            type="button"
-            @click="submit"
-          >
-            {{ data.id ? textUpdate : textAdd }}
-          </button>
+          <span class="btn-group">
+            <slot name="buttons" />
+            <BasicButton
+              class="btn btn-secondary"
+              :title="textCancel || $t('common.cancel')"
+              @click="$refs.coordinatorModal.close()"
+            />
+            <BasicButton
+              class="btn btn-primary me-2"
+              :title="data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add'))"
+              @click="submit"
+            />
+          </span>
         </slot>
       </span>
     </template>
@@ -73,7 +66,8 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import { sorter } from "@/assets/utils.js";
+import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage, sorter } from "@/assets/utils.js";
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -95,23 +89,24 @@ import { sorter } from "@/assets/utils.js";
  */
 export default {
   name: "BasicCoordinator",
-  components: { BasicModal, BasicForm },
+  components: { BasicModal, BasicForm, BasicButton },
   props: {
     title: {
       type: String,
       required: true,
     },
+    // Empty defaults: footer uses `textX || $t(...)`; a literal default is always truthy and skips i18n.
     textAdd: {
       type: String,
-      default: "Add",
+      default: "",
     },
     textUpdate: {
       type: String,
-      default: "Update",
+      default: "",
     },
     textCancel: {
       type: String,
-      default: "Cancel",
+      default: "",
     },
     table: {
       type: String,
@@ -196,8 +191,8 @@ export default {
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
-          title: "Error",
-          message: "The table " + this.table + " has no defined fields!",
+          title: this.$t('common.error'),
+          message: this.$t('coordinator.errors.noFieldsDefined', { table: this.table }),
           variant: "danger",
         });
       }
@@ -214,13 +209,15 @@ export default {
       
       if (!isValidated) return;
       if (hasIncompleteConfig) {
-        const stepMessage = incompleteSteps.length === 1 
-          ? `step ${incompleteSteps[0]}`
-          : `steps ${incompleteSteps.slice(0, -1).join(", ")} and ${incompleteSteps[incompleteSteps.length - 1]}`;
-        
+        const stepMessage = incompleteSteps.length === 1
+          ? this.$t('coordinator.errors.stepSingle', { n: incompleteSteps[0] })
+          : this.$t('coordinator.errors.stepMultiple', {
+              list: incompleteSteps.slice(0, -1).join(", "),
+              last: incompleteSteps[incompleteSteps.length - 1]
+            });
         this.eventBus.emit("toast", {
-          title: "Incomplete Configuration",
-          message: `You have incomplete configuration at ${stepMessage}`,
+          title: this.$t('coordinator.errors.incompleteConfig'),
+          message: this.$t('coordinator.errors.incompleteConfigDetail', { steps: stepMessage }),
           variant: "danger",
         });
         return;
@@ -247,8 +244,8 @@ export default {
           } else {
             this.$refs.coordinatorModal.waiting = false;
             this.eventBus.emit("toast", {
-              title: "Could not save",
-              message: result.message,
+              title: this.$t('coordinator.errors.saveFailed'),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }

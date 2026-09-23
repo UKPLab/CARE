@@ -57,12 +57,12 @@ export default defineComponent({
       if (this.withAssignmentId) {
         const assignmentField = {
           key: "assignmentID",
-          label: "Assignment ID:",
+          label: this.$t('moodle.assignmentId'),
           required: true,
           suffix: {
-            text: "Refresh",
+            text: this.$t('moodle.refresh'),
             onClick: this.fetchAssignments,
-            tooltip: "Refresh assignments list",
+            tooltip: this.$t('moodle.refreshTooltip'),
           },
         };
 
@@ -78,7 +78,7 @@ export default defineComponent({
           // NOTE: This text field should be given a default value, so the parent component can have access to this field.
           // Please refer to commit#2c717d2.
           assignmentField.default = "";
-          assignmentField.placeholder = "assignment-id-placeholder";
+          assignmentField.placeholder = this.$t('moodle.placeholders.assignmentId');
         }
 
         return [...this.basicMoodleOptionsFields, assignmentField];
@@ -91,33 +91,33 @@ export default defineComponent({
       if (this.showMoodleCourseId) {
         optionFields.push({
           key: "courseID",
-          label: "Course ID:",
+          label: this.$t('moodle.courseId'),
           type: "text",
           required: true,
           default: this.moodleCourseId,
-          placeholder: "course-id-placeholder",
+          placeholder: this.$t('moodle.placeholders.courseId'),
         });
       }
 
       if (this.showMoodleAPIKey) {
         optionFields.push({
           key: "apiKey",
-          label: "Moodle API Key:",
+          label: this.$t('moodle.apiKey'),
           type: "text",
           required: true,
           default: this.moodleAPIKey,
-          placeholder: "api-key-placeholder",
+          placeholder: this.$t('moodle.placeholders.apiKey'),
         });
       }
 
       if (this.showMoodleAPIUrl) {
         optionFields.push({
           key: "apiUrl",
-          label: "Moodle URL:",
+          label: this.$t('moodle.apiUrl'),
           type: "text",
           required: true,
           default: this.moodleAPIUrl,
-          placeholder: "https://example.moodle.com",
+          placeholder: this.$t('moodle.placeholders.apiUrl'),
         });
       }
 

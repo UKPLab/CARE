@@ -1,9 +1,7 @@
 <template>
   <div class="p-3">
     <p class="text-muted mb-3">
-      Upload a metadata file in `.json` or `.csv` format. CARE will extract the
-      available fields so you can define the target and mappings in the next
-      steps.
+      {{ $t('assignments.metadata.upload.help') }}
     </p>
     <input
       ref="metadataFileInput"
@@ -13,18 +11,14 @@
       @change="handleFileChange"
     />
     <div v-if="fileName" class="mt-2 small">
-      Loaded file:
+      {{ $t('assignments.metadata.upload.loadedFile') }}
       <strong>{{ fileName }}</strong>
     </div>
     <div v-if="parseError" class="mt-2 text-danger small">
       {{ parseError }}
     </div>
     <div v-if="rows.length > 0" class="mt-2 small text-success">
-      Parsed
-      {{ rows.length }}
-      rows with
-      {{ sourceFields.length }}
-      fields.
+      {{ $t('assignments.metadata.upload.parsedSummary', { rows: rows.length, fields: sourceFields.length }) }}
     </div>
   </div>
 </template>
@@ -120,12 +114,12 @@ export default {
                 .slice(0, 3)
                 .map((entry) => {
                   const rowInfo = Number.isInteger(entry?.row)
-                    ? `row ${entry.row + 1}`
-                    : "unknown row";
-                  return `${rowInfo}: ${entry?.message || "Malformed CSV content."}`;
+                    ? this.$t("assignments.metadata.upload.errors.csvRow", { row: entry.row + 1 })
+                    : this.$t("assignments.metadata.upload.errors.csvUnknownRow");
+                  return `${rowInfo}: ${entry?.message || this.$t("assignments.metadata.upload.errors.csvMalformed")}`;
                 })
                 .join(" | ");
-              reject(new Error(`Failed to parse CSV. ${summarizedErrors}`));
+              reject(new Error(this.$t("assignments.metadata.upload.errors.csvFailed", { details: summarizedErrors })));
               return;
             }
             resolve({
@@ -158,21 +152,17 @@ export default {
         } else if (file.name.toLowerCase().endsWith(".csv")) {
           parsed = await this.parseCsv(file);
         } else {
-          throw new Error(
-            "Unsupported file format. Please upload .json or .csv.",
-          );
+          throw new Error(this.$t("assignments.metadata.upload.errors.unsupportedFormat"));
         }
 
         const fields = parsed.fields
           .map((field) => String(field || "").trim())
           .filter(Boolean);
         if (parsed.rows.length === 0) {
-          throw new Error("The uploaded file did not contain usable rows.");
+          throw new Error(this.$t("assignments.metadata.upload.errors.noUsableRows"));
         }
         if (fields.length === 0) {
-          throw new Error(
-            "The uploaded file did not contain any usable fields.",
-          );
+          throw new Error(this.$t("assignments.metadata.upload.errors.noUsableFields"));
         }
 
         this.$emit("update:rows", parsed.rows);
@@ -182,7 +172,7 @@ export default {
         this.clearParsedState();
         this.$emit(
           "update:parseError",
-          error.message || "Failed to parse metadata file.",
+          error.message || this.$t("assignments.metadata.upload.errors.parseFailed"),
         );
         this.$emit("parse-failed");
       }

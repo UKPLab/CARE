@@ -3,12 +3,12 @@
     ref="importStepper"
     :steps="steps"
     :validation="stepValid"
-    submit-text="Close"
+    :submit-text="$t('common.close')"
     @submit="$refs.importStepper.close()"
     @step-change="handleStepChange"
   >
     <template #title>
-      <span>Bulk Import Users</span>
+      <span>{{$t('dashboard.users.bulkImportUsers')}}</span>
     </template>
     <template #step="{ step }">
       <ImportSourceStep
@@ -57,7 +57,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import { downloadObjectsAs } from "@/assets/utils.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
 import ImportConfirmStep from "@/components/dashboard/users/ImportConfirmStep.vue";
 import ImportPreviewStep from "@/components/dashboard/users/ImportPreviewStep.vue";
 import ImportResultStep from "@/components/dashboard/users/ImportResultStep.vue";
@@ -120,11 +120,11 @@ export default {
       };
     },
     steps() {
-      const sourceStep = this.importType === "csv" ? { key: "source", title: "Upload" } : { key: "source", title: "Moodle" };
+      const sourceStep = this.importType === "csv" ? { key: "source", title: this.$t('common.upload') } : { key: "source", title: this.$t('dashboard.users.moodle') };
       const commonSteps = [
-        { key: "preview", title: "Preview" },
-        { key: "confirm", title: "Confirm" },
-        { key: "result", title: "Result" },
+        { key: "preview", title: this.$t('dashboard.users.preview') },
+        { key: "confirm", title: this.$t('common.confirm') },
+        { key: "result", title: this.$t('dashboard.users.result') },
       ];
       return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
     },
@@ -161,14 +161,14 @@ export default {
       this.$socket.emit("userPublishMoodle", { options: this.moodleOptions, users }, (res) => {
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "Uploading completed",
-            message: "Please go to Moodle to check out your username and password!",
+            title: this.$t('dashboard.users.uploadingCompleted'),
+            message: this.$t('dashboard.users.uploadingCompletedMessage'),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Uploading failed",
-            message: res.message,
+            title: this.$t('errors.documents.uploadingFailed'),
+            message: resolveApiMessage(res),
             type: "error",
           });
         }
@@ -246,8 +246,8 @@ export default {
             this.initializeRoleMappings();
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to get users from Moodle",
-              message: res.message,
+              title: this.$t('errors.users.failedToGetUsersFromMoodle'),
+              message: resolveApiMessage(res),
               type: "error",
             });
             this.resetModal();
@@ -279,8 +279,8 @@ export default {
           this.downloadFileAsCSV();
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to bulk create users",
-            message: res.message,
+            title: this.$t('errors.users.failedToBulkCreateUsers'),
+            message: resolveApiMessage(res),
             type: "error",
           });
         }
@@ -294,8 +294,8 @@ export default {
           this.users = normalizeImportUsers(res.data);
         } else {
           this.eventBus.emit("toast", {
-            title: "Failed to check duplicate users",
-            message: "Please contact CARE staff to resolve the issue",
+            title: this.$t('errors.users.failedToCheckDuplicateUsers'),
+            message: this.$t('errors.users.failedToCheckDuplicateUsersMessage'),
             type: "error",
           });
         }

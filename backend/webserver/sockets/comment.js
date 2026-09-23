@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
 
@@ -26,10 +27,10 @@ class CommentSocket extends Socket {
         if (origComment.userId === await this.models['user'].getUserIdByName("Bot")) {
             const parentComment = await this.models['comment'].getById(origComment.parentCommentId, {transaction: options.transaction});
             if (!(await this.checkUserAccess(parentComment.userId))) {
-                throw Error("You are not allowed to edit this comment.");
+                throw Error("errors.permission.noCommentEditPermission");
             }
         } else if (!(await this.checkUserAccess(origComment.userId))) {
-            throw Error("You are not allowed to edit this comment.");
+            throw Error("errors.permission.noCommentEditPermission");
         }
 
         const newComment = await this.models['comment'].updateById(data.commentId, Object.assign(data, {draft: false}), {transaction: options.transaction});
@@ -57,13 +58,13 @@ class CommentSocket extends Socket {
             if (data.userId === 'Bot') {
                 const parentComment = await this.models['comment'].getById(data.parentCommentId);
                 if (!(await this.checkUserAccess(parentComment.userId))) {
-                    throw Error("You are not allowed to add a comment.");
+                    throw Error("errors.permission.noCommentPermission");
                 } else {
                     data.userId = await this.models['user'].getUserIdByName("Bot");
                     data.draft = false;
                 }
             } else if (!(await this.checkUserAccess(data.userId))) {
-                throw Error("You are not allowed to add a comment.");
+                throw Error("errors.permission.noCommentPermission");
             }
         } else {
             data.userId = this.userId;
@@ -101,7 +102,7 @@ class CommentSocket extends Socket {
     async sendComment(data, options) {
         const comment = await this.models['comment'].getById(data.commentId);
         if (!(await this.checkDocumentAccess(comment.documentId))) {
-            throw new Error("You don't have access to this comment");
+            throw new TranslatableError("errors.permission.noCommentAccess");
         }
         this.emit("commentRefresh", comment);
     }

@@ -28,12 +28,13 @@ help:
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
 	@echo "make build-clean                     Clean the environment of production build"
 	@echo "make docker          				Start docker images"
+	@echo "make docker-recompose 				Rebuild and start the dev Docker stack (postgres, rpc_*)"
 	@echo "make backup_db CONTAINER=<name/id>	Backup the database in the given container"
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
 	@echo "make clean             				Delete development files"
-	@echo "make lint             				Run linter (only frontend)"
+	@echo "make lint             				Run linter"
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 	@echo "make audit            				npm audit for frontend, backend, and utils/modules packages"
@@ -72,12 +73,26 @@ test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
 
 .PHONY: lint
-lint: frontend/node_modules/.uptodate
-	cd frontend && npm run frontend-lint
+lint: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
+	@set +e; \
+	(cd frontend && npm run frontend-lint); s1=$$?; \
+	echo ''; echo '=== Frontend i18n ==='; \
+	(cd frontend && npm run frontend-i18n-check); s2=$$?; \
+	echo ''; echo '=== Backend i18n ==='; \
+	(cd backend && npm run backend-i18n-check); s3=$$?; \
+	echo ''; echo '=== Lint summary ==='; \
+	echo "frontend eslint+i18n exit=$$s1/$$s2  backend i18n exit=$$s3"; \
+	if [ $$s1 -ne 0 ]; then exit $$s1; fi; \
+	if [ $$s2 -ne 0 ]; then exit $$s2; fi; \
+	exit $$s3
 
 .PHONY: docker
 docker:
-	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test rpc_moodle rpc_pdf
+	@docker compose -f docker-compose.yml -f docker-dev.yml up postgres rpc_test rpc_moodle rpc_pdf rpc_litellm
+
+.PHONY: docker-recompose
+docker-recompose:
+	@docker compose -f docker-compose.yml -f docker-dev.yml up --build postgres rpc_test rpc_moodle rpc_pdf rpc_litellm
 
 .PHONY: db
 db: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
@@ -97,7 +112,7 @@ dev-wizard: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTI
 	cd frontend && npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-frontend
-dev-frontend: frontend/node_modules/.uptodate
+dev-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev
 
 .PHONY: dev-build
@@ -119,7 +134,7 @@ dev-backend-watch: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run start:watch
 
 .PHONY: dev-build-frontend
-dev-build-frontend: frontend/node_modules/.uptodate
+dev-build-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev-build
 
 .PHONY: build
@@ -127,7 +142,7 @@ build:
 	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
 .PHONY: build-frontend
-build-frontend: frontend/node_modules/.uptodate
+build-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-build
 
 .PHONY: rpc_moodle_build
