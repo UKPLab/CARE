@@ -266,7 +266,6 @@ async function buildTurnResult(service, turn, assistantMessage) {
         conversation: {id, studySessionId, type, title, includeContext, createdAt, updatedAt},
         userMessage: turn.userMessage,
         assistantMessage,
-        introducedContextStepIds: await models["ai_message"].getIntroducedContextStepIds(id),
     };
 }
 
