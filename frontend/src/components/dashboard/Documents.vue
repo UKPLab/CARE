@@ -126,13 +126,9 @@ export default {
           action: "deleteDoc",
           filter: [
             {
-              key: "uploadedByUserId",
-              value: this.userId,
+              key: "canDelete",
+              value: true,
             },
-            {
-              key: "uploadedByUserId",
-              value: null
-            }
           ],
           stats:{
             documentId: "id",
@@ -235,6 +231,8 @@ export default {
           .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false && doc.type !== 3)
           .map((d) => {
             let newD = {...d};
+            const uploadedByOwner = d.uploadedByUserId === this.userId || d.uploadedByUserId === null;
+            newD.canDelete = uploadedByOwner && d.submissionId == null;
             newD.typeName = d.type === 0 ? this.$t('documents.types.pdf') : d.type === 1 ? this.$t('documents.types.html') : this.$t('documents.types.modal');
             newD.publicBadge = {
               class: DASHBOARD_BADGES.publicPrivate[!!newD.public],
