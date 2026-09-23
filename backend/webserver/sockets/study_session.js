@@ -264,7 +264,15 @@ class StudySessionSocket extends Socket {
      */
     async copyStudySession(data, options) {
         let studySessions = [];
-        const study = await this.models['study'].getById(data.studySession.studyId);
+        // Load the session from the DB instead of trusting studyId from the payload
+        const sourceSession = await this.models["study_session"].getById(data.studySession.id, {transaction: options.transaction});
+        if (!sourceSession) {
+            throw new TranslatableError("errors.studies.studySession.notFound");
+        }
+        const study = await this.models['study'].getById(sourceSession.studyId, {transaction: options.transaction});
+        if (!study || !(await this.checkUserAccess(study.userId))) {
+            throw new TranslatableError("errors.studies.studySession.noPermission");
+        }
         if (study.limitSessionsPerUser !== null) {
             await this.models["study"].updateById(study.id, {
                 limitSessionsPerUser: study.limitSessionsPerUser + 1 // we only add 1 because there is a list of unique userIds, so the limit of session per user will only ever increase by one.

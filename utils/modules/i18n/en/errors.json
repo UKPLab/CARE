@@ -377,7 +377,8 @@
     },
     "collaboration": {
         "collabUpdateFailed": "Collaboration Update Failed",
-        "collabCreationFailed": "Could not start collaboration"
+        "collabCreationFailed": "Could not start collaboration",
+        "noPermission": "No permission to update this collaboration"
     },
     "connectionError": "Connection error! Reconnecting...",
     "csv": {

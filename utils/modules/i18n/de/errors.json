@@ -377,7 +377,8 @@
   },
   "collaboration": {
     "collabUpdateFailed": "Aktualisierung der Kollaboration fehlgeschlagen",
-    "collabCreationFailed": "Kollaboration konnte nicht gestartet werden"
+    "collabCreationFailed": "Kollaboration konnte nicht gestartet werden",
+    "noPermission": "Keine Berechtigung, diese Kollaboration zu aktualisieren"
   },
   "connectionError": "Verbindungsfehler! Verbindung wird wiederhergestellt...",
   "csv": {

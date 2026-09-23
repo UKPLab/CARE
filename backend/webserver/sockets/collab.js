@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 
 /**
@@ -24,6 +25,10 @@ class CollabSocket extends Socket {
      */
     async updateCollab(data, options) {
         if (data.collabId && data.collabId !== 0) {
+            const collab = await this.models["collab"].getById(data.collabId, {transaction: options.transaction});
+            if (!collab || !(await this.checkUserAccess(collab.userId))) {
+                throw new TranslatableError("errors.collaboration.noPermission");
+            }
             const collabUpdate = await this.models["collab"].updateById(data.collabId, {timestamp: Date.now()}, {transaction: options.transaction});
             this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate); //fixme, sent twice due to collab
         } else {
