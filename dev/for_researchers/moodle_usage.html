@@ -184,6 +184,8 @@ For system administrators: see <a class="reference internal" href="../for_develo
 <p>User data can be imported from Moodle using the course ID:</p>
 <ol class="arabic simple">
 <li><p>In the Dashboard navigate to <code class="docutils literal notranslate"><span class="pre">Users</span> <span class="pre">&gt;</span> <span class="pre">Import</span> <span class="pre">via</span> <span class="pre">Moodle</span></code></p></li>
+<li><p>After CARE retrieves the Moodle users, review the role mapping step</p></li>
+<li><p>Map each Moodle role label to the corresponding CARE role, or choose <code class="docutils literal notranslate"><span class="pre">Do</span> <span class="pre">not</span> <span class="pre">assign</span> <span class="pre">additional</span> <span class="pre">role</span></code> if the role should not grant additional CARE permissions</p></li>
 <li><p>CARE will match users by email address</p></li>
 </ol>
 <p>CARE handles three scenarios:</p>
@@ -192,6 +194,8 @@ For system administrators: see <a class="reference internal" href="../for_develo
 <li><p>Duplicate users are merged based on email match</p></li>
 <li><p>Conflicts (e.g., mismatched emails) require manual correction</p></li>
 </ul>
+<p>Moodle role labels can vary by Moodle instance and may include multilingual markup such as <code class="docutils literal notranslate"><span class="pre">{mlang</span> <span class="pre">de}Lehrende{mlang}{mlang</span> <span class="pre">other}Lecturer{mlang}</span></code>. CARE hides this markup in the mapping step while keeping the original Moodle role string for the import.</p>
+<p>CSV user import also includes a role mapping step. CARE reads the distinct values from the CSV <code class="docutils literal notranslate"><span class="pre">roles</span></code> column and asks the admin to map each value to a CARE role before previewing the import. Multiple roles in one CSV cell should be separated by commas.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Never delete a user with an <code class="docutils literal notranslate"><span class="pre">extId</span></code> unless you are certain it won’t be needed. This could prevent future updates or synchronization.</p>

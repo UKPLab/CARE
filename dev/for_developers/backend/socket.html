@@ -2999,6 +2999,18 @@ This operation is restricted to users with administrator privileges.</p>
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.getAllowedBulkCreateRoleNames">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getAllowedBulkCreateRoleNames</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.getAllowedBulkCreateRoleNames" title="Link to this definition"></a></dt>
+<dd><p>Load roles that the bulk import flow may assign from client-provided mappings.
+Admin is intentionally excluded because the import UI also hides it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Set.&lt;string&gt;&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="UserSocket.getUserDetails">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getUserDetails</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.getUserDetails" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>userGetDetails</cite></p>
@@ -3135,6 +3147,23 @@ A user can only reset their own password unless they are an administrator.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Promise.&lt;string&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="UserSocket.sanitizeBulkCreateRoleMap">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">UserSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sanitizeBulkCreateRoleMap</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">roleMap</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allowedRoleNames</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#UserSocket.sanitizeBulkCreateRoleMap" title="Link to this definition"></a></dt>
+<dd><p>Keep only client role mappings whose target CARE role is allowed for bulk import.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>roleMap</strong> (<strong>Object.&lt;string, string&gt;</strong>) – Raw client-provided external-role to CARE-role map</p></li>
+<li><p><strong>allowedRoleNames</strong> (<strong>Set.&lt;string&gt;</strong>) – Backend-authoritative assignable role names</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Object.&lt;string, string&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
