@@ -209,15 +209,13 @@
     "studyAlreadyClosed": "Studie ist bereits geschlossen",
     "noPermissionManageStudies": "Keine Berechtigung, Studien zu verwalten",
     "noPermissionCloseStudy": "Keine Berechtigung, diese Studie zu schließen",
-    "noPermissionModifyStudy": "Keine Berechtigung, diese Studie zu ändern",
     "notAllowedToSeeStudy": "Sie dürfen diese Studie nicht sehen",
     "errorTitle": "Fehler",
     "studySession": {
       "notFound": "Studiensitzung nicht gefunden",
       "idRequired": "studySessionId ist erforderlich",
       "alreadyFinished": "Studiensitzung wurde bereits beendet",
-      "cannotFinishClosedStudy": "Sitzung kann nicht beendet werden: Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird.",
-      "noPermission": "Keine Berechtigung, diese Studiensitzung zu ändern"
+      "cannotFinishClosedStudy": "Sitzung kann nicht beendet werden: Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
     },
     "studyStep": {
       "notFound": "Kein erster Schritt für diese Studie gefunden",
@@ -377,8 +375,7 @@
   },
   "collaboration": {
     "collabUpdateFailed": "Aktualisierung der Kollaboration fehlgeschlagen",
-    "collabCreationFailed": "Kollaboration konnte nicht gestartet werden",
-    "noPermission": "Keine Berechtigung, diese Kollaboration zu aktualisieren"
+    "collabCreationFailed": "Kollaboration konnte nicht gestartet werden"
   },
   "connectionError": "Verbindungsfehler! Verbindung wird wiederhergestellt...",
   "csv": {

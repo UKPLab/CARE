@@ -49,9 +49,7 @@ class StudySessionSocket extends Socket {
             if (!existing) {
                 throw new TranslatableError("errors.studies.studySession.notFound");
             }
-            if (!(await this.checkUserAccess(existing.userId))) {
-                throw new TranslatableError("errors.studies.studySession.noPermission");
-            }
+            await this.assertWriteAccess("study_session", data.studySessionId, options);
             shouldSendSessionStartEmail = existing.start == null;
             session = await this.models["study_session"].updateById(data.studySessionId,
                 {start: Date.now()},
@@ -195,10 +193,7 @@ class StudySessionSocket extends Socket {
         }
 
         const study = await this.models["study"].getById(session.studyId, {transaction: options.transaction});
-        // The session owner, the study owner, or an admin may finish a session
-        if (this.userId !== session.userId && !(study && await this.checkUserAccess(study.userId))) {
-            throw new TranslatableError("errors.studies.studySession.noPermission");
-        }
+        await this.assertWriteAccess("study_session", data.studySessionId, options);
         if (study && study.closed) {
             throw new TranslatableError("errors.studies.studySession.cannotFinishClosedStudy");
         }
@@ -270,9 +265,7 @@ class StudySessionSocket extends Socket {
             throw new TranslatableError("errors.studies.studySession.notFound");
         }
         const study = await this.models['study'].getById(sourceSession.studyId, {transaction: options.transaction});
-        if (!study || !(await this.checkUserAccess(study.userId))) {
-            throw new TranslatableError("errors.studies.studySession.noPermission");
-        }
+        await this.assertWriteAccess("study", sourceSession.studyId, options);
         if (study.limitSessionsPerUser !== null) {
             await this.models["study"].updateById(study.id, {
                 limitSessionsPerUser: study.limitSessionsPerUser + 1 // we only add 1 because there is a list of unique userIds, so the limit of session per user will only ever increase by one.

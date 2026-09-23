@@ -209,15 +209,13 @@
         "studyAlreadyClosed": "Study is already closed",
         "noPermissionManageStudies": "No permission to manage studies",
         "noPermissionCloseStudy": "No permission to close this study",
-        "noPermissionModifyStudy": "No permission to modify this study",
         "notAllowedToSeeStudy": "You are not allowed to see this study",
         "errorTitle": "Error",
         "studySession": {
             "notFound": "Study session not found",
             "idRequired": "studySessionId is required",
             "alreadyFinished": "Study session has already been finished",
-            "cannotFinishClosedStudy": "Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed.",
-            "noPermission": "No permission to modify this study session"
+            "cannotFinishClosedStudy": "Cannot finish session: The study has been closed. Sessions are automatically terminated when a study is closed."
         },
         "studyStep": {
             "notFound": "No first step found for this study",
@@ -377,8 +375,7 @@
     },
     "collaboration": {
         "collabUpdateFailed": "Collaboration Update Failed",
-        "collabCreationFailed": "Could not start collaboration",
-        "noPermission": "No permission to update this collaboration"
+        "collabCreationFailed": "Could not start collaboration"
     },
     "connectionError": "Connection error! Reconnecting...",
     "csv": {
