@@ -139,6 +139,8 @@
     "description": "Beschreibung",
     "running": "Läuft",
     "finished": "Beendet",
+    "selectAll": "Alle auswählen",
+    "unselectAll": "Alle abwählen",
     "nlp": {
         "serviceRequest": "NLP-Dienstanfrage"
     },
