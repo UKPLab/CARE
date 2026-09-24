@@ -180,6 +180,7 @@
  */
 import LoadIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
+import {useId} from "vue";
 
 export default {
   name: "AssessmentCriteria",
@@ -211,10 +212,17 @@ export default {
     "toggle",
     "saved-and-next",
   ],
+  /**
+   * Generate a per-instance id for the panel's aria-controls link.
+   *
+   * @returns {{uid: string}} unique id from Vue's useId()
+   */
+  setup() {
+    return {uid: useId()};
+  },
   data() {
     return {
       localAssessment: "",
-      uid: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     };
   },
   computed: {
@@ -247,8 +255,8 @@ export default {
     },
     /**
      * Unique DOM id for this criterion's panel, used by aria-controls.
-     * Uses the component uid so it cannot collide, regardless of how the
-     * assessment configuration names its criteria.
+     * Uses Vue's useId(), so it stays unique across every mounted
+     * assessment, regardless of how the configuration names its criteria.
      *
      * @returns {string} unique panel id
      */

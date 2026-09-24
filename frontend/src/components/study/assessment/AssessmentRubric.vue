@@ -109,6 +109,7 @@
  */
 import AssessmentCriteria from "@/components/study/assessment/AssessmentCriteria.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import {useId} from "vue";
 
 export default {
   name: "AssessmentRubric",
@@ -152,6 +153,14 @@ export default {
     "toggle-info-panel-pin",
     "focus-next-rubric",
   ],
+  /**
+   * Generate a per-instance id for the panel's aria-controls link.
+   *
+   * @returns {{uid: string}} unique id from Vue's useId()
+   */
+  setup() {
+    return {uid: useId()};
+  },
   data() {
     return {
       expandedCriterionIndex: 0,
@@ -161,11 +170,13 @@ export default {
   computed: {
     /**
      * Unique DOM id for this rubric's panel, used by aria-controls.
+     * Uses Vue's useId(), not groupIndex, because every loaded study step
+     * mounts its own assessment and would repeat the same indices.
      *
      * @returns {string} unique panel id
      */
     panelId() {
-      return `rubric-panel-${this.groupIndex}`;
+      return `rubric-panel-${this.uid}`;
     },
     isGroupSaved() {
       if (!this.rubric || !Array.isArray(this.rubric.criteria)) return false;
@@ -216,7 +227,8 @@ export default {
           this.expandedCriterionIndex === index ? null : index;
     },
     /**
-     * Focus the header of this rubric's first criterion.
+     * Focus the header of this rubric's open criterion, or the first
+     * criterion if none is open.
      * Called by the parent after an advance opens this rubric.
      */
     focusFirstCriterion() {

@@ -483,8 +483,7 @@ export default {
      * @param {number} attempt - current attempt number
      */
     focusForwardControl(attempt = 0) {
-      const pick = this.$refs.nextButton || this.$refs.finishButton;
-      const el = pick && pick.$el ? pick.$el : pick;
+      const el = (this.$refs.nextButton || this.$refs.finishButton)?.$el;
       if (el && !el.disabled && typeof el.focus === "function") {
         el.focus();
         return;

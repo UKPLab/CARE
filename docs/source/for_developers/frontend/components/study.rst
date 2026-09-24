@@ -177,7 +177,7 @@ Each entry is clickable and **jumps to the PDF & Sidebar** position (see :doc:`a
 
    this.$refs.reportModal.open();
 
-   Assessment sidebar keyboard interaction
+Assessment sidebar keyboard interaction
 ---------------------------------------
 
 Location: ``frontend/src/components/study/assessment/AssessmentCriteria.vue``,
