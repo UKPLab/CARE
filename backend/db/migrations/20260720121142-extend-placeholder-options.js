@@ -4,13 +4,13 @@
 
 const wordRangeOption = {
   name: 'wordRange',
-  label: 'Word range',
+  label: 'templates.placeholders.options.labels.wordRange',
   valueType: 'positiveIntegerRange',
 };
 
 const pageRangeOption = {
   name: 'pageRange',
-  label: 'Page range',
+  label: 'templates.placeholders.options.labels.pageRange',
   valueType: 'positiveIntegerRange',
 };
 

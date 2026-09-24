@@ -615,10 +615,9 @@ class TemplateSocket extends Socket {
     }
     const optionDuplicates = getDuplicatePlaceholderOptionTokens(content);
     if (optionDuplicates.length > 0) {
-      throw new Error(
-        `This template has duplicate options on one placeholder: ${optionDuplicates.join(", ")}. ` +
-        `Each option name (e.g. wordRange) may appear at most once inside {...}.`
-      );
+      throw new TranslatableError("errors.templates.duplicatePlaceholderOptions", {
+        tokens: optionDuplicates.join(", "),
+      });
     }
   }
 

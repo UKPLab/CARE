@@ -57,7 +57,8 @@ doc_clean:
 # Local file: deps need their own node_modules (Node resolves from the linked package path).
 UTILS_MODULES_UPTODATE := \
 	utils/modules/editor-delta-conversion/node_modules/.uptodate \
-	utils/modules/assessment-score/node_modules/.uptodate
+	utils/modules/assessment-score/node_modules/.uptodate \
+	utils/modules/placeholder-tokens/node_modules/.uptodate
 
 .PHONY: test
 test: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)

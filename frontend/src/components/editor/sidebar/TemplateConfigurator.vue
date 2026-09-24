@@ -20,11 +20,12 @@
       </div>
 
       <div v-if="optionApplyWarnings.length > 0" class="alert alert-warning mb-3">
-        <strong>Notice:</strong> The placeholder was added, but these options were not included:
+        <strong>{{ $t("templates.placeholders.options.notice") }}</strong>
+        {{ $t("templates.placeholders.options.notIncluded") }}
         <ul class="mb-0 mt-2">
           <li v-for="warning in optionApplyWarnings" :key="warning">{{ warning }}</li>
         </ul>
-        Fix the option row and insert another placeholder if you want that option in the template.
+        {{ $t("templates.placeholders.options.notIncludedHelp") }}
       </div>
   
       <div class="card shadow mb-4 configurator">
@@ -70,14 +71,14 @@
                           v-model="row.name"
                           class="form-select form-select-sm option-select"
                         >
-                          <option value="">Select option...</option>
+                          <option value="">{{ $t("templates.placeholders.options.selectOption") }}</option>
                           <option
                             v-for="optionDef in placeholder.placeholderOptions"
                             :key="optionDef.name"
                             :value="optionDef.name"
                             :disabled="isOptionDisabled(placeholder, optionDef.name, rowIndex)"
                           >
-                            {{ optionDef.label }}
+                            {{ translateMaybeKey(optionDef.label) }}
                           </option>
                         </select>
                         <template v-if="isRangeOption(placeholder, row.name)">
@@ -86,7 +87,7 @@
                             type="number"
                             min="1"
                             class="form-control form-control-sm option-input"
-                            placeholder="From"
+                            :placeholder="$t('templates.placeholders.options.from')"
                           >
                           <span class="text-muted">–</span>
                           <input
@@ -94,7 +95,7 @@
                             type="number"
                             min="1"
                             class="form-control form-control-sm option-input"
-                            placeholder="To"
+                            :placeholder="$t('templates.placeholders.options.to')"
                           >
                         </template>
                         <input
@@ -115,7 +116,7 @@
                       <BasicButton
                         class="btn btn-outline-primary btn-sm"
                         icon="plus-lg"
-                        text="Add option"
+                        :text="$t('templates.placeholders.options.add')"
                         @click="addOptionRow(placeholder.id)"
                       />
                     </div>
@@ -359,7 +360,7 @@
        */
       getOptionLabel(placeholder, optionName) {
         const optionDef = (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
-        return optionDef ? optionDef.label : optionName;
+        return optionDef ? translateMaybeKey(optionDef.label) : optionName;
       },
       /**
        * Option definition for `optionName` on this placeholder, or undefined.
@@ -408,28 +409,31 @@
               || (row.from !== "" && row.from != null)
               || (row.to !== "" && row.to != null)
             ) {
-              applyWarnings.push("A value was entered but no option was selected, so it was not included.");
+              applyWarnings.push(this.$t("templates.placeholders.options.warnings.valueWithoutOption"));
             }
             return;
           }
           const optionDef = this.getOptionDef(placeholder, row.name);
           if (!optionDef) {
-            applyWarnings.push(`Unknown option for ${placeholder.label}, so it was not included.`);
+            applyWarnings.push(this.$t("templates.placeholders.options.warnings.unknownOption", {
+              placeholder: translateMaybeKey(placeholder.label),
+            }));
             return;
           }
+          const optionLabel = translateMaybeKey(optionDef.label);
           const optionValue = optionDef.valueType === "positiveIntegerRange"
             ? formatPositiveIntegerRange(row.from, row.to)
             : (row.value === undefined || row.value === null ? "" : String(row.value).trim());
           if (!this.isValidOptionValue(optionDef, optionValue)) {
             if (!optionValue) {
-              applyWarnings.push(`${optionDef.label} was not included (no value entered).`);
+              applyWarnings.push(this.$t("templates.placeholders.options.warnings.noValue", { option: optionLabel }));
             } else {
-              applyWarnings.push(`${optionDef.label} was not included (invalid value).`);
+              applyWarnings.push(this.$t("templates.placeholders.options.warnings.invalidValue", { option: optionLabel }));
             }
             return;
           }
           if (Object.prototype.hasOwnProperty.call(selectedOptions, row.name)) {
-            applyWarnings.push(`${optionDef.label} was already set, so the later row was not included.`);
+            applyWarnings.push(this.$t("templates.placeholders.options.warnings.alreadySet", { option: optionLabel }));
             return;
           }
           selectedOptions[row.name] = optionValue;
@@ -454,17 +458,20 @@
         const errors = [];
 
         for (const name of getDuplicateOptionNames(optionsStr)) {
-          errors.push(`${tokenText} (duplicate option "${name}")`);
+          errors.push(this.$t("templates.placeholders.options.errors.duplicate", { token: tokenText, name }));
         }
 
         for (const [name, value] of Object.entries(parsed.options || {})) {
           const optionDef = allowedByName[name];
           if (!optionDef) {
-            errors.push(`${tokenText} (unknown option "${name}")`);
+            errors.push(this.$t("templates.placeholders.options.errors.unknown", { token: tokenText, name }));
             continue;
           }
           if (!this.isValidOptionValue(optionDef, value)) {
-            errors.push(`${tokenText} (invalid ${optionDef.label.toLowerCase()})`);
+            errors.push(this.$t("templates.placeholders.options.errors.invalid", {
+              token: tokenText,
+              option: translateMaybeKey(optionDef.label),
+            }));
           }
         }
 
