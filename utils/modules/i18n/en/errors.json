@@ -274,7 +274,8 @@
         "resolveContextStepDocumentMismatch": "The study step does not match the selected document.",
         "resolveContextStudySessionNotFound": "The study session was not found.",
         "resolveContextSessionStepMismatch": "The study session does not match the study step.",
-        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once."
+        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once.",
+        "duplicatePlaceholderOptions": "This template has duplicate options on one placeholder: {tokens}. Each option name (e.g. wordRange) may appear at most once per placeholder."
     },
     "settings": {
         "errorLoading": "Error Loading Settings",

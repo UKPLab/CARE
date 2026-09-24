@@ -53,6 +53,7 @@
     "passport-local": "^1.0.0",
     "passport-orcid": "^0.0.4",
     "pg-promise": "^12.7.1",
+    "placeholder-tokens": "file:../utils/modules/placeholder-tokens",
     "quill-delta": "^5.1.0",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
