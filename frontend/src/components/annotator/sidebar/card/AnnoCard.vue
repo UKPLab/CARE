@@ -87,6 +87,7 @@
             :edit="editedByMyself"
             :level="0"
             @save-card="save()"
+            @cancel-card="cancel"
         />
       </template>
 
