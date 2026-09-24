@@ -334,8 +334,8 @@ Templates are used for system emails (e.g. password reset, verification, registr
 </tbody>
 </table>
 <ul class="simple">
-<li><p>Placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) are resolved per type by the backend (<code class="docutils literal notranslate"><span class="pre">backend/utils/templateResolver.js</span></code>).</p></li>
-<li><p>Content is stored per language in <code class="docutils literal notranslate"><span class="pre">template_language_content</span></code>; the Editor shows TemplateEditor and, for email types, a <strong>Placeholders</strong> sidebar (TemplateConfigurator) when editing a template (<code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided).</p></li>
+<li><p>Placeholders (e.g. <code class="docutils literal notranslate"><span class="pre">~username~</span></code>, <code class="docutils literal notranslate"><span class="pre">~link~</span></code>) are resolved per type by the backend (<code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code>).</p></li>
+<li><p>Content is stored per language in <code class="docutils literal notranslate"><span class="pre">template_content</span></code>; the Editor shows TemplateEditor and, for email types (1, 2, 3, 6, 7) and prompt templates (type 8), a <strong>Placeholders</strong> sidebar (TemplateConfigurator) when editing a template (<code class="docutils literal notranslate"><span class="pre">templateId</span></code> provided).</p></li>
 </ul>
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">Editor</span> <span class="na">ref</span><span class="o">=</span><span class="s">&quot;editor&quot;</span> <span class="na">:template-id</span><span class="o">=</span><span class="s">&quot;templateId&quot;</span> <span class="p">/&gt;</span>
 </pre></div>

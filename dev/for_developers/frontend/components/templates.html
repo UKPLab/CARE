@@ -158,9 +158,46 @@ Templates are edited in the same Quill-based Editor as documents. The backend fi
 <li><p><strong>template_edit</strong> — draft edits per template and language.</p></li>
 <li><p><strong>placeholder</strong> — placeholder keys and labels per template type (used by the frontend sidebar; resolution rules live in the resolver).</p></li>
 </ul>
-<p>Location: <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code></p>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code> (apply replacements; HTML/Delta output).
+Type 8 value collection: <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code>.</p>
 <p>Placeholder resolution is implemented there: <code class="docutils literal notranslate"><span class="pre">resolveTemplate</span></code> (returns HTML for emails) and <code class="docutils literal notranslate"><span class="pre">resolveTemplateToDelta</span></code> (returns Delta for document creation).
 Allowed placeholders per template type come from the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> database table; <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> / <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> substitute only those keys for <code class="docutils literal notranslate"><span class="pre">context.templateType</span></code>.</p>
+<section id="placeholder-token-helpers">
+<h3>Placeholder token helpers<a class="headerlink" href="#placeholder-token-helpers" title="Link to this heading"></a></h3>
+<p>Bracket-indexed placeholder tokens (<code class="docutils literal notranslate"><span class="pre">~key[N]~</span></code>) are parsed, formatted, and replaced by a shared util module used by both the backend resolver and the frontend template editor.</p>
+<section id="backend-integration">
+<h4>Backend Integration<a class="headerlink" href="#backend-integration" title="Link to this heading"></a></h4>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">utils/modules/placeholder-tokens</span></code></p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">applyPlaceholderReplacements</span><span class="p">,</span><span class="w"> </span><span class="nx">getUsedIndexes</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;placeholder-tokens&#39;</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>This logic is used in:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code> – placeholder resolution, duplicate checks, and used-index reporting</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code> – type 8 values from context and the database</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> – save validation via the resolver</p></li>
+</ul>
+</section>
+<section id="frontend-integration">
+<h4>Frontend Integration<a class="headerlink" href="#frontend-integration" title="Link to this heading"></a></h4>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">formatPlaceholderToken</span><span class="p">,</span><span class="w"> </span><span class="nx">countPlaceholdersByKey</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;placeholder-tokens&#39;</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>This logic is used in:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/sidebar/TemplateConfigurator.vue</span></code> – insert, count, and validate placeholders</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/basic/modal/skills/InputMap.vue</span></code> – hook input rows per index</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">frontend/src/components/editor/template/placeholderExamplePreview.js</span></code> – preview replacement</p></li>
+</ul>
+</section>
+<section id="testing">
+<h4>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h4>
+<p>The tests are located in <code class="docutils literal notranslate"><span class="pre">utils/modules/placeholder-tokens/tests/placeholder-tokens.test.js</span></code>. To execute the tests, use:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>test-modules
+</pre></div>
+</div>
+</section>
+</section>
 </section>
 <section id="implementing-the-template-editor">
 <h2>Implementing the Template Editor<a class="headerlink" href="#implementing-the-template-editor" title="Link to this heading"></a></h2>
@@ -257,7 +294,9 @@ TemplateEditor and TemplateConfigurator are used inside this Editor when editing
 <code class="docutils literal notranslate"><span class="pre">inlineComments</span></code>, <code class="docutils literal notranslate"><span class="pre">nlpAssessmentSuggestion</span></code>,
 <code class="docutils literal notranslate"><span class="pre">previousAssessmentResult</span></code>, <code class="docutils literal notranslate"><span class="pre">assessmentConfiguration</span></code>,
 <code class="docutils literal notranslate"><span class="pre">submissionFiles</span></code>, <code class="docutils literal notranslate"><span class="pre">studyContext</span></code></p></td>
-<td><p>Study/NLP prompt templates: <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> in
+<td><p>AI hooks: <code class="docutils literal notranslate"><span class="pre">resolveTemplateWithValues</span></code> in
+<code class="docutils literal notranslate"><span class="pre">backend/webserver/services/ai/hook.js</span></code>.
+<code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> in
 <code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> (see below).</p></td>
 </tr>
 </tbody>
@@ -266,20 +305,49 @@ TemplateEditor and TemplateConfigurator are used inside this Editor when editing
 <section id="prompt-templates-type-8">
 <h3>Prompt templates (type 8)<a class="headerlink" href="#prompt-templates-type-8" title="Link to this heading"></a></h3>
 <p id="prompt-templates-ref">Prompt templates use the same Placeholders sidebar and <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table as email templates.</p>
-<p>Location: <code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> (<code class="docutils literal notranslate"><span class="pre">templateResolve</span></code>)</p>
+<p>Location: <code class="docutils literal notranslate"><span class="pre">backend/webserver/sockets/template.js</span></code> (<code class="docutils literal notranslate"><span class="pre">templateResolve</span></code>);
+AI hook runtime: <code class="docutils literal notranslate"><span class="pre">backend/webserver/services/ai/hook.js</span></code> (<code class="docutils literal notranslate"><span class="pre">resolveTemplateWithValues</span></code>).</p>
 <p>At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes <code class="docutils literal notranslate"><span class="pre">placeholderExample</span></code> from the
-<code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row (sample text only, not live data). Every current placeholder has an example.
-At runtime, <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code> loads real values from
-<code class="docutils literal notranslate"><span class="pre">context</span></code> and the database. Many placeholders need <code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>, and <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>;
+<code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row when set (sample text only; rows may be empty until examples are added).
+<code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> uses <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code> for real values from
+<code class="docutils literal notranslate"><span class="pre">context</span></code> and the database. AI hooks instead pass a value map from the frontend input mapping.
+Many placeholders need <code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>, and <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>;
 if they are missing, those tokens resolve to an empty string.</p>
 <p><code class="docutils literal notranslate"><span class="pre">~nlpAssessmentSuggestion~</span></code> is the NLP draft assessment for the current step (same <code class="docutils literal notranslate"><span class="pre">document_data</span></code> as the
 Assessment sidebar pre-fill), not the saved rubric in <code class="docutils literal notranslate"><span class="pre">assessment_result</span></code> (use <code class="docutils literal notranslate"><span class="pre">~assessmentResult~</span></code> for that).
 Resolution is implemented in <code class="docutils literal notranslate"><span class="pre">backend/utils/studyNlpDocumentData.js</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">~editorText~</span></code> is plain text from the HTML or modal document (<code class="docutils literal notranslate"><span class="pre">resolveEditorText</span></code> in
-<code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code>): base <code class="docutils literal notranslate"><span class="pre">.delta</span></code> plus session draft edits, including earlier steps in the same
-session. Pass <code class="docutils literal notranslate"><span class="pre">context.editorText</span></code> on <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> to override (capped at 15k characters). Call
+<code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code>): base <code class="docutils literal notranslate"><span class="pre">.delta</span></code> plus session draft edits, including earlier steps in the same
+session. Pass <code class="docutils literal notranslate"><span class="pre">context.editorText</span></code> on <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> to override. There is no silent character cap;
+optional <code class="docutils literal notranslate"><span class="pre">wordRange</span></code> on the token limits retrieved text. Call
 <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> after step loading (<code class="docutils literal notranslate"><span class="pre">loadingReady</span></code>) or on user action—not in the same pass as NLP
 <code class="docutils literal notranslate"><span class="pre">insertIntoEditor</span></code> unless <code class="docutils literal notranslate"><span class="pre">context.editorText</span></code> is set explicitly.</p>
+<section id="prompt-placeholder-options">
+<h4>Prompt placeholder options<a class="headerlink" href="#prompt-placeholder-options" title="Link to this heading"></a></h4>
+<p>Type 8 placeholders that inject retrieved text (<code class="docutils literal notranslate"><span class="pre">pdfText</span></code>, <code class="docutils literal notranslate"><span class="pre">submissionFiles</span></code>, <code class="docutils literal notranslate"><span class="pre">editorText</span></code>) can carry
+per-token options in braces, for example <code class="docutils literal notranslate"><span class="pre">~pdfText[1]{pageRange:1}~</span></code> or <code class="docutils literal notranslate"><span class="pre">~editorText[1]{wordRange:1-500}~</span></code>.</p>
+<ul class="simple">
+<li><p><strong>Word range</strong> (<code class="docutils literal notranslate"><span class="pre">wordRange</span></code>): 1-based inclusive word slice. A single number <code class="docutils literal notranslate"><span class="pre">N</span></code> means the first N words.</p></li>
+<li><p><strong>Page range</strong> (<code class="docutils literal notranslate"><span class="pre">pageRange</span></code>): 1-based inclusive page slice. A single number <code class="docutils literal notranslate"><span class="pre">N</span></code> means the first N pages.
+Page 2 only is <code class="docutils literal notranslate"><span class="pre">2-2</span></code>. Seeded on <code class="docutils literal notranslate"><span class="pre">pdfText</span></code> and <code class="docutils literal notranslate"><span class="pre">submissionFiles</span></code> only (<code class="docutils literal notranslate"><span class="pre">editorText</span></code> is seeded with <code class="docutils literal notranslate"><span class="pre">wordRange</span></code>).
+When the mapped <code class="docutils literal notranslate"><span class="pre">submissionFiles</span></code> source has no <code class="docutils literal notranslate"><span class="pre">pages</span></code> array (TeX/zip text), <code class="docutils literal notranslate"><span class="pre">applyTextRangeLimit</span></code> treats the extract as one page.</p></li>
+</ul>
+<p>Both options may be set on one token. Pages are applied first, then words
+(e.g. <code class="docutils literal notranslate"><span class="pre">~pdfText[1]{pageRange:1,wordRange:1-200}~</span></code> is the first 200 words of page 1).
+A repeated option name on one token (e.g. two <code class="docutils literal notranslate"><span class="pre">wordRange</span></code> values) is rejected on save.
+Omit options to send the full extract.</p>
+<p><strong>Known limitation:</strong> a single number <code class="docutils literal notranslate"><span class="pre">N</span></code> always means “first N units”, not “unit N only”.
+<code class="docutils literal notranslate"><span class="pre">pageRange:2</span></code> is pages 1–2, not page 2. Use From/To <code class="docutils literal notranslate"><span class="pre">2</span></code>–<code class="docutils literal notranslate"><span class="pre">2</span></code> (<code class="docutils literal notranslate"><span class="pre">pageRange:2-2</span></code>) for one page.</p>
+<p><code class="docutils literal notranslate"><span class="pre">pageRange</span></code> cuts real pages only for a study PDF. The browser sends <code class="docutils literal notranslate"><span class="pre">{</span> <span class="pre">pages,</span> <span class="pre">pageCount</span> <span class="pre">}</span></code>, and the resolver slices that list.
+When a trigger runs the hook, the PDF text arrives as one string. TeX and zip text do too, so <code class="docutils literal notranslate"><span class="pre">pageRange</span></code> treats each of them as a single page.
+<code class="docutils literal notranslate"><span class="pre">wordRange</span></code> still cuts words in all of those cases, including the one-string extracts.</p>
+<p>Use <code class="docutils literal notranslate"><span class="pre">pageRange</span></code> when a study step runs the hook and the prompt should see certain pages of the PDF.
+Use <code class="docutils literal notranslate"><span class="pre">wordRange</span></code> when the prompt should see a word slice, and when a trigger runs the hook or the text is editor, TeX, or zip, where <code class="docutils literal notranslate"><span class="pre">pageRange</span></code> cannot see real pages.</p>
+<p>Limits apply when the prompt is resolved, not to text written in the template editor.</p>
+<p>Option definitions live in <code class="docutils literal notranslate"><span class="pre">placeholder.placeholderOptions</span></code> (seeded by migration). The Placeholders sidebar
+collects From/To before insert. Unknown or invalid option values are listed in the sidebar warning.
+A repeated option name on one token is rejected on save.</p>
+</section>
 </section>
 </section>
 <section id="adding-a-new-template-type-or-placeholder">
@@ -288,23 +356,28 @@ session. Pass <code class="docutils literal notranslate"><span class="pre">conte
 <p class="admonition-title">Note</p>
 <p>Placeholders marked with <code class="docutils literal notranslate"><span class="pre">*</span></code> in the table above are <strong>required</strong> for that type.
 If a required placeholder is missing from stable content in any language, validation
-fails on editor save, publish, or Settings assignment until it is added. Required
-keys are rows in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table with <code class="docutils literal notranslate"><span class="pre">required:</span> <span class="pre">true</span></code>.</p>
+fails on editor save, publish, or Settings assignment until it is added. The set of
+required placeholders is defined in the <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> table (<code class="docutils literal notranslate"><span class="pre">required:</span> <span class="pre">true</span></code>) and
+enforced via <code class="docutils literal notranslate"><span class="pre">getMissingRequiredPlaceholders</span></code> and <code class="docutils literal notranslate"><span class="pre">assertStableEmailTemplateContent</span></code>
+in <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code>.</p>
 </div>
 <p>Email placeholders (types 1, 2, 3, 6, 7) are resolved in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> from values on the resolver <code class="docutils literal notranslate"><span class="pre">context</span></code>.
-Prompt placeholders (type 8) are resolved in <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> (often from <code class="docutils literal notranslate"><span class="pre">document_data</span></code> or
+Prompt placeholders (type 8) are resolved in <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> in
+<code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code> (often from <code class="docutils literal notranslate"><span class="pre">document_data</span></code> or
 <code class="docutils literal notranslate"><span class="pre">study_step</span></code>). For type 8, new keys must also be listed in the <code class="docutils literal notranslate"><span class="pre">promptKeys</span></code> array in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> so
 that function is invoked.</p>
 <section id="adding-a-placeholder">
 <h3>Adding a placeholder<a class="headerlink" href="#adding-a-placeholder" title="Link to this heading"></a></h3>
 <p>For an existing type (example: <code class="docutils literal notranslate"><span class="pre">studyEndDate</span></code> on type 6):</p>
 <ul>
-<li><p>Add a <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row in a migration (<code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">placeholderKey</span></code>, label, required, and optionally <code class="docutils literal notranslate"><span class="pre">placeholderExample</span></code> for editor preview).</p></li>
+<li><p>Add a <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row in a migration (<code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">placeholderKey</span></code>, label, description,
+<code class="docutils literal notranslate"><span class="pre">required</span></code>, and optionally <code class="docutils literal notranslate"><span class="pre">placeholderExample</span></code> for editor preview). For per-token options
+(e.g. word/page range on retrieved text), set <code class="docutils literal notranslate"><span class="pre">placeholderOptions</span></code> on that row (see Prompt placeholder options above).</p></li>
 <li><p><strong>Email:</strong> fill <code class="docutils literal notranslate"><span class="pre">~studyEndDate~</span></code> in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code> in
 <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templateResolver.js</span></code>. The call site (e.g.
 <code class="docutils literal notranslate"><span class="pre">sendStudyClosedEmails</span></code> in <code class="docutils literal notranslate"><span class="pre">study.js</span></code>) must pass the value in the resolver context.</p></li>
 <li><p><strong>Prompt (e.g. ``myNewField`` for type 8):</strong> add <code class="docutils literal notranslate"><span class="pre">&quot;myNewField&quot;</span></code> to <code class="docutils literal notranslate"><span class="pre">promptKeys</span></code> in <code class="docutils literal notranslate"><span class="pre">buildReplacementMap</span></code>,
-then in <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code>, when <code class="docutils literal notranslate"><span class="pre">allow(&quot;myNewField&quot;)</span></code>:</p>
+then in <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code>, when <code class="docutils literal notranslate"><span class="pre">allow(&quot;myNewField&quot;)</span></code>:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">promptValues</span><span class="p">[</span><span class="s2">&quot;~myNewField~&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">myNewField</span> <span class="o">||</span> <span class="s2">&quot;&quot;</span><span class="p">;</span>
 </pre></div>
 </div>
