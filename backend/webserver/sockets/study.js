@@ -211,7 +211,6 @@ class StudySocket extends Socket {
         const notifySessions = data.notifySessions === true;
 
         const closedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
-            await this.assertWriteAccess("study", id, {transaction});
             await this.models["study"].updateById(
                 id,
                 { closed: true, userIdClosed: this.userId },
@@ -246,7 +245,6 @@ class StudySocket extends Socket {
         await this.hasManageStudiesPermission();
 
         const openedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
-            await this.assertWriteAccess("study", id, {transaction});
             await this.models["study"].updateById(
                 id,
                 { closed: null, userIdClosed: null },
@@ -272,7 +270,6 @@ class StudySocket extends Socket {
         await this.hasManageStudiesPermission();
 
         const deletedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
-            await this.assertWriteAccess("study", id, {transaction});
             await this.models["study"].updateById(
                 id,
                 { deleted: true },
