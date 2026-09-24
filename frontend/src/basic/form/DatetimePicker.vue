@@ -8,6 +8,7 @@
           type="date"
           :lang="localeCode"
           @blur="blur(currentDate)"
+          :min="options.disablePast ? today : undefined"
       >
       <input
           v-model="time"
@@ -87,7 +88,14 @@ export default {
     localeCode() {
       const locale = this.$i18n?.locale;
       return typeof locale === "string" ? locale : locale?.value;
-    }
+    },
+    today() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    },
   },
   mounted() {
     if (this.modelValue && this.modelValue !== undefined) {
