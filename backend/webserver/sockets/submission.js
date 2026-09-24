@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const TranslatableError = require("../../utils/TranslatableError");
 
 /**
  * Handle submissions through websocket
@@ -31,7 +32,10 @@ class SubmissionSocket extends Socket {
                     const copyResult = await this.models["submission"].copySubmission(submissionId, this.userId, {transaction});
                     copiedResults.push(copyResult);
                 } catch (error) {
-                    throw new Error(`Failed to copy submission with ${submissionId}: ${error.message}`);
+                    if (TranslatableError.is(error)) {
+                        throw error;
+                    }
+                    throw new TranslatableError( "errors.submission.copyWithIdFailed", {submissionId, message: error.message});
                 }
             }
             const copiedSubmissionIds = copiedResults.map(({copiedSubmission}) => copiedSubmission.id);
@@ -64,15 +68,15 @@ class SubmissionSocket extends Socket {
 
         const submission = await this.models['submission'].getById(id, { transaction });
         if (!submission) {
-            throw new Error("Submission not found.");
+            throw new TranslatableError("errors.submission.notFoundGeneric");
         }
         if (!(await this.checkUserAccess(submission.userId))) {
-            throw new Error("You are not allowed to delete this submission.");
+            throw new TranslatableError("errors.submission.updateNotAllowed");
         }
 
         const assignment = await this.models['assignment'].getById(submission.assignmentId, { transaction });
         if (assignment && assignment.closed) {
-            throw new Error("Cannot delete submission because the assignment is closed.");
+            throw new TranslatableError("errors.submission.deleteAssignmentClosed");
         }
 
         const documents = await this.models['document'].findAll({
@@ -82,7 +86,7 @@ class SubmissionSocket extends Socket {
         });
         const isStudyLocked = documents.some(doc => Number(doc.studyUsageCount || 0) > 0);
         if (isStudyLocked) {
-            throw new Error("Cannot delete submission because one or more linked documents are used in studies.");
+            throw new TranslatableError("errors.submission.deleteDocumentsUsedInStudies");
         }
 
         return await this.models['submission'].deleteById(id, { force, transaction });
@@ -100,7 +104,7 @@ class SubmissionSocket extends Socket {
      */
     async publishGrades(data) {
         if (!(await this.isAdmin())) {
-            throw new Error("You do not have permission to upload grades");
+            throw new TranslatableError("errors.submission.noGradeUploadPermission");
         }
         return await this.server.rpcs["MoodleRPC"].publishAssignmentGrade({
             options: data.options,

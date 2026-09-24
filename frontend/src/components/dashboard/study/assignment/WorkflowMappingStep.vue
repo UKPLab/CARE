@@ -1,16 +1,21 @@
 <template>
   <div>
-    <h6 class="text-secondary">Target Workflow Selection</h6>
+    <h6 class="text-secondary">{{ $t('dashboard.study.targetWorkflowSelection') }}</h6>
     <div class="mb-3">
-      <label class="form-label"><strong>Select Target Workflow:</strong></label>
+      <label class="form-label"><strong>{{ $t('dashboard.study.selectTargetWorkflow') }}</strong></label>
       <FormSelect v-model="targetWorkflowId" :options="workflowOptions" />
     </div>
     <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
-      <h6 class="text-secondary mt-4">Workflow Step Mapping</h6>
-      <p class="text-muted">Map each source workflow step (from template) to a target workflow step:</p>
+      <h6 class="text-secondary mt-4">{{ $t('dashboard.study.workflowStepMapping') }}</h6>
+      <p class="text-muted">{{ $t('dashboard.study.mapWorkflowStepToTarget') }}</p>
       <div v-for="(templateStep, index) in workflowSteps" :key="templateStep.id" class="mb-3">
         <label class="form-label">
-          <strong>Source Step {{ index + 1 }} ({{ getStepTypeName(templateStep.stepType) }}) → Target Step:</strong>
+          <strong>
+            {{ $t('dashboard.study.sourceStepTargetStep', {
+              index: index + 1,
+              stepType: getStepTypeName(templateStep.stepType),
+            }) }}
+          </strong>
         </label>
         <FormSelect
             v-model="workflowMapping[templateStep.id]"
@@ -19,14 +24,14 @@
       </div>
     </div>
     <div v-if="bulk" class="mt-4">
-      <h6 class="text-secondary">New Study Owner</h6>
+      <h6 class="text-secondary">{{ $t('dashboard.study.newStudyOwner') }}</h6>
       <div class="form-check">
         <input id="owner-session" v-model="newStudyOwner" type="radio" class="form-check-input" value="session_owner" />
-        <label class="form-check-label" for="owner-session">User of the study session</label>
+        <label class="form-check-label" for="owner-session">{{ $t('dashboard.study.userOfStudySession') }}</label>
       </div>
       <div class="form-check">
         <input id="owner-current-user" v-model="newStudyOwner" type="radio" class="form-check-input" value="study_owner" />
-        <label class="form-check-label" for="owner-current-user">Owner of the study</label>
+        <label class="form-check-label" for="owner-current-user">{{ $t('dashboard.study.ownerOfStudy') }}</label>
       </div>
     </div>
   </div>
@@ -124,9 +129,9 @@ export default {
   methods: {
     getStepTypeName(stepType) {
       switch (stepType) {
-        case 1: return 'Annotator';
-        case 2: return 'Editor';
-        default: return 'Unknown';
+        case 1: return this.$t("dashboard.study.annotator");
+        case 2: return this.$t("dashboard.study.editor");
+        default: return this.$t("common.unknown");
       }
     },
     getTargetStepOptions(stepType, currentStepId) {
@@ -144,7 +149,10 @@ export default {
       const options = orderedSteps
           .filter(step => step.stepType === stepType)
           .map(step => ({
-            name: `<Workflow> Step ${stepPositionMap.get(step.id)} (${this.getStepTypeName(step.stepType)})`,
+            name: this.$t("dashboard.study.workflowStepOption", {
+              index: stepPositionMap.get(step.id),
+              type: this.getStepTypeName(step.stepType),
+            }),
             value: step.id,
           }));
       if (stepType === 1 && currentStepId) {
@@ -154,7 +162,10 @@ export default {
               s => s.id === currentSourceStep.workflowStepPrevious
           );
           if (previousSourceStep && previousSourceStep.stepType === 1) {
-            options.unshift({ name: '<Document> Revised Document', value: 'previousSubmission' });
+            options.unshift({
+              name: this.$t("dashboard.study.revisedDocument"),
+              value: 'previousSubmission',
+            });
           }
         }
       }

@@ -3,20 +3,20 @@
     <div ref="assessmentSection" class="assessment-section">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div class="d-flex align-items-center gap-2">
-          <h4 class="mb-0">Assessment</h4>
+          <h4 class="mb-0">{{ $t('assessment.title') }}</h4>
           <span
               v-if="configuration && configuration.rubrics && configuration.rubrics.length"
               class="badge"
           >
-            {{ totalPoints }} / {{ totalMaxPoints }} P
+            {{ $t('assessment.totalPoints', { points: totalPoints, maxPoints: totalMaxPoints }) }}
           </span>
-          <span v-if="computedReadOnly" class="badge bg-secondary">Read Only</span>
+          <span v-if="computedReadOnly" class="badge bg-secondary">{{ $t('common.readOnly') }}</span>
         </div>
       </div>
 
       <div class="assessment-content-container">
         <div v-if="error" class="alert alert-danger">
-          <h6>Error</h6>
+          <h6>{{ $t('common.error') }}</h6>
           <p class="mb-0">{{ error }}</p>
         </div>
 
@@ -49,7 +49,7 @@
         </div>
 
         <div v-else class="text-center py-4">
-          <h6>No Assessment Configuration available.</h6>
+          <h6>{{ $t('assessment.noConfiguration') }}</h6>
         </div>
       </div>
     </div>

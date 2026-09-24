@@ -38,7 +38,7 @@
       v-if="showWarning"
       class="alert alert-warning"
     >
-      <strong>Note:</strong> {{ warningText }}
+       <strong>{{ $t('common.note') }}:</strong> {{ warningText }}
     </div>
     <div
       v-if="showPreview"
@@ -81,6 +81,7 @@
 </template>
 
 <script>
+
 /**
  * This component enables users to select a validation schema and allows for UI customization.
  * @author: Linyin Huang

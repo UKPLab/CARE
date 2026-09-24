@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 
 /**
@@ -41,7 +42,7 @@ class StatisticSocket extends Socket {
                 this.socket.emit("statsDataByUser", {
                     success: false,
                     userId: data.userId,
-                    message: "User rights and argument mismatch"
+                    message: "errors.statistics.userRightsArgumentMismatch"
                 });
                 this.logger.error("User right and request parameter mismatch. User did not agree to stats collection.");
             }
@@ -62,7 +63,7 @@ class StatisticSocket extends Socket {
      */
     async getStats(data, options) {
         if (!await this.isAdmin()) {
-            throw new Error("You don't have permission to access this data");
+            throw new TranslatableError("errors.permission.noPermissionToAccesData");
         }
 
         if (data.userId) {

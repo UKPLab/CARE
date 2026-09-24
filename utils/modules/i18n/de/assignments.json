@@ -1,0 +1,306 @@
+{
+  "fields": {
+    "name": {
+      "label": "Assignment-Name:",
+      "placeholder": "Assignment 1"
+    },
+    "description": {
+      "label": "Beschreibung:",
+      "help": "Optionale Beschreibung für dieses Assignment."
+    },
+    "maxRevisions": {
+      "label": "Maximale Revisionen:",
+      "help": "Maximale Anzahl erlaubter Revisionskopien für dieses Assignment. Ganz nach rechts für unbegrenzt.",
+      "unit": "Revision(en)",
+      "unlimitedLabel": "unbegrenzt"
+    },
+    "start": {
+      "label": "Startzeit:"
+    },
+    "end": {
+      "label": "Endzeit:"
+    },
+    "validationConfigurationId": {
+      "label": "Validierungskonfiguration:",
+      "help": "Validierung wird vor dem Submission-Upload angewendet."
+    },
+    "allowReUpload": {
+      "label": "Erneutes Hochladen erlauben:",
+      "help": "Wenn aktiviert, können Nutzer hochgeladene Submissions ersetzen oder löschen."
+    },
+    "notifyOnSubmissionUpload": {
+      "label": "Bei Submission-Upload benachrichtigen:",
+      "help": "Wenn aktiviert, wird eine E-Mail gesendet, wenn ein Studierender eine Submission hochlädt oder erneut hochlädt."
+    }
+  },
+  "dashboard": {
+    "buttons": {
+      "addAssignment": "Assignment hinzufügen"
+    },
+    "columns": {
+      "submissionStatus": "Submission-Status",
+      "assignedTo": "Zugewiesen an",
+      "maxRevisions": "Max. Revisionen",
+      "disable": "Deaktivieren",
+      "allowReUpload": "Erneutes Hochladen erlauben",
+      "parentAssignmentId": "Übergeordnetes Assignment"
+    },
+    "status": {
+      "notStarted": "Noch nicht gestartet",
+      "open": "Offen",
+      "closed": "Geschlossen"
+    },
+    "actions": {
+      "editAssignment": "Assignment bearbeiten",
+      "deleteAssignment": "Assignment löschen",
+      "inspectSubmissions": "Submissions anzeigen",
+      "uploadMetadata": "Metadaten hochladen",
+      "toggleDisable": "Deaktivierung umschalten",
+      "copyAssignment": "Assignment kopieren",
+      "closeAssignment": "Assignment schließen"
+    },
+    "fallback": {
+      "userLabel": "Benutzer {id}"
+    },
+    "confirm": {
+      "close": {
+        "title": "Assignment schließen",
+        "message": "Möchten Sie dieses Assignment wirklich schließen?"
+      },
+      "delete": {
+        "title": "Assignment löschen",
+        "message": "Möchten Sie dieses Assignment wirklich löschen?"
+      }
+    },
+    "toasts": {
+      "noPermissionEdit": "Sie haben keine Berechtigung, Assignments zu bearbeiten.",
+      "noPermissionClose": "Sie haben keine Berechtigung, Assignments zu schließen.",
+      "noPermissionDisable": "Sie haben keine Berechtigung, dieses Assignment zu deaktivieren.",
+      "noPermissionDelete": "Sie haben keine Berechtigung, Assignments zu löschen.",
+      "closeSuccess": {
+        "title": "Assignment geschlossen",
+        "message": "Das Assignment wurde geschlossen."
+      },
+      "closeFailed": "Schließen fehlgeschlagen",
+      "updateSuccess": {
+        "title": "Assignment aktualisiert",
+        "message": "Assignment ist jetzt {state}."
+      },
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "deleteSuccess": {
+        "title": "Assignment gelöscht",
+        "message": "Das Assignment wurde gelöscht"
+      },
+      "deleteFailed": "Assignment konnte nicht gelöscht werden",
+      "copyFailed": {
+        "title": "Assignment konnte nicht kopiert werden",
+        "message": "Das ursprüngliche Assignment wurde nicht gefunden."
+      },
+      "revisionLimitReached": {
+        "title": "Revisionslimit erreicht",
+        "message": "Sie haben die maximale Anzahl an Submissions für dieses Assignment erreicht ({count})."
+      },
+      "uploadNotAllowed": {
+        "title": "Upload nicht erlaubt",
+        "message": "Submissions sind für dieses Assignment geschlossen.",
+        "messageAdmin": "Submissions sind für dieses Assignment geschlossen. Nur Admins können jetzt hochladen."
+      }
+    },
+    "submissions": {
+      "activeTitle": "Aktive Assignments",
+      "noActive": "Sie haben keine aktiven Assignments.",
+      "closedTitle": "Geschlossene Assignments",
+      "noClosed": "Sie haben keine geschlossenen Assignments.",
+      "noDueDate": "kein Fälligkeitsdatum",
+      "unlimited": "Unbegrenzt",
+      "remainingLeft": "{count} Submission(s) übrig",
+      "overdueBy": "Überfällig seit {time}"
+    },
+    "modal": {
+      "submitText": "Assignment speichern",
+      "assignMode": {
+        "roles": "Rollen",
+        "users": "Benutzer"
+      },
+      "step1": {
+        "rolesHint": "Wählen Sie eine oder mehrere Rollen für dieses Assignment aus.",
+        "usersHint": "Wählen Sie einen oder mehrere Benutzer für dieses Assignment aus."
+      },
+      "steps": {
+        "userRoles": "Benutzerrollen",
+        "assignment": "Assignment"
+      },
+      "columns": {
+        "role": "Rolle"
+      },
+      "titles": {
+        "copy": "Assignment kopieren",
+        "edit": "Assignment bearbeiten",
+        "new": "Neues Assignment"
+      },
+      "toasts": {
+        "saveFailed": "Assignment konnte nicht gespeichert werden",
+        "saveSuccess": {
+          "title": "Assignment gespeichert",
+          "messageUpdated": "Assignment wurde erfolgreich aktualisiert.",
+          "messageCreated": "Assignment wurde erfolgreich erstellt."
+        }
+      }
+    },
+    "uploadModal": {
+      "assignmentDescriptionHeading": "Assignment-Beschreibung",
+      "noDescription": "Keine Beschreibung vorhanden.",
+      "steps": {
+        "assignment": "Assignment"
+      },
+      "fields": {
+        "name": {
+          "label": "Submission-Name",
+          "placeholder": "Submission-Namen eingeben"
+        },
+        "description": {
+          "label": "Submission-Beschreibung",
+          "placeholder": "Kurze Beschreibung hinzufügen"
+        }
+      },
+      "toasts": {
+        "missingUser": {
+          "title": "Benutzer fehlt",
+          "message": "Für diese Submission wurde kein Benutzer ausgewählt."
+        }
+      }
+    },
+    "submissionsModal": {
+      "title": "Submissions für {title}",
+      "revisionLimitWarning": "Maximale Anzahl an Revisionen ({count}) erreicht.",
+      "fallbackAssignmentTitle": "Assignment #{id}"
+    },
+    "submissionsTable": {
+      "columns": {
+        "name": "Submission-Name",
+        "studyUsageCount": "Verwendet in Studien"
+      },
+      "actions": {
+        "replace": "Submission ersetzen",
+        "delete": "Submission löschen"
+      },
+      "toasts": {
+        "documentFetchFailed": "Dokument konnte nicht abgerufen werden",
+        "replaceNotAllowed": {
+          "title": "Ersetzen nicht erlaubt",
+          "message": "Diese Submission kann nicht ersetzt werden, da ein oder mehrere Dokumente in Studien verwendet werden."
+        },
+        "replaceFailed": {
+          "title": "Ersetzen fehlgeschlagen",
+          "message": "Assignment-ID für diese Submission fehlt."
+        },
+        "deleteNotAllowed": {
+          "title": "Löschen nicht erlaubt",
+          "message": "Diese Submission kann nicht gelöscht werden, da ein oder mehrere Dokumente in Studien verwendet werden."
+        },
+        "deleteSuccess": {
+          "title": "Submission gelöscht",
+          "message": "Die Submission wurde gelöscht"
+        },
+        "deleteFailed": "Submission konnte nicht gelöscht werden"
+      },
+      "confirm": {
+        "delete": {
+          "title": "Submission löschen",
+          "message": "Möchten Sie diese Submission wirklich löschen?"
+        }
+      }
+    }
+  },
+  "metadata": {
+    "modal": {
+      "title": "Metadaten importieren"
+    },
+    "steps": {
+      "upload": "Upload",
+      "target": "Ziel",
+      "mapping": "Zuordnung",
+      "preview": "Vorschau",
+      "result": "Ergebnis"
+    },
+    "fallback": {
+      "assignmentLabel": "Assignment #{id}"
+    },
+    "upload": {
+      "help": "Laden Sie eine Metadaten-Datei im Format `.json` oder `.csv` hoch. CARE extrahiert die verfügbaren Felder, damit Sie Ziel und Zuordnungen in den nächsten Schritten festlegen können.",
+      "loadedFile": "Geladene Datei:",
+      "parsedSummary": "{rows} Zeilen mit {fields} Feldern gelesen.",
+      "errors": {
+        "unsupportedFormat": "Nicht unterstütztes Dateiformat. Bitte laden Sie .json oder .csv hoch.",
+        "noUsableRows": "Die hochgeladene Datei enthielt keine nutzbaren Zeilen.",
+        "noUsableFields": "Die hochgeladene Datei enthielt keine nutzbaren Felder.",
+        "parseFailed": "Metadaten-Datei konnte nicht gelesen werden.",
+        "csvFailed": "CSV konnte nicht gelesen werden. {details}",
+        "csvUnknownRow": "unbekannte Zeile",
+        "csvRow": "Zeile {row}",
+        "csvMalformed": "Ungültiger CSV-Inhalt."
+      }
+    },
+    "target": {
+      "typeLabel": "Zieltyp",
+      "help": "Metadaten werden in Dokumente von Submissions des ausgewählten Assignments geschrieben."
+    },
+    "mapping": {
+      "primaryKeyHeading": "Primärschlüssel-Zuordnung",
+      "sourceKey": "Quellschlüssel",
+      "selectField": "Feld auswählen",
+      "matchAgainst": "Abgleichen mit",
+      "primaryKeyHelp": "Diese Zuordnung steuert, wie CARE hochgeladene Zeilen den Submission-Besitzern im ausgewählten Assignment zuordnet.",
+      "metadataHeading": "Metadaten-Zuordnungen",
+      "targetMetaKey": "Ziel-metaKey",
+      "action": "Aktion",
+      "addMapping": "Zuordnung hinzufügen",
+      "remove": "Entfernen",
+      "empty": "Noch keine Metadaten-Zuordnungen konfiguriert.",
+      "metaKeyPlaceholder": "topic"
+    },
+    "validation": {
+      "selectSourceKey": "Wählen Sie den Quellschlüssel aus der Datei für den Abgleich.",
+      "selectTargetField": "Wählen Sie das CARE-Feld, mit dem der Primärschlüssel abgeglichen werden soll.",
+      "addMapping": "Fügen Sie mindestens eine Metadaten-Zuordnung hinzu.",
+      "mappingNeedsSource": "Jede Metadaten-Zuordnung braucht einen Quellschlüssel.",
+      "mappingNeedsMetaKey": "Jede Metadaten-Zuordnung braucht einen Ziel-metaKey.",
+      "uniqueMetaKeys": "Ziel-metaKeys müssen eindeutig sein.",
+      "uniquePrimaryKeys": "Primärschlüsselwerte müssen in allen hochgeladenen Zeilen vorhanden und eindeutig sein."
+    },
+    "preview": {
+      "warning": "Dieser Import betrifft nur das ausgewählte Assignment. Vorhandene Metadateneinträge mit demselben `metaKey` werden überschrieben.",
+      "targetType": "Zieltyp:",
+      "assignment": "Assignment:",
+      "primaryKeyMapping": "Primärschlüssel-Zuordnung:",
+      "mappedFields": "Zugeordnete Metadatenfelder:",
+      "willMatchRows": "Passende Zeilen:",
+      "rowsWithoutMatch": "Zeilen ohne Submission-Treffer:",
+      "willSkipWithoutDocuments": "Übersprungene Treffer ohne Dokumente:",
+      "documentsAffected": "Betroffene Dokumente:",
+      "willWriteEntries": "Zu schreibende Metadateneinträge:",
+      "willOverwriteEntries": "Zu überschreibende Metadateneinträge:"
+    },
+    "result": {
+      "wroteSummary": "{entries} Metadateneinträge in {documents} Dokumenten geschrieben ({matched} passende Zeilen).",
+      "noneWritten": "Es wurden keine Metadateneinträge geschrieben.",
+      "issues": "Hinweise:",
+      "notRunYet": "Der Import wurde noch nicht ausgeführt."
+    },
+    "issues": {
+      "unknownValue": "unbekannt",
+      "unmatched": "Kein Treffer für Wert \"{value}\": {detail}",
+      "submission": "Submission {id}: {detail}",
+      "row": "Zeile: {detail}",
+      "import": "Import: {detail}"
+    },
+    "toasts": {
+      "previewFailed": "Vorschau des Metadaten-Imports fehlgeschlagen",
+      "importSuccess": {
+        "title": "Metadaten importiert",
+        "message": "{count} Metadateneinträge geschrieben."
+      },
+      "importFailed": "Metadaten-Import fehlgeschlagen"
+    }
+  }
+}

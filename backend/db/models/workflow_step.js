@@ -17,8 +17,8 @@ module.exports = (sequelize, DataTypes) => {
 
         static fields = [{
             key: "name",
-            label: "Name of the workflow step:",
-            placeholder: "My workflow step",
+            label: "workflow.fields.step.name.label",
+            placeholder: "workflow.fields.step.name.placeholder",
             type: "text",
             required: true,
             default: "",
@@ -26,31 +26,31 @@ module.exports = (sequelize, DataTypes) => {
             maxlength: 100
         }, {
             key: "stepType",
-            label: "Select Step Type:",
+            label: "workflow.fields.step.stepType.label",
             type: "select",
             options: [
-                { value: 1, name: "Annotator" },
-                { value: 2, name: "Editor" },
-                { value: 3, name: "Modal" }
+                { value: 1, name: "workflow.stepTypes.annotator" },
+                { value: 2, name: "workflow.stepTypes.editor" },
+                { value: 3, name: "workflow.stepTypes.modal" }
             ],
             icon: "list",
             required: true,
             default: 2,
-            help: "Choose the type of workflow step."
+            help: "workflow.fields.step.stepType.help"
         }, {
             key: "allowBackward",
-            label: "Allow Backward Navigation:",
+            label: "workflow.fields.step.allowBackward.label",
             type: "switch",
             default: false,
-            help: "Allow users to navigate back to this step."
+            help: "workflow.fields.step.allowBackward.help"
         },{
             key: "configuration",
-            label: "Configuration:",
-            placeholder: "Enter JSON configuration for this step",
+            label: "workflow.fields.step.configuration.label",
+            placeholder: "workflow.fields.step.configuration.placeholder",
             type: "json",
             required: false,
             default: {},
-            help: "Additional configuration settings for this workflow step in JSON format."
+            help: "workflow.fields.step.configuration.help"
         }];
 
         /**

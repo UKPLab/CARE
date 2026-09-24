@@ -6,8 +6,8 @@
   >  
     <template v-if="toolbarVisible">       
       <TopBarButton
-        title="Reset"
-        text="Reset"
+        :title="$t('common.reset')"
+        :text="$t('common.reset')"
         :disabled="isZooming"
         @click="$emit('reset')"
       />      
@@ -32,7 +32,7 @@
     <BasicButton
       class="toolbar-toggle-btn"
       :icon="toolbarVisible ? 'chevron-right' : 'tools'"
-      tooltip="toolbarVisible ? 'Minimize Toolbar' : 'Show Toolbar'"
+      :title="toolbarVisible ? $t('components.pdftoolbar.minToolbar') : $t('components.pdftoolbar.showToolbar')"
       @click="toggleToolbar"
     />
   </div>

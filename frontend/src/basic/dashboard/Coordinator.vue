@@ -8,16 +8,15 @@
   >
     <template #title>
       <slot name="title">
-        <span v-if="data.id">Edit</span>
-        <span v-else>New</span>
-        {{ title }}
+        <span v-if="data.id">{{ $t('common.editItem', { item: title }) }}</span>
+        <span v-else>{{ $t('common.newItem', { item: title }) }}</span>
       </slot>
     </template>
     <template #body>
       <span v-if="success">
         <slot name="success">
-          <span v-if="data.id"> The entry is successfully updated!</span>
-          <span v-else>The entry is successfully added!</span>
+          <span v-if="data.id"> {{$t('coordinator.entryUpdated')}}</span>
+          <span v-else>{{$t('coordinator.entryAdded')}}</span>
         </slot>
       </span>
       <span v-else>
@@ -40,7 +39,7 @@
             class="btn btn-secondary"
             @click="$refs.coordinatorModal.close()"
           >
-            Close
+          {{$t('common.close')}}
           </button>
         </slot>
       </span>
@@ -55,14 +54,14 @@
             type="button"
             @click="$refs.coordinatorModal.close()"
           >
-            {{ textCancel }}
+            {{ textCancel  || $t('common.cancel')}}
           </button>
           <button
             class="btn btn-primary me-2"
             type="button"
             @click="submit"
           >
-            {{ data.id ? textUpdate : textAdd }}
+            {{ data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add')) }}
           </button>
         </slot>
       </span>
@@ -73,7 +72,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
-import { sorter } from "@/assets/utils.js";
+import { resolveApiMessage, sorter } from "@/assets/utils.js";
 
 /**
  * Basic Coordinator to add or edit database entries
@@ -101,17 +100,18 @@ export default {
       type: String,
       required: true,
     },
+    // Empty defaults: footer uses `textX || $t(...)`; a literal default is always truthy and skips i18n.
     textAdd: {
       type: String,
-      default: "Add",
+      default: "",
     },
     textUpdate: {
       type: String,
-      default: "Update",
+      default: "",
     },
     textCancel: {
       type: String,
-      default: "Cancel",
+      default: "",
     },
     table: {
       type: String,
@@ -196,8 +196,8 @@ export default {
         this.$refs.coordinatorModal.open();
       } else {
         this.eventBus.emit("toast", {
-          title: "Error",
-          message: "The table " + this.table + " has no defined fields!",
+          title: this.$t('common.error'),
+          message: this.$t('coordinator.errors.noFieldsDefined', { table: this.table }),
           variant: "danger",
         });
       }
@@ -214,13 +214,15 @@ export default {
       
       if (!isValidated) return;
       if (hasIncompleteConfig) {
-        const stepMessage = incompleteSteps.length === 1 
-          ? `step ${incompleteSteps[0]}`
-          : `steps ${incompleteSteps.slice(0, -1).join(", ")} and ${incompleteSteps[incompleteSteps.length - 1]}`;
-        
+        const stepMessage = incompleteSteps.length === 1
+          ? this.$t('coordinator.errors.stepSingle', { n: incompleteSteps[0] })
+          : this.$t('coordinator.errors.stepMultiple', {
+              list: incompleteSteps.slice(0, -1).join(", "),
+              last: incompleteSteps[incompleteSteps.length - 1]
+            });
         this.eventBus.emit("toast", {
-          title: "Incomplete Configuration",
-          message: `You have incomplete configuration at ${stepMessage}`,
+          title: this.$t('coordinator.errors.incompleteConfig'),
+          message: this.$t('coordinator.errors.incompleteConfigDetail', { steps: stepMessage }),
           variant: "danger",
         });
         return;
@@ -247,8 +249,8 @@ export default {
           } else {
             this.$refs.coordinatorModal.waiting = false;
             this.eventBus.emit("toast", {
-              title: "Could not save",
-              message: result.message,
+              title: this.$t('coordinator.errors.saveFailed'),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }

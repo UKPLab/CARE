@@ -1,0 +1,268 @@
+{
+  "placeholders": {
+    "warning": "Warning:",
+    "invalidPlaceholdersMessage": "The following placeholders are not valid for {templateType} templates:",
+    "invalidPlaceholdersIgnored": "These placeholders will be ignored when the template is used.",
+    "failedToLoad": "Failed to load placeholders",
+    "labels": {
+      "emailGeneral": {
+        "username": "Recipient username",
+        "firstName": "Recipient first name",
+        "lastName": "Recipient last name",
+        "link": "Link",
+        "otp": "One-time code",
+        "tokenExpiry": "Token expiry"
+      },
+      "emailStudySession": {
+        "username": "Recipient username",
+        "link": "Review link"
+      },
+      "emailAssignment": {
+        "username": "Recipient username",
+        "assignmentType": "Assignment type",
+        "assignmentName": "Assignment name",
+        "link": "Assignment link"
+      },
+      "emailStudyClose": {
+        "username": "Recipient username",
+        "studyName": "Study name"
+      },
+      "emailSubmissionUpload": {
+        "username": "Recipient username",
+        "assignmentName": "Assignment name",
+        "eventType": "Upload event",
+        "assignmentId": "Assignment ID",
+        "submissionId": "Submission ID",
+        "timestamp": "Upload timestamp"
+      }
+    },
+    "descriptions": {
+      "emailGeneral": {
+        "username": "Username of the email recipient.",
+        "firstName": "First name of the email recipient.",
+        "lastName": "Last name of the email recipient.",
+        "link": "Action link in the email (e.g. reset or verification URL).",
+        "otp": "One-time verification code for email-based two-factor authentication.",
+        "tokenExpiry": "Expiry time in hours or minutes, depending on the email context."
+      },
+      "emailStudySession": {
+        "username": "Submission owner receiving this session email.",
+        "link": "Link to open the review in read-only mode."
+      },
+      "emailAssignment": {
+        "username": "Username of the assigned reviewer.",
+        "assignmentType": "Whether the assignment is document or submission.",
+        "assignmentName": "Name of the assignment or study.",
+        "link": "Link to start the assigned review session."
+      },
+      "emailStudyClose": {
+        "username": "Username of the session owner with an open session at study close.",
+        "studyName": "Name of the study that was closed."
+      },
+      "emailSubmissionUpload": {
+        "username": "Recipient username (assignment owner or submitter).",
+        "assignmentName": "Name of the assignment.",
+        "eventType": "Lowercase: \"uploaded\" or \"reuploaded\".",
+        "assignmentId": "Internal assignment identifier.",
+        "submissionId": "Internal submission identifier.",
+        "timestamp": "When the submission was uploaded."
+      }
+    },
+    "help": {
+      "emailGeneral": {
+        "username": "The username of the person receiving the email. For password reset, verification, or registration emails this is the user whose account the email is about.",
+        "firstName": "The first name of the person receiving the email.",
+        "lastName": "The last name of the person receiving the email.",
+        "link": "The URL included in the email (e.g. password reset, verification, or registration).",
+        "otp": "One-time verification code for email-based two-factor authentication.",
+        "tokenExpiry": "Expiry time in hours or minutes, depending on the email context."
+      },
+      "emailStudySession": {
+        "username": "The person receiving this email. For session start and session finish notifications this is always the submission owner.",
+        "link": "The URL to open the review (read-only). Used for session start and session finish."
+      },
+      "emailAssignment": {
+        "username": "The username of the reviewer who is assigned to the task.",
+        "assignmentType": "How the work is assigned: \"document\" (review by document) or \"submission\" (review by submission).",
+        "assignmentName": "The name of the assignment or study the reviewer is assigned to.",
+        "link": "The URL for the reviewer to open and start their review session. They must use this link to begin the assigned task."
+      },
+      "emailStudyClose": {
+        "username": "The username of the session owner who had an open session when the study was closed.",
+        "studyName": "The name of the study that was closed."
+      },
+      "emailSubmissionUpload": {
+        "username": "The person receiving this email (assignment owner or submitter).",
+        "assignmentName": "The title of the assignment.",
+        "eventType": "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
+        "assignmentId": "Internal assignment ID.",
+        "submissionId": "Internal submission ID.",
+        "timestamp": "When the submission was uploaded."
+      },
+      "prompt": {
+        "pdfText": "Text from the PDF in the current context.",
+        "editorText": "Latest plain text from the study HTML/modal document. During step loading, callers should pass context.editorText explicitly if resolving in the same pass as NLP insertIntoEditor.",
+        "assessmentResult": "The saved rubric from the Assessment sidebar for this document and step.",
+        "inlineComments": "Structured comments and annotations for this document and step.",
+        "nlpAssessmentSuggestion": "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",
+        "previousAssessmentResult": "The saved rubric from the previous step when carry-over is configured.",
+        "assessmentConfiguration": "The assessment rubric configuration used in this step.",
+        "submissionFiles": "Each Add inserts ~submissionFiles[N]~ with the next available N (highest existing + 1). Gaps are kept after deletes. Map each index to a specific submission file in the AI hook step configuration.",
+        "studyContext": "Basic metadata from the current study, step, and document context."
+      }
+    }
+  },
+  "types": {
+    "emailGeneral": "Email - General",
+    "emailStudySession": "Email - Study Session",
+    "emailAssignment": "Email - Assignment",
+    "documentGeneral": "Document - General",
+    "documentStudy": "Document - Study",
+    "emailStudyClose": "Email - Study Close",
+    "emailSubmissionUpload": "Email - Submission upload",
+    "prompt": "Prompt"
+  },
+  "editor": {
+    "newLanguage": "New language",
+    "createEmpty": "Create Empty",
+    "copyContent": "Copy Content",
+    "language": "Language",
+    "newLanguageMessage": "A new language is being added for this template. Copy current content into this language?<br><br><strong>Leaving the current language will save the content in it.</strong>",
+    "leave": {
+      "missingPlaceholdersConfirm": "This template is missing required placeholders, so your changes will not be saved."
+    },
+    "toasts": {
+      "templateSaveFailed": "Template save failed",
+      "templateDiscardFailed": "Could not discard template changes",
+      "failedToLoadTemplate": "Failed to load template",
+      "failedToAddLanguage": "Failed to add language",
+      "noCursorPosition": {
+        "title": "No Cursor Position",
+        "message": "Please click in the editor to set the cursor position before inserting a placeholder."
+      },
+      "previousEditFailed": "Previous edit failed; try again",
+      "templateError": "Template Error"
+    }
+  },
+  "dashboard": {
+    "title": "Templates",
+    "browsePublicTemplates": "Browse public templates",
+    "publicTemplates": "Public Templates",
+    "addNewTemplate": "Add new template",
+    "addTemplate": "Add Template",
+    "chooseType": "Choose Type",
+    "actions": {
+      "editTemplate": "Edit template",
+      "editContent": "Edit content",
+      "viewContentReadOnly": "View content (read-only)",
+      "publishTemplate": "Publish template",
+      "publishedCannotBeUnpublished": "Published (cannot be unpublished)",
+      "sourceUpdated": "Source updated",
+      "deleteTemplate": "Delete template",
+      "exportTemplate": "Export template"
+    },
+    "status": {
+      "published": "Published",
+      "draft": "Draft",
+      "updateAvailable": "Update available",
+      "sourceUnavailable": "Source unavailable"
+    },
+    "toasts": {
+      "templateDetached": {
+        "title": "Template detached",
+        "message": "You can now edit this template"
+      },
+      "detachFailed": "Detach failed",
+      "templateDeleteFailed": "Template delete failed"
+    },
+    "confirmDelete": {
+      "title": "Delete Template",
+      "message": "Are you sure you want to delete \"{name}\"?"
+    }
+  },
+  "publicTemplates": {
+    "title": "Public Templates",
+    "description": "Browse published templates from other users. Copy a template to add it to your own list.",
+    "alreadyCopied": "Already copied",
+    "viewContentReadOnly": "View content (read-only)",
+    "copyToMyTemplates": "Copy to my templates",
+    "success": {
+      "title": "Template copied",
+      "message": "Template copied to your list"
+    },
+    "errors": {
+      "copyFailed": "Copy failed"
+    }
+  },
+  "publishModal": {
+    "title": "Publish Template",
+    "success": {
+      "published": "Template successfully published!",
+      "visibility": "The template is now {visibility}.",
+      "title": "Template published"
+    },
+    "emailTemplateVisibilityInfo": "Email templates are only {visibility} after publishing.",
+    "confirmQuestion": "Do you really want to publish the template?",
+    "cannotBeUndone": "This can not be undone!",
+    "confirmPublish": "Yes, publish it!",
+    "visibility": {
+      "administrators": "visible to other administrators",
+      "allUsers": "visible to all users"
+    },
+    "errors": {
+      "notPublished": "Template not published"
+    }
+  },
+  "detachModal": {
+    "title": "Edit Copy",
+    "description": "Editing this template will detach it from the source. You will no longer receive updates from the original template. Continue?"
+  },
+  "modal": {
+    "title": "Template",
+    "errors": {
+      "typeRequired": {
+        "title": "Type required",
+        "message": "Please choose a template type"
+      },
+      "operationFailed": "Template operation failed"
+    },
+    "success": {
+      "updated": "Template updated",
+      "created": "Template created"
+    }
+  },
+  "updateModal": {
+    "title": "Source template has been updated",
+    "description": "Replace your copy with the latest content, or create a new copy and detach the current one.",
+    "makeNewCopyWarning": "Make new copy: your current copy will be detached and will no longer receive updates.",
+    "makeNewCopy": "Make new copy",
+    "success": {
+      "updatedTitle": "Template updated",
+      "updatedMessage": "Content has been updated from the source template",
+      "copiedTitle": "Template copied",
+      "copiedMessage": "A new copy has been created. Your previous copy has been detached."
+    },
+    "errors": {
+      "updateFailed": "Update failed",
+      "copyFailed": "Copy failed"
+    }
+  },
+  "fields": {
+    "type": {
+      "options": {
+        "chooseType": "Choose type",
+        "emailGeneral": "Email - General",
+        "emailStudySession": "Email - Study Session",
+        "emailAssignment": "Email - Assignment",
+        "emailStudyClose": "Email - Study Close",
+        "emailSubmissionUpload": "Email - Submission upload",
+        "documentGeneral": "Document - General",
+        "documentStudy": "Document - Study",
+        "prompt": "Prompt"
+      }
+    },
+    "defaultLanguage": {
+      "label": "Default language"
+    }
+  }
+}

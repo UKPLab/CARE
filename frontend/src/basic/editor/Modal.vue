@@ -10,7 +10,9 @@
       <button
         class="btn btn-secondary"
         type="button"
-        @click="$refs.editorModal.close()">Close
+        @click="$refs.editorModal.close()"
+      >
+        {{ $t('common.close') }}
       </button>
     </template>
   </Modal>

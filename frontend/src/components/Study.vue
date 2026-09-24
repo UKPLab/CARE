@@ -7,7 +7,7 @@
       <p class="text-muted mb-4">{{ studyError.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>Go to Dashboard
+          <i class="bi bi-house me-2"></i>{{ $t('components.studyRoute.errors.goToDashboard') }}
         </router-link>
       </div>
     </div>
@@ -33,12 +33,12 @@
   <Teleport to="#topbarCenterPlaceholder">
     <div
         v-show="readOnlyComputed"
-        title="Read-only"
+        :title="$t('common.readOnly')"
     >
       <span
           :style="{ color: '#800000', fontWeight: 'bold' }"
       >
-        Read-only
+        {{ $t('common.readOnly') }}
       </span>
       <LoadIcon
           :size="22"
@@ -59,10 +59,10 @@
           currentStudyStep.studyStepPrevious !== null
         "
           class="btn btn-outline-primary me-3"
-          title="Previous"
+          :title="$t('common.previous')"
           @click="updateStep(currentStudyStep.studyStepPrevious)"
       >
-        Previous
+        {{ $t('common.previous') }}
       </TopBarButton>
 
       <TopBarButton
@@ -76,20 +76,20 @@
         "
           class="btn btn-outline-secondary mx-3"
           :disabled="!isCurrentStepReady"
-          :title="studySession.end ? 'Finish Study Again' : 'Finish Study'"
+          :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
           @click="finish()"
       >
-        {{ studySession.end ? "Finish Study Again" : "Finish Study" }}
+        {{ studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy') }}
       </TopBarButton>
 
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
           :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
           class="btn btn-outline-primary ms-3"
-          title="Next"
+          :title="$t('common.next')"
           @click="next()"
       >
-        Next
+        {{ $t('common.next') }}
       </TopBarButton>
 
       <TopBarButton
@@ -104,7 +104,7 @@
         <span
             :class="{ 'text-danger': timeLeft < 5 * 60 }"
             class="middle"
-        ><b>Time Left:</b> {{ timeLeftHuman }}</span
+        ><b>{{ $t('studies.timeLeft') }}:</b> {{ timeLeftHuman }}</span
         >
       </TopBarButton>
     </div>
@@ -142,7 +142,7 @@
                 @update:data="updateStudyData(step.id, 'annotator', $event)"
             >
               <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" title="Assessment">
+                <SidebarTemplate icon="list-check" :title="$t('assessment.title')">
                   <template #content>
                     <Assessment
                         :config="step.configuration"
@@ -165,7 +165,7 @@
                 @update:data="updateStudyData(step.id, 'editor', $event)"
             >
               <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" title="Assessment">
+                <SidebarTemplate icon="list-check" :title="$t('assessment.title')">
                   <template #content>
                     <Assessment
                         :config="step.configuration"
@@ -213,6 +213,7 @@ import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
@@ -384,9 +385,9 @@ export default {
     },
     timeLeftHuman() {
       if (this.timeLeft < 60) {
-        return Math.round(this.timeLeft) + "s";
+        return this.$t('common.time.seconds', { sec: Math.round(this.timeLeft) });
       }
-      return "<" + Math.ceil(this.timeLeft / 60) + "min";
+      return this.$t('common.time.lessThanMinutes', { min: Math.ceil(this.timeLeft / 60) });
     },
     currentStudyStep() {
       return this.currentStudyStepId ? this.$store.getters["table/study_step/get"](this.currentStudyStepId) : null;
@@ -471,15 +472,15 @@ export default {
   methods: {
     setStudyError(message, errorCode) {
       const titleMap = {
-        NOT_FOUND: 'Study Not Found',
-        ACCESS_DENIED: 'Access Denied',
-        FILE_MISSING: 'Files Not Available',
-        DOCUMENT_NOT_FOUND: 'Document Not Found',
+        NOT_FOUND: this.$t('components.studyRoute.errors.studyNotFoundTitle'),
+        ACCESS_DENIED: this.$t('components.studyRoute.errors.accessDeniedTitle'),
+        FILE_MISSING: this.$t('components.studyRoute.errors.filesMissingTitle'),
+        DOCUMENT_NOT_FOUND: this.$t('components.studyRoute.errors.documentNotFoundTitle'),
       };
 
       this.studyError = {
-        title: titleMap[errorCode] || 'Access Error!',
-        message: message || 'An unexpected error occurred.'
+        title: titleMap[errorCode] || this.$t('errors.permission.accessError'),
+        message: message ? resolveApiMessage({ success: false, message }) : this.$t('components.studyRoute.errors.unexpectedError')
       };
     },
     updateStudyData(stepId, data_type, data) {
@@ -538,8 +539,8 @@ export default {
       } else {
         if (this.foreignUnstartedSession) {
           this.eventBus.emit("toast", {
-            title: "Access Error!",
-            message: "This study session has not been started yet and belongs to another user.",
+            title: this.$t('errors.permission.accessError'),
+            message: this.$t('components.studyRoute.errors.foreignUnstartedSession'),
             variant: "danger",
           });
           this.$router.push("/");
@@ -576,14 +577,14 @@ export default {
           (result) => {
             if (result.success) {
               this.eventBus.emit("toast", {
-                title: "Study Session finished",
-                message: "Study session has been finished",
+                title: this.$t('studies.messages.sessionFinished'),
+                message: this.$t('studies.messages.sessionFinishedMessage'),
                 variant: "success",
               });
             } else {
               this.eventBus.emit("toast", {
-                title: "Study Session not finished",
-                message: result.message,
+                title: this.$t('errors.studies.sessionNotFinished'),
+                message: resolveApiMessage(result),
                 variant: "danger",
               });
             }
@@ -595,8 +596,8 @@ export default {
       // Prevent finishing if study is closed
       if (this.studyClosed) {
         this.eventBus.emit("toast", {
-          title: "Cannot finish session",
-          message: "The study has been closed. Sessions are automatically terminated when a study is closed.",
+          title: this.$t('studies.messages.cannotFinishSession'),
+          message: this.$t('studies.messages.studyClosedAutoTerminated'),
           variant: "warning",
         });
         return;
@@ -635,8 +636,8 @@ export default {
             (result) => {
               if (!result.success) {
                 this.eventBus.emit("toast", {
-                  title: "Study Step update failed",
-                  message: result.message,
+                  title: this.$t('errors.studies.stepUpdateFailed'),
+                  message: resolveApiMessage(result),
                   variant: "danger",
                 });
               }

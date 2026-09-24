@@ -2,7 +2,7 @@
   <div class="services-step">
     <!-- Services Configuration Content -->
     <div v-if="hasConfigServices" class="services-config mb-4">
-      <h6 class="section-title">Available Services</h6>
+      <h6 class="section-title">{{ $t('nlp.services.availableServices') }}</h6>
 
       <div
           v-for="(skill, index) in selectedSkills"
@@ -63,7 +63,7 @@
     <!-- No Services Message -->
     <div v-else class="no-content">
       <div class="alert alert-info" role="alert">
-        No services configuration available for this step.
+        {{ $t('nlp.services.noServices') }}
       </div>
     </div>
   </div>

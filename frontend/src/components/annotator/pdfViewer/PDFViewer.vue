@@ -30,7 +30,7 @@
       @update-visibility="updateVisibility"
     />
     <Adder v-if="!readOnly && !componentReadOnly"/>
-         </div>
+  </div>
 </template>
 
 <script>
@@ -45,6 +45,7 @@ import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import { resolveApiMessage } from "@/assets/utils";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -172,16 +173,16 @@ export default {
             })
             .catch(_response => {
               this.eventBus.emit('toast', {
-                title: "PDF Loading Error",
-                message: "Error during loading of the PDF file. Make sure the file is not corrupted and in valid PDF format.",
+                title: this.$t('errors.file.pdfLoadingError.title'),
+                message: this.$t('errors.file.pdfLoadingError.message'),
                 variant: "danger"
               });
               this.$router.push("/");
             });
         } else {
           this.eventBus.emit('toast', {
-            title: "PDF Loading Error",
-            message: res.message,
+            title: this.$t('errors.file.pdfLoadingError.title'),
+            message: resolveApiMessage(res),
             variant: "danger"
           });
           this.$router.push("/");

@@ -12,7 +12,7 @@
       :class="{ 'me-2': buttonText }"
       role="status"
     >
-      <span class="visually-hidden">Loading...</span>
+      <span class="visually-hidden">{{ $t('common.loading') }}</span>
     </span>
     <slot v-else-if="$slots.default" />
     <template v-else>

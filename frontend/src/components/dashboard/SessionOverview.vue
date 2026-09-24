@@ -1,11 +1,11 @@
 <template>
   <div class="container-fluid">
-    <h1>Study Sessions Overview</h1>
+    <h1>{{ $t('dashboard.sessionOverview.title') }}</h1>
     <div class="filters-container mb-3">
       <div class="d-flex-col align-items-center gap-3">
         <div class="form-check form-switch">
           <label class="form-check-label" for="showOpenStudiesSwitch">
-            show only open studies
+            {{ $t('dashboard.sessionOverview.showOnlyOpenStudies') }}
           </label>
           <input
             id="showOpenStudiesSwitch"
@@ -16,14 +16,14 @@
           >
         </div>
         <div class="d-flex align-items-center gap-2">
-          <label for="workflowSelect" class="mb-0">Filter Workflow type:</label>
+          <label for="workflowSelect" class="mb-0">{{ $t('dashboard.sessionOverview.filterWorkflowType') }}</label>
           <select
             id="workflowSelect"
             v-model="filters.workflowType"
             class="form-select form-select-sm"
             style="width: auto;"
           >
-            <option value="all">All Workflows</option>
+            <option value="all">{{ $t('dashboard.sessionOverview.allWorkflows') }}</option>
             <option
               v-for="workflow in workflowTypes"
               :key="workflow.id"
@@ -47,6 +47,7 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Dashboard page showing an overview of all study sessions
@@ -72,23 +73,28 @@ export default {
         pagination: 20,
         search: true,
       },
-      columns: [
-        { name: "Study Name", key: "studyName", sortable: true },
-        { name: "First Name", key: "firstName", sortable: true },
-        { name: "Last Name", key: "lastName", sortable: true },
-        { name: "Max Step", key: "currentStep", sortable: true },
-        { name: "Created At", key: "createdAt", sortable: true },
-        { name: "Last updated", key: "updatedAt", sortable: true },
-        { name: "Number of Steps", key: "numSteps", sortable: true },
+    };
+  },
+
+  computed: {
+    columns() {
+      return [
+        { name: this.$t('dashboard.sessionOverview.columns.studyName'), key: "studyName", sortable: true },
+        { name: this.$t('common.firstName'), key: "firstName", sortable: true },
+        { name: this.$t('common.lastName'), key: "lastName", sortable: true },
+        { name: this.$t('dashboard.sessionOverview.columns.maxStep'), key: "currentStep", sortable: true },
+        { name: this.$t('common.createdAt'), key: "createdAt", sortable: true },
+        { name: this.$t('common.updatedAt'), key: "updatedAt", sortable: true },
+        { name: this.$t('dashboard.sessionOverview.columns.numberOfSteps'), key: "numSteps", sortable: true },
         {
-          name: "Status",
+          name: this.$t('common.status'),
           key: "status",
           type: "badge",
           sortable: true,
           typeOptions: {
             keyMapping: {
-              Running: "Running",
-              Finished: "Finished",
+              Running: this.$t('common.running'),
+              Finished: this.$t('common.finished'),
             },
             classMapping: {
               Running: "bg-primary",
@@ -96,13 +102,13 @@ export default {
             }
           }
         },
-      ],
-    };
-  },
-
-  computed: {
+      ];
+    },
     workflowTypes() {
-      return this.$store.getters["table/workflow/getAll"] || [];
+      return (this.$store.getters["table/workflow/getAll"] || []).map((workflow) => ({
+        ...workflow,
+        name: translateMaybeKey(workflow.name),
+      }));
     },
     studySessions() {
       const sessions = this.$store.getters["table/study_session/getAll"] || [];
@@ -121,7 +127,9 @@ export default {
           studyName: study.name,
           firstName: this.getUserName(session.userId).firstName,
           lastName: this.getUserName(session.userId).lastName,
-          currentStep: currentStepIndex !== null ? `Step ${currentStepIndex}` : 'N/A',
+          currentStep: currentStepIndex !== null
+            ? this.$t('dashboard.sessionOverview.step', { number: currentStepIndex })
+            : this.$t('common.na'),
           createdAt: new Date(session.createdAt).toLocaleString(),
           updatedAt: new Date(session.updatedAt).toLocaleString(),
           numSteps: studySteps.length,
@@ -154,7 +162,7 @@ export default {
   methods: {
     getWorkflowType(workflowId) {
       const workflow = this.$store.getters["table/workflow/get"](workflowId);
-      return workflow ? workflow.name : "Unknown";
+      return workflow ? translateMaybeKey(workflow.name) : this.$t('common.unknown');
     },
     getUserName(userId) {
       const user = this.$store.getters["table/user/get"](userId);
@@ -165,7 +173,7 @@ export default {
         };
       }
       return {
-        firstName: "Unknown",
+        firstName: this.$t('common.unknown'),
         lastName: "",
       };
     },

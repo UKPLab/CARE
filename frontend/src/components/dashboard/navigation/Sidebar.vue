@@ -35,10 +35,10 @@
               >
                 <!-- Expanded mode -->
                 <div v-if="!isCollapsed" class="list-group-item-text subgroup-title">
-                  <span class="sidebar-icon subgroup-heading-icon" :title="subgroup.name">
+                  <span class="sidebar-icon subgroup-heading-icon" :title="tNavGroup(subgroup)">
                     <LoadIcon :icon-name="subgroup.icon" :size="22" />
                   </span>
-                  {{ subgroup.name }}
+                  {{ tNavGroup(subgroup) }}
                 </div>
 
                 <!-- Expanded mode: subgroup arrow -->
@@ -54,7 +54,7 @@
                 <span
                   v-else
                   class="sidebar-icon collapsed-group-icon"
-                  :title="subgroup.name"
+                  :title="tNavGroup(subgroup)"
                 >
                   <LoadIcon :icon-name="subgroup.icon" :size="24" />
                 </span>
@@ -78,14 +78,14 @@
                   >
                     <span
                       class="sidebar-icon"
-                      :title="element.name"
+                      :title="tNavElement(element)"
                     >
                       <LoadIcon
                         :icon-name="element.icon"
                         :size="24"
                       />
                     </span>
-                    <div class="list-group-item-text">{{ element.name }}</div>
+                    <div class="list-group-item-text">{{ tNavElement(element) }}</div>
                   </router-link>
                 </div>
               </transition>
@@ -102,7 +102,7 @@
                 <div class="submenu-preview-inner">
                   <!-- Collapsed mode: preview header -->
                   <div v-if="isCollapsed" class="submenu-preview-header">
-                    {{ subgroup.name }}
+                    {{ tNavGroup(subgroup) }}
                   </div>
 
                   <div v-if="isCollapsed" class="submenu-preview-divider" />
@@ -115,14 +115,14 @@
                   >
                     <span
                       class="sidebar-icon"
-                      :title="element.name"
+                      :title="tNavElement(element)"
                     >
                       <LoadIcon
                         :icon-name="element.icon"
                         :size="24"
                       />
                     </span>
-                    <div class="list-group-item-text">{{ element.name }}</div>
+                    <div class="list-group-item-text">{{ tNavElement(element) }}</div>
                   </router-link>
                 </div>
               </div>
@@ -133,12 +133,12 @@
 
       <!-- Sidebar footer -->
       <div v-if="isAdmin && !isCollapsed" class="text-center text-secondary">
-        App Version: {{ version }}
+        {{ $t('common.appVersion') }}: {{ version }}
       </div>
 
       <div
         class="collapse-sidebar-container list-group-item-action list-group-item list-group-item-custom"
-        title="Toggle sidebar"
+        :title="$t('navigation.sidebar.toggleSidebar')"
         @click="toggleSidebar()"
       >
         <span class="arrow-toggle sidebar-icon">
@@ -147,7 +147,7 @@
 
         <!-- Expanded mode -->
         <div v-if="!isCollapsed" class="list-group-item-text" style="cursor:pointer">
-          Collapse sidebar
+          {{ $t('navigation.sidebar.collapseSidebar') }}
         </div>
       </div>
     </div>
@@ -491,6 +491,16 @@ export default {
           this.groupStates[group.key] = false;
         }
       });
+    },
+
+    tNavGroup(group) {
+      const key = `sidebar.nav.groups.${group.name.toLowerCase()}`;
+      return this.$te(key) ? this.$t(key) : group.name;
+    },
+
+    tNavElement(element) {
+      const key = `sidebar.nav.${element.path}`;
+      return this.$te(key) ? this.$t(key) : element.name;
     },
   },
 };

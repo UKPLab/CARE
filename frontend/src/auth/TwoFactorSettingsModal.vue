@@ -9,38 +9,38 @@
     @hide="handleModalHide"
   >
     <template #title>
-      <span>Two-Factor Authentication Settings</span>
+      <span>{{ $t("auth.twoFactor.settings.title") }}</span>
     </template>
     <template #body>
       <!-- Loading State -->
       <div v-if="isLoading" class="text-center py-4">
         <div class="spinner-border text-primary" role="status">
-          <span class="visually-hidden">Loading...</span>
+          <span class="visually-hidden">{{ $t("common.loading") }}</span>
         </div>
-        <p class="text-muted mt-2">Loading...</p>
+        <p class="text-muted mt-2">{{ $t("common.loading") }}</p>
       </div>
       <!-- Main Content -->
         <div v-else>
         <div v-if="enforced && enabledMethods.length === 0" class="alert alert-warning">
           <i class="bi bi-shield-lock"></i>
-          Two-factor authentication is required by your administrator. Configure at least one method to continue.
+          {{ $t("auth.twoFactor.settings.enforcedWarning") }}
         </div>
         <!-- Status Summary -->
         <div v-if="enabledMethods.length === 0" class="alert alert-info">
           <i class="bi bi-info-circle"></i>
-          Status: No 2FA methods enabled
+          {{ $t("auth.twoFactor.settings.status.none") }}
         </div>
         <div v-else class="alert alert-success">
           <i class="bi bi-shield-check"></i>
-          Status: {{ enabledMethods.length }} method(s) enabled
+          {{ $t("auth.twoFactor.settings.status.enabled", { count: enabledMethods.length }) }}
         </div>
         <!-- Email 2FA Section -->
         <div class="method-section mb-4">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
-              <h6 class="mb-1">Email Verification</h6>
+              <h6 class="mb-1">{{ $t("auth.twoFactor.settings.email.title") }}</h6>
               <p class="text-muted small mb-0">
-                Receive a 6-digit code via email when logging in
+                {{ $t("auth.twoFactor.settings.email.description") }}
               </p>
             </div>
             <div class="form-check form-switch">
@@ -53,26 +53,26 @@
                 @change="toggleEmail2FA"
               />
               <label class="form-check-label" for="toggle-email">
-                {{ emailEnabled ? "Enabled" : "Disabled" }}
+                {{ emailEnabled ? $t("common.enabled") : $t("common.disabled") }}
               </label>
             </div>
           </div>
           <div v-if="emailEnabled" class="alert alert-light small mb-0">
             <i class="bi bi-check-circle text-success"></i>
-            Codes will be sent to: <strong>{{ userEmail }}</strong>
+            {{ $t("auth.twoFactor.settings.email.codesSentTo") }} <strong>{{ userEmail }}</strong>
           </div>
           <div v-if="!hasEmail" class="alert alert-warning small mb-0 mt-2">
             <i class="bi bi-exclamation-triangle"></i>
-            You need to add and verify an email address in your profile first
+            {{ $t("auth.twoFactor.settings.email.emailRequiredHint") }}
           </div>
         </div>
         <!-- TOTP 2FA Section -->
         <div class="method-section mb-4">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div>
-              <h6 class="mb-1">Authenticator App (TOTP)</h6>
+              <h6 class="mb-1">{{ $t("auth.twoFactor.settings.totp.title") }}</h6>
               <p class="text-muted small mb-0">
-                Use an authenticator app like Google Authenticator
+                {{ $t("auth.twoFactor.settings.totp.description") }}
               </p>
             </div>
             <div class="form-check form-switch">
@@ -85,7 +85,7 @@
                 @change="toggleTotp2FA"
               />
               <label class="form-check-label" for="toggle-totp">
-                {{ totpEnabled ? "Enabled" : "Disabled" }}
+                {{ totpEnabled ? $t("common.enabled") : $t("common.disabled") }}
               </label>
             </div>
           </div>
@@ -94,29 +94,28 @@
             <div v-if="totpSetupStep === 'initiate'" class="setup-content">
               <div class="alert alert-info">
                 <i class="bi bi-info-circle"></i>
-                Scan the QR code with your authenticator app, then enter the
-                code to verify setup.
+                {{ $t("auth.twoFactor.settings.totp.scanQrInstruction") }}
               </div>
               <div class="text-center my-3">
                 <div v-if="totpQrCode" class="qr-code-container">
                   <img
                     :src="totpQrCode"
-                    alt="TOTP QR Code"
+                    :alt="$t('auth.twoFactor.settings.totp.qrCodeAlt')"
                     class="qr-code-image"
                   />
                 </div>
                 <div v-else-if="totpQrCodeError" class="alert alert-warning small mb-0">
-                  Could not generate QR code. Use the manual entry key below.
+                  {{ $t("auth.twoFactor.settings.totp.qrCodeError") }}
                 </div>
                 <div v-else class="spinner-border text-primary" role="status">
-                  <span class="visually-hidden">Generating QR code...</span>
+                  <span class="visually-hidden">{{ $t("auth.twoFactor.settings.totp.generatingQrCode") }}</span>
                 </div>
               </div>
               <div v-if="totpSecret" class="alert alert-light small">
-                <strong>Manual entry:</strong> {{ totpSecret }}
+                <strong>{{ $t("auth.twoFactor.settings.totp.manualEntry") }}</strong> {{ totpSecret }}
               </div>
               <div class="form-group mt-3">
-                <label class="form-label">Enter verification code</label>
+                <label class="form-label">{{ $t("auth.twoFactor.settings.totp.enterVerificationCode") }}</label>
                 <input
                   v-model="totpVerificationCode"
                   type="text"
@@ -127,7 +126,7 @@
                   @input="formatTotpCode"
                 />
                 <div class="form-text">
-                  Enter the 6-digit code from your authenticator app
+                  {{ $t("auth.twoFactor.settings.totp.enterCodeHint") }}
                 </div>
               </div>
               <div class="d-flex gap-2 mt-3">
@@ -135,13 +134,13 @@
                   class="btn btn-primary"
                   :disabled="!canVerifyTotpSetup"
                   :loading="isSubmitting"
-                  :text="isSubmitting ? 'Verifying...' : 'Verify & Enable'"
+                  :text="isSubmitting ? $t('auth.twoFactor.settings.totp.verifying') : $t('auth.twoFactor.settings.totp.verifyAndEnable')"
                   @click="verifyTotpSetup"
                 />
                 <BasicButton
                   class="btn btn-secondary"
                   :disabled="isSubmitting"
-                  text="Cancel"
+                  :title="$t('common.cancel')"
                   @click="cancelTotpSetup"
                 />
               </div>
@@ -153,7 +152,7 @@
             class="alert alert-light small mb-0 mt-2"
           >
             <i class="bi bi-check-circle text-success"></i>
-            TOTP is configured and active
+            {{ $t("auth.twoFactor.settings.totp.active") }}
           </div>
         </div>
 
@@ -161,12 +160,10 @@
         <div class="alert alert-light mt-3">
           <h6 class="alert-heading">
             <i class="bi bi-info-circle"></i>
-            How it works
+            {{ $t("auth.twoFactor.settings.info.title") }}
           </h6>
           <p class="small mb-0">
-            When logging in, you'll be asked to verify using one of your enabled
-            methods. If multiple methods are enabled, you can choose which one
-            to use.
+            {{ $t("auth.twoFactor.settings.info.description") }}
           </p>
         </div>
       </div>
@@ -174,7 +171,7 @@
     <template #footer>
       <span v-if="!(enforced && enabledMethods.length === 0)" class="btn-group">
         <BasicButton
-          text="Close"
+          :title="$t('common.close')"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
         />
@@ -189,6 +186,7 @@ import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import QRCode from "qrcode";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for managing two-factor authentication settings
@@ -307,10 +305,8 @@ export default {
         }
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Failed to load 2FA settings",
-          message:
-            error.response?.data?.message ||
-            "An error occurred while loading 2FA settings",
+          title: this.$t("auth.twoFactor.settings.toasts.loadFailed"),
+          message: resolveApiMessage(error.response?.data || error),
           variant: "danger",
         });
       } finally {
@@ -327,9 +323,8 @@ export default {
     async enableEmail2FA() {
       if (!this.hasEmail) {
         this.eventBus.emit("toast", {
-          title: "Email required",
-          message:
-            "Please add and verify an email address in your profile first",
+          title: this.$t("auth.twoFactor.settings.toasts.emailRequired"),
+          message: this.$t("auth.twoFactor.settings.email.emailRequiredHint"),
           variant: "warning",
         });
         this.emailEnabled = false;
@@ -350,26 +345,24 @@ export default {
 
         if (response.status === 200) {
           this.eventBus.emit("toast", {
-            title: "Email 2FA enabled",
-            message: "Email verification has been enabled",
+            title: this.$t("auth.twoFactor.settings.toasts.emailEnabled.title"),
+            message: this.$t("auth.twoFactor.settings.toasts.emailEnabled.message"),
             variant: "success",
           });
           await this.load2FAStatus();
         } else {
           this.emailEnabled = false;
           this.eventBus.emit("toast", {
-            title: "Failed to enable email 2FA",
-            message: response.data.message || "Failed to enable email 2FA",
+            title: this.$t("auth.twoFactor.settings.toasts.emailEnableFailed"),
+            message: resolveApiMessage(response.data),
             variant: "danger",
           });
         }
       } catch (error) {
         this.emailEnabled = false;
         this.eventBus.emit("toast", {
-          title: "Failed to enable email 2FA",
-          message:
-            error.response?.data?.message ||
-            "An error occurred while enabling email 2FA",
+          title: this.$t("auth.twoFactor.settings.toasts.emailEnableFailed"),
+          message: resolveApiMessage(error.response?.data || error),
           variant: "danger",
         });
       } finally {
@@ -379,9 +372,8 @@ export default {
     async disableEmail2FA() {
       if (this.isTwoFactorRequired && this.enabledMethods.length <= 1) {
         this.eventBus.emit("toast", {
-          title: "Action blocked",
-          message:
-            "2FA is required. Configure another method before disabling this one.",
+          title: this.$t("auth.twoFactor.settings.toasts.actionBlocked.title"),
+          message: this.$t("auth.twoFactor.settings.toasts.actionBlocked.message"),
           variant: "warning",
         });
         this.emailEnabled = true;
@@ -390,7 +382,7 @@ export default {
 
       if (
         !confirm(
-          "Are you sure you want to disable email 2FA? This will reduce your account security.",
+          this.$t("auth.twoFactor.settings.confirm.disableEmail"),
         )
       ) {
         this.emailEnabled = true;
@@ -411,26 +403,24 @@ export default {
 
         if (response.status === 200) {
           this.eventBus.emit("toast", {
-            title: "Email 2FA disabled",
-            message: "Email verification has been disabled",
+            title: this.$t("auth.twoFactor.settings.toasts.emailDisabled.title"),
+            message: this.$t("auth.twoFactor.settings.toasts.emailDisabled.message"),
             variant: "success",
           });
           await this.load2FAStatus();
         } else {
           this.emailEnabled = true;
           this.eventBus.emit("toast", {
-            title: "Failed to disable email 2FA",
-            message: response.data.message || "Failed to disable email 2FA",
+            title: this.$t("auth.twoFactor.settings.toasts.emailDisableFailed"),
+            message: resolveApiMessage(response.data),
             variant: "danger",
           });
         }
       } catch (error) {
         this.emailEnabled = true;
         this.eventBus.emit("toast", {
-          title: "Failed to disable email 2FA",
-          message:
-            error.response?.data?.message ||
-            "An error occurred while disabling email 2FA",
+          title: this.$t("auth.twoFactor.settings.toasts.emailDisableFailed"),
+          message: resolveApiMessage(error.response?.data || error),
           variant: "danger",
         });
       } finally {
@@ -470,8 +460,8 @@ export default {
           this.isSettingUpTotp = false;
           this.totpEnabled = false;
           this.eventBus.emit("toast", {
-            title: "Failed to start TOTP setup",
-            message: response.data.message || "Failed to initiate TOTP setup",
+            title: this.$t("auth.twoFactor.settings.toasts.totpSetupStartFailed"),
+            message: resolveApiMessage(response.data),
             variant: "danger",
           });
         }
@@ -479,10 +469,8 @@ export default {
         this.isSettingUpTotp = false;
         this.totpEnabled = false;
         this.eventBus.emit("toast", {
-          title: "Failed to start TOTP setup",
-          message:
-            error.response?.data?.message ||
-            "An error occurred while starting TOTP setup",
+          title: this.$t("auth.twoFactor.settings.toasts.totpSetupStartFailed"),
+          message: resolveApiMessage(error.response?.data || error),
           variant: "danger",
         });
       }
@@ -507,8 +495,8 @@ export default {
 
         if (response.status === 200) {
           this.eventBus.emit("toast", {
-            title: "TOTP enabled",
-            message: "Authenticator app has been successfully configured",
+            title: this.$t("auth.twoFactor.settings.toasts.totpEnabled.title"),
+            message: this.$t("auth.twoFactor.settings.toasts.totpEnabled.message"),
             variant: "success",
           });
 
@@ -517,17 +505,15 @@ export default {
           await this.load2FAStatus();
         } else {
           this.eventBus.emit("toast", {
-            title: "Verification failed",
-            message: response.data.message || "Invalid code. Please try again.",
+            title: this.$t("auth.twoFactor.settings.toasts.verificationFailed"),
+            message: resolveApiMessage(response.data),
             variant: "danger",
           });
         }
       } catch (error) {
         this.eventBus.emit("toast", {
-          title: "Verification failed",
-          message:
-            error.response?.data?.message ||
-            "Failed to verify TOTP code. Please try again.",
+          title: this.$t("auth.twoFactor.settings.toasts.verificationFailed"),
+          message: resolveApiMessage(error.response?.data || error),
           variant: "danger",
         });
       } finally {
@@ -563,9 +549,8 @@ export default {
     async disableTotp2FA() {
       if (this.isTwoFactorRequired && this.enabledMethods.length <= 1) {
         this.eventBus.emit("toast", {
-          title: "Action blocked",
-          message:
-            "2FA is required. Configure another method before disabling this one.",
+          title: this.$t("auth.twoFactor.settings.toasts.actionBlocked.title"),
+          message: this.$t("auth.twoFactor.settings.toasts.actionBlocked.message"),
           variant: "warning",
         });
         this.totpEnabled = true;
@@ -574,7 +559,7 @@ export default {
 
       if (
         !confirm(
-          "Are you sure you want to disable TOTP 2FA? This will reduce your account security.",
+          this.$t("auth.twoFactor.settings.confirm.disableTotp"),
         )
       ) {
         this.totpEnabled = true;
@@ -595,26 +580,24 @@ export default {
 
         if (response.status === 200) {
           this.eventBus.emit("toast", {
-            title: "TOTP disabled",
-            message: "TOTP has been disabled",
+            title: this.$t("auth.twoFactor.settings.toasts.totpDisabled.title"),
+            message: this.$t("auth.twoFactor.settings.toasts.totpDisabled.message"),
             variant: "success",
           });
           await this.load2FAStatus();
         } else {
           this.totpEnabled = true;
           this.eventBus.emit("toast", {
-            title: "Failed to disable TOTP",
-            message: response.data.message || "Failed to disable TOTP",
+            title: this.$t("auth.twoFactor.settings.toasts.totpDisableFailed"),
+            message: resolveApiMessage(response.data),
             variant: "danger",
           });
         }
       } catch (error) {
         this.totpEnabled = true;
         this.eventBus.emit("toast", {
-          title: "Failed to disable TOTP",
-          message:
-            error.response?.data?.message ||
-            "An error occurred while disabling TOTP",
+          title: this.$t("auth.twoFactor.settings.toasts.totpDisableFailed"),
+          message: resolveApiMessage(error.response?.data || error),
           variant: "danger",
         });
       } finally {

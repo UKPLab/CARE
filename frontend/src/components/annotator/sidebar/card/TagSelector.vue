@@ -18,11 +18,11 @@
         selected
         value=""
       >
-        Choose a tag...
+        {{ $t('tagSelector.chooseTag') }}
       </option>
     </select>
     <div class="invalid-feedback">
-      Please select a valid tag.
+      {{ $t('tagSelector.selectTag') }}
     </div>
   </div>
   <div v-if="disabled && tags.length > 0">
@@ -86,10 +86,10 @@ export default {
     },
     placeholder() {
       if (!this.disabled) {
-        return "Add tag..."
+        return this.$t('tagSelector.addTag');
       }
       if (this.tags == null || this.tags.length === 0) {
-        return "No Tags";
+        return this.$t('tagSelector.noTags');
       }
       return "";
     },

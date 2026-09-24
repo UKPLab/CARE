@@ -112,10 +112,8 @@ export default {
     templates() {
       return this.$store.getters["table/template/getAll"] || [];
     },
-    // AIHooks should use prompt templates only (`template.type === 8` from feat-192).
-    // TODO: restore type-8 filter after prompt templates are available in your environment.
     promptTemplates() {
-      return this.templates;
+      return this.templates.filter((template) => Number(template.type) === 8);
     },
     models() {
       return this.$store.getters["table/ai_model/getAll"] || [];

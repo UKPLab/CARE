@@ -7,7 +7,7 @@
         </div>
 
         <div class="card">
-          <div class="card-header">Choose verification method</div>
+          <div class="card-header">{{ $t("auth.twoFactor.select.title") }}</div>
 
           <div class="card-body mx-4 my-4">
             <p v-if="showError" class="text-danger text-center">
@@ -16,10 +16,10 @@
 
             <div class="text-center mb-3">
               <p class="text-muted mb-1">
-                Your account is protected with multiple two-factor methods.
+                {{ $t("auth.twoFactor.select.description") }}
               </p>
               <p class="text-muted small mb-0">
-                Please choose how you want to verify this login.
+                {{ $t("auth.twoFactor.select.instruction") }}
               </p>
             </div>
 
@@ -61,19 +61,18 @@
                 type="submit"
                 :disabled="!selectedMethod"
                 :loading="isSubmitting"
-                :text="isSubmitting ? 'Continuing...' : 'Continue'"
+                :text="isSubmitting ? $t('auth.twoFactor.select.continuing') : $t('common.continue')"
               />
               <BasicButton
                 class="btn btn-link"
-                text="Cancel"
+                :title="$t('common.cancel')"
                 @click="cancel"
               />
             </div>
 
             <div class="text-center text-muted small">
               <p class="mb-0">
-                You can change your available methods in your profile after
-                logging in.
+                {{ $t("auth.twoFactor.select.profileHint") }}
               </p>
             </div>
           </div>
@@ -94,6 +93,7 @@ import IconAsset from "@/basic/icon/IconAsset.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "TwoFactorSelect",
@@ -126,23 +126,23 @@ export default {
       }
     },
     getMethodLabel(method) {
-      if (method === "email") return "Email verification code";
-      if (method === "totp") return "Authenticator app (TOTP)";
+      if (method === "email") return this.$t("auth.twoFactor.select.methods.email.label");
+      if (method === "totp") return this.$t("auth.twoFactor.select.methods.totp.label");
       return method;
     },
     getMethodDescription(method) {
       if (method === "email") {
-        return "We will send a 6-digit code to your registered email address.";
+        return this.$t("auth.twoFactor.select.methods.email.description");
       }
       if (method === "totp") {
-        return "Use a code from your authenticator app (e.g., Google Authenticator).";
+        return this.$t("auth.twoFactor.select.methods.totp.description");
       }
-      return "Use this method to complete your login.";
+      return this.$t("auth.twoFactor.select.methods.fallbackDescription");
     },
     async submitSelection() {
       if (!this.selectedMethod) {
         this.showError = true;
-        this.errorMessage = "Please select a verification method.";
+        this.errorMessage = this.$t("auth.twoFactor.select.errors.selectMethod");
         return;
       }
 
@@ -164,9 +164,10 @@ export default {
 
         if (response.status !== 200) {
           this.showError = true;
-          this.errorMessage =
-            response.data.message ||
-            "Failed to start the selected verification method.";
+          this.errorMessage = resolveApiMessage(
+            response.data,
+            "auth.twoFactor.select.errors.startFailed",
+          );
           return;
         }
 
@@ -194,12 +195,13 @@ export default {
 
         this.showError = true;
         this.errorMessage =
-          "The selected verification method is not supported in the client.";
+          this.$t("auth.twoFactor.select.errors.unsupportedMethod");
       } catch (error) {
         this.showError = true;
-        this.errorMessage =
-          error.response?.data?.message ||
-          "Failed to start the selected verification method. Please try again.";
+        this.errorMessage = resolveApiMessage(
+          error.response?.data,
+          "auth.twoFactor.select.errors.startFailedRetry",
+        );
       } finally {
         this.isSubmitting = false;
       }

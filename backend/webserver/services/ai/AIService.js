@@ -7,7 +7,7 @@ const hook = require("./hook");
 /**
  * AIService — AI / LLM RPC handlers.
  *
- * Implementation is split under `./ai/` (`helpers`, `runtime`, `chat`, `hook`).
+ * Implementation is split across `./ai/` modules and shared backend AI helpers.
  *
  * @extends Service
  * @author Akash Gundapuneni, Mohamed Rawhani
@@ -32,6 +32,17 @@ module.exports = class AIService extends Service {
     }
 
     /**
+     * Runs an AI hook for RPC clients and internal trigger jobs.
+     *
+     * @param {*} client Authenticated client context.
+     * @param {*} data Hook execution payload.
+     * @returns {Promise<*>}
+     */
+    async runHook(client, data) {
+        return await hook.runHook(this, client, data);
+    }
+
+    /**
      * Bridges declared `cmdTypes` into nested chat/hook helpers mirroring liteLLMRPC capabilities.
      *
      * @param {*} client RPC client emitting commands.
@@ -42,8 +53,8 @@ module.exports = class AIService extends Service {
     async command(client, command, data) {
         const handlers = {
             chatCompletion: () => chat.chatCompletion(this, client, data),
-            runHook: () => hook.runHook(this, client, data),
-            abortChatCompletion: () => chat.abortChatCompletion(this, data),
+            runHook: () => this.runHook(client, data),
+            abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
             getProviders: () => chat.getProviders(this),
