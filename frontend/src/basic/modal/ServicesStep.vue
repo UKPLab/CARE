@@ -207,6 +207,8 @@ export default {
           return "Dialogue Context";
         case "dialogueDecision":
           return "Dialogue Decision";
+        case "dialogueAnchor":
+          return "Dialogue Anchor";
         default:
           return serviceName;
       }
@@ -279,7 +281,6 @@ export default {
       const base = {
         name: existing.name || "",
         type: existing.type || "nlpRequest",
-        purpose: existing.purpose,
         required: existing.required !== false,
         inputs: skill.dataInput || {},
       };

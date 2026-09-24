@@ -25,7 +25,6 @@ const {
     getCurrentQuestion,
     requireCurrentQuestion,
     countFollowUps,
-    getMaxFollowUps,
     buildDecisionValues,
     buildAnchorSources,
     normalizeDialoguePlan,
@@ -37,6 +36,12 @@ const {
 const DIALOGUE = {
     conversationType: AI_CONVERSATION_TYPES.DIALOGUE,
     notFoundMessage: "AI dialogue not found",
+};
+
+const DIALOGUE_SERVICES = {
+    context: "dialogueContext",
+    decision: "dialogueDecision",
+    anchor: "dialogueAnchor",
 };
 
 /**
@@ -69,17 +74,14 @@ async function loadDialogueConversation(service, conversationId, userId, studySe
 }
 
 /**
- * Finds a configured Dialogue hook service by purpose/name.
+ * Finds a configured Dialogue hook service by its workflow service name.
  *
  * @param {Object[]} services - Study step service declarations.
- * @param {string} purpose - Expected service purpose.
+ * @param {string} name - Workflow service name.
  * @returns {Object|null} Service declaration.
  */
-function findDialogueService(services, purpose) {
-    const candidates = services.filter((entry) => entry?.type === "aiDialogue");
-    return candidates.find((entry) => entry.purpose === purpose)
-        || candidates.find((entry) => String(entry.name || "").toLowerCase().includes(purpose))
-        || null;
+function findDialogueService(services, name) {
+    return services.find((entry) => entry?.type === "aiDialogue" && entry.name === name) || null;
 }
 
 /**
@@ -90,26 +92,12 @@ function findDialogueService(services, purpose) {
  * @returns {Promise<Object>} Normalized dialogue plan.
  */
 async function loadDialoguePlan(models, studyStep) {
-    const settings = studyStep.configuration?.settings || {};
-    const inlinePlan = settings.dialoguePlan || studyStep.configuration?.dialoguePlan;
-    const configurationId = Number(
-        settings.dialoguePlanConfigurationId || settings.configurationId || 0,
-    );
-    let rawPlan = inlinePlan || null;
-    if (!rawPlan && configurationId > 0) {
-        const config = await models["configuration"].getById(configurationId);
-        if (
-            !config ||
-            config.deleted ||
-            Number(config.type) !== CONFIGURATION_TYPES.DIALOGUE_PLAN
-        ) {
-            throw new Error("Dialogue plan configuration not found");
-        }
-        rawPlan = typeof config.content === "string"
-            ? JSON.parse(config.content)
-            : config.content;
+    const configurationId = Number(studyStep.configuration?.settings?.dialoguePlanConfigurationId) || 0;
+    const config = configurationId ? await models["configuration"].getById(configurationId) : null;
+    if (!config || config.deleted || Number(config.type) !== CONFIGURATION_TYPES.DIALOGUE_PLAN) {
+        throw new Error("Dialogue plan configuration not found");
     }
-    const plan = normalizeDialoguePlan(rawPlan || {});
+    const plan = normalizeDialoguePlan(config.content);
     if (!plan.questions.length) {
         throw new Error("Dialogue plan has no questions");
     }
@@ -151,22 +139,24 @@ async function loadDialogueContext(
     const services = Array.isArray(studyStep.configuration?.services)
         ? studyStep.configuration.services
         : [];
-    const decisionService = findDialogueService(services, "decision");
-    const contextService = findDialogueService(services, "context")
-        || (decisionService ? null : services.find((entry) => entry?.type === "aiDialogue"))
-        || null;
+    const contextService = findDialogueService(services, DIALOGUE_SERVICES.context);
+    const decisionService = findDialogueService(services, DIALOGUE_SERVICES.decision);
+    const anchorService = findDialogueService(services, DIALOGUE_SERVICES.anchor);
     const contextHookId = Number(contextService?.hookId) || null;
     const decisionHookId = Number(decisionService?.hookId) || null;
-    if (requireHooks && contextHookId) {
-        await core.getAIService(service).call("loadHook", client, {hookId: contextHookId});
-    }
-    if (requireHooks && decisionHookId) {
-        await core.getAIService(service).call("loadHook", client, {hookId: decisionHookId});
+    const anchorHookId = Number(anchorService?.hookId) || null;
+    if (requireHooks) {
+        for (const hookId of [contextHookId, decisionHookId, anchorHookId].filter(Boolean)) {
+            await core.getAIService(service).call("loadHook", client, {hookId});
+        }
     }
 
     const plan = await loadDialoguePlan(models, studyStep);
     if (requireHooks && plan.adaptive && !decisionHookId) {
         throw new Error("Adaptive Dialogue requires a decision hook");
+    }
+    if (requireHooks && plan.adaptive && !anchorHookId && plan.questions.some((question) => question.anchoredText)) {
+        throw new Error("Adaptive Dialogue with anchored questions requires an anchor hook");
     }
 
     return {
@@ -175,9 +165,9 @@ async function loadDialogueContext(
         studyStep,
         plan,
         contextService,
-        decisionService,
         contextHookId,
         decisionHookId,
+        anchorHookId,
     };
 }
 
@@ -205,25 +195,15 @@ async function getDialogueConversation(service, client, data) {
             context.studySession.id,
         )
         : await findDialogueConversation(service, context.userId, context.studySession.id);
-    const conversations = existing ? [{
-        id: existing.id,
-        studySessionId: existing.studySessionId,
-        type: existing.type,
-        title: existing.title,
-        createdAt: existing.createdAt,
-        updatedAt: existing.updatedAt,
-    }] : [];
     const messages = existing ? await service.server.db.models["ai_message"].getVisibleMessages(existing.id, context.studyStep.id) : [];
     const currentQuestion = getCurrentQuestion(context.plan, messages);
     const latestAssistant = [...messages].reverse().find((message) => Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT);
 
     return {
-        conversations,
         activeConversationId: existing?.id || null,
         messages,
         plan: {
             title: context.plan.title,
-            adaptive: context.plan.adaptive,
             allowSkip: context.plan.allowSkip,
             totalQuestions: context.plan.questions.length,
         },
@@ -231,18 +211,6 @@ async function getDialogueConversation(service, client, data) {
         complete: Number(latestAssistant?.status) === AI_MESSAGE_STATUSES.COMPLETED
             && latestAssistant?.metadata?.dialogue?.kind === "completion",
     };
-}
-
-/**
- * Formats an answer into stored message content.
- *
- * @param {Object} data - Client answer payload.
- * @returns {string} User-visible answer text.
- */
-function normalizeAnswerText(data) {
-    const raw = data?.content ?? data?.answerText ?? data?.answerValue ?? data?.answer;
-    if (raw === null || raw === undefined) return "";
-    return String(raw).trim();
 }
 
 /**
@@ -416,17 +384,11 @@ async function createDialogueTurn(
 }
 
 /**
- * Builds the model request for an adaptive Dialogue decision.
- *
- * @param {string} decisionPrompt - Resolved decision hook prompt.
- * @returns {Promise<Object[]>} LiteLLM-compatible decision messages.
- */
-async function buildDecisionModelMessages(decisionPrompt) {
-    return [{role: "user", content: decisionPrompt}];
-}
-
-/**
  * Prepares an adaptive follow-up or the next configured question.
+ *
+ * The decision outcome is stored with the response, so invalid model output
+ * can be told apart from an intentional "next".
+ *
  * @param {Object} service - Assistant service.
  * @param {Object} client - Authenticated client.
  * @param {Object} context - Validated dialogue context.
@@ -438,35 +400,29 @@ async function buildDecisionModelMessages(decisionPrompt) {
 async function prepareAdaptiveResponse(service, client, context, turn, question, requestId) {
     const skipped = turn.userMessage.metadata?.dialogue?.skipped === true;
     const followUpsUsed = countFollowUps(turn.previousMessages, question.id);
-    const canFollowUp = !skipped && followUpsUsed < getMaxFollowUps(question);
+    const canFollowUp = !skipped && followUpsUsed < question.maxFollowUps;
     const nextQuestion = selectNextPlanQuestion(context.plan, [...turn.previousMessages, turn.userMessage]);
-    const modelParams = canFollowUp
-        ? await core.getAIService(service).call("resolveHookModel", client, {hookId: context.decisionHookId})
-        : null;
-    const anchorState = nextQuestion ? await anchors.prepareDialogueAnchors(
-        service, client, context, turn, modelParams, requestId,
-    ) : {};
+    const anchorState = nextQuestion
+        ? await anchors.prepareDialogueAnchors(service, client, context, turn, requestId)
+        : {};
     if (!canFollowUp) {
-        return {...dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState),
-            aiModelId: anchorState.aiModelId || null};
+        const payload = dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState);
+        payload.metadata.dialogue.decision = {requested: false};
+        return {...payload, aiModelId: anchorState.aiModelId || null};
     }
-    const promptValues = buildDecisionValues(
-        question, turn.userMessage.content, {followUpsUsed, canFollowUp, skipped},
-    );
-    const {promptText} = await core.getAIService(service).call(
-        "resolveHookPrompt", client, {hookId: context.decisionHookId, values: promptValues},
-    );
-    const output = await turns.requestAssistantCompletion(
-        service, client, {...context, hookId: context.decisionHookId}, modelParams, requestId,
-        await buildDecisionModelMessages(promptText), turn.assistantMessage.id,
+    const {output, aiModelId} = await turns.requestHookCompletion(
+        service, client, context, context.decisionHookId,
+        buildDecisionValues(question, turn.userMessage.content), requestId,
+        turn.assistantMessage.id, dialoguePlan.DIALOGUE_MODEL_PARAMETERS,
     );
     const decision = parseDialogueDecision(output);
-    const payload = decision.action === "follow_up" && decision.content
+    const payload = decision.action === "follow_up"
         ? {content: decision.content, metadata: buildQuestionMetadata("follow_up", question, {
             followUpIndex: followUpsUsed + 1,
         })}
         : dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState);
-    return {...payload, aiModelId: modelParams.aiModelId};
+    payload.metadata.dialogue.decision = {requested: true, action: decision.action, valid: decision.valid};
+    return {...payload, aiModelId};
 }
 
 /**
@@ -486,7 +442,7 @@ async function sendDialogueAnswer(service, client, data) {
     );
     const requestId = serviceHelpers.requireRequestId(data?.requestId);
     const skipped = data?.skipped === true;
-    const answerText = normalizeAnswerText(data);
+    const answerText = String(data?.answerText ?? "").trim();
     if (skipped && !context.plan.allowSkip) {
         throw new Error("This Dialogue does not allow skipping questions");
     }
@@ -638,5 +594,4 @@ module.exports = {
     sendDialogueAnswer,
     retryDialogueMessage,
     abortDialogueMessage,
-    buildDecisionModelMessages,
 };

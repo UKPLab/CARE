@@ -11,6 +11,8 @@ const {AI_MESSAGE_ROLES} = require("../../../db/models/ai_message");
 
 const ALLOWED_SOURCES = new Set(["pr1", "pr2", "both"]);
 const MAX_ANCHOR_LENGTH = 220;
+// Fixed for reproducible Dialogue decisions and anchor selections.
+const DIALOGUE_MODEL_PARAMETERS = {temperature: 0};
 
 /**
  * Converts a loose plan JSON into the shape used by Dialogue orchestration.
@@ -20,17 +22,7 @@ const MAX_ANCHOR_LENGTH = 220;
  */
 function normalizeDialoguePlan(rawPlan = {}) {
     const plan = rawPlan && typeof rawPlan === "object" ? rawPlan : {};
-    const categoryQuestions = Array.isArray(plan.categories)
-        ? plan.categories.flatMap((category) => {
-            const questions = Array.isArray(category?.questions) ? category.questions : [];
-            return questions.map((question) => ({
-                ...question,
-                categoryId: question.categoryId || category?.id || category?.name || null,
-            }));
-        })
-        : [];
-    const flatQuestions = Array.isArray(plan.questions) ? plan.questions : [];
-    const questions = [...categoryQuestions, ...flatQuestions]
+    const questions = (Array.isArray(plan.questions) ? plan.questions : [])
         .filter((question) => typeof question?.text === "string" && question.text.trim())
         .map((question, index) => ({
             id: String(question.id || `q${index + 1}`),
@@ -40,13 +32,11 @@ function normalizeDialoguePlan(rawPlan = {}) {
             anchoredText: typeof question.anchoredText === "string" && question.anchoredText.trim()
                 ? question.anchoredText.trim()
                 : null,
-            answerType: question.answerType || question.questionType || question.type || "text",
+            answerType: question.answerType || "text",
             options: Array.isArray(question.options) ? question.options : [],
             categoryId: question.categoryId || null,
             source: ALLOWED_SOURCES.has(question.source) ? question.source : null,
-            required: question.required !== false,
-            allowFollowUp: question.allowFollowUp === true,
-            maxFollowUps: Number.isInteger(Number(question.maxFollowUps))
+            maxFollowUps: question.allowFollowUp === true && Number.isInteger(Number(question.maxFollowUps))
                 ? Math.max(0, Number(question.maxFollowUps))
                 : 0,
             evidenceGoal: typeof question.evidenceGoal === "string" ? question.evidenceGoal : "",
@@ -63,7 +53,6 @@ function normalizeDialoguePlan(rawPlan = {}) {
             : "Dialogue",
         adaptive: plan.adaptive === true,
         allowSkip: plan.allowSkip === true,
-        categories: Array.isArray(plan.categories) ? plan.categories : [],
         questions,
         completionMessage: plan.completionMessage || "Thank you. The dialogue is complete.",
     };
@@ -87,17 +76,17 @@ function selectNextPlanQuestion(plan, messages = []) {
 /**
  * Parses the model's constrained adaptive decision.
  *
+ * Invalid output advances to the next question and is marked as not valid.
+ *
  * @param {string} output - Raw model output.
- * @returns {{action: string, content: string}} Safe decision.
+ * @returns {{action: string, content: string, valid: boolean}} Safe decision.
  */
 function parseDialogueDecision(output) {
-    const fallback = {action: "next", content: ""};
     const parsed = parseJsonObject(output);
-    if (!parsed) return fallback;
-    return {
-        action: ["follow_up", "next"].includes(parsed.action) ? parsed.action : "next",
-        content: typeof parsed.content === "string" ? parsed.content.trim() : "",
-    };
+    const content = typeof parsed?.content === "string" ? parsed.content.trim() : "";
+    if (parsed?.action === "next") return {action: "next", content: "", valid: true};
+    if (parsed?.action === "follow_up" && content) return {action: "follow_up", content, valid: true};
+    return {action: "next", content: "", valid: false};
 }
 
 /**
@@ -223,20 +212,16 @@ function buildAnchorSources(values = {}) {
  */
 function resolveAnchorCandidate(anchorIndex, source, anchorSources = {}) {
     if (!Number.isInteger(anchorIndex) || anchorIndex < 0) return null;
-    const candidates = source === "both"
-        ? [...(anchorSources.pr1 || []), ...(anchorSources.pr2 || [])]
-        : anchorSources[source] || [];
-    const candidate = toPlainText(candidates[anchorIndex]);
-    return candidate ? shortenAnchorQuote(candidate) : null;
+    return anchorSources[source]?.[anchorIndex] || null;
 }
 
 /**
- * Keeps only model-selected anchors that resolve to the configured review source.
+ * Keeps source-verified anchor selections and explicit abstentions.
  *
  * @param {string} output - Raw model output.
  * @param {Object[]} questions - Normalized Dialogue questions.
  * @param {Object} anchorSources - Stored source snapshot.
- * @returns {Object} Verified question-id to candidate-index mapping.
+ * @returns {Object} Question-id to verified candidate-index or null mapping.
  */
 function parseAnchorSelections(output, questions = [], anchorSources = {}) {
     const parsed = parseJsonObject(output);
@@ -245,7 +230,7 @@ function parseAnchorSelections(output, questions = [], anchorSources = {}) {
     return questions.reduce((selections, question) => {
         if (!question.anchoredText || !Object.hasOwn(requested, question.id)) return selections;
         const anchorIndex = requested[question.id];
-        if (resolveAnchorCandidate(anchorIndex, question.source, anchorSources)) {
+        if (anchorIndex === null || resolveAnchorCandidate(anchorIndex, question.source, anchorSources)) {
             selections[question.id] = anchorIndex;
         }
         return selections;
@@ -295,7 +280,6 @@ function buildQuestionMetadata(kind, question, rendered = {}) {
             source: question.source,
             anchorText: rendered.anchorText || null,
             anchorVerified: rendered.anchorVerified === true,
-            followUpOf: kind === "follow_up" ? question.id : null,
             followUpIndex: kind === "follow_up" ? rendered.followUpIndex || 1 : null,
         },
     };
@@ -397,33 +381,20 @@ function countFollowUps(messages, questionId) {
 }
 
 /**
- * Returns the allowed follow-up count for a question.
- *
- * @param {Object} question - Current question.
- * @returns {number} Maximum follow-up count.
- */
-function getMaxFollowUps(question) {
-    if (!question.allowFollowUp) return 0;
-    return Number.isInteger(question.maxFollowUps) ? question.maxFollowUps : 0;
-}
-
-/**
  * Builds the backend-owned decision prompt values.
+ *
+ * Only the fields named in the decision prompt are sent to the model.
  *
  * @param {Object} question - Current question.
  * @param {string} answerText - Latest answer text.
- * @param {Object} progress - Calculated follow-up count, availability and skip state.
  * @returns {Object} Prompt values.
  */
-function buildDecisionValues(
-    question,
-    answerText,
-    {followUpsUsed, canFollowUp, skipped},
-) {
+function buildDecisionValues(question, answerText) {
+    const {text, help, evidenceGoal, completeWhen, followUpDirection} = question;
     return {
         "dialogueDecision[1]": JSON.stringify({
-            currentQuestion: {...question, followUpsUsed, canFollowUp},
-            latestAnswer: {content: answerText, skipped},
+            currentQuestion: {text, help, evidenceGoal, completeWhen, followUpDirection},
+            latestAnswer: {content: answerText},
         }),
     };
 }
@@ -446,13 +417,13 @@ function buildNextQuestionResponse(plan, question, anchorState = {}) {
 }
 
 module.exports = {
+    DIALOGUE_MODEL_PARAMETERS,
     buildNextQuestionResponse,
     buildQuestionMetadata,
     buildAnswerMetadata,
     getCurrentQuestion,
     requireCurrentQuestion,
     countFollowUps,
-    getMaxFollowUps,
     buildDecisionValues,
     buildAnchorSources,
     normalizeDialoguePlan,
@@ -460,5 +431,4 @@ module.exports = {
     parseDialogueDecision,
     renderQuestion,
     selectNextPlanQuestion,
-    toPlainText,
 };

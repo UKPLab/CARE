@@ -64,7 +64,7 @@ import {
 import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
 
 const emptyConversationSnapshot = () => ({
-  conversations: [], activeConversationId: null, messages: [],
+  activeConversationId: null, messages: [],
 });
 
 /**
@@ -135,17 +135,10 @@ export default {
           );
       return latestQuestion?.id || null;
     },
-    dialogueServices() { return (this.config?.services || []).filter((service) => service.type === "aiDialogue"); },
-    decisionService() {
-      return this.dialogueServices.find((service) => service.purpose === "decision")
-          || this.dialogueServices.find((service) => String(service.name || "").toLowerCase().includes("decision"))
-          || null;
-    },
     contextService() {
-      return this.dialogueServices.find((service) => service.purpose === "context")
-          || this.dialogueServices.find((service) => String(service.name || "").toLowerCase().includes("context"))
-          || (this.decisionService ? null : this.dialogueServices[0])
-          || {};
+      return (this.config?.services || []).find((service) =>
+        service.type === "aiDialogue" && service.name === "dialogueContext"
+      ) || {};
     },
   },
   watch: {
@@ -241,7 +234,6 @@ export default {
         });
         if (!this.isCurrentSnapshotLoad(context)) return false;
         this.conversationSnapshot = {
-          conversations: result.conversations || [],
           activeConversationId: result.activeConversationId,
           messages: result.messages || [],
         };

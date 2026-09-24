@@ -2,22 +2,16 @@
 
 const placeholders = [
     {
-        placeholderKey: "currentQuestion",
-        placeholderLabel: "Current Dialogue question",
-        placeholderDescription: "The configured Dialogue question currently being answered.",
-        placeholderExample: '{"id":"evidence_1","source":"pr1","answerType":"text"}',
+        placeholderKey: "dialogueDecision",
+        placeholderLabel: "Dialogue decision input",
+        placeholderDescription: "The current Dialogue question and the latest answer, filled by CARE.",
+        placeholderExample: '{"currentQuestion":{"text":"What led you to this comment?","help":"","evidenceGoal":"","completeWhen":"","followUpDirection":""},"latestAnswer":{"content":"The method was unclear."}}',
     },
     {
-        placeholderKey: "latestAnswer",
-        placeholderLabel: "Latest Dialogue answer",
-        placeholderDescription: "The student's latest answer and whether it was skipped.",
-        placeholderExample: '{"content":"The evidence was unclear.","skipped":false}',
-    },
-    {
-        placeholderKey: "nextQuestion",
-        placeholderLabel: "Next Dialogue question",
-        placeholderDescription: "The next question selected by CARE, or null when the plan is complete.",
-        placeholderExample: '{"id":"justification_1","source":"pr2","answerType":"text"}',
+        placeholderKey: "dialogueAnchors",
+        placeholderLabel: "Dialogue anchor candidates",
+        placeholderDescription: "The anchored Dialogue questions with review excerpts from their source, filled by CARE.",
+        placeholderExample: '[{"id":"evidence_1","source":"pr1","questionText":"What led you to this comment?","evidenceGoal":"","candidates":[{"index":0,"text":"The method needs more detail."}]}]',
     },
 ];
 

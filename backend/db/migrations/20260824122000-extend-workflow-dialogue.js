@@ -131,14 +131,19 @@ const workflows = [
                     services: [
                         {
                             name: "dialogueContext",
-                            purpose: "context",
                             type: "aiDialogue",
                             required: true,
                             outputMapping: false,
                         },
                         {
                             name: "dialogueDecision",
-                            purpose: "decision",
+                            type: "aiDialogue",
+                            required: true,
+                            inputMapping: false,
+                            outputMapping: false,
+                        },
+                        {
+                            name: "dialogueAnchor",
                             type: "aiDialogue",
                             required: true,
                             inputMapping: false,

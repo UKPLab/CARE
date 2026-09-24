@@ -74,6 +74,44 @@ async function requestAssistantCompletion(
 }
 
 /**
+ * Resolves a hook's prompt and model, then sends the prompt as one user message.
+ *
+ * @param {Object} service - AIAssistantService runtime.
+ * @param {Object} client - Authenticated service client.
+ * @param {Object} context - Validated assistant context.
+ * @param {number} hookId - Hook providing the prompt template and model.
+ * @param {Object} values - Placeholder values for the hook template.
+ * @param {string} requestId - Request identifier used for logging and abort.
+ * @param {number} aiMessageId - Message linked to the AI log.
+ * @param {Object} [parameters] - Model parameters that override the hook configuration.
+ * @returns {Promise<{output: string, aiModelId: number}>} Model response and used model.
+ */
+async function requestHookCompletion(
+    service,
+    client,
+    context,
+    hookId,
+    values,
+    requestId,
+    aiMessageId,
+    parameters = {},
+) {
+    const aiService = core.getAIService(service);
+    const {promptText} = await aiService.call("resolveHookPrompt", client, {hookId, values});
+    const modelParams = await aiService.call("resolveHookModel", client, {hookId});
+    const output = await requestAssistantCompletion(
+        service,
+        client,
+        {...context, hookId},
+        {...modelParams, additionalParameters: {...modelParams.additionalParameters, ...parameters}},
+        requestId,
+        [{role: "user", content: promptText}],
+        aiMessageId,
+    );
+    return {output, aiModelId: modelParams.aiModelId};
+}
+
+/**
  * Loads and validates the latest retryable assistant message and its owned conversation.
  *
  * @param {Object} service - AIAssistantService runtime.
@@ -272,6 +310,7 @@ async function buildTurnResult(service, turn, assistantMessage) {
 module.exports = {
     requireNoPendingMessage,
     requestAssistantCompletion,
+    requestHookCompletion,
     loadRetryableAssistantMessage,
     resetMessageForRetry,
     abortPendingMessage,

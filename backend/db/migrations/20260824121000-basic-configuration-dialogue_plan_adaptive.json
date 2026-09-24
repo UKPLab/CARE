@@ -1,170 +1,170 @@
 {
   "name": "Post-validation Peer-review Dialogue Plan",
-  "description": "Adaptive post-validation dialogue covering seven peer-review reasoning categories across two reviews.",
-  "version": "1.0",
   "type": "dialoguePlan",
   "title": "Post-validation Dialogue",
+  "version": "1.2",
   "adaptive": true,
   "allowSkip": true,
-  "completionMessage": "Thank you. The dialogue is complete.",
+  "questions": [
+    {
+      "id": "understanding_1",
+      "help": "Describe what you understood the exposé to be trying to do. There is no required wording.",
+      "text": "Thinking about the exposé in your first review, how would you describe its main aim in your own words?",
+      "source": "pr1",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "understanding_reviewed_work",
+      "completeWhen": "The answer describes the exposé's main aim, problem, claim, or focus as the participant understood it.",
+      "evidenceGoal": "The participant explains their understanding of the reviewed work.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the main aim is unclear, ask what the exposé was mainly trying to do or address."
+    },
+    {
+      "id": "criteria_1",
+      "help": "Choose any judgment from your review and explain what standard or quality you were looking for.",
+      "text": "Think of one judgment you made in your second review. What standard or criterion were you using when you made it?",
+      "source": "pr2",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "judgment_criteria",
+      "completeWhen": "The answer identifies at least one standard or criterion used to make a judgment about the exposé.",
+      "evidenceGoal": "The participant explains a criterion or quality standard behind one of their judgments.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the standard is unclear, ask what quality or standard the participant was comparing the work against."
+    },
+    {
+      "id": "evidence_1",
+      "help": "Explain what you noticed in the exposé that led to the comment.",
+      "text": "Thinking about your first review, choose one comment you made. What in the exposé led you to make that comment?",
+      "source": "pr1",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "evidence_grounding",
+      "anchoredText": "In your first review, you wrote: “{{anchor}}” What in the exposé led you to write this feedback?",
+      "completeWhen": "The answer identifies a concrete feature, passage, claim, evidence, omission, wording, or other aspect of the exposé that led to the comment.",
+      "evidenceGoal": "The participant connects submitted feedback to evidence or features in the reviewed exposé.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the connection is unclear, ask which specific part or feature of the exposé led to the comment."
+    },
+    {
+      "id": "justification_1",
+      "help": "Explain the reason behind the point and why it mattered for the exposé.",
+      "text": "Thinking about your second review, choose one important point you made. If the author asked why you made that point, what would you say?",
+      "source": "pr2",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "judgment_justification_challenge",
+      "anchoredText": "In your second review, you wrote: “{{anchor}}” If the author asked why you made this point, what would you say?",
+      "completeWhen": "The answer gives a reason for the review point and explains why it mattered for the exposé.",
+      "evidenceGoal": "The participant explains and justifies a review judgment and can articulate it from the author's perspective.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the reason is unclear, ask what made the point important or what the participant would say to explain it to the author."
+    },
+    {
+      "id": "implications_1",
+      "help": "Name one suggestion from your review and explain the change you expected it to produce.",
+      "text": "Thinking about your first review, choose one suggestion you made. What change did you expect it to make to the exposé?",
+      "source": "pr1",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "constructive_implications",
+      "completeWhen": "The answer identifies a concrete expected change or consequence of the suggestion.",
+      "evidenceGoal": "The participant explains the intended effect of a suggestion in their feedback.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the expected effect is unclear, ask what the participant expected to change if the author followed the suggestion."
+    },
+    {
+      "id": "uncertainty_1",
+      "help": "If there was something you were unsure about, explain it. If not, you can say that.",
+      "text": "Thinking about your second review, was there anything you were unsure about? If so, what made you unsure?",
+      "source": "pr2",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "assumptions_uncertainty_limits",
+      "completeWhen": "The answer identifies an uncertainty, assumption, missing information, alternative interpretation, or limitation, or clearly states that there was no meaningful uncertainty.",
+      "evidenceGoal": "The participant identifies uncertainty, assumptions, or limits in their own judgment, or clearly states that none were salient.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If uncertainty is mentioned but unclear, ask what made that point uncertain. If the participant clearly reports no uncertainty, do not probe further."
+    },
+    {
+      "id": "strategy_1",
+      "help": "Describe how you chose which issues were worth including in your review.",
+      "text": "Thinking about your first review, how did you decide which points to focus on?",
+      "source": "pr1",
+      "required": true,
+      "answerType": "text",
+      "categoryId": "review_strategy_reflection",
+      "completeWhen": "The answer explains how the participant selected or prioritized points for the review.",
+      "evidenceGoal": "The participant explains their review strategy and prioritization.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the selection strategy is unclear, ask how the participant chose between several possible points."
+    },
+    {
+      "id": "cross_review_1",
+      "help": "You can describe what changed or what stayed the same in how you reviewed the two exposés.",
+      "text": "How, if at all, did your approach differ between the two reviews?",
+      "source": "both",
+      "required": false,
+      "answerType": "text",
+      "categoryId": "review_strategy_reflection",
+      "completeWhen": "The answer describes a difference or similarity in standards, focus, strategy, or reasoning across the two reviews.",
+      "evidenceGoal": "The participant compares their reviewing approach across the two reviews.",
+      "maxFollowUps": 1,
+      "allowFollowUp": true,
+      "followUpDirection": "If the comparison is unclear, ask for one specific thing that changed or stayed the same."
+    }
+  ],
   "categories": [
     {
       "id": "understanding_reviewed_work",
       "label": "Understanding the reviewed work",
-      "sourceCategory": "Socratic clarification",
-      "evidenceGoal": "The student explains what they understood the reviewed exposé to be trying to do."
+      "evidenceGoal": "The participant explains what they understood the reviewed exposé to be trying to do.",
+      "sourceCategory": "Socratic clarification"
     },
     {
       "id": "judgment_criteria",
       "label": "Criteria used for judgment",
-      "sourceCategory": "Peer-review quality judgment",
-      "evidenceGoal": "The student explains the standard or criterion used to judge quality."
+      "evidenceGoal": "The participant explains the standard or criterion used to judge quality.",
+      "sourceCategory": "Peer-review quality judgment"
     },
     {
       "id": "evidence_grounding",
       "label": "Evidence grounding",
-      "sourceCategory": "Socratic reasons and evidence",
-      "evidenceGoal": "The student connects their feedback to evidence or features in the reviewed exposé."
+      "evidenceGoal": "The participant connects submitted feedback to evidence or features in the reviewed exposé.",
+      "sourceCategory": "Socratic reasons and evidence"
     },
     {
       "id": "judgment_justification_challenge",
       "label": "Judgment justification and challenge",
-      "sourceCategory": "Socratic reasons, evidence, and perspectives",
-      "evidenceGoal": "The student explains and defends why a review judgment follows."
+      "evidenceGoal": "The participant explains and justifies a review judgment and can articulate it from the author's perspective.",
+      "sourceCategory": "Socratic reasons, evidence, and perspectives"
     },
     {
       "id": "constructive_implications",
       "label": "Constructive implications",
-      "sourceCategory": "Socratic implications and consequences",
-      "evidenceGoal": "The student explains what would improve if the author followed the feedback."
+      "evidenceGoal": "The participant explains the intended effect of a suggestion in their feedback.",
+      "sourceCategory": "Socratic implications and consequences"
     },
     {
       "id": "assumptions_uncertainty_limits",
       "label": "Assumptions, uncertainty, and limits",
-      "sourceCategory": "Socratic assumptions and reflection",
-      "evidenceGoal": "The student identifies assumptions, uncertainty, or limits in their own review."
+      "evidenceGoal": "The participant identifies assumptions, uncertainty, or limits in their own review, or clearly states that none were salient.",
+      "sourceCategory": "Socratic assumptions and reflection"
     },
     {
       "id": "review_strategy_reflection",
       "label": "Review strategy and reflection",
-      "sourceCategory": "Socratic questions about the question and reflection",
-      "evidenceGoal": "The student explains how they decided what to focus on and how they approached the review."
+      "evidenceGoal": "The participant explains how they selected priorities and approached the review.",
+      "sourceCategory": "Socratic questions about the question and reflection"
     }
   ],
-  "questions": [
-    {
-      "id": "understanding_1",
-      "categoryId": "understanding_reviewed_work",
-      "source": "pr1",
-      "text": "Thinking about the first review you submitted, what did you understand as the main aim or main problem of the exposé?",
-      "help": "Summarize what you understood the exposé to be trying to do. There is no required wording.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student explains their understanding of the reviewed work.",
-      "completeWhen": "The answer names the main aim, problem, claim, or focus of the exposé and explains it in the student's own words.",
-      "followUpDirection": "If vague, ask the student to clarify the main claim, goal, or problem they understood."
-    },
-    {
-      "id": "criteria_1",
-      "categoryId": "judgment_criteria",
-      "source": "pr2",
-      "text": "Thinking about the second review you submitted, what criteria did you use to judge whether something was strong, weak, clear, unclear, supported, or unsupported?",
-      "help": "Explain the standards or qualities you used when making your judgments.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student explains the criterion or quality standard behind the judgment.",
-      "completeWhen": "The answer names at least one standard or criterion used to judge quality.",
-      "followUpDirection": "If vague, ask what standard the student compared the work against."
-    },
-    {
-      "id": "evidence_1",
-      "categoryId": "evidence_grounding",
-      "source": "pr1",
-      "text": "Thinking about the first review you submitted, what evidence from the exposé supported one of your judgments?",
-      "anchoredText": "In your first review, you wrote: “{{anchor}}” What in the exposé led you to write this feedback?",
-      "help": "You can mention a specific claim, section, example, missing detail, or piece of evidence in the exposé.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student connects their feedback to evidence or features in the reviewed exposé.",
-      "completeWhen": "The answer points to a claim, section, missing evidence, unclear wording, weak structure, or unsupported conclusion.",
-      "followUpDirection": "If vague, ask for the specific claim, section, evidence, wording, or missing element that led to the feedback."
-    },
-    {
-      "id": "justification_1",
-      "categoryId": "judgment_justification_challenge",
-      "source": "pr2",
-      "text": "Thinking about the second review you submitted, why was one of your main points important enough to include?",
-      "anchoredText": "In your second review, you wrote: “{{anchor}}” Why was this point important enough to include?",
-      "help": "Explain why the quoted point mattered for the quality or usefulness of the exposé.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student explains and defends the importance of a review judgment.",
-      "completeWhen": "The answer explains why the point matters for the quality, clarity, argument, evidence, or usefulness of the exposé.",
-      "followUpDirection": "If shallow, ask how the student would defend the point if the author disagreed."
-    },
-    {
-      "id": "implications_1",
-      "categoryId": "constructive_implications",
-      "source": "pr1",
-      "text": "Thinking about the first review you submitted, choose one suggestion you made. What would improve in the exposé if the author followed it?",
-      "help": "First identify one suggestion from your review, then explain the change you expected it to produce.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student explains the intended improvement behind the feedback.",
-      "completeWhen": "The answer explains a concrete expected improvement in evidence, structure, argument, method, clarity, or reader understanding.",
-      "followUpDirection": "If vague, ask what concrete change would happen in the argument, evidence, structure, clarity, or reader understanding."
-    },
-    {
-      "id": "uncertainty_1",
-      "categoryId": "assumptions_uncertainty_limits",
-      "source": "pr2",
-      "text": "Thinking about the second review you submitted, where were you least sure about your own review, and why?",
-      "help": "You can mention missing information, an assumption, or another possible interpretation.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student identifies uncertainty, assumptions, or limits in their own judgment.",
-      "completeWhen": "The answer names an uncertainty, assumption, missing information, alternative interpretation, or limitation in the student's own review.",
-      "followUpDirection": "If vague, ask what assumption, missing information, or alternative interpretation made the student uncertain."
-    },
-    {
-      "id": "strategy_1",
-      "categoryId": "review_strategy_reflection",
-      "source": "pr1",
-      "text": "Thinking about the first review you submitted, how did you decide what to focus on first?",
-      "help": "Describe how you chose which issues to prioritize while reviewing.",
-      "answerType": "text",
-      "required": true,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student explains their review strategy and prioritization.",
-      "completeWhen": "The answer explains how the student selected priorities for the review.",
-      "followUpDirection": "If vague, ask how the student chose between several possible issues."
-    },
-    {
-      "id": "cross_review_1",
-      "categoryId": "review_strategy_reflection",
-      "source": "both",
-      "text": "When you compare the two reviews you submitted, did you use the same standards, or did your approach change?",
-      "help": "Compare the standards or reviewing approach you used across both reviews.",
-      "answerType": "text",
-      "required": false,
-      "allowFollowUp": true,
-      "maxFollowUps": 1,
-      "evidenceGoal": "The student compares standards, strategy, or reasoning across both peer reviews.",
-      "completeWhen": "The answer explains whether the student's standards, focus, uncertainty, or review strategy stayed the same or changed.",
-      "followUpDirection": "If vague, ask what changed and why, or what stayed the same across both reviews."
-    }
-  ]
+  "description": "Adaptive post-validation dialogue covering seven peer-review reasoning categories across two reviews.",
+  "completionMessage": "Thank you. The dialogue is complete."
 }
