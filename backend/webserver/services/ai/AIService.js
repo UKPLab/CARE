@@ -8,7 +8,7 @@ const request = require("./request");
 /**
  * AIService — AI / LLM RPC handlers.
  *
- * Implementation is split under `./ai/` (`runtime`, `chat`, `hook`, `request`).
+ * Implementation is split across `./ai/` modules and shared backend AI helpers.
  *
  * @extends Service
  * @author Akash Gundapuneni, Mohammed Rawhani
@@ -33,6 +33,17 @@ module.exports = class AIService extends Service {
     }
 
     /**
+     * Runs an AI hook for RPC clients and internal trigger jobs.
+     *
+     * @param {*} client Authenticated client context.
+     * @param {*} data Hook execution payload.
+     * @returns {Promise<*>}
+     */
+    async runHook(client, data) {
+        return await hook.runHook(this, client, data);
+    }
+
+    /**
      * Bridges declared `cmdTypes` into nested chat/hook helpers mirroring liteLLMRPC capabilities.
      *
      * @param {*} client RPC client emitting commands.
@@ -43,8 +54,8 @@ module.exports = class AIService extends Service {
     async command(client, command, data) {
         const handlers = {
             chatCompletion: () => chat.chatCompletion(this, client, data),
-            runHook: () => hook.runHook(this, client, data),
-            abortChatCompletion: () => chat.abortChatCompletion(this, data),
+            runHook: () => this.runHook(client, data),
+            abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
             getProviders: () => chat.getProviders(this),
@@ -68,7 +79,7 @@ module.exports = class AIService extends Service {
     async call(action, client, data = {}, options = {}) {
         const actions = {
             chatCompletion: () => chat.chatCompletion(this, client, data, options.log, {onDelta: options.onDelta}),
-            abortChatCompletion: () => chat.abortChatCompletion(this, data),
+            abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
             cancelRequest: () => request.cancelRequest(this, data?.logId, options.db),
             loadHook: () => hook.loadEnabledHook(this, data?.hookId),
             resolveHookModel: () => hook.resolveHookModelParams(this, data?.hookId, data?.aiModelId),

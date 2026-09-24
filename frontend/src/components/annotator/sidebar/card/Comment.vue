@@ -22,7 +22,7 @@
           />
         </div>
         <div class="col text-end">
-          {{ new Date(comment.updatedAt).toLocaleDateString() }}
+          {{ formatLocalizedDate(comment.updatedAt) }}
         </div>
       </div>
     </div>
@@ -37,7 +37,7 @@
         ref="textarea"
         v-model="comment.text"
         class="form-control"
-        placeholder="Enter text..."
+        :placeholder="$t('components.comment.enterText')"
         @keydown.ctrl.enter="saveOnDeactivated(false)"
         @copy="onCopy"
         @paste="onPaste"
@@ -47,12 +47,12 @@
       {{ comment.text }}
     </div>
     <div v-else>
-      <i>No comment</i>
+      <i>{{ $t('components.comment.noComment')}}</i>
     </div>
     <div
       v-if="isSentimentAnalysisActive"
       class="text-end fw-light"
-      title="Sentiment Analysis"
+      :title="$t('components.comment.sentimentAnalysis')"
     >
       <span v-if="nlp_active && awaitingNlpResult && !edit">
         <IconLoading/>
@@ -93,14 +93,14 @@
               :loading="false"
               :props="$props"
               icon="save-fill"
-              title="Save (Ctrl+Enter)"
+              :title="$t('components.comment.saveCommand')"
               @click="save"
             />
             <SidebarButton
               :loading="false"
               :props="$props"
               icon="x-square-fill"
-              title="Cancel"
+              :title="$t('common.cancel')"
               @click="cancel"
             />
           </div>
@@ -117,7 +117,7 @@
               :loading="false"
               :props="$props"
               icon="reply-fill"
-              title="Reply"
+              :title="$t('common.reply')"
               @click="reply(); maxComments = numChildComments+1"
             />
             <VoteButtons :comment="comment"/>
@@ -126,7 +126,7 @@
               :loading="false"
               :props="$props"
               icon="pencil-square"
-              title="Edit"
+              :title="$t('common.edit')"
               @click="editComment"
             />
             <SidebarButton
@@ -134,7 +134,7 @@
               :loading="false"
               :props="$props"
               icon="trash3"
-              title="Delete"
+              :title="$t('common.delete')"
               @click="remove"
             />
           </div>
@@ -156,19 +156,19 @@
       <BasicButton
         v-if="showExtenderButton"
         class="btn btn-light btn-sm"
-        text="Show more"
+        :text="$t('common.showMore')"
         @click="maxComments+=5"
       />
       <BasicButton
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
         class="btn btn-light btn-sm"
-        text="Show less"
+        :text="$t('common.showLess')"
         @click="maxComments=defaultNumComments"
       />
       <BasicButton
         v-if="maxComments > defaultNumComments"
         class="btn btn-light btn-sm"
-        text="Hide replies"
+        :text="$t('common.hideReplies')"
         @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
       />
     </div>
@@ -184,6 +184,7 @@ import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
+import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -389,6 +390,7 @@ export default {
     }
   },
   methods: {
+    formatLocalizedDate,
     save() {
       if (this.commentId && this.comment) {
         const previousText = this.commentTextBeforeEdit === null ? this.comment.text : this.commentTextBeforeEdit;
@@ -400,8 +402,8 @@ export default {
         }, (res) => {
           if (!res.success) {
             this.eventBus.emit("toast", {
-              title: "Comment not updated",
-              message: res.message,
+              title: this.$t('errors.annotator.commentNotUpdated'),
+              message: resolveApiMessage(res),
               variant: "danger",
             });
           } else {
@@ -437,8 +439,8 @@ export default {
         }, (res) => {
           if (!res.success) {
               this.eventBus.emit("toast", {
-                title: "Comments not retrieved",
-                message: res.message,
+                title: this.$t('errors.annotator.commentsNotRetrieved'),
+                message: resolveApiMessage(res),
                 variant: "danger",
               });
             }
@@ -457,8 +459,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Comment not updated",
-            message: res.message,
+            title: this.$t('errors.annotator.commentNotUpdated'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -480,8 +482,8 @@ export default {
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Comment not updated",
-            message: res.message,
+            title: this.$t('errors.annotator.commentNotUpdated'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

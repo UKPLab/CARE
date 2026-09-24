@@ -18,14 +18,14 @@
         <li>
           <a
             class="dropdown-item"
-            title="Send a request"
+            :title="$t('editor.reqTitle')"
             @click="configEditor.action = 'REQ'"
           >REQ</a>
         </li>
         <li>
           <a
             class="dropdown-item"
-            title="Send a command"
+            :title="$t('editor.cmdTitle')"
             @click="configEditor.action = 'CMD'"
           >CMD</a>
         </li>
@@ -39,7 +39,7 @@
         aria-expanded="false"
         :disabled="!configEditor.allowCommandChange"
         :value="configEditor.command"
-        title="the command to send"
+        :title="$t('editor.cmdToSend')"
       >
       <ul
         v-if="configEditor.action === 'CMD' && configEditor.allowCommandChange"
@@ -64,7 +64,7 @@
         aria-expanded="false"
         :disabled="!configEditor.allowServiceChange"
         :value="service"
-        title="the service to contact"
+        :title="$t('editor.serviceToContact')"
       >
       <ul
         v-if="configEditor.allowServiceChange"
@@ -84,7 +84,7 @@
       <button
         class="btn btn-primary"
         type="button"
-        :title="sending ? 'Waiting for response' : 'Send'"
+        :title="sending ? $t('editor.waitingForResponse') : $t('common.send')"
         :disabled="sending"
         @click="send"
       >
@@ -100,7 +100,7 @@
       </button>
     </div>
     <div class="border-start border-end border-bottom px-2">
-      <span class="text-secondary fst-italic">Payload</span>
+      <span class="text-secondary fst-italic">{{ $t('editor.payload') }}</span>
       <JsonEditor
         v-model:content="payload"
         start-edit-mode
@@ -125,13 +125,13 @@
         class="text-center text-secondary fst-italic"
       >
         <span>
-          No messages sent/received
+          {{ $t('editor.emptyMsgHistory') }}
         </span>
       </div>
       <div
         v-if="history.length > 0 && history.length > configEditor.defaultShowCount"
         class="w-100 text-center bg-light"
-        :title="`${showHistory ? 'Hide' : 'Show'} more`"
+        :title="showHistory ? $t('common.hideMore') : $t('common.showMore')"
         @click="showHistory=!showHistory"
       >
         <LoadIcon
@@ -239,7 +239,7 @@ export default {
       setTimeout(() => {
             if (this.sending) {
               this.eventBus.emit('toast', {
-                message: "Received no message from server within 5s.",
+                message: this.$t('errors.nlp.msgNotReceived'),
                 variant: "warning",
                 delay: 3000
               });

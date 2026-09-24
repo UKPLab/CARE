@@ -8,14 +8,14 @@
     @hide="reset"
   >
     <template #title>
-      <h5 class="modal-title">{{ title }}</h5>
+      <h5 class="modal-title">{{ modalTitle }}</h5>
     </template>
 
     <!-- Step 1: File picker -->
     <template #step-1>
       <div class="form-field d-flex flex-column">
         <label class="form-label w-100 text-start mb-2">
-          Select file ({{ acceptedExtensions.join(", ") }}):
+          {{ $t('modals.importExport.import.selectFile', { extensions: acceptedExtensions.join(', ') }) }}
         </label>
         <div class="w-100">
           <input
@@ -28,7 +28,9 @@
         </div>
       </div>
       <div v-if="selectedFile" class="mt-2">
-        <small class="text-muted">Selected: {{ selectedFile.name }}</small>
+        <small class="text-muted">
+          {{ $t('modals.importExport.import.selectedFile', { file: selectedFile.name }) }}
+        </small>
       </div>
       <div v-if="parseError" class="mt-2 text-danger">
         <small>{{ parseError }}</small>
@@ -38,7 +40,8 @@
     <!-- Step 2: Item selection -->
     <template #step-2>
       <p class="text-muted mb-2">
-        Select which items to import from <strong>{{ selectedFile && selectedFile.name }}</strong>:
+        {{ $t('modals.importExport.import.selectItemsPrefix') }}
+        <strong>{{ selectedFile && selectedFile.name }}</strong>:
       </p>
       <BasicTable
         v-model="selectedItems"
@@ -51,11 +54,15 @@
 
     <!-- Step 3: Confirmation -->
     <template #step-3>
-      <p>Are you sure you want to import the following {{ table || "items" }}?</p>
+      <p>
+        {{ $t('modals.importExport.import.confirmQuestion', { table: confirmTableLabel }) }}
+      </p>
       <ul>
         <li v-for="item in selectedItems" :key="item._idx">
           <strong>{{ item._label }}</strong>
-          <span v-if="item._childCount !== undefined"> — {{ item._childCount }} child record(s)</span>
+          <span v-if="item._childCount !== undefined">
+            {{ $t('modals.importExport.import.childRecords', { count: item._childCount }) }}
+          </span>
         </li>
       </ul>
     </template>
@@ -65,7 +72,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
-import { getSupportedImportFormats } from "@/assets/utils";
+import { getSupportedImportFormats, resolveApiMessage } from "@/assets/utils";
 
 /**
  * Import Format Modal Component
@@ -83,7 +90,7 @@ export default {
   props: {
     title: {
       type: String,
-      default: "Import",
+      default: null,
     },
     columns: {
       type: Array,
@@ -104,6 +111,9 @@ export default {
     };
   },
   computed: {
+    modalTitle() {
+      return this.title || this.$t('modals.importExport.import.defaultTitle');
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -116,14 +126,25 @@ export default {
     acceptString() {
       return this.acceptedExtensions.join(",");
     },
+    itemLabel() {
+      return this.table
+        ? this.humanizeTableName(this.table)
+        : this.$t('modals.importExport.import.steps.genericItem');
+    },
+    confirmTableLabel() {
+      return this.table
+        ? this.humanizeTableName(this.table)
+        : this.$t('modals.importExport.import.genericItems');
+    },
     steps() {
-      const itemLabel = this.table
-        ? this.table.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
-        : "Item";
       return [
-        { title: "File Selection" },
-        { title: `${itemLabel} Selection` },
-        { title: "Confirmation" },
+        { title: this.$t('modals.importExport.import.steps.fileSelection') },
+        {
+          title: this.$t('modals.importExport.import.steps.itemSelection', {
+            item: this.itemLabel,
+          }),
+        },
+        { title: this.$t('modals.importExport.import.steps.confirmation') },
       ];
     },
     stepValid() {
@@ -163,7 +184,7 @@ export default {
       if (!this.parsedData) return [];
       return this.parsedData.map((item, idx) => {
         const row = { ...item, _idx: idx };
-        row._label = item.name || item.title || item.id || `Item ${idx + 1}`;
+        row._label = item.name || item.title || item.id || this.$t('modals.importExport.import.fallbackItemLabel', { index: idx + 1 });
         if (this.childTable) {
           row._childCount = (item[this.childTable] || []).length;
         }
@@ -181,6 +202,13 @@ export default {
     },
   },
   methods: {
+    /**
+     * Turns an internal table id (snake_case) into display text for toasts and step titles.
+     * e.g. "tag_set" → "Tag Set"
+     */
+    humanizeTableName(table) {
+      return table.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    },
     /**
      * Opens the import modal.
      * @param {string|null} table                       - Table to import into. If null, emits @itemsSelected instead of writing to socket.
@@ -229,7 +257,7 @@ export default {
           f.extensions.includes(ext)
         );
         if (!format) {
-          throw new Error(`Unsupported file type "${ext}"`);
+          throw new Error(this.$t('modals.importExport.import.errors.unsupportedFileType', { ext }));
         }
         let parsed = format.parse(content);
         if (parsed && !Array.isArray(parsed)) {
@@ -239,7 +267,9 @@ export default {
         this.selectedItems = this.displayData.slice();
       } catch (error) {
         console.error("Error processing file:", error);
-        this.parseError = `Failed to parse file: ${error.message}`;
+        this.parseError = this.$t('modals.importExport.import.errors.parseFileFailed', {
+          message: error.message,
+        });
         this.selectedFile = null;
         this.parsedData = null;
       }
@@ -248,7 +278,7 @@ export default {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.onerror = () => reject(new Error(this.$t('modals.importExport.import.errors.readFileFailed')));
         reader.readAsText(file);
       });
     },
@@ -282,6 +312,7 @@ export default {
         : null;
 
       let importedCount = 0;
+      const displayTable = this.humanizeTableName(this.table);
 
       for (const selectedRow of this.selectedItems) {
         const item = this.parsedData[selectedRow._idx];
@@ -327,8 +358,10 @@ export default {
                 previousId = childResult.data;
               } else {
                 this.eventBus.emit("toast", {
-                  title: "Import Error",
-                  message: `Failed to import child record: ${childResult.message}`,
+                  title: this.$t('modals.importExport.import.errors.importError'),
+                  message: this.$t('modals.importExport.import.errors.importChildFailed', {
+                    message: resolveApiMessage(childResult),
+                  }),
                   variant: "danger",
                 });
               }
@@ -336,17 +369,26 @@ export default {
           }
         } else {
           this.eventBus.emit("toast", {
-            title: "Import Error",
-            message: `Failed to import "${itemData.name || itemData.id}": ${result.message}`,
+            title: this.$t('modals.importExport.import.errors.importError'),
+            message: this.$t('modals.importExport.import.errors.importItemFailed', {
+              name: itemData.name || itemData.id,
+              message: resolveApiMessage(result),
+            }),
             variant: "danger",
           });
         }
       }
 
       this.$refs.stepper.setWaiting(false);
+      const successKey = importedCount === 1
+        ? 'modals.importExport.import.success.single'
+        : 'modals.importExport.import.success.multiple';
       this.eventBus.emit("toast", {
-        title: "Import Successful",
-        message: `${importedCount} ${this.table}${importedCount !== 1 ? "s" : ""} imported successfully!`,
+        title: this.$t('modals.importExport.import.success.title'),
+        message: this.$t(successKey, {
+          count: importedCount,
+          table: displayTable,
+        }),
         variant: "success",
       });
       this.close();
@@ -369,4 +411,5 @@ export default {
   min-width: 160px;
 }
 </style>
+
 

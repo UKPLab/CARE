@@ -6,12 +6,14 @@
           v-model="date"
           class="form-control"
           type="date"
+          :lang="localeCode"
           @blur="blur(currentDate)"
       >
       <input
           v-model="time"
           class="form-control"
           type="time"
+          :lang="localeCode"
           @blur="blur(currentDate)"
       >
       <button
@@ -19,7 +21,7 @@
           type="button"
           @click="date = null"
       >
-        Reset
+        {{ $t('common.reset') }}
       </button>
     </template>
   </FormElement>
@@ -79,6 +81,12 @@ export default {
       if (oldVal !== newVal) {
         this.emitDate();
       }
+    }
+  },
+  computed: {
+    localeCode() {
+      const locale = this.$i18n?.locale;
+      return typeof locale === "string" ? locale : locale?.value;
     }
   },
   mounted() {

@@ -5,7 +5,7 @@
       @hide="reset"
   >
     <template #title>
-      <span>Upload Password</span>
+      <span>{{$t('users.uploadPassword')}}</span>
     </template>
     <template #body>
       <MoodleOptions
@@ -29,7 +29,7 @@
           v-if="fileErrors.length > 0"
           class="scrollable-error-container"
       >
-        <p>Your CSV file contains the following errors. Please fix them and reupload the file.</p>
+        <p>{{$t('dashboard.users.csvErrorHint')}}</p>
         <ul>
           <li
               v-for="(error, index) in fileErrors"
@@ -43,12 +43,12 @@
     <template #footer>
       <div class="btn-group">
         <BasicButton
-          title="Cancel"
+          :title="$t('common.cancel')"
           class="btn btn-secondary"
           @click="$refs.modal.close()"
         />
         <BasicButton
-          title="Upload"
+          :title="$t('common.upload')"
           class="btn btn-primary"
           :disabled="isDisabled"
           @click="uploadToMoodle"
@@ -63,6 +63,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import Papa from "papaparse";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Modal for uploading the login data of the newly created users to Moodle
@@ -76,31 +77,31 @@ export default {
       formFields: [
         {
           key: "courseID",
-          label: "Course ID:",
+          label: this.$t('moodle.courseId'),
           type: "text",
           required: true,
-          placeholder: "course-id-placeholder",
+          placeholder: this.$t('moodle.placeholders.courseId'),
         },
         {
           key: "assignmentID",
-          label: "Assignment ID:",
+          label: this.$t('moodle.assignmentId'),
           type: "text",
           required: true,
-          placeholder: "assignment-id-placeholder",
+          placeholder: this.$t('moodle.placeholders.assignmentId'),
         },
         {
           key: "url",
-          label: "Moodle URL:",
+          label: this.$t('moodle.apiUrl'),
           type: "text",
           required: true,
-          placeholder: "https://example.moodle.com",
+          placeholder: this.$t('moodle.placeholders.apiUrl'),
         },
         {
           key: "apiKey",
-          label: "Moodle API Key:",
+          label: this.$t('moodle.apiKey'),
           type: "text",
           required: true,
-          placeholder: "api-key-placeholder",
+          placeholder: this.$t('moodle.placeholders.apiKey'),
         },
       ],
       moodleOptions: {},
@@ -135,15 +136,15 @@ export default {
         if (res.success) {
           this.$refs.modal.close();
           this.eventBus.emit("toast", {
-            title: "Uploading completed",
-            message: "Please go to Moodle to check out your username and password!",
+            title: this.$t('dashboard.users.uploadingCompleted'),
+            message: this.$t('dashboard.users.uploadingCompletedMessage'),
             variant: "success",
           });
         } else {
           this.$refs.modal.waiting = false;
           this.eventBus.emit("toast", {
-            title: "Uploading failed",
-            message: res.message,
+            title: this.$t('errors.documents.uploadingFailed'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
 
@@ -158,7 +159,7 @@ export default {
       return new Promise((resolve, reject) => {
         Papa.parse(file, {
           header: true,
-          complete: function (results) {
+          complete: (results) => {
             const {data: rows, meta} = results;
             const {fields: fileHeaders} = meta;
             const requiredHeaders = ["extId", "userName", "password"];
@@ -166,18 +167,18 @@ export default {
             const errors = [];
             // Check headers
             if (!requiredHeaders.every((header) => fileHeaders.includes(header))) {
-              errors.push("CSV does not contain all required headers");
+              errors.push(this.$t('errors.csv.missingRequiredHeaders'));
             }
             rows.forEach((row, index) => {
               // Check if every cell has value
               for (const [key, value] of Object.entries(row)) {
                 if (value === null || value === "") {
-                  errors.push(`Empty value found for ${key} at index ${index + 1}`);
+                  errors.push(this.$t('errors.csv.emptyValue',{key, index: index + 1}));
                 }
               }
               // Check for duplicate id
               if (seenIds.has(row.extId)) {
-                errors.push(`Duplicate id found: ${row.extId} at index ${index + 1}`);
+                errors.push(this.$t('errors.csv.duplicateId', {extId: row.extId, index: index + 1}));
               } else {
                 seenIds.add(row.extId);
               }
@@ -189,8 +190,8 @@ export default {
               resolve(rows);
             }
           },
-          error: function (error) {
-            reject(["Error parsing file: " + error.message]);
+          error: (error) => {
+            reject([this.$t('errors.csv.parseError', { message: error.message })]);
           },
         });
       });
@@ -201,15 +202,15 @@ export default {
           this.uploadedUsers = await this.validateCSV(file);
           this.fileErrors = [];
           this.eventBus.emit("toast", {
-            title: "Validation completed",
-            message: "CSV is valid!",
+            title: this.$t('dashboard.users.validationCompleted'),
+            message: this.$t('dashboard.users.validationCompletedMessage'),
             variant: "success",
           });
         } catch (errors) {
           this.fileErrors = errors;
         }
       } else {
-        alert("Please upload a CSV file");
+        alert(this.$t('dashboard.users.pleaseUploadCsv'));
       }
     },
   },

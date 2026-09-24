@@ -13,7 +13,7 @@
       v-model="search"
       type="text"
       class="form-control"
-      placeholder="Type to filter table..."
+      :placeholder="$t('common.typeToFilter')"
       aria-label="table-search"
       aria-describedby="search-addon1"
     />
@@ -56,7 +56,7 @@
             {{ c.name }}
             <span
               v-if="c.sortable"
-              title="Sort By"
+              :title="$t('common.sortBy')"
             >
               <LoadIcon
                 v-if="c.sortable"
@@ -141,7 +141,7 @@
             :class="getManageColumnClass()"
             :style="manageColumnStyle"
           >
-            Manage
+            {{ $t('common.manage') }}
           </th>
         </tr>
       </thead>
@@ -151,7 +151,7 @@
             :colspan="columns.length"
             class="text-center"
           >
-            Loading data from server...
+            {{ $t('common.loadingFromServer') }}
           </td>
         </tr>
         <tr v-else-if="!data || data.length === 0">
@@ -159,7 +159,7 @@
             :colspan="emptyColspan"
             class="text-center"
           >
-            No data
+            {{ $t('common.noData') }}
           </td>
         </tr>
         <tr
@@ -228,7 +228,7 @@
                 @action="actionEmitter"
               />
               <span v-else-if="c.type === 'datetime'">
-                {{ new Date(r[c.key]).toLocaleString() }}
+                {{ formatLocalizedDateTime(r[c.key]) }}
               </span>
 
               <span v-else-if="c.type === 'icon-selector'">
@@ -288,7 +288,7 @@
     v-if="selectableRows && !(options && options.singleSelect)"
     class="text-end text-muted small mb-2"
   >
-    {{ selectedCount }} of {{ totalSelectableCount }} selected
+    {{ $t('common.selectedCount', { selected: selectedCount, total: totalSelectableCount }) }}
   </div>
   <Pagination
     v-if="options && options.pagination && total > 0"
@@ -314,6 +314,7 @@ import Pagination from "./table/Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import { tooltip } from "@/assets/tooltip.js";
+import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
 
 /**
@@ -667,6 +668,7 @@ export default {
     this.cleanupAllObserver();
   },
   methods: {
+    formatLocalizedDateTime,
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();

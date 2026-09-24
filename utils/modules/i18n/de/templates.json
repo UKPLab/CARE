@@ -1,0 +1,268 @@
+{
+  "placeholders": {
+    "warning": "Warnung:",
+    "invalidPlaceholdersMessage": "Die folgenden Platzhalter sind für {templateType}-Templates nicht gültig:",
+    "invalidPlaceholdersIgnored": "Diese Platzhalter werden ignoriert, wenn das Template verwendet wird.",
+    "failedToLoad": "Platzhalter konnten nicht geladen werden",
+    "labels": {
+      "emailGeneral": {
+        "username": "Benutzername des Empfängers",
+        "firstName": "Vorname des Empfängers",
+        "lastName": "Nachname des Empfängers",
+        "link": "Link",
+        "otp": "Einmalcode",
+        "tokenExpiry": "Token-Ablauf"
+      },
+      "emailStudySession": {
+        "username": "Benutzername des Empfängers",
+        "link": "Review-Link"
+      },
+      "emailAssignment": {
+        "username": "Benutzername des Empfängers",
+        "assignmentType": "Assignment-Typ",
+        "assignmentName": "Assignment-Name",
+        "link": "Assignment-Link"
+      },
+      "emailStudyClose": {
+        "username": "Benutzername des Empfängers",
+        "studyName": "Study-Name"
+      },
+      "emailSubmissionUpload": {
+        "username": "Benutzername des Empfängers",
+        "assignmentName": "Assignment-Name",
+        "eventType": "Upload-Ereignis",
+        "assignmentId": "Assignment-ID",
+        "submissionId": "Submission-ID",
+        "timestamp": "Upload-Zeitstempel"
+      }
+    },
+    "descriptions": {
+      "emailGeneral": {
+        "username": "Benutzername des E-Mail-Empfängers.",
+        "firstName": "Vorname des E-Mail-Empfängers.",
+        "lastName": "Nachname des E-Mail-Empfängers.",
+        "link": "Aktionslink in der E-Mail (z. B. für Zurücksetzen oder Verifizierung).",
+        "otp": "Einmaliger Verifizierungscode für E-Mail-basierte Zwei-Faktor-Authentifizierung.",
+        "tokenExpiry": "Ablaufzeit in Stunden oder Minuten, abhängig vom E-Mail-Kontext."
+      },
+      "emailStudySession": {
+        "username": "Submission-Owner, der diese Session-E-Mail erhält.",
+        "link": "Link zum Öffnen des Reviews im Nur-Lesen-Modus."
+      },
+      "emailAssignment": {
+        "username": "Benutzername des zugewiesenen Reviewers.",
+        "assignmentType": "Gibt an, ob das Assignment document oder submission ist.",
+        "assignmentName": "Name des Assignments oder der Study.",
+        "link": "Link zum Starten der zugewiesenen Review-Session."
+      },
+      "emailStudyClose": {
+        "username": "Benutzername des Session-Owners mit offener Session beim Schließen der Study.",
+        "studyName": "Name der geschlossenen Study."
+      },
+      "emailSubmissionUpload": {
+        "username": "Benutzername des Empfängers (Assignment-Owner oder Submitter).",
+        "assignmentName": "Name des Assignments.",
+        "eventType": "Kleinbuchstaben: \"uploaded\" oder \"reuploaded\".",
+        "assignmentId": "Interne Assignment-Kennung.",
+        "submissionId": "Interne Submission-Kennung.",
+        "timestamp": "Zeitpunkt des Submission-Uploads."
+      }
+    },
+    "help": {
+      "emailGeneral": {
+        "username": "Der Benutzername der Person, die die E-Mail erhält. Bei Passwort-Zurücksetzung, Verifizierung oder Registrierung ist dies der Benutzer, um dessen Konto es in der E-Mail geht.",
+        "firstName": "Der Vorname der Person, die die E-Mail erhält.",
+        "lastName": "Der Nachname der Person, die die E-Mail erhält.",
+        "link": "Die URL, die in der E-Mail enthalten ist, z. B. für Passwort-Zurücksetzung, Verifizierung oder Registrierung.",
+        "otp": "Einmaliger Verifizierungscode für E-Mail-basierte Zwei-Faktor-Authentifizierung.",
+        "tokenExpiry": "Ablaufzeit in Stunden oder Minuten, abhängig vom E-Mail-Kontext."
+      },
+      "emailStudySession": {
+        "username": "Die Person, die diese E-Mail erhält. Bei Benachrichtigungen zum Start und Abschluss einer Session ist dies immer der Owner der Submission.",
+        "link": "Die URL zum Öffnen des Reviews (read-only). Wird für den Start und Abschluss einer Session verwendet."
+      },
+      "emailAssignment": {
+        "username": "Der Benutzername des Reviewers, dem die Aufgabe zugewiesen wurde.",
+        "assignmentType": "Gibt an, wie die Arbeit zugewiesen wurde: \"document\" (Review nach Dokument) oder \"submission\" (Review nach Submission).",
+        "assignmentName": "Der Name des Assignments oder der Study, dem bzw. der der Reviewer zugewiesen wurde.",
+        "link": "Die URL, über die der Reviewer seine Review-Session öffnen und starten kann. Dieser Link muss verwendet werden, um die zugewiesene Aufgabe zu beginnen."
+      },
+      "emailStudyClose": {
+        "username": "Der Benutzername des Session-Owners, der eine offene Session hatte, als die Study geschlossen wurde.",
+        "studyName": "Der Name der Study, die geschlossen wurde."
+      },
+      "emailSubmissionUpload": {
+        "username": "Die Person, die diese E-Mail erhält (Assignment-Owner oder Submitter).",
+        "assignmentName": "Der Titel des Assignments.",
+        "eventType": "Satztext in Kleinbuchstaben: \"uploaded\" oder \"reuploaded\".",
+        "assignmentId": "Interne Assignment-ID.",
+        "submissionId": "Interne Submission-ID.",
+        "timestamp": "Zeitpunkt, zu dem die Submission hochgeladen wurde."
+      },
+      "prompt": {
+        "pdfText": "Text aus dem PDF im aktuellen Kontext.",
+        "editorText": "Aktueller Klartext aus dem HTML-/Modal-Dokument der Study. Beim Laden eines Schritts sollte context.editorText explizit übergeben werden, wenn in demselben Durchlauf wie NLP insertIntoEditor aufgelöst wird.",
+        "assessmentResult": "Die gespeicherte Rubrik aus der Assessment-Sidebar für dieses Dokument und diesen Schritt.",
+        "inlineComments": "Strukturierte Kommentare und Annotationen für dieses Dokument und diesen Schritt.",
+        "nlpAssessmentSuggestion": "NLP-Entwurf der Bewertung für diesen Studienschritt (aus den NLP-document_data des Schritts, nicht aus dem gespeicherten assessment_result). Leer, wenn NLP noch nicht gelaufen ist.",
+        "previousAssessmentResult": "Die gespeicherte Rubrik aus dem vorherigen Schritt, wenn eine Übernahme konfiguriert ist.",
+        "assessmentConfiguration": "Die Assessment-Rubrik-Konfiguration, die in diesem Schritt verwendet wird.",
+        "submissionFiles": "Jedes Hinzufügen fügt ~submissionFiles[N]~ mit dem nächsten freien N ein (höchstes vorhandenes + 1). Lücken bleiben nach dem Löschen erhalten. Ordnen Sie jeden Index in der AI-Hook-Schrittkonfiguration einer bestimmten Submission-Datei zu.",
+        "studyContext": "Grundlegende Metadaten aus dem aktuellen Study-, Schritt- und Dokumentkontext."
+      }
+    }
+  },
+  "types": {
+    "emailGeneral": "E-Mail - Allgemein",
+    "emailStudySession": "E-Mail - Study Session",
+    "emailAssignment": "E-Mail - Assignment",
+    "documentGeneral": "Dokument - Allgemein",
+    "documentStudy": "Dokument - Study",
+    "emailStudyClose": "E-Mail - Studienabschluss",
+    "emailSubmissionUpload": "E-Mail - Submission-Upload",
+    "prompt": "Prompt"
+  },
+  "editor": {
+    "newLanguage": "Neue Sprache",
+    "createEmpty": "Leer erstellen",
+    "copyContent": "Inhalt kopieren",
+    "language": "Sprache",
+    "newLanguageMessage": "Für dieses Template wird eine neue Sprache hinzugefügt. Soll der aktuelle Inhalt in diese Sprache kopiert werden?<br><br><strong>Beim Verlassen der aktuellen Sprache wird deren Inhalt gespeichert.</strong>",
+    "leave": {
+      "missingPlaceholdersConfirm": "Dieses Template enthält nicht alle erforderlichen Platzhalter; Ihre Änderungen werden nicht gespeichert."
+    },
+    "toasts": {
+      "templateSaveFailed": "Template konnte nicht gespeichert werden",
+      "templateDiscardFailed": "Template-Änderungen konnten nicht verworfen werden",
+      "failedToLoadTemplate": "Template konnte nicht geladen werden",
+      "failedToAddLanguage": "Sprache konnte nicht hinzugefügt werden",
+      "noCursorPosition": {
+        "title": "Keine Cursorposition",
+        "message": "Klicken Sie bitte in den Editor, um die Cursorposition zu setzen, bevor Sie einen Platzhalter einfügen."
+      },
+      "previousEditFailed": "Vorherige Bearbeitung fehlgeschlagen; versuchen Sie es erneut",
+      "templateError": "Template-Fehler"
+    }
+  },
+  "dashboard": {
+    "title": "Vorlagen",
+    "browsePublicTemplates": "Öffentliche Vorlagen durchsuchen",
+    "publicTemplates": "Öffentliche Vorlagen",
+    "addNewTemplate": "Neue Vorlage hinzufügen",
+    "addTemplate": "Vorlage hinzufügen",
+    "chooseType": "Typ auswählen",
+    "actions": {
+      "editTemplate": "Vorlage bearbeiten",
+      "editContent": "Inhalt bearbeiten",
+      "viewContentReadOnly": "Inhalt anzeigen (schreibgeschützt)",
+      "publishTemplate": "Vorlage veröffentlichen",
+      "publishedCannotBeUnpublished": "Veröffentlicht (kann nicht zurückgezogen werden)",
+      "sourceUpdated": "Quelle aktualisiert",
+      "deleteTemplate": "Vorlage löschen",
+      "exportTemplate": "Vorlage exportieren"
+    },
+    "status": {
+      "published": "Veröffentlicht",
+      "draft": "Entwurf",
+      "updateAvailable": "Update verfügbar",
+      "sourceUnavailable": "Quelle nicht verfügbar"
+    },
+    "toasts": {
+      "templateDetached": {
+        "title": "Vorlage getrennt",
+        "message": "Sie können diese Vorlage jetzt bearbeiten"
+      },
+      "detachFailed": "Trennen fehlgeschlagen",
+      "templateDeleteFailed": "Löschen der Vorlage fehlgeschlagen"
+    },
+    "confirmDelete": {
+      "title": "Vorlage löschen",
+      "message": "Möchten Sie \"{name}\" wirklich löschen?"
+    }
+  },
+  "publicTemplates": {
+    "title": "Öffentliche Vorlagen",
+    "description": "Durchsuchen Sie veröffentlichte Vorlagen anderer Benutzer. Kopieren Sie eine Vorlage, um sie Ihrer eigenen Liste hinzuzufügen.",
+    "alreadyCopied": "Bereits kopiert",
+    "viewContentReadOnly": "Inhalt anzeigen (schreibgeschützt)",
+    "copyToMyTemplates": "In meine Vorlagen kopieren",
+    "success": {
+      "title": "Vorlage kopiert",
+      "message": "Die Vorlage wurde in Ihre Liste kopiert"
+    },
+    "errors": {
+      "copyFailed": "Kopieren fehlgeschlagen"
+    }
+  },
+  "publishModal": {
+    "title": "Vorlage veröffentlichen",
+    "success": {
+      "published": "Vorlage erfolgreich veröffentlicht!",
+      "visibility": "Die Vorlage ist jetzt {visibility}.",
+      "title": "Vorlage veröffentlicht"
+    },
+    "emailTemplateVisibilityInfo": "E-Mail-Vorlagen sind nach der Veröffentlichung nur {visibility}.",
+    "confirmQuestion": "Möchten Sie die Vorlage wirklich veröffentlichen?",
+    "cannotBeUndone": "Dies kann nicht rückgängig gemacht werden!",
+    "confirmPublish": "Ja, veröffentlichen!",
+    "visibility": {
+      "administrators": "für andere Administratoren sichtbar",
+      "allUsers": "für alle Benutzer sichtbar"
+    },
+    "errors": {
+      "notPublished": "Vorlage nicht veröffentlicht"
+    }
+  },
+  "detachModal": {
+    "title": "Kopie bearbeiten",
+    "description": "Wenn Sie diese Vorlage bearbeiten, wird sie von der Quelle getrennt. Sie erhalten keine Updates mehr von der ursprünglichen Vorlage. Fortfahren?"
+  },
+  "modal": {
+    "title": "Vorlage",
+    "errors": {
+      "typeRequired": {
+        "title": "Typ erforderlich",
+        "message": "Bitte wählen Sie einen Vorlagentyp aus"
+      },
+      "operationFailed": "Vorlagenvorgang fehlgeschlagen"
+    },
+    "success": {
+      "updated": "Vorlage aktualisiert",
+      "created": "Vorlage erstellt"
+    }
+  },
+  "updateModal": {
+    "title": "Quellvorlage wurde aktualisiert",
+    "description": "Ersetzen Sie Ihre Kopie durch den neuesten Inhalt oder erstellen Sie eine neue Kopie und trennen Sie die aktuelle.",
+    "makeNewCopyWarning": "Neue Kopie erstellen: Ihre aktuelle Kopie wird getrennt und erhält keine Updates mehr.",
+    "makeNewCopy": "Neue Kopie erstellen",
+    "success": {
+      "updatedTitle": "Vorlage aktualisiert",
+      "updatedMessage": "Der Inhalt wurde aus der Quellvorlage aktualisiert",
+      "copiedTitle": "Vorlage kopiert",
+      "copiedMessage": "Eine neue Kopie wurde erstellt. Ihre vorherige Kopie wurde getrennt."
+    },
+    "errors": {
+      "updateFailed": "Aktualisierung fehlgeschlagen",
+      "copyFailed": "Kopieren fehlgeschlagen"
+    }
+  },
+  "fields": {
+    "type": {
+      "options": {
+        "chooseType": "Typ auswählen",
+        "emailGeneral": "E-Mail - Allgemein",
+        "emailStudySession": "E-Mail - Studiensitzung",
+        "emailAssignment": "E-Mail - Aufgabe",
+        "emailStudyClose": "E-Mail - Studienabschluss",
+        "emailSubmissionUpload": "E-Mail - Submission-Upload",
+        "documentGeneral": "Dokument - Allgemein",
+        "documentStudy": "Dokument - Studie",
+        "prompt": "Prompt"
+      }
+    },
+    "defaultLanguage": {
+      "label": "Standardsprache"
+    }
+  }
+}

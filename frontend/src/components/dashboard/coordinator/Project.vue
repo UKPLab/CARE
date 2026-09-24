@@ -2,7 +2,7 @@
   <BasicCoordinator
     ref="coordinator"
     table="project"
-    title="Project"
+    :title="$t('dashboard.projects.coordinator.title')"
   />
 </template>
 
@@ -20,7 +20,7 @@ export default {
   data() {
     return {
       projectId: 0,
-    }
+    };
   },
   methods: {
     open(projectId, defaultValues = {}) {
@@ -31,9 +31,9 @@ export default {
     },
     close() {
       this.$refs.coordinator.close();
-    }
-  }
-}
+    },
+  },
+};
 </script>
 
 <style scoped>

@@ -11,6 +11,7 @@
 <script>
 import {v4 as uuidv4} from "uuid";
 import LoadIcon from "@/basic/Icon.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Default component managing collaborations
@@ -105,8 +106,8 @@ export default {
       this.$socket.emit("collabUpdate", {collabId: this.collabId},  (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Collaboration Update Failed",
-            message: res.message,
+            title: this.$t('errors.collaboration.collabUpdateFailed'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }
@@ -123,8 +124,8 @@ export default {
         },  (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: "Could not start collaboration",
-            message: res.message,
+            title: this.$t('errors.collaboration.collabCreationFailed'),
+            message: resolveApiMessage(res),
             variant: "danger",
           });
         }

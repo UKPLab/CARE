@@ -1,7 +1,7 @@
 <template>
   <div class="skill-selector">
     <div class="mb-3">
-      <label class="form-label">{{ selectorLabel }}:</label>
+      <label class="form-label">{{ $t('nlp.skillSelector.selectSkill') }}</label>
       <FormSelect
         :model-value="modelValue"
         :options="skillOptions"
@@ -52,9 +52,6 @@ export default {
     },
     isAIAssistantService() {
       return ["aiChat", "aiDialogue"].includes(this.serviceType);
-    },
-    selectorLabel() {
-      return this.isAIAssistantService ? "Select AI Hook" : "Select Skill";
     },
     skillOptions() {
       const skillOpts = this.isAIAssistantService

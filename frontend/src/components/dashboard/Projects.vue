@@ -1,19 +1,19 @@
 <template>
-  <Card title="Projects">
+  <Card :title="$t('dashboard.projects.title')">
     <template #headerElements>
       <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
-        title="Create project"
-        text="Create"
+        :title="$t('dashboard.projects.createTooltip')"
+        :text="$t('common.create')"
         icon="plus"
         @click="$refs.projectModal.open(0)"
       />
       <BasicButton
         v-if="isAdmin"
         class="btn-secondary btn-sm"
-        title="Assign projects"
-        text="Assign projects"
+        :title="$t('dashboard.projects.assignTooltip')"
+        :text="$t('dashboard.projects.assignButton')"
         icon="people-fill"
         @click="$refs.assignProjectModal.open()"
       />
@@ -45,6 +45,7 @@ import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Project list component
@@ -75,16 +76,18 @@ export default {
         small: false,
         pagination: 10,
       },
-      columns: [
-        {name: "", key: "select", type: "icon-selector"},
-        {name: "Project name", key: "name"},
-        {name: "Created At", key: "createdAt"},
-        {name: "Public", key: "published", type: "badge"},
-        {name: "Closed", key: "closed", type: "badge"},
-      ],
     };
   },
   computed: {
+    columns() {
+      return [
+        {name: "", key: "select", type: "icon-selector"},
+        {name: this.$t('dashboard.projects.columns.name'), key: "name"},
+        {name: this.$t('common.createdAt'), key: "createdAt"},
+        {name: this.$t('dashboard.projects.columns.public'), key: "published", type: "badge"},
+        {name: this.$t('dashboard.projects.columns.closed'), key: "closed", type: "badge"},
+      ];
+    },
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
@@ -101,7 +104,7 @@ export default {
               "btn-outline-secondary": true,
             }
           },
-          title: "Copy project",
+          title: this.$t('dashboard.projects.actions.copy'),
           action: "copy",
           stats: {
             projectId: "id",
@@ -118,7 +121,7 @@ export default {
           filter: [
             {key: "userId", value: this.userId},
           ],
-          title: "Edit project",
+          title: this.$t('dashboard.projects.actions.edit'),
           action: "edit",
           stats: {
             projectId: "id",
@@ -135,7 +138,7 @@ export default {
           filter: [
             {key: "userId", value: this.userId},
           ],
-          title: "Delete project",
+          title: this.$t('dashboard.projects.actions.delete'),
           action: "delete",
           stats: {
             projectId: "id",
@@ -153,7 +156,7 @@ export default {
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
-          title: "Share project",
+          title: this.$t('dashboard.projects.actions.share'),
           action: "publish",
           stats: {
             projectId: "id",
@@ -166,7 +169,7 @@ export default {
               "btn-outline-dark": true,
             }
           },
-          title: "Export data",
+          title: this.$t('dashboard.projects.actions.export'),
           icon: "download",
           action: "export",
           stats: {
@@ -181,16 +184,16 @@ export default {
         .map((d) => {
           let newD = {...d};
           newD.published = {
-            text: newD.public || newD.userId === null ? "Yes" : "No",
+            text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
             class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
           };
           newD.closed = {
-            text: newD.closed ? "Yes" : "No",
+            text: newD.closed ? this.$t('common.yes') : this.$t('common.no'),
             class: newD.closed ? "bg-danger" : "bg-success",
           };
           newD.select = {
             icon: (newD.id === this.projectId) ? "star-fill" : "star",
-            title: "Select project as default",
+            title: this.$t('dashboard.projects.selectAsDefault'),
             action: "select",
             selected: newD.id === this.projectId,
           };
@@ -243,8 +246,8 @@ export default {
       }
 
       this.$refs.deleteConf.open(
-        "Delete Project",
-        "Are you sure you want to delete this project?",
+        this.$t('dashboard.projects.delete.title'),
+        this.$t('dashboard.projects.delete.message'),
         warning,
         (val) => {
           if (val) {
@@ -257,8 +260,8 @@ export default {
             }, (result) => {
               if (!result.success) {
                 this.eventBus.emit('toast', {
-                  title: "Project delete failed",
-                  message: result.message,
+                  title: this.$t('dashboard.projects.toasts.deleteFailed'),
+                  message: resolveApiMessage(result),
                   variant: "danger"
                 });
               }
@@ -278,15 +281,15 @@ export default {
       }, (result) => {
         if (!result.success) {
           this.eventBus.emit('toast', {
-            title: "Project publish failed",
-            message: result.message,
+            title: this.$t('dashboard.projects.toasts.publishFailed'),
+            message: resolveApiMessage(result),
             variant: "danger"
           });
         }
         else {
           this.eventBus.emit('toast', {
-            title: "Project published",
-            message: "The project has been successfully published.",
+            title: this.$t('dashboard.projects.toasts.publishedTitle'),
+            message: this.$t('dashboard.projects.toasts.publishedMessage'),
             variant: "success"
           });
         }

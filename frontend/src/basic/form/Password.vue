@@ -8,7 +8,7 @@
         v-model="currentData"
         :class="options.class"
         :name="options.key"
-        :placeholder="options.placeholder"
+        :placeholder="translatedPlaceholder"
         :required="options.required"
         :pattern="options.pattern"
         :type="isPasswordVisible ? 'text' : 'password'"
@@ -34,6 +34,7 @@
 <script>
 import FormElement from "@/basic/form/Element.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "FormPassword",
@@ -55,6 +56,11 @@ export default {
       currentData: "",
       isPasswordVisible: false,
     };
+  },
+  computed: {
+    translatedPlaceholder() {
+      return translateMaybeKey(this.options.placeholder);
+    },
   },
   watch: {
     currentData() {

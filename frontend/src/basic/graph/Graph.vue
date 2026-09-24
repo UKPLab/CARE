@@ -8,14 +8,14 @@
             <BasicButton
               class="btn border-0"
               icon="info-circle"
-              tooltip="Inspect node"
+              :tooltip="$t('basic.graph.inspectNode')"
               :disabled="!activateEditNode"
               @click="inspectNode(selectedNodes[0])"
             />
             <BasicButton
               class="btn border-0"
               icon="copy"
-              tooltip="Copy node"
+              :tooltip="$t('basic.graph.copyNode')"
               :disabled="!activateEditNode"
               @click="copyNode(selectedNodes[0])"
             />
@@ -25,7 +25,7 @@
                 class="btn border-0"
                 :rotate-icon="180"
                 icon="node-plus"
-                tooltip="Add node before"
+                :tooltip="$t('basic.graph.addNodeBefore')"
                 :disabled="!activateAddNode"
                 @click="addNodePrevious(selectedNodes[0])"
               />
@@ -33,20 +33,20 @@
                 class="btn border-0"
                 :disabled="!activateAddNode"
                 icon="node-plus"
-                tooltip="Add node after"
+                :tooltip="$t('basic.graph.addNodeAfter')"
                 @click="addNodeAfter(selectedNodes[0])"
               />
               <BasicButton
                 class="btn border-0"
                 icon="dash-circle"
-                tooltip="Remove node"
+                :tooltip="$t('basic.graph.removeNode')"
                 :disabled="!activateRemoveNode"
                 @click="removeNode(selectedNodes[0])"
               />
               <BasicButton
                 class="btn border-0"
                 icon="pencil"
-                tooltip="Edit node"
+                :tooltip="$t('basic.graph.editNode')"
                 :disabled="!activateEditNode"
                 @click="editNode(selectedNodes[0])"
               />
@@ -55,7 +55,7 @@
                   class="btn border-0"
                   :disabled="!activatePasteNode"
                   icon="clipboard"
-                  tooltip="Paste copied node"
+                  :tooltip="$t('basic.graph.pasteCopiedNode')"
                   @click="togglePasteOptions"
                 />
                 <!-- Paste Options Modal -->
@@ -64,13 +64,13 @@
                     class="btn border-0"
                     :rotate-icon="180"
                     icon="node-plus"
-                    tooltip="Paste before selected node"
+                    :tooltip="$t('basic.graph.pasteBeforeSelectedNode')"
                     @click="pasteNodeBefore(selectedNodes[0])"
                   />
                   <BasicButton
                     class="btn border-0"
                     icon="node-plus"
-                    tooltip="Paste after selected node"
+                    :tooltip="$t('basic.graph.pasteAfterSelectedNode')"
                     @click="pasteNodeAfter(selectedNodes[0])"
                   />
                 </div>
@@ -79,7 +79,7 @@
             <!-- Readonly indicator -->
             <span v-else class="badge text-bg-secondary ms-1 align-middle d-inline-flex align-items-center gap-1">
               <BasicIcon icon-name="lock-fill" :size="12" color="#fff" />
-              You cannot edit this graph
+              {{ $t("basic.graph.readOnly") }}
             </span>
           </span>
         </div>
@@ -371,9 +371,9 @@ export default {
       // warning that all subsequent nodes are also removed!
       this.mainModal?.hide();
       this.$refs['confirmDeletion'].open(
-        "Remove Node",
-        "Do you really want to remove the selected node?",
-        "All subsequent nodes will also be removed!",
+        this.$t("basic.graph.confirmRemove.title"),
+        this.$t("basic.graph.confirmRemove.message"),
+        this.$t("basic.graph.confirmRemove.warning"),
         (res) => {
           if (res) {
             this.deleteSubNodes(nodeId);

@@ -3,6 +3,7 @@ const {v4: uuidv4} = require("uuid");
 const _ = require("lodash");
 const {getEmailContent} = require("../../utils/helper/email");
 const {stepTypes, sourceOptionalStepTypes} = require("../../db/models/study_step");
+const TranslatableError = require("../../utils/TranslatableError");
 
 /**
  * Handle user through websocket
@@ -251,17 +252,17 @@ class AssignmentSocket extends Socket {
                 // create a shuffle copy of the users array for each role
                 let userQueue = _.shuffle(users);
                 if (userQueue.length === 0) {
-                    throw new Error(`No users found for role ${data['roles'].find((role) => role.id === roleId).name}. Please add users to the role.`);
+                    throw new TranslatableError( "errors.assignment.noUsersFoundForRole", {roleName: data['roles'].find((role) => role.id === roleId).name});
                 }
 
                 // check if there are enough assignment for each user, that are not from the user itself
                 if (neededAssignments > shuffledAssignments.length) {
-                    throw new Error(`Not enough documents to review for role ${data['roles'].find((role) => role.id === roleId).name}. Please add more documents.`);
+                    throw new TranslatableError( "errors.assignment.notEnoughDocumentsForRole", {roleName: data['roles'].find((role) => role.id === roleId).name});
                 }
 
                 for (const user of userQueue) {
                     if (shuffledAssignments.filter((assignment) => assignment.userId !== user.id).length < neededAssignments) {
-                        throw new Error(`Not enough documents to review for ${user.firstName} ${user.lastName}. Please add more documents.`);
+                        throw new TranslatableError( "errors.assignment.notEnoughDocumentsForReviewer", {reviewerName: `${user.firstName} ${user.lastName}`});
                     }
                 }
 
@@ -334,7 +335,10 @@ class AssignmentSocket extends Socket {
                             }
 
                             if (!swapped) {
-                                throw new Error(`Unable to assign enough documents for ${user.firstName} ${user.lastName} in role ${data['roles'].find((role) => role.id === roleId).name}`);
+                                throw new TranslatableError( "errors.assignment.unableToAssignEnoughDocuments", {
+                                    reviewerName: `${user.firstName} ${user.lastName}`,
+                                    roleName: data['roles'].find((role) => role.id === roleId).name,
+                                });
                             }
                         }
 
@@ -458,7 +462,7 @@ class AssignmentSocket extends Socket {
                     }
 
                     if (!swapped) {
-                        throw new Error("Could not assign all reviewers. Please try again.");
+                        throw new TranslatableError("errors.assignment.couldNotAssignReviewers");
                     }
                 }
             }
@@ -507,7 +511,7 @@ class AssignmentSocket extends Socket {
                 // Check if the reviewer exists in selectedReviewer
                 const reviewer = data.selectedReviewer.find((r) => r.id === reviewerId);
                 if (!reviewer) {
-                    throw new Error(`Study session owner (User ID: ${reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.`);
+                    throw new TranslatableError( "errors.assignment.studySessionOwnerNotSelectedReviewer", {reviewerId});
                 }
 
                 // Initialize array for this reviewer if not exists
@@ -556,7 +560,7 @@ class AssignmentSocket extends Socket {
             return finalAssignments;
 
         } else {
-            throw new Error("Invalid mode provided for assignment creation.");
+            throw new TranslatableError("errors.assignment.invalidMode");
         }
 
     }
@@ -866,7 +870,7 @@ class AssignmentSocket extends Socket {
                 if( targetWorkflowStepId === 'previousSubmission'){
                     // Get the original submission first
                     if(previousSubmissionId === null){
-                        throw new Error("First step selected does not map to a submission.");
+                        throw new TranslatableError("errors.assignment.firstStepNotSubmission");
                     }    
                     let originalSubmission = await this.models['submission'].findOne(
                         { where: { id: previousSubmissionId } }, 
@@ -883,7 +887,7 @@ class AssignmentSocket extends Socket {
                     );
                     //get document based on validation file for now getting pdf
                     if(!latestSubmission){
-                        throw new Error("The latest version of the chosen submission could not be found.");
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
                     }
                     const document = await this.models['document'].findOne(
                         { where: { submissionId: latestSubmission.id, type: 0} },

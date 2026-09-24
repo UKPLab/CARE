@@ -2,11 +2,12 @@
     <div>
       <!-- Warning banner for invalid placeholders -->
       <div v-if="invalidPlaceholders.length > 0" class="alert alert-warning mb-3">
-        <strong>Warning:</strong> The following placeholders are not valid for {{ templateTypeName }} templates:
+        <strong>{{ $t("templates.placeholders.warning") }}</strong>
+        {{ $t("templates.placeholders.invalidPlaceholdersMessage", { templateType: templateTypeName }) }}
         <ul class="mb-0 mt-2">
           <li v-for="ph in invalidPlaceholders" :key="ph">{{ ph }}</li>
         </ul>
-        These placeholders will be ignored when the template is used.
+        {{ $t("templates.placeholders.invalidPlaceholdersIgnored") }}
       </div>
 
       <div v-if="duplicatePlaceholders.length > 0" class="alert alert-warning mb-3">
@@ -19,7 +20,7 @@
   
       <div class="card shadow mb-0 configurator">
         <div class="card-header bg-white">
-          <h3 class="card-title fw-bold mb-0">Placeholders</h3>
+          <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
@@ -35,7 +36,7 @@
                   </div>
                   <div class="d-flex flex-column">
                     <div class="d-flex align-items-center">
-                      <h5 class="mb-0 me-1">{{ placeholder.label }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
+                      <h5 class="mb-0 me-1">{{ translateMaybeKey(placeholder.label) }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
                       <FormHelp
                         v-if="placeholder.description"
                         :help="getPlaceholderHelp(placeholder)"
@@ -45,7 +46,7 @@
                       v-if="placeholder.description"
                       class="mb-0 text-muted"
                     >
-                      {{ placeholder.description }}
+                      {{ translateMaybeKey(placeholder.description) }}
                     </p>
                   </div>
                 </div>
@@ -54,7 +55,7 @@
                   <BasicButton
                     class="btn btn-primary btn-sm d-flex align-items-center"
                     icon="plus-lg"
-                    text="Add"
+                    :text="$t('common.add')"
                     @click="handlePlaceholderClick(placeholder)"
                   />
                 </div>
@@ -68,6 +69,7 @@
   
   <script>
   import FormHelp from "@/basic/form/Help.vue";
+  import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
   import BasicButton from "@/basic/Button.vue";
   import {
     countPlaceholdersByKey,
@@ -127,18 +129,18 @@
         return this.template?.type || null;
       },
       templateTypeName() {
-        if (!this.templateType) return "Unknown";
+        if (!this.templateType) return this.$t("common.unknown");
         const types = {
-          1: "Email - General",
-          2: "Email - Study Session",
-          3: "Email - Assignment",
-          4: "Document - General",
-          5: "Document - Study",
-          6: "Email - Study Close",
-          7: "Email - Submission upload",
-          8: "Prompt",
+          1: this.$t("templates.types.emailGeneral"),
+          2: this.$t("templates.types.emailStudySession"),
+          3: this.$t("templates.types.emailAssignment"),
+          4: this.$t("templates.types.documentGeneral"),
+          5: this.$t("templates.types.documentStudy"),
+          6: this.$t("templates.types.emailStudyClose"),
+          7: this.$t("templates.types.emailSubmissionUpload"),
+          8: this.$t("templates.types.prompt"),
         };
-        return types[this.templateType] || "Unknown";
+        return types[this.templateType] || this.$t("common.unknown");
       },
       availablePlaceholders() {
         if (!this.templateType || !this.placeholderConfigs[this.templateType]) {
@@ -186,8 +188,8 @@
             }
           } else {
             this.eventBus.emit("toast", {
-              title: "Failed to load placeholders",
-              message: result.message || "Unknown error",
+              title: this.$t("templates.placeholders.failedToLoad"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -199,53 +201,24 @@
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      translateMaybeKey,
+      // Help lives only in templates.json. Lookup by type + placeholderKey
       getPlaceholderHelp(placeholder) {
-        const type = this.templateType;
-        const key = placeholder.id;
-
-        const longDescriptions = {
-          1: { // Email - General
-            username: "The username of the person receiving the email. For password reset, verification, or registration emails this is the user whose account the email is about.",
-            firstName: "The first name of the person receiving the email.",
-            lastName: "The last name of the person receiving the email.",
-            link: "The URL included in the email (e.g. password reset, verification, or registration).",
-          },
-          2: { // Email - Study Session
-            username: "The person receiving this email. For session start and session finish notifications this is always the submission owner.",
-            link: "The URL to open the review (read-only). Used for session start and session finish.",
-          },
-          3: { // Email - Assignment
-            username: "The username of the reviewer who is assigned to the task.",
-            assignmentType: "How the work is assigned: \"document\" (review by document) or \"submission\" (review by submission).",
-            assignmentName: "The name of the assignment or study the reviewer is assigned to.",
-            link: "The URL for the reviewer to open and start their review session. They must use this link to begin the assigned task.",
-          },
-          6: { // Email - Study Close
-            username: "The username of the session owner who had an open session when the study was closed.",
-            studyName: "The name of the study that was closed.",
-          },
-          7: { // Email - Submission upload
-            username: "The person receiving this email (assignment owner or submitter).",
-            assignmentName: "The title of the assignment.",
-            eventType: "Lowercase sentence text: \"uploaded\" or \"reuploaded\".",
-            assignmentId: "Internal assignment ID.",
-            submissionId: "Internal submission ID.",
-            timestamp: "When the submission was uploaded.",
-          },
-          8: { // Prompt
-            pdfText: "Text from the PDF in the current context.",
-            editorText: "Latest plain text from the study HTML/modal document. During step loading, callers should pass context.editorText explicitly if resolving in the same pass as NLP insertIntoEditor.",
-            assessmentResult: "The saved rubric from the Assessment sidebar for this document and step.",
-            inlineComments: "Structured comments and annotations for this document and step.",
-            nlpAssessmentSuggestion: "NLP draft assessment for this study step (from step NLP document_data, not the saved assessment_result). Empty if NLP has not run.",
-            previousAssessmentResult: "The saved rubric from the previous step when carry-over is configured.",
-            assessmentConfiguration: "The assessment rubric configuration used in this step.",
-            submissionFiles: "Each Add inserts ~submissionFiles[N]~ with the next available N (highest existing + 1). Gaps are kept after deletes. Map each index to a specific submission file in the AI hook step configuration.",
-            studyContext: "Basic metadata from the current study, step, and document context.",
-          },
-        };
-
-        return (longDescriptions[type] && longDescriptions[type][key]) || placeholder.description;
+        const typeSlug = {
+          1: "emailGeneral",
+          2: "emailStudySession",
+          3: "emailAssignment",
+          6: "emailStudyClose",
+          7: "emailSubmissionUpload",
+          8: "prompt",
+        }[this.templateType];
+        if (typeSlug && placeholder.id) {
+          const helpKey = `templates.placeholders.help.${typeSlug}.${placeholder.id}`;
+          if (this.$te(helpKey)) {
+            return this.$t(helpKey);
+          }
+        }
+        return translateMaybeKey(placeholder.description);
       },
       initializePlaceholderCounts() {
         const counts = {};

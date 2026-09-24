@@ -5,13 +5,13 @@
   >
     <template #element>
       <div
-        v-for="(option, index) in options.options"
-        :key="index"
+        v-for="option in options.options"
+        :key="option.value"
         :class="options.class"
         class="form-check"
       >
         <input
-          :id="`${options.key}_${index}`"
+          :id="`${options.key}_${option.value}`"
           v-model="currentData"
           :value="option.value"
           :name="options.key"
@@ -19,7 +19,7 @@
           class="form-check-input"
           type="radio"
         />
-        <label :for="`${options.key}_${index}`" class="form-check-label">{{ option.label }}</label>
+        <label :for="`${options.key}_${option.value}`" class="form-check-label">{{ option.label }}</label>
       </div>
     </template>
   </FormElement>

@@ -3,7 +3,8 @@
 /**
  * Study-step NLP document_data key helpers.
  *
- * Keys match NlpRequest.saveResult: {service.name}_{service.skill}_{resultField}.
+ * Skill keys match NlpRequest.saveResult: {service.name}_{service.skill}_{resultField}.
+ * Hook keys use the immutable hook id: aiHook_{hookId}.
  * Service discovery for assessment drafts matches Assessment.vue (nlpService /
  * preprocessedAssessmentKeyCandidates).
  *
@@ -13,27 +14,13 @@
 const NLP_ASSESSMENT_RESULT_FIELD = "assessment";
 
 /**
- * Turn a config label into a safe segment for a document_data key.
+ * Build the document_data key for an AI hook result.
  *
- * Hook and service names from step configuration may contain spaces; keys use underscores
- * instead (e.g. "Essay feedback" → "Essay_feedback"). Non-string input is returned unchanged.
- *
- * @param {string} value - Hook name or other label from step configuration
- * @returns {string|*} Sanitized segment for key building, or the original value when not a string
+ * @param {number|string} hookId - AI hook id
+ * @returns {string} Key in the form `aiHook_{hookId}`
  */
-function normalizeDocumentDataKeyPart(value) {
-    return typeof value === "string" ? value.trim().replace(/\s+/g, "_") : value;
-}
-
-/**
- * Build document_data key for AI hook results saved from a study step.
- *
- * @param {string} serviceName - service.name or service.type from step configuration
- * @param {string} hookName - service.hookName from step configuration
- * @returns {string} Key in the form `{serviceName}_{hookName}`
- */
-function buildStudyHookKey(serviceName, hookName) {
-    return `${serviceName}_${normalizeDocumentDataKeyPart(hookName)}`;
+function buildStudyHookKey(hookId) {
+    return `aiHook_${hookId}`;
 }
 
 /**
@@ -59,8 +46,7 @@ function getStudyNlpKeyCandidates(service, resultField) {
     if (!service) return [];
 
     if (service.hookId) {
-        const keys = [service.name, service.type].filter(Boolean);
-        return [...new Set(keys)];
+        return [buildStudyHookKey(service.hookId)];
     }
 
     if (!service.skill || !resultField) return [];
@@ -132,7 +118,6 @@ function resolveNlpAssessmentDraft(mergedData, stepConfiguration) {
 
 module.exports = {
     NLP_ASSESSMENT_RESULT_FIELD,
-    normalizeDocumentDataKeyPart,
     buildStudyHookKey,
     buildStudyNlpKey,
     getStudyNlpKeyCandidates,

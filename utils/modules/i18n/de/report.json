@@ -1,0 +1,10 @@
+{
+  "noText": "(kein Text)",
+  "ref": "(vgl. {citation})",
+  "show": "(anzeigen)",
+  "reviewReport": "Prüfbericht",
+  "emptyReport": "Leerer Bericht – keine Anmerkungen oder Kommentare gefunden.",
+  "generalComments": "Allgemeine Kommentare",
+  "noComments": "Keine Kommentare.",
+  "tip": "*Tipp: Bewegen Sie den Mauszeiger über eine Referenz, um den referenzierten Text zu sehen, oder klicken Sie darauf, um die Anmerkung im PDF anzuzeigen."
+}

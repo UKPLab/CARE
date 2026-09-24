@@ -2,25 +2,28 @@
   <div>
     <!-- doc-sub-single -->
     <template v-if="variant === 'doc-sub-single'">
-      <p>Are you sure you want to create the assignment with the following details?</p>
-      <div><strong>Template:</strong> {{ template && template.name }}</div>
-      <div><strong>Workflow:</strong> {{ workflow && workflow.name }}</div>
-      <div><strong>Assignment Type:</strong> {{ assignmentType === 'document' ? 'Document' : 'Submission' }}</div>
+      <p>{{ $t('dashboard.study.createAssignmentConfirmPrompt') }}</p>
+      <div><strong>{{ $t('dashboard.study.template') }}</strong> {{ template && template.name }}</div>
+      <div><strong>{{ $t('dashboard.study.workflow') }}</strong> {{ workflow && workflow.name }}</div>
+      <div>
+        <strong>{{ $t('dashboard.study.assignmentType') }}</strong>
+        {{ assignmentType === 'document' ? $t('dashboard.study.typeDocument') : $t('dashboard.study.typeSubmission') }}
+      </div>
       <div v-if="assignmentType === 'document'">
-        <strong>Workflow Assignments:</strong>
+        <strong>{{ $t('dashboard.study.workflowAssignments') }}</strong>
         <ul>
           <li v-for="(stepAssignment, index) in workflowStepsAssignments[0]" :key="stepAssignment.workflowStepId">
-            - Workflow Step {{ index + 1 }}:
+            - {{ $t('dashboard.study.workflowStepWithIndex', { index: index + 1 }) }}
             <span v-if="stepAssignment.documentId && getDoc(stepAssignment.documentId)">
               {{ getDoc(stepAssignment.documentId).name }}
               ({{ getDocReviewerName(stepAssignment) }})
             </span>
-            <span v-else>Create new document</span>
+            <span v-else>{{ $t('dashboard.study.createNewDocument') }}</span>
           </li>
         </ul>
       </div>
       <div>
-        <strong>Reviewers:</strong>
+        <strong>{{ $t('dashboard.study.reviewers') }}</strong>
         <ul>
           <li v-for="rev in selectedReviewer" :key="rev.id">- {{ rev.firstName }} {{ rev.lastName }}</li>
         </ul>
@@ -29,25 +32,27 @@
 
     <!-- session-single -->
     <template v-else-if="variant === 'session-single'">
-      <p>Are you sure you want to create the assignment with the following details?</p>
-      <div><strong>Template:</strong> {{ template && template.name }}</div>
-      <div><strong>Workflow:</strong> {{ workflow && workflow.name }}</div>
-      <div><strong>Assignment Type:</strong> Study Session</div>
-      <div><strong>Target Workflow:</strong> {{ targetWorkflowName }}</div>
+      <p>{{ $t('dashboard.study.createAssignmentConfirmPrompt') }}</p>
+      <div><strong>{{ $t('dashboard.study.template') }}</strong> {{ template && template.name }}</div>
+      <div><strong>{{ $t('dashboard.study.workflow') }}</strong> {{ workflow && workflow.name }}</div>
+      <div><strong>{{ $t('dashboard.study.assignmentType') }}</strong> {{ $t('dashboard.study.typeStudySession') }}</div>
+      <div><strong>{{ $t('dashboard.study.targetWorkflow') }}:</strong> {{ targetWorkflowName }}</div>
       <div v-if="orderedSelectedAssignments.length <= 1">
-        <strong>Selected Study Session:</strong>
-        {{ selectedAssignments.length > 0 ? `Session ${selectedAssignments[0].id}` : 'None' }}
+        <strong>{{ $t('dashboard.study.selectedStudySession') }}:</strong>
+        {{ selectedAssignments.length > 0
+          ? $t('dashboard.study.sessionWithId', { id: selectedAssignments[0].id })
+          : $t('common.none') }}
       </div>
       <div v-else>
-        <strong>Selected Study Sessions:</strong>
+        <strong>{{ $t('dashboard.study.selectedStudySessions') }}:</strong>
         <ul>
           <li v-for="(session, index) in orderedSelectedAssignments" :key="session.id">
-            Source Session {{ session.sourceSessionSlot || index + 1 }}: Session {{ session.id }}
+            {{ $t('dashboard.study.sourceSessionWithId', { slot: session.sourceSessionSlot || index + 1, id: session.id }) }}
           </li>
         </ul>
       </div>
       <div>
-        <strong>Reviewers:</strong>
+        <strong>{{ $t('dashboard.study.reviewers') }}</strong>
         <ul>
           <li v-for="rev in selectedReviewer" :key="rev.id">- {{ rev.firstName }} {{ rev.lastName }}</li>
         </ul>
@@ -56,66 +61,67 @@
 
     <!-- doc-sub-bulk or session-bulk (shared bulk summary layout) -->
     <template v-else>
-      <p>Are you sure you want to create the assignment with the following details?</p>
+      <p>{{ $t('dashboard.study.createAssignmentConfirmPrompt') }}</p>
       <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
-        <strong>Warning:</strong> The assignment process will make sure that a reviewer does not review their own document.
-        <br>This could lead to a failure in the assignment process,
-        <br>so make sure that the values are set correctly for a successful assignment.
+        <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.notReviewOwnDocument') }}
+        <br>{{ $t('dashboard.study.warning1') }}
+        <br>{{ $t('dashboard.study.warning2') }}
       </p>
       <p v-else class="text-warning">
-        <strong>Warning:</strong> In session user-based selection mode, each selected reviewer must have a corresponding study session.
+        <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.sessionUserSelectionWarning') }}
         <br>
         <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
-          The following reviewers do not have matching study sessions:
+          {{ $t('dashboard.study.reviewersWithoutMatchingStudySessions') }}
           <ul>
             <li v-for="unmatchedReviewer in unmatchedReviewersForSessions" :key="unmatchedReviewer.id">
-              {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }} (ID: {{ unmatchedReviewer.id }})
+              {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }}
+              ({{ $t('common.id') }}: {{ unmatchedReviewer.id }})
             </li>
           </ul>
         </span>
-        <span v-else>All selected reviewers have matching study sessions.</span>
+        <span v-else>{{ $t('dashboard.study.allReviewersHaveMatchingStudySessions') }}</span>
       </p>
       <div class="container">
         <div class="row mb-2">
-          <div class="col-2"><strong>Template:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.template') }}</strong></div>
           <div class="col-8">{{ template && template.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Workflow:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.workflow') }}</strong></div>
           <div class="col-8">{{ workflow && workflow.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>{{ usesMultipleSourceSessions ? 'Assignments:' : 'Documents:' }}</strong></div>
+          <div class="col-2"><strong>{{ usesMultipleSourceSessions ? $t('dashboard.study.assignments') : $t('dashboard.study.documents') }}</strong></div>
           <div class="col-8">{{ assignmentCount ?? selectedAssignments.length }}</div>
         </div>
         <div v-if="usesMultipleSourceSessions" class="row mb-2">
-          <div class="col-2"><strong>Source sessions:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.sourceSessions') }}</strong></div>
           <div class="col-8">
-            <p>Sessions within each assignment are ordered oldest to newest.</p>
+            <p>{{ $t('dashboard.study.sourceSessionsOldestFirst') }}</p>
             <ul>
               <li v-for="group in sourceSessionGroups" :key="group[0].sourceSessionUserId">
-                {{ group[0].completeUserName || 'User ' + group[0].sourceSessionUserId }}:
-                {{ group.map(session => 'Session ' + session.id).join(' → ') }}
+                {{ group[0].completeUserName || $t('dashboard.study.userFallback', { id: group[0].sourceSessionUserId }) }}:
+                {{ group.map(session => $t('dashboard.study.sessionWithId', { id: session.id })).join(' → ') }}
               </li>
             </ul>
           </div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Reviewers:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
           <div class="col-8">{{ selectedReviewer.length }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Reviews to create:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.reviewsToCreate') }}</strong></div>
           <div class="col-8">{{ numberOfReviews }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>Selection Mode:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.selectionMode') }}</strong></div>
           <div class="col-8">
             {{ reviewerSelectionModeFields[0] && reviewerSelectionModeFields[0].options.find(f => f.value === reviewerSelectionMode.mode)?.name }}
           </div>
         </div>
         <div v-if="reviewerSelectionMode.mode === 'role'" class="row mb-2">
-          <div class="col-2"><strong>Roles:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.roles') }}</strong></div>
           <div class="col-8">
             <ul>
               <li v-for="(value, key) in listOfSelectedRoles" :key="key">- {{ value.role }}: {{ value.value }}</li>
@@ -123,7 +129,7 @@
           </div>
         </div>
         <div v-if="reviewerSelectionMode.mode === 'reviewer'" class="row mb-2">
-          <div class="col-2"><strong>Reviewers:</strong></div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
           <div class="col-8">
             <ul>
               <li v-for="(value, key) in listOfSelectedReviewers" :key="key">- {{ value.reviewer }}: {{ value.value }}</li>
@@ -180,9 +186,9 @@ export default {
       );
     },
     targetWorkflowName() {
-      if (!this.targetWorkflowId) return 'Unknown';
+      if (!this.targetWorkflowId) return this.$t("common.unknown");
       const workflow = this.$store.getters["table/workflow/get"](this.targetWorkflowId);
-      return workflow ? workflow.name : "Unknown";
+      return workflow ? workflow.name : this.$t("common.unknown");
     },
     listOfSelectedRoles() {
       return Object.keys(this.roleSelection).map(key => {

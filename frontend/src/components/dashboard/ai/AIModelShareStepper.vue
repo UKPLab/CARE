@@ -109,7 +109,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 
 export default {
   name: "AIModelShareStepper",
-  subscribeTable: ["ai_budget", "ai_model_share", "ai_hook_share", "user_role"],
+  subscribeTable: ["ai_budget", "ai_model_share", "ai_hook_share", "user_role", "user"],
   components: {
     BasicTable,
     StepperModal,
@@ -284,22 +284,10 @@ export default {
       }
     },
     loadUserOptions() {
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("userGetByRole", { role: "all" }, (result) => {
-          if (!result?.success) {
-            reject(new Error(result?.message || "Failed to load users"));
-            return;
-          }
-          const me = Number(this.currentUserId);
-          const users = (result.data || [])
-            .filter((user) => !user.deleted && Number(user.id) !== me)
-            .map((user) => ({
-              id: user.id,
-              label: [user.firstName, user.lastName].filter(Boolean).join(" ").trim() || user.userName,
-            }));
-          resolve(users);
-        });
-      });
+      const me = Number(this.currentUserId);
+      return (this.$store.getters["table/user/getAll"] || [])
+        .filter((user) => !user.deleted && Number(user.id) !== me)
+        .map((user) => ({ id: user.id, label: user.userName }));
     },
     emitAppDataUpdate(table, data) {
       return new Promise((resolve, reject) => {
@@ -364,7 +352,7 @@ export default {
       this.$refs.shareStepper.open();
 
       try {
-        const users = await this.loadUserOptions();
+        const users = this.loadUserOptions();
         this.shareTargets = { users, roles: this.roleOptions };
 
         const config = this.buildShareConfig(row.id);

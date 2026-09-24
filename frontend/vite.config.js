@@ -58,6 +58,7 @@ export default defineConfig({
         preserveSymlinks: true,
         alias: {
             "@": fileURLToPath(new URL("./src", import.meta.url)),
+            "@i18n": fileURLToPath(new URL("../utils/modules/i18n", import.meta.url)),
         },
     },
     build: {

@@ -1,5 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
+const { QUEUE_STATUS } = require("../../utils/triggerQueueStatus.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
@@ -8,13 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     class TriggerQueue extends MetaModel {
         static autoTable = true;
-        static STATUS = {
-            PENDING: 0,
-            RUNNING: 1,
-            COMPLETED: 2,
-            CANCELLED: 3,
-            FAILED: 4,
-        };
+        static STATUS = QUEUE_STATUS;
 
         static associate(models) {
             TriggerQueue.belongsTo(models["trigger"], { foreignKey: "triggerId", as: "trigger" });

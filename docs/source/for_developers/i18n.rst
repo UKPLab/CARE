@@ -1,0 +1,1006 @@
+Internationalization (i18n)
+===========================
+
+This chapter covers how CARE localizes UI text: frontend and backend patterns, and how to add a new language.
+
+
+Where files live
+----------------
+
+All translation keys live under ``utils/modules/i18n/``:
+
+* ``en/*.json``, ``de/*.json`` — key catalogs per UI language (one file = one namespace, e.g. ``users.json``)
+* ``en/index.js``, ``de/index.js`` — import JSON files and bundle namespaces for the frontend
+* ``i18n-bundles.js`` — bundles ``en`` / ``de`` namespaces for ``vue-i18n``
+
+Related code:
+
+* ``frontend/src/assets/utils.js`` — ``resolveApiMessage``, ``translateMaybeKey``, ``formatLocalized*``
+* ``frontend/src/assets/locale.js`` — language switcher, ``app.locale``
+* ``backend/utils/i18n.js`` — ``translateMaybeKey``, ``hasKey`` (backend runtime and migrations)
+
+Translation guidelines
+----------------------
+
+Do **not** translate
+~~~~~~~~~~~~~~~~~~~~
+
+* **Table content** — study titles, document names, workflow names, etc.
+* **Server logs** — dashboard log table and log files are **always English** (see :ref:`logging-i18n` below)
+* Developer ``console.log`` / debug output
+* **Template body content** — multi-language content, not UI strings
+
+How to translate
+----------------
+
+.. code-block:: text
+
+                        ┌─────────────────────────┐
+                        │      What do you        │
+                        │         need?           │
+                        └───────────┬─────────────┘
+                  ┌─────────────────┴─────────────────┐
+                  │                                   │
+            New UI language                        UI text       
+                  │                                   │
+                  ▼                                   ▼
+       ┌──────────────────────┐            ┌──────────────────┐
+       │ 5. Adding a new UI   │            │ 1. Adding a key  │
+       │    language          │            │        &         │
+       │                      │            │ 2.  Adding a     │
+       └──────────┬───────────┘            │     namespace    │
+                  │                        └────────┬─────────┘
+                  │                                 │
+                  │              ┌──────────────────┘
+                  │              ▼
+                  │     ┌─────────────────────────┐
+                  │     │         Frontend or     │
+                  │     │         backend?        │
+                  │     └───────────┬─────────────┘
+                  │         ┌───────┴───────┐
+                  │         ▼               ▼
+                  │    3. Frontend        4. Backend
+                  │         │               │
+                  └─────────┴───────┬───────┘
+                                    ▼
+                        ┌─────────────────────────┐
+                        │ 6.   Test it out        │
+                        └─────────────────────────┘
+
+Sections in this chapter :
+
+| :ref:`i18n-add-key` — new key in an existing JSON file
+| :ref:`i18n-add-namespace` — new ``*.json`` namespace file
+| :ref:`i18n-frontend` — ``$t``, ``resolveApiMessage``, table columns, …
+| :ref:`i18n-backend` — ``TranslatableError``, backend ``translateMaybeKey``, …
+| :ref:`i18n-add-language` — new UI language
+| :ref:`i18n-test` — verify in the UI and logs
+
+.. _i18n-add-key:
+
+1. Adding a key
+---------------
+
+.. note::
+
+   Need a **new JSON file** for a dashboard or feature? See :ref:`i18n-add-namespace`.
+
+**Example:** you have a short hint for users in ``Users.vue`` — hardcoded English in a ``<p>``:
+
+.. code-block:: html
+
+   <p>Manage team members from this page.</p>
+
+To show it in the user's UI language, replace the literal text with ``$t(...)``. That requires a **key** in the
+locale JSON files first.
+
+**1. Choose a key name**
+
+Use dot notation: ``namespace.rest.of.key``. The first segment is the JSON filename (namespace), e.g.
+``users.labels.manageHint`` → file ``users.json``, nested path ``labels.manageHint``.
+
+**2. Add the key in every active locale**
+
+``utils/modules/i18n/en/users.json``:
+
+.. code-block:: json
+
+   {
+     "labels": {
+       "manageHint": "Manage team members from this page."
+     }
+   }
+
+``utils/modules/i18n/de/users.json`` — same key, translated value:
+
+.. code-block:: json
+
+   {
+     "labels": {
+       "manageHint": "Verwalten Sie Teammitglieder auf dieser Seite."
+     }
+   }
+
+Repeat for every locale folder (``en/``, ``de/``, …). **Keys must match** across locales; only the text
+values differ.
+
+**3. Use the key in the template**
+
+.. code-block:: html
+
+   <p>{{ $t('users.labels.manageHint') }}</p>
+
+When the user switches language in **Preferences**, the paragraph updates automatically.
+
+More frontend patterns (placeholders, toasts, table headers, …): :ref:`i18n-frontend`.
+Backend errors and logging use keys too: :ref:`i18n-backend`.
+
+Key layout inside a JSON file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Organize keys by **screen or feature**. Group related strings under clear subsections:
+
+.. code-block:: json
+
+   {
+     "workflows": {
+       "title": "Workflows",
+       "labels": {
+         "addWorkflow": "Add Workflow"
+       },
+       "errors": {
+         "importFailed": "Import failed"
+       }
+     }
+   }
+
+Useful subsections:
+
+* ``title`` — page or modal title
+* ``labels`` — field labels, short UI phrases, hints
+* ``errors`` — validation or action errors for that screen
+* ``columns`` — table header labels
+* ``toasts`` — toast title/message pairs
+* ``messages`` — confirm dialogs, longer text
+
+Reuse ``common`` for words that appear everywhere. Before adding a new key, check
+``utils/modules/i18n/en/common.json`` — shared labels such as ``id``, ``email``, ``save``, ``cancel``.
+
+Backend error keys usually go in ``errors.json`` (see :ref:`i18n-backend`).
+
+.. _i18n-add-namespace:
+
+2. Adding a new namespace
+-------------------------
+
+Each ``*.json`` file in a locale folder is one **namespace**. The filename (without ``.json``) becomes the
+first part of every key inside it.
+
+Example: ``reports.json`` with ``"title": "Reports"`` → use ``$t('reports.title')``.
+
+**1. Create the file in every active locale** (same keys, translated values):
+
+.. code-block:: text
+
+   utils/modules/i18n/en/reports.json
+   utils/modules/i18n/de/reports.json
+
+.. code-block:: json
+
+   {
+     "title": "Reports",
+     "labels": {
+       "export": "Export"
+     }
+   }
+
+**2. Register in** ``index.js`` **for each locale** (``en/index.js``, ``de/index.js``, …) — required for
+the frontend:
+
+.. code-block:: javascript
+
+   import reports from './reports.json'
+
+   export default {
+     // ...existing namespaces...
+     reports,
+   }
+
+**3. Use the keys** in Vue components:
+
+.. code-block:: html
+
+   <h1>{{ $t('reports.title') }}</h1>
+
+
+.. _i18n-frontend:
+
+3. Frontend
+-----------
+
+Common patterns — **before** (hardcoded English) and **after** (i18n). Add keys first as in
+:ref:`i18n-add-key`.
+
+Static text in a template ($t)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: html
+
+   <!-- Before -->
+   <p>Manage team members from this page.</p>
+
+   <!-- After -->
+   <p>{{ $t('users.labels.manageHint') }}</p>
+
+Button or attribute label
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: html
+
+   <!-- Before -->
+   <BasicButton title="Save" />
+
+   <!-- After -->
+   <BasicButton :title="$t('common.save')" />
+
+Text with a placeholder
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: html
+
+   <!-- Before -->
+   <p>Hello, {{ userName }}!</p>
+
+   <!-- After -->
+   <p>{{ $t('greeting.hello', { name: userName }) }}</p>
+
+   <!-- JSON: "hello": "Hello, {name}!" -->
+
+Lists of strings ($tm)
+~~~~~~~~~~~~~~~~~~~~~~
+
+When a key holds an **array** of messages (e.g. rotating status text), use ``$tm``:
+
+.. code-block:: json
+
+   {
+     "loading": {
+       "messages": [
+         "Thinking through your request...",
+         "Almost there..."
+       ]
+     }
+   }
+
+.. code-block:: javascript
+
+   data() {
+     return {
+       messages: this.$tm('loading.messages'),
+       index: 0,
+     };
+   }
+
+.. _i18n-t-rich-text:
+
+Rich text in translations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a sentence needs **inline markup** (:code:`<strong>`, :code:`<br>`, a clickable link) **or** dynamic values
+that must stay safe, use the vue-i18n :code:`<i18n-t>` 
+
+keypath and tag
+~~~~~~~~~~~~~~~
+
+* :code:`keypath` — the translation key (same string you would pass to :code:`$t('…')`).
+* :code:`tag` — the **HTML element that wraps the finished sentence**.
+
+  :code:`i18n-t` does not render a bare text node. It builds the full phrase (text + slots) and wraps it in
+  one element — the one named by :code:`tag`:
+
+  .. list-table::
+     :widths: 28 72
+     :header-rows: 0
+
+     * - :code:`tag="p"`
+       - paragraph wrapper → :code:`<p>…</p>`
+     * - :code:`tag="span"`
+       - inline wrapper → :code:`<span>…</span>`
+     * - :code:`tag="div"`
+       - block wrapper → :code:`<div>…</div>`
+
+  Pick the tag for layout/semantics (paragraph, inline hint, block summary).
+
+
+**How it fits together**
+
+**1. Locale** — one key, placeholder :code:`{0}` where the slot goes:
+
+.. code-block:: json
+
+   {
+     "csvTemplateHint": "Please check the format or {0} here.",
+     "downloadTemplate": "download the template"
+   }
+
+**2. Vue** — :code:`keypath` loads the key; :code:`tag="p"` wraps the output; the :code:`<a>` fills :code:`{0}`:
+
+.. code-block:: vue
+
+   <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
+     <a class="template-link" @click="downloadTemplateCSV">
+       {{ $t('dashboard.users.downloadTemplate') }}
+     </a>
+   </i18n-t>
+
+**3. Result in the browser:**
+
+.. code-block:: html
+
+   <p>
+     Please check the format or
+     <a class="template-link">download the template</a>
+     here.
+   </p>
+
+Named slots
+~~~~~~~~~~~
+
+Use when placeholders in the JSON have **names** (:code:`{newCount}`, :code:`{br}`, :code:`{dupCount}`). Each name maps
+to a :code:`<template #name>` block with the same name (without :code:`#` in the JSON).
+
+**JSON:**
+
+.. code-block:: json
+
+   {
+     "bulkImportConfirm": "Are you sure you want to bulk create {newCount} users {br} and overwrite {dupCount} users?"
+   }
+
+**Vue** — slot name :code:`newCount` fills :code:`{newCount}`, :code:`br` fills :code:`{br}`, etc.:
+
+.. code-block:: vue
+
+   <i18n-t keypath="dashboard.users.bulkImportConfirm" tag="p">
+     <template #newCount>
+       <strong>{{ userCount.new }}</strong>
+     </template>
+     <template #br>
+       <br />
+     </template>
+     <template #dupCount>
+       <strong>{{ userCount.duplicate }}</strong>
+     </template>
+   </i18n-t>
+
+**Rendered shape:**
+
+.. code-block:: html
+
+   <p>
+     Are you sure you want to bulk create <strong>3</strong> users
+     <br />
+     and overwrite <strong>1</strong> users?
+   </p>
+
+Indexed slots (:code:`{0}`, :code:`{1}`, …)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use when the JSON uses **numeric** placeholders. They refer to **default slot children in order** — the
+first child replaces :code:`{0}`, the second replaces :code:`{1}`, and so on. You do **not** write :code:`#0` unless you
+choose explicit :code:`<template #0>` (optional); a plain child element is enough for :code:`{0}`.
+
+**Single slot** (most common) — one link in the middle of a sentence:
+
+**JSON:**
+
+.. code-block:: json
+
+   {
+     "csvTemplateHint": "Please check the format or {0} here.",
+     "downloadTemplate": "download the template"
+   }
+
+**Vue** — the lone :code:`<a>` is child #0 → fills :code:`{0}`:
+
+.. code-block:: vue
+
+   <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
+     <a class="template-link" @click="downloadTemplateCSV">
+       {{ $t('dashboard.users.downloadTemplate') }}
+     </a>
+   </i18n-t>
+
+**Rendered:**
+
+.. code-block:: html
+
+   <p>
+     Please check the format or
+     <a class="template-link">download the template</a>
+     here.
+   </p>
+
+**Two slots** — same idea with :code:`{0}` and :code:`{1}`:
+
+**JSON:**
+
+.. code-block:: json
+
+   {
+     "openDocs": "Read the {0} or watch the {1}."
+   }
+
+**Vue** — first child → :code:`{0}`, second child → :code:`{1}`:
+
+.. code-block:: vue
+
+   <i18n-t keypath="help.openDocs" tag="p">
+     <a href="/docs">documentation</a>
+     <a href="/tutorial">tutorial video</a>
+   </i18n-t>
+
+**Rendered:**
+
+.. code-block:: html
+
+   <p>
+     Read the <a href="/docs">documentation</a> or watch the <a href="/tutorial">tutorial video</a>.
+   </p>
+
+**Named vs indexed — quick pick:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 30 35 35
+
+   * - JSON placeholder
+     - Vue slot
+     - Typical use
+   * - :code:`{userName}`, :code:`{br}`
+     - :code:`<template #userName>`, :code:`<template #br>`
+     - Many mixed parts; clear names for translators
+   * - :code:`{0}`, :code:`{1}`
+     - 1st / 2nd default child (or :code:`<template #0>`)
+     - One or two inline links in a short hint
+
+
+HTML inside a translation (v-html)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use :code:`v-html` **only when** :code:`i18n-t` is impractical and the string is **fully trusted** — markup comes
+from your locale JSON, and interpolated values are **not** raw user input, API text, or database names.
+
+If a phrase needs both markup and dynamic parts, **prefer** :ref:`i18n-t-rich-text` above.
+
+.. code-block:: json
+
+   {
+     "declinedSharingWarning": "You have selected students who <strong>didn't accept data sharing</strong>."
+   }
+
+.. code-block:: html
+
+   <span v-html="$t('dashboard.projects.export.declinedSharingWarning')" />
+
+
+.. danger::
+
+   Use :code:`v-html` **only** for trusted translation strings from your locale JSON — **never** for raw user
+   input, API data, or database values.
+
+Socket/API errors (resolveApiMessage)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**File:** ``frontend/src/assets/utils.js``
+
+Use for every toast, modal, or inline message that comes from a socket callback or HTTP response.
+
+.. code-block:: javascript
+
+   import { resolveApiMessage } from "@/assets/utils";
+
+   // Before — shows English from the server, ignores user locale:
+   this.$socket.emit("userCreate", payload, (response) => {
+     if (!response.success) {
+       this.eventBus.emit("toast", {
+         title: "Error",
+         message: response.message,
+         variant: "danger",
+       });
+     }
+   });
+
+   // After — translates response.key (+ params) in the user's locale:
+   this.$socket.emit("userCreate", payload, (response) => {
+     if (!response.success) {
+       this.eventBus.emit("toast", {
+         title: this.$t("errors.users.userCreationFailed"),
+         message: resolveApiMessage(response),
+         variant: "danger",
+       });
+     }
+   });
+
+``resolveApiMessage`` checks ``response.key`` first, then falls back to ``response.message`` (plain text or
+a key string). Optional second argument — fallback key if the response is empty:
+
+.. code-block:: javascript
+
+   resolveApiMessage(response, "errors.server.unknownError");
+
+DB values that may be a key or plain text (translateMaybeKey)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _i18n-translate-maybe-key:
+
+**File:** ``frontend/src/assets/utils.js``
+
+Some values from the database are stored as an **i18n key** (e.g. from a migration), others as **plain text**
+the user typed (e.g. a custom workflow name). Use ``translateMaybeKey`` when you do not know which case you
+have:
+
+* Known key → translated with ``$t``
+* Not a key → shown as-is
+
+**1. Import** from ``@/assets/utils``:
+
+.. code-block:: javascript
+
+   import { translateMaybeKey } from "@/assets/utils";
+
+**2. Expose in the component** (so the template can call it):
+
+.. code-block:: javascript
+
+   export default {
+     methods: {
+       translateMaybeKey,
+     },
+   };
+
+**3. Use in the template or script:**
+
+.. code-block:: html
+
+   <p>{{ translateMaybeKey(workflow.name) }}</p>
+
+.. code-block:: javascript
+
+   computed: {
+     displayName() {
+       return translateMaybeKey(this.workflow.name);
+     },
+   },
+
+Example values for ``workflow.name``:
+
+.. code-block:: text
+
+   workflow.dashboard.title          → translated (key in JSON)
+   My custom workflow                → shown unchanged (user text)
+
+Table columns
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Define ``columns`` in a ``computed`` property so headers update when the user switches language.
+
+.. code-block:: javascript
+
+   // Before — headers stay English after locale switch:
+   data() {
+     return {
+       columns: [
+         { name: "ID", key: "id", sortable: true },
+         { name: "Email", key: "email" },
+         { name: "Roles", key: "roles" },
+       ],
+     };
+   }
+
+   // After — headers follow the active locale:
+   computed: {
+     columns() {
+       return [
+         { name: this.$t("common.id"), key: "id", sortable: true },
+         { name: this.$t("common.email"), key: "email" },
+         { name: this.$t("users.columns.roles"), key: "roles" },
+       ];
+     },
+   },
+
+Prefer ``common.*`` for generic column names; use feature keys (e.g. ``users.columns.*``) when the label
+is specific to that screen.
+
+Locale helpers
+~~~~~~~~~~~~~~
+
+**File:** ``frontend/src/assets/locale.js``
+
+.. list-table::
+   :header-rows: 1
+
+   * - Export / constant
+     - Purpose
+   * - ``SUPPORTED_LOCALES``
+     - Languages shown in the language switcher
+   * - ``LOCALE_SETTING_KEY`` (``"app.locale"``)
+     - DB setting / user_setting key
+   * - ``getLocaleFromSettings(settings)``
+     - Read locale from merged ``appSettings``
+   * - ``getStoredLocale`` / ``setStoredLocale``
+     - Browser storage
+   * - ``applyLocale(i18n, code)``
+     - Set active ``vue-i18n`` locale
+
+Date and time formatting (formatLocalized*)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**File:** ``frontend/src/assets/utils.js``
+
+Format **dates and times** in the user's **active UI locale** picked in **Preferences**.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Function
+     - Output
+   * - ``formatLocalizedDate(value, options?)``
+     - Date only (e.g. ``29/05/2026`` in DE, ``5/29/2026`` in EN)
+   * - ``formatLocalizedTime(value, options?)``
+     - Time only (e.g. ``14:30:00``)
+   * - ``formatLocalizedDateTime(value, options?)``
+     - Date and time together
+
+**How to use**
+
+**1. Import** from ``@/assets/utils``:
+
+.. code-block:: javascript
+
+   import { formatLocalizedDate, formatLocalizedDateTime } from "@/assets/utils";
+
+**2. Expose in the component**:
+
+.. code-block:: javascript
+
+   export default {
+     methods: {
+       formatLocalizedDate,
+       formatLocalizedDateTime,
+     },
+   };
+
+**3. Use in the template:**
+
+.. code-block:: html
+
+   <!-- Before — follows OS locale, not app locale -->
+   <span>{{ new Date(user.lastLoginAt).toLocaleDateString() }}</span>
+
+   <!-- After — follows active UI locale -->
+   <span>{{ formatLocalizedDate(user.lastLoginAt) }}</span>
+
+**Format while preparing table rows** (common pattern — no need to expose in :code:`methods`):
+
+.. code-block:: javascript
+
+   import { formatLocalizedDate } from "@/assets/utils";
+
+   computed: {
+     usersForTable() {
+       return this.users.map((user) => ({
+         ...user,
+         lastLoginAt: user.lastLoginAt ? formatLocalizedDate(user.lastLoginAt) : "-",
+       }));
+     },
+   },
+
+Optional ``Intl.DateTimeFormat`` options as the second argument (:code:`options`) — same shape as for
+:code:`Date.prototype.toLocaleDateString`, :code:`toLocaleTimeString`, and :code:`toLocaleString`:
+
+.. code-block:: javascript
+
+   formatLocalizedDate(session.start, { year: "numeric", month: "short", day: "numeric" });
+   formatLocalizedTime(edit.createdAt, { hour: "2-digit", minute: "2-digit" });
+
+
+.. _i18n-backend:
+
+4. Backend
+----------
+
+Throwing errors
+~~~~~~~~~~~~~~~
+
+
+Backend responses support **two formats** — both are valid:
+
+* **Preferred:** ``{ success: false, key: "errors.auth.invalidCredentials", params: { ... } }``
+* **Legacy:** ``{ success: false, message: "Plain text or an i18n key string" }``
+
+The frontend ``resolveApiMessage`` handles both. New code should prefer ``key`` + optional ``params``.
+
+User-facing error in a handler
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code-block:: javascript
+
+   const TranslatableError = require("../utils/TranslatableError");
+
+   // Before — hardcoded English, wrong language in the UI:
+   if (!user) {
+     throw new Error("User not found.");
+   }
+
+   // After — key + params; frontend shows the translated message:
+   if (!user) {
+     throw new TranslatableError("errors.users.notFound", { id: userId });
+   }
+
+   // JSON (errors.json): "notFound": "User with id {id} was not found."
+
+TranslatableError
+~~~~~~~~~~~~~~~~~
+
+**File:** ``backend/utils/TranslatableError.js``
+
+When something goes wrong in a way the **user** should see (wrong password, missing permission, validation
+failed), throw a **TranslatableError** instead of a hardcoded English sentence.
+
+**Goal:** pass an i18n **key** (and optional **params** / **code**) from the backend to the frontend. The
+browser translates with ``resolveApiMessage``. Logging and legacy English ``message`` in socket callbacks are
+handled in ``Socket.js`` — see :ref:`logging-i18n`.
+
+**Why a dedicated class**:
+
+Keys alone can travel in a plain ``Error`` message — that works for simple cases. ``TranslatableError`` is for
+when you need a **structured, intentional** user-facing error:
+
+* **Structured payload** — not just a string. Carries the i18n **key**, optional **params** for placeholders
+  (e.g. ``{ validationLimit: 10 }``), and an optional machine-readable **code** for the socket/HTTP response.
+  A standard ``Error`` only has ``message``; attaching ``params`` and ``code`` to arbitrary errors is fragile
+  and easy to get wrong in catch handlers.
+* **Error filtering (security boundary)** — ``isTranslatable`` marks errors the transport layer may expose to
+  the client. In ``Socket.js``, only errors with a known i18n key (``TranslatableError``, ``generateError``,
+  or ``Error("errors.*")``) become ``{ key, params, code }`` in the callback. Raw database or system
+  exceptions fall through to a generic ``errors.server.unexpectedError`` — full detail stays in the logs.
+
+You can also use ``throw new Error("errors.*")`` or ``generateError(code, key)`` for simpler cases. The
+table below lists all patterns.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 35 65
+
+   * - Pattern
+     - When to use
+   * - ``throw new Error("errors.namespace.key")``
+     - Simple error, no placeholders
+   * - ``throw new TranslatableError("errors.namespace.key")``
+     - Same as above, explicit translatable type
+   * - ``throw new TranslatableError("errors.namespace.key", { name })``
+     - Error with ``{placeholder}`` values in the message
+   * - ``throw new TranslatableError("errors.namespace.key", { count: 5 }, "SOME_CODE")``
+     - Key + params + machine-readable ``code``
+   * - ``throw generateError("SOME_CODE", "errors.namespace.key")``
+     - Machine ``code`` + key, **no** params
+
+**Files:** ``backend/utils/TranslatableError.js``, ``backend/utils/generic.js`` (``generateError``)
+
+Simple examples:
+
+.. code-block:: javascript
+
+   // 1. Key only
+   throw new TranslatableError("errors.auth.invalidCredentials");
+
+   // 2. Key + params
+   throw new TranslatableError("errors.users.notFound", { id: userId });
+
+   // 3. Key + params + code (frontend may check response.code)
+   throw new TranslatableError(
+     "errors.assignment.unableToAssignEnoughDocuments",
+     { roleName: "Reviewer", count: 5 },
+     "ASSIGNMENT_FAILED"
+   );
+
+   // 4. Code + key, no params
+   throw generateError("DOCUMENT_NOT_FOUND", "errors.documents.doesNotExistOrDeleted");
+
+Socket callback payload
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Most socket handlers are registered with ``createSocket`` in ``Socket.js``. On **success**, the callback
+receives ``{ success: true, data: result }``. On **failure**, prefer **throwing** an error — the shared
+catch block builds the callback for you:
+
+.. code-block:: javascript
+
+   // Handler (backend) — throw; do not call callback yourself
+   if (!user) {
+     throw new TranslatableError("errors.users.notFound", { id: userId });
+   }
+
+   // What the frontend receives in (response) => { ... }:
+   {
+     success: false,
+     key: "errors.users.notFound",
+     params: { id: userId },
+     message: "User with id 123 was not found.",  // English fallback (translateMaybeKey)
+     code: "..."  // optional, when set on the error
+   }
+
+The frontend should display errors with ``resolveApiMessage(response)`` — it translates ``key`` + ``params``
+to the user's locale. The ``message`` field is a legacy English fallback; new UI code should not read it
+directly.
+
+**Manual responses** (validation results, per-row errors in ``data``, direct ``socket.emit``) may still use
+the legacy shape without a separate ``key`` field — put the i18n key in ``message`` instead:
+
+.. code-block:: javascript
+
+   // Legacy — still works; resolveApiMessage treats message as a key when it exists in JSON
+   { success: false, message: "errors.validation.additionalFilesNotAllowed", params: { files: "foo.txt" } }
+
+   // Preferred when you build the object yourself — same as the hub format
+   { success: false, key: "errors.validation.additionalFilesNotAllowed", params: { files: "foo.txt" } }
+
+**Frontend:**
+
+.. code-block:: javascript
+
+   this.$socket.emit("userCreate", payload, (response) => {
+     if (!response.success) {
+       this.eventBus.emit("toast", {
+         title: this.$t("errors.users.userCreationFailed"),
+         message: resolveApiMessage(response),
+         variant: "danger",
+       });
+     }
+   });
+
+.. _logging-i18n:
+
+Backend English output (translateMaybeKey)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+**File:** ``backend/utils/i18n.js``
+
+Same idea as frontend :ref:`translateMaybeKey <i18n-translate-maybe-key>`: if the string is a **known i18n key**,
+translate it; otherwise return it unchanged. On the backend this always uses the **English** catalog — not the
+user's locale. Use the same helper for **logs**, **socket fallbacks**, and **migrations** (``down`` steps that
+restore English text when rolling back rows that store i18n keys).
+
+**Anti-pattern — do not translate twice for logs**
+
+``SQLTransport`` already calls ``translateMaybeKey`` on every ``logger.*`` message. Do not call
+``translateMaybeKey`` before ``logger.error`` — the same string would be processed twice (harmless but redundant).
+
+.. code-block:: javascript
+
+   // Bad — translated before logger, then SQLTransport translates again
+   this.logger.error(translateMaybeKey(key, params));
+
+   // Good — pass the key; SQLTransport translates once (use i18nParams for placeholders)
+   this.logger.error(key, { i18nParams: params });
+
+
+Call sites often pass either an i18n **key** or **plain English**:
+
+* **Dashboard log table** — ``logger.error("errors.users.notFound")`` or ``logger.error(key, { i18nParams })``.
+  ``SQLTransport`` applies ``translateMaybeKey`` once before insert.
+* **Socket error responses** — log the key (``logger.error(key, { i18nParams: params })``); callback legacy
+  ``message`` uses ``translateMaybeKey(key, params)``.
+* **Migrations** — when ``up`` stores i18n keys in the database (e.g. ``placeholderLabel``), ``down`` calls
+  ``translateMaybeKey`` to write back the English source string. If the key is missing from ``en`` JSON, the
+  key string is returned unchanged (safe for rollback).
+
+
+.. code-block:: javascript
+
+   const { translateMaybeKey } = require("../utils/i18n");
+
+   const key = "errors.users.importFailed";
+
+   // Logger — pass key or plain English; SQLTransport translates once
+   this.logger.error(key);
+   this.logger.error("errors.auth.passwordResetRateLimited", { i18nParams: { minutes: 5 } });
+   this.logger.error("Import finished with warnings");
+
+   // Socket catch (simplified)
+   this.logger.error(key, { i18nParams: params });
+   callback({ success: false, key, params, message: translateMaybeKey(key, params) });
+
+Migration example:
+
+.. code-block:: javascript
+
+   const { translateMaybeKey } = require("../../utils/i18n");
+
+   module.exports = {
+     async up(queryInterface) {
+       await queryInterface.bulkUpdate(
+         "placeholder",
+         { placeholderLabel: "templates.placeholders.labels.emailGeneral.username" },
+         { type: 1, placeholderKey: "username" },
+       );
+       // ...more rows
+     },
+
+     async down(queryInterface) {
+       const label = translateMaybeKey("templates.placeholders.labels.emailGeneral.username");
+
+       await queryInterface.bulkUpdate(
+         "placeholder",
+         { placeholderLabel: label },
+         { type: 1, placeholderKey: "username" },
+       );
+       // ...more rows
+     },
+   };
+
+.. _i18n-add-language:
+
+5. Adding a new UI language
+---------------------------
+
+Example: adding French (``fr``) as a third UI language.
+
+**1. Copy and translate JSON catalogs**
+
+Duplicate ``utils/modules/i18n/en/`` to ``utils/modules/i18n/fr/``. Translate every **value** in every JSON
+file. **Keys must stay identical** — only the text changes.
+
+.. code-block:: text
+
+   utils/modules/i18n/en/common.json   →  utils/modules/i18n/fr/common.json
+   utils/modules/i18n/en/errors.json   →  utils/modules/i18n/fr/errors.json
+   ... (all other JSON files)
+
+**2. Register the locale in** ``i18n-bundles.js``
+
+.. code-block:: javascript
+
+   import en from './en/index.js'
+   import de from './de/index.js'
+   import fr from './fr/index.js'
+
+   const i18nBundles = { en, de, fr }
+
+   export { en, de, fr, i18nBundles }
+   export default i18nBundles
+
+The ``fr/index.js`` file comes from the copy in step 1 (same imports as ``en/index.js``, pointing at
+``fr/*.json``).
+
+**3. Add French to the language switcher** in ``frontend/src/assets/locale.js``:
+
+.. code-block:: javascript
+
+   export const SUPPORTED_LOCALES = [
+     { code: "de", name: "Deutsch", flag: "🇩🇪" },
+     { code: "en", name: "English", flag: "🇬🇧" },
+     { code: "fr", name: "Français", flag: "🇫🇷" },
+   ];
+
+**4. Test** — switch to French in **Preferences** and walk through the main screens. See :ref:`i18n-test`.
+
+
+.. _i18n-test:
+
+6. Test it out
+--------------
+
+1. Switch language in **Preferences** (or use the new locale from :ref:`i18n-add-language`)
+2. Open the screen you changed and confirm labels / table headers update
+3. Trigger a socket or API error and confirm ``resolveApiMessage`` shows the right text
+4. If you added backend logging or socket errors, confirm English output uses ``translateMaybeKey`` where needed
+5. If you added new keys, repeat steps 1–3 in each supported locale (``en``, ``de``, …)
+
+See also
+--------
+
+* :doc:`backend/logging` — Winston logging setup
+* :doc:`../for_researchers/interface_language` — end-user language settings
+* :doc:`../for_researchers/templates` — template content languages (not UI locale)

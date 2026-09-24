@@ -187,6 +187,7 @@ def create_app():
                 "message": "Annotations extracted successfully.",
                 "data": {
                     "annotations": annotations,
+                    "wholeText": whole_text,
                 }
             }
 

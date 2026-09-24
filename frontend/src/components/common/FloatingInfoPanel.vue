@@ -8,22 +8,22 @@
     @mouseleave="onMouseLeave"
   >
     <div class="info-panel-header">
-      <h6 class="mb-2">{{ selectedItem.name }}</h6>
+      <h6 class="mb-2">{{ translateMaybeKey(selectedItem.name) }}</h6>
     </div>
     <div class="info-panel-content">
       <div v-if="selectedItem.description" class="mb-3">
-        <strong>Description:</strong>
-        <p class="mb-0 mt-1">{{ selectedItem.description }}</p>
+        <strong>{{ $t('infoPanel.description')}}</strong>
+        <p class="mb-0 mt-1">{{ translateMaybeKey(selectedItem.description) }}</p>
       </div>
       
       <!-- Show maximum points for rubric groups only (groups have maxScore) -->
       <div v-if="selectedItem.maxScore !== undefined" class="mb-3">
-        <strong>Maximum Points:</strong>
-        <span class="badge bg-secondary ms-2">{{ selectedItem.maxScore }} P</span>
+        <strong>{{ $t('infoPanel.maxPoints')}}</strong>
+        <span class="badge bg-secondary ms-2">{{ selectedItem.maxScore }} {{ $t('infoPanel.pointsAbbreviation')}}</span>
       </div>
       
       <div v-if="selectedItem.scoring && selectedItem.scoring.length > 0">
-        <strong>Scoring Criteria:</strong>
+        <strong>{{ $t('infoPanel.scoringCriteria')}}</strong>
         <div class="scoring-list mt-2">
           <div 
             v-for="(option, index) in selectedItem.scoring" 
@@ -31,8 +31,8 @@
             class="scoring-item p-2 border rounded mb-2 border-secondary"
           >
             <div class="d-flex justify-content-between align-items-start">
-              <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} P</span>
-              <span class="flex-grow-1">{{ option.description }}</span>
+              <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} {{ $t('infoPanel.pointsAbbreviation')}}</span>
+              <span class="flex-grow-1">{{ translateMaybeKey(option.description) }}</span>
             </div>
           </div>
         </div>
@@ -42,6 +42,8 @@
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
+
 /**
  * FloatingInfoPanel Component
  * 
@@ -160,6 +162,7 @@ export default {
   },
   
   methods: {
+    translateMaybeKey,
     calculatePosition() {
       if (!this.referenceElement) return;
       

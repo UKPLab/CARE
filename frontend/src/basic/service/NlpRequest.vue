@@ -94,15 +94,12 @@ export default {
     },
     resultKeyBase() {
       return this.isHook
-        ? buildHookResultKey(this.serviceName)
+        ? buildHookResultKey(this.service.hookId)
         : this.skillKey;
     },
     resultKeyCandidates() {
       if (!this.isHook) return [this.resultKeyBase].filter(Boolean);
-      return getHookResultKeyCandidates(
-        this.serviceName,
-        this.service?.type
-      );
+      return getHookResultKeyCandidates(this.service.hookId);
     },
     nlpResults() {
       return this.$store.getters["service/getResults"]("NLPService");
@@ -211,8 +208,10 @@ export default {
       this.timeoutId = setTimeout(() => {
         if (this.status === 'pending') {
           this.eventBus.emit('toast', {
-            title: "NLP Service Request",
-            message: "Timeout in request for skill: " + this.skill,
+            title: this.$t('common.nlp.serviceRequest'),
+            message: this.$t('errors.nlp.timeout', { 
+              skill: this.skill 
+            }),
             variant: "danger"
           });
           this.status = 'timeout';
@@ -328,13 +327,13 @@ export default {
       return extractTextFromPDF(pdf);
     },
     /**
-     * Persists a hook's single completion to document_data under the service name alone (skill takes multi key).
+     * Persists a hook's single completion to document_data under its hook id key.
      *
-     * @param {{ outputText?: string }} response
+     * @param {{ output?: string|null }} response
      * @returns {void}
      */
     saveHookResult(response) {
-      let value = response?.outputText ?? "";
+      let value = response?.output ?? "";
       if (typeof value === "string") {
         try {
           value = JSON.parse(value);

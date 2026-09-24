@@ -1,7 +1,7 @@
 <template>
   <div class="chart-container">
     <canvas v-if="chartConfig" ref="chartCanvas"></canvas>
-    <p v-else class="text-muted"> ~ Placeholder data missing or invalid ~ </p>
+    <p v-else class="text-muted"> {{ $t('modals.placeholders.dataMissingOrInvalid') }} </p>
   </div>
 </template>
 
@@ -59,7 +59,7 @@ export default {
           labels,
           datasets: [
             {
-              label: this.config.label || 'Überarbeitung',
+              label: this.config.label || this.$t('modals.revisions.revision'),
               data: dataset,
               backgroundColor: '#EB7E47',
             },
@@ -73,7 +73,7 @@ export default {
             },
             title: {
               display: true,
-              text: this.config.title || 'Chart',
+              text: this.config.title || this.$t('modals.chart'),
             },
           },
           indexAxis: 'y',

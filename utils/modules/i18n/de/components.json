@@ -1,0 +1,52 @@
+{
+    "logs":{
+        "title": "Protokolle",
+    "columns": {
+        "level": "Stufe",
+        "time": "Zeit",
+        "service": "Dienst",
+        "message": "Nachricht"
+    },
+    "levels": {
+        "error": "Fehler",
+        "warn": "Warnung",
+        "info": "Info",
+        "debug": "Debug"
+    }
+    },
+    "comment":{
+        "enterText": "Text eingeben...",
+        "noComment": "Kein Kommentar",
+        "sentimentAnalysis": "Sentiment-Analyse",
+        "saveCommand": "Speichern (Strg + Enter)"
+    },
+    "voteButtons":{
+        "helpful": "Hilfreich",
+        "notHelpful": "Nicht hilfreich"
+    },
+    "pdftoolbar":{
+        "minToolbar": "Symbolleiste minimieren",
+        "showToolbar": "Symbolleiste anzeigen"
+    },
+    "documentRoute": {
+        "errors": {
+        "goToDashboard": "Zum Dashboard",
+        "documentNotFoundTitle": "Dokument nicht gefunden",
+        "accessDeniedTitle": "Zugriff verweigert",
+        "fileMissingTitle": "Datei nicht verfügbar",
+        "documentErrorTitle": "Dokumentfehler",
+        "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten."
+        }
+    },
+    "studyRoute": {
+        "errors": {
+        "goToDashboard": "Zum Dashboard",
+        "studyNotFoundTitle": "Studie nicht gefunden",
+        "accessDeniedTitle": "Zugriff verweigert",
+        "filesMissingTitle": "Dateien nicht verfügbar",
+        "documentNotFoundTitle": "Dokument nicht gefunden",
+        "unexpectedError": "Ein unerwarteter Fehler ist aufgetreten.",
+        "foreignUnstartedSession": "Diese Studiensitzung wurde noch nicht gestartet und gehört einem anderen Benutzer."
+        }
+    }
+}

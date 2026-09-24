@@ -1,61 +1,61 @@
 <template>
   <div>
-  <Card title="Users">
+  <Card :title="$t('users.title')">
     <template #headerElements>
       <div class="d-flex align-items-center flex-wrap gap-2">
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Live Sessions"
-            text="Live Sessions"
+            :title="$t('users.liveSessions')"
+            :text="$t('users.liveSessions')"
             icon="people-fill"
             @click="openSessionDetailsModal()"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Download Users"
-            text="Download Users"
+            :title="$t('users.downloadUsers')"
+            :text="$t('users.downloadUsers')"
             icon="download"
             @click="downloadUsers"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Rights Management"
-            text="Rights Management"
+            :title="$t('users.rights.managementTitle')"
+            :text="$t('users.rights.managementTitle')"
             icon="shield-lock"
             @click="openRightsManagementModal"
         />
         <BasicButton
           class="btn btn-secondary btn-sm"
-          title="Role Management"
-          text="Role Management"
+          :title="$t('users.roleManagement.button')"
+          :text="$t('users.roleManagement.button')"
           icon="person-plus"
           @click="$refs.roleManagementModal.open()"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Upload Password"
-            text="Upload Password"
+            :title="$t('users.uploadPassword')"
+            :text="$t('users.uploadPassword')"
             icon="key"
             @click="openUploadModal"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Import via CSV"
-            text="Import CSV"
+            :title="$t('users.importCsv')"
+            :text="$t('users.importCsv')"
             icon="filetype-csv"
             @click="openImportModal('csv')"
         />
         <BasicButton
             class="btn btn-secondary btn-sm"
-            title="Import via Moodle"
-            text="Import via Moodle"
+            :title="$t('users.importViaMoodle')"
+            :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
             @click="openImportModal('moodle')"
         />
         <BasicButton
             class="btn btn-primary btn-sm"
-            title="Add User"
-            text="Add User"
+            :title="$t('users.addUser')"
+            :text="$t('users.addUser')"
             icon="person-plus"
             @click="openUserAddModal"
         />
@@ -122,7 +122,7 @@ import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import {downloadObjectsAs} from "@/assets/utils";
+import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
 
 /**
@@ -181,33 +181,44 @@ export default {
           order: "ASC",
         },
       },
-      columns: [
-        { name: '', key: 'activeIndicator', filterKey: 'isActive', type: 'icon', sortable: true, sortKey: 'isActive', width: 1, fixed: "left",
-          style: { width: '1px', whiteSpace: "nowrap", textAlign: "center" },
-          typeOptions: { size: 6 }, 
-          filter: [
-                { key:'true',name:'active'},
-                { key:'false',name:'inactive'},
-          ]},
-        {name: "ID", key: "id", sortable: true, fixed: "left"},
-        {name: "First Name", key: "firstName", fixed: "left"},
-        {name: "Last Name", key: "lastName"},
-        {name: "User", key: "userName"},
-        {name: "Email", key: "email"},
-        {name: "Accept Terms", key: "acceptTerms", sortable: true},
-        {name: "Accept Stats", key: "acceptStats", sortable: true},
-        {name: "Accept Data Sharing", key: "acceptDataSharing", sortable: true},
-        {name: "Verified", key: "emailVerified"},
-        {name: "Last Login", key: "lastLoginAt", sortable: true},
-      ],
       // Possible values for role here are all the roles in the DB.
       role: "all",
     };
   },
   computed: {
+    columns() {
+      return [
+        {
+          name: '',
+          key: 'activeIndicator',
+          filterKey: 'isActive',
+          type: 'icon',
+          sortable: true,
+          sortKey: 'isActive',
+          width: 1,
+          fixed: 'left',
+          style: { width: '1px', whiteSpace: 'nowrap', textAlign: 'center' },
+          typeOptions: { size: 6 },
+          filter: [
+            { key: 'true', name: this.$t('common.active') },
+            { key: 'false', name: this.$t('common.inactive') },
+          ],
+        },
+        {name: this.$t('common.id'), key: "id", sortable: true, fixed: "left"},
+        {name: this.$t('users.columns.firstName'), key: "firstName", fixed: "left"},
+        {name: this.$t('users.columns.lastName'), key: "lastName"},
+        {name: this.$t('users.columns.userName'), key: "userName"},
+        {name: this.$t('users.columns.email'), key: "email"},
+        {name: this.$t('users.columns.acceptTerms'), key: "acceptTerms", sortable: true},
+        {name: this.$t('users.columns.acceptStats'), key: "acceptStats", sortable: true},
+        {name: this.$t('users.columns.acceptDataSharing'), key: "acceptDataSharing", sortable: true},
+        {name: this.$t('users.columns.verified'), key: "emailVerified"},
+        {name: this.$t('users.columns.lastLogin'), key: "lastLoginAt", sortable: true},
+      ];
+    },
     monitorStats() {
-    return this.$store.getters["admin/getMonitorStats"];
-  },
+      return this.$store.getters["admin/getMonitorStats"];
+    },
     users() {
       const activeIds = new Set(this.monitorStats.connectedUsers.map(u => u.userId));
       return this.$store.getters["table/user/getAll"].map((user) => {
@@ -216,8 +227,8 @@ export default {
           ...this.formatUserData(user),
           isActive,
           activeIndicator: isActive
-            ? { icon: 'circle-fill', color: '#198754', title: 'Online' }
-            : { icon: 'circle', color: '#6c757d', title: 'Offline' },
+            ? { icon: 'circle-fill', color: '#198754', title: this.$t('common.online') }
+            : { icon: 'circle', color: '#6c757d', title: this.$t('common.offline') },
         };
       });
     },
@@ -247,7 +258,7 @@ export default {
     buttons() {
       return [
         {
-          title: "Edit User",
+          title: this.$t('users.editUser'),
           action: "editUser",
           stats: {
             userId: "id",
@@ -261,7 +272,7 @@ export default {
           },
         },
         {
-          title: "View Rights",
+          title: this.$t('users.viewRights'),
           action: "viewRights",
           stats: {
             userId: "id",
@@ -275,7 +286,7 @@ export default {
           },
         },
         {
-          title: "Reset Password",
+          title: this.$t('users.resetPassword'),
           action: "resetPassword",
           stats: {
             userId: "id",
@@ -289,7 +300,7 @@ export default {
           },
         },
         {
-          title: "View Sessions",
+          title: this.$t('users.viewSessions'),
           action: "viewSessions",
           stats: {
             userId: "id",
@@ -304,7 +315,7 @@ export default {
           },
         },
         {
-          title: "Delete User",
+          title: this.$t('users.deleteUser'),
           action: "deleteUser",
           stats: {
             userId: "id",
@@ -363,7 +374,7 @@ export default {
       this.$nextTick(() => this.$refs.confirmModal?.open(name, message, warning, cb));
     },
     formatUserData(user) {
-      const formatDate = (date) => (date ? new Date(date).toLocaleDateString() : "-");
+      const formatDate = (date) => (date ? formatLocalizedDate(date) : "-");
 
       return {
         ...user,
@@ -402,7 +413,7 @@ export default {
       this.openPasswordModal(user.id);
     },
     deleteUser(user) {
-      this.openConfirmModal("Delete User", "Are you sure you want to delete this user?", null, (val) => {
+      this.openConfirmModal(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {
         if (val) {
           this.$socket.emit(
               "appDataUpdate",
@@ -416,14 +427,14 @@ export default {
               (result) => {
                 if (result.success) {
                   this.eventBus.emit("toast", {
-                    title: "User deleted",
-                    message: "User has been deleted",
+                    title: this.$t('users.messages.userDeleted'),
+                    message: this.$t('users.messages.userDeletedMessage'),
                     variant: "success",
                   });
                 } else {
                   this.eventBus.emit("toast", {
-                    title: "User not deleted",
-                    message: result.message,
+                    title: this.$t('errors.users.userNotDeleted'),
+                    message: resolveApiMessage(result),
                     variant: "danger",
                   });
                 }

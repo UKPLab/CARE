@@ -17,12 +17,12 @@
 
         <div class="card">
           <div class="card-header d-flex justify-content-between align-items-center">
-            Login
+            {{ $t('auth.login') }}
             <a
               v-if="showRegisterButton"
               class="btn btn-sm btn-primary"
               @click="toRegister"
-            >Register</a>
+            >{{ $t('auth.register') }}</a>
           </div>
 
           <div class="card-body mx-4 my-4">
@@ -36,7 +36,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="username"
-              >Username</label>
+              >{{ $t('auth.username') }}</label>
               <div class="col-md-6">
                 <input
                     id="username"
@@ -44,13 +44,13 @@
                     autocomplete="username"
                     autofocus
                     class="form-control"
-                    placeholder="Username or email"
+                    :placeholder="$t('auth.usernameOrEmail')"
                     required
                     type="text"
                     @blur="checkVal('username')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['username'] && !validUsername}">
-                  Please provide a valid username.
+                  {{ $t('errors.validation.auth.provideUsername') }}
                 </div>
               </div>
             </div>
@@ -60,7 +60,7 @@
               <label
                   class="col-md-4 col-form-label text-md-right"
                   for="password"
-              >Password</label>
+              >{{ $t('auth.password') }}</label>
               <div class="col-md-6">
                 <input
                     id="password"
@@ -68,13 +68,13 @@
                     autocomplete="current-password"
                     class="form-control"
                     name="password"
-                    placeholder="Password"
+                    :placeholder="$t('auth.password')"
                     required
                     type="password"
                     @blur="checkVal('password')"
                 >
                 <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  Please provide a valid password of at least 8 characters.
+                  {{ $t('errors.validation.auth.providePassword') }}
                 </div>
               </div>
             </div>
@@ -84,25 +84,25 @@
                   class="btn btn-primary btn-block"
                   type="submit"
                   :loading="isSubmitting"
-                  :text="isSubmitting ? 'Signing in...' : 'Login'"
+                  :text="isSubmitting ? $t('auth.signingIn') : $t('auth.login')"
               />
               <a
                   v-if="showGuestLogin"
                   class="btn btn-link"
                   @click="login_guest()"
-              >Login as Guest</a>
+              >{{ $t('auth.loginAsGuest') }}</a>
               <a
                 v-if="showForgotPassword"
                 class="btn btn-link"
                 @click="$refs.forgotPasswordModal.open()"
-              >Forgot Password?</a>
+              >{{ $t('auth.forgotPassword') }}</a>
             </div>
 
             <hr v-if="showExternalLoginOptions">
 
             <div v-if="showExternalLoginOptions" class="col-md-8 offset-md-2 mt-3">
               <p class="text-center text-muted small mb-2">
-                Or sign in with
+                {{ $t('auth.orSignInWith') }}
               </p>
               <div class="d-grid gap-2">
                 <BasicButton
@@ -134,7 +134,7 @@
           <span v-if="showDocs"><a
               :href="linkDocs"
               target="_blank"
-          >Documentation</a></span>
+          >{{ $t('navigation.documentation') }}</a></span>
           <span
               v-if="showFeedback && showDocs"
               class="mx-1"
@@ -142,7 +142,7 @@
           <span v-if="showFeedback"><a
               :href="linkFeedback"
               target="_blank"
-          >Feedback</a></span>
+          >{{ $t('navigation.feedback') }}</a></span>
           <span
               v-if="showProject && (showDocs || showFeedback)"
               class="mx-1"
@@ -150,13 +150,13 @@
           <span v-if="showProject"><a
               :href="linkProject"
               target="_blank"
-          >Project Page</a></span>
+          >{{ $t('navigation.projectPage') }}</a></span>
         </div>
         <div class="text-center text-secondary">
           {{ copyright }}
         </div>
         <div v-if="showVersion" class="text-center text-secondary">
-          App Version: {{ version }}
+          {{ $t('common.appVersion') }}: {{ version }}
         </div>
       </div>
     </div>
@@ -183,6 +183,7 @@ import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthLogin",
@@ -284,22 +285,23 @@ export default {
     },
     mapAuthErrorCode(errorCode) {
       const mapping = {
-        "twofactor-session-save-failed": "Could not start 2FA due to a session issue. Please try logging in again.",
-        "unsupported-2fa-method": "This account uses an unsupported 2FA method. Please contact an administrator.",
-        "orcid-login-disabled": "ORCID login is currently disabled.",
-        "orcid-login-not-ready": "ORCID login is enabled but not fully configured.",
-        "orcid-login-failed": "ORCID login failed. Please try again.",
-        "saml-login-disabled": "SAML login is currently disabled.",
-        "saml-login-not-ready": "SAML login is enabled but not fully configured.",
-        "saml-login-failed": "SAML login failed. Please try again.",
+        "twofactor-session-save-failed": "errors.auth.twoFactorSessionSaveFailed",
+        "unsupported-2fa-method": "errors.auth.unsupported2FAMethod",
+        "orcid-login-disabled": "errors.auth.orcidLoginDisabled",
+        "orcid-login-not-ready": "errors.auth.orcidLoginNotReady",
+        "orcid-login-failed": "errors.auth.orcidLoginFailed",
+        "saml-login-disabled": "errors.auth.samlLoginDisabled",
+        "saml-login-not-ready": "errors.auth.samlLoginNotReady",
+        "saml-login-failed": "errors.auth.samlLoginFailed",
       };
-      return mapping[errorCode] || "Login failed. Please try again.";
+
+      return this.$t(mapping[errorCode] || "errors.auth.loginFailed");
     },
     checkSelfRegistration() {
       if (this.$route.query.registrationDisabled === "true") {
         this.eventBus.emit("toast", {
-          message: "Self-registration is currently disabled. Please contact an administrator to create an account.",
-          title: "Registration Disabled",
+          message: this.$t('auth.messages.selfRegistrationDisabledMessage'),
+          title: this.$t('auth.messages.registrationDisabled'),
           variant: "warning"
         });
         // Clean up query parameter
@@ -373,7 +375,7 @@ export default {
         if (response.data.emailNotVerified) {
           this.showEmailVerificationModal(response.data.email);
         }
-        throw response.data.message;
+        throw resolveApiMessage(response.data, "errors.auth.invalidCredentials");
       }
 
       // Check if 2FA is required
@@ -414,7 +416,7 @@ export default {
           }
           // Unknown method: surface a clear error
           this.showError = true;
-          this.errorMessage = "Unsupported 2FA method returned from server.";
+          this.errorMessage = this.$t('errors.auth.unsupported2FAMethod');
           return { completedLogin: false };
         }
         // Normal login flow (no 2FA)
@@ -452,21 +454,21 @@ export default {
         );
         if (response.status === 200) {
           this.eventBus.emit("toast", {
-            title: "Email Verified",
-            message: response.data.message || "Your email has been successfully verified. You can now log in.",
+            title: this.$t('auth.messages.emailVerified'),
+            message: resolveApiMessage(response.data, "auth.messages.emailVerifiedSuccess"),
             variant: "success",
           });
         } else {
           this.eventBus.emit("toast", {
-            title: "Email Verification Error",
-            message: response.data.message || "Failed to verify email.",
+            title: this.$t('errors.auth.emailVerificationError'),
+            message: resolveApiMessage(response.data, "errors.auth.failedToVerifyEmail"),
             variant: "danger",
           });
         }
       } catch (_error) {
         this.eventBus.emit("toast", {
-          title: "Email Verification Error",
-          message: "Failed to verify email. Please try again later.",
+          title: this.$t('errors.auth.emailVerificationError'),
+          message: this.$t('errors.auth.failedToVerifyEmail'),
           variant: "danger",
         });
       }

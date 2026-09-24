@@ -1,7 +1,7 @@
 <template>
   <div class="text-placeholder">
     <p v-if="textContent">{{ textContent }}</p>
-    <p v-else class="text-muted"> ~ Placeholder data missing ~ </p>
+    <p v-else class="text-muted"> {{ $t('modals.placeholders.dataMissing') }} </p>
   </div>
 </template>
 

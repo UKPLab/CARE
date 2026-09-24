@@ -15,7 +15,7 @@
         <button
             v-show="!editMode"
             class="btn"
-            title="Copy"
+            :title="$t('common.copy')"
             @click="(e) => {e.stopPropagation(); copy()}"
         >
           <LoadIcon
@@ -27,7 +27,7 @@
         <button
             v-show="!editMode && !readOnly"
             class="btn"
-            title="Edit"
+            :title="$t('common.edit')"
             @click="(e) => {e.stopPropagation(); toEditMode(true)}"
         >
           <LoadIcon
@@ -39,7 +39,7 @@
         <button
             v-show="editMode && !readOnly"
             class="btn"
-            title="Edit"
+            :title="$t('common.edit')"
             @click="(e) => {e.stopPropagation(); toEditMode(false)}"
         >
           <LoadIcon
@@ -54,9 +54,9 @@
           v-model="contentText"
           :rows="contentText.split('\n').length"
           class="code form-check-input w-100 h-100"
-          title="Edit JSON"
+          :title="$t('editor.editJson')"
           type="text"
-        > </textarea>
+        ></textarea>
       </form>
     </div>
   </blockquote>
@@ -198,21 +198,21 @@ export default {
         try {
           await navigator.clipboard.writeText(JSON.stringify(this.content, null, 2));
           this.eventBus.emit('toast', {
-            title: "Json copied",
-            message: "Json copied to clipboard!",
+            title: this.$t('editor.copyJsonSuccess.title'),
+            message: this.$t('editor.copyJsonSuccess.message'),
             variant: "success"
           });
         } catch (_error) {
           this.eventBus.emit('toast', {
-            title: "Json not copied",
-            message: "Could not copy json to clipboard!",
+            title: this.$t('errors.file.copyJsonError.title'),
+            message: this.$t('errors.file.copyJsonError.notCopiedMsg'),
             variant: "danger"
           });
         }
       } else {
         this.eventBus.emit('toast', {
-          title: "Json not copied",
-          message: "Json not loaded or empty, cannot copy.",
+          title: this.$t('errors.file.copyJsonError.title'),
+          message: this.$t('errors.file.copyJsonError.notLoadedMsg'),
           variant: "danger"
         });
       }

@@ -47,7 +47,10 @@ const LIMIT_TYPE_LABELS = { 0: "Total", 1: "Per session", 2: "Per user" };
 
 export default {
   name: "DashboardAIBudgets",
-  subscribeTable: ["ai_budget"],
+  subscribeTable: [
+    "ai_budget", "ai_model", "ai_hook", "study", "study_step",
+    "ai_model_share", "ai_hook_share", "user",
+  ],
   components: { BasicCard, BasicButton, BasicTable, ConfirmModal, AIBudgetEditModal },
   data() {
     return {

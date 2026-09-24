@@ -3,11 +3,11 @@
     <div v-if="dataTable">
       <slot :id="options.key" :blur="validate" name="element"/>
       <div v-if="invalidField" class="feedback-invalid">
-        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
-        <span v-else>The input is invalid.</span>
+        <span v-if="options.invalidText"> {{ translateMaybeKey(options.invalidText) }}</span>
+        <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
       <div v-else-if="options.required && emptyField" class="feedback-invalid">
-        This field is required.
+        {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
     <div v-else>
@@ -19,15 +19,15 @@
           <label
             :for="options.key"
             class="form-label mb-0"
-          >{{ options.label }}</label>
-          <FormHelp :help="options.help" />
+          >{{ translateMaybeKey(options.label) }}</label>
+          <FormHelp :help="translateMaybeKey(options.help)" />
         </div>
         <BasicButton
           v-if="options.labelButton"
           :icon="options.labelButton.icon"
-          :title="options.labelButton.title"
-          :text="options.labelButton.text"
-          :tooltip="options.labelButton.tooltip"
+          :title="translateMaybeKey(options.labelButton.title)"
+          :text="translateMaybeKey(options.labelButton.text)"
+          :tooltip="translateMaybeKey(options.labelButton.tooltip)"
           :disabled="options.labelButton.disabled || false"
           :class="options.labelButton.class"
           @click="handleLabelButtonClick"
@@ -35,7 +35,7 @@
       </div>
       <FormHelp
         v-else
-        :help="options.help"
+        :help="translateMaybeKey(options.help)"
       />
       <div class="input-group">
         <div
@@ -51,11 +51,11 @@
 
       </div>
       <div v-if="invalidField" class="feedback-invalid">
-        <span v-if="options.invalidText"> {{ options.invalidText }}</span>
-        <span v-else>The input is invalid.</span>
+        <span v-if="options.invalidText"> {{ translateMaybeKey(options.invalidText) }}</span>
+        <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
       <div v-else-if="options.required && emptyField" class="feedback-invalid">
-        This field is required.
+        {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
   </fieldset>
@@ -65,6 +65,7 @@
 import FormHelp from "@/basic/form/Help.vue"
 import LoadIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * Basic form element with label and help text
@@ -114,6 +115,7 @@ export default {
         this.formButtonClick(payload);
       }
     },
+    translateMaybeKey,
     validate(data) {
       if (data === true) {
         this.invalidField = false;
