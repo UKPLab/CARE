@@ -38,7 +38,9 @@
         v-model="comment.text"
         class="form-control"
         :placeholder="$t('components.comment.enterText')"
-        @keydown.ctrl.enter="saveOnDeactivated(false)"
+        @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.esc.exact.prevent="!comment.draft && cancel()"
         @paste="onPaste"
       />
     </div>
