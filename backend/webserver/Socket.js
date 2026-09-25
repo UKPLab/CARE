@@ -731,7 +731,7 @@ module.exports = class Socket {
             allFilter[Op.or] = mergedClientFilter;
         }
 
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt", "apiKey"];
         let allAttributes = {exclude: defaultExcludes};
         // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
         const filtersAndAttributes = await this.getFiltersAndAttributes(
@@ -1105,7 +1105,7 @@ module.exports = class Socket {
                 // and without it byId lookup below fails (firstName/lastName never attached).
                 const parentAttrs = injection.fields?.length
                     ? ["id", ...injection.fields.filter((f) => f !== "id")]
-                    : {exclude: ["deleted", "deletedAt", "passwordHash", "salt", "initialPassword"]};
+                    : {exclude: ["deleted", "deletedAt", "passwordHash", "salt", "initialPassword", "apiKey"]};
                 const parents = await parentModel.findAll({
                     where: parentWhere,
                     attributes: parentAttrs,
@@ -1559,17 +1559,37 @@ module.exports = class Socket {
             if (hasBroadcastExpander) {
                 allFilter = await model.expandBroadcastFilter(allFilter, userId, isAdmin);
             }
-            // Deletes: row may already be soft-deleted; always deliver id so client can patch
-            const filteredData = operation === "delete"
-                ? rows
-                : rows.filter(entry => this.matchesFilter(entry, allFilter));
-            if (filteredData.length === 0) {
+            const visibleRows = rows.filter(entry => this.matchesFilter(entry, allFilter));
+            if (operation === "delete") {
+                // A delete must let a client drop a row it already holds, but a viewer who fails the
+                // row filter must never receive that row's columns — and must not be enriched, since
+                // enrichment re-attaches identity fields (names, usernames). Full row for rows the
+                // viewer can see; a bare {id, deleted:true} for the rest so the client can still patch.
+                const hiddenIdRows = rows
+                    .filter(entry => !this.matchesFilter(entry, allFilter))
+                    .map(entry => ({id: entry.id, deleted: true}));
+                if (isQueryMode) {
+                    if (visibleRows.length > 0) {
+                        await emitQueryMode(visibleRows);
+                    }
+                    for (const row of hiddenIdRows) {
+                        this.io.to(socket.id).emit(tableName + "Delta", {operation, row, originSocketId});
+                    }
+                } else {
+                    const payload = [...visibleRows, ...hiddenIdRows];
+                    if (payload.length > 0) {
+                        this.io.to(socket.id).emit(tableName + "Refresh", payload);
+                    }
+                }
+                continue;
+            }
+            if (visibleRows.length === 0) {
                 continue;
             }
             if (isQueryMode) {
-                await emitQueryMode(filteredData);
+                await emitQueryMode(visibleRows);
             } else {
-                this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
+                this.io.to(socket.id).emit(tableName + "Refresh", visibleRows);
             }
         }
     }

@@ -193,10 +193,16 @@ module.exports = (sequelize, DataTypes) => {
         static async getQueryTableSearchColumns(ctx) {
             const columns = [
                 "studyName", "userName", "ownerUserName",
-                "completeUserName", "studyCompleteUserName", "workflowType", "submissionGroup", "status",
+                "workflowType", "submissionGroup", "status",
             ];
             if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
-                columns.push("firstName", "lastName", "ownerFirstName", "ownerLastName");
+                // completeUserName / studyCompleteUserName are firstName+lastName concatenations and
+                // exist only under privateInfo in sessionIdentitySql. Exposing them to a caller
+                // without the right would let them search (and thus probe) hidden full names.
+                columns.push(
+                    "firstName", "lastName", "ownerFirstName", "ownerLastName",
+                    "completeUserName", "studyCompleteUserName"
+                );
             }
             return columns;
         }

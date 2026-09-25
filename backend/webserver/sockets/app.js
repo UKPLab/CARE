@@ -510,8 +510,12 @@ class AppSocket extends Socket {
         const derivedSortSpec = typeof model.getQueryTableSortColumns === "function"
             ? (model.getQueryTableSortColumns() || {})[sortColumn]
             : null;
-        // Fallback to id when the requested key is neither a model attribute nor a derived sort column.
-        if (!derivedSortSpec && (!sortColumn || !(sortColumn in attributes))) {
+        // Fallback to id unless the requested key is a derived sort column, or a model attribute the
+        // viewer is actually allowed to read
+        const canSortByColumn = !!sortColumn
+            && (sortColumn in attributes)
+            && scope.allowedAttributeNames.includes(sortColumn);
+        if (!derivedSortSpec && !canSortByColumn) {
             sortColumn = "id";
         }
 
