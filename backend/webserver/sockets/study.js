@@ -48,18 +48,54 @@ class StudySocket extends Socket {
     async saveStudyAsTemplate(data, options) {
         if (data.onlyTemplate && data.templateData) {
             const {stepDocuments, study_step, ...templateFields} = data.templateData;
-            return await this.models['study'].add({
+            const transaction = options.transaction;
+            let oldTemplate = null;
+            if (data.replaceTemplateId != null) {
+                const id = Number(data.replaceTemplateId);
+                if (!Number.isInteger(id) || id <= 0) {
+                    throw new TranslatableError("errors.studies.studyIdRequired");
+                }
+                oldTemplate = await this.models.study.findOne({
+                    where: {id, template: true, deleted: false},
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                });
+                if (!oldTemplate) throw new TranslatableError("errors.studies.studyNotFound");
+                if (oldTemplate.userId !== this.userId) {
+                    throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");
+                }
+            }
+
+            const selectedSteps = Array.isArray(stepDocuments) && stepDocuments.length
+                ? stepDocuments
+                : stepDocumentsFromStudySteps(study_step);
+            if (oldTemplate && !selectedSteps.length) {
+                throw new TranslatableError("errors.studies.missingContextOrStepDocuments");
+            }
+            const newTemplate = await this.models['study'].add({
                 ...templateFields,
+                id: undefined,
+                hash: undefined,
+                parentStudyId: oldTemplate?.id ?? templateFields.parentStudyId,
                 userId: this.userId,
                 template: true,
             }, {
-                transaction: options.transaction,
+                transaction,
                 context: {
-                    stepDocuments: Array.isArray(stepDocuments) && stepDocuments.length
-                        ? stepDocuments
-                        : stepDocumentsFromStudySteps(study_step),
+                    stepDocuments: selectedSteps,
+                    aiCostLimitTotal: templateFields.aiCostLimitTotal,
+                    aiCostLimitPerSession: templateFields.aiCostLimitPerSession,
+                    aiCostLimitPerUser: templateFields.aiCostLimitPerUser,
                 }
             });
+            if (oldTemplate) {
+                // Study's afterUpdate hook also soft-deletes old steps and AI budgets.
+                await oldTemplate.update(
+                    {deleted: true, deletedAt: new Date()},
+                    {transaction}
+                );
+            }
+            return newTemplate;
         } else {
             const currentStudy = await this.models['study'].getById(data['id']);
 
