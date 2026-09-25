@@ -281,8 +281,8 @@ module.exports = (sequelize, DataTypes) => {
 
                         for (const document of documents) {
                             await sequelize.models["document"].deleteById(document.id, {
-                                allowSubmissionDocumentDelete: true,
                                 transaction: options.transaction,
+                                context: { allowSubmissionDocumentDelete: true },
                             });
                         }
                     }

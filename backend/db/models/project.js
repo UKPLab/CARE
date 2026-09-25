@@ -73,7 +73,7 @@ module.exports = (sequelize, DataTypes) => {
                     for (const document of documents) {
                         await sequelize.models.document.deleteById(document.id, {
                             transaction: options.transaction,
-                            allowSubmissionDocumentDelete: true,
+                            context: { allowSubmissionDocumentDelete: true },
                         });
                     }
                     // Delete all the studies associated with the documents

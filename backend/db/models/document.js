@@ -425,7 +425,9 @@ module.exports = (sequelize, DataTypes) => {
             tableName: 'document',
             hooks: {
                 beforeUpdate: (document, options) => {
-                    if (options.allowSubmissionDocumentDelete) {
+                    // User updates copy the payload into context and always set currentUserId.
+                    // Only a cascade context, which has the flag and no currentUserId, may delete.
+                    if (options.context?.allowSubmissionDocumentDelete && options.context.currentUserId == null) {
                         return;
                     }
                     const previousSubmissionId = document._previousDataValues.submissionId;
