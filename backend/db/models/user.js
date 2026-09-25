@@ -651,8 +651,14 @@ module.exports = (sequelize, DataTypes) => {
          * @param {Object} ctx
          * @returns {Promise<string[]>}
          */
-        static async getQueryTableSearchColumns() {
-            return ["id", "extId", "firstName", "lastName", "studySessions", "documents", "rolesNames"];
+        static async getQueryTableSearchColumns(ctx = {}) {
+            const columns = ["id", "studySessions", "documents", "rolesNames"];
+            const privateInfo = typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            if (privateInfo) {
+                columns.push("extId", "firstName", "lastName");
+            }
+            return columns;
         }
 
         static getQueryTableSearchConditions(needle, ctx = {}) {
@@ -665,11 +671,12 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * @returns {Promise<Object>}
          */
-        static async getQueryTableFilterColumns() {
+        static async getQueryTableFilterColumns(ctx = {}) {
             const columns = User.assignmentReviewerColumnSql();
-            return {
+            const privateInfo = typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            const spec = {
                 id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
-                extId: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
                 studySessions: {
                     type: "numeric",
                     operators: ["=", ">", ">=", "<", "<=", "%"],
@@ -682,6 +689,10 @@ module.exports = (sequelize, DataTypes) => {
                 },
                 rolesNames: {type: "text", sql: columns.rolesNames},
             };
+            if (privateInfo) {
+                spec.extId = {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]};
+            }
+            return spec;
         }
     }
 

@@ -109,29 +109,43 @@ export default {
         sort: {column: "id", order: "ASC"},
       };
     },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
+    },
     reviewerTableColumns() {
-      return [
+      const columns = [
         {name: this.$t("common.id"), key: "id"},
-        {name: this.$t("dashboard.projects.extId"), key: "extId"},
-        {name: this.$t("common.firstName"), key: "firstName"},
-        {name: this.$t("common.lastName"), key: "lastName"},
+      ];
+      if (this.canReadPrivateInformation) {
+        columns.push(
+          {name: this.$t("dashboard.projects.extId"), key: "extId"},
+          {name: this.$t("common.firstName"), key: "firstName"},
+          {name: this.$t("common.lastName"), key: "lastName"},
+        );
+      }
+      columns.push(
         {name: this.$t("dashboard.projects.numberOfAssignments"), key: "studySessions"},
         {name: this.$t("dashboard.study.documents"), key: "documents"},
         {name: this.$t("dashboard.study.roles"), key: "rolesNames"},
-      ];
+      );
+      return columns;
     },
     reviewerFilterSchema() {
-      return {
+      const schema = {
         id: {
           label: this.$t("common.id"),
           type: "numeric",
           operators: ["=", ">", ">=", "<", "<=", "%"],
         },
-        extId: {
+      };
+      if (this.canReadPrivateInformation) {
+        schema.extId = {
           label: this.$t("dashboard.projects.extId"),
           type: "numeric",
           operators: ["=", ">", ">=", "<", "<=", "%"],
-        },
+        };
+      }
+      Object.assign(schema, {
         studySessions: {
           label: this.$t("dashboard.projects.numberOfAssignments"),
           type: "numeric",
@@ -143,10 +157,16 @@ export default {
           operators: ["=", ">", ">=", "<", "<=", "%"],
         },
         rolesNames: {label: this.$t("dashboard.study.roles"), type: "text"},
-      };
+      });
+      return schema;
     },
     reviewerSearchColumns() {
-      return ["id", "extId", "firstName", "lastName", "studySessions", "documents", "rolesNames"];
+      const columns = ["id"];
+      if (this.canReadPrivateInformation) {
+        columns.push("extId", "firstName", "lastName");
+      }
+      columns.push("studySessions", "documents", "rolesNames");
+      return columns;
     },
     reviewerQueryScope() {
       const assignmentReviewer = {};

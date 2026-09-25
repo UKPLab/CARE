@@ -480,14 +480,21 @@ export default {
       };
     },
     sessionTableColumns() {
-      return [
+      const columns = [
         { name: this.$t("submission.publishAssessment.columns.study"), key: "studyName" },
-        { name: this.$t("submission.publishAssessment.columns.reviewerFirstName"), key: "firstName" },
-        { name: this.$t("submission.publishAssessment.columns.reviewerLastName"), key: "lastName" },
-        { name: this.$t("submission.publishAssessment.columns.ownerFirstName"), key: "ownerFirstName" },
-        { name: this.$t("submission.publishAssessment.columns.ownerLastName"), key: "ownerLastName" },
-        { name: this.$t("submission.publishAssessment.columns.submissionExtId"), key: "submissionExtId" },
       ];
+      if (this.canReadPrivateInformation) {
+        columns.push(
+          { name: this.$t("submission.publishAssessment.columns.reviewerFirstName"), key: "firstName" },
+          { name: this.$t("submission.publishAssessment.columns.reviewerLastName"), key: "lastName" },
+          { name: this.$t("submission.publishAssessment.columns.ownerFirstName"), key: "ownerFirstName" },
+          { name: this.$t("submission.publishAssessment.columns.ownerLastName"), key: "ownerLastName" },
+        );
+      }
+      columns.push(
+        { name: this.$t("submission.publishAssessment.columns.submissionExtId"), key: "submissionExtId" },
+      );
+      return columns;
     },
     sessionFilterSchema() {
       const schema = {

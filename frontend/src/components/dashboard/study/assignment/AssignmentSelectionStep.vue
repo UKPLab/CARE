@@ -200,11 +200,20 @@ export default {
       if (this.assignmentType === "submission") return this.submissionColumns;
       return this.documentsTableColumns;
     },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
+    },
     sessionTableColumns() {
-      return [
+      const columns = [
         {name: this.$t("common.id"), key: "id"},
-        {name: this.$t("dashboard.study.sessionUserName"), key: "completeUserName", sortable: true},
-        {name: this.$t("dashboard.study.studyOwnerUserName"), key: "studyCompleteUserName", sortable: true},
+      ];
+      if (this.canReadPrivateInformation) {
+        columns.push(
+          {name: this.$t("dashboard.study.sessionUserName"), key: "completeUserName", sortable: true},
+          {name: this.$t("dashboard.study.studyOwnerUserName"), key: "studyCompleteUserName", sortable: true},
+        );
+      }
+      columns.push(
         {name: this.$t("dashboard.study.workflowType"), key: "workflowType", sortable: true},
         {name: this.$t("common.createdAt"), key: "createdAt", sortable: true},
         {name: this.$t("dashboard.study.submissionGroup"), key: "submissionGroup", sortable: true},
@@ -221,13 +230,18 @@ export default {
             classMapping: {Running: "bg-primary", Finished: "bg-success"},
           },
         },
-      ];
+      );
+      return columns;
     },
     sessionFilterSchema() {
-      return {
+      const schema = {
         id: {label: this.$t("common.id"), type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
-        completeUserName: {label: this.$t("dashboard.study.sessionUserName"), type: "text"},
-        studyCompleteUserName: {label: this.$t("dashboard.study.studyOwnerUserName"), type: "text"},
+      };
+      if (this.canReadPrivateInformation) {
+        schema.completeUserName = {label: this.$t("dashboard.study.sessionUserName"), type: "text"};
+        schema.studyCompleteUserName = {label: this.$t("dashboard.study.studyOwnerUserName"), type: "text"};
+      }
+      Object.assign(schema, {
         workflowType: {label: this.$t("dashboard.study.workflowType"), type: "text"},
         createdAt: {label: this.$t("common.createdAt"), type: "date"},
         submissionGroup: {label: this.$t("dashboard.study.submissionGroup"), type: "text"},
@@ -239,17 +253,16 @@ export default {
             {value: "Finished", label: this.$t("dashboard.study.finished")},
           ],
         },
-      };
+      });
+      return schema;
     },
     sessionSearchColumns() {
-      return [
-        "id",
-        "completeUserName",
-        "studyCompleteUserName",
-        "workflowType",
-        "submissionGroup",
-        "status",
-      ];
+      const columns = ["id"];
+      if (this.canReadPrivateInformation) {
+        columns.push("completeUserName", "studyCompleteUserName");
+      }
+      columns.push("workflowType", "submissionGroup", "status");
+      return columns;
     },
     selectedAssignmentUserIds() {
       if (this.newStudyOwner !== "study_owner") {
