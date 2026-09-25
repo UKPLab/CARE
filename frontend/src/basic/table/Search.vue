@@ -334,12 +334,8 @@ export default {
   },
   watch: {
     draft() {
-      if (this.tryFinishPendingValue()) return;
       if (this.tryResolvePendingOperator()) return;
-      // A trailing space ends a typed token — turn it into a chip before it reaches free-text search.
-      if (/\s$/.test(this.draft)) {
-        this.absorbTokens();
-      }
+      // A typed value becomes a chip on Enter, not on Space. Space stays part of the text.
       this.tryPromoteDraftKey();
       this.highlight = -1;
       this.hoverIndex = -1;
@@ -655,46 +651,6 @@ export default {
       });
     },
     /**
-     * Space (or another word) after a typed value: commit a valid number, otherwise fall back to
-     * plain search text so a leftover word cannot become a filter.
-     */
-    tryFinishPendingValue() {
-      if (!this.pending.key || this.stage !== "value") return false;
-      const operator = this.pending.operator || defaultOperator(this.schema, this.pending.key);
-      const trimmed = this.draft.trimStart();
-      // `[1, 2, 3]` may contain spaces; wait for the closing `]` before committing.
-      if (trimmed.startsWith("[")) {
-        const close = trimmed.indexOf("]");
-        if (close === -1) return false;
-        const after = trimmed.slice(close + 1);
-        if (after && !/^\s/.test(after)) return false;
-        const list = unquote(trimmed.slice(0, close + 1));
-        const rest = after.trimStart();
-        const coerced = coerceValue(this.schema, this.pending.key, list, this.$t.bind(this), operator);
-        if (coerced !== null && (after.length > 0 || /\s$/.test(this.draft))) {
-          this.commitPending(coerced);
-          this.draft = rest;
-          return true;
-        }
-        return false;
-      }
-      const match = this.draft.match(/^(\S+)(\s+)([\s\S]*)$/);
-      if (!match) return false;
-      const word = unquote(match[1]);
-      const rest = match[3].trimStart();
-      const coerced = coerceValue(this.schema, this.pending.key, word, this.$t.bind(this), operator);
-      if (coerced !== null) {
-        this.commitPending(coerced);
-        if (rest) this.draft = rest;
-        return true;
-      }
-      if (word) {
-        this.abandonPendingToDraft();
-        return true;
-      }
-      return false;
-    },
-    /**
      * After a key is picked, typing an operator (`=`, `>=`) selects it; any other text drops the
      * chip so the query stays ordinary search.
      * @param {boolean} commit Enter: accept a complete operator even if a longer one also matches.
@@ -720,8 +676,8 @@ export default {
       return true;
     },
     /**
-     * Typed `key:operator` (sessions:=) opens the pending filter; a complete `key:operator value`
-     * (sessions:=4) becomes a chip. A bare word (sessions) stays ordinary search text.
+     * Typed `key:operator` (sessions:=) opens the pending filter. A complete value stays text until
+     * Enter. A bare word (sessions) stays ordinary search text.
      */
     tryPromoteDraftKey() {
       if (this.pending.key || this.skipDraftPromote) return;
@@ -729,12 +685,6 @@ export default {
       if (!trimmed) return;
       const first = (trimmed.match(/^\S+/) || [])[0];
       if (!first) return;
-      const complete = parseToken(this.schema, first, this.$t.bind(this));
-      if (complete) {
-        this.addToken(complete);
-        this.draft = trimmed.slice(first.length).trimStart();
-        return;
-      }
       const tokenMatch = PENDING_TOKEN_PATTERN.exec(first);
       if (tokenMatch && this.schema[tokenMatch[1]]) {
         this.revivePendingFromDraft();
