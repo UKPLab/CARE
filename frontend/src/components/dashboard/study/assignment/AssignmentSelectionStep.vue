@@ -128,7 +128,6 @@ export default {
         { name: this.$t("common.userName"), key: "userName" },
         { name: this.$t("common.firstName"), key: "firstName" },
         { name: this.$t("common.lastName"), key: "lastName" },
-        // { name: this.$t("dashboard.study.groupId"), key: "group", filter: this.groupFilterOptions },
         { name: this.$t("common.createdAt"), key: "createdAt" },
       ];
     },
