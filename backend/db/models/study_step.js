@@ -13,10 +13,6 @@ const stepTypes = Object.freeze({
     STEP_TYPE_DIALOGUE: 4,
 });
 
-// Step types that may skip a copied source during assignment.
-const sourceOptionalStepTypes = Object.freeze([stepTypes.STEP_TYPE_DIALOGUE]);
-
-
 module.exports = (sequelize, DataTypes) => {
     class StudyStep extends MetaModel {
         static autoTable = true;
@@ -379,4 +375,3 @@ module.exports = (sequelize, DataTypes) => {
 };
 
 module.exports.stepTypes = stepTypes;
-module.exports.sourceOptionalStepTypes = sourceOptionalStepTypes;

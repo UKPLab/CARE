@@ -53,10 +53,10 @@ const workflows = [
     },
     {
         name: "Post-validation Dialogue Workflow (AI Adaptive)",
-        description: "Two read-only peer reviews followed by an adaptive AI Dialogue step.",
+        description: "A read-only peer review followed by an adaptive AI Dialogue step.",
         steps: [
             {
-                name: "First Review",
+                name: "Review",
                 stepType: 1,
                 allowBackward: false,
                 workflowStepDocument: null,
@@ -79,40 +79,7 @@ const workflows = [
                 },
             },
             {
-                name: "First Review Feedback",
-                stepType: 2,
-                allowBackward: true,
-                workflowStepDocument: null,
-                configuration: {
-                    readOnlyComponents: ["editor"],
-                    placeholders: false,
-                },
-            },
-            {
-                name: "Second Review",
-                stepType: 1,
-                allowBackward: true,
-                workflowStepDocument: null,
-                configuration: {
-                    settings: {
-                        fields: [
-                            assessmentConfigurationField,
-                            {
-                                key: "showAllDocumentAnnotations",
-                                label: "Show all document Annotations",
-                                type: "switch",
-                                required: false,
-                                default: true,
-                                help: "If enabled, all document annotations will be shown to the reviewer.",
-                            },
-                        ],
-                    },
-                    readOnlyComponents: ["annotator", "assessment"],
-                    placeholders: false,
-                },
-            },
-            {
-                name: "Second Review Feedback",
+                name: "Review Feedback",
                 stepType: 2,
                 allowBackward: true,
                 workflowStepDocument: null,
@@ -125,7 +92,7 @@ const workflows = [
                 name: "Dialogue",
                 stepType: 4,
                 allowBackward: true,
-                workflowStepDocument: null,
+                workflowStepDocument: 1,
                 configuration: {
                     settings: {fields: [dialoguePlanField]},
                     services: [

@@ -1,33 +1,12 @@
 <template>
   <div>
-    <p v-if="bulk && assignmentType === 'study_session' && normalizedSourceSessionSlots.length > 1">
-      Select exactly {{ normalizedSourceSessionSlots.length }} sessions per student.
-      Each student's sessions form one assignment, ordered oldest to newest.
-    </p>
-    <template v-if="usesSourceSessionSlots">
-      <div v-for="sourceSessionSlot in normalizedSourceSessionSlots" :key="sourceSessionSlot" class="mb-4">
-        <h6 class="text-secondary">Source Session {{ sourceSessionSlot }}</h6>
-        <BasicTable
-            :model-value="getSourceSessionSelection(sourceSessionSlot)"
-            :columns="studySessionsTableColumns"
-            :data="getStudySessionsForSlot(sourceSessionSlot)"
-            :options="documentTableOptions"
-            :max-table-height="300"
-            @update:model-value="setSourceSessionSelection(sourceSessionSlot, $event)"
-        />
-      </div>
-    </template>
     <BasicTable
-        v-else
         v-model="selectedAssignments"
         :columns="currentTableColumns"
         :data="currentTableData"
         :options="documentTableOptions"
         :max-table-height="400"
     />
-    <p v-if="sourceSessionSelectionError" class="text-danger mt-2" role="alert">
-      {{ sourceSessionSelectionError }}
-    </p>
   </div>
 </template>
 
@@ -39,7 +18,7 @@ import BasicTable from "@/basic/Table.vue";
  * Renders a selectable table of documents, submissions, or study sessions depending
  * on the assignment type chosen in the template step. Supports both single-select
  * (for single assignment flow) and multi-select (for bulk flow).
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "AssignmentSelectionStep",
@@ -56,8 +35,6 @@ export default {
     bulk: { type: Boolean, required: false, default: true },
     newStudyOwner: { type: String, required: false, default: 'session_owner' },
     targetWorkflowId: { required: false, default: null },
-    sourceSessionSlots: { type: Array, required: false, default: () => [1] },
-    sourceSessionSelectionError: { type: String, required: false, default: '' },
   },
   props: {
     modalValue: {
@@ -71,17 +48,6 @@ export default {
     };
   },
   computed: {
-    usesSourceSessionSlots() {
-      return this.assignmentType === 'study_session'
-          && !this.bulk
-          && this.normalizedSourceSessionSlots.length > 1;
-    },
-    normalizedSourceSessionSlots() {
-      const slots = [...new Set(this.sourceSessionSlots)]
-          .filter(slot => Number.isInteger(slot) && slot > 0)
-          .sort((a, b) => a - b);
-      return slots.length > 0 ? slots : [1];
-    },
     documentTableOptions() {
       return {
         striped: true,
@@ -253,9 +219,6 @@ export default {
       return options;
     },
     selectedAssignmentUserIds() {
-      if (this.usesSourceSessionSlots) {
-        return [...new Set(this.selectedAssignments.map(assignment => assignment.userId))];
-      }
       if (this.newStudyOwner !== 'study_owner') {
         return this.selectedAssignments.map(assignment => {
           const study = this.$store.getters["table/study/get"](assignment.studyId);
@@ -266,28 +229,10 @@ export default {
       }
     },
     isValid() {
-      if (this.bulk && this.assignmentType === 'study_session' && this.normalizedSourceSessionSlots.length > 1) {
-        return this.selectedAssignments.length > 0 && !this.sourceSessionSelectionError;
-      }
-      if (this.usesSourceSessionSlots) {
-        const selectedSlots = this.selectedAssignments.map(assignment => assignment.sourceSessionSlot);
-        const sessionIds = this.selectedAssignments.map(assignment => assignment.id);
-        const userIds = this.selectedAssignments.map(assignment => assignment.userId);
-        return this.normalizedSourceSessionSlots.every(slot => selectedSlots.includes(slot))
-            && this.selectedAssignments.length === this.normalizedSourceSessionSlots.length
-            && new Set(sessionIds).size === sessionIds.length
-            && new Set(userIds).size === 1;
-      }
       return this.bulk ? this.selectedAssignments.length > 0 : this.selectedAssignments.length === 1;
     },
   },
   watch: {
-    normalizedSourceSessionSlots(slots) {
-      if (this.assignmentType !== 'study_session' || this.bulk) return;
-      this.selectedAssignments = this.selectedAssignments.filter(
-          assignment => slots.includes(assignment.sourceSessionSlot)
-      );
-    },
     selectedAssignments: {
       handler(val) {
         this.$emit('update:modalValue', val);
@@ -307,51 +252,13 @@ export default {
   },
   mounted() {
     if (this.modalValue && this.modalValue.length > 0) {
-      if (this.usesSourceSessionSlots) {
-        this.selectedAssignments = this.modalValue.map((item, index) => {
-          const row = this.studySessionsTable.find(session => session.id === item.id);
-          return row ? {
-            ...row,
-            sourceSessionSlot: item.sourceSessionSlot || index + 1,
-          } : null;
-        }).filter(Boolean);
-      } else {
-        const ids = new Set(this.modalValue.map(item => item.id));
-        this.selectedAssignments = this.currentTableData.filter(row => ids.has(row.id));
-      }
+      const ids = new Set(this.modalValue.map(item => item.id));
+      this.selectedAssignments = this.currentTableData.filter(row => ids.has(row.id));
     }
     this.$emit('update:isValid', this.isValid);
     this.$emit('update:selectedAssignmentUserIds', this.selectedAssignmentUserIds);
   },
   methods: {
-    getSourceSessionSelection(sourceSessionSlot) {
-      const selected = this.selectedAssignments.find(
-          assignment => assignment.sourceSessionSlot === sourceSessionSlot
-      );
-      return selected ? [selected] : [];
-    },
-    setSourceSessionSelection(sourceSessionSlot, selectedRows) {
-      const otherSelections = this.selectedAssignments.filter(
-          assignment => assignment.sourceSessionSlot !== sourceSessionSlot
-      );
-      const selected = selectedRows[0];
-      this.selectedAssignments = selected
-          ? [...otherSelections, {...selected, sourceSessionSlot}]
-              .sort((a, b) => a.sourceSessionSlot - b.sourceSessionSlot)
-          : otherSelections;
-    },
-    getStudySessionsForSlot(sourceSessionSlot) {
-      const otherSelections = this.selectedAssignments.filter(
-          assignment => assignment.sourceSessionSlot !== sourceSessionSlot
-      );
-      const selectedSessionIds = new Set(otherSelections.map(assignment => assignment.id));
-      const selectedUserId = otherSelections[0]?.userId;
-      return this.studySessionsTable.map(session => ({
-        ...session,
-        isDisabled: selectedSessionIds.has(session.id)
-            || (selectedUserId !== undefined && session.userId !== selectedUserId),
-      }));
-    },
     getWorkflowType(workflowId) {
       const workflow = this.$store.getters["table/workflow/get"](workflowId);
       return workflow ? workflow.name : this.$t("common.unknown");

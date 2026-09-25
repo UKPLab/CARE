@@ -37,19 +37,11 @@
       <div><strong>{{ $t('dashboard.study.workflow') }}</strong> {{ workflow && workflow.name }}</div>
       <div><strong>{{ $t('dashboard.study.assignmentType') }}</strong> {{ $t('dashboard.study.typeStudySession') }}</div>
       <div><strong>{{ $t('dashboard.study.targetWorkflow') }}:</strong> {{ targetWorkflowName }}</div>
-      <div v-if="orderedSelectedAssignments.length <= 1">
+      <div>
         <strong>{{ $t('dashboard.study.selectedStudySession') }}:</strong>
         {{ selectedAssignments.length > 0
           ? $t('dashboard.study.sessionWithId', { id: selectedAssignments[0].id })
           : $t('common.none') }}
-      </div>
-      <div v-else>
-        <strong>{{ $t('dashboard.study.selectedStudySessions') }}:</strong>
-        <ul>
-          <li v-for="(session, index) in orderedSelectedAssignments" :key="session.id">
-            {{ $t('dashboard.study.sourceSessionWithId', { slot: session.sourceSessionSlot || index + 1, id: session.id }) }}
-          </li>
-        </ul>
       </div>
       <div>
         <strong>{{ $t('dashboard.study.reviewers') }}</strong>
@@ -91,20 +83,8 @@
           <div class="col-8">{{ workflow && workflow.name }}</div>
         </div>
         <div class="row mb-2">
-          <div class="col-2"><strong>{{ usesMultipleSourceSessions ? $t('dashboard.study.assignments') : $t('dashboard.study.documents') }}</strong></div>
-          <div class="col-8">{{ assignmentCount ?? selectedAssignments.length }}</div>
-        </div>
-        <div v-if="usesMultipleSourceSessions" class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.sourceSessions') }}</strong></div>
-          <div class="col-8">
-            <p>{{ $t('dashboard.study.sourceSessionsOldestFirst') }}</p>
-            <ul>
-              <li v-for="group in sourceSessionGroups" :key="group[0].sourceSessionUserId">
-                {{ group[0].completeUserName || $t('dashboard.study.userFallback', { id: group[0].sourceSessionUserId }) }}:
-                {{ group.map(session => $t('dashboard.study.sessionWithId', { id: session.id })).join(' → ') }}
-              </li>
-            </ul>
-          </div>
+          <div class="col-2"><strong>{{ $t('dashboard.study.documents') }}</strong></div>
+          <div class="col-8">{{ selectedAssignments.length }}</div>
         </div>
         <div class="row mb-2">
           <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
@@ -148,7 +128,7 @@
  * Supports four variants: doc-sub-single, doc-sub-bulk, session-single, and session-bulk,
  * each rendering an appropriate summary layout. Also warns when reviewers lack matching
  * study sessions in session_user mode.
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "ConfirmationStep",
@@ -158,9 +138,6 @@ export default {
     assignmentType: { type: String, required: false, default: 'document' },
     targetWorkflowId: { type: Number, required: false, default: null },
     selectedAssignments: { type: Array, required: false, default: () => [] },
-    assignmentCount: { type: Number, required: false, default: null },
-    usesMultipleSourceSessions: { type: Boolean, required: false, default: false },
-    sourceSessionGroups: { type: Array, required: false, default: () => [] },
     selectedReviewer: { type: Array, required: false, default: () => [] },
     reviewerSelectionMode: { type: Object, required: false, default: () => ({}) },
     workflowStepsAssignments: { type: Array, required: false, default: () => [] },
@@ -180,11 +157,6 @@ export default {
     },
   },
   computed: {
-    orderedSelectedAssignments() {
-      return [...this.selectedAssignments].sort(
-          (a, b) => (a.sourceSessionSlot || 1) - (b.sourceSessionSlot || 1)
-      );
-    },
     targetWorkflowName() {
       if (!this.targetWorkflowId) return this.$t("common.unknown");
       const workflow = this.$store.getters["table/workflow/get"](this.targetWorkflowId);

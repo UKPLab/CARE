@@ -155,7 +155,7 @@ import ConfirmationStep from "./assignment/ConfirmationStep.vue";
 
 /**
  * Modal for bulk creating assignments
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "ImportModal",
@@ -182,11 +182,6 @@ export default {
       workflow: computed(() => this.workflow),
       assignmentType: computed(() => this.assignmentType),
       targetWorkflowId: computed(() => this.workflowMappingStepModalValue?.targetWorkflowId ?? null),
-      sourceSessionSlots: computed(() => this.workflowMappingStepModalValue?.sourceSessionSlots ?? [1]),
-      usesMultipleSourceSessions: computed(() => this.usesMultipleSourceSessions),
-      sourceSessionGroups: computed(() => this.sourceSessionGroups),
-      sourceSessionSelectionError: computed(() => this.sourceSessionSelectionError),
-      assignmentCount: computed(() => this.assignmentCount),
       newStudyOwner: computed(() => this.workflowMappingStepModalValue?.newStudyOwner ?? 'session_owner'),
       selectedAssignments: computed(() => this.assignmentModalValue),
       selectedReviewer: computed(() => this.selectedReviewer),
@@ -248,47 +243,6 @@ export default {
     };
   },
   computed: {
-    usesMultipleSourceSessions() {
-      return this.assignmentType === 'study_session'
-          && (this.workflowMappingStepModalValue?.sourceSessionSlots?.length || 1) > 1;
-    },
-    sourceSessionGroups() {
-      if (!this.bulk || !this.usesMultipleSourceSessions) return [];
-      const groups = new Map();
-      this.assignmentModalValue.forEach(selection => {
-        const session = this.$store.getters["table/study_session/get"](selection.id);
-        if (!session) return;
-        if (!groups.has(session.userId)) groups.set(session.userId, []);
-        groups.get(session.userId).push({
-          ...selection,
-          sourceSessionUserId: session.userId,
-          sourceCreatedAt: session.createdAt,
-        });
-      });
-      return [...groups.values()].map(group => group.sort((a, b) =>
-          new Date(a.sourceCreatedAt) - new Date(b.sourceCreatedAt) || a.id - b.id
-      ));
-    },
-    sourceSessionSelectionError() {
-      if (!this.bulk || !this.usesMultipleSourceSessions) return '';
-      if (this.sourceSessionGroups.flat().length !== this.assignmentModalValue.length) {
-        return 'Selected source sessions are not available. Please select them again.';
-      }
-      const sourceCount = this.workflowMappingStepModalValue.sourceSessionSlots.length;
-      const invalidGroup = this.sourceSessionGroups.find(group => group.length !== sourceCount);
-      if (invalidGroup) {
-        const name = invalidGroup[0].completeUserName || 'User ' + invalidGroup[0].sourceSessionUserId;
-        return `${name} needs exactly ${sourceCount} selected source sessions; ${invalidGroup.length} selected.`;
-      }
-      if (this.sourceSessionGroups.some(group => new Set(group.map(session => Number(session.userId))).size > 1)) {
-        return 'Selected sessions have different study owners. Choose "User of the study session" as the new study owner.';
-      }
-      return '';
-    },
-    assignmentCount() {
-      return this.bulk && this.usesMultipleSourceSessions
-          ? this.sourceSessionGroups.length : this.assignmentModalValue.length;
-    },
     // Store lookups used by parent (passed as props to ConfirmationStep and DistributionStep)
     templates() {
       return this.$store.getters["table/study/getFiltered"](item => item.template === true);
@@ -477,9 +431,7 @@ export default {
       };
 
       if (this.assignmentType === 'study_session') {
-        socketData.targetWorkflowId = this.workflowMappingStepModalValue?.targetWorkflowId;
         socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
-        socketData.sourceSessionSlots = this.workflowMappingStepModalValue?.sourceSessionSlots ?? [1];
       } else {
         socketData.documents = this.workflowStepsAssignments[0];
       }
@@ -512,7 +464,6 @@ export default {
       if (this.assignmentType === 'study_session') {
         socketData.targetWorkflowId = this.workflowMappingStepModalValue?.targetWorkflowId;
         socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
-        socketData.sourceSessionSlots = this.workflowMappingStepModalValue?.sourceSessionSlots ?? [1];
       } else {
         socketData.documents = this.workflowStepsAssignments;
       }

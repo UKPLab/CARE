@@ -2,14 +2,14 @@
   "name": "Post-validation Peer-review Dialogue Plan",
   "type": "dialoguePlan",
   "title": "Post-validation Dialogue",
-  "version": "1.2",
+  "version": "1.3",
   "adaptive": true,
   "allowSkip": true,
   "questions": [
     {
       "id": "understanding_1",
       "help": "Describe what you understood the exposé to be trying to do. There is no required wording.",
-      "text": "Thinking about the exposé in your first review, how would you describe its main aim in your own words?",
+      "text": "Thinking about the exposé you reviewed, how would you describe its main aim in your own words?",
       "source": "pr1",
       "required": true,
       "answerType": "text",
@@ -23,8 +23,8 @@
     {
       "id": "criteria_1",
       "help": "Choose any judgment from your review and explain what standard or quality you were looking for.",
-      "text": "Think of one judgment you made in your second review. What standard or criterion were you using when you made it?",
-      "source": "pr2",
+      "text": "Think of one judgment you made in your review. What standard or criterion were you using when you made it?",
+      "source": "pr1",
       "required": true,
       "answerType": "text",
       "categoryId": "judgment_criteria",
@@ -37,12 +37,12 @@
     {
       "id": "evidence_1",
       "help": "Explain what you noticed in the exposé that led to the comment.",
-      "text": "Thinking about your first review, choose one comment you made. What in the exposé led you to make that comment?",
+      "text": "Thinking about your review, choose one comment you made. What in the exposé led you to make that comment?",
       "source": "pr1",
       "required": true,
       "answerType": "text",
       "categoryId": "evidence_grounding",
-      "anchoredText": "In your first review, you wrote: “{{anchor}}” What in the exposé led you to write this feedback?",
+      "anchoredText": "In your review, you wrote: “{{anchor}}” What in the exposé led you to write this feedback?",
       "completeWhen": "The answer identifies a concrete feature, passage, claim, evidence, omission, wording, or other aspect of the exposé that led to the comment.",
       "evidenceGoal": "The participant connects submitted feedback to evidence or features in the reviewed exposé.",
       "maxFollowUps": 1,
@@ -52,12 +52,12 @@
     {
       "id": "justification_1",
       "help": "Explain the reason behind the point and why it mattered for the exposé.",
-      "text": "Thinking about your second review, choose one important point you made. If the author asked why you made that point, what would you say?",
-      "source": "pr2",
+      "text": "Thinking about your review, choose one important point you made. If the author asked why you made that point, what would you say?",
+      "source": "pr1",
       "required": true,
       "answerType": "text",
       "categoryId": "judgment_justification_challenge",
-      "anchoredText": "In your second review, you wrote: “{{anchor}}” If the author asked why you made this point, what would you say?",
+      "anchoredText": "In your review, you wrote: “{{anchor}}” If the author asked why you made this point, what would you say?",
       "completeWhen": "The answer gives a reason for the review point and explains why it mattered for the exposé.",
       "evidenceGoal": "The participant explains and justifies a review judgment and can articulate it from the author's perspective.",
       "maxFollowUps": 1,
@@ -67,7 +67,7 @@
     {
       "id": "implications_1",
       "help": "Name one suggestion from your review and explain the change you expected it to produce.",
-      "text": "Thinking about your first review, choose one suggestion you made. What change did you expect it to make to the exposé?",
+      "text": "Thinking about your review, choose one suggestion you made. What change did you expect it to make to the exposé?",
       "source": "pr1",
       "required": true,
       "answerType": "text",
@@ -81,8 +81,8 @@
     {
       "id": "uncertainty_1",
       "help": "If there was something you were unsure about, explain it. If not, you can say that.",
-      "text": "Thinking about your second review, was there anything you were unsure about? If so, what made you unsure?",
-      "source": "pr2",
+      "text": "Thinking about your review, was there anything you were unsure about? If so, what made you unsure?",
+      "source": "pr1",
       "required": true,
       "answerType": "text",
       "categoryId": "assumptions_uncertainty_limits",
@@ -95,7 +95,7 @@
     {
       "id": "strategy_1",
       "help": "Describe how you chose which issues were worth including in your review.",
-      "text": "Thinking about your first review, how did you decide which points to focus on?",
+      "text": "Thinking about your review, how did you decide which points to focus on?",
       "source": "pr1",
       "required": true,
       "answerType": "text",
@@ -105,20 +105,6 @@
       "maxFollowUps": 1,
       "allowFollowUp": true,
       "followUpDirection": "If the selection strategy is unclear, ask how the participant chose between several possible points."
-    },
-    {
-      "id": "cross_review_1",
-      "help": "You can describe what changed or what stayed the same in how you reviewed the two exposés.",
-      "text": "How, if at all, did your approach differ between the two reviews?",
-      "source": "both",
-      "required": false,
-      "answerType": "text",
-      "categoryId": "review_strategy_reflection",
-      "completeWhen": "The answer describes a difference or similarity in standards, focus, strategy, or reasoning across the two reviews.",
-      "evidenceGoal": "The participant compares their reviewing approach across the two reviews.",
-      "maxFollowUps": 1,
-      "allowFollowUp": true,
-      "followUpDirection": "If the comparison is unclear, ask for one specific thing that changed or stayed the same."
     }
   ],
   "categories": [
@@ -165,6 +151,6 @@
       "sourceCategory": "Socratic questions about the question and reflection"
     }
   ],
-  "description": "Adaptive post-validation dialogue covering seven peer-review reasoning categories across two reviews.",
+  "description": "Adaptive post-validation dialogue covering seven peer-review reasoning categories for one review.",
   "completionMessage": "Thank you. The dialogue is complete."
 }

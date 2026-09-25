@@ -197,28 +197,19 @@ export default {
      */
     async resolveHookInput(spec, documentTexts) {
       if (!spec || typeof spec !== "object") return null;
-      const sourceStep = /^(document|submission)_step\d+$/.test(spec.value)
-          && Number.isInteger(spec.stepIndex)
-          ? this.orderedStudySteps[spec.stepIndex]
-          : null;
       switch (spec.type) {
         case "document": {
-          const documentId = spec.documentId || sourceStep?.documentId || this.documentId;
+          const documentId = spec.documentId || this.documentId;
           return this.extractDocumentText(documentId, documentTexts);
         }
         case "configuration":
           return {type: "serviceReplacement", input: spec};
         case "submission": {
-          const pdfDocumentId = spec.pdfDocumentId || sourceStep?.documentId;
-          const resolvedSpec = {
-            ...spec,
-            pdfDocumentId: pdfDocumentId || null,
-          };
           let pdfText = null;
-          if (resolvedSpec.selectedFiles?.includes("pdf") && resolvedSpec.pdfDocumentId) {
-            pdfText = await this.extractDocumentText(resolvedSpec.pdfDocumentId, documentTexts);
+          if (spec.selectedFiles?.includes("pdf") && spec.pdfDocumentId) {
+            pdfText = await this.extractDocumentText(spec.pdfDocumentId, documentTexts);
           }
-          return {type: "serviceReplacement", input: {...resolvedSpec, pdfText}};
+          return {type: "serviceReplacement", input: {...spec, pdfText}};
         }
         case "assessment":
         case "annotator":

@@ -14,9 +14,6 @@
       <p class="mb-4">{{ $t('dashboard.study.remainingAssignments') }} <strong>{{ remainingAssignments }}</strong></p>
       <BasicForm ref="reviewerBasedSelectionForm" v-model="reviewerSelection" :fields="reviewerSelectionFields" />
     </div>
-    <p v-else-if="reviewerSelectionMode.mode === 'session_user' && usesMultipleSourceSessions">
-      {{ $t('dashboard.study.multiSourceSessionUserSelection') }}
-    </p>
     <p v-else>{{ $t('dashboard.study.selectMode') }}</p>
   </div>
 </template>
@@ -30,7 +27,7 @@ import BasicForm from "@/basic/Form.vue";
  * (documents split manually between selected reviewers), and session-user-based
  * (each study session is assigned to its original user).
  * State is persisted via modalValue so navigating back restores the user's choices.
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "DistributionStep",
@@ -45,8 +42,6 @@ export default {
     selectedReviewer: { type: Array, required: false, default: () => [] },
     selectedAssignments: { type: Array, required: false, default: () => [] },
     assignmentType: { type: String, required: false, default: 'document' },
-    assignmentCount: { type: Number, required: false, default: null },
-    usesMultipleSourceSessions: { type: Boolean, required: false, default: false },
     roles: { type: Array, required: false, default: () => [] },
     reviewerSelectionModeFields: { type: Array, required: false, default: () => [] },
   },
@@ -82,7 +77,7 @@ export default {
           .reduce((a, b) => a + b, 0);
     },
     remainingAssignments() {
-      return (this.assignmentCount ?? this.selectedAssignments.length) - this.reviewerNumberOfAssignments;
+      return this.selectedAssignments.length - this.reviewerNumberOfAssignments;
     },
     reviewerSelectionFields() {
       return this.selectedReviewer.map(user => ({
@@ -114,13 +109,6 @@ export default {
       return this.selectionValid;
     },
     numberOfReviews() {
-      if (this.usesMultipleSourceSessions) {
-        if (this.reviewerSelectionMode.mode === 'session_user') return this.assignmentCount;
-        if (this.reviewerSelectionMode.mode === 'role') {
-          return this.selectedReviewer.reduce((total, reviewer) => total + (reviewer.roles || [])
-              .reduce((count, roleId) => count + Number(this.roleSelection[roleId] || 0), 0), 0);
-        }
-      }
       if (this.reviewerSelectionMode.mode === 'role') {
         return Object.values(this.roleSelection)
             .map(value => parseInt(value, 0))
