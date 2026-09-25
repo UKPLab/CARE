@@ -127,6 +127,19 @@ async function setupOrcidStrategy(server) {
     }
 }
 
+// Escapes RFC 4515 special characters so untrusted values cannot alter LDAP search filter semantics.
+function escapeLdapFilterValue(value) {
+    return String(value).replace(/[\\*()\0]/g, (char) => {
+        switch (char) {
+            case '\\': return '\\5c';
+            case '*': return '\\2a';
+            case '(': return '\\28';
+            case ')': return '\\29';
+            default: return '\\00';
+        }
+    });
+}
+
 async function setupLdapStrategy(server) {
     const enabled = (await server.db.models['setting'].get('system.auth.ldap.enabled')) === 'true';
     if (!enabled) {
@@ -152,12 +165,12 @@ async function setupLdapStrategy(server) {
         return;
     }
 
-    const serverConfig = {
-        url,
-        bindDN,
-        bindCredentials,
-        searchBase,
-        searchFilter,
+    // Build the search filter per-request, substituting {{username}} ourselves with an escaped
+    // value so a malicious username cannot inject LDAP filter syntax (CWE-90).
+    const serverConfig = (req, callback) => {
+        const username = req?.body?.username;
+        const safeSearchFilter = searchFilter.replace(/{{username}}/g, escapeLdapFilterValue(username));
+        callback(null, { url, bindDN, bindCredentials, searchBase, searchFilter: safeSearchFilter });
     };
 
     try {
