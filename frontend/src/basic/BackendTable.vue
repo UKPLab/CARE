@@ -35,11 +35,6 @@
     }"
     :style="tableWrapperStyle"
   >
-    <div
-      v-if="isInfiniteMode && topSpacerHeight > 0"
-      class="virtual-spacer-fill"
-      :style="{ height: topSpacerHeight + 'px' }"
-    ></div>
     <table
       ref="tableElement"
       :class="[tableClass, { 'table-virtual': isInfiniteMode }]"
@@ -114,6 +109,13 @@
         </tr>
       </thead>
       <tbody ref="tableBody">
+        <tr v-if="isInfiniteMode && topSpacerHeight > 0">
+          <td
+            :colspan="emptyColspan"
+            class="virtual-spacer-fill"
+            :style="{ height: topSpacerHeight + 'px' }"
+          ></td>
+        </tr>
         <tr v-if="!showPlaceholderRows && serverSidePagination && total > 0 && sourceData.length === 0">
           <td
             :colspan="emptyColspan"
@@ -275,13 +277,15 @@
             />
           </td>
         </tr>
+        <tr v-if="isInfiniteMode && bottomSpacerHeight > 0">
+          <td
+            :colspan="emptyColspan"
+            class="virtual-spacer-fill"
+            :style="{ height: bottomSpacerHeight + 'px' }"
+          ></td>
+        </tr>
       </tbody>
     </table>
-    <div
-      v-if="isInfiniteMode && bottomSpacerHeight > 0"
-      class="virtual-spacer-fill"
-      :style="{ height: bottomSpacerHeight + 'px' }"
-    ></div>
   </div>
   <!-- Classic CARE spinner over the skeleton: overlay is outside the scrolled content
        so it does not change scroll height or row-index maths. -->
@@ -520,6 +524,9 @@ export default {
       virtualEnd: 0,
       visibleFirstRow: 0, // global index of the first row on screen
       visibleLastRow: 0,
+      _thumbFraction: null, // scrollbar drag: 0 = first row, 1 = last screen
+      _pinnedRow: null,
+      _windowHold: false, // thumb jump in progress: do not stack another fetch
       viewportHeight: 0,
       scrollTop: 0,
       scrollHeight: 0,
@@ -570,11 +577,19 @@ export default {
       return this.showPlaceholderRows ? this.visibleFirstRow : this.rowsBefore + this.virtualStart;
     },
     topSpacerHeight() {
+      if (this.thumbAwaitingRows) return 0;
       return this.infiniteSliceStart * this.effectiveRowHeight;
     },
     bottomSpacerHeight() {
+      if (this.thumbAwaitingRows) return 0;
       const after = this.total - this.infiniteSliceStart - this.tableData.length;
       return Math.max(0, after) * this.effectiveRowHeight;
+    },
+    /** Scrollbar jumped to rows that are not loaded yet: skeletons sit in the viewport, not under a giant spacer. */
+    thumbAwaitingRows() {
+      // Keep spacers collapsed for the whole jump, including the moment rows arrive,
+      // so the viewport does not fall into an empty block and schedule another load.
+      return this._pinnedRow != null;
     },
     /** True when the viewport is looking at rows we have not fetched yet. */
     infiniteViewportUnloaded() {
@@ -612,7 +627,7 @@ export default {
           // Short placeholder so the ID column does not inflate to `__skeleton_80000`
           // and then snap back when real numeric ids arrive.
           id: "00000",
-          __sid: `__skeleton_${this.visibleFirstRow + i}`,
+          __sid: `__skeleton_${i}`,
           __skeleton: true,
         });
       }
@@ -649,19 +664,22 @@ export default {
     },
     infiniteThumbHeight() {
       const view = this.viewportHeight || 1;
-      const content = Math.max(this.scrollHeight || view, view);
-      return Math.max(32, (view / content) * view);
+      const total = Math.max(1, this.total);
+      const visible = Math.min(total, Math.max(1, Math.round(view / this.effectiveRowHeight)));
+      return Math.max(32, (visible / total) * view);
     },
     infiniteThumbStyle() {
       const view = this.viewportHeight || 1;
-      const content = Math.max(this.scrollHeight || view, view);
       const thumb = this.infiniteThumbHeight;
-      const maxScroll = Math.max(1, content - view);
       const maxTop = Math.max(0, view - thumb);
-      const top = (this.scrollTop / maxScroll) * maxTop;
+      const maxFirst = Math.max(1, this.total - Math.round(view / this.effectiveRowHeight));
+      const index = this._thumbFraction != null
+        ? this.rowIndexForFraction(this._thumbFraction)
+        : (this._pinnedRow != null ? this._pinnedRow : this.visibleFirstRow);
+      const fraction = maxFirst > 0 ? index / maxFirst : 0;
       return {
         height: `${thumb}px`,
-        top: `${top}px`,
+        top: `${Math.max(0, Math.min(maxTop, fraction * maxTop))}px`,
       };
     },
     infiniteShellStyle() {
@@ -2260,7 +2278,15 @@ export default {
     attachInfiniteScroll() {
       this.detachInfiniteScroll();
       this._scrollTarget = this.infiniteScrollTarget();
-      this._scrollHandler = () => this.scheduleVirtualUpdate();
+      this._scrollHandler = () => {
+        if (this._suppressScroll) {
+          this._suppressScroll = false;
+          return;
+        }
+        this._pinnedRow = null;
+        this._thumbFraction = null;
+        this.scheduleVirtualUpdate();
+      };
       (this._scrollTarget || window).addEventListener("scroll", this._scrollHandler, {passive: true});
       window.addEventListener("resize", this._scrollHandler, {passive: true});
       // First layout often has clientHeight 0 / a few rows; wait for the 65vh box to settle.
@@ -2294,7 +2320,7 @@ export default {
       const thumb = this.infiniteThumbHeight;
       const maxTop = Math.max(0, rect.height - thumb);
       const y = event.clientY - rect.top - thumb / 2;
-      this.scrollWrapperToThumb(Math.max(0, Math.min(maxTop, y)), maxTop);
+      this.previewThumb(Math.max(0, Math.min(maxTop, y)), maxTop);
       this._thumbDrag = {
         maxTop,
         offset: thumb / 2,
@@ -2303,7 +2329,7 @@ export default {
       this._onThumbMove = (moveEvent) => {
         if (!this._thumbDrag) return;
         const next = moveEvent.clientY - this._thumbDrag.rectTop - this._thumbDrag.offset;
-        this.scrollWrapperToThumb(
+        this.previewThumb(
           Math.max(0, Math.min(this._thumbDrag.maxTop, next)),
           this._thumbDrag.maxTop
         );
@@ -2312,13 +2338,50 @@ export default {
       window.addEventListener("mousemove", this._onThumbMove);
       window.addEventListener("mouseup", this._onThumbUp);
     },
-    scrollWrapperToThumb(thumbTop, maxTop) {
+    /** Thumb follows the pointer. No fetch until the button is released. */
+    previewThumb(thumbTop, maxTop) {
+      const fraction = maxTop > 0 ? thumbTop / maxTop : 0;
+      const target = this.rowIndexForFraction(fraction);
+      const visible = Math.max(1, Math.round((this.viewportHeight || 1) / this.effectiveRowHeight));
+      this._thumbFraction = fraction;
+      this._pinnedRow = target;
+      this.visibleFirstRow = target;
+      this.visibleLastRow = Math.min(Math.max(0, this.total - 1), target + visible - 1);
+      const outside = target < this.rowsBefore || target >= this.rowsBefore + this.loadedCount;
       const wrapper = this.$refs.tableWrapper;
-      if (!wrapper) return;
-      const maxScroll = Math.max(0, wrapper.scrollHeight - wrapper.clientHeight);
-      wrapper.scrollTop = maxTop > 0 ? (thumbTop / maxTop) * maxScroll : 0;
+      if (outside && wrapper) {
+        this._suppressScroll = true;
+        wrapper.scrollTop = 0;
+      }
+    },
+    /**
+     * Apply the thumb position once. A target already inside the loaded window only
+     * scrolls; a target outside it is the one case that fetches.
+     */
+    commitThumbFraction() {
+      const fraction = this._thumbFraction;
+      this._thumbFraction = null;
+      if (fraction == null || !this.total) return;
+      const target = this.rowIndexForFraction(fraction);
+      const visible = Math.max(1, Math.round((this.viewportHeight || 1) / this.effectiveRowHeight));
+      this._pinnedRow = target;
+      this.visibleFirstRow = target;
+      this.visibleLastRow = Math.min(Math.max(0, this.total - 1), target + visible - 1);
+      this._thumbFraction = null;
+      const windowStart = this.rowsBefore;
+      const windowEnd = windowStart + this.loadedCount;
+      if (target >= windowStart && target < windowEnd) {
+        this._pinnedRow = null;
+        this._windowHold = false;
+        this.scrollToRowIndex(target);
+        this.scheduleVirtualUpdate();
+        return;
+      }
+      this._windowHold = true;
+      this.scheduleWindowSeek(target);
     },
     stopInfiniteThumbDrag() {
+      this.commitThumbFraction();
       if (this._onThumbMove) {
         window.removeEventListener("mousemove", this._onThumbMove);
       }
@@ -2328,6 +2391,19 @@ export default {
       this._thumbDrag = null;
       this._onThumbMove = null;
       this._onThumbUp = null;
+    },
+    /** Scrollbar fraction 0..1 → first visible row. 1 is the last screen */
+    rowIndexForFraction(fraction) {
+      const visible = Math.max(1, Math.round((this.viewportHeight || 1) / this.effectiveRowHeight));
+      const maxFirst = Math.max(0, this.total - visible);
+      return Math.round(Math.max(0, Math.min(1, fraction)) * maxFirst);
+    },
+    scrollToRowIndex(index) {
+      const wrapper = this.$refs.tableWrapper;
+      if (!wrapper) return;
+      const row = Math.max(0, Math.min(index, Math.max(0, this.total - 1)));
+      this._suppressScroll = true;
+      wrapper.scrollTop = row * this.effectiveRowHeight;
     },
     scheduleVirtualUpdate() {
       if (!this.isInfiniteMode || this._scrollRaf) return;
@@ -2374,9 +2450,13 @@ export default {
       // Spacers sit outside the table, so row N starts at headHeight + N * rowHeight. The
       // sticky header covers the top headHeight pixels of the viewport.
       const headHeight = this.$refs.tableElement?.tHead?.offsetHeight || 0;
-      const first = Math.max(0, Math.floor(this.scrollTop / rowHeight));
+      const first = this._pinnedRow != null
+        ? this._pinnedRow
+        : Math.max(0, Math.floor(this.scrollTop / rowHeight));
       const usable = Math.max(rowHeight, this.viewportHeight - headHeight);
-      const last = Math.max(first, Math.floor((this.scrollTop + usable - 1) / rowHeight));
+      const last = this._pinnedRow != null
+        ? this._pinnedRow + Math.max(1, Math.round(usable / rowHeight)) - 1
+        : Math.max(first, Math.floor((this.scrollTop + usable - 1) / rowHeight));
       this.visibleFirstRow = Math.min(first, lastRow);
       this.visibleLastRow = Math.min(last, lastRow);
 
@@ -2395,8 +2475,9 @@ export default {
     /** Pull the next block in, or jump the window when the viewport left it entirely. */
     maintainInfiniteWindow() {
       if (!this.isInfiniteMode || this.queryLoading || this._windowFetchBusy) return;
-      // A seek is already queued for this viewport; do not stack more work on top of it.
-      if (this._seekTimer) return;
+      // Thumb jump owns the viewport until its rows are on screen. A resize in that
+      // gap used to queue a second and third load.
+      if (this._pinnedRow != null || this._windowHold || this._seekTimer) return;
       if (this.loadedCount === 0) {
         // Window ran dry (e.g. everything on it was deleted) but the result set is not empty.
         if (this.total > 0) {
@@ -2406,11 +2487,12 @@ export default {
       }
       const windowStart = this.rowsBefore;
       const windowEnd = this.rowsBefore + this.loadedCount;
+      const anchor = this._pinnedRow != null ? this._pinnedRow : this.visibleFirstRow;
 
-      if (this.visibleLastRow < windowStart - this.infinitePrefetchRows
-        || this.visibleFirstRow > windowEnd + this.infinitePrefetchRows) {
+      if (anchor < windowStart - this.infinitePrefetchRows
+        || anchor > windowEnd + this.infinitePrefetchRows) {
         // Scrollbar was dragged past everything we hold — re-anchor by row index.
-        this.scheduleWindowSeek(this.visibleFirstRow);
+        this.scheduleWindowSeek(anchor);
         return;
       }
       if (this.rowsAfter > 0 && windowEnd - this.visibleLastRow <= this.infinitePrefetchRows) {
@@ -2434,7 +2516,10 @@ export default {
       this.$nextTick(() => {
         const target = this._scrollTarget || this.infiniteScrollTarget();
         if (target) {
-          target.scrollTop += px;
+          this._suppressScroll = true;
+          const before = target.scrollTop;
+          target.scrollTop = before + px;
+          if (target.scrollTop === before) this._suppressScroll = false;
         } else if (typeof window !== "undefined") {
           window.scrollBy(0, px);
         }
@@ -2562,17 +2647,29 @@ export default {
      * the one place that sends an offset; the window keeps walking by cursor afterwards.
      */
     async seekWindow(targetRow) {
-      if (!this.isInfiniteMode || this._windowFetchBusy || !this.$socket?.connected) return;
-      const wanted = Math.min(this.infiniteBlockSize * 2, this.infiniteMaxRows);
+      if (!this.isInfiniteMode || this._windowFetchBusy || !this.$socket?.connected) {
+        if (!this._windowFetchBusy) this._windowHold = false;
+        return;
+      }
+      // Sit the target in the middle of the window. A short pad left it inside the
+      // prefetch margin, so one click immediately fetched the block above and below.
+      const wanted = this.infiniteMaxRows;
       const highest = Math.max(0, this.total - wanted);
-      const offset = Math.max(0, Math.min(targetRow - Math.floor(this.infiniteBlockSize / 3), highest));
+      const offset = Math.max(0, Math.min(targetRow - Math.floor(wanted / 2), highest));
       const token = ++this._seekToken;
+      this._windowHold = true;
       this._windowFetchBusy = true;
       try {
         const {items, meta} = await this.requestQueryItems(
           this.buildQueryPayload({offset, limit: wanted})
         );
-        if (!this.isInfiniteMode || token !== this._seekToken) return;
+        if (!this.isInfiniteMode || token !== this._seekToken) {
+          if (token === this._seekToken) {
+            this._windowHold = false;
+            this._pinnedRow = null;
+          }
+          return;
+        }
         this.queryItems = items;
         this.virtualStart = 0;
         this.virtualEnd = items.length;
@@ -2587,12 +2684,24 @@ export default {
         this.enteringTopIds = [];
         this.enteringBottomIds = [];
         this.syncWindowQuery();
+        const loadedLast = this.rowsBefore + Math.max(0, items.length - 1);
+        const show = Math.min(targetRow, loadedLast);
+        const local = Math.max(0, show - this.rowsBefore);
+        this.virtualStart = local;
+        this.virtualEnd = items.length;
+        // Spacers stay collapsed while pinned, so these rows sit in the viewport at once.
         this.$nextTick(() => {
-          this.measureRowHeight();
-          this.updateVirtualWindow();
+          this._pinnedRow = null;
+          this.$nextTick(() => {
+            this.scrollToRowIndex(show);
+            this.updateVirtualWindow();
+            this._windowHold = false;
+          });
         });
       } catch (err) {
         console.warn("BackendTable seekWindow failed", err);
+        this._windowHold = false;
+        this._pinnedRow = null;
       } finally {
         this._windowFetchBusy = false;
       }
@@ -2980,9 +3089,8 @@ export default {
 }
 
 .virtual-spacer-fill {
-  display: block;
-  width: 100%;
-  flex-shrink: 0;
+  padding: 0;
+  border: 0;
   pointer-events: none;
 }
 
