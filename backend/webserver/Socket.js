@@ -9,6 +9,7 @@ const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("..
 const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../utils/helper/queryTableColumnFilters.js");
 const {dashboardSortInclude} = require("../utils/helper/queryTableJoinSort.js");
 const {ensureStudyDashboardSortFresh} = require("../db/studyDashboardSortRefresh.js");
+const {SECRET_COLUMN_SET, hiddenColumns} = require("../utils/helper/sensitiveColumns.js");
 
 // Upper bound for a query-scoped bulk ("select all matching")
 const MAX_BULK_SELECTION = 100000;
@@ -232,12 +233,11 @@ module.exports = class Socket {
      */
     async broadcastTransactionChanges(transaction) {
         try {
-            const defaultExcludes = ["deletedAt", "passwordHash", "salt", "apiKey"];
             if (transaction && transaction.changes) {
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
                         const tableName = entry.constructor.tableName;
-                        const entryData = _.omit(entry.dataValues, defaultExcludes);
+                        const entryData = {...entry.dataValues};
                         const operation = entry._broadcastOp
                             || (entryData.deleted ? "delete" : "update");
                         if (!acc.has(tableName)) {
@@ -731,7 +731,7 @@ module.exports = class Socket {
             allFilter[Op.or] = mergedClientFilter;
         }
 
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt", "apiKey"];
+        const defaultExcludes = hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"]);
         let allAttributes = {exclude: defaultExcludes};
         // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
         const filtersAndAttributes = await this.getFiltersAndAttributes(
@@ -946,10 +946,7 @@ module.exports = class Socket {
             return [];
         }
         // Columns a client may never pull onto a row via a parent inject, regardless of table.
-        const forbiddenInjectFields = new Set([
-            "passwordHash", "salt", "initialPassword", "apiKey",
-            "twoFactorSecret", "rolesUpdatedAt", "deleted", "deletedAt",
-        ]);
+        const forbiddenInjectFields = new Set(hiddenColumns(["rolesUpdatedAt", "deleted", "deletedAt"]));
         const isAutoTable = (table) => typeof table === "string" && !!this.models[table]?.autoTable;
 
         return (await Promise.all(injects
@@ -1106,7 +1103,7 @@ module.exports = class Socket {
                 // and without it byId lookup below fails (firstName/lastName never attached).
                 const parentAttrs = injection.fields?.length
                     ? ["id", ...injection.fields.filter((f) => f !== "id")]
-                    : {exclude: ["deleted", "deletedAt", "passwordHash", "salt", "initialPassword", "apiKey"]};
+                    : {exclude: hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"])};
                 const parents = await parentModel.findAll({
                     where: parentWhere,
                     attributes: parentAttrs,
@@ -1259,7 +1256,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt","apiKey"];
+        const defaultExcludes = hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"]);
         let allAttributes = {
             exclude: defaultExcludes,
         };
@@ -1478,6 +1475,75 @@ module.exports = class Socket {
     }
 
     /**
+     * Model columns this viewer may receive. Null means every non-secret column (admin,
+     * a table whose access map does not list columns, or a viewer with no column grant).
+     * @param {string} tableName
+     * @param {number} userId
+     * @param {Date} rolesUpdatedAt
+     * @returns {Promise<Set<string>|null>}
+     */
+    async broadcastColumnAllowList(tableName, userId, rolesUpdatedAt) {
+        if (await this.isAdmin(userId, rolesUpdatedAt)) {
+            return null;
+        }
+        const model = this.models[tableName];
+        const accessMap = model?.accessMap || [];
+        const listsColumns = accessMap.some((rule) => rule.columns);
+        if (!listsColumns) {
+            return null;
+        }
+        const filters = await this.getFiltersAndAttributes(
+            userId, {}, {exclude: []}, tableName, rolesUpdatedAt
+        );
+        const listed = filters.attributes;
+        if (!Array.isArray(listed)) {
+            return null;
+        }
+        const names = new Set();
+        for (const item of listed) {
+            if (typeof item === "string") {
+                names.add(item);
+            } else if (item && typeof item === "object") {
+                for (const key of Object.keys(item)) {
+                    names.add(key);
+                }
+            }
+        }
+        return names;
+    }
+
+    /**
+     * Drops secret columns from a live update. Keeps id and deleted.
+     * When allowed is set, also keeps only those columns.
+     * @param {Object[]} rows
+     * @param {Set<string>|null} allowed null keeps every non-secret column
+     * @returns {Object[]}
+     */
+    projectBroadcastRows(rows, allowed) {
+        const secret = new Set([...SECRET_COLUMN_SET, "deletedAt"]);
+        return (rows || []).map((row) => {
+            if (!row || typeof row !== "object") {
+                return row;
+            }
+            const projected = {};
+            for (const [key, value] of Object.entries(row)) {
+                if (secret.has(key)) {
+                    continue;
+                }
+                if (key === "id" || key === "deleted") {
+                    projected[key] = value;
+                    continue;
+                }
+                if (allowed && !allowed.has(key)) {
+                    continue;
+                }
+                projected[key] = value;
+            }
+            return projected;
+        });
+    }
+
+    /**
      * Broadcasts data to all clients that have permissions to see it.
      * A Vuex subscription gets {table}Refresh.
      * A mounted BackendTable gets {table}Delta or {table}Stale.
@@ -1492,6 +1558,8 @@ module.exports = class Socket {
         const rows = Array.isArray(data) ? data : [data];
         // Who committed: FE uses this on Delta/Stale (own tab applies now, others may banner).
         const originSocketId = this.socket?.id || null;
+        // One allow-list per user for this broadcast. Several tabs share a userId.
+        const columnAllowCache = new Map();
 
         for (const socket of sockets) {
             const queryHolds = socket.currentQueries?.[tableName];
@@ -1500,15 +1568,24 @@ module.exports = class Socket {
             if (!hasSubscription && !isQueryMode) {
                 continue;
             }
-
             const userId = socket.user.id;
             const rolesUpdatedAt = socket.user.rolesUpdatedAt;
+            if (!columnAllowCache.has(userId)) {
+                columnAllowCache.set(
+                    userId,
+                    await this.broadcastColumnAllowList(tableName, userId, rolesUpdatedAt)
+                );
+            }
+            const allowedColumns = columnAllowCache.get(userId);
+            const project = (payloadRows) => this.projectBroadcastRows(payloadRows, allowedColumns);
             const emitRefresh = (payloadRows) => {
-                if (!hasSubscription || !payloadRows?.length) {
+                const projected = project(payloadRows);
+                if (!hasSubscription || projected.length === 0) {
                     return;
                 }
-                this.io.to(socket.id).emit(tableName + "Refresh", payloadRows);
+                this.io.to(socket.id).emit(tableName + "Refresh", projected);
             };
+
             // Helper: send this socket either Stale (mixed ops) or one Delta per row.
             const emitQueryMode = async (filteredRows) => {
                 // No operation (e.g. mixed delete+update in one txn) → Stale, not stacked Deltas.
@@ -1520,7 +1597,7 @@ module.exports = class Socket {
                     return;
                 }
                 const enrichedRows = await this.enrichQueryTableItems(
-                    tableName, filteredRows, userId, rolesUpdatedAt
+                    tableName, project(filteredRows), userId, rolesUpdatedAt
                 );
                 // One Delta per row so bulk same-op (multi-delete) can animate / bump
                 // immediately for on-page and next-page rows without a Stale banner.
