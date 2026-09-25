@@ -504,6 +504,9 @@ export default {
       _deltaHandler: null,
       _staleHandler: null,
       _pendingConnectFetch: null,
+      _queryHold: false,
+      _queryHeldOnSocket: false,
+      _onQueryConnect: null,
       _pendingLoadBusy: false,
       _enteringClearTimer: null,
       _pendingBackfillCount: 0,
@@ -1472,10 +1475,39 @@ export default {
         this.$socket.on(this.table + "Delta", this._deltaHandler);
         this.$socket.on(this.table + "Stale", this._staleHandler);
       }
+      this.holdQueryMode();
       // fetchQueryPage waits for socket.connect when autoConnect:false
       this.fetchQueryPage();
     },
+    // Tell the server this table is open so it also sends row updates.
+    holdQueryMode() {
+      if (this._queryHold || !this.table || !this.$socket) return;
+      this._queryHold = true;
+      this._onQueryConnect = () => {
+        if (!this._queryHold || !this.table) return;
+        this._queryHeldOnSocket = true;
+        this.$socket.emit("queryTableAcquire", {table: this.table});
+      };
+      this.$socket.on("connect", this._onQueryConnect);
+      if (this.$socket.connected) {
+        this._onQueryConnect();
+      }
+    },
+    // table closed so server can drop that hold. 
+    releaseQueryMode() {
+      if (this._onQueryConnect && this.$socket) {
+        this.$socket.off("connect", this._onQueryConnect);
+      }
+      this._onQueryConnect = null;
+      if (this._queryHeldOnSocket && this.table && this.$socket) {
+        this.$socket.emit("queryTableRelease", {table: this.table});
+      }
+      this._queryHold = false;
+      this._queryHeldOnSocket = false;
+    },
+    // Stop listening for row updates and tell the server this table closed.
     teardownQueryMode() {
+      this.releaseQueryMode();
       if (!this.table || !this.$socket) return;
       if (this._deltaHandler || this._staleHandler) {
         if (this.sockets?.unsubscribe) {

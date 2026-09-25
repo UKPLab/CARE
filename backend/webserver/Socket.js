@@ -1478,8 +1478,8 @@ module.exports = class Socket {
 
     /**
      * Broadcasts data to all clients that have permissions to see it.
-     * Query-mode sockets (socket.currentQueries[table]) receive {table}Delta or {table}Stale
-     * instead of a full {table}Refresh
+     * A Vuex subscription gets {table}Refresh.
+     * A mounted BackendTable gets {table}Delta or {table}Stale.
      * @param {string} tableName The name of table
      * @param {object|Array} data The data to broadcast
      * @param {string|null} [operation] create|update|delete — null means bulk/unknown → Stale for query-mode
@@ -1493,13 +1493,21 @@ module.exports = class Socket {
         const originSocketId = this.socket?.id || null;
 
         for (const socket of sockets) {
-            const isQueryMode = !!(socket.currentQueries && socket.currentQueries[tableName]);
-            if (!(tableName in socket.appDataSubscriptions.tables) && !isQueryMode) {
+            const queryHolds = socket.currentQueries?.[tableName];
+            const isQueryMode = typeof queryHolds === "number" && queryHolds > 0;
+            const hasSubscription = (socket.appDataSubscriptions?.tables?.[tableName]?.size || 0) > 0;
+            if (!hasSubscription && !isQueryMode) {
                 continue;
             }
 
             const userId = socket.user.id;
             const rolesUpdatedAt = socket.user.rolesUpdatedAt;
+            const emitRefresh = (payloadRows) => {
+                if (!hasSubscription || !payloadRows?.length) {
+                    return;
+                }
+                this.io.to(socket.id).emit(tableName + "Refresh", payloadRows);
+            };
             // Helper: send this socket either Stale (mixed ops) or one Delta per row.
             const emitQueryMode = async (filteredRows) => {
                 // No operation (e.g. mixed delete+update in one txn) → Stale, not stacked Deltas.
@@ -1526,10 +1534,9 @@ module.exports = class Socket {
 
             // Same user (any tab): still respect query-mode vs legacy
             if (socket.user.id === this.userId) {
+                emitRefresh(rows);
                 if (isQueryMode) {
                     await emitQueryMode(rows);
-                } else {
-                    this.io.to(socket.id).emit(tableName + "Refresh", rows);
                 }
                 continue;
             }
@@ -1541,10 +1548,9 @@ module.exports = class Socket {
 
             // if socket is admin or table is public, also just send (unless model requires per-user filtering/expansion)
             if (!hasModelUserFilter && !hasBroadcastExpander && (isAdmin || isPublicTable)) {
+                emitRefresh(rows);
                 if (isQueryMode) {
                     await emitQueryMode(rows);
-                } else {
-                    this.io.to(socket.id).emit(tableName + "Refresh", rows);
                 }
                 continue;
             }
@@ -1575,12 +1581,8 @@ module.exports = class Socket {
                     for (const row of hiddenIdRows) {
                         this.io.to(socket.id).emit(tableName + "Delta", {operation, row, originSocketId});
                     }
-                } else {
-                    const payload = [...visibleRows, ...hiddenIdRows];
-                    if (payload.length > 0) {
-                        this.io.to(socket.id).emit(tableName + "Refresh", payload);
-                    }
                 }
+                emitRefresh([...visibleRows, ...hiddenIdRows]);
                 continue;
             }
             if (visibleRows.length === 0) {
@@ -1588,9 +1590,8 @@ module.exports = class Socket {
             }
             if (isQueryMode) {
                 await emitQueryMode(visibleRows);
-            } else {
-                this.io.to(socket.id).emit(tableName + "Refresh", visibleRows);
             }
+            emitRefresh(visibleRows);
         }
     }
 

@@ -464,10 +464,6 @@ class AppSocket extends Socket {
 
     /**
      * Request-response page query for an autoTable.
-     * Stores params on socket.currentQueries[table]
-     * so broadcastTable can emit Delta/Stale instead of full Refresh.
-     *
-     * Cursor (keyset) pagination via sequelize-cursor-pagination. No OFFSET.
      *
      * @socketEvent queryTable
      * @param {Object} data
@@ -635,7 +631,7 @@ class AppSocket extends Socket {
         const startCursor = edges.length ? edges[0].cursor : null;
         const endCursor = edges.length ? edges[edges.length - 1].cursor : null;
 
-        // hasNext / hasPrev from travel direction + the overflow probe (exact, no extra COUNT).
+        // Whether there is a page before and after this one.
         let hasNext;
         let hasPrev;
         if (fromEnd) {
@@ -654,21 +650,6 @@ class AppSocket extends Socket {
             hasPrev = false;
             hasNext = overflow;
         }
-
-        if (!this.socket.currentQueries) {
-            this.socket.currentQueries = {};
-        }
-        this.socket.currentQueries[table] = {
-            limit,
-            sort: {column: sortColumn, direction: sortDirection},
-            after,
-            before,
-            fromEnd,
-            offset,
-            filter,
-            search: search || null,
-            columnFilters: columnFilters || null,
-        };
 
         return {
             items: items || [],
@@ -782,6 +763,40 @@ class AppSocket extends Socket {
         }   
     }
 
+    /**
+     * One mounted BackendTable holds query mode for its table.
+     * broadcastTable then emits Delta/Stale in addition to Refresh for Vuex subscribers.
+     * @param {{table?: string}} data
+     */
+    acquireQueryTable(data) {
+        const table = data?.table;
+        if (typeof table !== "string" || !this.models[table]?.autoTable) {
+            return;
+        }
+        if (!this.socket.currentQueries) {
+            this.socket.currentQueries = {};
+        }
+        const current = this.socket.currentQueries[table];
+        this.socket.currentQueries[table] = (typeof current === "number" ? current : 0) + 1;
+    }
+
+    /**
+     * Drop one BackendTable hold. The table leaves query mode when the last hold is gone.
+     * @param {{table?: string}} data
+     */
+    releaseQueryTable(data) {
+        const table = data?.table;
+        if (!this.socket.currentQueries || typeof table !== "string") {
+            return;
+        }
+        const current = this.socket.currentQueries[table];
+        if (typeof current !== "number" || current <= 1) {
+            delete this.socket.currentQueries[table];
+            return;
+        }
+        this.socket.currentQueries[table] = current - 1;
+    }
+
     init() {
 
         this.createSocket("appDataUpdate", this.updateAppData, {}, true);
@@ -791,6 +806,8 @@ class AppSocket extends Socket {
         this.createSocket("subscribeAppData", this.subscribeAppData, {}, false);
         this.createSocket("unsubscribeAppData", this.unsubscribeAppData, {}, false);
         this.createSocket("queryTable", this.queryTable, {}, false);
+        this.createSocket("queryTableAcquire", this.acquireQueryTable, {}, false);
+        this.createSocket("queryTableRelease", this.releaseQueryTable, {}, false);
         this.createSocket("queryTableDistinct", this.queryTableDistinct, {}, false);
         this.createSocket("appInit", this.sendInit, {}, false);
         this.createSocket("appSettingSet", this.sendOverallSetting, {}, false);
