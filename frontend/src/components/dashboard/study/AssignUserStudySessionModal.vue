@@ -156,13 +156,9 @@ export default {
     open(studySession) {
       this.reset();
       this.studySession = studySession;
-      this.$socket.emit("studySessionSubscribe", { studyId: this.studySession.studyId });
       this.$refs.assignUserStepper.open();
     },
     close() {
-      if (this.studySession) {
-        this.$socket.emit("studySessionUnsubscribe", { studyId: this.studySession.studyId });
-      }
       this.$refs.assignUserStepper.close();
     },
     reset() {

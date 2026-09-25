@@ -404,7 +404,8 @@
     "columnRequired": "Spaltenname ist erforderlich",
     "columnNotDistinct": "Spalte {column} ist für Distinct-Werte nicht verfügbar",
     "selectionTooLarge": "Zu viele Zeilen ausgewählt (mehr als {limit}). Bitte den Filter eingrenzen.",
-    "scopeInvalid": "Diese Auswahl ist nicht mehr gültig. Gehen Sie zurück und wählen Sie die Workflow-Schritte erneut aus."
+    "scopeInvalid": "Diese Auswahl ist nicht mehr gültig. Gehen Sie zurück und wählen Sie die Workflow-Schritte erneut aus.",
+    "inspectStudyRequired": "Zum Laden dieser Sitzungen ist eine Studie erforderlich."
   },
   "backgroundTask": {
     "noDocumentSocketForClient": "Kein DocumentSocket für den Client gefunden",

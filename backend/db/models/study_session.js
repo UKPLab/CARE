@@ -107,6 +107,7 @@ module.exports = (sequelize, DataTypes) => {
          *
          * - `scope.assessment`: Publish Assessment — closed studies running a configuration at
          *   picked workflow steps.
+         * - `scope.inspect`: Inspect Sessions — one study, owner or admin.
          * - `scope.assignmentBulk`: Add Bulk/Single Assignment — sessions whose study uses the
          *   mapped target workflow.
          *
@@ -114,7 +115,23 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object|null>} WHERE fragment, or null when no known scope key is set
          * @throws {TranslatableError} when a known scope key is present but unusable
          */
-        static async getQueryTableScopeFilter(scope) {
+        static async getQueryTableScopeFilter(scope, ctx = {}) {
+            if (scope?.inspect) {
+                const studyId = positiveInt(scope.inspect.studyId);
+                if (!studyId) {
+                    throw new TranslatableError("errors.queryTable.inspectStudyRequired");
+                }
+                const study = await sequelize.models.study.getById(studyId);
+                if (!study) {
+                    throw new TranslatableError("errors.studies.studyNotFound");
+                }
+                const admin = typeof ctx.isAdmin === "function" && await ctx.isAdmin();
+                // Owner of this study, or an admin.
+                if (!admin && ctx.userId !== study.userId) {
+                    throw new TranslatableError("errors.studies.notAllowedToSeeStudy");
+                }
+                return {studyId};
+            }
             if (scope?.assignmentBulk) {
                 const workflowId = positiveInt(scope.assignmentBulk.workflowId);
                 if (!workflowId) {

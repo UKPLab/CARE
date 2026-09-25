@@ -676,8 +676,7 @@ export default {
       return true;
     },
     /**
-     * Typed `key:operator` (sessions:=) opens the pending filter. A complete value stays text until
-     * Enter. A bare word (sessions) stays ordinary search text.
+     * Typed `key:operator` (sessions:=) opens the pending filter. A complete value stays text until Enter
      */
     tryPromoteDraftKey() {
       if (this.pending.key || this.skipDraftPromote) return;

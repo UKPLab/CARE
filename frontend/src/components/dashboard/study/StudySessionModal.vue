@@ -10,7 +10,6 @@
     size="lg"
     name="studySessionModal"
     remove-close
-    @show="onSessionModalShow"
     @hide="onSessionModalHide"
   >
     <template #title>
@@ -25,11 +24,11 @@
     </template>
     <template #body>
       <StudySessionTable
+        v-if="studyId"
+        ref="sessionTable"
         :study-id="studyId"
         :study="study"
-        :current-user-only="false"
         :show-all="true"
-        @update="$emit('update')"
         @session-deleted="$emit('session-deleted', $event)"
         @session-opened="$emit('session-opened', $event)"
       />
@@ -109,37 +108,15 @@ export default {
     close() {
       this.$refs.studySessionModal.close();
     },
-    loadStudySessions() {
-      if (this.studyId) {
-        this.$socket.emit("studySessionSubscribe", { studyId: this.studyId });
-      }
-    },
-    onSessionModalShow() {
-      this.loadStudySessions();
-    },
     onSessionModalHide() {
-      // Nested Add Reviewer only suspends this modal. Do not wipe Vuex then.
       if (this.nestedModalOpen) {
         return;
       }
-      this.dropStudySessions();
       this.$emit("hide");
     },
     onNestedModalHide() {
       this.nestedModalOpen = false;
-      this.loadStudySessions();
-    },
-    dropStudySessions() {
-      if (this.studyId) {
-        this.$socket.emit("studySessionUnsubscribe", { studyId: this.studyId });
-        const sessions = this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId) || [];
-        if (sessions.length) {
-          this.$store.commit(
-            "table/study_session/SOCKET_study_sessionRefresh",
-            sessions.map((session) => ({id: session.id, deleted: true}))
-          );
-        }
-      }
+      this.$refs.sessionTable?.refetch?.();
     },
     addSingleAssignment() {
       this.nestedModalOpen = true;

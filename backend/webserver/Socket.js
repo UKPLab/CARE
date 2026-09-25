@@ -750,6 +750,7 @@ module.exports = class Socket {
             userId: this.userId,
             rolesUpdatedAt: this.rolesUpdatedAt,
             hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
+            isAdmin: () => this.isAdmin(this.userId, this.rolesUpdatedAt),
             // Nested scopes (e.g. reviewer "from previous sessions") re-resolve another table's
             // query-scoped selection without shipping id lists through the client.
             resolveQueryTableIds: (params) => this.resolveQueryTableIds(params),
