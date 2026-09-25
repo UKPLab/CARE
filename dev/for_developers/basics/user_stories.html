@@ -183,6 +183,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#switch-between-workflow-steps">Switch Between Workflow Steps</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#nlp-generated-review-after-assessment">NLP-Generated Review After Assessment</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#view-study-sessions-as-coordinator">View Study Sessions as Coordinator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#import-and-export-content-templates">Import and Export Content Templates</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#create-and-manage-study-templates">Create and Manage Study Templates</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#sync-and-detach-study-templates">Sync and Detach Study Templates</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#grade-a-study-session">Grade a Study Session</a></li>
@@ -2433,6 +2434,30 @@ can review participant progress and results without modifying their work.</p>
 <li><p>All editing options are disabled.</p></li>
 <li><p>If I have the right to view private user information, participant real names are
 shown in the session table; otherwise they are not visible.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="import-and-export-content-templates">
+<h3>Import and Export Content Templates<a class="headerlink" href="#import-and-export-content-templates" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As a <strong>Participant</strong>, I want to export a content template to a file and import
+it on another CARE instance, so that I can reuse the email, document, or prompt
+text.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p>From Dashboard → Templates I can export one template, or every template on
+my list. A public template I have not copied is not included.</p></li>
+<li><p>Import reads JSON and YAML.</p></li>
+<li><p>The file includes the saved text for each language.</p></li>
+<li><p>Import creates a new template that I own, with that text, and it is not published.</p></li>
+<li><p>I can publish it afterwards with the existing publish action.</p></li>
+<li><p>Only an admin can import an email template.</p></li>
 </ul>
 </dd>
 </dl>
