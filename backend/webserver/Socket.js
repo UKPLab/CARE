@@ -925,6 +925,98 @@ module.exports = class Socket {
     }
 
     /**
+     * Restrict client-supplied subscribeAppData injects to a safe whitelist.
+     *
+     * Injects flow into handleInjections. Two of its branches are dangerous with client input:
+     * `sql` evaluates a client string as raw SQL (Sequelize.literal), and `parent`/`count` accept a
+     * client-chosen table and column list. A subscribing client is therefore allowed only:
+     *   - `count`: related-row counts against a real autoTable, plain string keys, no `where`.
+     *   - `parent`: flatten a real autoTable's columns onto each row, but never sensitive/credential
+     *     columns (passwordHash, apiKey, initialPassword, ...) and only with an explicit field list.
+     * `sql` and any client-supplied `where` are dropped entirely. A `parent` field list is then
+     * cut to the columns that table's accessMap grants this viewer, so firstName/lastName/email
+     * on `user` stay behind userPrivateInfo the way a direct subscribe does.
+     *
+     * @param {*} injects client-sent inject list
+     * @returns {Promise<Array<Object>>} sanitized injects (possibly empty)
+     */
+    async sanitizeClientInjects(injects) {
+        if (!Array.isArray(injects)) {
+            return [];
+        }
+        // Columns a client may never pull onto a row via a parent inject, regardless of table.
+        const forbiddenInjectFields = new Set([
+            "passwordHash", "salt", "initialPassword", "apiKey",
+            "twoFactorSecret", "rolesUpdatedAt", "deleted", "deletedAt",
+        ]);
+        const isAutoTable = (table) => typeof table === "string" && !!this.models[table]?.autoTable;
+
+        return (await Promise.all(injects
+            .map(async (inject) => {
+                if (!inject || !isAutoTable(inject.table)) {
+                    return null;
+                }
+                if (inject.type === "count" && typeof inject.by === "string" && typeof inject.as === "string") {
+                    // No client `where`: a count is scoped to the visible rows' foreign keys only.
+                    return {
+                        type: "count",
+                        table: inject.table,
+                        by: inject.by,
+                        as: inject.as,
+                        on: typeof inject.on === "string" ? inject.on : "id",
+                    };
+                }
+                if (inject.type === "parent" && typeof inject.by === "string") {
+                    // Require an explicit field list (no "dump every column" fallback for clients)
+                    // and strip anything sensitive, then anything this viewer may not read.
+                    const requested = Array.isArray(inject.fields)
+                        ? inject.fields.filter((f) => typeof f === "string" && !forbiddenInjectFields.has(f))
+                        : [];
+                    const fields = await this.allowedParentInjectFields(inject.table, requested);
+                    if (fields.length === 0) {
+                        return null;
+                    }
+                    return {
+                        type: "parent",
+                        table: inject.table,
+                        by: inject.by,
+                        fields,
+                    };
+                }
+                // sql injects and anything else are not allowed from a client.
+                return null;
+            })))
+            .filter(Boolean);
+    }
+
+    /**
+     * Columns of a parent table this viewer may copy onto a subscribed row.
+     * Tables with an accessMap of column lists (user: public vs private info) keep only the
+     * columns of the rights the viewer holds. Admin keeps the requested list. A table with no
+     * such column rules is unchanged.
+     * @param {string} table parent table name
+     * @param {Array<string>} fields requested column names
+     * @returns {Promise<Array<string>>}
+     */
+    async allowedParentInjectFields(table, fields) {
+        if (!fields.length) {
+            return [];
+        }
+        const accessMap = this.models[table]?.accessMap || [];
+        const columnRules = accessMap.filter((rule) => Array.isArray(rule.columns) && rule.right);
+        if (columnRules.length === 0 || await this.isAdmin()) {
+            return fields;
+        }
+        const allowed = new Set();
+        for (const rule of columnRules) {
+            if (await this.hasAccess(rule.right)) {
+                rule.columns.forEach((column) => allowed.add(column));
+            }
+        }
+        return fields.filter((field) => allowed.has(field));
+    }
+
+    /**
      * Resolve queryTable inject specs for a model and viewer.
      * Models may define static getQueryTableInjects(ctx) or autoTable.queryInjects.
      * @param {Object} model Sequelize model

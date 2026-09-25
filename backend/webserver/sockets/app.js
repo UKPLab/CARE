@@ -383,6 +383,9 @@ class AppSocket extends Socket {
             throw generateError("VALIDATION_ERROR", "errors.validation.tableNameRequired");
         }
 
+        // Client injects reach handleInjections. Parent fields are cut to the columns this viewer may read.
+        data.inject = await this.sanitizeClientInjects(data.inject);
+
         // add subscription to the list
         const newSubscriptionId = uuidv4();
         const tableName = data.table;
