@@ -29,7 +29,7 @@ Step-by-step (Backend → Frontend)
 
 2. **Subscribe (bottom-left “Example Component” → center “Sockets”)**: On mount, the ``subscribeTable`` plugin emits ``subscribeAppData`` for each table to **Sockets (AppSocket, center)**; the server returns a ``subscriptionId``.
 
-3. **Access-aware filtering (center “Sockets” ↔ top-center “Database”)**: Before sending any data, **Sockets** applies the model’s ``accessMap`` / ``publicTable`` via ``getFiltersAndAttributes`` so each socket only receives permitted rows/columns.
+3. **Access-aware filtering (center “Sockets” ↔ top-center “Database”)**: Before sending any data, **Sockets** applies the model’s ``accessMap`` / ``publicTable`` via ``getReadFilter`` so each socket only receives permitted rows/columns.
 
 4. **Initial snapshot (center “Sockets” → bottom-right “Vuex Store”)**: The server calls ``sendTable`` and emits ``<tableName>Refresh`` to the **Vuex Store (right)** with the current rows. The **same event name** is used later for updates.
 
@@ -37,7 +37,7 @@ Step-by-step (Backend → Frontend)
 
 6. **Backend transaction (center “Sockets” → top-center “Database”)**: ``updateData`` validates, applies defaults, and enforces access; inside a transaction it persists changes to the **Database (top-center)**. On **commit** (``afterCommit``) the server aggregates changed rows of ``autoTable`` models. See also: :ref:`MetaModel behavior <metamodel-behavior>` for the shared logic used in ``updateData``, including soft-deletion, access filtering, and hook handling.
 
-7. **Broadcast (center “Sockets” → right “Vuex Store”)**: ``broadcastTable`` re-applies per-socket visibility with ``getFiltersAndAttributes`` (admins/public can bypass) and emits ``<tableName>Refresh`` only to relevant subscribers; **Vuex (right)** receives the updated data.
+7. **Broadcast (center “Sockets” → right “Vuex Store”)**: ``broadcastTable`` re-applies per-socket visibility with ``getReadFilter`` (admins/public can bypass) and emits ``<tableName>Refresh`` only to relevant subscribers; **Vuex (right)** receives the updated data.
 
 8. **Vuex merge (right “Vuex Store”)**: Each autoTable module handles the ``<tableName>Refresh`` mutation and merges rows (see ``refreshState``); ``refreshCount`` increments.
 
@@ -58,7 +58,7 @@ sendTable
 
 - **Purpose**: send the current snapshot for a table and emit updates to the client.
 - **Preconditions**: only works for models with ``autoTable = true``; otherwise it no-ops with a log.
-- **Filtering**: starts with ``{ deleted: false }`` and OR-adds any provided ``filter``; then applies per-socket access via ``getFiltersAndAttributes`` (may also add allowed columns).
+- **Filtering**: starts with ``{ deleted: false }`` and OR-adds any provided ``filter``; then applies per-socket access via ``getReadFilter`` (may also add allowed columns).
 - **Attributes**: excludes sensitive fields by default (e.g., ``deleted``, ``deletedAt``, ``updatedAt``, ``rolesUpdatedAt``, ``initialPassword``, ``passwordHash``, ``salt``).
 - **Injects**: supports ``{ type: "count", table, by, as }``; counts related rows and injects the result into each entry as ``as``.
 - **Related tables**: if the model’s ``autoTable.foreignTables`` or ``autoTable.parentTables`` are set, it also fetches those and emits ``<relatedTable>Refresh`` for them.
@@ -68,6 +68,17 @@ AppDataUpdate Socket
 --------------------
 
 The ``appDataUpdate`` socket is the generic way to **create or update rows** in models with ``autoTable = true``. It is defined in ``backend/webserver/sockets/app.js`` inside the ``AppSocket`` class:
+
+Before updating an existing row, ``updateData`` calls ``assertWriteAccess``, which
+applies ``getWriteFilter`` to that row. ``getWriteFilter`` uses the same rules as
+``getReadFilter`` with public access removed: ``publicTable``, ``public`` rows, shared
+rows returned by a model's ``getUserFilter``, column-only ``accessMap`` rights and
+``accessMap`` table rules whose ``by`` is not ``id`` grant read access only, never write
+access. A table rule with ``by: "id"`` collects rows the user owns in the other table
+(e.g. ``study_session`` → ``study``) and grants write; any other ``by`` collects what the
+user's own rows point to (e.g. ``study`` ← ``study_session``), which is membership, not
+ownership. Models implementing ``getUserFilter`` return
+``{owned, shared}`` so the socket applies ``shared`` on the read path only.
 
 .. code-block:: javascript
 

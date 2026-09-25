@@ -108,7 +108,7 @@ module.exports = (sequelize, DataTypes) => {
 		 * assignment's assignment_share entry has their userId or one of their roleIds.
 		 *
 		 * @param {number} userId - The ID of the user to build the filter for.
-		 * @returns {object} Sequelize where-clause filter object.
+		 * @returns {Promise<{owned: object, shared: object|null}>} Shared rows are read-only.
 		 */
 		static async getUserFilter(userId) {
 			const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
@@ -129,12 +129,11 @@ module.exports = (sequelize, DataTypes) => {
 			});
 			const assignedIds = [...new Set(matchingEntries.map(e => e.assignmentId))];
 
-			// Step 3: filter assignments by ownership or assignment_share membership
-			const filter = { [Op.or]: [{ userId }] };
-			if (assignedIds.length > 0) {
-				filter[Op.or].push({ id: { [Op.in]: assignedIds } });
-			}
-			return filter;
+			// Step 3: owned = the user's own assignments; shared = assignments shared with them
+			return {
+				owned: { userId },
+				shared: assignedIds.length > 0 ? { id: { [Op.in]: assignedIds } } : null,
+			};
 		}
 
 		static associate(models) {

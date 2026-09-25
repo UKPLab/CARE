@@ -4,6 +4,9 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
 	class AssignmentShare extends MetaModel {
 		static autoTable = true;
+		// userId is the recipient, not the owner. Ownership of the parent assignment is
+		// enforced in MetaModel.add / updateById via foreignOwner.
+		static foreignOwner = {column: "assignmentId", table: "assignment"};
 		static accessMap = [
 			{
 				right: "frontend.dashboard.assignments.viewAll",
