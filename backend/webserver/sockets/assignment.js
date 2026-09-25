@@ -185,6 +185,10 @@ class AssignmentSocket extends Socket {
      * @returns {Promise<{selectedAssignments: Array, selectedReviewer: Array}>}
      */
     async resolveBulkAssignmentSelections(data) {
+        if (!(await this.hasAccess("frontend.dashboard.studies.addBulkAssignments"))) {
+            throw new TranslatableError("errors.permission.noPermissionToAccesData");
+        }
+
         let selectedAssignments = Array.isArray(data.selectedAssignments) ? data.selectedAssignments : [];
         let selectedReviewer = Array.isArray(data.selectedReviewer) ? data.selectedReviewer : [];
 
@@ -235,8 +239,14 @@ class AssignmentSocket extends Socket {
             if (userIds.length === 0) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "reviewer"});
             }
+            // Return only the columns the distribution step + CSV need
+            const canSeePrivateInfo = await this.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            const reviewerAttributes = canSeePrivateInfo
+                ? ["id", "userName", "firstName", "lastName"]
+                : ["id", "userName"];
             selectedReviewer = await this.models["user"].getAll({
                 where: {id: {[Op.in]: userIds}, deleted: false},
+                attributes: reviewerAttributes,
             });
         }
 
