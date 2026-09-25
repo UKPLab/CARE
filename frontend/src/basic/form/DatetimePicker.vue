@@ -1,26 +1,27 @@
--
+
 <template>
   <FormElement ref="formElement" :options="options">
-    <template #element="{blur}">
+    <template #element>
       <input
-          v-model="date"
-          class="form-control"
-          type="date"
-          :lang="localeCode"
-          @blur="blur(currentDate)"
-          :min="options.disablePast ? today : undefined"
+        v-model="date"
+        class="form-control"
+        type="date"
+        :lang="localeCode"
+        :min="options.disablePast ? today : undefined"
+        @blur="validate"
       >
       <input
-          v-model="time"
-          class="form-control"
-          type="time"
-          :lang="localeCode"
-          @blur="blur(currentDate)"
+        v-model="time"
+        class="form-control"
+        type="time"
+        :lang="localeCode"
+        :min="options.disablePast && date === today ? currentTime : undefined"
+        @blur="validate"
       >
       <button
-          class="btn btn-outline-secondary"
-          type="button"
-          @click="date = null"
+        class="btn btn-outline-secondary"
+        type="button"
+        @click="date = null"
       >
         {{ $t('common.reset') }}
       </button>
@@ -50,10 +51,13 @@ export default {
       currentDate: null,
       date: null,
       time: null,
+      originalValue: null,
+      now: new Date(),
+      clockTimer: null,
     }
   },
   watch: {
-    modelValue(oldVal, newVal) {
+     modelValue(oldVal, newVal) {
       if (oldVal !== newVal) {
         if (this.modelValue !== null && this.modelValue !== undefined) {
           this.currentDate = new Date(this.modelValue);
@@ -90,21 +94,42 @@ export default {
       return typeof locale === "string" ? locale : locale?.value;
     },
     today() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, "0");
-      const day = String(now.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
+      return this.formatLocalDate(this.now);
+    },
+    currentTime() {
+      return this.formatLocalTime(this.now);
     },
   },
+
   mounted() {
-    if (this.modelValue && this.modelValue !== undefined) {
-      this.currentDate = new Date(this.modelValue);
-    } else {
-      this.currentDate = null;
-    }
+    this.originalValue = this.modelValue;
+    this.currentDate = this.modelValue ? new Date(this.modelValue) : null;
+
+    // update the allowed date and time every 30 seconds while the form is open.
+    this.clockTimer = setInterval(() => {
+      this.now = new Date();
+    }, 30_000);
+
   },
+
+  beforeUnmount() {
+    clearInterval(this.clockTimer);
+  },
+
   methods: {
+    formatLocalDate(value) {
+      const year = value.getFullYear();
+      const month = String(value.getMonth() + 1).padStart(2, "0");
+      const day = String(value.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    },
+
+    formatLocalTime(value) {
+      const hours = String(value.getHours()).padStart(2, "0");
+      const minutes = String(value.getMinutes()).padStart(2, "0");
+      return `${hours}:${minutes}`;
+    },
+
     parse() {
       if (this.currentDate !== null) {
         const day = ("0" + this.currentDate.getDate()).slice(-2);
@@ -130,10 +155,42 @@ export default {
       this.$emit("update:modelValue", newDate);
     },
     validate() {
-      return this.$refs.formElement.validate(this.currentDate);
-    }
-  }
-}
+      const element = this.$refs.formElement;
+
+      // use the input value as currentDate can lag behind a manual edit.
+      if (!element.validate(this.date || null)) return false;
+
+      if (!this.options.disablePast || !this.date) {
+        element.invalidField = false;
+        return true;
+      }
+
+      const selected = new Date(`${this.date}T${this.time || "00:00"}`);
+      const original = this.originalValue
+        ? new Date(this.originalValue)
+        : null;
+
+      const unchangedExistingValue =
+        original &&
+        !Number.isNaN(original.getTime()) &&
+        this.date === this.formatLocalDate(original) &&
+        this.time === this.formatLocalTime(original);
+
+      // inputs have minute precision, so permit the current minute.
+      const currentMinute = new Date();
+      currentMinute.setSeconds(0, 0);
+
+      const valid =
+        !Number.isNaN(selected.getTime()) &&
+        (selected >= currentMinute || unchangedExistingValue);
+
+      element.invalidField = !valid;
+      if (!valid) element.shakeIt();
+
+      return valid;
+    },
+  },
+};
 </script>
 
 <style scoped>
