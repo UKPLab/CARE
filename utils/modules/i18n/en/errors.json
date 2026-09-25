@@ -276,7 +276,8 @@
         "resolveContextSessionStepMismatch": "The study session does not match the study step.",
         "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once.",
         "duplicateImportLanguage": "This file repeats the language {language}.",
-        "importDefaultLanguageMissing": "The default language {language} has no content in this file."
+        "importDefaultLanguageMissing": "The default language {language} has no content in this file.",
+        "duplicatePlaceholderOptions": "This template has duplicate options on one placeholder: {tokens}. Each option name (e.g. wordRange) may appear at most once per placeholder."
     },
     "settings": {
         "errorLoading": "Error Loading Settings",

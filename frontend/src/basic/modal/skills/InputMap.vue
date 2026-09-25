@@ -53,7 +53,7 @@
 import FormSelect from "@/basic/form/Select.vue";
 import FormRadio from "@/basic/form/Radio.vue";
 import deepEqual from "deep-equal";
-import { tokenInnerText } from "@/components/editor/template/placeholderTokens.js";
+import { tokenInnerText } from "placeholder-tokens";
 
 export default {
   name: "InputMap",

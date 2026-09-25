@@ -116,10 +116,15 @@ async function resolveServiceInput(service, input) {
             const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
             if (!submissionId || !selectedFiles.length) return "";
 
+            // `{ pages, pageCount }` must stay intact so applyTextRangeLimit can slice pages.
+            if (pdfText && typeof pdfText === "object" && Array.isArray(pdfText.pages)) {
+                return pdfText;
+            }
+
             const parts = [];
 
             if (selectedFiles.includes("pdf")) {
-                let text = pdfText;
+                let text = typeof pdfText === "string" ? pdfText : "";
                 if (!text) {
                     const pdfDoc = await service.server.db.models["document"].findOne({
                         where: {submissionId, type: 0, deleted: false},

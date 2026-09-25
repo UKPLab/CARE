@@ -276,7 +276,8 @@
     "resolveContextSessionStepMismatch": "Die Studiensitzung stimmt nicht mit dem Studienschritt überein.",
     "duplicateBracketPlaceholders": "Diese Vorlage enthält doppelte Platzhalter-IDs in eckigen Klammern: {ids}. Jeder ~key[N]~-Token darf höchstens einmal vorkommen.",
     "duplicateImportLanguage": "Diese Datei wiederholt die Sprache {language}.",
-    "importDefaultLanguageMissing": "Die Standardsprache {language} hat in dieser Datei keinen Inhalt."
+    "importDefaultLanguageMissing": "Die Standardsprache {language} hat in dieser Datei keinen Inhalt.",
+    "duplicatePlaceholderOptions": "Diese Vorlage enthält doppelte Optionen an einem Platzhalter: {tokens}. Jeder Optionsname (z. B. wordRange) darf pro Platzhalter höchstens einmal vorkommen."
   },
   "settings": {
     "errorLoading": "Fehler beim Laden der Einstellungen",

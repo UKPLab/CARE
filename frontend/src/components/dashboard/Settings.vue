@@ -361,15 +361,12 @@ export default {
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
         if (res.success) {
-          this.settings.forEach((s) => {
-            this.$store.commit("settings/set", { key: s.key, value: s.value });
-          });
           this.eventBus.emit("toast", {
             title: this.$t('common.success'),
             message: resolveApiMessage({ message: res.data }, 'settings.messages.settingsSavedSuccessfully'),
             variant: "success",
           });
-          this.setSettingsSnapshot();
+          this.load(false);
         } else {
           this.eventBus.emit("toast", {
             title: this.$t('errors.settings.errorSaving'),
