@@ -486,6 +486,8 @@ Rename and Delete a Document
 
      - When I try to rename a document to an empty name, I see a validation error.
      - When I cancel the delete confirmation dialog, the document is not deleted.
+     - When the document is a submission file, Documents does not offer delete. A delete
+       does not remove the document.
 
 -----
 

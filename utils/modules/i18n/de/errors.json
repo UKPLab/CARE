@@ -139,6 +139,7 @@
     "fileMissingFromServer": "Die Dokumentdatei {filename} fehlt auf dem Server.",
     "noUploadAccess": "Benutzer hat keinen Zugriff zum Hochladen von Dokumenten",
     "updateNotAllowed": "Sie dürfen dieses Dokument nicht aktualisieren",
+    "submissionFileNotDeletable": "Dieses Dokument gehört zu einer Einreichung und kann unter Dokumente nicht gelöscht werden.",
     "nonHtmlModalUnsupported": "Nicht-HTML/Modal-Dokumente werden für diese Operation nicht unterstützt",
     "nonHtmlModalUnsupportedUppercase": "Nicht-HTML/MODAL-Dokumente werden für diese Operation nicht unterstützt",
     "idRequired": "Dokument-ID ist erforderlich.",
