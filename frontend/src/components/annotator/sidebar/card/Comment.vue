@@ -38,7 +38,9 @@
         v-model="comment.text"
         class="form-control"
         :placeholder="$t('components.comment.enterText')"
-        @keydown.ctrl.enter="saveOnDeactivated(false)"
+        @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.esc.exact.prevent="cancelOnEscape"
         @paste="onPaste"
       />
     </div>
@@ -244,7 +246,7 @@ export default {
       default: 1,
     }
   },
-  emits: ["saveCard"],
+  emits: ["saveCard", "cancelCard"],
   data() {
     return {
       awaitingNlpResult: false,
@@ -441,6 +443,23 @@ export default {
         this.$refs.collab.removeCollab();
       }
       this.editMode = null;
+    },
+    /**
+     * Cancels the edit from the keyboard, mirroring the mouse Cancel button.
+     * The card's main comment (level 0) is cancelled by the parent card,
+     * the same route saveCard uses; replies cancel themselves.
+     * Drafts are ignored so a single key press cannot delete a new comment.
+     * @returns {void}
+     */
+    cancelOnEscape() {
+      if (this.comment.draft) {
+        return;
+      }
+      if (this.level === 0) {
+        this.$emit("cancelCard");
+      } else {
+        this.cancel();
+      }
     },
     remove() {
       this.$socket.emit('commentUpdate', {

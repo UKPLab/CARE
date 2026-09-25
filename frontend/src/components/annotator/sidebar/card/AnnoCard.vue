@@ -6,17 +6,24 @@
   >
     <template #header>
       <div 
-        class="row" 
+        class="row card-focusable" 
         :class="{ 'header-hoverable': collapsed && !editedByMyself }"
         :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
         @click="handleHeaderClick"
+        tabindex="0"
+        @keydown.enter.exact.self.prevent="handleHeaderClick"
+        @keydown.space.exact.self.prevent="handleHeaderClick"
       >
         <div class="col" style="display: flex; align-items: center;">
           <div 
             v-if="!editedByMyself"
             :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
+            class="card-focusable"
             style="display: inline-flex; margin-right: 8px;"
             @click.stop="handleCheckIconClick"
+            tabindex="0"
+            @keydown.enter.exact.prevent="handleCheckIconClick"
+            @keydown.space.exact.prevent="handleCheckIconClick"
           >
             <LoadIcon
               :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
@@ -87,6 +94,7 @@
             :edit="editedByMyself"
             :level="0"
             @save-card="save()"
+            @cancel-card="cancel"
         />
       </template>
 
@@ -772,5 +780,13 @@ export default {
   font-size: smaller;
   color: var(--bs-secondary-color, #929292);
   transition: background-color 0.2s ease;
+}
+</style>
+
+<style scoped>
+.card-focusable:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+  border-radius: 4px;
 }
 </style>
