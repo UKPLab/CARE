@@ -117,6 +117,71 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Reject a create that is missing fields, has an unknown type, or is an email type from a non-admin.
+         *
+         * @param {Object} payload
+         * @param {string} payload.name
+         * @param {string} payload.description
+         * @param {number} payload.type
+         * @param {boolean} isAdmin
+         * @returns {number}
+         * @throws {TranslatableError} if name or description is missing, the type is unknown, or a non-admin creates an email template
+         */
+        static assertCreateAllowed(payload, isAdmin) {
+            if (!payload?.name || !payload.description || payload.type == null) {
+                throw new TranslatableError("errors.templates.missingCreateFields");
+            }
+            const type = Number(payload.type);
+            if (!allTemplateTypes.includes(type)) {
+                throw new TranslatableError("errors.templates.typeRequired");
+            }
+            if (!isAdmin && emailTemplateTypes.includes(type)) {
+                throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
+            }
+            return type;
+        }
+
+        /**
+         * Create a template and its language bodies.
+         * Email types require options.isAdmin. contents may be empty.
+         *
+         * @param {Object} payload
+         * @param {string} payload.name
+         * @param {string} payload.description
+         * @param {number} payload.type
+         * @param {string} [payload.defaultLanguage]
+         * @param {boolean} [payload.public]
+         * @param {number} payload.userId
+         * @param {Array<Object>} contents Each item has language and content
+         * @param {Object} [options]
+         * @param {boolean} options.isAdmin
+         * @param {Object} [options.transaction]
+         * @returns {Promise<Object>}
+         * @throws {TranslatableError} if name or description is missing, the type is unknown, or a non-admin creates an email template
+         */
+        static async createWithContents(payload, contents, options = {}) {
+            const type = this.assertCreateAllowed(payload, options.isAdmin);
+
+            const template = await this.add({
+                name: payload.name,
+                description: payload.description,
+                type,
+                defaultLanguage: payload.defaultLanguage || "en",
+                public: payload.public ?? false,
+                userId: payload.userId,
+            }, { transaction: options.transaction });
+
+            for (const row of contents) {
+                await this.sequelize.models.template_content.add({
+                    templateId: template.id,
+                    language: row.language,
+                    content: row.content,
+                }, { transaction: options.transaction });
+            }
+            return template;
+        }
+
+        /**
          * Bump updatedAt without changing any column, so copies see "Update available"
          * after their source content changes.
          *

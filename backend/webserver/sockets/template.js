@@ -107,35 +107,24 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}            
    */
   async createTemplate(data, options) {
-    if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
-        throw new TranslatableError("errors.templates.missingCreateFields");
+    if (data?.content === undefined) {
+      throw new TranslatableError("errors.templates.missingCreateFields");
     }
-    if (!(await this.isAdmin()) && this.models["template"].emailTemplateTypes.includes(data.type)) {
-      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
-    }
-
     const defaultLanguage = data.defaultLanguage || "en";
-    const templatePayload = {
+    return this.models["template"].createWithContents({
       name: data.name,
       description: data.description,
       type: data.type,
       defaultLanguage,
       public: data.public ?? false,
       userId: this.userId,
-    };
-
-    const template = await this.models["template"].add(templatePayload, { transaction: options.transaction });
-
-    await this.models["template_content"].add(
-      {
-        templateId: template.id,
-        language: defaultLanguage,
-        content: data.content,
-      },
-      { transaction: options.transaction }
-    );
-
-    return template;
+    }, [{
+      language: defaultLanguage,
+      content: data.content,
+    }], {
+      transaction: options.transaction,
+      isAdmin: await this.isAdmin(),
+    });
   }
 
   /**
@@ -961,20 +950,14 @@ class TemplateSocket extends Socket {
    * @throws {TranslatableError}
    */
   async importTemplate(data, options) {
-    if (!data?.name || !data.description || data.type == null) {
-      throw new TranslatableError("errors.templates.missingCreateFields");
-    }
+    const isAdmin = await this.isAdmin();
+    const type = this.models["template"].assertCreateAllowed({
+      name: data?.name,
+      description: data?.description,
+      type: data?.type,
+    }, isAdmin);
 
-    const type = Number(data.type);
-    const Template = this.models["template"];
-    if (!Template.allTemplateTypes.includes(type)) {
-      throw new TranslatableError("errors.templates.typeRequired");
-    }
-    if (!(await this.isAdmin()) && Template.emailTemplateTypes.includes(type)) {
-      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
-    }
-
-    const contents = data.template_content ?? [];
+    const contents = data?.template_content ?? [];
     if (!Array.isArray(contents)) {
       throw new TranslatableError("errors.templates.deltaOperationsRequired");
     }
@@ -995,7 +978,7 @@ class TemplateSocket extends Socket {
       rows.push(row);
     }
 
-    const defaultLanguage = data.defaultLanguage || rows[0]?.language || "en";
+    const defaultLanguage = data?.defaultLanguage || rows[0]?.language || "en";
     if (rows.length > 0 && !seen.has(defaultLanguage)) {
       throw new TranslatableError("errors.templates.importDefaultLanguageMissing", { language: defaultLanguage });
     }
@@ -1004,24 +987,17 @@ class TemplateSocket extends Socket {
       await this.assertNoDuplicatePlaceholders(row.content, type, options);
     }
 
-    const template = await Template.add({
-      name: data.name,
-      description: data.description,
-      type,
+    return this.models["template"].createWithContents({
+      name: data?.name,
+      description: data?.description,
+      type: data?.type,
       defaultLanguage,
       public: false,
       userId: this.userId,
-    }, { transaction: options.transaction });
-
-    for (const row of rows) {
-      await this.models["template_content"].add({
-        templateId: template.id,
-        language: row.language,
-        content: row.content,
-      }, { transaction: options.transaction });
-    }
-
-    return template;
+    }, rows, {
+      transaction: options.transaction,
+      isAdmin,
+    });
   }
 
   init() {
