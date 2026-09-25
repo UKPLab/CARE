@@ -108,35 +108,24 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}            
    */
   async createTemplate(data, options) {
-    if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
-        throw new TranslatableError("errors.templates.missingCreateFields");
+    if (data?.content === undefined) {
+      throw new TranslatableError("errors.templates.missingCreateFields");
     }
-    if (!(await this.isAdmin()) && this.models["template"].emailTemplateTypes.includes(data.type)) {
-      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
-    }
-
     const defaultLanguage = data.defaultLanguage || "en";
-    const templatePayload = {
+    return this.models["template"].createWithContents({
       name: data.name,
       description: data.description,
       type: data.type,
       defaultLanguage,
       public: data.public ?? false,
       userId: this.userId,
-    };
-
-    const template = await this.models["template"].add(templatePayload, { transaction: options.transaction });
-
-    await this.models["template_content"].add(
-      {
-        templateId: template.id,
-        language: defaultLanguage,
-        content: data.content,
-      },
-      { transaction: options.transaction }
-    );
-
-    return template;
+    }, [{
+      language: defaultLanguage,
+      content: data.content,
+    }], {
+      transaction: options.transaction,
+      isAdmin: await this.isAdmin(),
+    });
   }
 
   /**
@@ -909,6 +898,115 @@ class TemplateSocket extends Socket {
     return await this.models["template"].deleteById(data.templateId, {transaction: options.transaction});
   }
 
+  /**
+   * Saved body text for templates the caller owns.
+   * Export all is the dashboard table: own rows, including copies. Another user's
+   * public template is not included. template_content is not in the client store.
+   * sourceId is omitted because it only points at a row in this database.
+   * Drafts in template_edit are not included.
+   *
+   * @socketEvent templateExport
+   * @param {Object} data
+   * @param {number} [data.templateId]
+   * @param {Object} options
+   * @returns {Promise<Object>}
+   * @throws {TranslatableError}
+   */
+  async exportTemplates(data, options) {
+    const Template = this.models["template"];
+    const isAdmin = await this.isAdmin();
+    const templates = await Template.findOwnedWithContent(
+      this.userId,
+      isAdmin,
+      data?.templateId,
+      options
+    );
+
+    if (data?.templateId && templates.length === 0) {
+      throw new TranslatableError("errors.templates.notFound");
+    }
+
+    return templates.map((template) => {
+      const row = template.get({ plain: true });
+      return {
+        name: row.name,
+        description: row.description,
+        type: row.type,
+        defaultLanguage: row.defaultLanguage,
+        public: row.public,
+        template_content: (row.template_contents || []).map((contentRow) => ({
+          language: contentRow.language,
+          content: contentRow.content,
+        })),
+      };
+    });
+  }
+
+  /**
+   * Create a template from an export file, including each saved language body.
+   * Uses this.userId. A userId or sourceId in the file is ignored so the row
+   * is not a locked copy of a template that only exists in the source database.
+   * public is always false. Publishing stays on the existing publish action.
+   *
+   * @socketEvent templateImport
+   * @param {Object} data
+   * @param {Array<Object>} [data.template_content]
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   * @throws {TranslatableError}
+   */
+  async importTemplate(data, options) {
+    const isAdmin = await this.isAdmin();
+    const type = this.models["template"].assertCreateAllowed({
+      name: data?.name,
+      description: data?.description,
+      type: data?.type,
+    }, isAdmin);
+
+    const contents = data?.template_content ?? [];
+    if (!Array.isArray(contents)) {
+      throw new TranslatableError("errors.templates.deltaOperationsRequired");
+    }
+
+    const seen = new Set();
+    const rows = [];
+    for (const row of contents) {
+      if (!row || typeof row.language !== "string" || row.language === "") {
+        throw new TranslatableError("errors.templates.languageRequired");
+      }
+      if (!row.content || !Array.isArray(row.content.ops)) {
+        throw new TranslatableError("errors.templates.deltaOperationsRequired");
+      }
+      if (seen.has(row.language)) {
+        throw new TranslatableError("errors.templates.duplicateImportLanguage", { language: row.language });
+      }
+      seen.add(row.language);
+      rows.push(row);
+    }
+
+    const defaultLanguage = data?.defaultLanguage || rows[0]?.language || "en";
+    if (rows.length > 0 && !seen.has(defaultLanguage)) {
+      throw new TranslatableError("errors.templates.importDefaultLanguageMissing", { language: defaultLanguage });
+    }
+
+    for (const row of rows) {
+      await this.assertNoDuplicatePlaceholders(row.content, type, options);
+    }
+
+    return this.models["template"].createWithContents({
+      name: data?.name,
+      description: data?.description,
+      type: data?.type,
+      defaultLanguage,
+      public: false,
+      userId: this.userId,
+    }, rows, {
+      transaction: options.transaction,
+      isAdmin,
+    });
+  }
+
   init() {
     this.createSocket("templateAdd", this.createTemplate, {}, true);
     this.createSocket("templateGetContent", this.getContent, {}, false);
@@ -926,6 +1024,8 @@ class TemplateSocket extends Socket {
     this.createSocket("templateDetach", this.detachTemplate, {}, true);
     this.createSocket("templateUpdateFromSource", this.updateFromSource, {}, true);
     this.createSocket("templateDelete", this.deleteTemplate, {}, true);
+    this.createSocket("templateExport", this.exportTemplates, {}, false);
+    this.createSocket("templateImport", this.importTemplate, {}, true);
   }
 }
 

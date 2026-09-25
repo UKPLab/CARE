@@ -1956,6 +1956,27 @@ View Study Sessions as Coordinator
 
 -----
 
+Import and Export Content Templates
+-----------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to export a content template to a file and import
+     it on another CARE instance, so that I can reuse the email, document, or prompt
+     text.
+
+   :Acceptance:
+     - From Dashboard → Templates I can export one template, or every template on
+       my list. A public template I have not copied is not included.
+     - Import reads JSON and YAML.
+     - The file includes the saved text for each language.
+     - Import creates a new template that I own, with that text, and it is not published.
+     - I can publish it afterwards with the existing publish action.
+     - Only an admin can import an email template.
+
+-----
+
 Create and Manage Study Templates
 -----------------------------------
 
