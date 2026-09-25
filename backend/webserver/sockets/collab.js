@@ -24,6 +24,7 @@ class CollabSocket extends Socket {
      */
     async updateCollab(data, options) {
         if (data.collabId && data.collabId !== 0) {
+            await this.assertWriteAccess("collab", data.collabId, options);
             const collabUpdate = await this.models["collab"].updateById(data.collabId, {timestamp: Date.now()}, {transaction: options.transaction});
             this.emitDoc(collabUpdate.documentId, "collabRefresh", collabUpdate); //fixme, sent twice due to collab
         } else {

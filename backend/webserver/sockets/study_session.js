@@ -49,6 +49,7 @@ class StudySessionSocket extends Socket {
             if (!existing) {
                 throw new TranslatableError("errors.studies.studySession.notFound");
             }
+            await this.assertWriteAccess("study_session", data.studySessionId, options);
             shouldSendSessionStartEmail = existing.start == null;
             session = await this.models["study_session"].updateById(data.studySessionId,
                 {start: Date.now()},
@@ -192,6 +193,7 @@ class StudySessionSocket extends Socket {
         }
 
         const study = await this.models["study"].getById(session.studyId, {transaction: options.transaction});
+        await this.assertWriteAccess("study_session", data.studySessionId, options);
         if (study && study.closed) {
             throw new TranslatableError("errors.studies.studySession.cannotFinishClosedStudy");
         }
@@ -257,7 +259,13 @@ class StudySessionSocket extends Socket {
      */
     async copyStudySession(data, options) {
         let studySessions = [];
-        const study = await this.models['study'].getById(data.studySession.studyId);
+        // Load the session from the DB instead of trusting studyId from the payload
+        const sourceSession = await this.models["study_session"].getById(data.studySession.id, {transaction: options.transaction});
+        if (!sourceSession) {
+            throw new TranslatableError("errors.studies.studySession.notFound");
+        }
+        const study = await this.models['study'].getById(sourceSession.studyId, {transaction: options.transaction});
+        await this.assertWriteAccess("study", sourceSession.studyId, options);
         if (study.limitSessionsPerUser !== null) {
             await this.models["study"].updateById(study.id, {
                 limitSessionsPerUser: study.limitSessionsPerUser + 1 // we only add 1 because there is a list of unique userIds, so the limit of session per user will only ever increase by one.
