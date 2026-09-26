@@ -541,6 +541,16 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * @param {Object} [ctx]
+         * @returns {Promise<boolean>}
+         */
+        static async canReadReviewerCounts(ctx = {}) {
+            if (typeof ctx.hasAccess !== "function") return false;
+            return await ctx.hasAccess("frontend.dashboard.studies.addBulkAssignments")
+                || await ctx.hasAccess("frontend.dashboard.studies.addSingleAssignments");
+        }
+
+        /**
          * Extra columns on the reviewer picker: how many open study sessions,
          * how many ready-for-review documents, and role names joined with ", ".
          * @returns {Object<string, string>} alias → SQL
@@ -583,7 +593,7 @@ module.exports = (sequelize, DataTypes) => {
 
             const conditions = [];
 
-            if (reviewer.hasDocuments) {
+            if (reviewer.hasDocuments && await User.canReadReviewerCounts(ctx)) {
                 const columns = User.assignmentReviewerColumnSql();
                 conditions.push(where(literal(columns.documents), {[Op.gte]: 1}));
             }
@@ -638,12 +648,18 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * @returns {Promise<Array<Object>>}
          */
-        static async getQueryTableInjects() {
+        static async getQueryTableInjects(ctx = {}) {
+            const columns = User.assignmentReviewerColumnSql();
+            const fields = {rolesNames: columns.rolesNames};
+            if (await User.canReadReviewerCounts(ctx)) {
+                fields.studySessions = columns.studySessions;
+                fields.documents = columns.documents;
+            }
             return [{
                 type: "sql",
                 table: "user",
                 on: "id",
-                fields: User.assignmentReviewerColumnSql(),
+                fields,
             }];
         }
 
@@ -652,7 +668,10 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<string[]>}
          */
         static async getQueryTableSearchColumns(ctx = {}) {
-            const columns = ["id", "studySessions", "documents", "rolesNames"];
+            const columns = ["id", "rolesNames"];
+            if (await User.canReadReviewerCounts(ctx)) {
+                columns.push("studySessions", "documents");
+            }
             const privateInfo = typeof ctx.hasAccess === "function"
                 && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
             if (privateInfo) {
@@ -662,7 +681,7 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         static getQueryTableSearchConditions(needle, ctx = {}) {
-            const canSearch = typeof ctx.canSearch === "function" ? ctx.canSearch : () => true;
+            const canSearch = typeof ctx.canSearch === "function" ? ctx.canSearch : () => false;
             return Object.entries(User.assignmentReviewerColumnSql())
                 .filter(([key]) => canSearch(key))
                 .map(([, sql]) => includesCondition(literal(sql), needle));
@@ -677,18 +696,20 @@ module.exports = (sequelize, DataTypes) => {
                 && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
             const spec = {
                 id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
-                studySessions: {
+                rolesNames: {type: "text", sql: columns.rolesNames},
+            };
+            if (await User.canReadReviewerCounts(ctx)) {
+                spec.studySessions = {
                     type: "numeric",
                     operators: ["=", ">", ">=", "<", "<=", "%"],
                     sql: columns.studySessions,
-                },
-                documents: {
+                };
+                spec.documents = {
                     type: "numeric",
                     operators: ["=", ">", ">=", "<", "<=", "%"],
                     sql: columns.documents,
-                },
-                rolesNames: {type: "text", sql: columns.rolesNames},
-            };
+                };
+            }
             if (privateInfo) {
                 spec.extId = {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]};
             }
