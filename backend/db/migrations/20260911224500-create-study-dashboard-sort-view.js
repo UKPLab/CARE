@@ -10,6 +10,9 @@ const {
  * Physical sort keys for Studies dashboard Status / Sessions columns.
  * queryTable cannot ORDER BY those derived values as study columns; the view is cheap to read
  * and refreshed after study/session writes (and before a stale Status sort).
+ *
+ * Pins study.start, study.end, study.closed, study.multipleSubmit, study_session.studyId
+ * and study_session.deleted. changeColumn on those must drop this view first and recreate it.
  */
 module.exports = {
     async up(queryInterface) {

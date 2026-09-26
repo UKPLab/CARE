@@ -3,6 +3,10 @@
 /**
  * SQL that fills materialized view study_dashboard_sort.
  * queryTable sort / filter / search read the view; keep in sync with enrichStudyRow() in Study.vue.
+ *
+ * The view pins study.start, study.end, study.closed, study.multipleSubmit,
+ * study_session.studyId and study_session.deleted. A later changeColumn on those
+ * must DROP MATERIALIZED VIEW study_dashboard_sort first and recreate it.
  */
 
 const STATE_SQL = `CASE

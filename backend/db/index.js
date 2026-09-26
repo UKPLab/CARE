@@ -55,7 +55,7 @@ Object.keys(db.models).forEach(modelName => {
     }
 });
 
-attachStudyDashboardSortHooks(sequelize, db.models);
+attachStudyDashboardSortHooks(sequelize);
 
 
 
