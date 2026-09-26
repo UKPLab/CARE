@@ -57,9 +57,15 @@ export const DATE_OPERATOR_HINTS = {
 // value is entered, so `sessions:>=` never becomes a filter on its own.
 const TYPED_VALUE_TYPES = new Set(["numeric", "text", "date"]);
 
+/** Column spec only when this key was defined on the schema */
+function ownEntry(schema, key) {
+  if (!schema || !Object.hasOwn(schema, key)) return undefined;
+  return schema[key];
+}
+
 /** True when the value for this key has to be typed (no options to pick). */
 export function needsTypedValue(schema, key) {
-  return TYPED_VALUE_TYPES.has(schema[key]?.type);
+  return TYPED_VALUE_TYPES.has(ownEntry(schema, key)?.type);
 }
 
 const OPERATORS_BY_TYPE = {
@@ -230,12 +236,12 @@ function matchesBoolWord(value, t) {
 
 /** Chip/dropdown name for a column. */
 export function keyLabel(schema, key) {
-  return schema[key]?.label || key;
+  return ownEntry(schema, key)?.label || key;
 }
 
 /** Operators this column may use. */
 export function operatorsFor(schema, key) {
-  const entry = schema[key];
+  const entry = ownEntry(schema, key);
   if (!entry) return [];
   return orderedOperators(entry.operators || OPERATORS_BY_TYPE[entry.type] || OPERATORS_BY_TYPE.text);
 }
@@ -243,13 +249,13 @@ export function operatorsFor(schema, key) {
 /** Omitted operator (`state:running`). Text still defaults to contains. */
 export function defaultOperator(schema, key) {
   const ops = operatorsFor(schema, key);
-  if (schema[key]?.type === "text" && ops.includes("~")) return "~";
+  if (ownEntry(schema, key)?.type === "text" && ops.includes("~")) return "~";
   return ops.includes("=") ? "=" : (ops[0] || "=");
 }
 
 /** Values that can be picked from the dropdown; numeric, date, and text keys are typed instead. */
 export function optionsFor(schema, key, t) {
-  const entry = schema[key];
+  const entry = ownEntry(schema, key);
   if (!entry) return [];
   if (entry.type === "boolean") {
     const labels = yesNoLabels(t);
@@ -296,7 +302,7 @@ export function parseIsoDate(value) {
  * @returns {*|null} that value, or null if it does not fit.
  */
 function coerceScalar(schema, key, raw, t) {
-  const entry = schema[key];
+  const entry = ownEntry(schema, key);
   if (!entry) return null;
   const value = String(raw ?? "").trim();
   if (!value) return null;
@@ -330,7 +336,7 @@ function coerceScalar(schema, key, raw, t) {
  * @returns {*|null} null when the text is not valid for this column.
  */
 export function coerceValue(schema, key, raw, t, operator = "=") {
-  const entry = schema[key];
+  const entry = ownEntry(schema, key);
   if (!entry) return null;
   const value = String(raw ?? "").trim();
   if (!value) return null;
@@ -362,7 +368,7 @@ function displayScalar(schema, key, value, t) {
   if (value === null) {
     return "null";
   }
-  const entry = schema[key];
+  const entry = ownEntry(schema, key);
   if (entry && (entry.type === "boolean")) {
     const labels = yesNoLabels(t);
     return value ? labels.yes : labels.no;
@@ -399,7 +405,7 @@ function serializeScalar(schema, key, value) {
   if (value === null) {
     return "null";
   }
-  const entry = schema[key];
+  const entry = ownEntry(schema, key);
   if (entry && (entry.type === "boolean")) {
     return value ? "yes" : "no";
   }
@@ -424,7 +430,7 @@ export function parseToken(schema, segment, t) {
   const match = TOKEN_PATTERN.exec(segment);
   if (!match) return null;
   const [, key, operator, rawValue] = match;
-  if (!schema[key]) return null;
+  if (!ownEntry(schema, key)) return null;
   const resolved = operator || defaultOperator(schema, key);
   if (!operatorsFor(schema, key).includes(resolved)) return null;
   const value = coerceValue(schema, key, unquote(rawValue), t, resolved);

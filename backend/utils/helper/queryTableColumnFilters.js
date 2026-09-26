@@ -133,9 +133,8 @@ function sqlTextArray(values) {
     if (!values.length) {
         return "ARRAY[]::text[]";
     }
-    const inner = values
-        .map((item) => `'${String(item).replace(/'/g, "''")}'`)
-        .join(", ");
+    const {sequelize} = require("../../db");
+    const inner = values.map((item) => sequelize.escape(String(item))).join(", ");
     return `ARRAY[${inner}]::text[]`;
 }
 
@@ -380,7 +379,7 @@ function buildQueryTableColumnFilters({model, columnFilters, filterSpec, allowed
     const conditions = [];
 
     for (const [key, requested] of Object.entries(columnFilters)) {
-        const spec = filterSpec[key];
+        const spec = Object.hasOwn(filterSpec, key) ? filterSpec[key] : null;
         if (!spec || requested === null || requested === undefined) {
             continue;
         }
@@ -394,7 +393,7 @@ function buildQueryTableColumnFilters({model, columnFilters, filterSpec, allowed
             table: model.tableName,
         };
         // Sidecar-view and model-SQL keys are not study columns; anything else must be readable.
-        if (!entry.sql && !entry.viewField && !(entry.field in attributes && allowed.has(entry.field))) {
+        if (!entry.sql && !entry.viewField && !(Object.hasOwn(attributes, entry.field) && allowed.has(entry.field))) {
             continue;
         }
 
@@ -404,7 +403,7 @@ function buildQueryTableColumnFilters({model, columnFilters, filterSpec, allowed
             if (!spec.operators.includes(operator)) {
                 continue;
             }
-        } else if (!(operator in OPERATORS) && operator !== "~" && operator !== "%") {
+        } else if (!Object.hasOwn(OPERATORS, operator) && operator !== "~" && operator !== "%") {
             continue;
         }
 
@@ -430,7 +429,7 @@ function columnFiltersNeedViewJoin(filterSpec, columnFilters) {
     if (!filterSpec || !columnFilters || typeof columnFilters !== "object") {
         return false;
     }
-    return Object.keys(columnFilters).some((key) => !!(filterSpec[key] && filterSpec[key].viewField));
+    return Object.keys(columnFilters).some((key) => Object.hasOwn(filterSpec, key) && filterSpec[key].viewField);
 }
 
 module.exports = {
