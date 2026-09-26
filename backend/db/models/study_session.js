@@ -185,8 +185,8 @@ module.exports = (sequelize, DataTypes) => {
             }
 
             const stepMatch = steps
-                .map((step) => `("study"."workflowId" = ${step.workflowId}`
-                    + ` AND "study_step"."stepNumber" = ${step.stepNumber})`)
+                .map((step) => `("study"."workflowId" = ${sequelize.escape(step.workflowId)}`
+                    + ` AND "study_step"."stepNumber" = ${sequelize.escape(step.stepNumber)})`)
                 .join(" OR ");
             const configurationMatch = sequelize.models.study_step.assessmentConfigurationSql("study_step");
             return {
@@ -197,8 +197,8 @@ module.exports = (sequelize, DataTypes) => {
                         + ' AND "study_step"."deleted" = false'
                         + ' WHERE "study"."deleted" = false AND "study"."template" = false'
                         + ' AND "study"."closed" IS NOT NULL'
-                        + (projectId ? ` AND "study"."projectId" = ${projectId}` : "")
-                        + ` AND ${configurationMatch} = '${configurationId}'`
+                        + (projectId ? ` AND "study"."projectId" = ${sequelize.escape(projectId)}` : "")
+                        + ` AND ${configurationMatch} = ${sequelize.escape(String(configurationId))}`
                         + ` AND (${stepMatch}))`
                     ),
                 },
