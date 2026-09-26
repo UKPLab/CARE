@@ -501,13 +501,21 @@ module.exports = (sequelize, DataTypes) => {
             const originalId = data?.id;
             const isCreate = !originalId || originalId === 0;
             if (!isCreate && context?.stepDocuments) {
-                const child = await Study.findOne({
-                    where: {parentStudyId: originalId, deleted: false},
-                    order: [["id", "DESC"]],
-                    transaction,
-                });
-                if (child?.hash) {
-                    return {id: child.id, hash: child.hash};
+                const original = await Study.findByPk(originalId, {transaction});
+                if (original?.createdAt) {
+                    // First study with this parentStudyId created after the original.
+                    const child = await Study.findOne({
+                        where: {
+                            parentStudyId: original.id,
+                            deleted: false,
+                            createdAt: {[Op.gt]: original.createdAt},
+                        },
+                        order: [["id", "ASC"]],
+                        transaction,
+                    });
+                    if (child?.hash) {
+                        return {id: child.id, hash: child.hash};
+                    }
                 }
             }
             if (isCreate && entry?.hash) {
