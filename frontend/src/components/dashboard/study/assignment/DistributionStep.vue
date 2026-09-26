@@ -89,8 +89,9 @@ export default {
         }),
         type: "slider",
         class: 'custom-slider-class',
+        default: 0,
         min: 0,
-        max: Number(this.remainingAssignments + Number(this.reviewerSelection[user.id])),
+        max: this.selectedAssignments.length,
         step: 1,
         unit: this.$t("dashboard.study.reviews"),
       }));

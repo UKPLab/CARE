@@ -20,14 +20,14 @@
           :title="$t('modals.importExport.wiring.templates.importTooltip')"
           :text="$t('common.import')"
           icon="upload"
-          @click="$refs.importFormatModal.open('template')"
+          @click="$refs.importFormatModal.open('template', null, { socket: { name: 'templateImport' } })"
         />
         <BasicButton
           class="btn-secondary btn-sm me-2"
           :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
           :text="$t('common.exportAll')"
           icon="download"
-          @click="$refs.exportFormatModal.open(null, 'template')"
+          @click="openExport(null)"
         />
         <BasicButton
           class="btn-primary btn-sm"
@@ -44,7 +44,11 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
-    <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.templates.exportTitle')" />
+    <ExportFormatModal
+      ref="exportFormatModal"
+      :title="$t('modals.importExport.wiring.templates.exportTitle')"
+      @formatSelected="onExportFormat"
+    />
     <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.templates.importTitle')" />
   </template>
   
@@ -90,6 +94,7 @@
     data() {
       return {
         options: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
+        exportTemplateId: null,
       };
     },
     computed: {
@@ -280,7 +285,7 @@
             this.$refs.updateModal.open(data.params);
             break;
           case "export":
-            this.$refs.exportFormatModal.open(data.params.id, "template");
+            this.openExport(data.params.id);
             break;
         }
       },
@@ -310,6 +315,25 @@
               });
             }
           });
+        });
+      },
+      // template_content is not in the client store, so the file has to come from the server.
+      openExport(id = null) {
+        this.exportTemplateId = id;
+        this.$refs.exportFormatModal.open();
+      },
+      onExportFormat(format) {
+        const templateId = this.exportTemplateId;
+        this.$socket.emit("templateExport", templateId ? { templateId } : {}, (result) => {
+          if (!result?.success) {
+            this.eventBus.emit("toast", {
+              title: this.$t("errors.download.exportFailedTitle"),
+              message: resolveApiMessage(result),
+              variant: "danger",
+            });
+            return;
+          }
+          this.$refs.exportFormatModal.downloadItems(result.data, format, templateId, "template");
         });
       },
       deleteTemplate(template) {

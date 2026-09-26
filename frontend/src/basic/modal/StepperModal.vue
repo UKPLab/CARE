@@ -4,6 +4,7 @@
     name="stepperModal"
     :size="size"
     scrollable-body
+    @show="scrollToTop"
     @hide="$emit('hide')"
     @close-requested="handleCloseRequest"
   >
@@ -21,7 +22,7 @@
           {{ step.title }}
         </div>
       </div>
-      <div class="content-container">
+      <div ref="contentContainer" class="content-container">
         <div :key="'step-' + (currentStep + 1)">
           <template v-if="!!$slots['error']">
             <slot name="error"/>
@@ -131,10 +132,18 @@ export default {
       immediate: true,
       handler(value) {
         this.$emit("stepChange", value);
+        this.scrollToTop();
       }
     }
   },
   methods: {
+    scrollToTop() {
+      this.$nextTick(() => {
+        if (this.$refs.contentContainer) {
+          this.$refs.contentContainer.scrollTop = 0;
+        }
+      });
+    },
     open() {
       this.reset();
       this.$refs.stepperModal.open();

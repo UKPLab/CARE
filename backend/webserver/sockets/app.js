@@ -277,6 +277,7 @@ class AppSocket extends Socket {
     async sendSystemRoles() {
         try {
             const roles = await this.models["user_role"].findAll({
+                where: {deleted: false},
                 attributes: ["id", "name"],
                 raw: true,
             });

@@ -139,6 +139,7 @@
         "fileMissingFromServer": "The document file {filename} is missing from the server.",
         "noUploadAccess": "User does not have access to upload documents",
         "updateNotAllowed": "You are not allowed to update this document",
+        "submissionFileNotDeletable": "This document belongs to a submission and cannot be deleted from Documents.",
         "nonHtmlModalUnsupported": "Non-HTML/Modal documents are not supported for this operation",
         "nonHtmlModalUnsupportedUppercase": "Non-HTML/MODAL documents are not supported for this operation",
         "idRequired": "Document ID is required.",
@@ -276,7 +277,10 @@
         "resolveContextStepDocumentMismatch": "The study step does not match the selected document.",
         "resolveContextStudySessionNotFound": "The study session was not found.",
         "resolveContextSessionStepMismatch": "The study session does not match the study step.",
-        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once."
+        "duplicateBracketPlaceholders": "This template has duplicate bracket placeholder IDs: {ids}. Each ~key[N]~ must appear at most once.",
+        "duplicateImportLanguage": "This file repeats the language {language}.",
+        "importDefaultLanguageMissing": "The default language {language} has no content in this file.",
+        "duplicatePlaceholderOptions": "This template has duplicate options on one placeholder: {tokens}. Each option name (e.g. wordRange) may appear at most once per placeholder."
     },
     "settings": {
         "errorLoading": "Error Loading Settings",
