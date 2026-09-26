@@ -213,12 +213,9 @@ module.exports = (sequelize, DataTypes) => {
                 "workflowType", "submissionGroup", "status",
             ];
             if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
-                // completeUserName / studyCompleteUserName are firstName+lastName concatenations and
-                // exist only under privateInfo in sessionIdentitySql. Exposing them to a caller
-                // without the right would let them search (and thus probe) hidden full names.
                 columns.push(
                     "firstName", "lastName", "ownerFirstName", "ownerLastName",
-                    "completeUserName", "studyCompleteUserName"
+                    "completeUserName", "studyCompleteUserName",
                 );
             }
             return columns;
