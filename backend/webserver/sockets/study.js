@@ -244,33 +244,24 @@ class StudySocket extends Socket {
         const notifySessions = data.notifySessions === true;
         const studyIds = await this.resolveBulkStudyIds(data);
 
-        // One broadcast for the whole bulk: a query-scoped selection can be the entire table, and
-        // a per-row broadcast would fan that out to every connected socket (same as deleteBulk).
-        const pendingChanges = [];
         const closedCount = await this.runBulkWithProgress(studyIds, data.progressId, async (id, transaction) => {
             await this.models["study"].updateById(
                 id,
                 { closed: true, userIdClosed: this.userId },
                 { transaction }
             );
+            if (!notifySessions) {
+                return;
+            }
             transaction.afterCommit(async () => {
-                if (transaction.changes?.length) {
-                    pendingChanges.push(...transaction.changes);
-                }
-                if (notifySessions) {
-                    try {
-                        const updated = await this.models["study"].getById(id);
-                        await this.sendStudyClosedEmails(updated);
-                    } catch (err) {
-                        this.logger.error(`Failed to send study closed emails for study ${id}:`, err);
-                    }
+                try {
+                    const updated = await this.models["study"].getById(id);
+                    await this.sendStudyClosedEmails(updated);
+                } catch (err) {
+                    this.logger.error(`Failed to send study closed emails for study ${id}:`, err);
                 }
             });
         });
-
-        if (pendingChanges.length) {
-            await this.broadcastTransactionChanges({changes: pendingChanges});
-        }
 
         return { closedCount };
     }
@@ -290,23 +281,13 @@ class StudySocket extends Socket {
 
         const studyIds = await this.resolveBulkStudyIds(data);
 
-        const pendingChanges = [];
         const openedCount = await this.runBulkWithProgress(studyIds, data.progressId, async (id, transaction) => {
             await this.models["study"].updateById(
                 id,
                 { closed: null, userIdClosed: null },
                 { transaction }
             );
-            transaction.afterCommit(() => {
-                if (transaction.changes?.length) {
-                    pendingChanges.push(...transaction.changes);
-                }
-            });
         });
-
-        if (pendingChanges.length) {
-            await this.broadcastTransactionChanges({changes: pendingChanges});
-        }
 
         return { openedCount };
     }
@@ -326,24 +307,13 @@ class StudySocket extends Socket {
 
         const studyIds = await this.resolveBulkStudyIds(data);
 
-        const pendingChanges = [];
         const deletedCount = await this.runBulkWithProgress(studyIds, data.progressId, async (id, transaction) => {
             await this.models["study"].updateById(
                 id,
                 {deleted: true},
                 {transaction}
             );
-            // Collect hooks' changes; broadcast once after the whole bulk
-            transaction.afterCommit(() => {
-                if (transaction.changes?.length) {
-                    pendingChanges.push(...transaction.changes);
-                }
-            });
         });
-
-        if (pendingChanges.length) {
-            await this.broadcastTransactionChanges({changes: pendingChanges});
-        }
 
         return {deletedCount};
     }

@@ -204,6 +204,7 @@ module.exports = class Socket {
     async runBulkWithProgress(items, progressId, action) {
         let count = 0;
         const total = items.length;
+        const pendingChanges = [];
         // A progress bar cannot show more than ~100 steps; a select-all over the whole table would
         // otherwise emit one event per row.
         const progressEvery = Math.max(1, Math.floor(total / 100));
@@ -214,6 +215,9 @@ module.exports = class Socket {
             try {
                 await action(item, transaction);
                 await transaction.commit();
+                if (transaction.changes?.length) {
+                    pendingChanges.push(...transaction.changes);
+                }
                 count++;
             } catch (e) {
                 this.logger.error(e);
@@ -223,6 +227,10 @@ module.exports = class Socket {
             if (progressId && ((i + 1) % progressEvery === 0 || i + 1 === total)) {
                 this.socket.emit("progressUpdate", { id: progressId, current: i + 1, total });
             }
+        }
+
+        if (pendingChanges.length) {
+            await this.broadcastTransactionChanges({changes: pendingChanges});
         }
 
         return count;
