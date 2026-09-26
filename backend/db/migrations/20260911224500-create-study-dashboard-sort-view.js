@@ -3,7 +3,6 @@
 const {
     VIEW_NAME,
     createMaterializedViewSql,
-    createMaterializedViewIndexesSql,
 } = require("../studyDashboardSortSql.js");
 
 /**
@@ -17,7 +16,16 @@ const {
 module.exports = {
     async up(queryInterface) {
         await queryInterface.sequelize.query(createMaterializedViewSql());
-        await queryInterface.sequelize.query(createMaterializedViewIndexesSql());
+        await queryInterface.addIndex(VIEW_NAME, ["id"], {
+            name: `${VIEW_NAME}_id`,
+            unique: true,
+        });
+        await queryInterface.addIndex(VIEW_NAME, ["stateRank", "id"], {
+            name: `${VIEW_NAME}_rank_id`,
+        });
+        await queryInterface.addIndex(VIEW_NAME, ["sessions", "id"], {
+            name: `${VIEW_NAME}_sessions_id`,
+        });
     },
 
     async down(queryInterface) {

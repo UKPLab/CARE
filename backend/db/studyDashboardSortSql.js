@@ -47,20 +47,8 @@ WITH DATA;
 `;
 }
 
-function createMaterializedViewIndexesSql() {
-    return `
-CREATE UNIQUE INDEX "${VIEW_NAME}_id" ON "${VIEW_NAME}" (id);
-CREATE INDEX "${VIEW_NAME}_rank_id" ON "${VIEW_NAME}" ("stateRank", id);
-CREATE INDEX "${VIEW_NAME}_sessions_id" ON "${VIEW_NAME}" (sessions, id);
-`;
-}
-
 module.exports = {
-    STATE_SQL,
     STATES,
-    SESSION_COUNT_SQL,
-    STATE_RANK_SQL,
     VIEW_NAME,
     createMaterializedViewSql,
-    createMaterializedViewIndexesSql,
 };

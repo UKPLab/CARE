@@ -101,9 +101,6 @@ function attachStudyDashboardSortHooks(sequelize) {
 }
 
 module.exports = {
-    refreshStudyDashboardSort,
-    scheduleStudyDashboardSortRefresh,
     ensureStudyDashboardSortFresh,
     attachStudyDashboardSortHooks,
-    VIEW_NAME,
 };
