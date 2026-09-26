@@ -51,7 +51,8 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "CoordinatorStudy",
   emits: ["published"],
-  subscribeTable: ['document', 'tag_set', 'ai_budget'],
+  // document and tag_set are loaded in loadFormData, which open() awaits.
+  subscribeTable: ['ai_budget'],
   components: {BasicCoordinator, BasicButton},
   data() {
     return {
