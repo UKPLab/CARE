@@ -200,7 +200,6 @@ export default {
       return columns;
     },
     studyQueryFilter() {
-      // Ownership (userId / createdByUserId) is applied server-side via study.getUserFilter.
       return [
         {key: "projectId", value: this.projectId},
         {key: "template", value: false},
