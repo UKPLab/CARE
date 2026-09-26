@@ -284,7 +284,7 @@ More Commands
     * - ``make test-rpc``
       - Run backend RPC tests.
     * - ``make test-modules``
-      - Run unit tests for the ``editor-delta-conversion`` module.
+      - Run unit tests for the ``editor-delta-conversion`` and ``placeholder-tokens`` modules.
     * - ``make lint``
       - Run frontend linter.
     * - ``make modules``
