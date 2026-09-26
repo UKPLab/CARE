@@ -363,6 +363,7 @@ import Loader from "./Loading.vue";
 import { tooltip } from "@/assets/tooltip.js";
 import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
+import debounce from "lodash.debounce";
 import { matchesTokenList } from "./table/searchTokens.js";
 
 /**
@@ -993,7 +994,7 @@ export default {
     }
   },
   created() {
-    this.debouncedComputeFixedColumns = this.debounce(() => {
+    this.debouncedComputeFixedColumns = debounce(() => {
       this.computeFixedColumnStyles();
     }, 150);
   },
@@ -1022,7 +1023,7 @@ export default {
         this.computeFixedColumnStyles();
         // Use ResizeObserver for better performance if available
         if (window.ResizeObserver && this.$refs.tableWrapper) {
-          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
+          this.resizeObserver = new ResizeObserver(this.debouncedComputeFixedColumns);
           this.resizeObserver.observe(this.$refs.tableWrapper);
           if (this.$refs.tableElement) {
             this.resizeObserver.observe(this.$refs.tableElement);
@@ -1040,6 +1041,7 @@ export default {
       }
       if (this.debouncedComputeFixedColumns) {
         window.removeEventListener("resize", this.debouncedComputeFixedColumns);
+        this.debouncedComputeFixedColumns.cancel();
       }
     },
     getManageColumnClass() {
@@ -1176,15 +1178,6 @@ export default {
         return trimmed;
       }
       return null;
-    },
-    debounce(func, wait = 100) {
-      let timeout;
-      return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          func.apply(this, args);
-        }, wait);
-      };
     },
     updateValues(data) {
       // Selection is always a row list; a consumer that binds nothing starts empty.
