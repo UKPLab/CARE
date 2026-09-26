@@ -39,6 +39,21 @@ class PublishAssessmentSocket extends Socket {
     }
 
     /**
+     * Sessions this viewer may see. Same row rule as the session table, so a participant
+     * only counts their own sessions.
+     * @returns {Promise<Object>} Sequelize WHERE for study_session
+     */
+    async visibleSessionWhere() {
+        const filters = await this.getFiltersAndAttributes(
+            this.userId, {deleted: false}, {}, "study_session", this.rolesUpdatedAt
+        );
+        if (!filters.accessAllowed) {
+            return {id: null};
+        }
+        return filters.filter;
+    }
+
+    /**
      * Workflow steps that run one assessment configuration, with their session counts.
      *
      * @socketEvent publishAssessmentWorkflows
@@ -54,6 +69,7 @@ class PublishAssessmentSocket extends Socket {
         }
         const projectId = positiveInt(data?.projectId);
         const where = await this.resolveStudyScope(projectId);
+        const sessionWhere = await this.visibleSessionWhere();
         const configurationMatch = this.models["study_step"].assessmentConfigurationSql("steps");
 
         const rows = await this.models["study"].findAll({
@@ -75,7 +91,7 @@ class PublishAssessmentSocket extends Socket {
                     association: "sessions",
                     attributes: [],
                     required: false,
-                    where: {deleted: false},
+                    where: sessionWhere,
                 },
             ],
             group: [col("study.workflowId"), col("steps.stepNumber")],
