@@ -2152,16 +2152,8 @@ export default {
       const enriched = this.applyEnrich(updatedRow);
       const idx = this.queryItems.findIndex((i) => i.id === enriched.id);
       if (idx === -1) return;
-      // Preserve enriched display fields (e.g. firstName) if delta row lacks them
       const prev = this.queryItems[idx];
-      const merged = {
-        ...prev,
-        ...enriched,
-        firstName: enriched.firstName ?? prev.firstName,
-        lastName: enriched.lastName ?? prev.lastName,
-        state: enriched.state ?? prev.state,
-        sessions: enriched.sessions ?? prev.sessions,
-      };
+      const merged = {...prev, ...enriched};
       this.queryItems.splice(idx, 1, merged);
       // Restart highlight even if id was already in the list
       this.updatedIds = this.updatedIds.filter((id) => id !== merged.id);
