@@ -991,9 +991,12 @@ module.exports = class Socket {
      *   - `count`: related-row counts against a real autoTable, plain string keys, no `where`.
      *   - `parent`: flatten a real autoTable's columns onto each row, but never sensitive/credential
      *     columns (passwordHash, apiKey, initialPassword, ...) and only with an explicit field list.
-     * `sql` and any client-supplied `where` are dropped entirely. A `parent` field list is then
+     * `sql` and any client-supplied `where` are dropped entirely. A `parent` inject is kept only
+     * for tables whose accessMap lists columns as arrays (today: `user`). The field list is then
      * cut to the columns that table's accessMap grants this viewer, so firstName/lastName/email
-     * on `user` stay behind userPrivateInfo the way a direct subscribe does.
+     * stay behind userPrivateInfo the way a direct subscribe does. Tables such as `study`,
+     * `study_session` and `document` declare `columns: this.getAttributes()` before `init()`,
+     * which is not an array, so a client `parent` inject of those tables is dropped.
      *
      * @param {*} injects client-sent inject list
      * @returns {Promise<Array<Object>>} sanitized injects (possibly empty)
@@ -1046,12 +1049,11 @@ module.exports = class Socket {
 
     /**
      * Columns of a parent table this viewer may copy onto a subscribed row.
-     * Tables with an accessMap of column lists (user: public vs private info) keep only the
-     * columns of the rights the viewer holds. Admin keeps the requested list. A table with no
-     * such column rules is unchanged.
+     * Keeps a requested column when an accessMap rule lists it in an array and the viewer holds that rule's right.
+     * Admin receives the requested list. A table with no array column rules returns none.
      * @param {string} table parent table name
      * @param {Array<string>} fields requested column names
-     * @returns {Promise<Array<string>>}
+     * @returns {Promise<Array<string>>} allowed column names, possibly empty
      */
     async allowedParentInjectFields(table, fields) {
         if (!fields.length) {
@@ -1059,7 +1061,10 @@ module.exports = class Socket {
         }
         const accessMap = this.models[table]?.accessMap || [];
         const columnRules = accessMap.filter((rule) => Array.isArray(rule.columns) && rule.right);
-        if (columnRules.length === 0 || await this.isAdmin()) {
+        if (columnRules.length === 0) {
+            return [];
+        }
+        if (await this.isAdmin()) {
             return fields;
         }
         const allowed = new Set();
@@ -1706,22 +1711,11 @@ module.exports = class Socket {
             }
             const visibleRows = rows.filter(entry => this.matchesFilter(entry, allFilter));
             if (operation === "delete") {
-                // A delete must let a client drop a row it already holds, but a viewer who fails the
-                // row filter must never receive that row's columns — and must not be enriched, since
-                // enrichment re-attaches identity fields (names, usernames). Full row for rows the
-                // viewer can see; a bare {id, deleted:true} for the rest so the client can still patch.
-                const hiddenIdRows = rows
-                    .filter(entry => !this.matchesFilter(entry, allFilter))
-                    .map(entry => ({id: entry.id, deleted: true}));
-                if (isQueryMode) {
-                    if (visibleRows.length > 0) {
-                        await emitQueryMode(visibleRows);
-                    }
-                    for (const row of hiddenIdRows) {
-                        this.io.to(socket.id).emit(tableName + "Delta", {operation, row, originSocketId});
-                    }
+                // Only rows this viewer may see
+                if (isQueryMode && visibleRows.length > 0) {
+                    await emitQueryMode(visibleRows);
                 }
-                emitRefresh([...visibleRows, ...hiddenIdRows]);
+                emitRefresh(visibleRows);
                 continue;
             }
             if (visibleRows.length === 0) {
