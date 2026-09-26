@@ -8,6 +8,7 @@
       :default-value="{ isTemplateMode: isTemplateMode }"
       @success="success"
       @submit="handleSubmit"
+      @hide="dropFormData"
   >
     <template #title>
       {{ modalTitle }}
@@ -49,7 +50,9 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "CoordinatorStudy",
-  subscribeTable: ['document', 'tag_set', 'ai_budget'],
+  emits: ["published"],
+  // document and tag_set are loaded in loadFormData, which open() awaits.
+  subscribeTable: ['ai_budget'],
   components: {BasicCoordinator, BasicButton},
   data() {
     return {
@@ -58,16 +61,27 @@ export default {
       isSuccess: false,
       isTemplateMode: false,
       isUsingTemplate: false,
+      studyRecord: null,
+      formSubscriptionIds: [],
     }
   },
   computed: {
     study() {
-      if (this.studyId !== 0) {
-        return {...this.$store.getters['table/study/get'](this.studyId)};
+      if (this.studyRecord && Number(this.studyRecord.id) === Number(this.studyId)) {
+        return { ...this.studyRecord };
       }
-      return {};
+      if (this.studyId !== 0) {
+        const fromStore = this.$store.getters["table/study/get"](this.studyId);
+        if (fromStore) {
+          return { ...fromStore };
+        }
+      }
+      return this.studyRecord ? { ...this.studyRecord } : {};
     },
     link() {
+      if (!this.study.hash) {
+        return "";
+      }
       return window.location.origin + "/study/" + this.study.hash;
     },
     modalTitle() {
@@ -83,7 +97,37 @@ export default {
     },
   },
   methods: {
-    open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
+    subscribeAppData(payload) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(this.$t('errors.studies.formLoadTimeout'))), 20000);
+        this.$socket.emit("subscribeAppData", payload, (result) => {
+          clearTimeout(timer);
+          if (result?.success) {
+            this.formSubscriptionIds.push(result.data);
+            if (Array.isArray(this.subscriptionIds)) {
+              this.subscriptionIds.push(result.data);
+            }
+            resolve(result.data);
+          } else {
+            reject(new Error(resolveApiMessage(result)));
+          }
+        });
+      });
+    },
+    loadFormData(studyId) {
+      const waits = [
+        this.subscribeAppData({table: "document"}),
+        this.subscribeAppData({table: "tag_set"}),
+      ];
+      if (studyId) {
+        waits.push(this.subscribeAppData({
+          table: "study_step",
+          filter: [{key: "studyId", value: Number(studyId)}],
+        }));
+      }
+      return Promise.all(waits);
+    },
+    async open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false, studyRow = null) {
       if (documentId !== null) {
         this.documentId = documentId;
       }
@@ -91,20 +135,33 @@ export default {
       this.studyId = studyId;
       this.isTemplateMode = templateMode;
       this.isUsingTemplate = copy && studyId !== 0;
+      this.studyRecord = studyRow ? { ...studyRow } : null;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
+
+      if (!loadInitialized) {
+        try {
+          await this.loadFormData(studyId);
+          await this.$nextTick();
+        } catch (err) {
+          this.eventBus.emit("toast", {
+            title: this.$t('errors.studies.formLoadFailed'),
+            message: err.message,
+            variant: "danger",
+          });
+          return;
+        }
+      }
 
       if (loadInitialized) {
         this.$refs.coordinator.showSuccess();
       }
-
-      // Pre-fill the three study-level cap virtual fields from ai_budget.
       const aiOverrides = studyId !== 0 ? this.findExistingStudyCaps(studyId) : {};
-
       this.$refs.coordinator.open(
-          studyId,
-          {documentId: this.documentId, isTemplateMode: templateMode},
-          copy,
-          aiOverrides
+        studyId,
+        {documentId: this.documentId, isTemplateMode: templateMode},
+        copy,
+        aiOverrides,
+        this.studyRecord
       );
     },
     findExistingStudyCaps(studyId) {
@@ -149,13 +206,52 @@ export default {
         });
       }
     },
-    success(id) {
+    success(payload) {
       if (!this.isTemplateMode) {
-        const originalStudy = this.$store.getters['table/study/get'](this.studyId);
-        const newStudies = this.$store.getters['table/study/getFiltered']((s) => s.parentStudyId === originalStudy?.id);
-        const validNewStudy = newStudies.find(s => new Date(s.createdAt) > new Date(originalStudy.createdAt));
-        this.studyId = validNewStudy ? validNewStudy.id : id;
+        const published = payload && typeof payload === "object"
+          ? payload
+          : {id: payload};
+        if (published.hash) {
+          this.studyId = published.id;
+          this.studyRecord = {
+            ...(this.studyRecord || {}),
+            id: published.id,
+            hash: published.hash,
+          };
+        } else if (published.id) {
+          this.studyId = published.id;
+          if (!this.studyRecord || Number(this.studyRecord.id) !== Number(published.id)) {
+            this.studyRecord = {id: published.id};
+          }
+        }
         this.isSuccess = true;
+        this.$emit("published", published);
+      }
+    },
+    dropFormData() {
+      const ids = [...this.formSubscriptionIds];
+      this.formSubscriptionIds = [];
+      ids.forEach((id) => {
+        this.$socket.emit("unsubscribeAppData", id);
+        const list = this.subscriptionIds;
+        if (Array.isArray(list)) {
+          const index = list.indexOf(id);
+          if (index >= 0) {
+            list.splice(index, 1);
+          }
+        }
+      });
+      if (!this.studyId) {
+        return;
+      }
+      const steps = this.$store.getters["table/study_step/getFiltered"](
+        (step) => Number(step.studyId) === Number(this.studyId)
+      ) || [];
+      if (steps.length) {
+        this.$store.commit(
+          "table/study_step/SOCKET_study_stepRefresh",
+          steps.map((step) => ({id: step.id, deleted: true}))
+        );
       }
     },
     close() {

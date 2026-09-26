@@ -4,6 +4,23 @@ const TranslatableError = require("../utils/TranslatableError");
 const {Sequelize, Op} = require("sequelize");
 const _ = require("lodash");
 const {EWMAMonitor} = require("../utils/EWMAMonitor")
+const {mergeFilter} = require("../utils/helper/data.js");
+const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("../utils/helper/queryTableSearch.js");
+const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../utils/helper/queryTableColumnFilters.js");
+const {dashboardSortInclude} = require("../utils/helper/queryTableJoinSort.js");
+const {ensureStudyDashboardSortFresh} = require("../db/studyDashboardSortRefresh.js");
+const {SECRET_COLUMN_SET, hiddenColumns} = require("../utils/helper/sensitiveColumns.js");
+const {positiveInt} = require("../utils/helper/positiveInt.js");
+
+// Upper bound for a query-scoped bulk ("select all matching")
+const MAX_BULK_SELECTION = 100000;
+
+// Upper bound for an explicit id list sent by the client (one page / a few pages of picks).
+const MAX_EXPLICIT_SELECTION = 10000;
+
+// Rows a single broadcast may animate row by row in query-mode; above this the client refetches.
+const MAX_DELTA_ROWS = 100;
+
 /**
  * Defines as new Socket class
  *
@@ -187,6 +204,10 @@ module.exports = class Socket {
     async runBulkWithProgress(items, progressId, action) {
         let count = 0;
         const total = items.length;
+        const pendingChanges = [];
+        // A progress bar cannot show more than ~100 steps; a select-all over the whole table would
+        // otherwise emit one event per row.
+        const progressEvery = Math.max(1, Math.floor(total / 100));
 
         for (let i = 0; i < total; i++) {
             const item = items[i];
@@ -194,15 +215,22 @@ module.exports = class Socket {
             try {
                 await action(item, transaction);
                 await transaction.commit();
+                if (transaction.changes?.length) {
+                    pendingChanges.push(...transaction.changes);
+                }
                 count++;
             } catch (e) {
                 this.logger.error(e);
                 await transaction.rollback();
             }
 
-            if (progressId) {
+            if (progressId && ((i + 1) % progressEvery === 0 || i + 1 === total)) {
                 this.socket.emit("progressUpdate", { id: progressId, current: i + 1, total });
             }
+        }
+
+        if (pendingChanges.length) {
+            await this.broadcastTransactionChanges({changes: pendingChanges});
         }
 
         return count;
@@ -214,22 +242,54 @@ module.exports = class Socket {
      */
     async broadcastTransactionChanges(transaction) {
         try {
-            const defaultExcludes = ["deletedAt", "passwordHash", "salt", "apiKey"];
             if (transaction && transaction.changes) {
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
                         const tableName = entry.constructor.tableName;
-                        const entryData = _.omit(entry.dataValues, defaultExcludes);
+                        const entryData = {...entry.dataValues};
+                        const operation = entry._broadcastOp
+                            || (entryData.deleted ? "delete" : "update");
                         if (!acc.has(tableName)) {
-                            acc.set(tableName, []);
+                            acc.set(tableName, new Map());
                         }
-                        acc.get(tableName).push(entryData);
+                        const byOp = acc.get(tableName);
+                        if (!byOp.has(operation)) {
+                            byOp.set(operation, []);
+                        }
+                        byOp.get(operation).push(entryData);
                     }
                     return acc;
                 }, new Map());
 
-                for (const [table, changes] of changesMap) {
-                    this.broadcastTable(table, changes);
+                const companionBroadcasts = [];
+                for (const [table, byOp] of changesMap) {
+                    const model = this.models[table];
+                    if (typeof model?.getCompanionBroadcasts === "function") {
+                        for (const [operation, rows] of byOp) {
+                            companionBroadcasts.push(...model.getCompanionBroadcasts(rows, operation));
+                        }
+                    }
+                    // Mixed ops in one txn (e.g. study create+update): pass null so query-mode gets Stale.
+                    // Same-op bulk (e.g. multi-delete): pass the operation so clients get per-row Deltas.
+                    if (byOp.size > 1) {
+                        const allRows = [...byOp.values()].flat();
+                        this.broadcastTable(table, allRows, null);
+                    } else {
+                        for (const [operation, rows] of byOp) {
+                            this.broadcastTable(table, rows, operation);
+                        }
+                    }
+                }
+                for (const {table, rows, operation} of companionBroadcasts) {
+                    let payload = rows;
+                    // Companion rows are often {id} stubs — load full rows so ACL filters work.
+                    if (payload.length && payload.every((r) => r?.id != null && Object.keys(r).length === 1)) {
+                        const ids = payload.map((r) => r.id);
+                        payload = await this.models[table].getAll({
+                            where: {id: {[Op.in]: ids}, deleted: false},
+                        });
+                    }
+                    await this.broadcastTable(table, payload, operation);
                 }
             }
         } catch (e) {
@@ -648,27 +708,503 @@ module.exports = class Socket {
     }
 
     /**
-     * Handles injections of type count by executing COUNT queries and attaching the result to the data
+     * Row scope of one queryTable request: ACL filter + client filter + search-bar tokens + free text.
+     *
+     * Everything that decides *which rows match* lives here, so a query-scoped bulk (select all
+     * matching) resolves exactly the rows the same viewer can list — sorting and paging are the
+     * caller's business.
+     *
+     * @param {Object} params
+     * @param {string} params.table autoTable name
+     * @param {Array} [params.filter] subscribeAppData-style filter items from the client
+     * @param {Object} [params.query] { search, columnFilters, searchColumns }
+     * @param {Object} [params.scope] consumer scope a filter item cannot express (e.g. Publish
+     *   Assessment's configuration + workflow-step selection); the model reads it
+     * @returns {Promise<Object>} model, attributes, where, allAttributes, allowedAttributeNames,
+     *   injectCtx, filterSpec, columnFilters, search, searchColumns, needsViewJoin, usesStateView
+     */
+    async resolveQueryTableScope({table, filter = [], query = {}, scope = null}) {
+        if (!table) {
+            throw new TranslatableError("errors.validation.tableNameRequired");
+        }
+        if (!this.models[table] || !this.models[table].autoTable) {
+            throw new Error(`${table} is not an autoTable`);
+        }
+
+        const model = this.models[table];
+        const attributes = model.getAttributes();
+
+        let allFilter = {deleted: false};
+        const mergedClientFilter = mergeFilter([Array.isArray(filter) ? filter : []], attributes);
+        if (mergedClientFilter.length > 0) {
+            allFilter[Op.or] = mergedClientFilter;
+        }
+
+        const defaultExcludes = hiddenColumns();
+        let allAttributes = {exclude: defaultExcludes};
+        // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
+        const filtersAndAttributes = await this.getFiltersAndAttributes(
+            this.userId, allFilter, allAttributes, table, this.rolesUpdatedAt
+        );
+        if (!filtersAndAttributes.accessAllowed) {
+            throw new TranslatableError("errors.permission.noPermissionToAccesData");
+        }
+        allFilter = filtersAndAttributes.filter;
+        allAttributes = filtersAndAttributes.attributes;
+
+        const allowedAttributeNames = Array.isArray(allAttributes)
+            ? allAttributes
+            : Object.keys(attributes).filter((name) => !(allAttributes.exclude || []).includes(name));
+        const injectCtx = {
+            userId: this.userId,
+            rolesUpdatedAt: this.rolesUpdatedAt,
+            hasAccess: (right) => this.hasAccess(right, this.userId, this.rolesUpdatedAt),
+            isAdmin: () => this.isAdmin(this.userId, this.rolesUpdatedAt),
+            // Nested scopes (e.g. reviewer "from previous sessions") re-resolve another table's
+            // query-scoped selection without shipping id lists through the client.
+            resolveQueryTableIds: (params) => this.resolveQueryTableIds(params),
+        };
+
+        // Rows a wizard step means but a filter item cannot name (join over other tables). The model
+        // validates the request and owns the SQL; an unusable scope must throw there, not widen the list.
+        if (scope && typeof model.getQueryTableScopeFilter === "function") {
+            const scopeWhere = await model.getQueryTableScopeFilter(scope, injectCtx);
+            if (scopeWhere) {
+                allFilter = {[Op.and]: [allFilter, scopeWhere]};
+            }
+        }
+
+        // Search-bar filter tokens
+        const columnFilters = query.columnFilters && typeof query.columnFilters === "object"
+            ? query.columnFilters
+            : null;
+        let filterSpec = null;
+        if (columnFilters && Object.keys(columnFilters).length > 0) {
+            filterSpec = typeof model.getQueryTableFilterColumns === "function"
+                ? await model.getQueryTableFilterColumns(injectCtx)
+                : null;
+            const columnWhere = buildQueryTableColumnFilters({
+                model,
+                columnFilters,
+                filterSpec,
+                allowedAttributeNames,
+            });
+            if (columnWhere) {
+                allFilter = {[Op.and]: [allFilter, columnWhere]};
+            }
+        }
+
+        const search = typeof query.search === "string"
+            ? query.search.trim().slice(0, MAX_SEARCH_LENGTH)
+            : "";
+        let searchColumns = null;
+        if (search) {
+            const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
+            searchColumns = typeof model.getQueryTableSearchColumns === "function"
+                ? await model.getQueryTableSearchColumns(injectCtx)
+                : null;
+            searchColumns = this.narrowSearchColumns(searchColumns, query.searchColumns);
+            const searchWhere = buildQueryTableSearch({
+                model,
+                search,
+                allowedAttributeNames,
+                injects,
+                searchColumns,
+            });
+            if (searchWhere) {
+                allFilter = {[Op.and]: [allFilter, searchWhere]};
+            }
+        }
+
+        const viewFields = viewSearchFields(model);
+        const searchNeedsView = !!(search && viewFields.some((spec) => !searchColumns || searchColumns.includes(spec.key)));
+        const needsViewJoin = columnFiltersNeedViewJoin(filterSpec, columnFilters) || searchNeedsView;
+        const usesStateView = !!(filterSpec && columnFilters && Object.keys(columnFilters).some(
+            (key) => filterSpec[key]?.viewField === "state"
+        )) || !!(search && viewFields.some((spec) => spec.field === "state"
+            && (!searchColumns || searchColumns.includes(spec.key))));
+
+        return {
+            model,
+            attributes,
+            where: allFilter,
+            allAttributes,
+            allowedAttributeNames,
+            injectCtx,
+            filterSpec,
+            columnFilters,
+            search,
+            searchColumns,
+            needsViewJoin,
+            usesStateView,
+        };
+    }
+
+    /**
+     * Narrow the model's searchable keys to the columns a consumer actually shows.
+     *
+     * The model list stays the outer bound (a client cannot widen it); a table that renders fewer
+     * columns passes its own subset so free text never matches a field the user cannot see there.
+     * @param {string[]|null} modelColumns
+     * @param {*} requested client-sent allow-list
+     * @returns {string[]|null}
+     */
+    narrowSearchColumns(modelColumns, requested) {
+        if (!Array.isArray(modelColumns) || !Array.isArray(requested) || requested.length === 0) {
+            return modelColumns;
+        }
+        const wanted = new Set(requested.filter((key) => typeof key === "string"));
+        const narrowed = modelColumns.filter((key) => wanted.has(key));
+        // An empty intersection means the request was nonsense; fall back to the model list instead
+        // of searching nothing (which would silently match every row).
+        return narrowed.length > 0 ? narrowed : modelColumns;
+    }
+
+    /**
+     * Ids of every row a query matches — the server-side form of "select all matching".
+     *
+     * Never trusts the client's row list: `includeIds` is intersected with the same ACL scope the
+     * list query uses, and `excludeIds` (rows the user unchecked after select-all) is subtracted.
+     *
+     * @param {Object} params
+     * @param {string} params.table autoTable name
+     * @param {Array} [params.filter] client filter items (same as queryTable)
+     * @param {Object} [params.query] { search, columnFilters, searchColumns }
+     * @param {Object} [params.scope] consumer scope
+     * @param {Array<number>} [params.excludeIds] rows unchecked after select-all
+     * @param {Array<number>} [params.includeIds] restrict to these ids (explicit selection)
+     * @param {import("sequelize").Transaction} [params.transaction] share the caller's transaction; omit for a plain read
+     * @returns {Promise<number[]>}
+     */
+    async resolveQueryTableIds({table, filter = [], query = {}, scope: scopeParams = null, excludeIds = [], includeIds = null, transaction = null}) {
+        const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
+        const conditions = [scope.where];
+
+        const excluded = this.sanitizeIds(excludeIds, MAX_BULK_SELECTION);
+        if (excluded.length > 0) {
+            conditions.push({id: {[Op.notIn]: excluded}});
+        }
+        if (includeIds !== null) {
+            const included = this.sanitizeIds(includeIds, MAX_EXPLICIT_SELECTION);
+            if (included.length === 0) {
+                return [];
+            }
+            conditions.push({id: {[Op.in]: included}});
+        }
+
+        const findOptions = {
+            where: conditions.length === 1 ? conditions[0] : {[Op.and]: conditions},
+            attributes: ["id"],
+            order: [["id", "ASC"]],
+            raw: true,
+            limit: MAX_BULK_SELECTION + 1,
+            ...(transaction ? {transaction} : {}),
+        };
+        const viewJoin = await this.applyViewJoin({
+            needed: scope.needsViewJoin,
+            usesStateView: scope.usesStateView,
+        });
+        if (viewJoin) {
+            Object.assign(findOptions, viewJoin.join);
+        }
+
+        const rows = await scope.model.findAll(findOptions);
+        if (rows.length > MAX_BULK_SELECTION) {
+            throw new TranslatableError("errors.queryTable.selectionTooLarge", {limit: MAX_BULK_SELECTION});
+        }
+        return rows.map((row) => row.id);
+    }
+
+    /**
+     * Refresh `study_dashboard_sort` and build the INNER JOIN when a query reads the view.
+     *
+     * @param {Object} params
+     * @param {boolean} params.needed filter, search, or sort reads the view
+     * @param {boolean} [params.usesStateView] refresh the state column, not only the session count
+     * @returns {Promise<{sortModel: import("sequelize").Model, join: {include: Object[], subQuery: false}}|null>}
+     */
+    async applyViewJoin({needed = false, usesStateView = false} = {}) {
+        if (!needed) {
+            return null;
+        }
+        const sortModel = this.models["study_dashboard_sort"];
+        if (!sortModel) {
+            throw new Error("study_dashboard_sort is not available");
+        }
+        await ensureStudyDashboardSortFresh(
+            this.server.db.sequelize,
+            usesStateView ? "stateRank" : "sessions"
+        );
+        return {
+            sortModel,
+            join: {include: [dashboardSortInclude(sortModel)], subQuery: false},
+        };
+    }
+
+    /**
+     * BackendTable selection → the ids `resolveQueryTableIds` would list.
+     *
+     * `allMatching` keeps filter, search, and scope, minus `excludeIds`. An explicit pick is
+     * `includeIds` only, still intersected with the viewer's row scope.
+     *
+     * @param {string} table autoTable name
+     * @param {Object} [sel] { filter, query, scope, excludeIds, ids, allMatching }
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
+     * @returns {Promise<number[]>}
+     */
+    resolveSelectionIds(table, sel = {}, transaction = null) {
+        return this.resolveQueryTableIds({
+            table,
+            filter: sel.filter || [],
+            query: sel.query || {},
+            scope: sel.scope || null,
+            excludeIds: sel.excludeIds || [],
+            includeIds: sel.allMatching ? null : (sel.ids || []),
+            transaction,
+        });
+    }
+
+    /**
+     * Positive integer ids only; duplicates dropped.
+     * @param {*} ids
+     * @param {number} max
+     * @returns {number[]}
+     * @throws {TranslatableError} when the cleaned list is longer than max
+     */
+    sanitizeIds(ids, max) {
+        if (!Array.isArray(ids)) {
+            return [];
+        }
+        const clean = [...new Set(ids.map((id) => positiveInt(id)).filter(Boolean))];
+        if (clean.length > max) {
+            throw new TranslatableError("errors.queryTable.idListTooLarge", {limit: max});
+        }
+        return clean;
+    }
+
+    /**
+     * Restrict client-supplied subscribeAppData injects to a safe whitelist.
+     *
+     * Injects flow into handleInjections. Two of its branches are dangerous with client input:
+     * `sql` evaluates a client string as raw SQL (Sequelize.literal), and `parent`/`count` accept a
+     * client-chosen table and column list. A subscribing client is therefore allowed only:
+     *   - `count`: related-row counts against a real autoTable, plain string keys, no `where`.
+     *   - `parent`: flatten a real autoTable's columns onto each row, but never sensitive/credential
+     *     columns (passwordHash, apiKey, initialPassword, ...) and only with an explicit field list.
+     * `sql` and any client-supplied `where` are dropped entirely. A `parent` inject is kept only
+     * for tables whose accessMap lists columns as arrays (today: `user`). The field list is then
+     * cut to the columns that table's accessMap grants this viewer, so firstName/lastName/email
+     * stay behind userPrivateInfo the way a direct subscribe does. Tables such as `study`,
+     * `study_session` and `document` declare `columns: this.getAttributes()` before `init()`,
+     * which is not an array, so a client `parent` inject of those tables is dropped.
+     *
+     * @param {*} injects client-sent inject list
+     * @returns {Promise<Array<Object>>} sanitized injects (possibly empty)
+     */
+    async sanitizeClientInjects(injects) {
+        if (!Array.isArray(injects)) {
+            return [];
+        }
+        // Columns a client may never pull onto a row via a parent inject, regardless of table.
+        const forbiddenInjectFields = new Set(hiddenColumns());
+        const isAutoTable = (table) => typeof table === "string" && !!this.models[table]?.autoTable;
+
+        return (await Promise.all(injects
+            .map(async (inject) => {
+                if (!inject || !isAutoTable(inject.table)) {
+                    return null;
+                }
+                if (inject.type === "count" && typeof inject.by === "string" && typeof inject.as === "string") {
+                    // No client `where`: a count is scoped to the visible rows' foreign keys only.
+                    return {
+                        type: "count",
+                        table: inject.table,
+                        by: inject.by,
+                        as: inject.as,
+                        on: typeof inject.on === "string" ? inject.on : "id",
+                    };
+                }
+                if (inject.type === "parent" && typeof inject.by === "string") {
+                    // Require an explicit field list (no "dump every column" fallback for clients)
+                    // and strip anything sensitive, then anything this viewer may not read.
+                    const requested = Array.isArray(inject.fields)
+                        ? inject.fields.filter((f) => typeof f === "string" && !forbiddenInjectFields.has(f))
+                        : [];
+                    const fields = await this.allowedParentInjectFields(inject.table, requested);
+                    if (fields.length === 0) {
+                        return null;
+                    }
+                    return {
+                        type: "parent",
+                        table: inject.table,
+                        by: inject.by,
+                        fields,
+                    };
+                }
+                // sql injects and anything else are not allowed from a client.
+                return null;
+            })))
+            .filter(Boolean);
+    }
+
+    /**
+     * Columns of a parent table this viewer may copy onto a subscribed row.
+     * Keeps a requested column when an accessMap rule lists it in an array and the viewer holds that rule's right.
+     * Admin receives the requested list. A table with no array column rules returns none.
+     * @param {string} table parent table name
+     * @param {Array<string>} fields requested column names
+     * @returns {Promise<Array<string>>} allowed column names, possibly empty
+     */
+    async allowedParentInjectFields(table, fields) {
+        if (!fields.length) {
+            return [];
+        }
+        const accessMap = this.models[table]?.accessMap || [];
+        const columnRules = accessMap.filter((rule) => Array.isArray(rule.columns) && rule.right);
+        if (columnRules.length === 0) {
+            return [];
+        }
+        if (await this.isAdmin()) {
+            return fields;
+        }
+        const allowed = new Set();
+        for (const rule of columnRules) {
+            if (await this.hasAccess(rule.right)) {
+                rule.columns.forEach((column) => allowed.add(column));
+            }
+        }
+        return fields.filter((field) => allowed.has(field));
+    }
+
+    /**
+     * Resolve queryTable inject specs for a model and viewer.
+     * Models may define static getQueryTableInjects(ctx).
+     * @param {Object} model Sequelize model
+     * @param {number} userId
+     * @param {Date} rolesUpdatedAt
+     * @returns {Promise<Array<Object>>}
+     */
+    async resolveQueryTableInjects(model, userId, rolesUpdatedAt) {
+        if (typeof model.getQueryTableInjects !== "function") {
+            return [];
+        }
+        return model.getQueryTableInjects({
+            userId,
+            rolesUpdatedAt,
+            hasAccess: (right) => this.hasAccess(right, userId, rolesUpdatedAt),
+        });
+    }
+
+    /**
+     * Attach related-table fields to queryTable / query-mode delta rows.
+     * @param {string} tableName autoTable name
+     * @param {Object[]} items rows to enrich
+     * @param {number} userId viewer
+     * @param {Date} rolesUpdatedAt
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
+     * @returns {Promise<Object[]>}
+     */
+    async enrichQueryTableItems(tableName, items, userId, rolesUpdatedAt, transaction = null) {
+        if (!items?.length) {
+            return items || [];
+        }
+        const model = this.models[tableName];
+        const injects = await this.resolveQueryTableInjects(model, userId, rolesUpdatedAt);
+        if (!injects.length) {
+            return items;
+        }
+        return this.handleInjections(injects, items.map((row) => ({...row})), transaction);
+    }
+
+    /**
+     * Handles injections for queryTable rows and legacy sendTable snapshots.
+     * Supports count (related row counts), parent (flatten parent columns onto each row) and
+     * sql (model-owned scalar expressions for values no single parent hop can reach).
      * @param {Object} injects Instructions on what to inject
      * @param {Object} data Data to query and extend
-     * @returns {Object} data with attached COUNT results
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
+     * @returns {Object} data with attached COUNT / parent-field / expression results
      */
-    async handleInjections(injects, data) {
+    async handleInjections(injects, data, transaction = null) {
+        if (!data?.length) {
+            return data || [];
+        }
         for (const injection of injects) {
             if (injection.type === "count") {
-                const count = await this.models[injection.table].findAll({
-                    attributes: [injection.by, [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
-                    where: {
-                        [injection.by]: {
-                            [Op.in]: data.map((d) => d.id)
-                        },
-                    },
+                const sourceKey = injection.on || "id";
+                const fkValues = [...new Set(data.map((d) => d[sourceKey]).filter((id) => id != null))];
+                if (!fkValues.length) {
+                    continue;
+                }
+                const injectModel = this.models[injection.table];
+                const where = {
+                    [injection.by]: {[Op.in]: fkValues},
+                };
+                if (injection.where) {
+                    Object.assign(where, injection.where);
+                } else if (injectModel && "deleted" in injectModel.getAttributes()) {
+                    where.deleted = false;
+                }
+                const count = await injectModel.findAll({
+                    attributes: [injection.by, [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]],
+                    where,
                     group: injection.by,
-                    raw: true
+                    raw: true,
+                    ...(transaction ? {transaction} : {}),
                 });
-                // inject in data
                 data = data.map((d) => {
-                    d[injection.as] = Number(count.find((c) => c[injection.by] === d.id)?.count) || 0;
+                    d[injection.as] = Number(count.find((c) => c[injection.by] === d[sourceKey])?.count) || 0;
+                    return d;
+                });
+            } else if (injection.type === "parent") {
+                const parentIds = [...new Set(data.map((d) => d[injection.by]).filter((id) => id != null))];
+                if (!parentIds.length) {
+                    continue;
+                }
+                const parentModel = this.models[injection.table];
+                const parentWhere = {id: {[Op.in]: parentIds}, deleted: false};
+                // Always include id — Sequelize attributes arrays do not auto-add PK,
+                // and without it byId lookup below fails (firstName/lastName never attached).
+                const parentAttrs = injection.fields?.length
+                    ? ["id", ...injection.fields.filter((f) => f !== "id")]
+                    : {exclude: hiddenColumns()};
+                const parents = await parentModel.findAll({
+                    where: parentWhere,
+                    attributes: parentAttrs,
+                    raw: true,
+                    ...(transaction ? {transaction} : {}),
+                });
+                const byId = Object.fromEntries(parents.map((p) => [p.id, p]));
+                const fields = injection.fields || Object.keys(parents[0] || {}).filter((k) => k !== "id");
+                data = data.map((d) => {
+                    const parent = byId[d[injection.by]];
+                    for (const field of fields) {
+                        // Always set the key so FE visibleColumns (hasOwnProperty) keeps the column
+                        d[field] = parent ? parent[field] : null;
+                    }
+                    return d;
+                });
+            } else if (injection.type === "sql") {
+                // Values behind more than one hop (e.g. a session's study owner or submission).
+                const fields = Object.entries(injection.fields || {});
+                const sourceKey = injection.on || "id";
+                const keys = [...new Set(data.map((d) => d[sourceKey]).filter((id) => id != null))];
+                if (!fields.length || !keys.length) {
+                    continue;
+                }
+                const sqlModel = this.models[injection.table];
+                const rows = await sqlModel.findAll({
+                    where: {[sourceKey]: {[Op.in]: keys}},
+                    attributes: [sourceKey, ...fields.map(([alias, sql]) => [Sequelize.literal(sql), alias])],
+                    raw: true,
+                    ...(transaction ? {transaction} : {}),
+                });
+                const byKey = new Map(rows.map((row) => [row[sourceKey], row]));
+                data = data.map((d) => {
+                    const extra = byKey.get(d[sourceKey]);
+                    for (const [alias] of fields) {
+                        d[alias] = extra ? extra[alias] : null;
+                    }
                     return d;
                 });
             }
@@ -786,7 +1322,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt","apiKey"];
+        const defaultExcludes = hiddenColumns();
         let allAttributes = {
             exclude: defaultExcludes,
         };
@@ -1005,35 +1541,162 @@ module.exports = class Socket {
     }
 
     /**
-     * Broadcasts data to all clients that have permissions to see it
+     * Model columns this viewer may receive. Null means every non-secret column (admin,
+     * a table whose access map does not list columns, or a viewer with no column grant).
+     * @param {string} tableName
+     * @param {number} userId
+     * @param {Date} rolesUpdatedAt
+     * @returns {Promise<Set<string>|null>}
+     */
+    async broadcastColumnAllowList(tableName, userId, rolesUpdatedAt) {
+        if (await this.isAdmin(userId, rolesUpdatedAt)) {
+            return null;
+        }
+        const model = this.models[tableName];
+        const accessMap = model?.accessMap || [];
+        const listsColumns = accessMap.some((rule) => rule.columns);
+        if (!listsColumns) {
+            return null;
+        }
+        const filters = await this.getFiltersAndAttributes(
+            userId, {}, {exclude: []}, tableName, rolesUpdatedAt
+        );
+        const listed = filters.attributes;
+        if (!Array.isArray(listed)) {
+            return null;
+        }
+        const names = new Set();
+        for (const item of listed) {
+            if (typeof item === "string") {
+                names.add(item);
+            } else if (item && typeof item === "object") {
+                for (const key of Object.keys(item)) {
+                    names.add(key);
+                }
+            }
+        }
+        return names;
+    }
+
+    /**
+     * Drops secret columns from a live update. Keeps id and deleted.
+     * When allowed is set, also keeps only those columns.
+     * @param {Object[]} rows
+     * @param {Set<string>|null} allowed null keeps every non-secret column
+     * @returns {Object[]}
+     */
+    projectBroadcastRows(rows, allowed) {
+        const secret = new Set([...SECRET_COLUMN_SET, "deletedAt"]);
+        return (rows || []).map((row) => {
+            if (!row || typeof row !== "object") {
+                return row;
+            }
+            const projected = {};
+            for (const [key, value] of Object.entries(row)) {
+                if (secret.has(key)) {
+                    continue;
+                }
+                if (key === "id" || key === "deleted") {
+                    projected[key] = value;
+                    continue;
+                }
+                if (allowed && !allowed.has(key)) {
+                    continue;
+                }
+                projected[key] = value;
+            }
+            return projected;
+        });
+    }
+
+    /**
+     * Broadcasts data to all clients that have permissions to see it.
+     * A Vuex subscription gets {table}Refresh.
+     * A mounted BackendTable gets {table}Delta or {table}Stale.
      * @param {string} tableName The name of table
-     * @param {object} data The data to broadcast
+     * @param {object|Array} data The data to broadcast
+     * @param {string|null} [operation] create|update|delete — null means bulk/unknown → Stale for query-mode
      * @returns {Promise<void>}
      */
-    async broadcastTable(tableName, data) {
+    async broadcastTable(tableName, data, operation = null) {
         const sockets = await this.io.fetchSockets();
         if (!sockets) return;
+        const rows = Array.isArray(data) ? data : [data];
+        // Who committed: FE uses this on Delta/Stale (own tab applies now, others may banner).
+        const originSocketId = this.socket?.id || null;
+        // One allow-list per user for this broadcast. Several tabs share a userId.
+        const columnAllowCache = new Map();
+
         for (const socket of sockets) {
-            if (!(tableName in socket.appDataSubscriptions.tables)) {
+            const queryHolds = socket.currentQueries?.[tableName];
+            const isQueryMode = typeof queryHolds === "number" && queryHolds > 0;
+            const hasSubscription = (socket.appDataSubscriptions?.tables?.[tableName]?.size || 0) > 0;
+            if (!hasSubscription && !isQueryMode) {
                 continue;
             }
             const userId = socket.user.id;
             const rolesUpdatedAt = socket.user.rolesUpdatedAt;
-            // if the changes come from same user, just send
+            if (!columnAllowCache.has(userId)) {
+                columnAllowCache.set(
+                    userId,
+                    await this.broadcastColumnAllowList(tableName, userId, rolesUpdatedAt)
+                );
+            }
+            const allowedColumns = columnAllowCache.get(userId);
+            const project = (payloadRows) => this.projectBroadcastRows(payloadRows, allowedColumns);
+            const emitRefresh = (payloadRows) => {
+                const projected = project(payloadRows);
+                if (!hasSubscription || projected.length === 0) {
+                    return;
+                }
+                this.io.to(socket.id).emit(tableName + "Refresh", projected);
+            };
+
+            // Helper: send this socket either Stale (mixed ops) or one Delta per row.
+            const emitQueryMode = async (filteredRows) => {
+                // No operation (e.g. mixed delete+update in one txn) → Stale, not stacked Deltas.
+                // Same for a bulk bigger than a page: one refetch beats thousands of row events.
+                if (!operation || filteredRows.length > MAX_DELTA_ROWS) {
+                    this.io.to(socket.id).emit(tableName + "Stale", {
+                        originSocketId,
+                    });
+                    return;
+                }
+                const enrichedRows = await this.enrichQueryTableItems(
+                    tableName, project(filteredRows), userId, rolesUpdatedAt
+                );
+                // One Delta per row so bulk same-op (multi-delete) can animate / bump
+                // immediately for on-page and next-page rows without a Stale banner.
+                for (const row of enrichedRows) {
+                    this.io.to(socket.id).emit(tableName + "Delta", {
+                        operation,
+                        row,
+                        originSocketId,
+                    });
+                }
+            };
+
+            // Same user (any tab): still respect query-mode vs legacy
             if (socket.user.id === this.userId) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
-                continue
+                emitRefresh(rows);
+                if (isQueryMode) {
+                    await emitQueryMode(rows);
+                }
+                continue;
             }
             const model = this.models[tableName];
             const hasModelUserFilter = typeof model.getUserFilter === "function";
             const hasBroadcastExpander = typeof model.expandBroadcastFilter === "function";
             const isAdmin = await this.isAdmin(userId, rolesUpdatedAt);
             const isPublicTable = model.publicTable;
-            
+
             // if socket is admin or table is public, also just send (unless model requires per-user filtering/expansion)
             if (!hasModelUserFilter && !hasBroadcastExpander && (isAdmin || isPublicTable)) {
-                this.io.to(socket.id).emit(tableName + "Refresh", data);
-                continue
+                emitRefresh(rows);
+                if (isQueryMode) {
+                    await emitQueryMode(rows);
+                }
+                continue;
             }
             let allFilter = {};
             let allAttributes = {};
@@ -1046,10 +1709,23 @@ module.exports = class Socket {
             if (hasBroadcastExpander) {
                 allFilter = await model.expandBroadcastFilter(allFilter, userId, isAdmin);
             }
-            const filteredData = data.filter(entry => this.matchesFilter(entry, allFilter));
-            this.io.to(socket.id).emit(tableName + "Refresh", filteredData);
+            const visibleRows = rows.filter(entry => this.matchesFilter(entry, allFilter));
+            if (operation === "delete") {
+                // Only rows this viewer may see
+                if (isQueryMode && visibleRows.length > 0) {
+                    await emitQueryMode(visibleRows);
+                }
+                emitRefresh(visibleRows);
+                continue;
+            }
+            if (visibleRows.length === 0) {
+                continue;
+            }
+            if (isQueryMode) {
+                await emitQueryMode(visibleRows);
+            }
+            emitRefresh(visibleRows);
         }
-        ;
     }
 
     /**

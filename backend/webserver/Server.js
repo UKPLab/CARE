@@ -376,6 +376,8 @@ module.exports = class Server {
                 ids: {},
                 merged: {}
             };
+            // Ref-count of mounted BackendTables per autoTable
+            socket.currentQueries = {};
             socket.userId = "";
             this.logger.debug("Socket connect: " + socket.id);
 

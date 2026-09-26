@@ -297,7 +297,6 @@
     :items-per-page="limit"
     :items-per-page-list="itemsPerPageList"
     :pages="pages"
-    :show-pages="paginationShowPages"
     :total-items="total"
     @update-items-per-page="paginationItemsPerPageChange"
     @update-page="paginationPageChange"
@@ -418,7 +417,6 @@ export default {
       currentData: [],
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
-      paginationShowPages: 3,
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
@@ -635,9 +633,6 @@ export default {
       if (typeof this.options.pagination === "object") {
         if ("itemsPerPageList" in this.options.pagination) {
           this.itemsPerPageList = this.options.pagination.itemsPerPageList;
-        }
-        if ("showPages" in this.options.pagination) {
-          this.paginationShowPages = this.options.pagination.showPages;
         }
       }
     }

@@ -1,0 +1,1193 @@
+<template>
+  <div class="input-group input-group-sm table-search">
+    <span
+      id="search-addon1"
+      class="input-group-text"
+    >
+      <LoadIcon icon-name="search" />
+    </span>
+    <div
+      ref="tokenField"
+      :style="{'--token-menu-left': `${menuLeft}px`}"
+      class="form-control token-field d-flex flex-wrap align-items-center"
+      @click="onFieldClick"
+    >
+      <span
+        v-if="tokens.length > 0"
+        ref="leadingGap"
+        aria-label="before-filters"
+        class="token-gap token-gap-leading"
+        tabindex="0"
+        @click.stop
+        @keydown="onLeadingGapKeydown"
+        @paste.prevent="onGapPaste"
+      />
+      <template
+        v-for="(token, index) in tokens"
+        :key="token.uid"
+      >
+        <!-- Caret inside a filter: show the raw token so it can be edited in place. -->
+        <input
+          v-if="editIndex === index"
+          ref="editInput"
+          v-model="editText"
+          :style="{width: rawWidth}"
+          aria-label="filter-token"
+          class="token-raw"
+          type="text"
+          @blur="onRawBlur"
+          @keydown="onRawKeydown($event, index)"
+          @keydown.enter.prevent="commitRaw(true)"
+        />
+        <span
+          v-else
+          class="badge rounded-pill token-chip d-inline-flex align-items-center gap-1"
+          @click.stop="expandToken(index, 'end')"
+        >
+          {{ chipLabel(token) }}
+          <LoadIcon
+            :size="10"
+            cursor="pointer"
+            icon-name="x"
+            @click.stop="removeTokenAt(index)"
+          />
+        </span>
+        <!-- Slot after this chip: caret sits here without entering the next filter. -->
+        <span
+          :ref="(el) => bindGapRef(index, el)"
+          aria-label="between-filters"
+          class="token-gap"
+          tabindex="0"
+          @click.stop
+          @keydown="onGapKeydown(index, $event)"
+          @paste.prevent="onGapPaste"
+        />
+      </template>
+      <span
+        v-if="pending.key"
+        class="badge rounded-pill token-chip token-chip-pending d-inline-flex align-items-center gap-1"
+      >
+        {{ pendingLabel }}
+        <LoadIcon
+          :size="10"
+          cursor="pointer"
+          icon-name="x"
+          @click.stop="resetPending"
+        />
+      </span>
+      <span class="token-compose">
+        <input
+          ref="input"
+          v-model="draft"
+          :placeholder="inputPlaceholder"
+          aria-describedby="search-addon1"
+          aria-label="table-search"
+          class="token-input"
+          type="text"
+          @focus="onFocus"
+          @blur="onDraftBlur"
+          @click.stop
+          @keydown.down.prevent="moveHighlight(1)"
+          @keydown.up.prevent="moveHighlight(-1)"
+          @keydown.enter.prevent="onEnter"
+          @keydown.left="onDraftLeft"
+          @keydown.right="onDraftRight"
+          @keydown.delete="onBackspace"
+          @paste="onPaste"
+        />
+      </span>
+      <ul
+        v-if="menuOpen && suggestions.length > 0"
+        ref="suggestionList"
+        class="dropdown-menu show token-suggestions"
+        @mouseleave="hoverIndex = -1"
+      >
+        <li
+          v-for="(suggestion, index) in suggestions"
+          :key="stage + '_' + suggestion.value"
+        >
+          <button
+            :class="{
+              hovered: index === hoverIndex,
+              'keyboard-focus': index === highlight,
+            }"
+            class="dropdown-item token-suggestion"
+            type="button"
+            @mousedown.prevent="pickSuggestion(suggestion)"
+            @mouseenter="onSuggestionHover(index)"
+          >
+            <span :class="{'token-suggestion-symbol': !!suggestion.hint}">{{ suggestion.label }}</span>
+            <span
+              v-if="suggestion.hint"
+              class="token-suggestion-hint"
+            >{{ suggestion.hint }}</span>
+          </button>
+        </li>
+      </ul>
+      <div
+        v-else-if="menuOpen && showDatePicker"
+        class="dropdown-menu show token-suggestions token-suggestions-form-date"
+      >
+        <DatetimePicker
+          :model-value="formDateValue"
+          :options="formDatePickerOptions"
+          date-only
+          @update:model-value="onFormDatePicked"
+        />
+      </div>
+    </div>
+    <button
+      v-if="hasBarQuery"
+      :title="copied ? $t('common.queryCopied') : $t('common.copySearchQuery')"
+      class="btn btn-outline-secondary search-bar-btn"
+      type="button"
+      @click="copyQuery"
+    >
+      <LoadIcon :icon-name="copied ? 'check' : 'clipboard'" />
+    </button>
+    <button
+      v-if="hasBarQuery"
+      class="btn btn-outline-secondary search-bar-btn"
+      :title="$t('common.clearSearch')"
+      type="button"
+      @click="clearAll"
+    >
+      <LoadIcon icon-name="x-lg" />
+    </button>
+    <slot name="additional-buttons" />
+  </div>
+</template>
+
+<script>
+import LoadIcon from "@/basic/Icon.vue";
+import DatetimePicker from "@/basic/form/DatetimePicker.vue";
+import {
+  OPERATOR_LABELS,
+  OPERATOR_LABEL_KEYS,
+  OPERATOR_HINTS,
+  DATE_OPERATOR_HINTS,
+  coerceValue,
+  defaultOperator,
+  keyLabel,
+  needsTypedValue,
+  operatorsFor,
+  optionsFor,
+  parseQuery,
+  parseIsoDate,
+  parseToken,
+  PENDING_TOKEN_PATTERN,
+  serializeToken,
+  tokenLabel,
+  unquote,
+} from "./searchTokens.js";
+
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function localIsoDate(date) {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
+/**
+ * Interactive table search bar with GitLab-style filter tokens.
+ *
+ * @author Andrii Nikitin
+ */
+export default {
+  name: "BasicTableSearch",
+  components: {LoadIcon, DatetimePicker},
+  props: {
+    /** `{search, columnFilters}` — columnFilters maps a schema key to `{operator, value}` */
+    modelValue: {
+      type: Object,
+      required: false,
+      default: () => ({search: "", columnFilters: {}}),
+    },
+    /** Filterable keys of this table; empty means free-text search only */
+    schema: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    placeholder: {
+      type: String,
+      required: false,
+      default: "",
+    },
+  },
+  emits: ["update:modelValue"],
+  data() {
+    return {
+      tokens: [],
+      draft: "",
+      suggestionsOpen: false,
+      stage: "key", // key → operator → value
+      pending: {key: null, operator: null},
+      highlight: -1, // keyboard focus in the suggestion list; 
+      hoverIndex: -1, // pointer hover;
+      editIndex: null, // token currently expanded to its raw form
+      editText: "",
+      movingFocus: false, // suppresses blur handlers while focus moves between zones
+      uidCounter: 0,
+      copied: false,
+      copiedTimer: null,
+      menuLeft: 0,
+      formDateValue: null,
+      formDatePickerOptions: {key: "search-date"},
+    };
+  },
+  computed: {
+    hasSchema() {
+      return Object.keys(this.schema).length > 0;
+    },
+    inputPlaceholder() {
+      // A picked operator on a typed-value key (Sessions ≥ …) is not a filter until a value arrives.
+      if (this.stage === "value" && this.pending.key) {
+        const operator = this.pending.operator || defaultOperator(this.schema, this.pending.key);
+        let listHint = "";
+        if (operator === "=") listHint = this.$t("common.typeExactListHint");
+        else if (operator === "!=") listHint = this.$t("common.typeNoneOfHint");
+        else if (operator === "~") listHint = this.$t("common.typeContainsListHint");
+        else if (operator === "%") listHint = this.$t("common.typeContainsAnyListHint");
+        if (needsTypedValue(this.schema, this.pending.key)) {
+          const type = this.schema[this.pending.key].type;
+          let hint = this.$t("common.typeValueHint");
+          if (type === "numeric") hint = this.$t("common.typeNumberHint");
+          else if (type === "date") hint = this.$t("common.typeDateHint");
+          if (type === "date" || !listHint) return hint;
+          return `${hint}. ${listHint}`;
+        }
+      }
+      if (this.tokens.length > 0 || this.pending.key) return "";
+      return this.hasSchema ? this.$t("common.searchOrFilter") : (this.placeholder || this.$t("common.typeToFilter"));
+    },
+    payload() {
+      const columnFilters = {};
+      this.tokens.forEach((token) => {
+        columnFilters[token.key] = {operator: token.operator, value: token.value};
+      });
+      // A value typed for a pending filter (Sessions = 5) is not free-text search.
+      return {search: this.pending.key ? "" : this.draft.trim(), columnFilters};
+    },
+    hasBarQuery() {
+      return this.tokens.length > 0 || !!this.draft.trim() || !!this.pending.key;
+    },
+    queryString() {
+      const parts = this.tokens.map((token) => serializeToken(this.schema, token));
+      if (this.pending.key) {
+        const pending = this.pending.operator
+          ? `${this.pending.key}:${this.pending.operator}`
+          : this.pending.key;
+        parts.push(pending);
+        if (this.draft.trim()) parts.push(this.draft.trim());
+      } else if (this.draft.trim()) {
+        parts.push(this.draft.trim());
+      }
+      return parts.join(" ");
+    },
+    rawWidth() {
+      return `${Math.max(this.editText.length, 2) + 1}ch`;
+    },
+    pendingLabel() {
+      if (!this.pending.key) return "";
+      const operator = this.pending.operator
+        ? (OPERATOR_LABEL_KEYS[this.pending.operator]
+          ? this.$t(OPERATOR_LABEL_KEYS[this.pending.operator])
+          : (OPERATOR_LABELS[this.pending.operator] || this.pending.operator))
+        : "";
+      return `${keyLabel(this.schema, this.pending.key)} ${operator}`.trim();
+    },
+    suggestions() {
+      if (!this.hasSchema) return [];
+      if (this.stage === "operator" && this.pending.key) {
+        const typed = this.draft.trim();
+        const type = this.schema[this.pending.key]?.type;
+        const hints = type === "date" ? DATE_OPERATOR_HINTS : OPERATOR_HINTS;
+        return operatorsFor(this.schema, this.pending.key)
+          .filter((operator) => !typed || operator.startsWith(typed))
+          .map((operator) => ({
+            type: "operator",
+            value: operator,
+            label: operator,
+            hint: hints[operator] ? this.$t(hints[operator]) : "",
+          }));
+      }
+      if (this.stage === "value" && this.pending.key) {
+        return optionsFor(this.schema, this.pending.key, this.$t.bind(this))
+          .filter((option) => this.matchesDraft(option.label))
+          .map((option) => ({type: "value", value: option.value, label: option.label}));
+      }
+      return Object.keys(this.schema)
+        .filter((key) => !this.tokens.some((token) => token.key === key))
+        .filter((key) => this.matchesDraft(keyLabel(this.schema, key)) || this.matchesDraft(key))
+        .map((key) => ({type: "key", value: key, label: keyLabel(this.schema, key)}));
+    },
+    showDatePicker() {
+      return this.stage === "value"
+        && !!this.pending.key
+        && this.schema[this.pending.key]?.type === "date";
+    },
+    menuOpen() {
+      return this.suggestionsOpen && (this.suggestions.length > 0 || this.showDatePicker);
+    },
+  },
+  watch: {
+    draft() {
+      if (this.tryResolvePendingOperator()) return;
+      // A typed value becomes a chip on Enter, not on Space. Space stays part of the text.
+      this.tryPromoteDraftKey();
+      this.highlight = -1;
+      this.hoverIndex = -1;
+      this.emitUpdate();
+    },
+    /** Editing the raw form applies straight away, so `>=5` → `>=6` refilters while you type. */
+    editText(text) {
+      if (this.editIndex === null) return;
+      const current = this.tokens[this.editIndex];
+      const parsed = parseToken(this.schema, text.trim(), this.$t.bind(this));
+      if (!current || !parsed) return;
+      if (current.key === parsed.key && current.operator === parsed.operator && current.value === parsed.value) {
+        return;
+      }
+      this.tokens.splice(this.editIndex, 1, {...parsed, uid: current.uid});
+      this.emitUpdate();
+    },
+    modelValue: {
+      handler(value) {
+        if (JSON.stringify(value || {}) === JSON.stringify(this.payload)) return;
+        this.hydrate(value);
+      },
+      deep: true,
+    },
+    suggestionsOpen(open) {
+      if (open) this.syncMenuPosition();
+    },
+    tokens: {
+      handler() {
+        if (this.suggestionsOpen) this.syncMenuPosition();
+      },
+      deep: true,
+    },
+    pending: {
+      handler() {
+        if (this.suggestionsOpen) this.syncMenuPosition();
+      },
+      deep: true,
+    },
+    showDatePicker(open) {
+      if (open) {
+        this.syncMenuPosition();
+        const day = parseIsoDate(this.draft.trim());
+        this.formDateValue = day ? `${day}T00:00:00` : null;
+      }
+    },
+  },
+  created() {
+    this.gapEls = Object.create(null);
+    this.skipDraftPromote = false; // Left from a pending chip must not immediately revive it
+  },
+  mounted() {
+    this.hydrate(this.modelValue);
+  },
+  beforeUnmount() {
+    clearTimeout(this.copiedTimer);
+  },
+  methods: {
+    chipLabel(token) {
+      return tokenLabel(this.schema, token, this.$t.bind(this));
+    },
+    matchesDraft(label) {
+      const needle = this.draft.trim().toLowerCase();
+      if (!needle) return true;
+      return String(label).toLowerCase().includes(needle);
+    },
+    nextUid() {
+      this.uidCounter += 1;
+      return this.uidCounter;
+    },
+    rawInput() {
+      const ref = this.$refs.editInput;
+      return Array.isArray(ref) ? ref[0] : ref;
+    },
+    bindGapRef(index, el) {
+      if (el) {
+        this.gapEls[index] = el;
+      } else {
+        delete this.gapEls[index];
+      }
+    },
+    focusDraft(caret = "end") {
+      this.$nextTick(() => {
+        const el = this.$refs.input;
+        if (el) {
+          el.focus();
+          const position = caret === "start" ? 0 : el.value.length;
+          el.setSelectionRange(position, position);
+        }
+        this.movingFocus = false;
+      });
+    },
+    /** Caret after token `index`, or before the first chip when `index` is -1. Chips stay collapsed. */
+    focusGap(index) {
+      this.movingFocus = true;
+      this.closeSuggestions();
+      this.$nextTick(() => {
+        const el = index < 0 ? this.$refs.leadingGap : this.gapEls[index];
+        if (el && (index < 0 || index < this.tokens.length)) {
+          el.focus();
+          this.movingFocus = false;
+          return;
+        }
+        this.focusDraft("start");
+      });
+    },
+    onFocus() {
+      if (!this.pending.key) this.stage = "key";
+      this.suggestionsOpen = true;
+      this.syncMenuPosition();
+    },
+    onDraftBlur() {
+      if (this.movingFocus) return;
+      if (this.showDatePicker) return;
+      this.closeSuggestions();
+    },
+    onFormDatePicked(iso) {
+      if (!iso) return;
+      this.commitPending(localIsoDate(new Date(iso)));
+      this.highlight = -1;
+      this.hoverIndex = -1;
+      this.suggestionsOpen = true;
+      this.focusDraft("end");
+    },
+    /** Clicking the field background focuses the draft; clicks inside the input keep a text selection. */
+    onFieldClick(event) {
+      if (event.target.closest(".token-input, .token-raw, .token-chip, .token-gap, .token-suggestions")) {
+        return;
+      }
+      this.focusDraft("end");
+    },
+    /** Dropdown sits under the whole search field, aligned with the empty input after chips. */
+    syncMenuPosition() {
+      this.$nextTick(() => {
+        const field = this.$refs.tokenField;
+        const input = this.$refs.input;
+        if (!field || !input) return;
+        const fieldRect = field.getBoundingClientRect();
+        const inputRect = input.getBoundingClientRect();
+        this.menuLeft = Math.max(0, Math.round(inputRect.left - fieldRect.left));
+      });
+    },
+    closeSuggestions() {
+      this.suggestionsOpen = false;
+      this.highlight = -1;
+      this.hoverIndex = -1;
+    },
+    onSuggestionHover(index) {
+      this.hoverIndex = index;
+    },
+    moveHighlight(delta) {
+      this.suggestionsOpen = true;
+      const count = this.suggestions.length;
+      if (count === 0) {
+        this.highlight = -1;
+        return;
+      }
+      if (this.highlight === -1) {
+        this.highlight = delta > 0 ? 0 : count - 1;
+      } else {
+        this.highlight = (this.highlight + delta + count) % count;
+      }
+      this.$nextTick(() => {
+        this.scrollHighlightIntoView();
+      });
+    },
+    /** Scroll only the suggestion list — `scrollIntoView` also moves the page, so the thumb lies. */
+    scrollHighlightIntoView() {
+      const list = this.$refs.suggestionList;
+      const item = list?.children?.[this.highlight];
+      if (!list || !item || this.highlight < 0) return;
+      const listRect = list.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      if (itemRect.top < listRect.top) {
+        list.scrollTop -= listRect.top - itemRect.top;
+      } else if (itemRect.bottom > listRect.bottom) {
+        list.scrollTop += itemRect.bottom - listRect.bottom;
+      }
+    },
+    /** Enter takes the keyboard item, or the hovered one if arrows have not been used. */
+    onEnter() {
+      const index = this.highlight >= 0 ? this.highlight : this.hoverIndex;
+      const suggestion = index >= 0 ? this.suggestions[index] : null;
+      if (this.suggestionsOpen && suggestion) {
+        this.pickSuggestion(suggestion);
+        return;
+      }
+      this.commitDraft();
+    },
+    pickSuggestion(suggestion) {
+      if (suggestion.type === "key") {
+        this.pending = {key: suggestion.value, operator: null};
+        this.draft = "";
+        const operators = operatorsFor(this.schema, suggestion.value);
+        if (operators.length === 1) {
+          this.pending.operator = operators[0];
+          this.stage = "value";
+        } else {
+          this.stage = "operator";
+        }
+      } else if (suggestion.type === "operator") {
+        this.pending.operator = suggestion.value;
+        this.stage = "value";
+      } else {
+        this.commitPending(suggestion.value);
+      }
+      this.highlight = -1;
+      this.hoverIndex = -1;
+      this.suggestionsOpen = true;
+      this.focusDraft("end");
+    },
+    /** Enter with no highlight: finish the pending token, or parse what was typed. */
+    commitDraft() {
+      if (this.pending.key && this.stage === "operator") {
+        this.tryResolvePendingOperator(true);
+        return;
+      }
+      if (this.pending.key) {
+        const value = coerceValue(
+          this.schema,
+          this.pending.key,
+          unquote(this.draft.trim()),
+          this.$t.bind(this),
+          this.pending.operator || defaultOperator(this.schema, this.pending.key),
+        );
+        if (value !== null) {
+          this.commitPending(value);
+          return;
+        }
+        if (this.draft.trim()) {
+          this.abandonPendingToDraft();
+          return;
+        }
+        // Operator picked but no usable value yet — keep waiting instead of dropping the filter.
+        if (needsTypedValue(this.schema, this.pending.key) && this.stage === "value") {
+          return;
+        }
+      }
+      this.absorbTokens();
+      this.closeSuggestions();
+      this.emitUpdate();
+    },
+    commitPending(value) {
+      this.addToken({
+        key: this.pending.key,
+        operator: this.pending.operator || defaultOperator(this.schema, this.pending.key),
+        value,
+      });
+      // Clear the typed value while pending is still set so it never lands in `search`.
+      this.draft = "";
+      this.resetPending();
+    },
+    onBackspace() {
+      if (this.draft !== "") return;
+      // Outside a raw zone there is nothing to edit character by character — drop the whole filter.
+      if (this.pending.key) {
+        this.resetPending();
+      } else if (this.tokens.length > 0) {
+        this.removeTokenAt(this.tokens.length - 1);
+      }
+    },
+    onDraftLeft(event) {
+      const el = event.target;
+      if (el.selectionStart !== 0 || el.selectionEnd !== 0) return;
+      if (this.pending.key) {
+        event.preventDefault();
+        this.collapsePendingToDraft();
+        return;
+      }
+      if (this.tokens.length === 0) return;
+      event.preventDefault();
+      this.focusGap(this.tokens.length - 1);
+    },
+    onDraftRight(event) {
+      if (this.pending.key) return;
+      const el = event.target;
+      if (el.selectionStart !== el.selectionEnd) return;
+      const first = (this.draft.trimStart().match(/^\S+/) || [])[0];
+      if (!first) return;
+      const wordEnd = this.draft.length - this.draft.trimStart().length + first.length;
+      const pos = el.selectionStart;
+      // Revive on the Right that reaches the end of a recognized key, not one press later.
+      if (pos < wordEnd - 1 || pos > wordEnd) return;
+      if (!this.revivePendingFromDraft()) return;
+      event.preventDefault();
+    },
+    /** Incomplete filter chip → plain text (key or `key:operator`). Caret stays at the end of that word. */
+    collapsePendingToDraft() {
+      this.writePendingIntoDraft("key");
+    },
+    /** Typed text is not a filter value/operator — drop the chip and keep everything as search text. */
+    abandonPendingToDraft() {
+      this.writePendingIntoDraft("end");
+    },
+    writePendingIntoDraft(caret) {
+      const key = this.pending.key;
+      const text = this.pending.operator
+        ? `${key}:${this.pending.operator}`
+        : keyLabel(this.schema, key);
+      const leftover = this.draft.trim();
+      this.skipDraftPromote = true;
+      this.resetPending();
+      this.draft = leftover ? `${text} ${leftover}` : text;
+      this.suggestionsOpen = true;
+      this.$nextTick(() => {
+        this.skipDraftPromote = false;
+        const el = this.$refs.input;
+        if (el) {
+          el.focus();
+          const pos = caret === "key" ? text.length : el.value.length;
+          el.setSelectionRange(pos, pos);
+        }
+      });
+    },
+    /**
+     * After a key is picked, typing an operator (`=`, `>=`) selects it; any other text drops the
+     * chip so the query stays ordinary search.
+     * @param {boolean} commit Enter: accept a complete operator even if a longer one also matches.
+     */
+    tryResolvePendingOperator(commit = false) {
+      if (!this.pending.key || this.stage !== "operator") return false;
+      const typed = this.draft.trim();
+      if (!typed) return false;
+      const ops = operatorsFor(this.schema, this.pending.key);
+      const prefixes = ops.filter((operator) => operator.startsWith(typed));
+      const uniqueExact = prefixes.length === 1 && prefixes[0] === typed;
+      if (ops.includes(typed) && (commit || uniqueExact)) {
+        this.pending.operator = typed;
+        this.stage = "value";
+        this.draft = "";
+        this.highlight = -1;
+        this.hoverIndex = -1;
+        this.suggestionsOpen = true;
+        return true;
+      }
+      if (prefixes.length > 0) return false;
+      this.abandonPendingToDraft();
+      return true;
+    },
+    /**
+     * Typed `key:operator` (sessions:=) opens the pending filter. A complete value stays text until Enter
+     */
+    tryPromoteDraftKey() {
+      if (this.pending.key || this.skipDraftPromote) return;
+      const trimmed = this.draft.trim();
+      if (!trimmed) return;
+      const first = (trimmed.match(/^\S+/) || [])[0];
+      if (!first) return;
+      const tokenMatch = PENDING_TOKEN_PATTERN.exec(first);
+      if (tokenMatch && this.schema[tokenMatch[1]]) {
+        this.revivePendingFromDraft();
+      }
+    },
+    /** `key:operator` at the caret (`sessions:=`) → pending chip waiting for a value. */
+    revivePendingFromDraft() {
+      const trimmed = this.draft.trimStart();
+      if (!trimmed) return false;
+      const first = (trimmed.match(/^\S+/) || [])[0];
+      const tokenMatch = PENDING_TOKEN_PATTERN.exec(first);
+      if (!tokenMatch || !this.schema[tokenMatch[1]]) return false;
+      const key = tokenMatch[1];
+      const operator = tokenMatch[2];
+      const ops = operatorsFor(this.schema, key);
+      if (!ops.includes(operator)) return false;
+      this.pending = {key, operator};
+      this.stage = "value";
+      this.draft = trimmed.slice(first.length).trimStart();
+      this.suggestionsOpen = true;
+      this.highlight = -1;
+      this.hoverIndex = -1;
+      return true;
+    },
+    onGapKeydown(index, event) {
+      if (event.ctrlKey || event.metaKey) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        this.expandToken(index, "end");
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        const next = index + 1;
+        if (next < this.tokens.length) {
+          this.expandToken(next, "start");
+        } else {
+          this.focusDraft("start");
+        }
+        return;
+      }
+      if (event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        this.removeFromGap(index);
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.focusDraft("end");
+        return;
+      }
+      this.typeFromGap(event);
+    },
+    /** Backspace in a gap drops the filter to the left, caret stays between the neighbours. */
+    removeFromGap(index) {
+      this.movingFocus = true;
+      this.removeTokenAt(index);
+      if (this.tokens.length === 0) {
+        this.focusDraft("start");
+        return;
+      }
+      if (index === 0) {
+        this.focusGap(-1);
+        return;
+      }
+      this.focusGap(index - 1);
+    },
+    onLeadingGapKeydown(event) {
+      if (event.ctrlKey || event.metaKey) return;
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        this.expandToken(0, "start");
+        return;
+      }
+      if (event.key === "ArrowLeft" || event.key === "Backspace" || event.key === "Delete") {
+        event.preventDefault();
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        this.focusDraft("end");
+        return;
+      }
+      this.typeFromGap(event);
+    },
+    onRawKeydown(event, index) {
+      if (event.key === "ArrowLeft") {
+        this.onRawLeft(event, index);
+        return;
+      }
+      if (event.key === "ArrowRight") {
+        this.onRawRight(event, index);
+      }
+    },
+    typeFromGap(event) {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length !== 1) return;
+      event.preventDefault();
+      const ch = event.key;
+      this.draft = `${ch}${this.draft}`;
+      this.movingFocus = true;
+      this.$nextTick(() => {
+        const el = this.$refs.input;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(ch.length, ch.length);
+        }
+        this.movingFocus = false;
+        this.suggestionsOpen = true;
+      });
+    },
+    onGapPaste(event) {
+      const text = event.clipboardData?.getData("text") || "";
+      if (!text) return;
+      this.draft = this.draft ? `${text} ${this.draft}` : text;
+      this.movingFocus = true;
+      this.$nextTick(() => {
+        const el = this.$refs.input;
+        if (el) {
+          el.focus();
+          el.setSelectionRange(text.length, text.length);
+        }
+        this.movingFocus = false;
+        this.absorbTokens();
+        this.suggestionsOpen = true;
+        this.emitUpdate();
+      });
+    },
+    /** Open a committed filter for raw editing and put the caret at the entering edge. */
+    expandToken(index, caret = "end") {
+      const uid = this.tokens[index]?.uid;
+      if (this.editIndex !== null && this.editIndex !== index) {
+        this.movingFocus = true;
+        this.commitRaw(false);
+      }
+      const target = this.tokens.findIndex((token) => token.uid === uid);
+      if (target === -1) {
+        this.movingFocus = false;
+        return;
+      }
+      this.resetPending();
+      this.closeSuggestions();
+      this.movingFocus = true;
+      this.editIndex = target;
+      this.editText = serializeToken(this.schema, this.tokens[target]);
+      this.$nextTick(() => {
+        const el = this.rawInput();
+        if (el) {
+          el.focus();
+          if (caret === "all") {
+            el.select();
+          } else {
+            const position = caret === "start" ? 0 : el.value.length;
+            el.setSelectionRange(position, position);
+          }
+        }
+        this.movingFocus = false;
+      });
+    },
+    onRawLeft(event, index) {
+      const el = event.target;
+      if (el.selectionStart !== 0 || el.selectionEnd !== 0) return;
+      event.preventDefault();
+      if (index === 0) return;
+      this.movingFocus = true;
+      this.commitRaw(false);
+      this.focusGap(index - 1);
+    },
+    onRawRight(event, index) {
+      const el = event.target;
+      if (el.selectionStart !== el.value.length || el.selectionEnd !== el.value.length) return;
+      event.preventDefault();
+      this.movingFocus = true;
+      const result = this.commitRaw(false);
+      if (result === "plain") {
+        this.focusDraft("end");
+        return;
+      }
+      if (result === "removed") {
+        if (this.tokens.length === 0) {
+          this.focusDraft("start");
+          return;
+        }
+        if (index === 0) {
+          this.focusGap(-1);
+          return;
+        }
+        this.focusGap(index - 1);
+        return;
+      }
+      this.focusGap(index);
+    },
+    onRawBlur() {
+      if (this.movingFocus) return;
+      this.commitRaw(false);
+    },
+    /**
+     * Leave the raw zone: keep the filter if the text still parses, drop it when emptied, and fall
+     * back to plain search text when the key or operator no longer makes a token.
+     * @returns {string} "kept" | "removed" | "plain" | "none"
+     */
+    commitRaw(refocusDraft = false) {
+      if (this.editIndex === null) return "none";
+      const index = this.editIndex;
+      const token = this.tokens[index];
+      const text = this.editText.trim();
+      this.editIndex = null;
+      this.editText = "";
+      if (!token) return "none";
+
+      let result = "kept";
+      if (!text) {
+        this.tokens.splice(index, 1);
+        result = "removed";
+      } else {
+        const parsed = parseToken(this.schema, text, this.$t.bind(this));
+        if (parsed) {
+          this.tokens.splice(index, 1, {...parsed, uid: token.uid});
+          this.dedupeKey(index);
+        } else {
+          // Incomplete/invalid raw (`state:=` after deleting the value) stays as plain search
+          // text — do not auto-promote back into a chip.
+          this.skipDraftPromote = true;
+          this.tokens.splice(index, 1);
+          this.draft = this.draft ? `${text} ${this.draft}` : text;
+          result = "plain";
+          this.$nextTick(() => {
+            this.skipDraftPromote = false;
+          });
+        }
+      }
+      this.emitUpdate();
+      if (refocusDraft) {
+        this.movingFocus = true;
+        this.focusDraft("end");
+      }
+      return result;
+    },
+    onPaste() {
+      this.$nextTick(() => {
+        this.absorbTokens();
+        this.emitUpdate();
+      });
+    },
+    /** Pull every complete token out of the draft and leave the rest as free text. */
+    absorbTokens() {
+      const {tokens, text} = parseQuery(this.schema, this.draft, this.$t.bind(this));
+      if (tokens.length === 0) return;
+      tokens.forEach((token) => this.addToken(token));
+      this.draft = text.length > 0 ? `${text.join(" ")} ` : "";
+    },
+    /** One token per key in this version — a second pick replaces the first. */
+    addToken(token) {
+      const index = this.tokens.findIndex((existing) => existing.key === token.key);
+      if (index === -1) {
+        this.tokens.push({...token, uid: this.nextUid()});
+      } else {
+        this.tokens.splice(index, 1, {...token, uid: this.tokens[index].uid});
+      }
+      this.emitUpdate();
+    },
+    dedupeKey(keepIndex) {
+      const key = this.tokens[keepIndex]?.key;
+      if (!key) return;
+      this.tokens = this.tokens.filter((token, index) => index === keepIndex || token.key !== key);
+    },
+    removeTokenAt(index) {
+      this.tokens.splice(index, 1);
+      if (this.editIndex === index) {
+        this.editIndex = null;
+        this.editText = "";
+      } else if (this.editIndex > index) {
+        this.editIndex -= 1;
+      }
+      this.emitUpdate();
+    },
+    resetPending() {
+      this.pending = {key: null, operator: null};
+      this.stage = "key";
+      this.highlight = -1;
+      this.hoverIndex = -1;
+    },
+    clearAll() {
+      this.tokens = [];
+      this.editIndex = null;
+      this.editText = "";
+      this.resetPending();
+      this.draft = "";
+      this.closeSuggestions();
+      this.emitUpdate();
+    },
+    async copyQuery() {
+      const text = this.queryString;
+      if (!text) return;
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (_error) {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      this.copied = ok;
+      clearTimeout(this.copiedTimer);
+      if (ok) {
+        this.copiedTimer = setTimeout(() => {
+          this.copied = false;
+        }, 2000);
+      }
+    },
+    hydrate(value) {
+      const tokens = [];
+      Object.entries(value?.columnFilters || {}).forEach(([key, filter]) => {
+        if (!this.schema[key] || !filter) return;
+        const operator = filter.operator || defaultOperator(this.schema, key);
+        if (!operatorsFor(this.schema, key).includes(operator)) return;
+        tokens.push({key, operator, value: filter.value, uid: this.nextUid()});
+      });
+      this.tokens = tokens;
+      this.draft = value?.search || "";
+      this.editIndex = null;
+      this.editText = "";
+      this.resetPending();
+    },
+    emitUpdate() {
+      this.$emit("update:modelValue", this.payload);
+    },
+  },
+};
+</script>
+
+<style scoped>
+.table-search {
+  position: relative;
+}
+
+.table-search > .search-bar-btn {
+  flex-shrink: 0;
+}
+
+.token-field {
+  --token-chip-gap: 0.2rem;
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: auto;
+  min-height: calc(1.5em + 0.5rem + 2px);
+  cursor: text;
+  column-gap: 0;
+  row-gap: 0.25rem;
+  overflow: visible;
+}
+
+.token-chip,
+.token-raw {
+  margin-inline-end: var(--token-chip-gap);
+}
+
+.token-chip {
+  background-color: var(--bs-secondary-bg, #e9ecef);
+  border: 1px solid var(--bs-border-color, #dee2e6);
+  color: var(--bs-body-color, #212529);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.token-chip-pending {
+  border-style: dashed;
+}
+
+.token-gap {
+  display: inline-block;
+  flex: 0 0 0;
+  width: 0;
+  overflow: visible;
+  align-self: stretch;
+  position: relative;
+  outline: none;
+  cursor: text;
+}
+
+.token-gap:focus {
+  outline: none;
+}
+
+.token-gap:focus::before {
+  content: "";
+  position: absolute;
+  left: calc(var(--token-chip-gap) / -2);
+  top: 0.2em;
+  width: 1px;
+  height: 1em;
+  background: currentColor;
+  animation: token-caret 1s step-end infinite;
+}
+
+@keyframes token-caret {
+  50% { opacity: 0; }
+}
+
+.token-raw {
+  min-width: 3ch;
+  padding: 0 0.25rem;
+  border: 1px solid var(--bs-primary, #0d6efd);
+  border-radius: 0.25rem;
+  background: transparent;
+  font-family: var(--bs-font-monospace, monospace);
+  outline: none;
+}
+
+.token-compose {
+  flex: 1 1 8rem;
+  min-width: 8rem;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+}
+
+.token-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  outline: none;
+}
+
+.token-suggestions {
+  --bs-dropdown-padding-y: 0;
+  --bs-dropdown-padding-x: 0;
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: var(--token-menu-left, 0px);
+  z-index: 1000;
+  max-height: 16rem;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+}
+
+.token-suggestions > li {
+  margin: 0;
+  padding: 0 10px 0 0;
+}
+
+.token-suggestions .dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  color: inherit;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.token-suggestion-symbol {
+  font-family: var(--bs-font-monospace, monospace);
+}
+
+.token-suggestion-hint {
+  margin-left: auto;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
+/* Cursor: outline. Arrows: sidebar fill. Same item with both: combine. */
+.token-suggestions .dropdown-item:hover,
+.token-suggestions .dropdown-item.hovered {
+  color: inherit;
+  background-color: transparent;
+  box-shadow: inset 0 0 0 2px #222;
+  border-radius: 0.25rem;
+}
+
+.token-suggestions .dropdown-item.keyboard-focus,
+.token-suggestions .dropdown-item.keyboard-focus:focus {
+  color: inherit;
+  background-color: #e0e0e0;
+  box-shadow: inset 2px 0 0 #222;
+  border-radius: 0;
+}
+
+.token-suggestions .dropdown-item.keyboard-focus:hover,
+.token-suggestions .dropdown-item.keyboard-focus.hovered {
+  color: inherit;
+  background-color: #e0e0e0;
+  box-shadow: inset 2px 0 0 #222, inset 0 0 0 2px #222;
+  border-radius: 0.25rem;
+}
+
+.token-suggestions-form-date {
+  padding: 0.5rem 0.65rem;
+  min-width: 18rem;
+}
+</style>

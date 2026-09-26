@@ -4,7 +4,7 @@
     :props="{ id: id }"
     size="lg"
     name="coordinatorModal"
-    @hide="reset"
+    @hide="onModalHide"
   >
     <template #title>
       <slot name="title">
@@ -142,13 +142,14 @@ export default {
       default: false,
     },
   },
-  emits: ["submit", "success"],
+  emits: ["submit", "success", "hide"],
   data() {
     return {
       data: {},
       success: false,
       configStatus: {},
       overrideDefaultValues: {},
+      sourceRow: null,
     };
   },
   computed: {
@@ -180,10 +181,12 @@ export default {
      * @param defaultValues Override default values
      * @param copy If the entry should be copied
      * @param dataOverrides Additional data to override after fetching
+     * @param sourceRow Optional row to fill the form when Vuex has no `get(id)` (queryTable pages)
      */
-    open(id = 0, defaultValues = {}, copy = false, dataOverrides = {}) {
+    open(id = 0, defaultValues = {}, copy = false, dataOverrides = {}, sourceRow = null) {
       if (this.fields) {
         this.reset();
+        this.sourceRow = sourceRow || null;
         this.overrideDefaultValues = defaultValues;
         this.data = this.getData(id, copy);
         // Apply data overrides after fetching data
@@ -199,6 +202,10 @@ export default {
     },
     close() {
       this.$refs.coordinatorModal.close();
+    },
+    onModalHide() {
+      this.reset();
+      this.$emit("hide");
     },
     handleConfigStatusChange(status) {
       this.configStatus = status;
@@ -264,6 +271,7 @@ export default {
     reset() {
       this.$refs.coordinatorModal.waiting = false;
       this.overrideDefaultValues = {};
+      this.sourceRow = null;
       this.data = this.getData(0);
       this.success = false;
       this.eventBus.emit("resetFormField");
@@ -272,7 +280,7 @@ export default {
       if (id === 0) {
         return { ...this.defaultValue, ...this.overrideDefaultValues };
       } else {
-        return this.getDataFromStore(id, this.table, this.fields, copy);
+        return this.getDataFromStore(id, this.table, this.fields, copy, this.sourceRow);
       }
     },
     /**
@@ -281,10 +289,14 @@ export default {
      * @param table from which table the data should be taken
      * @param fields Fields of the table
      * @param copy If the data should be copied (id will not be provided)
+     * @param {Object|null} [fallbackRow] queryTable / caller row when Vuex has no entry
      * @returns {{}}
      */
-    getDataFromStore(id, table, fields, copy = false) {
-      const data = this.$store.getters["table/" + table + "/get"](id);
+    getDataFromStore(id, table, fields, copy = false, fallbackRow = null) {
+      const stored = this.$store.getters["table/" + table + "/get"](id);
+      const data = stored
+        || (fallbackRow && Number(fallbackRow.id) === Number(id) ? fallbackRow : null)
+        || {};
 
       let returnData = fields.reduce((acc, field) => {
         // if the key is in the data, use the data value
@@ -335,7 +347,7 @@ export default {
       }, {});
 
       if (!copy) {
-        returnData = { ...returnData, ...{ id: data.id } };
+        returnData = { ...returnData, ...{ id: data.id ?? id } };
       }
 
       return returnData;

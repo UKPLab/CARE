@@ -2,6 +2,10 @@
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const TranslatableError = require("../../utils/TranslatableError");
+const {Op, literal} = require("sequelize");
+const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
+const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
+const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
 module.exports = (sequelize, DataTypes) => {
     class StudySession extends MetaModel {
@@ -23,6 +27,262 @@ module.exports = (sequelize, DataTypes) => {
                 columns: this.getAttributes()
             }
         ];
+
+        /**
+         * Active sessions by id
+         * @param {number[]} ids
+         * @param {Object} [options]
+         * @param {Array} [options.attributes]
+         * @param {Array} [options.order]
+         * @param {import("sequelize").Transaction} [options.transaction] share the caller's transaction; omit for a plain read
+         * @returns {Promise<Array<Object>>}
+         */
+        static async findActiveByIds(ids, {attributes, order, transaction} = {}) {
+            return this.findAll({
+                where: {id: {[Op.in]: ids}, deleted: false},
+                ...(attributes ? {attributes} : {}),
+                ...(order ? {order} : {}),
+                ...(transaction ? {transaction} : {}),
+                raw: true,
+            });
+        }
+
+        /**
+         * When sessions change, refresh session counts on study rows in query-mode tables.
+         * @param {Object[]} rows changed study_session rows
+         * @returns {Array<{table: string, rows: Object[], operation: string}>}
+         */
+        static getCompanionBroadcasts(rows) {
+            const studyIds = [...new Set(rows.map((row) => row.studyId).filter((id) => id != null))];
+            if (!studyIds.length) {
+                return [];
+            }
+            return [{
+                table: "study",
+                rows: studyIds.map((id) => ({id})),
+                operation: "update",
+            }];
+        }
+
+        /**
+         * Shared correlated subqueries for study / session-user / study-owner / submission.
+         *
+         * @param {boolean} [privateInfo] viewer may read user names / extIds
+         * @returns {Object<string, string>} alias → SQL expression
+         */
+        static sessionIdentitySql(privateInfo = false) {
+            const studyField = (field) =>
+                `(SELECT "study"."${field}" FROM "study" WHERE "study"."id" = "study_session"."studyId")`;
+            const reviewerField = (field) =>
+                `(SELECT "reviewer"."${field}" FROM "user" AS "reviewer"`
+                + ` WHERE "reviewer"."id" = "study_session"."userId")`;
+            const ownerField = (field) =>
+                `(SELECT "owner"."${field}" FROM "user" AS "owner"`
+                + ` WHERE "owner"."id" = ${studyField("userId")})`;
+            // Walk: study_step → document → (parent document) → submission.
+            const submissionId =
+                '(SELECT COALESCE("stepDocument"."submissionId", "parentDocument"."submissionId")'
+                + ' FROM "study_step" AS "sessionStep"'
+                + ' INNER JOIN "document" AS "stepDocument"'
+                + ' ON "stepDocument"."id" = "sessionStep"."documentId" AND "stepDocument"."deleted" = false'
+                + ' LEFT JOIN "document" AS "parentDocument"'
+                + ' ON "parentDocument"."id" = "stepDocument"."parentDocumentId"'
+                + ' AND "parentDocument"."deleted" = false'
+                + ' WHERE "sessionStep"."studyId" = "study_session"."studyId"'
+                + ' AND "sessionStep"."deleted" = false'
+                + ' ORDER BY (COALESCE("stepDocument"."submissionId", "parentDocument"."submissionId") IS NULL),'
+                + ' ("stepDocument"."submissionId" IS NULL), "sessionStep"."id" LIMIT 1)';
+
+            const columns = {
+                studyName: studyField("name"),
+                studyUserId: studyField("userId"),
+                userName: reviewerField("userName"),
+                ownerUserName: ownerField("userName"),
+                workflowType: '(SELECT "workflow"."name" FROM "workflow"'
+                    + ` WHERE "workflow"."id" = ${studyField("workflowId")})`,
+                submissionId,
+                submissionExtId: `(SELECT "submission"."extId" FROM "submission"`
+                    + ` WHERE "submission"."id" = ${submissionId})`,
+                
+                submissionGroup: `(SELECT COALESCE("submission"."group"::text, '') FROM "submission"`
+                    + ` WHERE "submission"."id" = ${submissionId})`,
+                status: 'CASE WHEN "study_session"."end" IS NULL THEN \'Running\' ELSE \'Finished\' END',
+            };
+            if (privateInfo) {
+                columns.firstName = reviewerField("firstName");
+                columns.lastName = reviewerField("lastName");
+                columns.ownerFirstName = ownerField("firstName");
+                columns.ownerLastName = ownerField("lastName");
+                columns.ownerExtId = ownerField("extId");
+                columns.completeUserName =
+                    `TRIM(CONCAT_WS(' ', ${reviewerField("firstName")}, ${reviewerField("lastName")}))`;
+                columns.studyCompleteUserName =
+                    `TRIM(CONCAT_WS(' ', ${ownerField("firstName")}, ${ownerField("lastName")}))`;
+            }
+            return columns;
+        }
+
+        /**
+         * Rows of a scoped study_session queryTable.
+         *
+         * - `scope.assessment`: Publish Assessment — closed studies running a configuration at
+         *   picked workflow steps.
+         * - `scope.inspect`: Inspect Sessions — one study, owner or admin.
+         * - `scope.assignmentBulk`: Add Bulk/Single Assignment — sessions whose study uses the
+         *   mapped target workflow.
+         *
+         * @param {Object} scope
+         * @returns {Promise<Object|null>} WHERE fragment, or null when no known scope key is set
+         * @throws {TranslatableError} when a known scope key is present but unusable
+         */
+        static async getQueryTableScopeFilter(scope, ctx = {}) {
+            if (scope?.inspect) {
+                const studyId = positiveInt(scope.inspect.studyId);
+                if (!studyId) {
+                    throw new TranslatableError("errors.queryTable.inspectStudyRequired");
+                }
+                const study = await sequelize.models.study.getById(studyId);
+                if (!study) {
+                    throw new TranslatableError("errors.studies.studyNotFound");
+                }
+                const admin = typeof ctx.isAdmin === "function" && await ctx.isAdmin();
+                // Owner of this study, or an admin.
+                if (!admin && ctx.userId !== study.userId) {
+                    throw new TranslatableError("errors.studies.notAllowedToSeeStudy");
+                }
+                return {studyId};
+            }
+            if (scope?.assignmentBulk) {
+                const workflowId = positiveInt(scope.assignmentBulk.workflowId);
+                if (!workflowId) {
+                    throw new TranslatableError("errors.queryTable.scopeInvalid");
+                }
+                return {
+                    studyId: {
+                        [Op.in]: sequelize.literal(
+                            '(SELECT "study"."id" FROM "study"'
+                            + ' WHERE "study"."deleted" = false'
+                            + ` AND "study"."workflowId" = ${workflowId})`
+                        ),
+                    },
+                };
+            }
+
+            const assessment = scope?.assessment;
+            if (!assessment) {
+                return null;
+            }
+            const configurationId = positiveInt(assessment.configurationId);
+            const projectId = positiveInt(assessment.projectId);
+            const steps = (Array.isArray(assessment.steps) ? assessment.steps : [])
+                .map((step) => ({
+                    workflowId: positiveInt(step?.workflowId),
+                    stepNumber: positiveInt(step?.stepNumber),
+                }))
+                .filter((step) => step.workflowId && step.stepNumber);
+            if (!configurationId || steps.length === 0) {
+                throw new TranslatableError("errors.queryTable.scopeInvalid");
+            }
+
+            const stepMatch = steps
+                .map((step) => `("study"."workflowId" = ${sequelize.escape(step.workflowId)}`
+                    + ` AND "study_step"."stepNumber" = ${sequelize.escape(step.stepNumber)})`)
+                .join(" OR ");
+            const configurationMatch = sequelize.models.study_step.assessmentConfigurationSql("study_step");
+            return {
+                studyId: {
+                    [Op.in]: sequelize.literal(
+                        '(SELECT "study"."id" FROM "study"'
+                        + ' INNER JOIN "study_step" ON "study_step"."studyId" = "study"."id"'
+                        + ' AND "study_step"."deleted" = false'
+                        + ' WHERE "study"."deleted" = false AND "study"."template" = false'
+                        + ' AND "study"."closed" IS NOT NULL'
+                        + (projectId ? ` AND "study"."projectId" = ${sequelize.escape(projectId)}` : "")
+                        + ` AND ${configurationMatch} = ${sequelize.escape(String(configurationId))}`
+                        + ` AND (${stepMatch}))`
+                    ),
+                },
+            };
+        }
+
+        /**
+         * Session identity for queryTable rows and query-mode deltas.
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<Array<Object>>}
+         */
+        static async getQueryTableInjects(ctx) {
+            const privateInfo = await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            return [{
+                type: "sql",
+                table: "study_session",
+                on: "id",
+                fields: StudySession.sessionIdentitySql(privateInfo),
+            }];
+        }
+
+        /**
+         * Free-text keys for session picker columns
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<string[]>}
+         */
+        static async getQueryTableSearchColumns(ctx) {
+            const columns = [
+                "studyName", "userName", "ownerUserName",
+                "workflowType", "submissionGroup", "status",
+            ];
+            if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                columns.push(
+                    "firstName", "lastName", "ownerFirstName", "ownerLastName",
+                    "completeUserName", "studyCompleteUserName",
+                );
+            }
+            return columns;
+        }
+
+        /**
+         * Free text on identity expressions 
+         */
+        static getQueryTableSearchConditions(needle, ctx = {}) {
+            const canSearch = typeof ctx.canSearch === "function" ? ctx.canSearch : () => true;
+            const skip = new Set(["submissionId", "submissionExtId", "studyUserId"]);
+            return Object.entries(StudySession.sessionIdentitySql(true))
+                .filter(([key]) => !skip.has(key) && canSearch(key))
+                .map(([, sql]) => includesCondition(literal(sql), needle));
+        }
+
+        /**
+         * Session search-bar chips
+         */
+        static async getQueryTableFilterColumns(ctx = {}) {
+            const privateInfo = typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            const columns = StudySession.sessionIdentitySql(privateInfo);
+            const spec = {
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
+                createdAt: {type: "date"},
+                status: {type: "enum", values: ["Running", "Finished"], sql: columns.status},
+            };
+            for (const key of [
+                "userName", "ownerUserName", "completeUserName", "studyCompleteUserName",
+                "workflowType", "submissionGroup",
+                "firstName", "lastName", "ownerFirstName", "ownerLastName",
+            ]) {
+                if (columns[key]) {
+                    spec[key] = {type: "text", sql: columns[key]};
+                }
+            }
+            if (columns.submissionId) {
+                spec.submissionExtId = {
+                    type: "numeric",
+                    operators: NUMERIC_OPERATORS,
+                    sql: `(SELECT "submission"."extId" FROM "submission"`
+                        + ` WHERE "submission"."id" = ${columns.submissionId})`,
+                };
+            }
+            return spec;
+        }
 
         /**
          * Check if a new session can be created for a study

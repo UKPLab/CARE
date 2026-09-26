@@ -2,10 +2,13 @@
 
 const TranslatableError = require("../../utils/TranslatableError");
 const MetaModel = require("../MetaModel.js");
-const {Op} = require("sequelize");
+const {Op, literal, where} = require("sequelize");
 const {genSalt, genPwdHash, genPwd} = require("../../webserver/auth/utils.js");
 const {generateAnimalUsername} = require("../../utils/helper/generator");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
+const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
+const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
@@ -536,6 +539,182 @@ module.exports = (sequelize, DataTypes) => {
             } catch (error) {
                 throw error;
             }
+        }
+
+        /**
+         * @param {Object} [ctx]
+         * @returns {Promise<boolean>}
+         */
+        static async canReadReviewerCounts(ctx = {}) {
+            if (typeof ctx.hasAccess !== "function") return false;
+            return await ctx.hasAccess("frontend.dashboard.studies.addBulkAssignments")
+                || await ctx.hasAccess("frontend.dashboard.studies.addSingleAssignments");
+        }
+
+        /**
+         * Extra columns on the reviewer picker: how many open study sessions,
+         * how many ready-for-review documents, and role names joined with ", ".
+         * @returns {Object<string, string>} alias → SQL
+         */
+        static assignmentReviewerColumnSql() {
+            return {
+                studySessions:
+                    '(SELECT COUNT(*)::int FROM "study_session" AS "ss"'
+                    + ' INNER JOIN "study" AS "s" ON "s"."id" = "ss"."studyId"'
+                    + ' AND "s"."deleted" = false AND "s"."closed" IS NULL'
+                    + ' WHERE "ss"."userId" = "user"."id" AND "ss"."deleted" = false)',
+                documents:
+                    '(SELECT COUNT(*)::int FROM "document" AS "d"'
+                    + ' WHERE "d"."userId" = "user"."id" AND "d"."deleted" = false'
+                    + ' AND "d"."readyForReview" = true)',
+                rolesNames:
+                    '(SELECT COALESCE(STRING_AGG("ur"."name", \', \' ORDER BY "ur"."name"), \'\')'
+                    + ' FROM "user_role_matching" AS "urm"'
+                    + ' INNER JOIN "user_role" AS "ur" ON "ur"."id" = "urm"."userRoleId"'
+                    + ' AND "ur"."deleted" = false'
+                    + ' WHERE "urm"."userId" = "user"."id" AND "urm"."deleted" = false)',
+            };
+        }
+
+        /**
+         * Reviewer picker scope: optionally restrict to users behind a session selection
+         * ("from previous selected") or an explicit id list (document/submission path).
+         *
+         * @param {Object} scope
+         * @param {Object} [scope.assignmentReviewer]
+         * @param {Object} [ctx]
+         * @param {function(Object): Promise<number[]>} [ctx.resolveQueryTableIds]
+         * @returns {Promise<Object|null>}
+         */
+        static async getQueryTableScopeFilter(scope, ctx = {}) {
+            const reviewer = scope?.assignmentReviewer;
+            if (!reviewer) {
+                return null;
+            }
+
+            const conditions = [];
+
+            if (reviewer.hasDocuments && await User.canReadReviewerCounts(ctx)) {
+                const columns = User.assignmentReviewerColumnSql();
+                conditions.push(where(literal(columns.documents), {[Op.gte]: 1}));
+            }
+
+            if (Array.isArray(reviewer.userIds)) {
+                const ids = [...new Set(
+                    reviewer.userIds.map((id) => positiveInt(id)).filter(Boolean)
+                )];
+                if (ids.length === 0) {
+                    conditions.push({id: {[Op.in]: [-1]}});
+                } else {
+                    conditions.push({id: {[Op.in]: ids}});
+                }
+            } else if (reviewer.fromSessions && typeof ctx.resolveQueryTableIds === "function") {
+                const fromSessions = reviewer.fromSessions;
+                const sessionIds = await ctx.resolveQueryTableIds({
+                    table: "study_session",
+                    filter: fromSessions.filter || [],
+                    query: fromSessions.query || {},
+                    scope: fromSessions.scope || null,
+                    excludeIds: fromSessions.excludeIds || [],
+                    includeIds: fromSessions.allMatching ? null : (fromSessions.ids || []),
+                });
+                if (sessionIds.length === 0) {
+                    conditions.push({id: {[Op.in]: [-1]}});
+                } else {
+                    const idList = sessionIds.join(",");
+                    const userExpr =
+                        '(SELECT "study"."userId" FROM "study" WHERE "study"."id" = "study_session"."studyId")';
+                    conditions.push({
+                        id: {
+                            [Op.in]: sequelize.literal(
+                                `(SELECT DISTINCT ${userExpr} FROM "study_session"`
+                                + ` WHERE "study_session"."id" IN (${idList})`
+                                + ' AND "study_session"."deleted" = false)'
+                            ),
+                        },
+                    });
+                }
+            }
+
+            if (conditions.length === 0) {
+                // Empty assignmentReviewer object: still a known consumer, no extra WHERE.
+                return null;
+            }
+            if (conditions.length === 1) {
+                return conditions[0];
+            }
+            return {[Op.and]: conditions};
+        }
+
+        /**
+         * @returns {Promise<Array<Object>>}
+         */
+        static async getQueryTableInjects(ctx = {}) {
+            const columns = User.assignmentReviewerColumnSql();
+            const fields = {rolesNames: columns.rolesNames};
+            if (await User.canReadReviewerCounts(ctx)) {
+                fields.studySessions = columns.studySessions;
+                fields.documents = columns.documents;
+            }
+            return [{
+                type: "sql",
+                table: "user",
+                on: "id",
+                fields,
+            }];
+        }
+
+        /**
+         * @param {Object} ctx
+         * @returns {Promise<string[]>}
+         */
+        static async getQueryTableSearchColumns(ctx = {}) {
+            const columns = ["id", "rolesNames"];
+            if (await User.canReadReviewerCounts(ctx)) {
+                columns.push("studySessions", "documents");
+            }
+            const privateInfo = typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            if (privateInfo) {
+                columns.push("extId", "firstName", "lastName");
+            }
+            return columns;
+        }
+
+        static getQueryTableSearchConditions(needle, ctx = {}) {
+            const canSearch = typeof ctx.canSearch === "function" ? ctx.canSearch : () => false;
+            return Object.entries(User.assignmentReviewerColumnSql())
+                .filter(([key]) => canSearch(key))
+                .map(([, sql]) => includesCondition(literal(sql), needle));
+        }
+
+        /**
+         * @returns {Promise<Object>}
+         */
+        static async getQueryTableFilterColumns(ctx = {}) {
+            const columns = User.assignmentReviewerColumnSql();
+            const privateInfo = typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
+            const spec = {
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
+                rolesNames: {type: "text", sql: columns.rolesNames},
+            };
+            if (await User.canReadReviewerCounts(ctx)) {
+                spec.studySessions = {
+                    type: "numeric",
+                    operators: NUMERIC_OPERATORS,
+                    sql: columns.studySessions,
+                };
+                spec.documents = {
+                    type: "numeric",
+                    operators: NUMERIC_OPERATORS,
+                    sql: columns.documents,
+                };
+            }
+            if (privateInfo) {
+                spec.extId = {type: "numeric", operators: NUMERIC_OPERATORS};
+            }
+            return spec;
         }
     }
 

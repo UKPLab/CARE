@@ -13,6 +13,18 @@ module.exports = class MetaModel extends Model {
     static accessMap = [];
 
     /**
+     * Optional queryTable hooks (on autoTable models):
+     * - static getQueryTableInjects(ctx) → inject specs for handleInjections (count, parent, …)
+     * - static getCompanionBroadcasts(rows, operation) → related table deltas after txn commit
+     * - static getQueryTableSearchConditions(needle) → extra OR clauses for search (computed columns)
+     * - static getQueryTableViewSearchFields() → sidecar-view columns to STRPOS in search
+     * - static getQueryTableSearchColumns(ctx) → whitelist of searchable keys
+     * - static getQueryTableFilterColumns(ctx) → filterable keys for the table search bar
+     * - static getQueryTableSortColumns() → { [uiKey]: { field } } JOIN sort via a sidecar view
+     * - static resolveAppDataResult({data, transaction, context, entry}) → custom appDataUpdate payload; default is entry.id
+     */
+
+    /**
      * Fields for frontend
      * @type {[]}
      */
@@ -274,6 +286,7 @@ module.exports = class MetaModel extends Model {
             }
 
             const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
+            if (this.cache) this.cache.clear();
             return createdObject.get({plain: true});
 
         } catch (err) {

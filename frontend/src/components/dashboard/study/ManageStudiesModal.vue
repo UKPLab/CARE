@@ -4,7 +4,9 @@
     :steps="steps"
     :validation="stepValid"
     size="xl"
-    @submit="handleSubmit">
+    @submit="handleSubmit"
+    @step-change="onStepChange"
+    @hide="onHide">
 
     <template #title>
       <h5 class="modal-title">{{ $t('dashboard.study.manageTitle') }}</h5>
@@ -46,12 +48,17 @@
           </select>
         </div>
       </div>
-      <BasicTable
-        v-model="selectedStudies"
+      <BackendTable
+        ref="studyTable"
+        table="study"
         :columns="columns"
-        :data="tableRows"
+        :query-filter="studyQueryFilter"
+        :query-filter-schema="studyFilterSchema"
+        :query-search-columns="studySearchColumns"
+        :enrich-row="(row) => enrichStudyRow(row)"
         :options="tableOptions"
         :max-table-height="'50vh'"
+        @selection-change="onSelectionChange"
       />
     </template>
 
@@ -69,8 +76,9 @@
         <div v-if="selectedMode.mode === 'bulkClose'" class="confirmation-content">
           <h6>{{ $t('dashboard.study.studiesToClose') }}</h6>
           <p class="text-muted">{{ $t('dashboard.study.aboutToClose', { count: selectedCount }) }}</p>
-          <ul class="selected-items-list">
-            <li v-for="study in selectedStudies" :key="study.id">
+          <p v-if="selection.allMatching" class="text-muted">{{ selectionSummary }}</p>
+          <ul v-else class="selected-items-list">
+            <li v-for="study in selection.rows" :key="study.id">
               {{ $t('dashboard.study.studyListItem', {
                 name: study.name,
                 workflow: study.workflowName,
@@ -86,8 +94,9 @@
         <div v-else-if="selectedMode.mode === 'bulkOpen'" class="confirmation-content">
           <h6>{{ $t('dashboard.study.studiesToOpen') }}</h6>
           <p class="text-muted">{{ $t('dashboard.study.aboutToOpen', { count: selectedCount }) }}</p>
-          <ul class="selected-items-list">
-            <li v-for="study in selectedStudies" :key="study.id">
+          <p v-if="selection.allMatching" class="text-muted">{{ selectionSummary }}</p>
+          <ul v-else class="selected-items-list">
+            <li v-for="study in selection.rows" :key="study.id">
               {{ $t('dashboard.study.studyListItem', {
                 name: study.name,
                 workflow: study.workflowName,
@@ -95,16 +104,14 @@
               }) }}
             </li>
           </ul>
-          <div v-if="notificationSettings.notifySessions" class="alert alert-warning mt-3">
-            <i class="fas fa-envelope"></i> {{ $t('dashboard.study.notifyActiveSessionsAlert') }}
-          </div>
         </div>
 
         <div v-else-if="selectedMode.mode === 'bulkDelete'" class="confirmation-content delete-warning-container">
           <h6>{{ $t('dashboard.study.studiesToDelete') }}</h6>
           <p class="text-muted">{{ $t('dashboard.study.aboutToDelete', { count: selectedCount }) }}</p>
-          <ul class="selected-items-list">
-            <li v-for="study in selectedStudies" :key="study.id">
+          <p v-if="selection.allMatching" class="text-muted">{{ selectionSummary }}</p>
+          <ul v-else class="selected-items-list">
+            <li v-for="study in selection.rows" :key="study.id">
               {{ $t('dashboard.study.studyListItem', {
                 name: study.name,
                 workflow: study.workflowName,
@@ -122,38 +129,94 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import BasicTable from "@/basic/Table.vue";
+import BackendTable from "@/basic/BackendTable.vue";
 import BasicForm from "@/basic/Form.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
+import {emptySelection} from "@/basic/table/emptySelection.js";
+
+/**
+ * One bulk action per mode. Everything that differs between close / open / delete is a string,
+ * so the three flows share one emit + toast path.
+ */
+const BULK_ACTIONS = {
+  bulkClose: {
+    event: "studyCloseBulk",
+    countKey: "closedCount",
+    emptyTitleKey: "dashboard.study.nothingToClose",
+    emptyMessageKey: "dashboard.study.selectOpenStudy",
+    doneTitleKey: "dashboard.study.closedTitle",
+    doneMessageKey: "dashboard.study.closedMessage",
+    unchangedTitleKey: "dashboard.study.closeFinishedTitle",
+    unchangedMessageKey: "dashboard.study.noneClosed",
+    failTitleKey: "dashboard.study.closeFailed",
+  },
+  bulkOpen: {
+    event: "studyOpenBulk",
+    countKey: "openedCount",
+    emptyTitleKey: "dashboard.study.nothingToOpen",
+    emptyMessageKey: "dashboard.study.selectStudy",
+    doneTitleKey: "dashboard.study.openedTitle",
+    doneMessageKey: "dashboard.study.openedMessage",
+    unchangedTitleKey: "dashboard.study.openFinishedTitle",
+    unchangedMessageKey: "dashboard.study.noneOpened",
+    failTitleKey: "dashboard.study.openFailed",
+  },
+  bulkDelete: {
+    event: "studyDeleteBulk",
+    countKey: "deletedCount",
+    emptyTitleKey: "dashboard.study.nothingToDelete",
+    emptyMessageKey: "dashboard.study.selectStudy",
+    doneTitleKey: "dashboard.study.deletedTitle",
+    doneMessageKey: "dashboard.study.deletedMessage",
+    unchangedTitleKey: "dashboard.study.deleteFinishedTitle",
+    unchangedMessageKey: "dashboard.study.noneDeleted",
+    failTitleKey: "dashboard.study.deleteFailed",
+  },
+};
 
 /**
  * Modal for bulk closing, opening, or deleting studies
+ *
+ * The list runs on queryTable (issue #88): studies are never pulled into Vuex here. Select-all
+ * therefore means "every row this query matches" — the server resolves it again from the same
+ * filter, search and exclusions.
+ *
  * @author: Dennis Zyska
  */
 export default {
   name: "BulkCloseModal",
-  subscribeTable: ["user_role", "user_role_matching", "user", "workflow", "study"],
+  // Workflow names for the dropdown labels and the Workflow column; studies come from queryTable.
+  subscribeTable: ["workflow"],
   components: {
     StepperModal,
-    BasicTable,
+    BackendTable,
     BasicForm,
     ConfirmModal,
   },
+  emits: ["hide"],
   data() {
     return {
       selectedMode: { mode: null },
-      selectedStudies: [],
+      selection: emptySelection(),
       notificationSettings: { notifySessions: false },
       workflowFilter: "all",
+      // Workflow ids present in the current mode's studies (DISTINCT on the server).
+      workflowIds: [],
       tableOptions: {
         striped: true,
         hover: true,
         bordered: false,
         borderless: false,
         small: false,
-        pagination: 10,
+        pagination: {
+          serverSide: true,
+          itemsPerPage: 10,
+          total: 0,
+        },
         search: true,
         selectableRows: true,
+        sort: {column: "name", order: "ASC"},
       },
     };
   },
@@ -204,288 +267,262 @@ export default {
         true, // Step 3 - confirm delete if applicable
       ];
     },
-    modeTitle() {
-      const titles = {
-        bulkClose: this.$t("dashboard.study.closeStudies"),
-        bulkOpen: this.$t("dashboard.study.openStudies"),
-        bulkDelete: this.$t("dashboard.study.deleteStudies"),
-      };
-      return titles[this.selectedMode.mode] || this.$t("dashboard.study.action");
-    },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
-    studiesToFilter() {
-      const allStudies = this.$store.getters["table/study/getFiltered"](
-          (study) =>
-            study.projectId === this.projectId &&
-            !study.template
-      );
-      
-      // Filter based on selected mode
-      if (this.selectedMode.mode === 'bulkClose') {
-        // For closing, show only OPEN studies
-        return allStudies.filter(s => s.closed === null);
-      } else if (this.selectedMode.mode === 'bulkOpen') {
-        // For opening, show only CLOSED studies
-        return allStudies.filter(s => s.closed !== null);
-      } else if (this.selectedMode.mode === 'bulkDelete') {
-        // For deleting, show all studies (both open and closed)
-        return allStudies;
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
+    },
+    /** Project scope + mode, without the Filter Workflows value (that one narrows it further). */
+    baseQueryFilter() {
+      const filter = [
+        {key: "projectId", value: this.projectId},
+        {key: "template", value: false},
+      ];
+      if (this.selectedMode.mode === "bulkClose") {
+        filter.push({key: "closed", value: null});
+      } else if (this.selectedMode.mode === "bulkOpen") {
+        filter.push({key: "closed", value: null, type: "not"});
       }
-      return [];
+      return filter;
+    },
+    studyQueryFilter() {
+      if (this.workflowFilter === "all") {
+        return this.baseQueryFilter;
+      }
+      return [...this.baseQueryFilter, {key: "workflowId", value: Number(this.workflowFilter)}];
+    },
+    /**
+     * Filter tokens for the columns this table shows. Study name is free text only; Workflow and
+     * User replace the header funnels the client-side table used to have.
+     */
+    studyFilterSchema() {
+      const schema = {
+        id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
+        workflowName: {label: this.$t("dashboard.study.workflowCol"), type: "text"},
+        createdAt: {label: this.$t("dashboard.study.createdCol"), type: "date"},
+      };
+      if (this.canReadPrivateInformation) {
+        schema.ownerName = {label: this.$t("dashboard.study.userCol"), type: "text"};
+      }
+      return schema;
+    },
+    /** Free text must not reach dashboard-only fields (state / sessions) that are not shown here. */
+    studySearchColumns() {
+      const columns = ["id", "name", "workflowName"];
+      if (this.canReadPrivateInformation) {
+        columns.push("firstName", "lastName");
+      }
+      return columns;
     },
     workflowOptions() {
-      return [...new Set(this.studiesToFilter.map(s => s.workflowId))]
-        .filter(id => id != null)
-        .map(id => {
+      return this.workflowIds
+        .map((id) => {
           const wf = this.$store.getters["table/workflow/get"](id);
           return {
             value: id,
-            key: id,
-            name: wf.name,
+            name: wf?.name || this.$t("dashboard.study.workflowFallback", { id }),
           };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
-    },
-    studyUserOptions() {
-      return [...new Set(this.studiesToFilter.map(s => s.userId))]
-        .filter(id => id != null)
-        .map(id => {
-          const user = this.$store.getters["table/user/get"](id);
-          const parts = user ? [user.firstName, user.lastName].filter(Boolean) : [];
-          const name = parts.length ? parts.join(" ")
-            : user?.userName || user?.email || this.$t("dashboard.study.userFallback", { id });
-          return { value: id, name };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name));
-    },
-    groupOptions() {
-      return [
-        { key: "Guest", name: this.$t("common.guest") },
-        { key: "Other", name: this.$t("common.other") },
-      ];
     },
     columns() {
       return [
         { name: this.$t("common.id"), key: "id", sortable: true, width: 1 },
         { name: this.$t("studies.study"), key: "name", sortable: true, multiline: true, width: 3 },
-        {
-          name: this.$t("dashboard.study.workflowCol"),
-          key: "workflowName",
-          sortable: true,
-          multiline: true,
-          width: 3,
-          filter: this.workflowOptions.map((opt) => ({ key: opt.key, name: opt.name })),
-        },
-        {
-          name: this.$t("dashboard.study.userCol"),
-          key: "ownerName",
-          sortable: true,
-          width: 2,
-          filter: this.studyUserOptions.map((opt) => ({ key: opt.name, name: opt.name })),
-        },     
-        {
-          name: this.$t("dashboard.study.createdCol"),
-          key: "createdAt",
-          sortable: true,
-          width: 2,
-        },
+        // Workflow / User are not study columns — server-side sorting would silently sort by
+        // something else, so they stay unsortable (filter them through the search bar instead).
+        { name: this.$t("dashboard.study.workflowCol"), key: "workflowName", sortable: false, multiline: true, width: 3 },
+        { name: this.$t("dashboard.study.userCol"), key: "ownerName", sortable: false, width: 2 },
+        { name: this.$t("dashboard.study.createdCol"), key: "createdAt", type: "datetime", sortable: true, width: 2 },
       ];
     },
-    tableRows() {
-      return this.studiesToFilter
-        .filter(study => {
-          // Apply workflow filter
-          if (this.workflowFilter !== "all" && study.workflowId.toString() !== this.workflowFilter) {
-            return false;
-          }
-          return true;
-        })
-        .map((study) => {
-          const workflow = this.$store.getters["table/workflow/get"](study.workflowId);
-          const user = this.$store.getters["table/user/get"](study.userId);
-          const ownerParts = user ? [user.firstName, user.lastName].filter(Boolean) : [];
-          const ownerName = ownerParts.length
-            ? ownerParts.join(" ")
-            : user?.userName || user?.email || this.$t("dashboard.study.userFallback", { id: study.userId });
-
-          return {
-            id: study.id,
-            name: study.name || this.$t("dashboard.study.studyFallback", { id: study.id }),
-            workflowName: workflow?.name || this.$t("dashboard.study.workflowFallback", { id: study.workflowId ?? "-" }),
-            ownerName,
-            createdAt: new Date(study.createdAt).toLocaleString(),
-          };
-        })
-        .sort((a, b) => a.name.localeCompare(b.name));
-    },
     selectedCount() {
-      return this.selectedStudies.length;
+      return this.selection.count;
     },
-    confirmButtonTitle() {
-      const titles = {
-        bulkClose: this.$t("dashboard.study.closeStudies"),
-        bulkOpen: this.$t("dashboard.study.openStudies"),
-        bulkDelete: this.$t("dashboard.study.deleteStudies"),
-      };
-      return titles[this.selectedMode.mode] || this.$t("dashboard.study.executeAction");
+    /** Shown instead of a row list when the selection is "everything this query matches". */
+    selectionSummary() {
+      const parts = [];
+      if (this.selectedMode.mode === "bulkClose") {
+        parts.push(this.$t("dashboard.study.allOpenStudies"));
+      } else if (this.selectedMode.mode === "bulkOpen") {
+        parts.push(this.$t("dashboard.study.allClosedStudies"));
+      } else {
+        parts.push(this.$t("dashboard.study.allStudies"));
+      }
+      const workflow = this.workflowOptions.find((o) => o.value.toString() === this.workflowFilter);
+      parts.push(workflow
+        ? this.$t("dashboard.study.workflowNamed", { name: workflow.name })
+        : this.$t("dashboard.study.allWorkflowsInFilter"));
+      if (this.selection.query?.search) {
+        parts.push(this.$t("dashboard.study.searchQuoted", { search: this.selection.query.search }));
+      }
+      if (this.selection.excludeIds.length > 0) {
+        parts.push(this.$t("dashboard.study.unselectedCount", { count: this.selection.excludeIds.length }));
+      }
+      return this.$t("dashboard.study.matchingFilter", { parts: parts.join(", ") });
+    },
+  },
+  watch: {
+    "selectedMode.mode"(mode, previous) {
+      if (previous == null || mode === previous) return;
+      this.selection = emptySelection();
     },
   },
   methods: {
     open() {
       this.selectedMode = { mode: null };
-      this.selectedStudies = [];
+      this.selection = emptySelection();
       this.workflowFilter = "all";
+      this.workflowIds = [];
       this.notificationSettings = { notifySessions: false };
       this.$refs.manageStudiesModal.open();
     },
+    onHide() {
+      // Back to step 1 so the query-mode table unmounts with the modal instead of staying
+      // subscribed to study deltas while hidden.
+      this.$refs.manageStudiesModal?.reset();
+      this.$emit("hide");
+    },
+    onStepChange(step) {
+      if (step !== 1) {
+        const live = this.$refs.studyTable?.getSelection?.();
+        if (live) this.selection = {...live};
+        return;
+      }
+      this.loadWorkflowOptions();
+      this.$nextTick(() => this.restoreStudySelection());
+    },
+    restoreStudySelection() {
+      const saved = this.selection;
+      if (!saved) return;
+      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
+      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
+      const hasSelection = !!saved.allMatching || hasRows || hasIds;
+      const query = saved.query || {};
+      const hasSearch = !!String(query.search || "").trim()
+        || Object.keys(query.columnFilters || {}).length > 0;
+      if (!hasSelection && !hasSearch) return;
+      const table = this.$refs.studyTable;
+      if (hasSearch) table?.applySearch?.(query);
+      if (hasSelection) table?.applySelection?.(saved);
+    },
+    onSelectionChange() {
+      // Snapshot while the table exists: the stepper unmounts it before the confirm step.
+      const selection = this.$refs.studyTable?.getSelection();
+      this.selection = selection ? {...selection} : emptySelection();
+    },
+    /**
+     * Workflows that actually occur in the current mode's studies — the same list the client-side
+     * table derived from the Vuex dump, now a DISTINCT next to the list query.
+     */
+    loadWorkflowOptions() {
+      if (!this.selectedMode.mode) {
+        this.workflowIds = [];
+        return;
+      }
+      this.$socket.emit("queryTableDistinct", {
+        table: "study",
+        column: "workflowId",
+        filter: this.baseQueryFilter,
+      }, (res) => {
+        if (!res?.success) {
+          console.warn("queryTableDistinct failed", res);
+          this.workflowIds = [];
+          return;
+        }
+        this.workflowIds = res.data?.values || [];
+      });
+    },
+    enrichStudyRow(row) {
+      const workflow = this.$store.getters["table/workflow/get"](row.workflowId);
+      // firstName / lastName are injected by queryTable only for viewers with userPrivateInfo.
+      const ownerParts = [row.firstName, row.lastName].filter(Boolean);
+      return {
+        ...row,
+        name: row.name || this.$t("dashboard.study.studyFallback", { id: row.id }),
+        workflowName: workflow?.name || this.$t("dashboard.study.workflowFallback", { id: row.workflowId ?? "-" }),
+        ownerName: ownerParts.length ? ownerParts.join(" ") : this.$t("dashboard.study.userFallback", { id: row.userId }),
+      };
+    },
+    /**
+     * What the server should act on: either the ids the user ticked, or the query itself plus the
+     * rows unticked after select-all.
+     * @returns {Object|null} null when nothing is selected
+     */
+    buildBulkPayload() {
+      if (this.selectedCount <= 0) {
+        return null;
+      }
+      if (this.selection.allMatching) {
+        return {
+          selection: {
+            allMatching: true,
+            excludeIds: this.selection.excludeIds,
+            filter: this.selection.filter,
+            query: this.selection.query,
+          },
+        };
+      }
+      return {studyIds: this.selection.ids};
+    },
     handleSubmit() {
-      if (this.selectedMode.mode === 'bulkClose') {
-        this.closeMatchingStudies();
-      } else if (this.selectedMode.mode === 'bulkOpen') {
-        this.openMatchingStudies();
-      } else if (this.selectedMode.mode === 'bulkDelete') {
-        this.$refs.manageStudiesModal.close();
-         this.$refs.deleteConf.open(
-          this.$t("dashboard.study.deleteStudies"),
-          "",
-          this.$t("dashboard.study.deleteConfirmPrompt"),
-          (confirmed) => {
-            if (confirmed) {
-              this.deleteMatchingStudies();
-            }
-            else{
-              this.$refs.manageStudiesModal.open();
-            }
+      const mode = this.selectedMode.mode;
+      const action = BULK_ACTIONS[mode];
+      if (!action) {
+        return;
+      }
+      const payload = this.buildBulkPayload();
+      if (!payload) {
+        this.eventBus.emit("toast", {
+          title: this.$t(action.emptyTitleKey),
+          message: this.$t(action.emptyMessageKey),
+          variant: "warning",
+        });
+        return;
+      }
+      if (mode === "bulkClose") {
+        payload.notifySessions = this.notificationSettings.notifySessions;
+      }
+
+      if (mode !== "bulkDelete") {
+        this.runBulk(action, payload);
+        return;
+      }
+      // Keep the stepper open so startProgress() is visible after ConfirmModal closes.
+      // Closing it first left the progress bar on a hidden modal (delete looked "background").
+      this.$refs.deleteConf.open(
+        this.$t("dashboard.study.deleteStudies"),
+        "",
+        this.$t("dashboard.study.deleteConfirmPrompt"),
+        (confirmed) => {
+          if (confirmed) {
+            this.runBulk(action, payload);
           }
-        );
-      }
-    },
-    closeMatchingStudies() {
-      const matches = this.selectedStudies;
-      if (matches.length === 0) {
-        this.eventBus.emit("toast", {
-          title: this.$t("dashboard.study.nothingToClose"),
-          message: this.$t("dashboard.study.selectOpenStudy"),
-          variant: "warning",
-        });
-        return;
-      }
-      const ids = matches
-          .map((s) => Number(s.id))
-          .filter((n) => Number.isFinite(n));
-      const data = {
-        notifySessions: this.notificationSettings.notifySessions,
-        progressId: this.$refs.manageStudiesModal.getProgressId(),
-        studyIds: ids,
-      };
-      this.$refs.manageStudiesModal.startProgress();
-      this.$socket.emit("studyCloseBulk", data, (res) => {
-        this.$refs.manageStudiesModal.stopProgress();
-        this.operationInProgress = false;
-        if (res.success) {
-          const closed = res.data?.closedCount ?? 0;
-          this.eventBus.emit("toast", {
-            title: closed > 0
-              ? this.$t("dashboard.study.closedTitle")
-              : this.$t("dashboard.study.closeFinishedTitle"),
-            message:
-              closed > 0
-                ? this.$t("dashboard.study.closedMessage", { count: closed })
-                : this.$t("dashboard.study.noneClosed"),
-            variant: closed > 0 ? "success" : "info",
-          });
-          this.$refs.manageStudiesModal.close();
-        } else {
-          this.eventBus.emit("toast", {
-            title: this.$t("dashboard.study.closeFailed"),
-            message: resolveApiMessage(res),
-            variant: "danger",
-          });
         }
-      });
+      );
     },
-    openMatchingStudies() {
-      const matches = this.selectedStudies;
-      if (matches.length === 0) {
-        this.eventBus.emit("toast", {
-          title: this.$t("dashboard.study.nothingToOpen"),
-          message: this.$t("dashboard.study.selectStudy"),
-          variant: "warning",
-        });
-        return;
-      }
-      const ids = matches
-          .map((s) => Number(s.id))
-          .filter((n) => Number.isFinite(n));
+    runBulk(action, payload) {
       const data = {
-        notifySessions: this.notificationSettings.notifySessions,
+        ...payload,
         progressId: this.$refs.manageStudiesModal.getProgressId(),
-        studyIds: ids,
       };
       this.$refs.manageStudiesModal.startProgress();
-      this.$socket.emit("studyOpenBulk", data, (res) => {
+      this.$socket.emit(action.event, data, (res) => {
         this.$refs.manageStudiesModal.stopProgress();
         if (res.success) {
-          const opened = res.data?.openedCount ?? 0;
+          const count = res.data?.[action.countKey] ?? 0;
           this.eventBus.emit("toast", {
-            title: opened > 0
-              ? this.$t("dashboard.study.openedTitle")
-              : this.$t("dashboard.study.openFinishedTitle"),
-            message:
-              opened > 0
-                ? this.$t("dashboard.study.openedMessage", { count: opened })
-                : this.$t("dashboard.study.noneOpened"),
-            variant: opened > 0 ? "success" : "info",
+            title: this.$t(count > 0 ? action.doneTitleKey : action.unchangedTitleKey),
+            message: count > 0
+              ? this.$t(action.doneMessageKey, { count })
+              : this.$t(action.unchangedMessageKey),
+            variant: count > 0 ? "success" : "info",
           });
           this.$refs.manageStudiesModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: this.$t("dashboard.study.openFailed"),
-            message: resolveApiMessage(res),
-            variant: "danger",
-          });
-        }
-      });
-    },
-    deleteMatchingStudies() {
-      const matches = this.selectedStudies;
-      if (matches.length === 0) {
-        this.eventBus.emit("toast", {
-          title: this.$t("dashboard.study.nothingToDelete"),
-          message: this.$t("dashboard.study.selectStudy"),
-          variant: "warning",
-        });
-        return;
-      }
-      
-      const ids = matches
-          .map((s) => Number(s.id))
-          .filter((n) => Number.isFinite(n));
-      const data = {
-        progressId: this.$refs.manageStudiesModal.getProgressId(),
-        studyIds: ids,
-      };
-      this.$refs.manageStudiesModal.startProgress();
-      this.$socket.emit("studyDeleteBulk", data, (res) => {
-        this.$refs.manageStudiesModal.stopProgress();
-        if (res.success) {
-          const deleted = res.data?.deletedCount ?? 0;
-          this.eventBus.emit("toast", {
-            title: deleted > 0
-              ? this.$t("dashboard.study.deletedTitle")
-              : this.$t("dashboard.study.deleteFinishedTitle"),
-            message:
-              deleted > 0
-                ? this.$t("dashboard.study.deletedMessage", { count: deleted })
-                : this.$t("dashboard.study.noneDeleted"),
-            variant: deleted > 0 ? "success" : "info",
-          });
-          this.$refs.manageStudiesModal.close();
-        } else {
-          this.eventBus.emit("toast", {
-            title: this.$t("dashboard.study.deleteFailed"),
+            title: this.$t(action.failTitleKey),
             message: resolveApiMessage(res),
             variant: "danger",
           });
@@ -498,57 +535,20 @@ export default {
 </script>
 
 <style scoped>
-.form-check-label {
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.confirmation-content .form-check {
-  padding: 1rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.confirmation-content .form-check-input {
-  width: 1.25rem;
-  height: 1.25rem;
-  margin-top: 0.25rem;
-  cursor: pointer;
-}
-
-.confirmation-content .form-check-label {
-  margin-bottom: 0;
-  user-select: none;
-}
-
-.bulk-close-table :deep(thead th) {
-  white-space: nowrap;
-}
-
 /* Confirmation alerts */
 .confirmation-content .alert {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  border-radius: 0.375rem;
+  border: none;
+  font-size: 0.95rem;
 }
 
 .confirmation-content .alert-warning {
   background-color: var(--bs-warning-bg-subtle);
   border-color: var(--bs-warning-border-subtle);
   color: var(--bs-warning-text-emphasis);
-}
-
-.confirmation-content .alert-danger {
-  background-color: var(--bs-danger-bg-subtle);
-  border-color: var(--bs-danger-border-subtle);
-  color: var(--bs-danger-text-emphasis);
-}
-
-.confirmation-content .alert-info {
-  background-color: var(--bs-info-bg-subtle);
-  border-color: var(--bs-info-border-subtle);
-  color: var(--bs-info-text-emphasis);
 }
 
 .confirmation-content .alert strong {
@@ -558,42 +558,6 @@ export default {
 /* Delete warning specific styling */
 .delete-warning-container {
   border-left-color: #dc3545 !important;
-}
-
-.danger-banner {
-  background-color: var(--bs-danger-bg-subtle) !important;
-  border: 2px solid #dc3545 !important;
-  border-radius: 0.5rem;
-  padding: 1.25rem !important;
-}
-
-.danger-banner strong {
-  font-weight: 700;
-}
-
-.confirm-checkbox-container {
-  padding: 1.25rem;
-  background-color: var(--bs-warning-bg-subtle);
-  border-radius: 0.375rem;
-  border: 1px solid #ffc107;
-}
-
-.confirm-checkbox-container .form-check-input {
-  width: 1.5rem;
-  height: 1.5rem;
-  margin-top: 0.25rem;
-  cursor: pointer;
-  border: 2px solid #dc3545;
-}
-
-.confirm-checkbox-container .form-check-input:checked {
-  background-color: #dc3545;
-  border-color: #dc3545;
-}
-
-.confirm-checkbox-container .form-check-label {
-  font-size: 0.95rem;
-  line-height: 1.5;
 }
 
 .filters-container {
@@ -608,7 +572,7 @@ export default {
 }
 
 .confirmation-content {
-  background: var(--bs-body-bg, #ffffff);
+  background-color: var(--bs-body-bg, #ffffff);
   border-radius: 0.5rem;
   padding: 1.5rem;
   border: 1px solid var(--bs-border-color, #e9ecef);
@@ -636,12 +600,6 @@ export default {
   color: var(--bs-primary-text-emphasis, #0056b3);
 }
 
-.confirmation-content .alert {
-  border-radius: 0.375rem;
-  border: none;
-  font-size: 0.95rem;
-}
-
 .mode-selection-container {
   padding: 1.5rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
@@ -652,17 +610,6 @@ export default {
 .mode-selection-container h5 {
   color: var(--bs-body-color, #333);
   font-weight: 600;
-}
-
-.mode-selection-container ul {
-  list-style-type: disc;
-  padding-left: 1.5rem;
-  margin-bottom: 1rem;
-}
-
-.mode-selection-container li {
-  margin-bottom: 0.5rem;
-  line-height: 1.5;
 }
 
 .selected-items-list {
@@ -707,11 +654,5 @@ export default {
 
 .selected-items-list::-webkit-scrollbar-thumb:hover {
   background: var(--bs-body-color, #555);
-}
-
-.alert-sm {
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0;
-  font-size: 0.9rem;
 }
 </style>

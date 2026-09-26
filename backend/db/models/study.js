@@ -4,6 +4,9 @@ const TranslatableError = require("../../utils/TranslatableError");
 const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
+const {Op, col, literal, where: sqlWhere} = require("sequelize");
+const {STATES} = require("../studyDashboardSortSql.js");
+const {NUMERIC_OPERATORS, NUMERIC_OPERATORS_NE} = require("../../utils/helper/queryTableColumnFilters.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -462,10 +465,21 @@ module.exports = (sequelize, DataTypes) => {
             delete newStudyData.hash;
             newStudyData.parentStudyId = study.id;
             // Create the new study version
-            await Study.add(newStudyData, {
+            const created = await Study.add(newStudyData, {
                 transaction: options.transaction,
                 context: options.context
             });
+            // Sequelize cloneDeep's update options, so mutating context is lost.
+            // The transaction object is shared for the whole appDataUpdate call.
+            if (created) {
+                const published = {id: created.id, hash: created.hash};
+                if (options.transaction) {
+                    options.transaction.versionedStudy = published;
+                }
+                if (options.context) {
+                    options.context.versionedStudy = published;
+                }
+            }
 
             study.setDataValue("closed", new Date());
 
@@ -474,6 +488,41 @@ module.exports = (sequelize, DataTypes) => {
 
             // Specify which fields to be updated. (If fields is provided, only those columns will be saved)
             options.fields = ["closed"];
+        }
+
+        /**
+         * Success modal needs the live study {id, hash}. Create and versioning
+         * return that; delete / close / restart stay a numeric id.
+         */
+        static async resolveAppDataResult({data, transaction, context, entry}) {
+            const published = transaction?.versionedStudy || context?.versionedStudy;
+            if (published?.hash) {
+                return published;
+            }
+            const originalId = data?.id;
+            const isCreate = !originalId || originalId === 0;
+            if (!isCreate && context?.stepDocuments) {
+                const original = await Study.findByPk(originalId, {transaction});
+                if (original?.createdAt) {
+                    // First study with this parentStudyId created after the original.
+                    const child = await Study.findOne({
+                        where: {
+                            parentStudyId: original.id,
+                            deleted: false,
+                            createdAt: {[Op.gt]: original.createdAt},
+                        },
+                        order: [["id", "ASC"]],
+                        transaction,
+                    });
+                    if (child?.hash) {
+                        return {id: child.id, hash: child.hash};
+                    }
+                }
+            }
+            if (isCreate && entry?.hash) {
+                return {id: entry.id, hash: entry.hash};
+            }
+            return entry?.id;
         }
 
         /**
@@ -496,6 +545,46 @@ module.exports = (sequelize, DataTypes) => {
                 return;
             }
              */
+        }
+
+        /**
+         * Workflow steps that run one assessment, with open and closed session counts.
+         * `where` and `sessionWhere` are the viewer's row scope.
+         * @param {Object} params
+         * @param {Object} params.where study WHERE
+         * @param {number} params.configurationId
+         * @param {Object} params.sessionWhere study_session WHERE
+         * @returns {Promise<Array<Object>>}
+         */
+        static async countSessionsByAssessmentStep({where, configurationId, sessionWhere}) {
+            const configurationMatch = this.sequelize.models["study_step"].assessmentConfigurationSql("steps");
+            return this.findAll({
+                where,
+                attributes: [
+                    "workflowId",
+                    [col("steps.stepNumber"), "stepNumber"],
+                    [literal('COUNT(DISTINCT CASE WHEN "study"."closed" IS NOT NULL THEN "sessions"."id" END)'), "closedSessions"],
+                    [literal('COUNT(DISTINCT CASE WHEN "study"."closed" IS NULL THEN "sessions"."id" END)'), "openSessions"],
+                ],
+                include: [
+                    {
+                        association: "steps",
+                        attributes: [],
+                        required: true,
+                        where: {[Op.and]: [{deleted: false}, sqlWhere(literal(configurationMatch), String(configurationId))]},
+                    },
+                    {
+                        association: "sessions",
+                        attributes: [],
+                        required: false,
+                        where: sessionWhere,
+                    },
+                ],
+                group: [col("study.workflowId"), col("steps.stepNumber")],
+                order: [[col("study.workflowId"), "ASC"], [col("steps.stepNumber"), "ASC"]],
+                subQuery: false,
+                raw: true,
+            });
         }
 
         static associate(models) {
@@ -523,6 +612,143 @@ module.exports = (sequelize, DataTypes) => {
                 foreignKey: "projectId",
                 as: "project"
             });
+
+            Study.hasOne(models["study_dashboard_sort"], {
+                foreignKey: "id",
+                sourceKey: "id",
+                as: "dashboardSort",
+                constraints: false,
+            });
+        }
+
+        /**
+         * queryTable ORDER BY for columns that are not study fields.
+         * Values live on materialized view study_dashboard_sort.
+         * @returns {Object<string, {field: string}>}
+         */
+        static getQueryTableSortColumns() {
+            return {
+                state: {field: "stateRank"},
+                sessions: {field: "sessions"},
+            };
+        }
+
+        /**
+         * Related fields to attach in queryTable / query-mode deltas.
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<Array<Object>>}
+         */
+        static async getQueryTableInjects(ctx) {
+            const injects = [
+                {type: "count", table: "study_session", by: "studyId", as: "sessions"},
+            ];
+            if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                injects.push({
+                    type: "parent",
+                    table: "user",
+                    by: "userId",
+                    fields: ["firstName", "lastName"],
+                });
+            }
+            return injects;
+        }
+
+        /**
+         * Searchable keys aligned with visible Studies dashboard columns (not every DB field).
+         * Virtual keys: sessions / state (materialized view), firstName/lastName (parent inject).
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<string[]>}
+         */
+        static async getQueryTableSearchColumns(ctx) {
+            const columns = ["id", "name", "sessions", "state", "workflowName"];
+            if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                columns.push("firstName", "lastName");
+            }
+            return columns;
+        }
+
+        /**
+         * Free-text match on the workflow title, which is not a study column.
+         * Only applied for consumers that show a Workflow column (Manage Studies).
+         * @param {string} needle already lowercased and length-capped
+         * @param {Object} [ctx]
+         * @param {function(string): boolean} [ctx.canSearch]
+         * @returns {Array<Object>}
+         */
+        static getQueryTableSearchConditions(needle, ctx = {}) {
+            if (typeof ctx.canSearch === "function" && !ctx.canSearch("workflowName")) {
+                return [];
+            }
+            const escaped = sequelize.escape(needle);
+            return [{
+                workflowId: {
+                    [Op.in]: sequelize.literal(
+                        "(SELECT \"workflow\".\"id\" FROM \"workflow\"" +
+                        ` WHERE STRPOS(LOWER("workflow"."name"), ${escaped}) > 0` +
+                        " AND \"workflow\".\"deleted\" = false)"
+                    ),
+                },
+            }];
+        }
+
+        /**
+         * Free-text search on study_dashboard_sort (same values as sort/filter).
+         * @returns {Array<{key: string, field: string, castText?: boolean}>}
+         */
+        static getQueryTableViewSearchFields() {
+            return [
+                {key: "state", field: "state"},
+                {key: "sessions", field: "sessions", castText: true},
+            ];
+        }
+
+        /**
+         * Keys the Studies search bar may filter on.
+         * state / sessions read the materialized view; workflowName / ownerName are correlated
+         * subqueries; other keys are study columns.
+         * A filter token for anything outside this spec is dropped server-side.
+         * @param {Object} [ctx]
+         * @param {function(string): Promise<boolean>} [ctx.hasAccess]
+         * @returns {Promise<Object>}
+         */
+        static async getQueryTableFilterColumns(ctx = {}) {
+            const spec = {
+                state: {type: "enum", values: STATES, viewField: "state"},
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
+                createdAt: {type: "date"},
+                sessions: {type: "numeric", viewField: "sessions", operators: NUMERIC_OPERATORS_NE},
+                limitSessions: {type: "numeric", operators: NUMERIC_OPERATORS_NE},
+                limitSessionsPerUser: {type: "numeric", operators: NUMERIC_OPERATORS_NE},
+                workflowName: {
+                    type: "text",
+                    sql: "(SELECT \"workflow\".\"name\" FROM \"workflow\"" +
+                        " WHERE \"workflow\".\"id\" = \"study\".\"workflowId\")",
+                },
+                collab: {type: "boolean"},
+                resumable: {type: "boolean"},
+                multipleSubmit: {type: "boolean"},
+                enableEmailNotifications: {type: "boolean"},
+            };
+            // Owner name is the same gated data as the firstName / lastName inject.
+            if (typeof ctx.hasAccess === "function"
+                && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                spec.ownerName = {
+                    type: "text",
+                    sql: "(SELECT TRIM(CONCAT_WS(' ', \"user\".\"firstName\", \"user\".\"lastName\"))" +
+                        " FROM \"user\" WHERE \"user\".\"id\" = \"study\".\"userId\")",
+                };
+            }
+            return spec;
+        }
+
+        /**
+         * Columns a client may ask distinct values for (dropdown options within the current query).
+         * @returns {string[]}
+         */
+        static getQueryTableDistinctColumns() {
+            return ["workflowId"];
         }
 
     }
@@ -629,12 +855,12 @@ module.exports = (sequelize, DataTypes) => {
         },
         indexes: [
             {
-            unique: false,
-            fields: ["userId", "template"]
+                unique: false,
+                fields: ["userId", "template"]
             },
             {
-            unique: true,
-            fields: ["id"]
+                unique: true,
+                fields: ["id"]
             }
         ]
     });

@@ -260,7 +260,6 @@
         "aboutToDelete": "You are about to permanently delete {count} study:",
         "studyListItem": "{name} ({workflow}) - Owner: {owner}",
         "notifyOpenSessionsAlert": "Email notifications will be sent to participants with open sessions.",
-        "notifyActiveSessionsAlert": "Email notifications will be sent to participants with active sessions.",
         "nothingToClose": "Nothing to close",
         "nothingToOpen": "Nothing to open",
         "nothingToDelete": "Nothing to delete",
@@ -293,7 +292,15 @@
         "groupId": "Group ID",
         "na": "N/A",
         "typePdf": "PDF",
-        "typeHtml": "HTML"
+        "typeHtml": "HTML",
+        "matchingFilter": "Matching the current filter: {parts}.",
+        "allOpenStudies": "all open studies",
+        "allClosedStudies": "all closed studies",
+        "allStudies": "all studies",
+        "workflowNamed": "workflow \"{name}\"",
+        "allWorkflowsInFilter": "all workflows",
+        "searchQuoted": "search \"{search}\"",
+        "unselectedCount": "{count} studies you unselected"
     },
     "users": {
         "userWithQuotes": "\"user\"",
