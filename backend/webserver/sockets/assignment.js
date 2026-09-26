@@ -4,6 +4,7 @@ const _ = require("lodash");
 const {Op} = require("sequelize");
 const {getEmailContent} = require("../../utils/helper/email");
 const TranslatableError = require("../../utils/TranslatableError");
+const {buildRoleBulkCsvRows} = require("../../utils/helper/roleBulkCsv.js");
 
 /**
  * Handle user through websocket
@@ -246,37 +247,6 @@ class AssignmentSocket extends Socket {
     }
 
     /**
-     * CSV rows for role-mode bulk: names come from the resolved rows
-     * @param {Object} finalAssignments assignmentId → reviewerId[]
-     * @param {Array} selectedAssignments
-     * @param {Array} selectedReviewer
-     * @returns {Array<Object>}
-     */
-    buildRoleBulkCsvRows(finalAssignments, selectedAssignments, selectedReviewer) {
-        const reviewersById = Object.fromEntries(
-            (selectedReviewer || []).map((user) => [String(user.id), user])
-        );
-        const assignmentsById = Object.fromEntries(
-            (selectedAssignments || []).map((row) => [String(row.id), row])
-        );
-        return Object.keys(finalAssignments).map((assignmentId) => {
-            const assignmentUser = assignmentsById[String(assignmentId)] || {};
-            const csv = {
-                assignedToName: `${assignmentUser.firstName || ""} ${assignmentUser.lastName || ""}`.trim(),
-                assignedToFirstName: assignmentUser.firstName || "",
-                assignedToLastName: assignmentUser.lastName || "",
-            };
-            (finalAssignments[assignmentId] || []).forEach((reviewerId, index) => {
-                const reviewerUser = reviewersById[String(reviewerId)];
-                csv[`reviewer_${index + 1}`] = reviewerUser
-                    ? `${reviewerUser.firstName || ""} ${reviewerUser.lastName || ""}`.trim()
-                    : "";
-            });
-            return csv;
-        });
-    }
-
-    /**
      * Creates multiple assignments based on the provided data.
      * 
      * Two assignment modes are supported:
@@ -495,7 +465,7 @@ class AssignmentSocket extends Socket {
 
             return {
                 distribution: finalAssignments,
-                csvRows: this.buildRoleBulkCsvRows(
+                csvRows: buildRoleBulkCsvRows(
                     finalAssignments, data.selectedAssignments, data.selectedReviewer
                 ),
             };
