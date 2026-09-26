@@ -249,7 +249,6 @@ export default {
 
       // Step 3/4: ReviewerSelectionStep
       selectedReviewer: [],
-      selectedReviewerRoles: [],
 
       // Step 4/5: DistributionStep
       reviewerSelectionMode: {},
@@ -424,7 +423,6 @@ export default {
       this.assignmentSelection = emptySelection();
       this.reviewerQuerySelection = emptySelection();
       this.selectedReviewer = [];
-      this.selectedReviewerRoles = [];
       this.reviewerSelectionMode = {};
       this.roleSelection = {};
       this.reviewerSelection = {};
@@ -496,9 +494,6 @@ export default {
         }
         this.assignmentModalValue = res.data?.selectedAssignments || [];
         this.selectedReviewer = res.data?.selectedReviewer || [];
-        this.selectedReviewerRoles = [...new Set(
-          this.selectedReviewer.flatMap((user) => user.roles || [])
-        )];
       });
     },
     onSuccess() {
@@ -586,32 +581,8 @@ export default {
       this.$socket.emit("assignmentCreateBulk", socketData, (res) => {
         this.$refs.assignmentStepper.stopProgress();
         if (res.success) {
-          if (this.reviewerSelectionMode.mode === "role") {
-            const filename = "assignments";
-            const csvRows = res.data?.csvRows;
-            if (Array.isArray(csvRows)) {
-              downloadObjectsAs(csvRows, filename, "csv");
-            } else {
-              const distribution = res.data?.distribution || res.data || {};
-              const returnData = Object.keys(distribution).map((assignmentId) => {
-                const assignmentUser = this.assignmentModalValue.find((u) => u.id === Number(assignmentId));
-                if (!assignmentUser) {
-                  return null;
-                }
-                const csv = {
-                  assignedToName: `${assignmentUser.firstName} ${assignmentUser.lastName}`,
-                  assignedToFirstName: assignmentUser.firstName,
-                  assignedToLastName: assignmentUser.lastName,
-                };
-                distribution[assignmentId].forEach((reviewerId, index) => {
-                  const reviewerUser = this.selectedReviewer.find((u) => u.id === Number(reviewerId));
-                  csv[`reviewer_${index + 1}`] = reviewerUser
-                    ? `${reviewerUser.firstName} ${reviewerUser.lastName}` : "";
-                });
-                return csv;
-              }).filter(Boolean);
-              downloadObjectsAs(returnData, filename, "csv");
-            }
+          if (this.reviewerSelectionMode.mode === "role" && Array.isArray(res.data?.csvRows)) {
+            downloadObjectsAs(res.data.csvRows, "assignments", "csv");
           }
           this.onSuccess();
         } else {
