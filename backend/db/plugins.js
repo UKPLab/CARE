@@ -19,6 +19,13 @@ function GlobalChangeTrackingPlugin(sequelize) {
             afterUpdate: (instance, options) => {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
+                    // Created in this transaction: stay a create so clients insert the row.
+                    if (instance._broadcastOp === "create") {
+                        if (instance.deleted) {
+                            instance._broadcastOp = "delete";
+                        }
+                        return;
+                    }
                     instance._broadcastOp = instance.deleted ? "delete" : "update";
                     options.transaction.changes.push(instance);
                 }
@@ -27,6 +34,12 @@ function GlobalChangeTrackingPlugin(sequelize) {
                 if (options.transaction) {
                     options.transaction.changes = options.transaction.changes || [];
                     const record = Array.isArray(instance) ? instance[0] : instance;
+                    if (record._broadcastOp === "create") {
+                        if (record.deleted) {
+                            record._broadcastOp = "delete";
+                        }
+                        return;
+                    }
                     record._broadcastOp = record.deleted ? "delete" : "update";
                     options.transaction.changes.push(record);
                 }
