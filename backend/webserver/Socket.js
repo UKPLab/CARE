@@ -1019,22 +1019,21 @@ module.exports = class Socket {
 
     /**
      * Resolve queryTable inject specs for a model and viewer.
-     * Models may define static getQueryTableInjects(ctx) or autoTable.queryInjects.
+     * Models may define static getQueryTableInjects(ctx).
      * @param {Object} model Sequelize model
      * @param {number} userId
      * @param {Date} rolesUpdatedAt
      * @returns {Promise<Array<Object>>}
      */
     async resolveQueryTableInjects(model, userId, rolesUpdatedAt) {
-        if (typeof model.getQueryTableInjects === "function") {
-            return model.getQueryTableInjects({
-                userId,
-                rolesUpdatedAt,
-                hasAccess: (right) => this.hasAccess(right, userId, rolesUpdatedAt),
-            });
+        if (typeof model.getQueryTableInjects !== "function") {
+            return [];
         }
-        const fromAutoTable = model.autoTable?.queryInjects;
-        return fromAutoTable ? [...fromAutoTable] : [];
+        return model.getQueryTableInjects({
+            userId,
+            rolesUpdatedAt,
+            hasAccess: (right) => this.hasAccess(right, userId, rolesUpdatedAt),
+        });
     }
 
     /**
