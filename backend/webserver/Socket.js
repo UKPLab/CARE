@@ -890,17 +890,12 @@ module.exports = class Socket {
             raw: true,
             limit: MAX_BULK_SELECTION + 1,
         };
-        if (scope.needsViewJoin) {
-            const sortModel = this.models["study_dashboard_sort"];
-            if (!sortModel) {
-                throw new Error("study_dashboard_sort is not available");
-            }
-            await ensureStudyDashboardSortFresh(
-                this.server.db.sequelize,
-                scope.usesStateView ? "stateRank" : "sessions"
-            );
-            findOptions.include = [dashboardSortInclude(sortModel)];
-            findOptions.subQuery = false;
+        const viewJoin = await this.applyViewJoin({
+            needed: scope.needsViewJoin,
+            usesStateView: scope.usesStateView,
+        });
+        if (viewJoin) {
+            Object.assign(findOptions, viewJoin.join);
         }
 
         const rows = await scope.model.findAll(findOptions);
@@ -908,6 +903,32 @@ module.exports = class Socket {
             throw new TranslatableError("errors.queryTable.selectionTooLarge", {limit: MAX_BULK_SELECTION});
         }
         return rows.map((row) => row.id);
+    }
+
+    /**
+     * Refresh `study_dashboard_sort` and build the INNER JOIN when a query reads the view.
+     *
+     * @param {Object} params
+     * @param {boolean} params.needed filter, search, or sort reads the view
+     * @param {boolean} [params.usesStateView] refresh the state column, not only the session count
+     * @returns {Promise<{sortModel: import("sequelize").Model, join: {include: Object[], subQuery: false}}|null>}
+     */
+    async applyViewJoin({needed = false, usesStateView = false} = {}) {
+        if (!needed) {
+            return null;
+        }
+        const sortModel = this.models["study_dashboard_sort"];
+        if (!sortModel) {
+            throw new Error("study_dashboard_sort is not available");
+        }
+        await ensureStudyDashboardSortFresh(
+            this.server.db.sequelize,
+            usesStateView ? "stateRank" : "sessions"
+        );
+        return {
+            sortModel,
+            join: {include: [dashboardSortInclude(sortModel)], subQuery: false},
+        };
     }
 
     /**

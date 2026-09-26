@@ -7,8 +7,7 @@ const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
 const {col} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
-const {paginateJoinSort, dashboardSortInclude, serializeCursor} = require("../../utils/helper/queryTableJoinSort.js");
-const {ensureStudyDashboardSortFresh} = require("../../db/studyDashboardSortRefresh.js");
+const {paginateJoinSort, serializeCursor} = require("../../utils/helper/queryTableJoinSort.js");
 const TranslatableError = require("../../utils/TranslatableError");
 
 // Upper bound for one queryTable page. The infinite-scroll window asks for its whole
@@ -530,24 +529,15 @@ class AppSocket extends Socket {
         let edges;
         let total;
 
-        const needsViewJoin = Boolean(derivedSortSpec) || scope.needsViewJoin;
-
-        const sortModel = needsViewJoin ? this.models["study_dashboard_sort"] : null;
-        if (needsViewJoin) {
-            if (!sortModel) {
-                throw new Error("study_dashboard_sort is not available");
-            }
-            const usesStateView = derivedSortSpec?.field === "stateRank" || scope.usesStateView;
-            await ensureStudyDashboardSortFresh(
-                this.server.db.sequelize,
-                usesStateView ? "stateRank" : "sessions"
-            );
-        }
+        const viewJoin = await this.applyViewJoin({
+            needed: Boolean(derivedSortSpec) || scope.needsViewJoin,
+            usesStateView: derivedSortSpec?.field === "stateRank" || scope.usesStateView,
+        });
 
         if (derivedSortSpec) {
             const joinPage = await paginateJoinSort({
                 model,
-                sortModel,
+                sortModel: viewJoin.sortModel,
                 where: allFilter,
                 attributes: allAttributes,
                 viewField: derivedSortSpec.field,
@@ -568,9 +558,7 @@ class AppSocket extends Socket {
                 : [[sortColumn, sortDirection], ["id", sortDirection]];
             const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
 
-            const joinOptions = needsViewJoin
-                ? {include: [dashboardSortInclude(sortModel)], subQuery: false}
-                : {};
+            const joinOptions = viewJoin ? viewJoin.join : {};
 
             if (offset > 0) {
                 // Cursor payload here is built exactly like sequelize-cursor-pagination's
@@ -705,17 +693,12 @@ class AppSocket extends Socket {
             limit: MAX_DISTINCT_VALUES,
             raw: true,
         };
-        if (scope.needsViewJoin) {
-            const sortModel = this.models["study_dashboard_sort"];
-            if (!sortModel) {
-                throw new Error("study_dashboard_sort is not available");
-            }
-            await ensureStudyDashboardSortFresh(
-                this.server.db.sequelize,
-                scope.usesStateView ? "stateRank" : "sessions"
-            );
-            findOptions.include = [dashboardSortInclude(sortModel)];
-            findOptions.subQuery = false;
+        const viewJoin = await this.applyViewJoin({
+            needed: scope.needsViewJoin,
+            usesStateView: scope.usesStateView,
+        });
+        if (viewJoin) {
+            Object.assign(findOptions, viewJoin.join);
         }
 
         const rows = await scope.model.findAll(findOptions);
