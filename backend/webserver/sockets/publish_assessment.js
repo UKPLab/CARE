@@ -163,14 +163,7 @@ class PublishAssessmentSocket extends Socket {
             .map((step) => positiveInt(step?.stepNumber))
             .filter(Boolean))];
 
-        const sessionIds = await this.resolveQueryTableIds({
-            table: "study_session",
-            filter: selection.filter || [],
-            query: selection.query || {},
-            scope: selection.scope,
-            excludeIds: selection.excludeIds || [],
-            includeIds: selection.allMatching ? null : (selection.ids || []),
-        });
+        const sessionIds = await this.resolveSelectionIds("study_session", selection);
         if (sessionIds.length === 0) {
             return {sessions: []};
         }

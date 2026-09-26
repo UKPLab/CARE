@@ -932,6 +932,27 @@ module.exports = class Socket {
     }
 
     /**
+     * BackendTable selection → the ids `resolveQueryTableIds` would list.
+     *
+     * `allMatching` keeps filter, search, and scope, minus `excludeIds`. An explicit pick is
+     * `includeIds` only, still intersected with the viewer's row scope.
+     *
+     * @param {string} table autoTable name
+     * @param {Object} [sel] { filter, query, scope, excludeIds, ids, allMatching }
+     * @returns {Promise<number[]>}
+     */
+    resolveSelectionIds(table, sel = {}) {
+        return this.resolveQueryTableIds({
+            table,
+            filter: sel.filter || [],
+            query: sel.query || {},
+            scope: sel.scope || null,
+            excludeIds: sel.excludeIds || [],
+            includeIds: sel.allMatching ? null : (sel.ids || []),
+        });
+    }
+
+    /**
      * Positive integer ids only; duplicates dropped.
      * @param {*} ids
      * @param {number} max

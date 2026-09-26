@@ -193,15 +193,7 @@ class AssignmentSocket extends Socket {
         let selectedReviewer = Array.isArray(data.selectedReviewer) ? data.selectedReviewer : [];
 
         if (data.assignmentType === "study_session" && data.assignmentSelection) {
-            const sel = data.assignmentSelection;
-            const sessionIds = await this.resolveQueryTableIds({
-                table: "study_session",
-                filter: sel.filter || [],
-                query: sel.query || {},
-                scope: sel.scope || null,
-                excludeIds: sel.excludeIds || [],
-                includeIds: sel.allMatching ? null : (sel.ids || []),
-            });
+            const sessionIds = await this.resolveSelectionIds("study_session", data.assignmentSelection);
             if (sessionIds.length === 0) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
             }
@@ -227,15 +219,7 @@ class AssignmentSocket extends Socket {
         }
 
         if (data.reviewerQuerySelection) {
-            const sel = data.reviewerQuerySelection;
-            const userIds = await this.resolveQueryTableIds({
-                table: "user",
-                filter: sel.filter || [],
-                query: sel.query || {},
-                scope: sel.scope || null,
-                excludeIds: sel.excludeIds || [],
-                includeIds: sel.allMatching ? null : (sel.ids || []),
-            });
+            const userIds = await this.resolveSelectionIds("user", data.reviewerQuerySelection);
             if (userIds.length === 0) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "reviewer"});
             }
