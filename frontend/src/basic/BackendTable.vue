@@ -143,7 +143,6 @@
             'row-placeholder': r.__skeleton || isPlaceholderRow(r.id),
             'row-updated': isUpdatedRow(r.id),
             'row-entering': isEnteringRow(r.id),
-            'row-entering-top': isEnteringTopRow(r.id),
             'row-entering-bottom': isEnteringBottomRow(r.id),
           }"
           @click="r.__skeleton || isPlaceholderRow(r.id) ? null : selectRow(r)"
@@ -466,7 +465,7 @@ export default {
       default: null,
     },
   },
-  emits: ["action", "update:modelValue", "delta", "stale", "selectionChange"],
+  emits: ["action", "update:modelValue", "selectionChange"],
   data: function () {
     return {
       tableClass: {
@@ -501,13 +500,11 @@ export default {
       queryMeta: {total: 0, page: 0, pageSize: 10, totalPages: 1},
       currentQuery: null,
       pendingInserts: 0,
-      anchorDisplacement: 0,
       pendingStructural: false,
       deletingIds: new Set(),
       placeholderIds: new Set(),
       updatedIds: [],
       enteringIds: [],
-      enteringTopIds: [],
       enteringBottomIds: [],
       pendingLoadPhase: null, // null | 'out' | 'in'
       processedDeleteIds: new Set(),
@@ -523,7 +520,6 @@ export default {
       _onQueryConnect: null,
       _pendingLoadBusy: false,
       _enteringClearTimer: null,
-      _pendingBackfillCount: 0,
       _backfillTimer: null,
       _backfillBusy: false,
       _hopBusy: false,
@@ -1346,11 +1342,14 @@ export default {
         this.currentPage = target;
         this.fetchQueryPage({nav: {before: this.queryMeta.startCursor}, pageOnFailure: from});
       } else {
-        // Non-neighbour jump (e.g. window [1,2,3] at the edges): hop one page at a
-        // time via cursors. Keyset has no "page N" address, so we step.
+        // Reserve, not a path the pager uses. Pagination.vue only has First,
+        // Previous, Next and Last, and changePage clamps to 1..pages, so those
+        // four branches cover every click. Kept in case numbered pages return:
+        // keyset has no "page N" address, so a jump has to walk cursors.
         this.hopToPage(target);
       }
     },
+    /** Reserve for a non-neighbour page jump. Nothing in the current pager calls this. */
     async hopToPage(target) {
       if (this._hopBusy) return;
       this._hopBusy = true;
@@ -1386,11 +1385,6 @@ export default {
       this.itemsPerPage = value;
       this.currentPage = 1;
       this.paginationUpdate();
-    },
-    // NOTE: Because deepEqual is imported after its reference in the template.
-    // Therefore, add this wrapper function here to prevent reference error.
-    deepEqual(row1, row2) {
-      return deepEqual(row1, row2);
     },
     /**
      * Buttons that apply to this row. Pure on purpose: it runs during render, so it must not
@@ -1662,7 +1656,6 @@ export default {
         columnFilters: this.activeColumnFilters,
       };
       this.pendingInserts = 0;
-      this.anchorDisplacement = 0;
       this.pendingStructural = false;
       this.updatedIds = [];
       this.placeholderIds = new Set();
@@ -1671,11 +1664,9 @@ export default {
         this.enteringIds = items
           .filter((row) => row?.id != null && !highlightNewFrom.has(row.id))
           .map((row) => row.id);
-        this.enteringTopIds = [];
         this.enteringBottomIds = [];
       } else {
         this.enteringIds = [];
-        this.enteringTopIds = [];
         this.enteringBottomIds = [];
       }
       if (this.isInfiniteMode) {
@@ -1770,7 +1761,7 @@ export default {
         }
       });
     },
-    /** Promise wrapper around fetchQueryPage for sequential keyset hops. */
+    /** Promise wrapper around fetchQueryPage. Only hopToPage awaits it, and that hop is unused by the pager. */
     fetchQueryPageAsync(options = {}) {
       return new Promise((resolve, reject) => {
         this.fetchQueryPage({
@@ -1803,9 +1794,6 @@ export default {
     isEnteringRow(id) {
       const ids = this.enteringIds;
       return Array.isArray(ids) && ids.includes(id);
-    },
-    isEnteringTopRow(id) {
-      return Array.isArray(this.enteringTopIds) && this.enteringTopIds.includes(id);
     },
     isEnteringBottomRow(id) {
       return Array.isArray(this.enteringBottomIds) && this.enteringBottomIds.includes(id);
@@ -2028,7 +2016,6 @@ export default {
       const next = new Set(this.deletingIds);
       next.add(id);
       this.deletingIds = next;
-      this._pendingBackfillCount = (this._pendingBackfillCount || 0) + 1;
 
       const animMs = this._deleteAnimMs;
       setTimeout(() => {
@@ -2070,7 +2057,6 @@ export default {
       const placeholders = this.placeholderIds || new Set();
       const remaining = this.queryItems.filter((row) => !placeholders.has(row.id));
       const need = pageSize - remaining.length;
-      this._pendingBackfillCount = 0;
 
       if (need <= 0) {
         if (placeholders.size) {
@@ -2112,7 +2098,6 @@ export default {
         }
         this.placeholderIds = new Set();
         this.enteringIds = [];
-        this.enteringTopIds = [];
         this.enteringBottomIds = bottomFill.map((row) => row.id);
         clearTimeout(this._enteringClearTimer);
         this._enteringClearTimer = setTimeout(() => {
@@ -2144,9 +2129,6 @@ export default {
           resolve({items, meta: response.data?.meta || null});
         });
       });
-    },
-    fetchCurrentPageItems() {
-      return this.requestQueryItems(this.buildQueryPayload(this.currentNav()));
     },
     replaceRow(updatedRow) {
       const enriched = this.applyEnrich(updatedRow);
@@ -2193,7 +2175,6 @@ export default {
       this.fetchQueryPage({nav: this.currentNav()});
     },
     handleStale(payload = {}) {
-      this.$emit("stale", payload);
       if (this.isInfiniteMode) {
         this.scheduleWindowRefetch();
         return;
@@ -2206,7 +2187,6 @@ export default {
     },
     handleDelta(delta) {
       if (!this.queryMode || !delta) return;
-      this.$emit("delta", delta);
       const {operation, row, originSocketId} = delta;
       if (!row?.id && row?.id !== 0) return;
       if (this.isInfiniteMode) {
@@ -2310,7 +2290,6 @@ export default {
 
       this._pendingLoadBusy = true;
       this.pendingInserts = 0;
-      this.anchorDisplacement = 0;
       this.pendingStructural = false;
       // Keyset window is anchored to a row cursor, not a page index: refetch the
       // SAME window to reveal in-window changes. currentPage stays put.
@@ -2332,7 +2311,6 @@ export default {
         clearTimeout(this._enteringClearTimer);
         this._enteringClearTimer = setTimeout(() => {
           this.enteringIds = [];
-          this.enteringTopIds = [];
           this.enteringBottomIds = [];
           this._pendingLoadBusy = false;
         }, reduceMotion ? 0 : 1200);
@@ -2815,7 +2793,6 @@ export default {
         this.deletingIds = new Set();
         this.placeholderIds = new Set();
         this.enteringIds = [];
-        this.enteringTopIds = [];
         this.enteringBottomIds = [];
         this.syncWindowQuery();
         const loadedLast = this.rowsBefore + Math.max(0, items.length - 1);
@@ -2974,7 +2951,6 @@ export default {
       clearTimeout(this._enteringClearTimer);
       this._enteringClearTimer = setTimeout(() => {
         this.enteringIds = [];
-        this.enteringTopIds = [];
         this.enteringBottomIds = [];
       }, 1200);
     },
@@ -3026,7 +3002,6 @@ export default {
       });
       this.queryItems = this.queryItems.filter((row) => !placeholders.has(row.id));
       this.placeholderIds = new Set();
-      this._pendingBackfillCount = 0;
       if (removedAbove) this.shiftScrollForRows(-removedAbove);
       this.syncWindowQuery();
       this.scheduleVirtualUpdate();
@@ -3107,11 +3082,6 @@ export default {
         }
         this.insertWindowRow(row);
       }
-    },
-    /** Re-apply enrichRow to current page (e.g. after related Vuex data changes) */
-    reEnrichItems() {
-      if (!this.queryMode) return;
-      this.queryItems = this.queryItems.map((row) => this.applyEnrich(row));
     },
   },
 };
@@ -3540,7 +3510,6 @@ export default {
 }
 
 .row-entering td,
-.row-entering-top td,
 .row-entering-bottom td {
   position: relative;
   z-index: 0;
@@ -3548,10 +3517,6 @@ export default {
 
 .row-entering td {
   animation: row-enter-flash 1.15s ease;
-}
-
-.row-entering-top td {
-  animation: row-enter-from-top 0.95s ease;
 }
 
 .row-entering-bottom td {
@@ -3564,13 +3529,6 @@ export default {
 .table-wrapper tbody tr.row-entering td.table-fixed-right {
   z-index: 3 !important;
   animation: row-enter-flash-sticky 1.15s ease;
-}
-
-.table-wrapper tbody tr.row-entering-top td.table-fixed,
-.table-wrapper tbody tr.row-entering-top td.table-fixed-left,
-.table-wrapper tbody tr.row-entering-top td.table-fixed-right {
-  z-index: 3 !important;
-  animation: row-enter-from-top-sticky 0.95s ease;
 }
 
 .table-wrapper tbody tr.row-entering-bottom td.table-fixed,
@@ -3607,42 +3565,6 @@ export default {
   100% {
     background-color: var(--bs-body-bg, #fff);
     box-shadow: inset 0 0 0 transparent;
-  }
-}
-
-@keyframes row-enter-from-top {
-  0% {
-    background-color: rgba(13, 110, 253, 0.4);
-    box-shadow: inset 0 3px 0 #0d6efd;
-    opacity: 0.15;
-  }
-  40% {
-    background-color: rgba(25, 135, 84, 0.22);
-    box-shadow: inset 0 3px 0 #198754;
-    opacity: 1;
-  }
-  100% {
-    background-color: transparent;
-    box-shadow: inset 0 0 0 transparent;
-    opacity: 1;
-  }
-}
-
-@keyframes row-enter-from-top-sticky {
-  0% {
-    background-color: color-mix(in srgb, #0d6efd 40%, var(--bs-body-bg, #fff));
-    box-shadow: inset 0 3px 0 #0d6efd;
-    opacity: 0.15;
-  }
-  40% {
-    background-color: color-mix(in srgb, #198754 22%, var(--bs-body-bg, #fff));
-    box-shadow: inset 0 3px 0 #198754;
-    opacity: 1;
-  }
-  100% {
-    background-color: var(--bs-body-bg, #fff);
-    box-shadow: inset 0 0 0 transparent;
-    opacity: 1;
   }
 }
 
@@ -3690,7 +3612,6 @@ export default {
   }
 
   .row-entering td,
-  .row-entering-top td,
   .row-entering-bottom td {
     animation: none;
     background-color: rgba(25, 135, 84, 0.18);
