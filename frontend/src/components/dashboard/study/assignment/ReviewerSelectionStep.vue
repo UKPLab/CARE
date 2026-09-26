@@ -80,6 +80,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    initialSelection: {
+      type: Object,
+      default: null,
+    },
   },
   emits: ["update:selection", "update:isValid"],
   data() {
@@ -221,11 +225,54 @@ export default {
     },
   },
   mounted() {
+    this.restoreSelection();
     this.$emit("update:isValid", this.isValid);
   },
+  beforeUnmount() {
+    const live = this.$refs.reviewerTable?.getSelection?.();
+    if (live) this.$emit("update:selection", {...live});
+  },
   methods: {
+    restoreSelection() {
+      const saved = this.initialSelection;
+      if (!saved) return;
+      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
+      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
+      const hasSelection = !!saved.allMatching || hasRows || hasIds;
+      const query = saved.query || {};
+      const hasSearch = !!String(query.search || "").trim()
+        || Object.keys(query.columnFilters || {}).length > 0;
+      if (!hasSelection && !hasSearch) return;
+
+      const ar = saved.scope?.assignmentReviewer || {};
+      this.filterHasDocuments = !!ar.hasDocuments;
+      this.filterSelectedDocuments = !!(ar.fromSessions || ar.userIds);
+      // Flags are local data and remount as false. Put them back, then compare the
+      // scope they produce with the saved one. A different document/session list
+      // is a fresh page: clear the flags, checks, search, and chips.
+      const sameScope = JSON.stringify(saved.scope ?? null) === JSON.stringify(this.reviewerQueryScope ?? null);
+      if (!sameScope) {
+        this.filterHasDocuments = false;
+        this.filterSelectedDocuments = false;
+        this.selection = emptySelection();
+        this.$emit("update:selection", emptySelection());
+        this.$emit("update:isValid", false);
+        return;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.reviewerTable;
+        if (hasSearch) table?.applySearch?.(query);
+        if (hasSelection) table?.applySelection?.(saved);
+        const live = table?.getSelection?.();
+        this.selection = live ? {...live} : emptySelection();
+        this.$emit("update:selection", this.selection);
+        this.$emit("update:isValid", this.isValid);
+      });
+    },
     resetEmittedSelection() {
-      this.selection = emptySelection();
+      this.$refs.reviewerTable?.resetSelection?.();
+      const query = this.$refs.reviewerTable?.getSelection?.()?.query || {};
+      this.selection = {...emptySelection(), query};
       this.$emit("update:selection", this.selection);
       this.$emit("update:isValid", false);
     },

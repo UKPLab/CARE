@@ -638,10 +638,26 @@ export default {
       });
     },
     onStepChange(step) {
-      // The session table remounts with every visit to its step; its selection starts empty.
-      if (step === 2) {
-        this.sessionSelection = emptySelection();
+      if (step !== 2) {
+        const live = this.$refs.sessionTable?.getSelection?.();
+        if (live) this.sessionSelection = {...live};
+        return;
       }
+      this.$nextTick(() => this.restoreSessionSelection());
+    },
+    restoreSessionSelection() {
+      const saved = this.sessionSelection;
+      if (!saved) return;
+      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
+      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
+      const hasSelection = !!saved.allMatching || hasRows || hasIds;
+      const query = saved.query || {};
+      const hasSearch = !!String(query.search || "").trim()
+        || Object.keys(query.columnFilters || {}).length > 0;
+      if (!hasSelection && !hasSearch) return;
+      const table = this.$refs.sessionTable;
+      if (hasSearch) table?.applySearch?.(query);
+      if (hasSelection) table?.applySelection?.(saved);
     },
     onSessionSelectionChange() {
       // Snapshot while the table exists: the stepper unmounts it before the confirmation step.

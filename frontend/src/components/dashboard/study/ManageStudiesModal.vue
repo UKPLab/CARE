@@ -366,6 +366,12 @@ export default {
       return this.$t("dashboard.study.matchingFilter", { parts: parts.join(", ") });
     },
   },
+  watch: {
+    "selectedMode.mode"(mode, previous) {
+      if (previous == null || mode === previous) return;
+      this.selection = emptySelection();
+    },
+  },
   methods: {
     open() {
       this.selectedMode = { mode: null };
@@ -382,12 +388,27 @@ export default {
       this.$emit("hide");
     },
     onStepChange(step) {
-      if (step === 1) {
-        // The table remounts with every visit to this step; its selection starts empty.
-        this.selection = emptySelection();
-        this.workflowFilter = "all";
-        this.loadWorkflowOptions();
+      if (step !== 1) {
+        const live = this.$refs.studyTable?.getSelection?.();
+        if (live) this.selection = {...live};
+        return;
       }
+      this.loadWorkflowOptions();
+      this.$nextTick(() => this.restoreStudySelection());
+    },
+    restoreStudySelection() {
+      const saved = this.selection;
+      if (!saved) return;
+      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
+      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
+      const hasSelection = !!saved.allMatching || hasRows || hasIds;
+      const query = saved.query || {};
+      const hasSearch = !!String(query.search || "").trim()
+        || Object.keys(query.columnFilters || {}).length > 0;
+      if (!hasSelection && !hasSearch) return;
+      const table = this.$refs.studyTable;
+      if (hasSearch) table?.applySearch?.(query);
+      if (hasSelection) table?.applySelection?.(saved);
     },
     onSelectionChange() {
       // Snapshot while the table exists: the stepper unmounts it before the confirm step.

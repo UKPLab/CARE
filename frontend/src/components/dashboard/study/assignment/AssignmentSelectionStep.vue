@@ -60,13 +60,16 @@ export default {
   inject: {
     assignmentType: {type: String, required: false, default: "document"},
     bulk: {type: Boolean, required: false, default: true},
-    newStudyOwner: {type: String, required: false, default: "session_owner"},
     targetWorkflowId: {required: false, default: null},
   },
   props: {
     modalValue: {
       type: Array,
       default: () => [],
+    },
+    initialSelection: {
+      type: Object,
+      default: null,
     },
   },
   emits: [
@@ -265,12 +268,6 @@ export default {
       return columns;
     },
     selectedAssignmentUserIds() {
-      if (this.newStudyOwner !== "study_owner") {
-        return this.selectedAssignments.map((assignment) => {
-          const study = this.$store.getters["table/study/get"](assignment.studyId);
-          return study ? study.userId : null;
-        }).filter((userId) => userId !== null);
-      }
       return this.selectedAssignments
           .map((assignment) => assignment.userId)
           .filter((userId) => userId != null);
@@ -304,10 +301,45 @@ export default {
       const ids = new Set(this.modalValue.map((item) => item.id));
       this.selectedAssignments = this.currentTableData.filter((row) => ids.has(row.id));
     }
+    this.restoreSessionSelection();
     this.$emit("update:isValid", this.isValid);
     this.$emit("update:selectedAssignmentUserIds", this.selectedAssignmentUserIds);
   },
+  beforeUnmount() {
+    if (!this.isSessionType) return;
+    const live = this.$refs.sessionTable?.getSelection?.();
+    if (live) this.$emit("update:selection", {...live});
+  },
   methods: {
+    restoreSessionSelection() {
+      const saved = this.initialSelection;
+      if (!this.isSessionType || !saved) return;
+      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
+      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
+      const hasSelection = !!saved.allMatching || hasRows || hasIds;
+      const query = saved.query || {};
+      const hasSearch = !!String(query.search || "").trim()
+        || Object.keys(query.columnFilters || {}).length > 0;
+      if (!hasSelection && !hasSearch) return;
+      // Workflow (query scope) can change while this step is unmounted.
+      // A different list is a fresh page: no checks, no search, no chips.
+      const sameScope = JSON.stringify(saved.scope ?? null) === JSON.stringify(this.queryScope ?? null);
+      if (!sameScope) {
+        this.sessionSelection = emptySelection();
+        this.$emit("update:selection", emptySelection());
+        this.$emit("update:isValid", false);
+        return;
+      }
+      this.$nextTick(() => {
+        const table = this.$refs.sessionTable;
+        if (hasSearch) table?.applySearch?.(query);
+        if (hasSelection) table?.applySelection?.(saved);
+        const live = table?.getSelection?.();
+        this.sessionSelection = live ? {...live} : emptySelection();
+        this.$emit("update:selection", this.sessionSelection);
+        this.$emit("update:isValid", this.isValid);
+      });
+    },
     onSessionSelectionChange() {
       const selection = this.$refs.sessionTable?.getSelection();
       this.sessionSelection = selection ? {...selection} : emptySelection();

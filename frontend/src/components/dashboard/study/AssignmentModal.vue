@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <StepperModal
       ref="assignmentStepper"
       :steps="steps"
@@ -64,6 +64,7 @@
           :key="`assignment-step3-${stepResetKey}`"
           ref="assignmentSelectionStep3"
           :modalValue="assignmentModalValue"
+          :initial-selection="assignmentSelection"
           @update:modalValue="assignmentModalValue = $event"
           @update:selectedAssignmentUserIds="selectedAssignmentUserIds = $event"
           @update:selection="onAssignmentSelection"
@@ -75,6 +76,7 @@
           ref="reviewerSelectionStep3"
           :selected-assignment-user-ids="selectedAssignmentUserIds"
           :assignment-selection="assignmentSelection"
+          :initial-selection="reviewerQuerySelection"
           :bulk="bulk"
           @update:selection="onReviewerSelection"
           @update:isValid="reviewerSelectionValid = $event"
@@ -89,6 +91,7 @@
           ref="reviewerSelectionStep4"
           :selected-assignment-user-ids="selectedAssignmentUserIds"
           :assignment-selection="assignmentSelection"
+          :initial-selection="reviewerQuerySelection"
           :bulk="bulk"
           @update:selection="onReviewerSelection"
           @update:isValid="reviewerSelectionValid = $event"
