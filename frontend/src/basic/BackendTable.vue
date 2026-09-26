@@ -286,6 +286,17 @@
         </tr>
       </tbody>
     </table>
+    <div
+      v-if="queryMode && queryLoadingVisible && !isInfiniteMode"
+      class="infinite-loading-overlay"
+      role="status"
+      aria-live="polite"
+    >
+      <Loader
+        :loading="true"
+        :text="$t('common.loading')"
+      />
+    </div>
   </div>
   <!-- Classic CARE spinner over the skeleton: overlay is outside the scrolled content
        so it does not change scroll height or row-index maths. -->
@@ -472,6 +483,7 @@ export default {
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
       searchQuery: {search: "", columnFilters: {}},
+      _appliedSearchKey: "{\"search\":\"\",\"columnFilters\":{}}",
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       fixedColumnStyles: {},
       manageColumnStyle: {},
@@ -484,7 +496,6 @@ export default {
       // rows unticked afterwards. Both are resolved again on the server when the action runs.
       allMatching: false,
       excludeIds: [],
-      // queryTable / Delta (issue #88)
       queryItems: [],
       queryMeta: {total: 0, page: 0, pageSize: 10, totalPages: 1},
       currentQuery: null,
@@ -501,6 +512,8 @@ export default {
       processedDeleteIds: new Set(),
       searchDebounceTimer: null,
       queryLoading: false,
+      queryLoadingVisible: false,
+      queryLoadingTimer: null,
       _deltaHandler: null,
       _staleHandler: null,
       _pendingConnectFetch: null,
@@ -543,6 +556,7 @@ export default {
       _windowFetchBusy: false,
       _seekTimer: null,
       _seekToken: 0,
+      _queryToken: 0,
       _windowRefetchTimer: null,
       _windowRefetchHighlight: [],
       _emptyBlockKey: null,
@@ -920,16 +934,32 @@ export default {
       deep: true,
     },
     searchQuery: {
-      handler() {
+      handler(value) {
         if (!this.queryMode) return;
+        const next = this.searchQueryKey(value);
         clearTimeout(this.searchDebounceTimer);
-        this.resetSelection();
+        if (next === this._appliedSearchKey) return;
         this.searchDebounceTimer = setTimeout(() => {
+          if (next === this._appliedSearchKey) return;
+          this._appliedSearchKey = next;
+          this.resetSelection();
           this.currentPage = 1;
           this.fetchQueryPage({nav: {}});
         }, 300);
       },
       deep: true,
+    },
+    queryLoading(loading) {
+      clearTimeout(this.queryLoadingTimer);
+      this.queryLoadingTimer = null;
+      if (!loading) {
+        this.queryLoadingVisible = false;
+        return;
+      }
+      this.queryLoadingTimer = setTimeout(() => {
+        this.queryLoadingTimer = null;
+        if (this.queryLoading) this.queryLoadingVisible = true;
+      }, 600);
     },
     selectionState: {
       handler(value) {
@@ -970,6 +1000,7 @@ export default {
   beforeUnmount() {
     this.teardownQueryMode();
     clearTimeout(this.searchDebounceTimer);
+    clearTimeout(this.queryLoadingTimer);
     clearTimeout(this._enteringClearTimer);
     clearTimeout(this._backfillTimer);
     this.cleanupFixedColumns();
@@ -977,6 +1008,15 @@ export default {
   },
   methods: {
     formatLocalizedDateTime,
+    searchQueryKey(value) {
+      const search = (value?.search || "").trim();
+      const filters = value?.columnFilters || {};
+      const columnFilters = {};
+      Object.keys(filters).sort().forEach((key) => {
+        columnFilters[key] = filters[key];
+      });
+      return JSON.stringify({search, columnFilters});
+    },
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();
@@ -1229,6 +1269,43 @@ export default {
       this.currentData = [];
     },
     /**
+     * Put a saved queryTable selection back after the step unmounts on wizard Back.
+     * @param {{allMatching?: boolean, excludeIds?: number[], rows?: Object[], ids?: number[]}} selection
+     */
+    applySelection(selection) {
+      if (!selection) return;
+      if (selection.allMatching) {
+        this.allMatching = true;
+        this.excludeIds = [...(selection.excludeIds || [])];
+        this.currentData = [];
+        return;
+      }
+      this.allMatching = false;
+      this.excludeIds = [];
+      const rows = Array.isArray(selection.rows) ? selection.rows : [];
+      this.currentData = rows.length
+        ? rows.map((row) => ({...row}))
+        : (selection.ids || []).filter((id) => id != null).map((id) => ({id}));
+    },
+    /**
+     * Put the search text and chips back and request that same page.
+     * The key is set first so the search watcher does not clear the selection.
+     * @param {{search?: string, columnFilters?: Object}} query
+     */
+    applySearch(query) {
+      if (!this.queryMode) return;
+      const next = {
+        search: query?.search || "",
+        columnFilters: query?.columnFilters ? {...query.columnFilters} : {},
+      };
+      const key = this.searchQueryKey(next);
+      if (key === this._appliedSearchKey) return;
+      this._appliedSearchKey = key;
+      this.searchQuery = next;
+      this.currentPage = 1;
+      this.fetchQueryPage({nav: {}});
+    },
+    /**
      * Selection as the server takes it: either explicit ids, or the current query plus the rows
      * the user unticked after select-all.
      * @returns {{allMatching: boolean, excludeIds: number[], ids: number[], rows: Array,
@@ -1254,7 +1331,7 @@ export default {
       };
     },
     paginationPageChange(page) {
-      if (!this.queryMode) return;
+      if (!this.queryMode || this.queryLoading) return;
       // Keyset navigation. First / Prev / Next / Last
       const pages = this.pages || 1;
       const target = Math.min(Math.max(1, page), pages);
@@ -1263,16 +1340,18 @@ export default {
 
       if (target === 1) {
         this.currentPage = 1;
-        this.fetchQueryPage({nav: {}});
+        this.fetchQueryPage({nav: {}, pageOnFailure: from});
       } else if (target === pages) {
         this.currentPage = pages;
-        this.fetchQueryPage({nav: {fromEnd: true}});
+        const pageSize = this.limit;
+        const remainder = pageSize > 0 ? this.total % pageSize : 0;
+        this.fetchQueryPage({nav: {fromEnd: true, limit: remainder || pageSize}, pageOnFailure: from});
       } else if (target === from + 1) {
         this.currentPage = target;
-        this.fetchQueryPage({nav: {after: this.queryMeta.endCursor}});
+        this.fetchQueryPage({nav: {after: this.queryMeta.endCursor}, pageOnFailure: from});
       } else if (target === from - 1) {
         this.currentPage = target;
-        this.fetchQueryPage({nav: {before: this.queryMeta.startCursor}});
+        this.fetchQueryPage({nav: {before: this.queryMeta.startCursor}, pageOnFailure: from});
       } else {
         // Non-neighbour jump (e.g. window [1,2,3] at the edges): hop one page at a
         // time via cursors. Keyset has no "page N" address, so we step.
@@ -1291,10 +1370,12 @@ export default {
           const nav = forward
             ? {after: this.queryMeta.endCursor}
             : {before: this.queryMeta.startCursor};
+          const from = this.currentPage;
           this.currentPage += forward ? 1 : -1;
-          await this.fetchQueryPageAsync({nav});
+          await this.fetchQueryPageAsync({nav, pageOnFailure: from});
         }
       } catch (err) {
+        if (err?.superseded) return;
         console.warn("BackendTable hopToPage failed", err);
       } finally {
         this._hopBusy = false;
@@ -1561,6 +1642,11 @@ export default {
       }
       return payload;
     },
+    releaseSupersededWindow() {
+      this._windowFetchBusy = false;
+      this._windowHold = false;
+      this._pinnedRow = null;
+    },
     applyQueryResult(result, {highlightNewFrom = null, requestedNav = {}} = {}) {
       const items = (result.items || []).map((row) => this.applyEnrich(row));
       this.queryItems = items;
@@ -1601,6 +1687,8 @@ export default {
       }
       if (this.isInfiniteMode) {
         // A fresh window: sort / search / filter / page-size changes all land here.
+        // fetchQueryPage bumped _seekToken, so the displaced block will not clear this itself.
+        this.releaseSupersededWindow();
         this.rowsBefore = requestedNav.fromEnd
           ? Math.max(0, (this.queryMeta.total || 0) - items.length)
           : (Number.isFinite(this.queryMeta.offset) ? this.queryMeta.offset : 0);
@@ -1645,12 +1733,30 @@ export default {
       }
       const nav = options.nav || {};
       this.queryLoading = true;
+      const token = ++this._queryToken;
+      if (this.isInfiniteMode) {
+        // Window blocks use _seekToken, not _queryToken. Bump it so an in-flight
+        // fetchWindowBlock / seek / refetch cannot append into this new result.
+        this._seekToken += 1;
+        clearTimeout(this._seekTimer);
+        this._seekTimer = null;
+      }
       const payload = this.buildQueryPayload(nav);
-      this.$socket.emit("queryTable", payload, (response) => {
+      // timeout() makes the ack (err, response). A lost ack or a disconnect
+      // ends the wait, so pagination is not stuck on queryLoading.
+      this.$socket.timeout(15000).emit("queryTable", payload, (err, response) => {
+        if (token !== this._queryToken) {
+          if (typeof options.onIgnored === "function") options.onIgnored();
+          return;
+        }
         this.queryLoading = false;
-        if (!response?.success) {
-          console.warn("queryTable failed", response);
-          if (typeof options.onError === "function") options.onError(response);
+        if (err || !response?.success) {
+          if (Number.isInteger(options.pageOnFailure)) {
+            this.currentPage = options.pageOnFailure;
+          }
+          if (this.isInfiniteMode) this.releaseSupersededWindow();
+          console.warn("queryTable failed", err || response);
+          if (typeof options.onError === "function") options.onError(err || response);
           return;
         }
         try {
@@ -1661,9 +1767,13 @@ export default {
           if (typeof options.onApplied === "function") {
             options.onApplied(response.data);
           }
-        } catch (err) {
-          console.warn("queryTable applyQueryResult failed", err);
-          if (typeof options.onError === "function") options.onError(err);
+        } catch (applyErr) {
+          if (Number.isInteger(options.pageOnFailure)) {
+            this.currentPage = options.pageOnFailure;
+          }
+          if (this.isInfiniteMode) this.releaseSupersededWindow();
+          console.warn("queryTable applyQueryResult failed", applyErr);
+          if (typeof options.onError === "function") options.onError(applyErr);
         }
       });
     },
@@ -1680,6 +1790,7 @@ export default {
             if (typeof options.onError === "function") options.onError(err);
             reject(err);
           },
+          onIgnored: () => reject(Object.assign(new Error("query superseded"), {superseded: true})),
         });
       });
     },
@@ -1690,6 +1801,7 @@ export default {
         after: q.after || undefined,
         before: q.before || undefined,
         fromEnd: q.fromEnd || undefined,
+        limit: q.fromEnd ? q.limit : undefined,
       };
     },
     isOwnSocket(originSocketId) {
@@ -2606,22 +2718,27 @@ export default {
       // A block that brings nothing new must not be requested again on the next scroll frame.
       const navKey = `${direction}:${nav.after || nav.before || `offset-${nav.offset}`}`;
       if (this._emptyBlockKey === navKey) return;
+      const token = ++this._seekToken;
       this._windowFetchBusy = true;
       try {
         const {items, meta} = await this.requestQueryItems(this.buildQueryPayload(nav));
-        if (!this.isInfiniteMode) return;
+        if (!this.isInfiniteMode || token !== this._seekToken) return;
         const added = direction === "after"
           ? this.appendWindowBlock(items, meta)
           : this.prependWindowBlock(items, meta);
         this._emptyBlockKey = added > 0 ? null : navKey;
       } catch (err) {
-        console.warn("BackendTable fetchWindowBlock failed", err);
+        if (token === this._seekToken) {
+          console.warn("BackendTable fetchWindowBlock failed", err);
+        }
       } finally {
-        this._windowFetchBusy = false;
-        this.$nextTick(() => {
-          this.measureRowHeight();
-          this.scheduleVirtualUpdate();
-        });
+        if (token === this._seekToken) {
+          this._windowFetchBusy = false;
+          this.$nextTick(() => {
+            this.measureRowHeight();
+            this.scheduleVirtualUpdate();
+          });
+        }
       }
     },
     appendWindowBlock(items, meta) {
@@ -2731,11 +2848,15 @@ export default {
           });
         });
       } catch (err) {
-        console.warn("BackendTable seekWindow failed", err);
-        this._windowHold = false;
-        this._pinnedRow = null;
+        if (token === this._seekToken) {
+          console.warn("BackendTable seekWindow failed", err);
+          this._windowHold = false;
+          this._pinnedRow = null;
+        }
       } finally {
-        this._windowFetchBusy = false;
+        if (token === this._seekToken) {
+          this._windowFetchBusy = false;
+        }
       }
     },
     scheduleWindowRefetch(highlightId = null) {
@@ -2767,12 +2888,13 @@ export default {
         : -1;
       const highlight = this._windowRefetchHighlight;
       this._windowRefetchHighlight = [];
+      const token = ++this._seekToken;
       this._windowFetchBusy = true;
       try {
         const {items, meta} = await this.requestQueryItems(
           this.buildQueryPayload({offset, limit: wanted})
         );
-        if (!this.isInfiniteMode) return;
+        if (!this.isInfiniteMode || token !== this._seekToken) return;
         this.queryItems = items;
         this.virtualStart = 0;
         this.virtualEnd = items.length;
@@ -2804,9 +2926,13 @@ export default {
           this.updateVirtualWindow();
         });
       } catch (err) {
-        console.warn("BackendTable refetchWindow failed", err);
+        if (token === this._seekToken) {
+          console.warn("BackendTable refetchWindow failed", err);
+        }
       } finally {
-        this._windowFetchBusy = false;
+        if (token === this._seekToken) {
+          this._windowFetchBusy = false;
+        }
       }
     },
     firstVisibleRowId() {
