@@ -1,4 +1,5 @@
-const {Op, where, fn, col, literal} = require("sequelize");
+const {Op, where, col, literal} = require("sequelize");
+const {includesCondition} = require("./queryTableSearch.js");
 const {SORT_ALIAS, nestedViewKey} = require("./queryTableJoinSort.js");
 
 const OPERATORS = {
@@ -42,16 +43,6 @@ function toBoolean(value) {
         return false;
     }
     return null;
-}
-
-/**
- * Case-insensitive substring match, same STRPOS form as queryTableSearch.
- * @param {Object} expression Sequelize column / literal
- * @param {string} needle already lowercased
- * @returns {Object}
- */
-function containsCondition(expression, needle) {
-    return where(fn("STRPOS", fn("LOWER", expression), needle), {[Op.gt]: 0});
 }
 
 /** Next calendar day after `YYYY-MM-DD`, still as `YYYY-MM-DD`. */
@@ -351,7 +342,7 @@ function buildCondition({entry, operator, value}) {
         return null;
     }
     if (operator === "~") {
-        return containsCondition(filterExpression(entry), text.toLowerCase());
+        return includesCondition(filterExpression(entry), text.toLowerCase());
     }
     if (operator === "%") {
         return tokenListCondition(entry, "%", [text]);
