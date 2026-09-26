@@ -2,7 +2,7 @@ const {Op, where, fn, col, cast} = require("sequelize");
 const {SORT_ALIAS} = require("./queryTableJoinSort.js");
 const {hiddenColumns} = require("./sensitiveColumns.js");
 
-const SKIP_SEARCH = new Set(hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"]));
+const SKIP_SEARCH = new Set(hiddenColumns());
 
 const SKIP_TYPES = new Set(["BLOB", "JSONB", "JSON", "VIRTUAL", "GEOMETRY"]);
 

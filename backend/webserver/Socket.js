@@ -731,7 +731,7 @@ module.exports = class Socket {
             allFilter[Op.or] = mergedClientFilter;
         }
 
-        const defaultExcludes = hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"]);
+        const defaultExcludes = hiddenColumns();
         let allAttributes = {exclude: defaultExcludes};
         // Who may see which rows/columns: admin/fullAccess → all rows in scope; regular user → mainly own rows (userId).
         const filtersAndAttributes = await this.getFiltersAndAttributes(
@@ -950,7 +950,7 @@ module.exports = class Socket {
             return [];
         }
         // Columns a client may never pull onto a row via a parent inject, regardless of table.
-        const forbiddenInjectFields = new Set(hiddenColumns(["rolesUpdatedAt", "deleted", "deletedAt"]));
+        const forbiddenInjectFields = new Set(hiddenColumns());
         const isAutoTable = (table) => typeof table === "string" && !!this.models[table]?.autoTable;
 
         return (await Promise.all(injects
@@ -1107,7 +1107,7 @@ module.exports = class Socket {
                 // and without it byId lookup below fails (firstName/lastName never attached).
                 const parentAttrs = injection.fields?.length
                     ? ["id", ...injection.fields.filter((f) => f !== "id")]
-                    : {exclude: hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"])};
+                    : {exclude: hiddenColumns()};
                 const parents = await parentModel.findAll({
                     where: parentWhere,
                     attributes: parentAttrs,
@@ -1260,7 +1260,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = hiddenColumns(["deleted", "deletedAt", "rolesUpdatedAt"]);
+        const defaultExcludes = hiddenColumns();
         let allAttributes = {
             exclude: defaultExcludes,
         };
