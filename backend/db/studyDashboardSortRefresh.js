@@ -1,7 +1,9 @@
 "use strict";
 
 const {VIEW_NAME} = require("./studyDashboardSortSql.js");
-const logger = require("../utils/logger")("studyDashboardSort");
+const createLogger = require("../utils/logger");
+
+let logger = null;
 
 const WATCH_TABLES = new Set(["study", "study_session"]);
 const STATE_STALE_MS = 60 * 1000;
@@ -52,6 +54,9 @@ function scheduleStudyDashboardSortRefresh(sequelize, transaction) {
         debounceTimer = setTimeout(() => {
             debounceTimer = null;
             refreshStudyDashboardSort(sequelize).catch((err) => {
+                if (!logger) {
+                    logger = createLogger("studyDashboardSort");
+                }
                 logger.warn("study_dashboard_sort refresh failed: " + err.message);
             });
         }, DEBOUNCE_MS);
