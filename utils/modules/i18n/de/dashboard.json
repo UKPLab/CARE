@@ -260,7 +260,6 @@
     "aboutToDelete": "Sie sind dabei, {count} Studie dauerhaft zu löschen:",
     "studyListItem": "{name} ({workflow}) - Inhaber: {owner}",
     "notifyOpenSessionsAlert": "E-Mail-Benachrichtigungen werden an Teilnehmer mit offenen Sitzungen gesendet.",
-    "notifyActiveSessionsAlert": "E-Mail-Benachrichtigungen werden an Teilnehmer mit aktiven Sitzungen gesendet.",
     "nothingToClose": "Nichts zu schließen",
     "nothingToOpen": "Nichts zu öffnen",
     "nothingToDelete": "Nichts zu löschen",

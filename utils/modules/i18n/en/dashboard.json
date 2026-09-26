@@ -260,7 +260,6 @@
         "aboutToDelete": "You are about to permanently delete {count} study:",
         "studyListItem": "{name} ({workflow}) - Owner: {owner}",
         "notifyOpenSessionsAlert": "Email notifications will be sent to participants with open sessions.",
-        "notifyActiveSessionsAlert": "Email notifications will be sent to participants with active sessions.",
         "nothingToClose": "Nothing to close",
         "nothingToOpen": "Nothing to open",
         "nothingToDelete": "Nothing to delete",
