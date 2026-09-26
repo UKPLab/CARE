@@ -873,9 +873,10 @@ module.exports = class Socket {
      * @param {Object} [params.scope] consumer scope
      * @param {Array<number>} [params.excludeIds] rows unchecked after select-all
      * @param {Array<number>} [params.includeIds] restrict to these ids (explicit selection)
+     * @param {import("sequelize").Transaction} [params.transaction] share the caller's transaction; omit for a plain read
      * @returns {Promise<number[]>}
      */
-    async resolveQueryTableIds({table, filter = [], query = {}, scope: scopeParams = null, excludeIds = [], includeIds = null}) {
+    async resolveQueryTableIds({table, filter = [], query = {}, scope: scopeParams = null, excludeIds = [], includeIds = null, transaction = null}) {
         const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
         const conditions = [scope.where];
 
@@ -897,6 +898,7 @@ module.exports = class Socket {
             order: [["id", "ASC"]],
             raw: true,
             limit: MAX_BULK_SELECTION + 1,
+            ...(transaction ? {transaction} : {}),
         };
         const viewJoin = await this.applyViewJoin({
             needed: scope.needsViewJoin,
@@ -947,9 +949,10 @@ module.exports = class Socket {
      *
      * @param {string} table autoTable name
      * @param {Object} [sel] { filter, query, scope, excludeIds, ids, allMatching }
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
      * @returns {Promise<number[]>}
      */
-    resolveSelectionIds(table, sel = {}) {
+    resolveSelectionIds(table, sel = {}, transaction = null) {
         return this.resolveQueryTableIds({
             table,
             filter: sel.filter || [],
@@ -957,6 +960,7 @@ module.exports = class Socket {
             scope: sel.scope || null,
             excludeIds: sel.excludeIds || [],
             includeIds: sel.allMatching ? null : (sel.ids || []),
+            transaction,
         });
     }
 
@@ -1092,9 +1096,10 @@ module.exports = class Socket {
      * @param {Object[]} items rows to enrich
      * @param {number} userId viewer
      * @param {Date} rolesUpdatedAt
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
      * @returns {Promise<Object[]>}
      */
-    async enrichQueryTableItems(tableName, items, userId, rolesUpdatedAt) {
+    async enrichQueryTableItems(tableName, items, userId, rolesUpdatedAt, transaction = null) {
         if (!items?.length) {
             return items || [];
         }
@@ -1103,7 +1108,7 @@ module.exports = class Socket {
         if (!injects.length) {
             return items;
         }
-        return this.handleInjections(injects, items.map((row) => ({...row})));
+        return this.handleInjections(injects, items.map((row) => ({...row})), transaction);
     }
 
     /**
@@ -1112,9 +1117,10 @@ module.exports = class Socket {
      * sql (model-owned scalar expressions for values no single parent hop can reach).
      * @param {Object} injects Instructions on what to inject
      * @param {Object} data Data to query and extend
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
      * @returns {Object} data with attached COUNT / parent-field / expression results
      */
-    async handleInjections(injects, data) {
+    async handleInjections(injects, data, transaction = null) {
         if (!data?.length) {
             return data || [];
         }
@@ -1139,6 +1145,7 @@ module.exports = class Socket {
                     where,
                     group: injection.by,
                     raw: true,
+                    ...(transaction ? {transaction} : {}),
                 });
                 data = data.map((d) => {
                     d[injection.as] = Number(count.find((c) => c[injection.by] === d[sourceKey])?.count) || 0;
@@ -1160,6 +1167,7 @@ module.exports = class Socket {
                     where: parentWhere,
                     attributes: parentAttrs,
                     raw: true,
+                    ...(transaction ? {transaction} : {}),
                 });
                 const byId = Object.fromEntries(parents.map((p) => [p.id, p]));
                 const fields = injection.fields || Object.keys(parents[0] || {}).filter((k) => k !== "id");
@@ -1184,6 +1192,7 @@ module.exports = class Socket {
                     where: {[sourceKey]: {[Op.in]: keys}},
                     attributes: [sourceKey, ...fields.map(([alias, sql]) => [Sequelize.literal(sql), alias])],
                     raw: true,
+                    ...(transaction ? {transaction} : {}),
                 });
                 const byKey = new Map(rows.map((row) => [row[sourceKey], row]));
                 data = data.map((d) => {

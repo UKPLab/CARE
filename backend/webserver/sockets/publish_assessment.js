@@ -1,6 +1,5 @@
 const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
-const {Op, col, literal} = require("sequelize");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
 // Service fields returned with each export session so the client can locate assessment scores.
@@ -70,34 +69,10 @@ class PublishAssessmentSocket extends Socket {
         const projectId = positiveInt(data?.projectId);
         const where = await this.resolveStudyScope(projectId);
         const sessionWhere = await this.visibleSessionWhere();
-        const configurationMatch = this.models["study_step"].assessmentConfigurationSql("steps");
-
-        const rows = await this.models["study"].findAll({
+        const rows = await this.models["study"].countSessionsByAssessmentStep({
             where,
-            attributes: [
-                "workflowId",
-                [col("steps.stepNumber"), "stepNumber"],
-                [literal('COUNT(DISTINCT CASE WHEN "study"."closed" IS NOT NULL THEN "sessions"."id" END)'), "closedSessions"],
-                [literal('COUNT(DISTINCT CASE WHEN "study"."closed" IS NULL THEN "sessions"."id" END)'), "openSessions"],
-            ],
-            include: [
-                {
-                    association: "steps",
-                    attributes: [],
-                    required: true,
-                    where: {[Op.and]: [{deleted: false}, literal(`${configurationMatch} = '${configurationId}'`)]},
-                },
-                {
-                    association: "sessions",
-                    attributes: [],
-                    required: false,
-                    where: sessionWhere,
-                },
-            ],
-            group: [col("study.workflowId"), col("steps.stepNumber")],
-            order: [[col("study.workflowId"), "ASC"], [col("steps.stepNumber"), "ASC"]],
-            subQuery: false,
-            raw: true,
+            configurationId,
+            sessionWhere,
         });
 
         return {
@@ -121,19 +96,9 @@ class PublishAssessmentSocket extends Socket {
         if (studyIds.length === 0) {
             return new Map();
         }
-        const conditions = [
-            {studyId: {[Op.in]: studyIds}, deleted: false},
-            literal(`${this.models["study_step"].assessmentConfigurationSql("study_step")} = '${configurationId}'`),
-        ];
-        if (stepNumbers.length > 0) {
-            conditions.push({stepNumber: {[Op.in]: stepNumbers}});
-        }
-        const steps = await this.models["study_step"].findAll({
-            where: {[Op.and]: conditions},
-            attributes: ["id", "studyId", "stepNumber", "documentId", "configuration"],
-            order: [["stepNumber", "ASC"], ["id", "ASC"]],
-            raw: true,
-        });
+        const steps = await this.models["study_step"].findForAssessment(
+            studyIds, configurationId, stepNumbers
+        );
         const byStudy = new Map();
         for (const step of steps) {
             if (!byStudy.has(step.studyId)) {
@@ -168,11 +133,9 @@ class PublishAssessmentSocket extends Socket {
             return {sessions: []};
         }
 
-        let sessions = await this.models["study_session"].findAll({
-            where: {id: {[Op.in]: sessionIds}, deleted: false},
+        let sessions = await this.models["study_session"].findActiveByIds(sessionIds, {
             attributes: ["id", "studyId", "userId", "hash", "start", "end"],
             order: [["id", "ASC"]],
-            raw: true,
         });
         sessions = await this.enrichQueryTableItems("study_session", sessions, this.userId, this.rolesUpdatedAt);
 

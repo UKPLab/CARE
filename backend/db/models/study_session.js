@@ -29,6 +29,25 @@ module.exports = (sequelize, DataTypes) => {
         ];
 
         /**
+         * Active sessions by id
+         * @param {number[]} ids
+         * @param {Object} [options]
+         * @param {Array} [options.attributes]
+         * @param {Array} [options.order]
+         * @param {import("sequelize").Transaction} [options.transaction] share the caller's transaction; omit for a plain read
+         * @returns {Promise<Array<Object>>}
+         */
+        static async findActiveByIds(ids, {attributes, order, transaction} = {}) {
+            return this.findAll({
+                where: {id: {[Op.in]: ids}, deleted: false},
+                ...(attributes ? {attributes} : {}),
+                ...(order ? {order} : {}),
+                ...(transaction ? {transaction} : {}),
+                raw: true,
+            });
+        }
+
+        /**
          * When sessions change, refresh session counts on study rows in query-mode tables.
          * @param {Object[]} rows changed study_session rows
          * @returns {Array<{table: string, rows: Object[], operation: string}>}

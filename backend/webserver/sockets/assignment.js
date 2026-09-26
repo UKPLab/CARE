@@ -183,9 +183,12 @@ class AssignmentSocket extends Socket {
      * Resolve query-scoped session / reviewer selections into the row arrays createAssignmentBulk
      * already walks (id, userId, roles, names). Document/submission keep the client arrays.
      * @param {Object} data
+     * @param {Object} [options]
+     * @param {import("sequelize").Transaction} [options.transaction] set by assignmentCreateBulk; the preview socket omits it
      * @returns {Promise<{selectedAssignments: Array, selectedReviewer: Array}>}
      */
-    async resolveBulkAssignmentSelections(data) {
+    async resolveBulkAssignmentSelections(data, options = {}) {
+        const transaction = options.transaction || null;
         if (!(await this.hasAccess("frontend.dashboard.studies.addBulkAssignments"))) {
             throw new TranslatableError("errors.permission.noPermissionToAccesData");
         }
@@ -194,16 +197,13 @@ class AssignmentSocket extends Socket {
         let selectedReviewer = Array.isArray(data.selectedReviewer) ? data.selectedReviewer : [];
 
         if (data.assignmentType === "study_session" && data.assignmentSelection) {
-            const sessionIds = await this.resolveSelectionIds("study_session", data.assignmentSelection);
+            const sessionIds = await this.resolveSelectionIds("study_session", data.assignmentSelection, transaction);
             if (sessionIds.length === 0) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
             }
-            const sessions = await this.models["study_session"].findAll({
-                where: {id: {[Op.in]: sessionIds}, deleted: false},
-                raw: true,
-            });
+            const sessions = await this.models["study_session"].findActiveByIds(sessionIds, {transaction});
             const enriched = await this.enrichQueryTableItems(
-                "study_session", sessions, this.userId, this.rolesUpdatedAt
+                "study_session", sessions, this.userId, this.rolesUpdatedAt, transaction
             );
             const newStudyOwner = data.newStudyOwner === "study_owner" ? "study_owner" : "session_owner";
             selectedAssignments = enriched.map((session) => ({
@@ -220,7 +220,7 @@ class AssignmentSocket extends Socket {
         }
 
         if (data.reviewerQuerySelection) {
-            const userIds = await this.resolveSelectionIds("user", data.reviewerQuerySelection);
+            const userIds = await this.resolveSelectionIds("user", data.reviewerQuerySelection, transaction);
             if (userIds.length === 0) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "reviewer"});
             }
@@ -232,6 +232,7 @@ class AssignmentSocket extends Socket {
             selectedReviewer = await this.models["user"].getAll({
                 where: {id: {[Op.in]: userIds}, deleted: false},
                 attributes: reviewerAttributes,
+                ...(transaction ? {transaction} : {}),
             });
         }
 
@@ -281,7 +282,7 @@ class AssignmentSocket extends Socket {
      *  If the underlying `this.createAssignment` method fails.
      */
     async createAssignmentBulk(data, options) {
-        const resolved = await this.resolveBulkAssignmentSelections(data);
+        const resolved = await this.resolveBulkAssignmentSelections(data, options);
         data.selectedAssignments = resolved.selectedAssignments;
         data.selectedReviewer = resolved.selectedReviewer;
 
