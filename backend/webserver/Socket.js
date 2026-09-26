@@ -910,10 +910,11 @@ module.exports = class Socket {
     }
 
     /**
-     * Positive integer ids only; duplicates dropped, length capped.
+     * Positive integer ids only; duplicates dropped.
      * @param {*} ids
      * @param {number} max
      * @returns {number[]}
+     * @throws {TranslatableError} when the cleaned list is longer than max
      */
     sanitizeIds(ids, max) {
         if (!Array.isArray(ids)) {
@@ -922,7 +923,10 @@ module.exports = class Socket {
         const clean = [...new Set(
             ids.map((id) => Number(id)).filter((id) => Number.isSafeInteger(id) && id > 0)
         )];
-        return clean.slice(0, max);
+        if (clean.length > max) {
+            throw new TranslatableError("errors.queryTable.idListTooLarge", {limit: max});
+        }
+        return clean;
     }
 
     /**
