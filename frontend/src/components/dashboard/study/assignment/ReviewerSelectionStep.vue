@@ -26,7 +26,6 @@
       table="user"
       :columns="reviewerTableColumns"
       :query-scope="reviewerQueryScope"
-      :query-filter="reviewerQueryFilter"
       :query-filter-schema="reviewerFilterSchema"
       :query-search-columns="reviewerSearchColumns"
       :options="reviewerTableOptions"
@@ -186,9 +185,6 @@ export default {
         return {assignmentReviewer: {}};
       }
       return {assignmentReviewer};
-    },
-    reviewerQueryFilter() {
-      return [];
     },
     isValid() {
       return this.selection.count > 0;
