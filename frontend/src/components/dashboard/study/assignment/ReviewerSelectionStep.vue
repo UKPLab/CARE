@@ -38,6 +38,7 @@
 
 <script>
 import BackendTable from "@/basic/BackendTable.vue";
+import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
 
 function emptySelection() {
   return {
@@ -139,26 +140,26 @@ export default {
         id: {
           label: this.$t("common.id"),
           type: "numeric",
-          operators: ["=", ">", ">=", "<", "<=", "%"],
+          operators: NUMERIC_OPERATORS,
         },
       };
       if (this.canReadPrivateInformation) {
         schema.extId = {
           label: this.$t("dashboard.projects.extId"),
           type: "numeric",
-          operators: ["=", ">", ">=", "<", "<=", "%"],
+          operators: NUMERIC_OPERATORS,
         };
       }
       Object.assign(schema, {
         studySessions: {
           label: this.$t("dashboard.projects.numberOfAssignments"),
           type: "numeric",
-          operators: ["=", ">", ">=", "<", "<=", "%"],
+          operators: NUMERIC_OPERATORS,
         },
         documents: {
           label: this.$t("dashboard.study.documents"),
           type: "numeric",
-          operators: ["=", ">", ">=", "<", "<=", "%"],
+          operators: NUMERIC_OPERATORS,
         },
         rolesNames: {label: this.$t("dashboard.study.roles"), type: "text"},
       });

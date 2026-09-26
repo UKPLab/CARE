@@ -132,6 +132,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import BasicForm from "@/basic/Form.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
 
 /**
  * One bulk action per mode. Everything that differs between close / open / delete is a string,
@@ -301,7 +302,7 @@ export default {
      */
     studyFilterSchema() {
       const schema = {
-        id: {label: this.$t("common.id"), type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+        id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
         workflowName: {label: this.$t("dashboard.study.workflowCol"), type: "text"},
         createdAt: {label: this.$t("dashboard.study.createdCol"), type: "date"},
       };

@@ -4,6 +4,7 @@ const SequelizeSimpleCache = require("sequelize-simple-cache");
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op, literal} = require("sequelize");
 const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
+const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
 module.exports = (sequelize, DataTypes) => {
@@ -240,7 +241,7 @@ module.exports = (sequelize, DataTypes) => {
                 && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
             const columns = StudySession.sessionIdentitySql(privateInfo);
             const spec = {
-                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
                 createdAt: {type: "date"},
                 status: {type: "enum", values: ["Running", "Finished"], sql: columns.status},
             };
@@ -256,7 +257,7 @@ module.exports = (sequelize, DataTypes) => {
             if (columns.submissionId) {
                 spec.submissionExtId = {
                     type: "numeric",
-                    operators: ["=", ">", ">=", "<", "<=", "%"],
+                    operators: NUMERIC_OPERATORS,
                     sql: `(SELECT "submission"."extId" FROM "submission"`
                         + ` WHERE "submission"."id" = ${columns.submissionId})`,
                 };

@@ -7,6 +7,7 @@ const {genSalt, genPwdHash, genPwd} = require("../../webserver/auth/utils.js");
 const {generateAnimalUsername} = require("../../utils/helper/generator");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
+const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
 module.exports = (sequelize, DataTypes) => {
@@ -695,23 +696,23 @@ module.exports = (sequelize, DataTypes) => {
             const privateInfo = typeof ctx.hasAccess === "function"
                 && await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo");
             const spec = {
-                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
                 rolesNames: {type: "text", sql: columns.rolesNames},
             };
             if (await User.canReadReviewerCounts(ctx)) {
                 spec.studySessions = {
                     type: "numeric",
-                    operators: ["=", ">", ">=", "<", "<=", "%"],
+                    operators: NUMERIC_OPERATORS,
                     sql: columns.studySessions,
                 };
                 spec.documents = {
                     type: "numeric",
-                    operators: ["=", ">", ">=", "<", "<=", "%"],
+                    operators: NUMERIC_OPERATORS,
                     sql: columns.documents,
                 };
             }
             if (privateInfo) {
-                spec.extId = {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]};
+                spec.extId = {type: "numeric", operators: NUMERIC_OPERATORS};
             }
             return spec;
         }

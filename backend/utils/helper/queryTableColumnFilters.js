@@ -1,6 +1,6 @@
 const {Op, where, col, literal} = require("sequelize");
-const {includesCondition} = require("./queryTableSearch.js");
 const {SORT_ALIAS, nestedViewKey} = require("./queryTableJoinSort.js");
+const {includesCondition} = require("./queryTableSearch.js");
 
 const OPERATORS = {
     "=": Op.eq,
@@ -10,6 +10,9 @@ const OPERATORS = {
     "<": Op.lt,
     "<=": Op.lte,
 };
+
+const NUMERIC_OPERATORS = ["=", ">", ">=", "<", "<=", "%"];
+const NUMERIC_OPERATORS_NE = [...NUMERIC_OPERATORS, "!="];
 
 const TRUTHY = new Set(["true", "yes", "1"]);
 const FALSY = new Set(["false", "no", "0"]);
@@ -424,6 +427,8 @@ function columnFiltersNeedViewJoin(filterSpec, columnFilters) {
 }
 
 module.exports = {
+    NUMERIC_OPERATORS,
+    NUMERIC_OPERATORS_NE,
     buildQueryTableColumnFilters,
     columnFiltersNeedViewJoin,
 };

@@ -6,6 +6,7 @@ const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const {Op} = require("sequelize");
 const {STATES} = require("../studyDashboardSortSql.js");
+const {NUMERIC_OPERATORS, NUMERIC_OPERATORS_NE} = require("../../utils/helper/queryTableColumnFilters.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -675,11 +676,11 @@ module.exports = (sequelize, DataTypes) => {
         static async getQueryTableFilterColumns(ctx = {}) {
             const spec = {
                 state: {type: "enum", values: STATES, viewField: "state"},
-                id: {type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
                 createdAt: {type: "date"},
-                sessions: {type: "numeric", viewField: "sessions", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
-                limitSessions: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
-                limitSessionsPerUser: {type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
+                sessions: {type: "numeric", viewField: "sessions", operators: NUMERIC_OPERATORS_NE},
+                limitSessions: {type: "numeric", operators: NUMERIC_OPERATORS_NE},
+                limitSessionsPerUser: {type: "numeric", operators: NUMERIC_OPERATORS_NE},
                 workflowName: {
                     type: "text",
                     sql: "(SELECT \"workflow\".\"name\" FROM \"workflow\"" +

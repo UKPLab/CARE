@@ -257,6 +257,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
+import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
 import {
   ASSESSMENT_RESULT_KEY,
   getAssessmentResultKeyCandidates,
@@ -501,7 +502,7 @@ export default {
         submissionExtId: {
           label: this.$t("submission.publishAssessment.columns.submissionExtId"),
           type: "numeric",
-          operators: ["=", ">", ">=", "<", "<=", "%"],
+          operators: NUMERIC_OPERATORS,
         },
       };
       if (this.canReadPrivateInformation) {

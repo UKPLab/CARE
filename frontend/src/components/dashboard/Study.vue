@@ -96,6 +96,7 @@ import SavedTemplatesModal from "./study/SavedTemplatesModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import PublishAssessmentModal from "./submission/PublishAssessmentModal.vue";
 import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+import {NUMERIC_OPERATORS, NUMERIC_OPERATORS_NE} from "@/basic/table/searchTokens.js";
 
 /**
  * Dashboard component for handling studies
@@ -176,11 +177,11 @@ export default {
             {value: "ended", label: this.$t('studies.status.ended')},
           ],
         },
-        id: {label: this.$t('common.id'), type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+        id: {label: this.$t('common.id'), type: "numeric", operators: NUMERIC_OPERATORS},
         createdAt: {label: this.$t('studies.columns.created'), type: "date"},
-        sessions: {label: this.$t('studies.columns.sessions'), type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
-        limitSessions: {label: this.$t('studies.columns.sessionLimit'), type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
-        limitSessionsPerUser: {label: this.$t('studies.columns.sessionLimitPerUser'), type: "numeric", operators: ["=", "!=", ">", ">=", "<", "<=", "%"]},
+        sessions: {label: this.$t('studies.columns.sessions'), type: "numeric", operators: NUMERIC_OPERATORS_NE},
+        limitSessions: {label: this.$t('studies.columns.sessionLimit'), type: "numeric", operators: NUMERIC_OPERATORS_NE},
+        limitSessionsPerUser: {label: this.$t('studies.columns.sessionLimitPerUser'), type: "numeric", operators: NUMERIC_OPERATORS_NE},
         collab: {label: this.$t('studies.columns.collaborative'), type: "boolean"},
         resumable: {label: this.$t('studies.columns.resumable'), type: "boolean"},
         multipleSubmit: {label: this.$t('studies.columns.multipleSubmissions'), type: "boolean"},

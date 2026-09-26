@@ -31,6 +31,7 @@
 <script>
 import BasicTable from "@/basic/Table.vue";
 import BackendTable from "@/basic/BackendTable.vue";
+import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
 
 function emptySelection() {
   return {
@@ -237,7 +238,7 @@ export default {
     },
     sessionFilterSchema() {
       const schema = {
-        id: {label: this.$t("common.id"), type: "numeric", operators: ["=", ">", ">=", "<", "<=", "%"]},
+        id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
       };
       if (this.canReadPrivateInformation) {
         schema.completeUserName = {label: this.$t("dashboard.study.sessionUserName"), type: "text"};

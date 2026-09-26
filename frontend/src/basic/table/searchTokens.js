@@ -68,10 +68,13 @@ export function needsTypedValue(schema, key) {
   return TYPED_VALUE_TYPES.has(ownEntry(schema, key)?.type);
 }
 
+export const NUMERIC_OPERATORS = ["=", ">", ">=", "<", "<=", "%"];
+export const NUMERIC_OPERATORS_NE = [...NUMERIC_OPERATORS, "!="];
+
 const OPERATORS_BY_TYPE = {
   boolean: ["=", "!=", "%"],
   enum: ["=", "!=", "%"],
-  numeric: ["=", "!=", ">", ">=", "<", "<=", "%"],
+  numeric: NUMERIC_OPERATORS_NE,
   date: ["=", ">", ">=", "<", "<=", "%"],
   text: ["=", "!=", "~", "%"],
 };
