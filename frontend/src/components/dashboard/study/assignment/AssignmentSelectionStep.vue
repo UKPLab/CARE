@@ -32,19 +32,7 @@
 import BasicTable from "@/basic/Table.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
-
-function emptySelection() {
-  return {
-    allMatching: false,
-    excludeIds: [],
-    ids: [],
-    rows: [],
-    count: 0,
-    filter: [],
-    scope: null,
-    query: {},
-  };
-}
+import {emptySelection} from "@/basic/table/emptySelection.js";
 
 /**
  * Step component for selecting the items to be assigned in the bulk assignment wizard.

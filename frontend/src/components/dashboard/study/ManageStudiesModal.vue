@@ -133,6 +133,7 @@ import BackendTable from "@/basic/BackendTable.vue";
 import BasicForm from "@/basic/Form.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
+import {emptySelection} from "@/basic/table/emptySelection.js";
 
 /**
  * One bulk action per mode. Everything that differs between close / open / delete is a string,
@@ -173,11 +174,6 @@ const BULK_ACTIONS = {
     failTitleKey: "dashboard.study.deleteFailed",
   },
 };
-
-/** Same shape as BackendTable.getSelection(), for the steps where no table is mounted. */
-function emptySelection() {
-  return {allMatching: false, excludeIds: [], ids: [], rows: [], count: 0, filter: [], query: {}};
-}
 
 /**
  * Modal for bulk closing, opening, or deleting studies

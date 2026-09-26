@@ -258,15 +258,11 @@ import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
+import {emptySelection} from "@/basic/table/emptySelection.js";
 import {
   ASSESSMENT_RESULT_KEY,
   getAssessmentResultKeyCandidates,
 } from "@/assets/serviceDocumentDataKeys.js";
-
-/** Same shape as BackendTable.getSelection(), for the steps where the session table is unmounted. */
-function emptySelection() {
-  return {allMatching: false, excludeIds: [], ids: [], rows: [], count: 0, filter: [], scope: null, query: {}};
-}
 
 /**
  * Modal for publishing assessment data with CSV export

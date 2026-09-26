@@ -155,19 +155,7 @@ import AssignmentSelectionStep from "./assignment/AssignmentSelectionStep.vue";
 import ReviewerSelectionStep from "./assignment/ReviewerSelectionStep.vue";
 import DistributionStep from "./assignment/DistributionStep.vue";
 import ConfirmationStep from "./assignment/ConfirmationStep.vue";
-
-function emptySelection() {
-  return {
-    allMatching: false,
-    excludeIds: [],
-    ids: [],
-    rows: [],
-    count: 0,
-    filter: [],
-    scope: null,
-    query: {},
-  };
-}
+import {emptySelection} from "@/basic/table/emptySelection.js";
 
 /**
  * Modal for bulk creating assignments
