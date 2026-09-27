@@ -259,14 +259,20 @@ function appendStoredFileIfExists(server, archive, hash, extension, archivePath,
  * @param {boolean} shouldGenerateAliases - Whether the export should anonymize author names.
  * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
  * @param {Object|null} ownerUser - The document owner's user record (for the real name to replace).
- * @param {Map<string, Buffer>|null} [anonymizedBufferCache] - Optional cache, keyed by hash, so a
- *   document appended under several archive paths (e.g. one per review session) only pays for the
- *   unzip/substitute/rezip round-trip once.
+ * @param {Map<string, Buffer|null>|null} [anonymizedBufferCache] - Optional cache, keyed by hash, so
+ *   a document appended under several archive paths (e.g. one per review session) only pays for the
+ *   unzip/substitute/rezip round-trip once — a `null` entry means anonymization was already tried
+ *   and failed, so later calls fall straight back to a plain copy instead of retrying and re-failing.
  * @returns {Promise<void>}
  */
 async function appendZipFileAnonymized(server, archive, hash, archivePath, shouldGenerateAliases, userMapping, ownerUser, anonymizedBufferCache = null) {
     if (anonymizedBufferCache?.has(hash)) {
-        archive.append(anonymizedBufferCache.get(hash), { name: archivePath });
+        const cachedBuffer = anonymizedBufferCache.get(hash);
+        if (cachedBuffer) {
+            archive.append(cachedBuffer, { name: archivePath });
+        } else {
+            appendStoredFileIfExists(server, archive, hash, '.zip', archivePath, 'ZIP');
+        }
         return;
     }
 
@@ -285,6 +291,7 @@ async function appendZipFileAnonymized(server, archive, hash, archivePath, shoul
                 return;
             } catch (err) {
                 server.logger.error(`Failed to change names for zip ${hash}:`, err);
+                anonymizedBufferCache?.set(hash, null);
             }
         }
     }
@@ -314,15 +321,16 @@ async function resolveHasPrivateInfoRight(server, userId) {
  * @param {Object} server - The server instance providing the logger.
  * @param {*} raw - The raw value from the request body.
  * @param {string} fieldName - Name of the field being parsed, used only for the warning log.
- * @returns {Array} Parsed array of ids, or an empty array if parsing fails.
+ * @param {Array} [fallback] - Value to return when raw can't be parsed into an array.
+ * @returns {Array} Parsed array of ids, or `fallback` if parsing fails.
  */
-function parseIdsArray(server, raw, fieldName) {
+function parseIdsArray(server, raw, fieldName, fallback = []) {
     try {
         const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-        return Array.isArray(parsed) ? parsed : [];
+        return Array.isArray(parsed) ? parsed : fallback;
     } catch (e) {
         server.logger.warn(`Could not parse ${fieldName}:`, raw);
-        return [];
+        return fallback;
     }
 }
 
