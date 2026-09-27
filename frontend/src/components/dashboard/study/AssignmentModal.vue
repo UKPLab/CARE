@@ -51,8 +51,10 @@
           :key="`assignment-step2-${stepResetKey}`"
           ref="assignmentSelectionStep2"
           :modalValue="assignmentModalValue"
+          :initial-selection="assignmentSelection"
           @update:modalValue="assignmentModalValue = $event"
           @update:selectedAssignmentUserIds="selectedAssignmentUserIds = $event"
+          @update:selection="onAssignmentSelection"
           @update:isValid="assignmentSelectionValid = $event"
       />
     </template>
@@ -66,7 +68,6 @@
           :modalValue="assignmentModalValue"
           :initial-selection="assignmentSelection"
           @update:modalValue="assignmentModalValue = $event"
-          @update:selectedAssignmentUserIds="selectedAssignmentUserIds = $event"
           @update:selection="onAssignmentSelection"
           @update:isValid="assignmentSelectionValid = $event"
       />
@@ -183,15 +184,6 @@ export default {
         fields: ["firstName", "lastName", "userName"],
       }],
     },
-    {
-      table: "submission",
-      inject: [{
-        type: "parent",
-        table: "user",
-        by: "userId",
-        fields: ["firstName", "lastName", "userName"],
-      }],
-    },
     { table: "study", filter: [{ key: "template", value: true }] },
     { table: "template" },
   ],
@@ -265,6 +257,7 @@ export default {
       distributionValid: false,
 
       resolveLoading: false,
+      activeStep: 0,
     };
   },
   computed: {
@@ -279,7 +272,7 @@ export default {
       return this.$store.getters["admin/getSystemRoles"] || [];
     },
     assignmentCount() {
-      if (this.assignmentType === 'study_session') {
+      if (this.assignmentType === 'study_session' || this.assignmentType === 'submission') {
         return this.assignmentSelection.count || this.assignmentModalValue.length;
       }
       return this.assignmentModalValue.length;
@@ -369,18 +362,9 @@ export default {
         reviewerSelection: this.reviewerSelection,
       };
     },
+    // Document path only. Submissions get their step document on the server (createAssignment).
     workflowStepsAssignments() {
-      if (this.assignmentType === "submission") {
-        return this.assignmentModalValue.map((submission) => {
-          return this.workflowSteps.map((c, index) => {
-            if (index === 0) {
-              const primaryDocId = this.getPrimaryDocumentId(submission.id);
-              return { documentId: primaryDocId, workflowStepId: c.id };
-            }
-            return { documentId: null, workflowStepId: c.id };
-          });
-        });
-      }
+      if (this.assignmentType !== "document") return [];
       return this.assignmentModalValue.map((document) => {
         return this.workflowSteps.map((c, index) => ({
           documentId: index === 0 ? document.id : null,
@@ -389,26 +373,36 @@ export default {
       });
     },
   },
-  methods: {
-    getPrimaryDocumentId(submissionId) {
-      const submission = this.$store.getters["table/submission/get"](submissionId);
-      const configuration = this.$store.getters["table/configuration/get"](submission.validationConfigurationId);
-      const docs = this.$store.getters["table/document/getFiltered"](
-          d => d.submissionId === submissionId && !d.deleted && d.type === 0
-      );
-      if (!docs || docs.length === 0) return null;
-      if (configuration && configuration.primaryDocument) {
-        const primaryDoc = docs.find(d => d.id === configuration.primaryDocument);
-        if (primaryDoc) return primaryDoc.id;
-      }
-      return docs[0].id;
+  watch: {
+    assignmentType(next, prev) {
+      if (!prev || next === prev) return;
+      this.assignmentModalValue = [];
+      this.selectedAssignmentUserIds = [];
+      this.assignmentSelection = emptySelection();
+      this.reviewerQuerySelection = emptySelection();
+      this.selectedReviewer = [];
+      this.assignmentSelectionValid = false;
+      this.reviewerSelectionValid = false;
+      this.reviewerSelectionMode = {};
+      this.roleSelection = {};
+      this.reviewerSelection = {};
+      this.selectionValid = false;
+      this.numberOfReviews = 0;
+      this.distributionValid = false;
     },
+  },
+  methods: {
     open(bulk = true) {
       this.bulk = bulk;
       this.reset();
       this.$refs.assignmentStepper.open();
     },
     reset() {
+      // Stepper goes back to step 0 on open; the old step is still mounted when that
+      // step-change fires, so it must not be captured into the fresh wizard.
+      this.activeStep = 0;
+      this.resolveLoading = false;
+      this.$refs.assignmentStepper?.setWaiting?.(false);
       this.stepResetKey++;
       this.assignmentType = "document";
       this.workflowSteps = [];
@@ -435,9 +429,13 @@ export default {
       this.distributionValid = false;
     },
     onAssignmentSelection(selection) {
+      const panel = this.stepContent[this.activeStep];
+      if (panel === "assignment-selection" && this.assignmentType !== "submission") return;
+      if (panel !== "session-selection" && panel !== "assignment-selection") return;
       this.assignmentSelection = selection ? {...selection} : emptySelection();
     },
     onReviewerSelection(selection) {
+      if (this.stepContent[this.activeStep] !== "reviewer-selection") return;
       this.reviewerQuerySelection = selection ? {...selection} : emptySelection();
     },
     /**
@@ -445,10 +443,30 @@ export default {
      * into row arrays. Distribution still builds sliders from selectedReviewer objects.
      */
     onStepChange(stepIndex) {
+      if (stepIndex === this.activeStep) return;
+      const forward = stepIndex > this.activeStep;
+      this.captureLiveSelections();
+      this.activeStep = stepIndex;
+      if (!forward) {
+        this.resolveLoading = false;
+        this.$refs.assignmentStepper?.setWaiting?.(false);
+      }
       const panel = this.stepContent[stepIndex];
-      if (panel === "distribution" || panel === "confirmation") {
+      if (forward && (panel === "distribution" || panel === "confirmation")) {
         this.resolveSelectionsForDownstream();
       }
+    },
+    captureLiveSelections() {
+      if (this.assignmentType === "submission") {
+        const submissions = this.$refs.assignmentSelectionStep2?.getSelection?.();
+        if (submissions) this.assignmentSelection = {...submissions};
+      } else if (this.assignmentType === "study_session") {
+        const sessions = this.$refs.assignmentSelectionStep3?.getSelection?.();
+        if (sessions) this.assignmentSelection = {...sessions};
+      }
+      const reviewer = this.$refs.reviewerSelectionStep3?.getSelection?.()
+        || this.$refs.reviewerSelectionStep4?.getSelection?.();
+      if (reviewer) this.reviewerQuerySelection = {...reviewer};
     },
     resolvePayload() {
       const payload = {
@@ -458,13 +476,15 @@ export default {
         selectedReviewer: this.selectedReviewer,
         reviewerQuerySelection: this.snapshotReviewerSelection(),
       };
-      if (this.assignmentType === "study_session") {
+      if (this.assignmentType === "study_session" || this.assignmentType === "submission") {
         payload.assignmentSelection = this.snapshotAssignmentSelection();
       }
       return payload;
     },
     snapshotAssignmentSelection() {
-      const live = this.$refs.assignmentSelectionStep3?.getSelection?.();
+      const live = this.assignmentType === "submission"
+        ? this.$refs.assignmentSelectionStep2?.getSelection?.()
+        : this.$refs.assignmentSelectionStep3?.getSelection?.();
       return live ? {...live} : {...this.assignmentSelection};
     },
     snapshotReviewerSelection() {
@@ -473,9 +493,6 @@ export default {
       return live ? {...live} : {...this.reviewerQuerySelection};
     },
     resolveSelectionsForDownstream() {
-      // Reviewers always come from BackendTable, so resolve them into rows before
-      // Distribution / Confirmation. Sessions only for the study_session path;
-      // documents / submissions stay the Vuex rows in selectedAssignments.
       if (this.resolveLoading) {
         return;
       }
@@ -538,7 +555,7 @@ export default {
 
         if (this.assignmentType === "study_session") {
           socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
-        } else {
+        } else if (this.assignmentType === "document") {
           socketData.documents = this.workflowStepsAssignments[0];
         }
 
@@ -573,6 +590,9 @@ export default {
       if (this.assignmentType === "study_session") {
         socketData.targetWorkflowId = this.workflowMappingStepModalValue?.targetWorkflowId;
         socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
+        socketData.assignmentSelection = this.snapshotAssignmentSelection();
+      } else if (this.assignmentType === "submission") {
+        // Server resolves the submissions and picks each one's PDF itself.
         socketData.assignmentSelection = this.snapshotAssignmentSelection();
       } else {
         socketData.documents = this.workflowStepsAssignments;

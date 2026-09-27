@@ -861,6 +861,7 @@ export default {
   watch: {
     currentData: {
       handler() {
+        if (this._unmounting) return;
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -868,8 +869,9 @@ export default {
       deep: true,
     },
     modelValue: {
-      handler() {
-        this.currentData = this.updateValues(this.modelValue);
+      handler(value) {
+        if (deepEqual(this.currentData, value)) return;
+        this.currentData = this.updateValues(value);
       },
       deep: true,
     },
@@ -911,22 +913,26 @@ export default {
       }
     },
     queryFilter: {
-      handler() {
-        if (this.queryMode) {
-          this.currentPage = 1;
-          this.resetSelection();
-          this.fetchQueryPage();
-        }
+      handler(value) {
+        if (!this.queryMode) return;
+        const key = JSON.stringify(value ?? null);
+        if (key === this._filterKey) return;
+        this._filterKey = key;
+        this.currentPage = 1;
+        this.resetSelection();
+        this.fetchQueryPage();
       },
       deep: true,
     },
     queryScope: {
-      handler() {
-        if (this.queryMode) {
-          this.currentPage = 1;
-          this.resetSelection();
-          this.fetchQueryPage();
-        }
+      handler(value) {
+        if (!this.queryMode) return;
+        const key = JSON.stringify(value ?? null);
+        if (key === this._scopeKey) return;
+        this._scopeKey = key;
+        this.currentPage = 1;
+        this.resetSelection();
+        this.fetchQueryPage();
       },
       deep: true,
     },
@@ -960,9 +966,8 @@ export default {
     },
     selectionState: {
       handler(value) {
-        if (this.selectableRows) {
-          this.$emit("selectionChange", value);
-        }
+        if (this._unmounting || !this.selectableRows) return;
+        this.$emit("selectionChange", value);
       },
       deep: true,
     },
@@ -983,6 +988,8 @@ export default {
       this.itemsPerPage = 0;
     }
 
+    this._filterKey = JSON.stringify(this.queryFilter ?? null);
+    this._scopeKey = JSON.stringify(this.queryScope ?? null);
     this.setupQueryMode();
 
     if (this.hasFixedColumns || this.hasManageButtons) {
@@ -995,6 +1002,7 @@ export default {
     }, 150);
   },
   beforeUnmount() {
+    this._unmounting = true;
     this.teardownQueryMode();
     clearTimeout(this.searchDebounceTimer);
     clearTimeout(this.queryLoadingTimer);
@@ -1625,7 +1633,8 @@ export default {
         query,
       };
       if (this.hasQueryScope) {
-        payload.scope = this.queryScope;
+        // Copy: the socket must not mutate the reactive scope and retrigger its watcher.
+        payload.scope = JSON.parse(JSON.stringify(this.queryScope));
       }
       return payload;
     },

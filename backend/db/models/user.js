@@ -577,8 +577,8 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Reviewer picker scope: optionally restrict to users behind a session selection
-         * ("from previous selected") or an explicit id list (document/submission path).
+         * Reviewer picker scope: optionally restrict to users behind a session or submission
+         * selection ("from previous selected") or an explicit id list (document path).
          *
          * @param {Object} scope
          * @param {Object} [scope.assignmentReviewer]
@@ -630,6 +630,30 @@ module.exports = (sequelize, DataTypes) => {
                                 `(SELECT DISTINCT ${userExpr} FROM "study_session"`
                                 + ` WHERE "study_session"."id" IN (${idList})`
                                 + ' AND "study_session"."deleted" = false)'
+                            ),
+                        },
+                    });
+                }
+            } else if (reviewer.fromSubmissions && typeof ctx.resolveQueryTableIds === "function") {
+                const fromSubmissions = reviewer.fromSubmissions;
+                const submissionIds = await ctx.resolveQueryTableIds({
+                    table: "submission",
+                    filter: fromSubmissions.filter || [],
+                    query: fromSubmissions.query || {},
+                    scope: fromSubmissions.scope || null,
+                    excludeIds: fromSubmissions.excludeIds || [],
+                    includeIds: fromSubmissions.allMatching ? null : (fromSubmissions.ids || []),
+                });
+                if (submissionIds.length === 0) {
+                    conditions.push({id: {[Op.in]: [-1]}});
+                } else {
+                    const idList = submissionIds.join(",");
+                    conditions.push({
+                        id: {
+                            [Op.in]: sequelize.literal(
+                                '(SELECT DISTINCT "submission"."userId" FROM "submission"'
+                                + ` WHERE "submission"."id" IN (${idList})`
+                                + ' AND "submission"."deleted" = false)'
                             ),
                         },
                     });

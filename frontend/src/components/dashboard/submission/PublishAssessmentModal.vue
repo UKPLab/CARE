@@ -292,6 +292,7 @@ export default {
       linkCollection: "studies",
       selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
       isReviewUrlIncluded: false, // Option to include review URL in Moodle feedback
+      sessionStepLive: false,
     };
   },
   computed: {
@@ -582,8 +583,10 @@ export default {
       this.sessionSelection = emptySelection();
       this.loadWorkflows();
     },
-    selectedWorkflows() {
-      // Reset sessions when workflow changes (the query behind them changed)
+    selectedWorkflows(next, prev) {
+      const ids = (rows) => (rows || []).map((row) => row.id).join(",");
+      if (ids(next) === ids(prev)) return;
+      // Reset sessions when the picked workflow steps change (the query behind them changed)
       this.sessionSelection = emptySelection();
     },
   },
@@ -635,12 +638,16 @@ export default {
       });
     },
     onStepChange(step) {
-      if (step !== 2) {
+      if (this.sessionStepLive) {
         const live = this.$refs.sessionTable?.getSelection?.();
         if (live) this.sessionSelection = {...live};
-        return;
       }
-      this.$nextTick(() => this.restoreSessionSelection());
+      this.sessionStepLive = false;
+      if (step !== 2) return;
+      this.$nextTick(() => {
+        this.restoreSessionSelection();
+        this.sessionStepLive = true;
+      });
     },
     restoreSessionSelection() {
       const saved = this.sessionSelection;
@@ -657,6 +664,7 @@ export default {
       if (hasSelection) table?.applySelection?.(saved);
     },
     onSessionSelectionChange() {
+      if (!this.sessionStepLive) return;
       // Snapshot while the table exists: the stepper unmounts it before the confirmation step.
       const selection = this.$refs.sessionTable?.getSelection();
       this.sessionSelection = selection ? {...selection} : emptySelection();
@@ -719,6 +727,7 @@ export default {
       this.workflowRows = [];
       this.workflowsLoading = false;
       this.sessionSelection = emptySelection();
+      this.sessionStepLive = false;
       this.publishMethod = "csv";
       this.linkCollection = "studies";
       this.selectedAssignmentMaxGrade = 0;

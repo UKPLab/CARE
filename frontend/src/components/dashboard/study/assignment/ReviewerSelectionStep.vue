@@ -58,12 +58,12 @@ export default {
       type: Boolean,
       default: true,
     },
-    /** Session BackendTable getSelection() snapshot (study_session path). */
+    /** Session / submission BackendTable getSelection() snapshot. */
     assignmentSelection: {
       type: Object,
       default: null,
     },
-    /** Document/submission owner ids still resolved on the client. */
+    /** Document owner ids still resolved on the client. Submission select-all uses fromSubmissions. */
     selectedAssignmentUserIds: {
       type: Array,
       default: () => [],
@@ -175,6 +175,15 @@ export default {
             query: this.assignmentSelection.query || {},
             scope: this.assignmentSelection.scope || null,
           };
+        } else if (this.assignmentType === "submission" && this.assignmentSelection) {
+          assignmentReviewer.fromSubmissions = {
+            allMatching: this.assignmentSelection.allMatching,
+            excludeIds: this.assignmentSelection.excludeIds || [],
+            ids: this.assignmentSelection.ids || [],
+            filter: this.assignmentSelection.filter || [],
+            query: this.assignmentSelection.query || {},
+            scope: this.assignmentSelection.scope || null,
+          };
         } else if (this.selectedAssignmentUserIds.length > 0) {
           assignmentReviewer.userIds = this.selectedAssignmentUserIds;
         } else {
@@ -195,9 +204,11 @@ export default {
       this.$emit("update:isValid", val);
     },
     filterHasDocuments() {
+      if (this._restoring) return;
       this.resetEmittedSelection();
     },
     filterSelectedDocuments() {
+      if (this._restoring) return;
       this.resetEmittedSelection();
     },
     assignmentSelection: {
@@ -213,10 +224,6 @@ export default {
     this.restoreSelection();
     this.$emit("update:isValid", this.isValid);
   },
-  beforeUnmount() {
-    const live = this.$refs.reviewerTable?.getSelection?.();
-    if (live) this.$emit("update:selection", {...live});
-  },
   methods: {
     restoreSelection() {
       const saved = this.initialSelection;
@@ -230,8 +237,9 @@ export default {
       if (!hasSelection && !hasSearch) return;
 
       const ar = saved.scope?.assignmentReviewer || {};
+      this._restoring = true;
       this.filterHasDocuments = !!ar.hasDocuments;
-      this.filterSelectedDocuments = !!(ar.fromSessions || ar.userIds);
+      this.filterSelectedDocuments = !!(ar.fromSessions || ar.fromSubmissions || ar.userIds);
       // Flags are local data and remount as false. Put them back, then compare the
       // scope they produce with the saved one. A different document/session list
       // is a fresh page: clear the flags, checks, search, and chips.
@@ -239,12 +247,14 @@ export default {
       if (!sameScope) {
         this.filterHasDocuments = false;
         this.filterSelectedDocuments = false;
+        this._restoring = false;
         this.selection = emptySelection();
         this.$emit("update:selection", emptySelection());
         this.$emit("update:isValid", false);
         return;
       }
       this.$nextTick(() => {
+        this._restoring = false;
         const table = this.$refs.reviewerTable;
         if (hasSearch) table?.applySearch?.(query);
         if (hasSelection) table?.applySelection?.(saved);

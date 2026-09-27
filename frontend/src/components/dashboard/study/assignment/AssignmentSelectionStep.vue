@@ -17,11 +17,22 @@
         {{ $t("dashboard.study.selectTargetWorkflow") }}
       </p>
     </template>
+    <BackendTable
+        v-else-if="isSubmissionType"
+        ref="submissionTable"
+        table="submission"
+        :columns="submissionColumns"
+        :query-filter-schema="submissionFilterSchema"
+        :query-search-columns="submissionSearchColumns"
+        :options="submissionTableOptions"
+        :max-table-height="'50vh'"
+        @selection-change="onSubmissionSelectionChange"
+    />
     <BasicTable
         v-else
         v-model="selectedAssignments"
-        :columns="currentTableColumns"
-        :data="currentTableData"
+        :columns="documentsTableColumns"
+        :data="documentsTable"
         :options="documentTableOptions"
         :max-table-height="400"
     />
@@ -39,8 +50,7 @@ import {emptySelection} from "@/basic/table/emptySelection.js";
  * Renders a selectable table of documents, submissions, or study sessions depending
  * on the assignment type chosen in the template step. Supports both single-select
  * (for single assignment flow) and multi-select (for bulk flow).
- * Document/submission stay on BasicTable (Vuex). Sessions use BackendTable / queryTable
- * so this step never dumps study / study_session / study_step.
+ * Documents stay on BasicTable. Submissions and sessions use BackendTable / queryTable
  * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
@@ -71,11 +81,15 @@ export default {
     return {
       selectedAssignments: this.modalValue ? [...this.modalValue] : [],
       sessionSelection: emptySelection(),
+      submissionSelection: emptySelection(),
     };
   },
   computed: {
     isSessionType() {
       return this.assignmentType === "study_session";
+    },
+    isSubmissionType() {
+      return this.assignmentType === "submission";
     },
     queryScope() {
       if (!this.isSessionType || !this.targetWorkflowId) {
@@ -121,29 +135,6 @@ export default {
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
     },
-    submissions() {
-      return this.$store.getters["table/submission/getAll"];
-    },
-    groupFilterOptions() {
-      const groups = new Set();
-      let hasEmptyGroups = false;
-      (this.submissionsTable || []).forEach((s) => {
-        if (s && s.group !== null && s.group !== undefined && s.group !== "") {
-          groups.add(String(s.group));
-        } else {
-          hasEmptyGroups = true;
-        }
-      });
-      const options = Array.from(groups)
-          .sort((a, b) => {
-            const na = Number(a), nb = Number(b);
-            if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
-            return a.localeCompare(b);
-          })
-          .map((g) => ({key: g, name: g}));
-      if (hasEmptyGroups) options.unshift({key: "", name: this.$t("common.noGroupId")});
-      return options;
-    },
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
         const newD = {...d};
@@ -163,36 +154,47 @@ export default {
         {name: this.$t("common.lastName"), key: "lastName"},
       ];
     },
-    submissionsTable() {
-      return this.submissions.map((s) => {
-        const newS = {...s};
-        newS.name = s.name || this.$t("dashboard.study.submissionWithId", {id: s.id});
-        newS.userName = s.userName || this.$t("dashboard.study.na");
-        newS.firstName = s.firstName || this.$t("common.unknown");
-        newS.lastName = s.lastName || this.$t("common.unknown");
-        newS.group = (s.group !== null && s.group !== undefined && s.group !== "") ? s.group : "";
-        return newS;
-      });
+    submissionTableOptions() {
+      return this.sessionTableOptions;
     },
-    submissionColumns() {
-      return [
-        {name: this.$t("common.id"), key: "id"},
-        {name: this.$t("common.userName"), key: "userName"},
-        {name: this.$t("common.firstName"), key: "firstName"},
-        {name: this.$t("common.lastName"), key: "lastName"},
-        {name: this.$t("common.createdAt"), key: "createdAt"},
-      ];
-    },
-    currentTableData() {
-      if (this.assignmentType === "submission") return this.submissionsTable;
-      return this.documentsTable;
-    },
-    currentTableColumns() {
-      if (this.assignmentType === "submission") return this.submissionColumns;
-      return this.documentsTableColumns;
+    canReadPublicInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPublicInfo");
     },
     canReadPrivateInformation() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
+    },
+    submissionColumns() {
+      const columns = [
+        {name: this.$t("common.id"), key: "id", sortable: true},
+      ];
+      if (this.canReadPublicInformation) {
+        columns.push({name: this.$t("common.userName"), key: "userName"});
+      }
+      if (this.canReadPrivateInformation) {
+        columns.push(
+          {name: this.$t("common.firstName"), key: "firstName"},
+          {name: this.$t("common.lastName"), key: "lastName"},
+        );
+      }
+      columns.push({name: this.$t("common.createdAt"), key: "createdAt", sortable: true});
+      return columns;
+    },
+    submissionFilterSchema() {
+      const schema = {
+        id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
+      };
+      if (this.canReadPublicInformation) {
+        schema.userName = {label: this.$t("common.userName"), type: "text"};
+      }
+      if (this.canReadPrivateInformation) {
+        schema.firstName = {label: this.$t("common.firstName"), type: "text"};
+        schema.lastName = {label: this.$t("common.lastName"), type: "text"};
+      }
+      schema.createdAt = {label: this.$t("common.createdAt"), type: "date"};
+      return schema;
+    },
+    submissionSearchColumns() {
+      return this.submissionColumns.map((column) => column.key).filter((key) => key !== "createdAt");
     },
     sessionTableColumns() {
       const columns = [
@@ -264,12 +266,16 @@ export default {
       if (this.isSessionType) {
         return this.bulk ? this.sessionSelection.count > 0 : this.sessionSelection.count === 1;
       }
+      if (this.isSubmissionType) {
+        return this.bulk ? this.submissionSelection.count > 0 : this.submissionSelection.count === 1;
+      }
       return this.bulk ? this.selectedAssignments.length > 0 : this.selectedAssignments.length === 1;
     },
   },
   watch: {
     selectedAssignments: {
       handler(val) {
+        if (this.isSessionType || this.isSubmissionType) return;
         this.$emit("update:modalValue", val);
         this.$emit("update:selectedAssignmentUserIds", this.selectedAssignmentUserIds);
       },
@@ -285,18 +291,18 @@ export default {
     },
   },
   mounted() {
-    if (!this.isSessionType && this.modalValue && this.modalValue.length > 0) {
+    if (!this.isSessionType && !this.isSubmissionType && this.modalValue && this.modalValue.length > 0) {
       const ids = new Set(this.modalValue.map((item) => item.id));
-      this.selectedAssignments = this.currentTableData.filter((row) => ids.has(row.id));
+      this.selectedAssignments = this.documentsTable.filter((row) => ids.has(row.id));
     }
     this.restoreSessionSelection();
+    this.restoreSubmissionSelection();
     this.$emit("update:isValid", this.isValid);
-    this.$emit("update:selectedAssignmentUserIds", this.selectedAssignmentUserIds);
-  },
-  beforeUnmount() {
-    if (!this.isSessionType) return;
-    const live = this.$refs.sessionTable?.getSelection?.();
-    if (live) this.$emit("update:selection", {...live});
+    // Owner ids feed the reviewer "from previous" filter on the document path only;
+    // sessions and submissions send their selection query instead (fromSessions / fromSubmissions).
+    if (!this.isSessionType && !this.isSubmissionType) {
+      this.$emit("update:selectedAssignmentUserIds", this.selectedAssignmentUserIds);
+    }
   },
   methods: {
     restoreSessionSelection() {
@@ -333,7 +339,53 @@ export default {
       this.sessionSelection = selection ? {...selection} : emptySelection();
       this.$emit("update:selection", this.sessionSelection);
     },
+    slimSubmission(row) {
+      return {
+        id: row.id,
+        userId: row.userId,
+        name: row.name ?? null,
+        userName: row.userName ?? null,
+        firstName: row.firstName ?? null,
+        lastName: row.lastName ?? null,
+        createdAt: row.createdAt ?? null,
+      };
+    },
+    publishSubmissionSelection(selection) {
+      const raw = selection ? {...selection} : emptySelection();
+      const rows = (raw.rows || []).map((row) => this.slimSubmission(row));
+      const slim = {...raw, rows};
+      this.submissionSelection = slim;
+      this.$emit("update:selection", slim);
+      this.$emit("update:modalValue", raw.allMatching ? [] : rows);
+      this.$emit("update:isValid", this.isValid);
+    },
+    restoreSubmissionSelection() {
+      const saved = this.initialSelection;
+      if (!this.isSubmissionType || !saved) return;
+      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
+      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
+      const hasSelection = !!saved.allMatching || hasRows || hasIds;
+      const query = saved.query || {};
+      const hasSearch = !!String(query.search || "").trim()
+        || Object.keys(query.columnFilters || {}).length > 0;
+      if (!hasSelection && !hasSearch) return;
+      this.$nextTick(() => {
+        const table = this.$refs.submissionTable;
+        if (hasSearch) table?.applySearch?.(query);
+        if (hasSelection) table?.applySelection?.(saved);
+        this.publishSubmissionSelection(table?.getSelection?.() || saved);
+      });
+    },
+    onSubmissionSelectionChange() {
+      this.publishSubmissionSelection(this.$refs.submissionTable?.getSelection());
+    },
     getSelection() {
+      if (this.isSubmissionType) {
+        const live = this.$refs.submissionTable?.getSelection();
+        if (!live) return {...this.submissionSelection};
+        const rows = (live.rows || []).map((row) => this.slimSubmission(row));
+        return {...live, rows};
+      }
       const live = this.$refs.sessionTable?.getSelection();
       return live ? {...live} : {...this.sessionSelection};
     },

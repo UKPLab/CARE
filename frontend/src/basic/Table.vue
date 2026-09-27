@@ -583,6 +583,7 @@ export default {
   watch: {
     currentData: {
       handler() {
+        if (this._unmounting) return;
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -590,8 +591,9 @@ export default {
       deep: true,
     },
     modelValue: {
-      handler() {
-        this.currentData = this.updateValues(this.modelValue);
+      handler(value) {
+        if (deepEqual(this.currentData, value)) return;
+        this.currentData = this.updateValues(value);
       },
       deep: true,
     },
@@ -659,6 +661,7 @@ export default {
     }, 150);
   },
   beforeUnmount() {
+    this._unmounting = true;
     this.cleanupFixedColumns();
     this.cleanupAllObserver();
   },

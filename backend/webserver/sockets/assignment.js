@@ -35,11 +35,14 @@ class AssignmentSocket extends Socket {
         const templateStudySteps = await this.models['study_step'].getAllByKey("studyId", data['template'].id);
         const workflowSteps = await this.models['workflow_step'].getSortedWorkflowSteps(data['template'].workflowId);
         const workflowStepById = Object.fromEntries(workflowSteps.map((ws) => [ws.id, ws]));
+        const documentOverrides = data.assignmentType === "submission"
+            ? await this.submissionStepDocuments(data["assignment"]?.id, workflowSteps, options)
+            : (data["documents"] || []);
 
         const stepDocuments = [];
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
-                const stepDocument = data['documents'].find(doc => doc.workflowStepId === step.workflowStepId) || null;
+                const stepDocument = documentOverrides.find(doc => doc.workflowStepId === step.workflowStepId) || null;
                 const hasOverride = stepDocument != null && stepDocument.documentId != null;
                 let stepDocumentId = hasOverride ? stepDocument.documentId : step.documentId;
                 if (!hasOverride) {
@@ -127,6 +130,38 @@ class AssignmentSocket extends Socket {
     }
 
     /**
+     * Document override for one submission assignment.
+     * Puts the viewer's visible PDF of that submission (type 0, not deleted, lowest id)
+     * on the first workflow step. An empty result leaves the template document in place.
+     * @param {number} submissionId
+     * @param {Array<Object>} workflowSteps workflow steps; the override uses the first element
+     * @param {Object} [options]
+     * @param {import("sequelize").Transaction} [options.transaction]
+     * @returns {Promise<Array<{workflowStepId: number, documentId: number}>>} empty when no PDF is found
+     */
+    async submissionStepDocuments(submissionId, workflowSteps, options = {}) {
+        const firstStep = workflowSteps[0];
+        if (!submissionId || !firstStep) {
+            return [];
+        }
+        // Row scope is the document ACL for this viewer, plus the submission PDF filter.
+        const acl = await this.getFiltersAndAttributes(
+            this.userId, {submissionId, type: 0, deleted: false}, {}, "document", this.rolesUpdatedAt
+        );
+        if (!acl.accessAllowed) {
+            return [];
+        }
+        const document = await this.models["document"].findOne({
+            where: acl.filter,
+            attributes: ["id"],
+            order: [["id", "ASC"]],
+            raw: true,
+            transaction: options.transaction,
+        });
+        return document ? [{workflowStepId: firstStep.id, documentId: document.id}] : [];
+    }
+
+    /**
      * Adds new sessions to a study.
      * 
      * If the number of reviewers being added exceeds the current session limit of the study,
@@ -180,8 +215,7 @@ class AssignmentSocket extends Socket {
     }
 
     /**
-     * Resolve query-scoped session / reviewer selections into the row arrays createAssignmentBulk
-     * already walks (id, userId, roles, names). Document/submission keep the client arrays.
+     * Resolve query-scoped session / submission / reviewer selections into the row arrays
      * @param {Object} data
      * @param {Object} [options]
      * @param {import("sequelize").Transaction} [options.transaction] set by assignmentCreateBulk; the preview socket omits it
@@ -216,6 +250,36 @@ class AssignmentSocket extends Socket {
                 firstName: session.firstName || "",
                 lastName: session.lastName || "",
                 completeUserName: session.completeUserName || "",
+            }));
+        }
+
+        if (data.assignmentType === "submission") {
+            // Submissions come only from the BackendTable selection; client rows are not trusted.
+            if (!data.assignmentSelection) {
+                throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
+            }
+            const submissionIds = await this.resolveSelectionIds("submission", data.assignmentSelection, transaction);
+            if (submissionIds.length === 0) {
+                throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
+            }
+            const submissions = await this.models["submission"].findAll({
+                where: {id: {[Op.in]: submissionIds}, deleted: false},
+                attributes: ["id", "userId", "name"],
+                order: [["id", "ASC"]],
+                raw: true,
+                ...(transaction ? {transaction} : {}),
+            });
+            // Owner names for the role-mode CSV, gated like the picker (userPublicInfo / userPrivateInfo)
+            const enriched = await this.enrichQueryTableItems(
+                "submission", submissions, this.userId, this.rolesUpdatedAt, transaction
+            );
+            selectedAssignments = enriched.map((submission) => ({
+                id: submission.id,
+                userId: submission.userId,
+                name: submission.name,
+                userName: submission.userName || "",
+                firstName: submission.firstName || "",
+                lastName: submission.lastName || "",
             }));
         }
 
@@ -293,7 +357,8 @@ class AssignmentSocket extends Socket {
         };
        
         const shuffledAssignments = _.shuffle(data.selectedAssignments.map((assignment, index) => ({
-            ...assignment, document: data.documents[index]
+            // Submissions have no client step list; createAssignment picks their PDF.
+            ...assignment, document: data.documents?.[index] ?? null
         })));
 
         if (data.mode === "role") {

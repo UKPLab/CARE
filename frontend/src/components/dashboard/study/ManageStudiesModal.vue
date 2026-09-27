@@ -200,6 +200,7 @@ export default {
       selectedMode: { mode: null },
       selection: emptySelection(),
       notificationSettings: { notifySessions: false },
+      studyStepLive: false,
       workflowFilter: "all",
       // Workflow ids present in the current mode's studies (DISTINCT on the server).
       workflowIds: [],
@@ -385,13 +386,17 @@ export default {
       this.$emit("hide");
     },
     onStepChange(step) {
-      if (step !== 1) {
+      if (this.studyStepLive) {
         const live = this.$refs.studyTable?.getSelection?.();
         if (live) this.selection = {...live};
-        return;
       }
+      this.studyStepLive = false;
+      if (step !== 1) return;
       this.loadWorkflowOptions();
-      this.$nextTick(() => this.restoreStudySelection());
+      this.$nextTick(() => {
+        this.restoreStudySelection();
+        this.studyStepLive = true;
+      });
     },
     restoreStudySelection() {
       const saved = this.selection;
@@ -408,6 +413,7 @@ export default {
       if (hasSelection) table?.applySelection?.(saved);
     },
     onSelectionChange() {
+      if (!this.studyStepLive) return;
       // Snapshot while the table exists: the stepper unmounts it before the confirm step.
       const selection = this.$refs.studyTable?.getSelection();
       this.selection = selection ? {...selection} : emptySelection();
