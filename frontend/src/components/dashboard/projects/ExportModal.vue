@@ -28,7 +28,7 @@
           {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="['submissions', 'grades', 'documents', 'studies', 'userBehaviour'].includes(dataSelection.exportType)">
+      <div v-else-if="wizardExportTypes.includes(dataSelection.exportType)">
         <StepSelectUsers
           v-if="dataSelection.projectId"
           :project-id="dataSelection.projectId"
@@ -57,7 +57,7 @@
     
     <template #step-3>
       <StepOptions
-        v-if="['submissions', 'grades', 'documents', 'studies', 'userBehaviour'].includes(dataSelection.exportType)"
+        v-if="wizardExportTypes.includes(dataSelection.exportType)"
         v-model:generate-aliases="generateAliases"
         v-model:faker-seed="fakerSeed"
         v-model:grade-format="gradeFormat"
@@ -94,7 +94,7 @@
     </template>
 
     <template 
-      v-if="['submissions', 'grades', 'documents', 'studies', 'userBehaviour'].includes(dataSelection.exportType)"
+      v-if="wizardExportTypes.includes(dataSelection.exportType)"
       #step-4
     >
       <StepConfirmDownload
@@ -124,6 +124,9 @@ import StepOptionsUserBehaviour from "@/components/dashboard/projects/export/Ste
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
 
+// Export types that go through the full wizard (select users, options, confirm download)
+// rather than the plain "select project" flow (reviewerList, all).
+const WIZARD_EXPORT_TYPES = ['submissions', 'grades', 'documents', 'studies', 'userBehaviour'];
 
 /**
  * ProjectModal - modal component for adding and editing projects
@@ -172,6 +175,7 @@ export default {
   },
   data() {
     return {
+      wizardExportTypes: WIZARD_EXPORT_TYPES,
       dataSelection: {
         projectId: null,
         exportType: "reviewerList",
@@ -233,7 +237,7 @@ export default {
       ];
     },
     steps() {
-      if (["submissions", "grades", "documents", "studies", "userBehaviour"].includes(this.dataSelection.exportType)) {
+      if (this.wizardExportTypes.includes(this.dataSelection.exportType)) {
         return [
           { title: this.$t('settings.title') },
           { title: this.$t('dashboard.projects.exportModal.steps.selectStudent') },
