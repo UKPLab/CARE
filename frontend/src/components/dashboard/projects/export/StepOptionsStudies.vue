@@ -62,6 +62,7 @@
 <script>
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import { toggleArrayItem } from "@/assets/utils";
 
 /**
  * StepOptionsStudies
@@ -239,12 +240,7 @@ export default {
           : [];
       },
       toggleWorkflow(id) {
-        const idx = this.optionsData.selectedWorkflowIds.indexOf(id);
-        if (idx >= 0) {
-          this.optionsData.selectedWorkflowIds.splice(idx, 1);
-        } else {
-          this.optionsData.selectedWorkflowIds.push(id);
-        }
+        toggleArrayItem(this.optionsData.selectedWorkflowIds, id);
     }
   }
 }
