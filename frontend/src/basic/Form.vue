@@ -11,6 +11,7 @@
         @update:model-value="currentData = $event"
         @update:config-status="handleConfigStatusChange"
         @file-change="(file) => $emit('file-change', file)"
+        @button-click="$emit('button-click', $event)"
       />
       <div
         v-if="advancedFields.length > 0"
@@ -28,6 +29,7 @@
               @update:model-value="currentData = $event"
               @update:config-status="handleConfigStatusChange"
               @file-change="(file) => $emit('file-change', file)"
+              @button-click="$emit('button-click', $event)"
             />
           </div>
         </Collapsible>
@@ -56,6 +58,7 @@ export default {
   provide() {
     return {
       formData: computed(() => this.currentData),
+      formButtonClick: (payload) => this.$emit("button-click", payload),
     };
   },
   props: {
@@ -68,7 +71,7 @@ export default {
       required: true,
     },
   },
-  emits: ["update:modelValue", "update:configStatus", "file-change"],
+  emits: ["update:modelValue", "update:configStatus", "file-change", "button-click"],
   data() {
     return {
       currentData: null,

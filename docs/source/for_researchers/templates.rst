@@ -1,7 +1,7 @@
-Email and Document Templates
-=============================
+Email, Document, and Prompt Templates
+=====================================
 
-This section describes **email and document content templates** in CARE.  
+This section describes **email, document, and prompt content templates** in CARE.  
 These are different from **study templates** (saved study configurations): content templates define the text of emails (e.g. password reset, session links, study closed) and the initial body of documents created from a template.
 
 You manage content templates from **Dashboard → Templates**.  
@@ -12,6 +12,7 @@ They are used for:
 - Assignment emails (when a reviewer is assigned to a task)
 - Study-closed emails (when a study is closed and participants with open sessions are notified)
 - Pre-filled document content when creating a new document from a template
+- AI prompts
 
 When to Use Which Template Type
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -39,12 +40,19 @@ Placeholders that are replaced: ``~username~`` (the session owner), ``~studyName
 Used when creating a new document and pre-filling its content from a template. No placeholders are replaced; use these for static boilerplate.  
 Type 4 is for general documents; type 5 is for documents used in studies.
 
+.. _prompt-templates-user:
+
+**Prompt (type 8)**
+Used by :doc:`AI hooks <ai_features>` to prepare instructions and study or document context
+for a model. Insert the available placeholders from the **Placeholders** sidebar; CARE
+replaces them when the hook runs.
+
 Flow to Create and Use a Template
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. **Create:** In the Dashboard, open **Templates** and click **Add**. Choose the **type** and enter a name (and description).  
-2. **Edit:** Open the template. Write the body; for email types, use the **Placeholders** sidebar to insert allowed placeholders (e.g. ``~username~``, ``~link~``) where they should be replaced.  
-3. **Assign:** In **Dashboard → Settings**, open the section that contains the **email template** settings. You will see one setting per email use (e.g. password reset, session start, session finish, assignment, study closed). Each is a **dropdown**: choose a template from the list, or leave **None (use default email)** to use the built-in text. For **document templates** (types 4 and 5), you do not assign them in Settings; choose a template when **creating a document** (e.g. Dashboard → Documents → Create).  
+2. **Edit:** Open the template. Write the body; for email and prompt types, use the **Placeholders** sidebar to insert allowed placeholders where they should be replaced.  
+3. **Assign:** Assign email templates in **Dashboard → Settings**. Choose document templates when creating a document. Select prompt templates when creating an AI hook.  
 4. **Publish (optional):** Publishing makes the template visible to other users. Once published, it cannot be unpublished or deleted (see below).
 
 If you leave a template setting at **None (use default email)** or the system cannot load the template, CARE uses a **default (fallback) email** for that feature, so the action (e.g. sending the email) still completes with built-in text. To use your own text, assign a template and ensure the relevant checkbox below is enabled.
@@ -61,32 +69,35 @@ For template-based emails to be sent, the relevant option must be enabled:
 Where Templates Are Used
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-+--------------------------+--------------------+----------------------------------------------+
-| Template type            | Where it is used   | Notes                                        |
-+==========================+====================+==============================================+
-| Email - General (type 1) | Auth/system emails | Password reset, verification, registration;  |
-|                          |                    | configured via ``email.template.*`` settings |
-|                          |                    | in Dashboard → Settings.                     |
-+--------------------------+--------------------+----------------------------------------------+
-| Email - Study Session    | Session start /    | Used when a study session is started or      |
-| (type 2)                 | finish emails      | finished; study must have **Enable Email     |
-|                          |                    | Notifications** turned on.                   |
-+--------------------------+--------------------+----------------------------------------------+
-| Email - Assignment       | Assignment emails  | Used when a reviewer is assigned; checkbox  |
-| (type 3)                 |                    | in Single/Bulk Assignment modal must be      |
-|                          |                    | checked to send emails.                      |
-+--------------------------+--------------------+----------------------------------------------+
-| Document - General       | Document creation  | When creating a document, you can select a   |
-| (type 4)                 |                    | template to pre-fill the content.            |
-+--------------------------+--------------------+----------------------------------------------+
-| Document - Study         | Study-related      | Used for study documents created from a      |
-| (type 5)                 | documents          | template.                                    |
-+--------------------------+--------------------+----------------------------------------------+
-| Email - Study Close      | Study-closed       | Sent when a study is closed to participants  |
-| (type 6)                 | emails             | with open sessions; study must have         |
-|                          |                    | **Enable Study Close Email Notifications**   |
-|                          |                    | turned on.                                   |
-+--------------------------+--------------------+----------------------------------------------+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 25 50
+
+   * - Template type
+     - Where it is used
+     - Notes
+   * - Email - General (type 1)
+     - Auth/system emails
+     - Password reset, verification, and registration; configured through
+       ``email.template.*`` settings.
+   * - Email - Study Session (type 2)
+     - Session start/finish emails
+     - Requires **Enable Email Notifications** on the study.
+   * - Email - Assignment (type 3)
+     - Assignment emails
+     - Requires the notification option in the assignment modal.
+   * - Document - General (type 4)
+     - Document creation
+     - Pre-fills a new document.
+   * - Document - Study (type 5)
+     - Study documents
+     - Pre-fills documents used in studies.
+   * - Email - Study Close (type 6)
+     - Study-closed emails
+     - Requires **Enable Study Close Email Notifications** on the study.
+   * - Prompt (type 8)
+     - AI hooks
+     - Supplies instructions and placeholders to configured models.
 
 Publishing and Deletion
 ~~~~~~~~~~~~~~~~~~~~~~~

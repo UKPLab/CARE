@@ -394,11 +394,15 @@ This component integrates with Vuex-provided NLP skills and ensures placeholders
 .. code-block:: javascript
 
     this.$refs.confirmModal.open(
-        "Delete User",
-        "Are you sure you want to delete this user?",
-        "This action cannot be undone.",
+        this.$t('users.messages.deleteTitle'),
+        this.$t('users.messages.deleteConfirm'),
+        null,
         (res) => console.log("Confirmed:", res)
     );
+
+Footer buttons use ``$t('common.abort')`` and ``$t('common.confirm')``. Pass already-translated
+``title``, ``message``, and ``warning`` into ``open()``. ``warning`` is plain text, not HTML, so
+newlines do not break lines.
 
 **API:** ``open(title, message, warning?, callback)``; emits ``@response`` with ``true/false``.  
 

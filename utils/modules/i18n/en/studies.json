@@ -96,10 +96,12 @@
   "loading": {
     "title": "Loading Study Step",
     "nlpError": "An error occurred while processing NLP results. Please try again or skip NLP support.",
+    "serviceError": "An error occurred while processing service results. Please try again or skip service support.",
     "generalError": "An error occurred while loading the study step. Please try again later.",
     "buttons": {
       "tryAgain": "Try Again",
-      "skip": "Skip NLP Support"
+      "skip": "Skip NLP Support",
+      "skipService": "Skip Service Support"
     },
     "messages": [
       "Thinking through your request...",
@@ -119,6 +121,8 @@
     "errorTitle": "Error Loading Study Step",
     "processingTitle": "Processing NLP Requests",
     "failedTitle": "NLP Requests Failed",
+    "processingServiceTitle": "Processing Service Requests",
+    "failedServiceTitle": "Service Requests Failed",
     "readyTitle": "Study Step Ready"
   },
   "dashboard": {
@@ -231,6 +235,18 @@
     "multipleSubmit": {
       "label": "Allow multiple submissions?",
       "help": "Specify whether participants can submit their study multiple times."
+    },
+    "aiCostLimitTotal": {
+      "label": "AI cost limit - total ($):",
+      "help": "Total AI spend allowed in this study across all participants. Leave empty for no cap."
+    },
+    "aiCostLimitPerSession": {
+      "label": "Per session ($):",
+      "help": "AI spend allowed in a single session. Leave empty for no per-session cap."
+    },
+    "aiCostLimitPerUser": {
+      "label": "Per participant ($):",
+      "help": "AI spend allowed per participant in this study. Leave empty for no per-participant cap."
     },
     "step": {
       "documentId": {

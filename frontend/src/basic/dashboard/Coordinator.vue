@@ -35,34 +35,28 @@
       >
         <slot name="success-footer">
           <slot name="buttons" />
-          <button
+          <BasicButton
             class="btn btn-secondary"
+            :title="$t('common.close')"
             @click="$refs.coordinatorModal.close()"
-          >
-          {{$t('common.close')}}
-          </button>
+          />
         </slot>
       </span>
-      <span
-        v-else
-        class="btn-group"
-      >
+      <span v-else>
         <slot name="footer">
-          <slot name="buttons" />
-          <button
-            class="btn btn-secondary"
-            type="button"
-            @click="$refs.coordinatorModal.close()"
-          >
-            {{ textCancel  || $t('common.cancel')}}
-          </button>
-          <button
-            class="btn btn-primary me-2"
-            type="button"
-            @click="submit"
-          >
-            {{ data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add')) }}
-          </button>
+          <span class="btn-group">
+            <slot name="buttons" />
+            <BasicButton
+              class="btn btn-secondary"
+              :title="textCancel || $t('common.cancel')"
+              @click="$refs.coordinatorModal.close()"
+            />
+            <BasicButton
+              class="btn btn-primary me-2"
+              :title="data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add'))"
+              @click="submit"
+            />
+          </span>
         </slot>
       </span>
     </template>
@@ -72,6 +66,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicButton from "@/basic/Button.vue";
 import { resolveApiMessage, sorter } from "@/assets/utils.js";
 
 /**
@@ -94,7 +89,7 @@ import { resolveApiMessage, sorter } from "@/assets/utils.js";
  */
 export default {
   name: "BasicCoordinator",
-  components: { BasicModal, BasicForm },
+  components: { BasicModal, BasicForm, BasicButton },
   props: {
     title: {
       type: String,

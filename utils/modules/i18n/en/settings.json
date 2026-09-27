@@ -17,5 +17,13 @@
   },
   "rememberToSave": "Remember to click {save} after making changes.",
   "noneUseDefaultEmail": "None (use default email)",
-  "pickColor": "Pick a color"
+  "pickColor": "Pick a color",
+  "triggerQueue": {
+    "group": "Triggers",
+    "queue": "Queue",
+    "pollInterval": {
+      "displayName": "Trigger queue poll interval (minutes)",
+      "description": "How often the trigger queue worker looks for pending jobs, in minutes. New jobs still start immediately when an event fires. Requires a server restart."
+    }
+  }
 }

@@ -1,43 +1,39 @@
 <template>
-  <Card :title="$t('socketProfiler.title')">
-    <template #headerElements>
+  <DashboardListPage
+    :title="$t('socketProfiler.title')"
+    :columns="columns"
+    :data="recordings"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
         <BasicButton
-            class="btn-primary btn-sm"
-            :text="$t('socketProfiler.actions.startRecording')"
-            :title="$t('socketProfiler.actions.startRecording')"
-            icon="record-circle"
-            @click="openStartModal"
+          class="btn-primary btn-sm"
+          :text="$t('socketProfiler.actions.startRecording')"
+          :title="$t('socketProfiler.actions.startRecording')"
+          icon="record-circle"
+          @click="openStartModal"
         />
         <BasicButton
-            class="btn-danger btn-sm"
-            :text="$t('socketProfiler.actions.stopRecording')"
-            :title="$t('socketProfiler.actions.stopRecording')"
-            icon="stop-circle"
-            :disabled="!isRecording"
-            @click="stopActiveRecording"
+          class="btn-danger btn-sm"
+          :text="$t('socketProfiler.actions.stopRecording')"
+          :title="$t('socketProfiler.actions.stopRecording')"
+          icon="stop-circle"
+          :disabled="!isRecording"
+          @click="stopActiveRecording"
         />
         <BasicButton
-            class="btn-outline-info btn-sm"
-            :text="$t('socketProfiler.actions.import')"
-            :title="$t('socketProfiler.actions.importTooltip')"
-            icon="upload"
-            @click="openImportModal"
+          class="btn-secondary btn-sm"
+          :text="$t('socketProfiler.actions.import')"
+          :title="$t('socketProfiler.actions.importTooltip')"
+          icon="upload"
+          @click="openImportModal"
         />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="tableColumns"
-          :key="recordings.length"
-          :data="recordings"
-          :options="tableOptions"
-          :buttons="tableButtons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <StartRecordingModal ref="startRecordingModal" />
   <StartReplayModal ref="startReplayModal" @replay-start="onReplayStart" />
   <RecordingModal ref="recordingModal" />
@@ -46,8 +42,7 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import BasicButton from "@/basic/Button.vue";
 import RecordingModal from "./socketprofiler/RecordingModal.vue";
 import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
@@ -55,6 +50,8 @@ import StartReplayModal from "./socketprofiler/StartReplayModal.vue";
 import ReplayResultsModal from "./socketprofiler/ReplayResultsModal.vue";
 import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils";
 import ImportRecordingModal from "./socketprofiler/ImportRecordingModal.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 
 export default {
   name: "DashboardSocketProfiler",
@@ -64,8 +61,7 @@ export default {
     },
   ],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     RecordingModal,
     StartRecordingModal,
@@ -75,15 +71,7 @@ export default {
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      options: withSearch(),
     };
   },
   computed: {
@@ -92,7 +80,7 @@ export default {
      * re-evaluate when the UI locale changes.
      * @returns {Array<Object>} Column descriptors for BasicTable
      */
-    tableColumns() {
+    columns() {
       return [
         {name: this.$t("socketProfiler.columns.id"), key: "id"},
         {name: this.$t("socketProfiler.columns.name"), key: "name"},
@@ -107,52 +95,24 @@ export default {
      * re-evaluate when the UI locale changes.
      * @returns {Array<Object>} Button descriptors for BasicTable
      */
-    tableButtons() {
+    buttons() {
       return [
-        {
-          icon: "play-circle",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-success": true,
-            },
-          },
+        dashboardRowAction("start", {
           title: this.$t("socketProfiler.actions.replayRecording"),
           action: "replayRecording",
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-info": true,
-            },
-          },
+        }),
+        dashboardRowAction("download", {
           title: this.$t("socketProfiler.actions.exportRecording"),
           action: "exportRecording",
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-primary": true,
-            },
-          },
+        }),
+        dashboardRowAction("edit", {
           title: this.$t("socketProfiler.actions.editRecording"),
           action: "editRecording",
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        }),
+        dashboardRowAction("delete", {
           title: this.$t("socketProfiler.actions.deleteRecording"),
           action: "deleteRecording",
-        },
+        }),
       ];
     },
     /**
@@ -440,9 +400,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>

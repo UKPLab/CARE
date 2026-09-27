@@ -348,6 +348,69 @@ Import this component if you need a modal prompted to the user. You can customiz
       - Boolean
       - False
 
+.. _details:
+
+Details
+-------
+
+Read-only label/value list for review steps and overview modals. Pass a flat
+``items`` array, or ``sections`` with ``{ title, items }``. Extra content
+(tables, JSON) goes in the default slot.
+
+Each item is ``{ key, label, value, type, class, visible }``.
+``type`` is ``text`` (default), ``badge``, ``code``, or ``list``.
+
+.. code-block:: html
+
+    <BasicDetails
+      heading="Review AI Hook"
+      :items="items"
+      note="Please confirm these settings before saving."
+    />
+
+.. code-block:: javascript
+
+    import BasicDetails from '@/basic/Details.vue';
+
+    export default {
+        name: 'DetailsExample',
+        components: {
+            BasicDetails,
+        },
+        data() {
+            return {
+                items: [
+                    { key: "name", label: "Name", value: "Assessment Feedback" },
+                    { key: "status", label: "Status", value: "Enabled", type: "badge", class: "bg-success" },
+                ],
+            };
+        },
+    };
+
+.. list-table:: Details properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+    * - heading
+      - Optional heading above the list
+      - None
+      - String
+    * - items
+      - Flat list of detail rows
+      - ``[]``
+      - Array
+    * - sections
+      - Grouped rows with optional section titles
+      - ``[]``
+      - Array
+    * - note
+      - Optional review hint shown under the list
+      - None
+      - String
+
 .. _table:
 
 Table

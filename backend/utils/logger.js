@@ -62,6 +62,46 @@ class SQLTransport extends Transport {
 
 }
 
+let sequelizeFileLogger;
+
+/**
+ * Writes Sequelize queries to disk, except trigger queue reads.
+ *
+ * @param {string} query Sequelize query text
+ * @returns {void}
+ */
+function logSequelizeToFile(query) {
+    const sql = query.replace(/^Executing \([^)]+\):\s*/i, '').trimStart();
+    if (/^SELECT\b/i.test(sql)
+        && /(?:^|[."\s])trigger_queue(?:["\s.]|$)/i.test(sql)) {
+        return;
+    }
+
+    if (!sequelizeFileLogger) {
+        const transport = new winston.transports.DailyRotateFile({
+            filename: (logging_dir || './logs') + '/sequelize-%DATE%.log',
+            datePattern: 'YYYY-MM-DD',
+            maxSize: '20m',
+            zippedArchive: true
+        });
+        transport.on('error', error => {
+            console.error('Sequelize log transport error:', error);
+        });
+
+        sequelizeFileLogger = winston.createLogger({
+            level: 'info',
+            silent: (process.env.DISABLE_LOGGING === "true" || process.env.DISABLE_LOGGING === 1),
+            format: winston.format.combine(
+                winston.format.timestamp(),
+                winston.format.printf(({timestamp, message}) => `${timestamp} ${message}`)
+            ),
+            transports: [transport]
+        });
+    }
+
+    sequelizeFileLogger.info(query);
+}
+
 /**
  * Custom Winston format to add caller information (file, line, column, function)
  * This helps identify where log messages originated from in the codebase
@@ -185,3 +225,5 @@ exports = module.exports = function (service = "log", db = null) {
     });
 
 }
+
+module.exports.logSequelizeToFile = logSequelizeToFile;

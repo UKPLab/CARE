@@ -36,7 +36,7 @@
     <BasicButton
       class="toolbar-toggle-btn"
       :icon="toolbarVisible ? 'chevron-right' : 'tools'"
-      :title="toolbarVisible ? $t('components.pdftoolbar.minToolbar') : $t('components.pdftoolbar.showToolbar')"
+      :tooltip="toolbarVisible ? $t('components.pdftoolbar.minToolbar') : $t('components.pdftoolbar.showToolbar')"
       @click="toggleToolbar"
     />
   </div>

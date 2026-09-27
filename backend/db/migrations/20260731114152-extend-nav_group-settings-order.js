@@ -2,7 +2,6 @@
 
 /**
  * Force dashboard nav_group order so Settings is last.
- * Older DBs can still have Settings at order 4 (above AI).
  */
 const GROUP_ORDERS = [
   { name: 'Home', order: 1 },
@@ -10,7 +9,8 @@ const GROUP_ORDERS = [
   { name: 'Manage', order: 3 },
   { name: 'Assignment', order: 4 },
   { name: 'AI', order: 5 },
-  { name: 'Settings', order: 6 },
+  { name: 'Triggers', order: 6 },
+  { name: 'Settings', order: 7 },
 ];
 
 /** @type {import('sequelize-cli').Migration} */

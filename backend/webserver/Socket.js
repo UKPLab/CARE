@@ -38,7 +38,7 @@ module.exports = class Socket {
             .filter((model) => model.autoTable)
             .map((model) => model.tableName);
 
-        // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date}
+        // user rights in form: userId: {isAdmin: false, rights: {right1: false, ..}, roles: [role1, ..], lastRolesUpdate: Date, rolesUpdatedAtMs}
         this.userInfo = {};
 
         this.transactionMonitor = new EWMAMonitor(30, this.logger);
@@ -214,7 +214,7 @@ module.exports = class Socket {
      */
     async broadcastTransactionChanges(transaction) {
         try {
-            const defaultExcludes = ["deletedAt", "passwordHash", "salt"];
+            const defaultExcludes = ["deletedAt", "passwordHash", "salt", "apiKey"];
             if (transaction && transaction.changes) {
                 const changesMap = transaction.changes.reduce((acc, entry) => {
                     if (entry.constructor.autoTable) {
@@ -296,18 +296,44 @@ module.exports = class Socket {
 
 
     /**
+     * Resolve the user's rolesUpdatedAt as a millisecond timestamp.
+     * Prefers the DB value so mid-session role changes are visible; falls back to the hint.
+     * Relies on User.cache being cleared when roles change.
+     * @param {number} userId The user id
+     * @param {Date} [rolesUpdatedAt] Date of the last role update of the user
+     * @returns {Promise} Millisecond timestamp of user.rolesUpdatedAt, or null if unavailable
+     */
+    async getRolesUpdatedAtMs(userId, rolesUpdatedAt = null) {
+        try {
+            const user = await this.models["user"].findByPk(userId, {
+                attributes: ["rolesUpdatedAt"],
+                raw: true,
+            });
+            if (user?.rolesUpdatedAt) {
+                return new Date(user.rolesUpdatedAt).getTime();
+            }
+        } catch (_err) {
+            // fall through to hint
+        }
+        if (rolesUpdatedAt) {
+            return new Date(rolesUpdatedAt).getTime();
+        }
+        return null;
+    }
+
+    /**
      * Checks and caches whether the user is an admin.
-     * Note: This method has side effects as it caches the admin status in `this.userInfo[userId].isUserAdmin`.
-     * This can be problematic if the user's admin status changes
-     * during their session, as the cached value won't automatically update.
+     * Reloads roles when DB user.rolesUpdatedAt differs from the cached timestamp so
+     * mid-session role changes are enforced without reconnecting.
      * @param {number} userId The id of the user to check admin privileges for
      * @param {Date} rolesUpdatedAt Date of the last role update of the user
      * @returns {Promise<boolean>} True if the user is an admin.
      */
     async isAdmin(userId = this.userId, rolesUpdatedAt = this.rolesUpdatedAt) {
-        // admin has full rights, so return true directly
-        if (!this.userInfo[userId] || rolesUpdatedAt > this.userInfo[userId].lastRolesUpdate) {
-            await this.updateUserInfo(userId);
+        const rolesUpdatedAtMs = await this.getRolesUpdatedAtMs(userId, rolesUpdatedAt);
+        const cached = this.userInfo[userId];
+        if (!cached || cached.rolesUpdatedAtMs !== rolesUpdatedAtMs) {
+            await this.updateUserInfo(userId, rolesUpdatedAtMs);
         }
         return this.userInfo[userId].isAdmin;
     }
@@ -315,15 +341,17 @@ module.exports = class Socket {
     /**
      * Adds access information about the user userId in this.userInfo.
      * @param {number} userId The id of the user to update access for
-     * @returns {void}
+     * @param {number|null} [rolesUpdatedAtMs] Millisecond timestamp of user.rolesUpdatedAt when known
+     * @returns {Promise<void>}
      */
-    async updateUserInfo(userId) {
+    async updateUserInfo(userId, rolesUpdatedAtMs = null) {
         const userAccess = {};
         const roleIds = await this.models["user_role_matching"].getUserRolesById(userId);
         userAccess.roles = roleIds;
         userAccess.isAdmin = await this.models["user_role_matching"].isAdminInUserRoles(roleIds);
         userAccess.rights = {};
         userAccess.lastRolesUpdate = new Date();
+        userAccess.rolesUpdatedAtMs = rolesUpdatedAtMs;
         this.userInfo[userId] = userAccess;
     }
 
@@ -335,21 +363,18 @@ module.exports = class Socket {
      * @returns {Promise<boolean>} True if the user has the right
      */
     async hasAccess(right, userId = this.userId, rolesUpdatedAt = this.rolesUpdatedAt) {
-        // admin has full rights, so return true directly
-        if (!this.userInfo[userId] || rolesUpdatedAt > this.userInfo[userId].lastRolesUpdate) {
-            await this.updateUserInfo(userId);
+        // isAdmin refreshes the rights cache when rolesUpdatedAt changed
+        if (await this.isAdmin(userId, rolesUpdatedAt)) {
+            return true;
         }
         const userInfo = this.userInfo[userId];
 
-        if (userInfo.isAdmin) {
-            return true;
-        } else if (userInfo.rights[right]) {
+        if (userInfo.rights[right] !== undefined) {
             return userInfo.rights[right];
-        } else {
-            const hasAccess = await this.models["user_role_matching"].hasAccessByUserRoles(userInfo.roles, right);
-            this.userInfo[userId].rights[right] = hasAccess;
-            return hasAccess;
         }
+        const hasAccess = await this.models["user_role_matching"].hasAccessByUserRoles(userInfo.roles, right);
+        this.userInfo[userId].rights[right] = hasAccess;
+        return hasAccess;
     }
 
     /**
@@ -555,28 +580,28 @@ module.exports = class Socket {
         let fullRowAccess = isPublicOrAdmin;
 
         if (!fullRowAccess) {
-            // --- Ownership: user always sees their own rows when table has userId ---
-            if (hasUserIdAttribute) {
-                rowVisibilityConditions.push({userId});
-            }
-
-            // --- Public rows: always visible regardless of ownership or access rights ---
-            if ('public' in model.getAttributes()) {
-                rowVisibilityConditions.push({public: true});
-            }
-
-            // --- User-level row filter ---
+            // --- User-level row filter (authoritative when present, e.g. template type rules) ---
             if (hasModelUserFilter) {
-                const userFilter = await model.getUserFilter(userId);
+                const userFilter = await model.getUserFilter(userId, isAdmin);
                 if (Reflect.ownKeys(userFilter).length > 0) {
                     rowVisibilityConditions.push(userFilter);
                 } else {
                     // getUserFilter returns {} → grants full row access (e.g. for admins)
                     fullRowAccess = true;
                 }
-            } else if (!hasUserIdAttribute && accessRights.length === 0) {
-                this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
-                return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+            } else {
+                // --- Ownership: user always sees their own rows when table has userId ---
+                if (hasUserIdAttribute) {
+                    rowVisibilityConditions.push({userId});
+                }
+
+                // --- Public rows: always visible regardless of ownership or access rights ---
+                if ('public' in model.getAttributes()) {
+                    rowVisibilityConditions.push({public: true});
+                } else if (!hasUserIdAttribute && accessRights.length === 0) {
+                    this.logger.warn("User with id " + userId + " requested table " + tableName + " without access rights");
+                    return {filter: allFilter, attributes: allAttributes, accessAllowed: false};
+                }
             }
 
             // --- Access-map limitations (ORed with user filter conditions) ---
@@ -761,7 +786,7 @@ module.exports = class Socket {
         if (filter.length > 0) {
             allFilter[Op.or] = filter;
         }
-        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt"];
+        const defaultExcludes = ["deleted", "deletedAt", "rolesUpdatedAt", "initialPassword", "passwordHash", "salt","apiKey"];
         let allAttributes = {
             exclude: defaultExcludes,
         };
