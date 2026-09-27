@@ -9,11 +9,11 @@
 
       <div v-if="hasDeclinedSharingSelected" class="alert alert-danger mt-3">
         <i18n-t
-          :keypath="declinedSharingWarningKey"
+          :keypath="exportTypeConfig.warningKey"
           tag="span"
         >
           <template #emphasis>
-            <strong>{{ $t(declinedSharingEmphasisKey) }}</strong>
+            <strong>{{ $t(exportTypeConfig.emphasisKey) }}</strong>
           </template>
         </i18n-t>
       </div>
@@ -85,48 +85,44 @@ export default {
     }
   },
   computed: {
-    // Which consent flag and wording the "declined sharing" warning uses, per export type.
-    // Adding another consent-flavored export type only needs a new entry here.
-    declinedSharingConfig() {
-      const configsByExportType = {
-        userBehaviour: {
-          field: 'acceptStatsSharing',
-          warningKey: 'dashboard.projects.export.declinedStatsSharingWarning',
-          emphasisKey: 'dashboard.projects.export.declinedStatsSharingEmphasis',
-        },
-      };
-      return configsByExportType[this.exportType] || {
-        field: 'acceptDataSharing',
+    // Everything that varies by export type in this component: which consent flag and
+    // wording the "declined sharing" warning uses, and which per-user unit label (or none)
+    // to show in the selection list. Adding another export type only needs a new override
+    // entry (or none, if the default fits).
+    exportTypeConfig() {
+      const defaultConfig = {
+        consentField: 'acceptDataSharing',
         warningKey: 'dashboard.projects.export.declinedSharingWarning',
         emphasisKey: 'dashboard.projects.export.declinedSharingEmphasis',
+        unitKey: 'documents',
       };
+      const overridesByExportType = {
+        submissions: { unitKey: 'submissions' },
+        grades: { unitKey: null },
+        studies: { unitKey: 'studies' },
+        userBehaviour: {
+          consentField: 'acceptStatsSharing',
+          warningKey: 'dashboard.projects.export.declinedStatsSharingWarning',
+          emphasisKey: 'dashboard.projects.export.declinedStatsSharingEmphasis',
+          unitKey: null,
+        },
+      };
+      return { ...defaultConfig, ...(overridesByExportType[this.exportType] || {}) };
     },
     hasDeclinedSharingSelected() {
-      const field = this.declinedSharingConfig.field;
+      const field = this.exportTypeConfig.consentField;
       return this.userSelection.some(row => row[field] === false);
-    },
-    declinedSharingWarningKey() {
-      return this.declinedSharingConfig.warningKey;
-    },
-    declinedSharingEmphasisKey() {
-      return this.declinedSharingConfig.emphasisKey;
     },
     exportTypeLabel() {
       const labels = this.$tm('dashboard.projects.export.typeLabel');
       return labels[this.exportType] || labels.documents;
     },
     userSelectionDisplay() {
-      const unitKeyByExportType = {
-        submissions: 'submissions',
-        studies: 'studies',
-      };
-      const unitKey = unitKeyByExportType[this.exportType] || 'documents';
+      const unitKey = this.exportTypeConfig.unitKey;
       return this.userSelection.map(row => ({
         userId: row.userId,
         name: row.fullName || row.userName,
-        suffix: ['grades', 'userBehaviour'].includes(this.exportType)
-          ? null
-          : this.$t(`dashboard.projects.export.unitCount.${unitKey}`, { count: row.count }),
+        suffix: unitKey ? this.$t(`dashboard.projects.export.unitCount.${unitKey}`, { count: row.count }) : null,
       }));
     },
   }
