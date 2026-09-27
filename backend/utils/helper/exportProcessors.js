@@ -5,6 +5,7 @@ const {
     getConsentedUserIds,
     appendStoredFileIfExists,
     appendZipFileAnonymized,
+    parseIdsArray,
     attachTagNames,
     createJsonArrayStream,
     createCsvRowsStream
@@ -173,13 +174,7 @@ async function processDocumentForExport(server, doc, docFolder, shouldExcludeNon
  * @returns {Promise<void>}
  */
 async function processDocumentBasedExport(server, projectId, userIds, users, documentTypes, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, shouldGenerateAliases, userMapping, baseFolderName, archive) {
-    try {
-        documentTypes = typeof documentTypes === 'string' ? JSON.parse(documentTypes) : documentTypes;
-        if (!Array.isArray(documentTypes)) documentTypes = [0, 1, 2, 4];
-    } catch (e) {
-        server.logger.warn("Could not parse documentTypes:", documentTypes);
-        documentTypes = [0, 1, 2, 4];
-    }
+    documentTypes = parseIdsArray(server, documentTypes, "documentTypes", [0, 1, 2, 4]);
 
     const docs = await server.db.models.document.findAll({
         where: { projectId, userId: userIds, deleted: false, parentDocumentId: null },
