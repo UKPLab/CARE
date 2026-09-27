@@ -30,6 +30,7 @@
 
 <script>
 import BasicForm from "@/basic/Form.vue";
+import { toggleArrayItem } from "@/assets/utils";
 
 /**
  * StepOptionsDocuments
@@ -137,12 +138,7 @@ export default {
         : this.documentTypeOptions.map(opt => opt.value);
     },
     toggleType(value) {
-      const idx = this.optionsData.selectedTypes.indexOf(value);
-      if (idx >= 0) {
-        this.optionsData.selectedTypes.splice(idx, 1);
-      } else {
-        this.optionsData.selectedTypes.push(value);
-      }
+      toggleArrayItem(this.optionsData.selectedTypes, value);
     }
   }
 }
