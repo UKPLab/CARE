@@ -84,14 +84,19 @@ async function replaceAuthorInZip(filePath, realName, fakeName) {
     const [realFirstName, realLastName] = getFirstAndLastNameTokens(realName);
     const [fakeFirstName, fakeLastName] = getFirstAndLastNameTokens(fakeName);
 
+    // Word-boundary match: replaces every whole-word occurrence of the name (not just the first),
+    // without also rewriting it as a substring of an unrelated word (e.g. "Mark" inside "Markov").
+    const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const wholeWordRegex = (name) => new RegExp(`\\b${escapeRegExp(name)}\\b`, 'g');
+
     const authorRegex = /\\author\s*\{[^}]*\}/g;
 
     for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
         if (!zipEntry.dir && relativePath.toLowerCase().endsWith('.tex')) {
             let text = await zipEntry.async("string");
             text = text.replace(authorRegex, `\\author{${fakeName}}`);
-            if (realFirstName && fakeFirstName) text = text.split(realFirstName).join(fakeFirstName);
-            if (realLastName && fakeLastName) text = text.split(realLastName).join(fakeLastName);
+            if (realFirstName && fakeFirstName) text = text.replace(wholeWordRegex(realFirstName), fakeFirstName);
+            if (realLastName && fakeLastName) text = text.replace(wholeWordRegex(realLastName), fakeLastName);
 
             zip.file(relativePath, text);
         }
