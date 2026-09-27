@@ -61,6 +61,10 @@ module.exports = function (server) {
             }
             const { users, workflowIds: parsedWorkflowIds } = context;
 
+            if (exportType === 'userBehaviour' && !(await resolveIsAdmin(server, currentUserId))) {
+                return res.status(403).send("Admin rights required for this export.");
+            }
+
             // build user mapping for aliases
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
 
@@ -149,10 +153,6 @@ module.exports = function (server) {
                     );
                     break;
                 case 'userBehaviour': {
-                    const isAdmin = await resolveIsAdmin(server, currentUserId);
-                    if (!isAdmin) {
-                        return res.status(403).send("Admin rights required for this export.");
-                    }
                     await processUserBehaviourExport(
                         server,
                         users,
