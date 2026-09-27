@@ -8,10 +8,7 @@
       <h6>{{ $t('dashboard.projects.export.confirmSelection') }}</h6>
 
       <div v-if="hasDeclinedSharingSelected" class="alert alert-danger mt-3">
-        <i18n-t
-          :keypath="exportTypeConfig.warningKey"
-          tag="span"
-        >
+        <i18n-t :keypath="exportTypeConfig.warningKey" tag="span"> <!-- i18n-lint-ignore: dynamic keypath resolved via exportTypeConfig(), not a literal key -->
           <template #emphasis>
             <strong>{{ $t(exportTypeConfig.emphasisKey) }}</strong>
           </template>
