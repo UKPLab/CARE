@@ -760,6 +760,10 @@ export default {
       }
       return study.closed !== null ? true : false;
     },
+    /**
+     * Resolve the assessment configuration id linked to a study step configuration.
+     * Prefers settings.configurationId; falls back to a top-level configurationId.
+     */
     getConfigurationIdFromConfig(cfg) {
       if (!cfg) return null;
       return (
@@ -768,6 +772,10 @@ export default {
         null
       );
     },
+    /**
+     * Pick the NLP or AI hook service from a study step configuration.
+     * Prefers a service with skill or hookId; otherwise uses the first entry.
+     */
     getNlpServiceForStudyStep(studyStep) {
       if (!studyStep || !studyStep.configuration) return null;
       const cfg = studyStep.configuration;
