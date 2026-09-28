@@ -23,6 +23,7 @@ const dialoguePlan = require("./dialoguePlan.js");
 const turns = require("./turns.js");
 const {
     buildAnswerMetadata,
+    buildQuestionMetadata,
     getCurrentQuestion,
     requireCurrentQuestion,
     buildAnchorSources,

@@ -27,6 +27,7 @@
             :study-step-id="studyStepId"
             :workflow-steps="workflowSteps"
             :current-stepper-step="currentStepperStep"
+            :service-index="index"
             :step-config="modelValue"
             :selected-skills="selectedSkills"
             :document-id="documentId"

@@ -19,7 +19,7 @@
       >
         <FormRadio
             :model-value="submissionFileSelections[input]?.[0] || null"
-            :options="{ key: `submission_file_${input}`, label: 'Select files to include:', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
+            :options="{ key: `submission_file_${studyStepId || 'standalone'}_${serviceIndex}_${input}`, label: 'Select files to include:', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
             @update:model-value="toggleSubmissionFile(input, $event)"
         />
       </div>
@@ -112,6 +112,10 @@ export default {
       type: Boolean,
       required: false,
       default: true,
+    },
+    serviceIndex: {
+      type: Number,
+      default: 0,
     },
   },
   emits: ["update:modelValue", "validation-change"],
