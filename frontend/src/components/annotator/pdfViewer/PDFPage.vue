@@ -64,7 +64,6 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
-import {joinWrappedLines} from "@/assets/pdfViewer/textLayer.js";
 import Loader from "@/basic/Loading.vue";
 import {toRaw} from 'vue';
 
@@ -311,7 +310,7 @@ export default {
           viewport: displayViewport.clone({ dontFlip: true })
         });
         
-        return renderTask.render().then(() => joinWrappedLines(textContent, renderTask));
+        return renderTask.render();
       }).then(() => {
           this.pdf.renderingDone.set(page.pageNumber, true);
           this.isRendered = true;
