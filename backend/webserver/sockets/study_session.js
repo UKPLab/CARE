@@ -187,13 +187,13 @@ class StudySessionSocket extends Socket {
         if (!session) {
             throw new TranslatableError("errors.studies.studySession.notFound");
         }
+        await this.assertWriteAccess("study_session", data.studySessionId, options);
 
         if (session.end) {
             throw new TranslatableError("errors.studies.studySession.alreadyFinished");
         }
 
         const study = await this.models["study"].getById(session.studyId, {transaction: options.transaction});
-        await this.assertWriteAccess("study_session", data.studySessionId, options);
         if (study && study.closed) {
             throw new TranslatableError("errors.studies.studySession.cannotFinishClosedStudy");
         }
