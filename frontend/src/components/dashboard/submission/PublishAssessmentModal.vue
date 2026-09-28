@@ -900,21 +900,23 @@ export default {
 
       const keys = this.getAssessmentDataKeys(matchingStudyStep);
       const bySession = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId) || [];
-      let items = bySession.filter(
+      const items = bySession.filter(
         (row) =>
           (row?.studyStepId == null || row?.studyStepId === matchingStudyStep.id)
           && keys.includes(row?.key)
       );
-      if (!items.length) {
+      let scores = pickScoresFromGradeRows(items);
+      // Same fallback rule as the grade export: use document-level hook rows when the session rows have no scores.
+      if (!Object.keys(scores).length) {
         const documentId = Number(matchingStudyStep.documentId);
-        items = (this.$store.getters["table/document_data/getAll"] || []).filter(
+        const documentRows = (this.$store.getters["table/document_data/getAll"] || []).filter(
           (row) =>
             row.studySessionId == null
             && Number(row.documentId) === documentId
             && keys.includes(row?.key)
         );
+        scores = pickScoresFromGradeRows(documentRows);
       }
-      const scores = pickScoresFromGradeRows(items);
       const assessment = calculateAssessmentScore(this.selectedConfigurationContent, scores);
 
       return { scores, assessment };
