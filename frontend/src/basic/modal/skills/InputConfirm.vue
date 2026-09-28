@@ -1,24 +1,24 @@
 <template>
   <div class="confirmation-step">
-    <h6 class="fw-bold mb-3">Confirm Your Selections</h6>
+    <h6 class="fw-bold mb-3">{{ $t('nlp.inputConfirm.confirmSelections') }}</h6>
     
     <div class="confirmation-section mb-3">
-      <h6 class="text-primary mb-2">Selected Skill:</h6>
+      <h6 class="text-primary mb-2">{{ $t('nlp.inputConfirm.selectedSkill') }}</h6>
       <p class="mb-1">{{ selectedSkill }}</p>
     </div>
     
     <div class="confirmation-section mb-3">
-      <h6 class="text-primary mb-2">Input Mappings:</h6>
+      <h6 class="text-primary mb-2">{{ $t('nlp.inputConfirm.inputMappings') }}</h6>
       <ul class="list-unstyled mb-1">
         <li v-for="(mapping, param) in inputMappings" :key="param">
-          <strong>{{ param }}:</strong> {{ mapping.name || mapping.tableType || 'Configuration' }}
+          <strong>{{ param }}:</strong> {{ mapping.name || mapping.tableType || $t('nlp.inputConfirm.defaultConfiguration') }}
           <span v-if="mapping.requiresTableSelection"></span>
         </li>
       </ul>
     </div>
     
     <div v-if="hasSelectedFiles" class="confirmation-section mb-3">
-      <h6 class="text-primary mb-2">Selected Files:</h6>
+      <h6 class="text-primary mb-2">{{ $t('nlp.inputConfirm.selectedFiles') }}</h6>
       <ul class="list-unstyled mb-1">
         <li v-for="(files, param) in selectedFiles" :key="param" class="mb-1">
           <strong>{{ param }}:</strong>
@@ -33,7 +33,7 @@
     
     
     <div v-if="showBaseFileSelections && hasBaseFileSelections" class="confirmation-section mb-3">
-      <h6 class="text-primary mb-2">Base File Selections:</h6>
+      <h6 class="text-primary mb-2">{{ $t('nlp.inputConfirm.baseFileSelections') }}</h6>
       <ul class="list-unstyled mb-1">
         <li v-for="selection in formattedBaseFileSelections" :key="selection.configId">
           <strong>{{ selection.displayName }}:</strong> {{ selection.value }}
@@ -94,7 +94,7 @@ export default {
       return Object.entries(this.baseFileSelections).map(([configId, selection]) => ({
         configId,
         displayName: this.validationConfigurationNames[configId],
-        value: selection || 'Unknown'
+        value: selection || this.$t('nlp.inputConfirm.unknownSelection')
       }));
     },
   },
@@ -103,13 +103,13 @@ export default {
 
 <style scoped>
 .confirmation-step {
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   padding: 20px;
   border-radius: 8px;
 }
 
 .confirmation-section {
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   padding-bottom: 10px;
 }
 
@@ -125,7 +125,7 @@ export default {
 .confirmation-section p,
 .confirmation-section ul {
   margin-bottom: 0;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .confirmation-section .list-unstyled li {
@@ -133,6 +133,6 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 </style>

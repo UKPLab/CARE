@@ -10,23 +10,23 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name of the project:",
-                placeholder: "My project",
+                label: "dashboard.projects.fields.name.label",
+                placeholder: "dashboard.projects.fields.name.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "description",
-                label: "Description of the project:",
-                placeholder: "My project description",
+                label: "dashboard.projects.fields.description.label",
+                placeholder: "dashboard.projects.fields.description.placeholder",
                 type: "textarea",
                 required: false,
                 default: "",
             },
             {
                 key: "public",
-                label: "Is the project public?",
+                label: "dashboard.projects.fields.publicSwitch",
                 type: "switch",
                 required: false,
                 default: false
@@ -71,7 +71,10 @@ module.exports = (sequelize, DataTypes) => {
                     // delete associated documents
                     const documents = await sequelize.models.document.getAllByKey("projectId", project.id);
                     for (const document of documents) {
-                        await sequelize.models.document.deleteById(document.id, {transaction: options.transaction});
+                        await sequelize.models.document.deleteById(document.id, {
+                            transaction: options.transaction,
+                            context: { allowSubmissionDocumentDelete: true },
+                        });
                     }
                     // Delete all the studies associated with the documents
                     const studies = await sequelize.models.study.getAllByKey("projectId", project.id);

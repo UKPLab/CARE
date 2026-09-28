@@ -7,14 +7,14 @@
     xl
   >
     <template #title>
-      Review Report
+      {{$t('report.reviewReport')}}
     </template>
     <template #body>
       <p v-if="reportItems.length + noteItems.length === 0">
-        Empty report -- no annotations or comments found.
+        {{$t('report.emptyReport')}}
       </p>
       <div v-else>
-        <h2>General Comments</h2>
+        <h2>{{$t('report.generalComments')}}</h2>
         <ul>
           <li
             v-for="n in noteItems"
@@ -49,20 +49,19 @@
             </li>
           </template>
           <li v-else>
-            No comments.
+            {{$t('report.noComments')}}
           </li>
         </ul>
         <!-- Add page notes -->
       </div>
       <p id="footnote">
-        *Tip: Hover over a reference to see the referenced text or click to view the annotation in the
-        PDF.
+        {{$t('report.tip')}}
       </p>
     </template>
     <template #footer>
       <BasicButton
         class="btn btn-primary"
-        text="Close"
+        :text="$t('common.close')"
         data-bs-dismiss="modal"
       />
     </template>

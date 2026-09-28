@@ -1,0 +1,182 @@
+<template>
+  <div>
+    <Card :title="$t('ai.log.summaryTitle')" class="mb-3">
+      <template #body>
+        <div class="row g-3">
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card">
+              <div class="metric-label">{{ $t("ai.log.totalRequests") }}</div>
+              <div class="metric-value">{{ formatInteger(summary.totalRequests) }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card">
+              <div class="metric-label">{{ $t("ai.log.totalInputTokens") }}</div>
+              <div class="metric-value">{{ formatInteger(summary.totalInputTokens) }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card">
+              <div class="metric-label">{{ $t("ai.log.totalOutputTokens") }}</div>
+              <div class="metric-value">{{ formatInteger(summary.totalOutputTokens) }}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6 col-xl-3">
+            <div class="metric-card">
+              <div class="metric-label">{{ $t("ai.log.totalCosts") }}</div>
+              <div class="metric-value">{{ formatCurrency(summary.totalCosts) }}</div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </Card>
+
+    <Card :title="$t('ai.log.requestsTitle')">
+      <template #body>
+        <BasicTable
+          :columns="columns"
+          :data="rows"
+          :options="tableOptions"
+          :max-table-height="'60vh'"
+        />
+      </template>
+    </Card>
+  </div>
+</template>
+
+<script>
+/**
+ * Summarizes token/cost KPIs alongside sortable audit rows for persisted `ai_log` entries.
+ *
+ * @author Akash Gundapuneni
+ */
+
+import Card from "@/basic/dashboard/card/Card.vue";
+import BasicTable from "@/basic/Table.vue";
+
+export default {
+  name: "DashboardAILog",
+  subscribeTable: ["ai_log", "ai_model"],
+  components: {
+    Card,
+    BasicTable,
+  },
+  data() {
+    return {
+      tableOptions: {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        pagination: 10,
+        search: true,
+      },
+    };
+  },
+  computed: {
+    columns() {
+      return [
+        { name: this.$t("ai.log.time"), key: "createdAt", type: "datetime", sortable: true },
+        { name: this.$t("ai.common.model"), key: "modelName", sortable: true },
+        { name: this.$t("ai.common.status"), key: "statusBadge", type: "badge", sortable: true, sortKey: "status" },
+        { name: this.$t("ai.log.inputTokens"), key: "inputTokens", sortable: true },
+        { name: this.$t("ai.log.outputTokens"), key: "outputTokens", sortable: true },
+        { name: this.$t("ai.log.totalTokens"), key: "totalTokens", sortable: true },
+        { name: this.$t("ai.log.costUsd"), key: "costDisplay", sortable: true, sortKey: "costs" },
+      ];
+    },
+    logs() {
+      return this.$store.getters["table/ai_log/getAll"] || [];
+    },
+    models() {
+      return this.$store.getters["table/ai_model/getAll"] || [];
+    },
+    summary() {
+      return this.logs.reduce(
+        (acc, log) => {
+          acc.totalRequests += 1;
+          acc.totalInputTokens += this.toNumber(log.inputTokens);
+          acc.totalOutputTokens += this.toNumber(log.outputTokens);
+          acc.totalCosts += this.toNumber(log.costs);
+          return acc;
+        },
+        {
+          totalRequests: 0,
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCosts: 0,
+        }
+      );
+    },
+    rows() {
+      const modelsById = this.models.reduce((acc, model) => {
+        acc[model.id] = model.name || model.model || this.$t("ai.common.modelNumber", { id: model.id });
+        return acc;
+      }, {});
+
+      return this.logs
+        .map((log) => ({
+          ...log,
+          modelName: log.aiModelId ? (modelsById[log.aiModelId] || this.$t("ai.common.modelNumber", { id: log.aiModelId })) : "-",
+          inputTokens: this.toNumber(log.inputTokens),
+          outputTokens: this.toNumber(log.outputTokens),
+          totalTokens: this.toNumber(log.totalTokens),
+          costs: this.toNumber(log.costs),
+          costDisplay: this.formatCurrency(log.costs),
+          statusBadge: this.getStatusBadge(log.status),
+        }))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    },
+  },
+  methods: {
+    toNumber(value) {
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : 0;
+    },
+    formatInteger(value) {
+      return this.toNumber(value).toLocaleString();
+    },
+    formatCurrency(value) {
+      return this.toNumber(value).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 6,
+      });
+    },
+    getStatusBadge(status) {
+      const statusText = status ? status.toString() : this.$t("ai.common.unknown");
+      const normalized = statusText.toLowerCase();
+      if (normalized.includes("fail") || normalized.includes("error")) {
+        return { text: this.$t("ai.log.status.failed"), class: "bg-danger" };
+      }
+      return { text: statusText, class: "bg-secondary" };
+    },
+  },
+};
+</script>
+
+<style scoped>
+.metric-card {
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+  background: #fff;
+  min-height: 86px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-bottom: 0.3rem;
+}
+
+.metric-value {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: #212529;
+  line-height: 1.2;
+}
+</style>

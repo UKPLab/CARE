@@ -1,4 +1,5 @@
 const Socket = require("../Socket.js");
+const TranslatableError = require("../../utils/TranslatableError");
 const {
     normalizeMetadataMappings,
     validateMetadataMappings,
@@ -29,11 +30,11 @@ class DocumentMetadataSocket extends Socket {
      * @param {number} assignment.userId - ID of the assignment owner.
      * @param {Object} [options={}] - Optional Sequelize transaction and related DB options.
      * @returns {Promise<void>}
-     * @throws {Error} If the assignment is closed or the caller lacks permission.
+     * @throws {TranslatableError} If the assignment is closed or the caller lacks permission.
      */
     async assertMetadataImportAccess(assignment, options = {}) {
         if (assignment.closed) {
-            throw new Error("Cannot import metadata because the assignment is closed.");
+            throw new TranslatableError("errors.documentMetadata.assignmentClosed");
         }
         if (await this.isAdmin()) return;
 
@@ -41,7 +42,7 @@ class DocumentMetadataSocket extends Socket {
 
         if (await this.hasAccess("frontend.dashboard.assignments.edit")) return;
 
-        throw new Error("You do not have permission to import metadata for this assignment.");
+        throw new TranslatableError("errors.documentMetadata.noPermission");
     }
 
     /**
@@ -112,38 +113,38 @@ class DocumentMetadataSocket extends Socket {
     async buildMetadataImportPlan(data, options = {}) {
         const targetType = data.targetType || "assignment";
         if (targetType !== "assignment") {
-            throw new Error(`Unsupported target type "${targetType}".`);
+            throw new TranslatableError("errors.documentMetadata.unsupportedTargetType", { targetType });
         }
 
         const assignmentId = Number(data.assignmentId || 0);
         if (!assignmentId) {
-            throw new Error("Assignment ID is required.");
+            throw new TranslatableError("errors.documentMetadata.assignmentIdRequired");
         }
 
         const assignment = await this.models["assignment"].getById(assignmentId, {transaction: options.transaction});
         if (!assignment) {
-            throw new Error(`Assignment with id ${assignmentId} not found`);
+            throw new TranslatableError("errors.documentMetadata.assignmentNotFound", { assignmentId });
         }
 
         await this.assertMetadataImportAccess(assignment, options);
 
         const primaryKeyMapping = normalizePrimaryKeyMapping(data.primaryKeyMapping);
         if (!primaryKeyMapping.sourceField) {
-            throw new Error("Primary key source field is required.");
+            throw new TranslatableError("errors.documentMetadata.primaryKeySourceRequired");
         }
         if (!["extId", "email"].includes(primaryKeyMapping.targetField)) {
-            throw new Error("Primary key target field must be either \"extId\" or \"email\".");
+            throw new TranslatableError("errors.documentMetadata.primaryKeyTargetInvalid");
         }
 
         const rows = Array.isArray(data.rows) ? data.rows.filter((row) => row && typeof row === "object") : [];
         if (rows.length === 0) {
-            throw new Error("No metadata rows provided.");
+            throw new TranslatableError("errors.documentMetadata.noRows");
         }
         validatePrimaryKeyValues(rows, primaryKeyMapping);
 
         const mappings = normalizeMetadataMappings(data.mappings);
         if (mappings.length === 0) {
-            throw new Error("At least one metadata mapping is required.");
+            throw new TranslatableError("errors.documentMetadata.mappingRequired");
         }
         validateMetadataMappings(mappings);
 
@@ -262,7 +263,7 @@ class DocumentMetadataSocket extends Socket {
             if (resolvedSubmissions.length === 0) {
                 unmatched.push({
                     primaryKeyValue: primaryKeyValue ?? null,
-                    message: "No submission owner match found in this assignment.",
+                    key: "errors.documentMetadata.noSubmissionOwnerMatch",
                 });
                 continue;
             }
@@ -271,7 +272,7 @@ class DocumentMetadataSocket extends Socket {
             if (ownerUserIdsForRow.size > 1) {
                 unmatched.push({
                     primaryKeyValue: primaryKeyValue ?? null,
-                    message: "Primary key matched submissions owned by different users.",
+                    key: "errors.documentMetadata.multipleOwnersMatch",
                 });
                 continue;
             }
@@ -280,7 +281,7 @@ class DocumentMetadataSocket extends Socket {
             if (effectiveMappings.length === 0) {
                 skipped.push({
                     submissionId: resolvedSubmissions[0]?.id || null,
-                    message: "Row does not contain any mapped source fields.",
+                    key: "errors.documentMetadata.noMappedSourceFields",
                 });
                 continue;
             }
@@ -291,7 +292,7 @@ class DocumentMetadataSocket extends Socket {
                 if (documentsForSubmission.length === 0) {
                     skipped.push({
                         submissionId: submission.id,
-                        message: "Submission has no documents.",
+                        key: "errors.documentMetadata.submissionHasNoDocuments",
                     });
                     continue;
                 }
@@ -326,7 +327,8 @@ class DocumentMetadataSocket extends Socket {
             if (rowOverwrittenEntryCount > 0) {
                 overwritten.push({
                     submissionId: resolvedSubmissions[0].id,
-                    message: `${rowOverwrittenEntryCount} metadata entries were overwritten.`,
+                    key: "errors.documentMetadata.entriesOverwritten",
+                    params: { count: rowOverwrittenEntryCount },
                 });
             }
 

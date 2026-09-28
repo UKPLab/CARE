@@ -1,3 +1,4 @@
+const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {v4: uuidv4} = require("uuid");
 const {inject} = require("../../utils/helper/generic");
@@ -6,6 +7,7 @@ const {Op} = require("sequelize");
 const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
+const ADMIN_ROLE_NAME = "admin";
 
 /**
  * Handle user through websocket
@@ -73,7 +75,7 @@ class UserSocket extends Socket {
      */
     async createUser(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("User rights and argument mismatch");
+            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
         }
         const user = await this.models["user"].add(data, {transaction: options.transaction});
         // TODO: update frontend user data, don't overwrite it was is currently done (see also refreshState in store/utils.js)
@@ -93,7 +95,7 @@ class UserSocket extends Socket {
      */
     async getUserDetails(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("User rights and argument mismatch");
+            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
         }
         return await this.models["user"].getUserDetails(data);
     }
@@ -113,7 +115,7 @@ class UserSocket extends Socket {
      */
     async updateUserDetails(data, options) {
         if (!(await this.isAdmin())) {
-            throw new Error("User rights and argument mismatch");
+            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
         }
         return await this.models["user"].updateUserDetails(data, options);
     }
@@ -128,9 +130,9 @@ class UserSocket extends Socket {
         try {
             const rightToFetch = `backend.socket.user.getUsers.${role}`;
             if (!(await this.hasAccess(rightToFetch))) {
-                const msg = "This user does not have the right to load users by their role.";
-                this.logger.error(msg);
-                throw new Error(msg);
+                const key = "errors.users.noRightToLoadUsersByRole";
+                this.logger.error(key);
+                throw new TranslatableError(key);
             }
             return role === "all" ? await this.models["user"].getAll() : await this.models["user"].getUsersByRole(role);
         } catch (error) {
@@ -209,6 +211,48 @@ class UserSocket extends Socket {
     }
 
     /**
+     * Load roles that the bulk import flow may assign from client-provided mappings.
+     * Admin is intentionally excluded because the import UI also hides it.
+     *
+     * @returns {Promise<Set<string>>}
+     */
+    async getAllowedBulkCreateRoleNames() {
+        const roles = await this.models["user_role"].findAll({
+            where: {
+                deleted: false,
+                name: {[Op.ne]: ADMIN_ROLE_NAME},
+            },
+            attributes: ["name"],
+            raw: true,
+        });
+        return new Set(roles.map((role) => role.name).filter(Boolean));
+    }
+
+    /**
+     * Keep only client role mappings whose target CARE role is allowed for bulk import.
+     *
+     * @param {Object<string, string>} roleMap Raw client-provided external-role to CARE-role map
+     * @param {Set<string>} allowedRoleNames Backend-authoritative assignable role names
+     * @returns {Object<string, string>}
+     */
+    sanitizeBulkCreateRoleMap(roleMap, allowedRoleNames) {
+        if (!roleMap || typeof roleMap !== "object" || Array.isArray(roleMap)) {
+            return {};
+        }
+
+        return Object.fromEntries(
+            Object.entries(roleMap)
+                .map(([externalRole, careRole]) => [
+                    externalRole,
+                    typeof careRole === "string" ? careRole.trim() : "",
+                ])
+                .filter(([externalRole, careRole]) =>
+                    externalRole && careRole && allowedRoleNames.has(careRole)
+                )
+        );
+    }
+
+    /**
      * Creates or updates a list of users in bulk.
      * Each user is processed in an isolated database transaction. Errors for individual users are caught,
      * logged, and added to an error array without halting the entire process. Progress is reported to the client.
@@ -220,7 +264,15 @@ class UserSocket extends Socket {
      * @returns {Promise<{createdUsers: Array, errors: Array}>} An object containing the created users and errors
      */
     async bulkCreateUsers(data) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+
         const users = data["users"];
+        const roleMap = this.sanitizeBulkCreateRoleMap(
+            data["roleMap"],
+            await this.getAllowedBulkCreateRoleNames()
+        );
 
         const createdUsers = [];
         const errors = [];
@@ -233,7 +285,7 @@ class UserSocket extends Socket {
                 if (!user.exists) {
                     createdUser = await this.models["user"].add(user, {
                         transaction, context: {
-                            userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                            userRoles: user.roles, roleMap,
                         },
                     })
 
@@ -244,12 +296,14 @@ class UserSocket extends Socket {
                             firstName: user.firstName, lastName: user.lastName, extId: user.extId, emailVerified: true,
                         }, {
                             transaction, context: {
-                                userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                                userRoles: user.roles, roleMap,
                             }
                         });
                     } else {
                         errors.push({
-                            email: user.email, message: "User with mail " + user.email + " not found",
+                            email: user.email,
+                            message: "errors.users.userWithMailNotFound",
+                            params: {email: user.email},
                         });
                     }
                 }
@@ -265,16 +319,21 @@ class UserSocket extends Socket {
                 try {
                     if (error.name === "SequelizeUniqueConstraintError" && error.errors[0].path === "email") {
                         errors.push({
-                            extId: user.extId, message: "duplicate email",
+                            extId: user.extId,
+                            message: "errors.users.duplicateEmail",
                         });
                     } else {
                         errors.push({
-                            extId: user.extId, message: error.errors[0].message,
+                            extId: user.extId,
+                            message: "errors.users.bulkCreateValidationFailed",
+                            params: {message: error.errors[0].message},
                         });
                     }
                 } catch (e) {
                     errors.push({
-                        extId: user.extId, message: e.message,
+                        extId: user.extId,
+                        message: "errors.users.bulkCreateValidationFailed",
+                        params: {message: e.message},
                     });
                 }
                 this.logger.error("Failed to bulk create user: " + user.email);
@@ -322,7 +381,7 @@ class UserSocket extends Socket {
     async updateUserConsent(data, options) {
         const user = await this.models['user'].getById(this.userId);
         if (!user) {
-            throw new Error("Failed to update user: User not found");
+            throw new TranslatableError("errors.users.failedToUpdateUser");
         }
 
         return _.omit(await this.models["user"].updateById(user.id,
@@ -353,7 +412,7 @@ class UserSocket extends Socket {
         const {userId, password, oldPassword} = data;
         if (!(await this.isAdmin()) || this.userId === userId) {
             if (userId !== this.userId) {
-                throw new Error("User rights and argument mismatch");
+                throw new TranslatableError("errors.users.userRightsArgumentMismatch");
             }
             const user = await this.models["user"].findOne({where:{
                 id: userId
@@ -361,7 +420,7 @@ class UserSocket extends Socket {
             const hashedOldPassword = await genPwdHash(oldPassword, user.salt);
             const iscorrectPassword = user.passwordHash === hashedOldPassword;
             if(!iscorrectPassword){
-                throw new Error("You entered an incorrect Password")
+                throw new TranslatableError("errors.users.incorrectPassword")
             }
         } 
         await this.models["user"].resetUserPwd(userId, password);
@@ -407,7 +466,7 @@ class UserSocket extends Socket {
 
     async getRoleRights(data, options) {
         if(!(await this.isAdmin())){
-            throw new Error("no permission to get role rights");
+            throw new TranslatableError("errors.users.noPermissionGetRoleRights");
         }
         const rights = await this.models["role_right_matching"].findAll({
                             where: {userRoleId: data.roleId, deleted: false},
@@ -418,7 +477,7 @@ class UserSocket extends Socket {
     }
     async getAllRights(data, options) {
         if(!(await this.isAdmin())){
-            throw new Error("no permission to get all rights");
+            throw new TranslatableError("errors.users.noPermissionGetAllRights");
         }
         const rights = await this.models["user_right"].findAll({
                             where: {deleted: false},
@@ -429,7 +488,7 @@ class UserSocket extends Socket {
     }
     async assignRoleRights(data, options) {
         if(!(await this.isAdmin())){
-            throw new Error("no permission to assign role rights");
+            throw new TranslatableError("errors.users.noPermissionAssignRoleRights");
         }
         const roleId = data.roleId;
         const newRights = data.newRights || []; // array of right names to add
@@ -485,7 +544,7 @@ class UserSocket extends Socket {
      * @param {Object} options Additional configuration parameters.
      */
     async subscribeToUserMonitor(data, options) {
-        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        if (!(await this.isAdmin())) throw new TranslatableError("errors.users.adminAccessRequired");
         this.socket.join(MONITOR_USERS_ROOM);
         return await this.buildStats();
     }
@@ -497,7 +556,7 @@ class UserSocket extends Socket {
      * @socketEvent userMonitorUnsubscribe
      */
     async unsubscribeFromUserMonitor(data, options) {
-        if (!(await this.isAdmin())) throw new Error("Admin access required");
+        if (!(await this.isAdmin())) throw new TranslatableError("errors.users.adminAccessRequired");
         this.socket.leave(MONITOR_USERS_ROOM);
     }
 

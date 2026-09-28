@@ -1,37 +1,35 @@
 <template>
-  <Card title="Workflows">
-    <template #headerElements>
+  <DashboardListPage
+    :title="$t('workflow.dashboard.title')"
+    :columns="columns"
+    :data="workflows"
+    :buttons="buttons"
+    :table-options="options"
+    @action="chooseAction"
+  >
+    <template #headerActions>
       <BasicButton
-        class="btn btn-primary btn-sm"
-        title="Add Workflow"
-        text="Add Workflow"
+        class="btn-primary btn-sm"
+        :title="$t('workflow.dashboard.addWorkflow')"
+        :text="$t('workflow.dashboard.addWorkflow')"
         @click="$refs.workflowCreateModal.open()"
       />
       <BasicButton
-        class="btn btn-secondary btn-sm ms-2"
-        title="Export Workflows"
-        text="Export All"
+        class="btn-secondary btn-sm ms-2"
+        :title="$t('workflow.dashboard.exportWorkflows')"
+        :text="$t('workflow.dashboard.exportAll')"
         icon="download"
         @click="exportWorkflows"
       />
       <BasicButton
-        class="btn btn-secondary btn-sm ms-2"
-        title="import Workflows"
-        text="Import"
+        class="btn-secondary btn-sm ms-2"
+        :title="$t('workflow.dashboard.importWorkflows')"
+        :text="$t('common.import')"
         icon="upload"
         @click="importWorkflows"
       />
     </template>
-    <template #body>
-        <BasicTable
-          :columns="columns"
-          :data="workflows"
-          :options="options"
-          :buttons="buttons"
-          @action="chooseAction"
-        />      
-    </template>
-  </Card>
+  </DashboardListPage>
 
   <!-- Modals -->
   <WorkflowCreateModal
@@ -47,17 +45,16 @@
   />
   <ExportFormatModal
     ref="exportFormatModal"
+    :title="$t('workflow.exportFormatModal.title')"
   />
   <ImportFormatModal
     ref="importFormatModal"
-    title="Import Workflows"
+    :title="$t('workflow.importFormatModal.title')"
   />
   <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 
@@ -67,6 +64,10 @@ import WorkflowRenameModal from "./workflows/WorkflowRenameModal.vue";
 import WorkflowEditModal from "./workflows/WorkflowEditModal.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
+import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Workflows dashboard component
@@ -79,8 +80,7 @@ export default {
   name: "DashboardWorkflows",
   subscribeTable: ["workflow", "workflow_step"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ConfirmModal,
     WorkflowRenameModal,
@@ -93,38 +93,36 @@ export default {
     return {
       selectedWorkflowId: "",
       copiedData: null,
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
+      options: withSearch({
         sort: {
           column: "name",
           order: "ASC",
         },
-      },
-      columns: [
-        { name: "ID", key: "id", sortable: true },
-        { name: "Name", key: "name", sortable: true },
-        {
-          name: "Type",
-          key: "workflowType",
-          type: "badge",
-          typeOptions: {
-            keyMapping: { system: "System", user: "User" },
-            classMapping: { system: "bg-info", user: "bg-secondary" },
-          },
-        },
-        { name: "Hidden", key: "hidden", type: "badge" },
-        { name: "Created", key: "createdAt", sortable: true },
-        { name: "Last Update", key: "updatedAt", sortable: true},
-      ],
+      }),
     };
   },
   computed: {
+    columns() {
+      return [
+        { name: this.$t("common.id"), key: "id", sortable: true },
+        { name: this.$t("common.name"), key: "name", sortable: true },
+        {
+          name: this.$t("common.type"),
+          key: "workflowType",
+          type: "badge",
+          typeOptions: {
+            keyMapping: {
+              system: this.$t("workflow.dashboard.types.system"),
+              user: this.$t("workflow.dashboard.types.user"),
+            },
+            classMapping: { system: "bg-info", user: "bg-secondary" },
+          },
+        },
+        { name: this.$t("workflow.dashboard.columns.hidden"), key: "hidden", type: "badge" },
+        { name: this.$t("common.createdAt"), key: "createdAt", sortable: true },
+        { name: this.$t("common.updatedAt"), key: "updatedAt", sortable: true},
+      ];
+    },
     workflows() {
         return this.$store.getters["table/workflow/getFiltered"](
           (workflow) => workflow.userId === null || workflow.userId === this.userId
@@ -133,7 +131,7 @@ export default {
           workflowType: workflow.userId === null ? "system" : "user",
           isEditable: this.isAdmin || workflow.userId === this.userId,
           hidden: {
-            text: workflow.hideInFrontend ? "Yes" : "No",
+            text: workflow.hideInFrontend ? this.$t("common.yes") : this.$t("common.no"),
             class: workflow.hideInFrontend ? "bg-warning" : "bg-success",
           }
         }));
@@ -146,90 +144,60 @@ export default {
     },
     buttons() {
       return [
-        {
-          title: "copy Workflow",
+        dashboardRowAction("copy", {
+          title: this.$t("workflow.dashboard.actions.copyWorkflow"),
           action: "copyWorkflow",
           stats: { workflowId: "id" },
-          icon: "files",
           filter: [
             {key: "isEditable", value: true},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
-          title: "Edit Workflow",
+        }),
+        dashboardRowAction("open", {
+          title: this.$t("workflow.dashboard.actions.editWorkflow"),
           action: "editWorkflow",
           stats: { workflowId: "id" },
-          icon: "diagram-3",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-        },
-        {
-          title: "Rename Workflow",
+        }),
+        dashboardRowAction("edit", {
+          title: this.$t("workflow.dashboard.actions.renameWorkflow"),
           action: "renameWorkflow",
           stats: { workflowId: "id" },
-          icon: "fonts",
           filter: [
             {key: "isEditable", value: true},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-info": true,
-            },
-          },
-        },
-        {
-          title: "Export Workflow",
+        }),
+        dashboardRowAction("download", {
+          title: this.$t("workflow.dashboard.actions.exportWorkflow"),
           action: "exportWorkflow",
           stats: { workflowId: "id" },
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-primary": true,
-            },
-          },
-        },
-        {
-          title: "Toggle Hidden",
+        }),
+        dashboardRowAction("hide", {
+          title: this.$t("workflow.dashboard.actions.toggleHidden"),
           action: "toggleHidden",
           stats: { workflowId: "id" },
-          icon: "eye-slash",
           filter: [
             {key: "isEditable", value: true},
+            {key: "hideInFrontend", value: false},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-warning": true,
-            },
-          },
-        },
-        {
-          title: "Delete Workflow",
+          filterMode: "and",
+        }),
+        dashboardRowAction("show", {
+          title: this.$t("workflow.dashboard.actions.toggleHidden"),
+          action: "toggleHidden",
+          stats: { workflowId: "id" },
+          filter: [
+            {key: "isEditable", value: true},
+            {key: "hideInFrontend", value: true},
+          ],
+          filterMode: "and",
+        }),
+        dashboardRowAction("delete", {
+          title: this.$t("workflow.dashboard.actions.deleteWorkflow"),
           action: "deleteWorkflow",
           stats: { workflowId: "id" },
-          icon: "trash",
           filter: [
             {key: "isEditable", value: true},
           ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-danger": true,
-            },
-          },
-        },
+        }),
       ];
     },
   },
@@ -291,14 +259,16 @@ export default {
         (result) => {
           if (result.success) {
             this.eventBus.emit("toast", {
-              title: "Workflow Updated",
-              message: `Workflow is now ${newHiddenState ? 'hidden' : 'visible'} in frontend`,
+              title: this.$t("workflow.dashboard.toasts.workflowUpdated.title"),
+              message: this.$t("workflow.dashboard.toasts.workflowUpdated.message", {
+                state: newHiddenState ? this.$t("workflow.dashboard.visibility.hidden") : this.$t("workflow.dashboard.visibility.visible"),
+              }),
               variant: "success",
             });
           } else {
             this.eventBus.emit("toast", {
-              title: "Update Failed",
-              message: result.message,
+              title: this.$t("workflow.dashboard.toasts.updateFailed"),
+              message: resolveApiMessage(result),
               variant: "danger",
             });
           }
@@ -309,38 +279,26 @@ export default {
     deleteWorkflow(params) {
       const workflow = this.workflows.find(w => w.id === params.id);
       
-      this.$refs.confirmModal.open(
-        "Delete Workflow",
-        `Are you sure you want to delete the workflow "${workflow.name}"?`,
-        "This action cannot be undone.",
-        (confirmed) => {
-          if (confirmed) {
-            this.$socket.emit(
-              "appDataUpdate",
-              {
-                table: "workflow",
-                data: {
-                  id: params.id,
-                  deleted: true,
-                },
-              },
-              (result) => {
-                if (result.success) {
-                  this.eventBus.emit("toast", {
-                    title: "Workflow Deleted",
-                    message: "Workflow has been deleted",
-                    variant: "success",
-                  });
-                } else {
-                  this.eventBus.emit("toast", {
-                    title: "Delete Failed",
-                    message: result.message,
-                    variant: "danger",
-                  });
-                }
-              }
-            );
-          }
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.confirmModal,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "workflow",
+          id: params.id,
+          title: this.$t("workflow.dashboard.confirmDelete.title"),
+          message: this.$t("workflow.dashboard.confirmDelete.message", { name: workflow.name }),
+          warning: this.$t("workflow.dashboard.confirmDelete.warning"),
+          failTitle: this.$t("workflow.dashboard.toasts.deleteFailed"),
+          onSuccess: () => {
+            this.eventBus.emit("toast", {
+              title: this.$t("workflow.dashboard.toasts.workflowDeleted.title"),
+              message: this.$t("workflow.dashboard.toasts.workflowDeleted.message"),
+              variant: "success",
+            });
+          },
         }
       );
     },
@@ -355,9 +313,9 @@ export default {
 
 .graph-container {
   height: 500px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 0.375rem;
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
 }
 
 .workflow-network-graph {
@@ -372,9 +330,5 @@ export default {
 .graph-controls {
   display: flex;
   align-items: center;
-}
-
-.card .card-body {
-  padding: 1rem;
 }
 </style>

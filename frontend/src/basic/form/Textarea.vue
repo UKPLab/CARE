@@ -7,8 +7,9 @@
           :required="options.required"
           :class="options.class"
           class="form-control"
-          :placeholder="options.placeholder"
+          :placeholder="translatedPlaceholder"
           :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
+          :rows="options.rows"
           @blur="blur(currentData)"
       />
     </template>
@@ -17,6 +18,7 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue"
+import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "FormTextarea",
@@ -37,6 +39,11 @@ export default {
     return {
       currentData: "",
     }
+  },
+  computed: {
+    translatedPlaceholder() {
+      return translateMaybeKey(this.options.placeholder);
+    },
   },
   watch: {
     currentData() {

@@ -4,10 +4,28 @@
  * Resolves template placeholders with context data and handles privacy/anonymity.
  * Converts Quill Delta format templates to resolved HTML or Delta format.
  * 
- * @author Mohammad Elwan
+ * @author Mohammad Elwan, Mohammed Rawhani
  */
 const Delta = require("quill-delta");
 const {deltaToPlainText} = require("editor-delta-conversion");
+const {
+    applyPlaceholderReplacements,
+    applyTextRangeLimit,
+    countPlaceholdersByKey,
+    formatDuplicatePlaceholderToken,
+    getDuplicatePlaceholderIndexes,
+    getTokensWithDuplicateOptions,
+    getUsedIndexes,
+    hasPlaceholderForKey,
+    supportsRangeLimit,
+    tokenInnerText,
+} = require("placeholder-tokens");
+const {
+    addIndexedSubmissionFileReplacements,
+    buildPromptPlaceholderValues,
+    resolveEditorText,
+} = require("./templatePromptValues");
+const TranslatableError = require("../TranslatableError");
 
 /**
  * Extract plain text from Quill Delta operations
@@ -16,9 +34,7 @@ const {deltaToPlainText} = require("editor-delta-conversion");
  * @returns {string} Plain text extracted from Delta
  */
 function extractTextFromDelta(delta) {
-    if (!delta || !delta.ops) {
-        return "";
-    }
+    if (!delta || !delta.ops) return "";
     
     return delta.ops
         .filter(op => op.insert && typeof op.insert === 'string')
@@ -33,10 +49,68 @@ function extractTextFromDelta(delta) {
  * @returns {Object} Quill Delta object
  */
 function textToDelta(text) {
-    if (!text) {
-        return new Delta();
-    }
+    if (!text) return new Delta();
     return new Delta().insert(text);
+}
+
+/**
+ * Resolve a placeholder token and apply per-instance range options where supported.
+ *
+ * @param {string} baseKey - Placeholder key
+ * @param {number|null} index - Placeholder index
+ * @param {Object} tokenOptions - Parsed token options
+ * @param {Object} replacements - Replacement map
+ * @returns {*|undefined} String from `applyTextRangeLimit` when `supportsRangeLimit(baseKey)`; otherwise the map value
+ */
+function resolveTokenWithOptions(baseKey, index, tokenOptions, replacements) {
+    const value = resolveReplacementForToken(baseKey, index, replacements);
+    if (value === undefined) {
+        return undefined;
+    }
+    if (supportsRangeLimit(baseKey)) {
+        return applyTextRangeLimit(value, tokenOptions);
+    }
+    return value;
+}
+
+/**
+ * Convert a placeholder value to a string for template replacement.
+ * Objects/arrays are serialized to JSON text.
+ *
+ * @param {*} value - Value to convert
+ * @returns {string} String form of value, or empty string when nullish or not serializable
+ */
+function normalizeReplacementValue(value) {
+    if (value === undefined || value === null) return "";
+    if (typeof value === "string") return value;
+    if (typeof value === "number" || typeof value === "boolean") return String(value);
+    try {
+        return JSON.stringify(value);
+    } catch (_error) {
+        return "";
+    }
+}
+
+/**
+ * Resolve placeholder value from a replacement map.
+ *
+ * @param {string} baseKey - Placeholder key
+ * @param {number} index - Placeholder index, or null for unbracketed ~key~
+ * @param {Object} replacements - Map of `~token~` to resolved value
+ * @returns {*|undefined} Map value, or undefined when the token is not in the map
+ */
+function resolveReplacementForToken(baseKey, index, replacements) {
+    if (index != null) {
+        const bracketToken = `~${baseKey}[${index}]~`;
+        if (Object.prototype.hasOwnProperty.call(replacements, bracketToken)) {
+            return replacements[bracketToken];
+        }
+    }
+    const legacyToken = `~${baseKey}~`;
+    if (Object.prototype.hasOwnProperty.call(replacements, legacyToken)) {
+        return replacements[legacyToken];
+    }
+    return undefined;
 }
 
 /**
@@ -131,6 +205,27 @@ async function buildReplacementMap(context, models, options = {}) {
         replacements["~timestamp~"] = context.timestamp;
     }
 
+    const promptKeys = [
+        "pdfText",
+        "editorText",
+        "assessmentResult",
+        "inlineComments",
+        "nlpAssessmentSuggestion",
+        "previousAssessmentResult",
+        "assessmentConfiguration",
+        "submissionFiles",
+        "studyContext",
+    ];
+    const shouldResolvePromptPlaceholders = promptKeys.some((key) => allow(key));
+    if (shouldResolvePromptPlaceholders) {
+        const promptReplacements = await buildPromptPlaceholderValues(context, models, allow, options);
+        Object.assign(replacements, promptReplacements);
+    }
+
+    for (const key of Object.keys(replacements)) {
+        replacements[key] = normalizeReplacementValue(replacements[key]);
+    }
+
     return replacements;
 }
 
@@ -143,9 +238,7 @@ async function buildReplacementMap(context, models, options = {}) {
  * @returns {Promise<boolean>} True if study anonymizes data
  */
 async function shouldAnonymize(studyId, models, options = {}) {
-    if (!studyId) {
-        return false;
-    }
+    if (!studyId) return false;
     
     const study = await models["study"].getById(studyId, options);
     return study ? (study.anonymize === true) : false;
@@ -163,9 +256,7 @@ async function shouldAnonymize(studyId, models, options = {}) {
  */
 async function getTemplateContentForLanguage(templateId, language, models, options = {}) {
     const templateContentModel = models["template_content"];
-    if (!templateContentModel) {
-        return null;
-    }
+    if (!templateContentModel) return null;
     const row = await templateContentModel.findOne({
         where: { templateId, language, deleted: false },
         raw: true,
@@ -194,16 +285,16 @@ async function getTemplateContentForLanguage(templateId, language, models, optio
  */
 async function resolveTemplate(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("Template ID is required");
+        throw new TranslatableError("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("Models object is required");
+        throw new TranslatableError("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Template with ID ${templateId} not found`);
+        throw new TranslatableError( "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {
@@ -221,12 +312,12 @@ async function resolveTemplate(templateId, context, models, options = {}) {
     const replacements = await buildReplacementMap(context, models, options);
     
     const text = deltaToPlainText(content);
-    let resolvedText = text;
-    for (const [placeholder, value] of Object.entries(replacements)) {
-        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedPlaceholder, 'g');
-        resolvedText = resolvedText.replace(regex, value || "");
+    if (template.type === 8) {
+        await addIndexedSubmissionFileReplacements(text, replacements, context, models, options);
     }
+    let resolvedText = applyPlaceholderReplacements(text, (baseKey, index, tokenOptions) => {
+        return resolveTokenWithOptions(baseKey, index, tokenOptions, replacements);
+    });
     
     // Make URLs clickable: split by URL pattern, escape non-URL parts, wrap URLs in <a>
     const urlPattern = /(https?:\/\/\S+)/g;
@@ -263,16 +354,16 @@ async function resolveTemplate(templateId, context, models, options = {}) {
  */
 async function resolveTemplateToDelta(templateId, context, models, options = {}) {
     if (!templateId) {
-        throw new Error("Template ID is required");
+        throw new TranslatableError("errors.templates.templateIdRequired");
     }
     
     if (!models) {
-        throw new Error("Models object is required");
+        throw new TranslatableError("errors.templates.modelsObjectRequired");
     }
     
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Template with ID ${templateId} not found`);
+        throw new TranslatableError( "errors.templates.withUpperIdNotFound", {templateId});
     }
     
     if (context.studyId && context.anonymize === undefined) {
@@ -294,25 +385,18 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
         originalDelta = new Delta(content.ops);
     }
     
-    let text = extractTextFromDelta(originalDelta);
-    let resolvedText = text;
-    
-    for (const [placeholder, value] of Object.entries(replacements)) {
-        const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(escapedPlaceholder, 'g');
-        resolvedText = resolvedText.replace(regex, value || "");
+    const text = extractTextFromDelta(originalDelta);
+    if (template.type === 8) {
+        await addIndexedSubmissionFileReplacements(text, replacements, context, models, options);
     }
+    const resolveToken = (baseKey, index, tokenOptions) =>
+        resolveTokenWithOptions(baseKey, index, tokenOptions, replacements);
     
     const resolvedDelta = new Delta();
     
     for (const op of originalDelta.ops) {
         if (op.insert && typeof op.insert === 'string') {
-            let insertText = op.insert;
-            for (const [placeholder, value] of Object.entries(replacements)) {
-                const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                const regex = new RegExp(escapedPlaceholder, 'g');
-                insertText = insertText.replace(regex, value || "");
-            }
+            let insertText = applyPlaceholderReplacements(op.insert, resolveToken);
             
             if (op.attributes) {
                 resolvedDelta.insert(insertText, op.attributes);
@@ -337,7 +421,7 @@ async function resolveTemplateToDelta(templateId, context, models, options = {})
  * Return placeholder keys that are required for the given template type but missing in content.
  *
  * @param {Object} content - Quill Delta object with ops array
- * @param {number} templateType - Template type (e.g. 1, 2, 3, 6, 7)
+ * @param {number} templateType - Template type (e.g. 1, 2, 3, 6, 7, 8)
  * @param {Object} models - Database models
  * @param {Object} [options]
  * @returns {Promise<string[]>} Array of missing required placeholder keys (e.g. ['link'])
@@ -348,20 +432,178 @@ async function getMissingRequiredPlaceholders(content, templateType, models, opt
     if (requiredKeys.length === 0) return [];
 
     const text = deltaToPlainText(content && content.ops ? { ops: content.ops } : content);
+    const bracketOnly = templateType === 8;
     const missing = [];
     for (const key of requiredKeys) {
-        const token = `~${key}~`;
-        if (!text.includes(token)) missing.push(key);
+        if (!hasPlaceholderForKey(text, key, { bracketOnly })) {
+            missing.push(key);
+        }
     }
     return missing;
 }
 
+/**
+ * Return duplicate placeholder token strings for allowed keys in template content.
+ *
+ * @param {Object} content - Quill Delta object with ops array
+ * @param {number} templateType - Template type
+ * @param {Object} models - Database models
+ * @param {Object} [options]
+ * @returns {Promise<Array>} Duplicate placeholder token strings
+ */
+async function getDuplicatePlaceholderIds(content, templateType, models, options = {}) {
+    const rows = await models["placeholder"].getAllByKey("type", templateType, options);
+    const allowedKeys = new Set(rows.map((row) => row.placeholderKey));
+    const contentDelta = content && content.ops ? { ops: content.ops } : content;
+    const text = deltaToPlainText(contentDelta);
+    const duplicates = getDuplicatePlaceholderIndexes(text)
+        .filter((entry) => allowedKeys.has(entry.key))
+        .map((entry) => formatDuplicatePlaceholderToken(entry));
+    return duplicates;
+}
+
+/**
+ * Return placeholder tokens whose `{...}` repeats an option name.
+ *
+ * @param {Object} content - Quill Delta object with ops array
+ * @returns {string[]} Token strings with duplicate option names
+ */
+function getDuplicatePlaceholderOptionTokens(content) {
+    const contentDelta = content && content.ops ? { ops: content.ops } : content;
+    const text = deltaToPlainText(contentDelta);
+    return getTokensWithDuplicateOptions(text);
+}
+
+/**
+ * Resolve a prompt template by substituting caller-supplied placeholder values (push model).
+ *
+ * Unlike {@link resolveTemplate}, this does NOT query the database for placeholder data — the
+ * caller provides a `{ placeholderKey: value }` map (e.g. assembled in the frontend and the runhook function from the
+ * input mapping). For `pdfText`, `submissionFiles`, and `editorText`, values pass through `applyTextRangeLimit`.
+ * Other keys use `JSON.stringify` when the value is not already a string. Used by the AI-hook runtime.
+ *
+ * @param {number} templateId - Prompt template id.
+ * @param {Object} values - Map of placeholderKey → value (optional `language`).
+ * @param {Object} models - Database models object.
+ * @param {Object} [options] - Sequelize options (e.g. transaction).
+ * @returns {Promise<string>} Resolved prompt as plain text.
+ * @throws {Error} If the template is missing.
+ */
+async function resolveTemplateWithValues(templateId, values, models, options = {}) {
+    if (!templateId) {
+        throw new Error("Template ID is required");
+    }
+    if (!models) {
+        throw new Error("Models object is required");
+    }
+
+    const template = await models["template"].getById(templateId, options);
+    if (!template) {
+        throw new Error(`Template with ID ${templateId} not found`);
+    }
+
+    const language = (values && values.language) || template.defaultLanguage || "en";
+    let content = await getTemplateContentForLanguage(templateId, language, models, options);
+    if (!content && language !== (template.defaultLanguage || "en")) {
+        content = await getTemplateContentForLanguage(templateId, template.defaultLanguage || "en", models, options);
+    }
+
+    let resolvedText = deltaToPlainText(content || {ops: []});
+    const toText = (value) => {
+        if (value === null || value === undefined) return "";
+        return typeof value === "string" ? value : JSON.stringify(value);
+    };
+    const valueMap = values || {};
+    resolvedText = applyPlaceholderReplacements(resolvedText, (baseKey, index, tokenOptions) => {
+        if (index != null) {
+            const inner = tokenInnerText(baseKey, index);
+            if (Object.prototype.hasOwnProperty.call(valueMap, inner)) {
+                const raw = valueMap[inner];
+                if (supportsRangeLimit(baseKey)) {
+                    return applyTextRangeLimit(raw, tokenOptions);
+                }
+                return toText(raw);
+            }
+            return undefined;
+        }
+        if (template.type !== 8 && Object.prototype.hasOwnProperty.call(valueMap, baseKey)) {
+            return toText(valueMap[baseKey]);
+        }
+        return undefined;
+    });
+    return resolvedText;
+}
+
+/**
+ * Return placeholder catalog rows that appear in a template's content.
+ * Each row includes usedIndexes and occurrenceCount for hook input mapping.
+ *
+ * @param {number} templateId - Template id
+ * @param {Object} models
+ * @param {Object} [options] 
+ * @returns {Promise<Array>} Placeholder catalog rows used in the template, with usedIndexes and occurrenceCount
+ * @throws {Error} When the template id is invalid
+ */
+async function getUsedPlaceholders(templateId, models, options = {}) {
+    const template = await models["template"].getById(templateId, options);
+    if (!template) {
+        throw new Error(`Template with ID ${templateId} not found`);
+    }
+    const content = await getTemplateContentForLanguage(
+        templateId, template.defaultLanguage || "en", models, options
+    );
+    const text = content ? deltaToPlainText(content) : "";
+    const bracketOnly = template.type === 8;
+    const countsByKey = countPlaceholdersByKey(text, { bracketOnly });
+    const rows = await models["placeholder"].getAllByKey("type", template.type, options);
+    return rows
+        .filter((row) => {
+            if (bracketOnly) {
+                return getUsedIndexes(text, row.placeholderKey).length > 0;
+            }
+            return countsByKey[row.placeholderKey] > 0;
+        })
+        .map((row) => {
+            let usedIndexes = getUsedIndexes(text, row.placeholderKey);
+            if (!bracketOnly && text.includes(`~${row.placeholderKey}~`) && !usedIndexes.includes(1)) {
+                usedIndexes = [1, ...usedIndexes].sort((a, b) => a - b);
+            }
+            return {
+                ...row,
+                occurrenceCount: countsByKey[row.placeholderKey] || usedIndexes.length,
+                usedIndexes,
+            };
+        });
+}
+
+/**
+ * Build i18n key and params for a missing-placeholder validation failure.
+ *
+ * @param {string[]} missing placeholder keys still required
+ * @param {Object} [options]
+ * @param {string} [options.action="saving"] saving | publishing | assigning
+ * @param {string} [options.language] template_content language code, when checking one locale
+ * @returns {{ key: string, params: Object }} i18n key + params (tokens; language if set) for the caller to throw
+ */
 function formatMissingPlaceholderError(missing, { action = "saving", language } = {}) {
     const tokens = missing.map((k) => `~${k}~`).join(", ");
+    const inLanguageKeys = {
+        publishing: "errors.templates.missingRequiredPlaceholdersInLanguagePublishing",
+        assigning: "errors.templates.missingRequiredPlaceholdersInLanguageAssigning",
+    };
+    const plainKeys = {
+        saving: "errors.templates.missingRequiredPlaceholders",
+        publishing: "errors.templates.missingRequiredPlaceholdersPublishing",
+        assigning: "errors.templates.missingRequiredPlaceholdersAssigning",
+    };
+
     if (language) {
-        return `This email template must include the required placeholder(s): ${tokens} in ${language} before ${action}. Add them from the toolbar in the template editor.`;
+        const key = inLanguageKeys[action] || inLanguageKeys.publishing;
+        return { key, params: { tokens, language } };
     }
-    return `This email template must include the required placeholder(s): ${tokens}. Add them from the toolbar before ${action}.`;
+
+    const key = plainKeys[action] || plainKeys.saving;
+    return { key, params: { tokens } };
 }
 
 /**
@@ -370,16 +612,17 @@ function formatMissingPlaceholderError(missing, { action = "saving", language } 
  *
  * @param {number} templateId
  * @param {Object} models
- * @param {Object}
- * @returns {Promise<void>}
+ * @param {Object} options
+ * @returns {Promise<void>} Resolves when required placeholders are present
+ * @throws {Error} When a required placeholder is missing from stable template content
  */
 async function assertStableEmailTemplateContent(templateId, models, options = {}) {
     const action = options.action || "publishing";
     const template = await models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error("Template not found");
+        throw new TranslatableError("errors.templates.notFound");
     }
-    if (![1, 2, 3, 6, 7].includes(template.type)) {
+    if (!models["template"].emailTemplateTypes.includes(template.type)) {
         return;
     }
 
@@ -392,7 +635,8 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
     if (!rows || rows.length === 0) {
         const missing = await getMissingRequiredPlaceholders({ ops: [] }, template.type, models, options);
         if (missing.length > 0) {
-            throw new Error(formatMissingPlaceholderError(missing, { action }));
+            const { key, params } = formatMissingPlaceholderError(missing, { action });
+            throw new TranslatableError(key, params);
         }
         return;
     }
@@ -401,7 +645,8 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
         const content = row.content && row.content.ops ? { ops: row.content.ops } : { ops: [] };
         const missing = await getMissingRequiredPlaceholders(content, template.type, models, options);
         if (missing.length > 0) {
-            throw new Error(formatMissingPlaceholderError(missing, { action, language: row.language }));
+            const { key, params } = formatMissingPlaceholderError(missing, { action, language: row.language });
+            throw new TranslatableError(key, params);
         }
     }
 }
@@ -409,7 +654,12 @@ async function assertStableEmailTemplateContent(templateId, models, options = {}
 module.exports = {
     resolveTemplate,
     resolveTemplateToDelta,
+    resolveTemplateWithValues,
     getMissingRequiredPlaceholders,
+    getDuplicatePlaceholderIds,
+    getDuplicatePlaceholderOptionTokens,
+    getUsedPlaceholders,
+    resolveEditorText,
     formatMissingPlaceholderError,
     assertStableEmailTemplateContent,
 };

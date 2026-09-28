@@ -6,12 +6,14 @@
       size="xl"
       @submit="bulk ? createBulkAssignments() : createSingleAssignment()">
     <template #title>
-      <h5 class="modal-title">{{ bulk ? 'Create Bulk Assignment' : 'Create Single Assignment' }}</h5>
+      <h5 class="modal-title">
+        {{ bulk ? $t('dashboard.study.createBulkAssignment') : $t('dashboard.study.createSingleAssignmentTitle') }}
+      </h5>
     </template>
 
     <template v-if="templates.length === 0" #error>
-      <p class="text-center text-danger">There are not study templates available!</p>
-      <p class="text-center">Please create a study template to proceed!</p>
+      <p class="text-center text-danger">{{ $t('dashboard.study.noStudyTemplatesAvailable') }}</p>
+      <p class="text-center">{{ $t('dashboard.study.createTemplateToProceed') }}</p>
     </template>
 
     <!-- ─── Step 1: Template Selection ──────────────────────────────────────── -->
@@ -142,7 +144,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import { downloadObjectsAs } from "@/assets/utils";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils";
 import { computed } from "vue";
 import TemplateSelectionStep from "./assignment/TemplateSelectionStep.vue";
 import WorkflowMappingStep from "./assignment/WorkflowMappingStep.vue";
@@ -257,24 +259,24 @@ export default {
     reviewerSelectionModeFields() {
       const baseOptions = [
         {
-          name: "Role-based selection (the number of documents that should be reviewed by each user of the selected roles)",
+          name: this.$t("dashboard.study.roleBasedSelection"),
           value: "role",
         },
         {
-          name: "Reviewer-based selection (distribute document between the selected reviewers)",
+          name: this.$t("dashboard.study.reviewerBasedSelection"),
           value: "reviewer",
         },
       ];
       if (this.assignmentType === 'study_session') {
         baseOptions.push({
-          name: "Session user-based selection (assign each study session to its original user)",
+          name: this.$t("dashboard.study.sessionUserBasedSelection"),
           value: "session_user",
         });
       }
       return [
         {
           key: "mode",
-          label: "Reviewer Selection Mode",
+          label: this.$t("dashboard.study.reviewerSelectionMode"),
           type: "select",
           options: baseOptions,
           required: true,
@@ -310,21 +312,23 @@ export default {
       const isSession = this.assignmentType === 'study_session';
       if (isSession) {
         return [
-          { title: "Template Selection" },
-          { title: "Workflow Mapping" },
-          { title: "Study Session Selection" },
-          { title: "Reviewer Selection" },
-          ...(this.bulk ? [{ title: "Distribution" }] : []),
-          { title: "Confirmation" },
+          { title: this.$t("dashboard.study.templateSelection") },
+          { title: this.$t("dashboard.study.workflowMapping") },
+          { title: this.$t("dashboard.study.studySessionSelection") },
+          { title: this.$t("dashboard.study.reviewerSelection") },
+          ...(this.bulk ? [{ title: this.$t("dashboard.study.distribution") }] : []),
+          { title: this.$t("common.confirmation") },
         ];
       }
-      const selectionTitle = this.assignmentType === 'submission' ? "Submission Selection" : "Document Selection";
+      const selectionTitle = this.assignmentType === 'submission'
+        ? this.$t("dashboard.study.submissionSelection")
+        : this.$t("dashboard.study.documentSelection");
       return [
-        { title: "Template Selection" },
+        { title: this.$t("dashboard.study.templateSelection") },
         { title: selectionTitle },
-        { title: "Reviewer Selection" },
-        ...(this.bulk ? [{ title: "Distribution" }] : []),
-        { title: "Confirmation" },
+        { title: this.$t("dashboard.study.reviewerSelection") },
+        ...(this.bulk ? [{ title: this.$t("dashboard.study.distribution") }] : []),
+        { title: this.$t("common.confirmation") },
       ];
     },
     distributionModalValue() {
@@ -402,16 +406,16 @@ export default {
     onSuccess() {
       this.$refs.assignmentStepper.close();
       this.eventBus.emit("toast", {
-        title: "Assignment created",
-        message: "The assignment has been created successfully",
+        title: this.$t("dashboard.study.assignmentCreated"),
+        message: this.$t("dashboard.study.assignmentCreatedMessage"),
         variant: "success",
       });
     },
     onError(res) {
       this.$refs.assignmentStepper.stopProgress();
       this.eventBus.emit("toast", {
-        title: "Failed to create assignment",
-        message: res.message,
+        title: this.$t("dashboard.study.failedToCreateAssignment"),
+        message: resolveApiMessage(res),
         variant: "danger",
       });
     },

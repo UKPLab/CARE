@@ -1,0 +1,81 @@
+{
+  "title": "Dokumente",
+  "document": "Dokument",
+  "preparingPdf": "PDF wird vorbereitet...",
+  "documentDefaultName": "dokument",
+  "addDocument": "Dokument hinzufügen",
+  "uploadDocument": "Dokument hochladen",
+  "uploadNewDocument": "Neues Dokument hochladen",
+  "createDocument": "Dokument erstellen",
+  "createNewDocument": "Neues Dokument erstellen",
+  "renameDocument": "Dokument umbenennen...",
+  "deleteDocument": "Dokument löschen...",
+  "accessDocument": "Dokument öffnen...",
+  "publishDocument": "Dokument veröffentlichen...",
+  "downloadPdfWithAnnotations": "PDF mit Annotationen herunterladen",
+  "exportDelta": "Delta in eine lokale Datei exportieren",
+  "exportHtml": "HTML in eine lokale Datei exportieren",
+  "openStudyCoordinator": "Study Coordinator öffnen...",
+  "importAnnotations": "Annotationen importieren",
+  "typeOfDocument": "Dokumenttyp",
+  "chooseDocumentType": "Dokumenttyp auswählen...",
+  "nameOfDocument": "Name des Dokuments",
+  "yesPublish": "Ja, veröffentlichen!",
+  "types": {
+    "pdf": "PDF",
+    "html": "HTML",
+    "modal": "MODAL",
+    "generalHtml": "Allgemeines HTML-Dokument",
+    "studyModal": "Study-Modal-Dokument (nur in Studien verwendbar)"
+  },
+  "fields": {
+    "name": {
+      "label": "Name des Dokuments:",
+      "placeholder": "Mein Dokument"
+    },
+    "hash": {
+      "label": "Hash-ID des Dokuments"
+    },
+    "userId": {
+      "label": "Benutzer-ID des Dokuments"
+    },
+    "public": {
+      "label": "Ist das Dokument veröffentlicht?"
+    }
+  },
+  "messages": {
+    "deleteConfirm": "Sind Sie sicher, dass Sie das Dokument löschen möchten?",
+    "deleteTitle": "Dokument löschen",
+    "studyWarning": "Derzeit laufen {count} Studien zu diesem Dokument. Wenn Sie es löschen, werden die Studien ebenfalls gelöscht!",
+    "documentPublished": "Dokument erfolgreich veröffentlicht!",
+    "documentAvailableAt": "Das Dokument ist unter folgendem Link verfügbar:",
+    "publishConfirm": "Möchten Sie das Dokument wirklich veröffentlichen?",
+    "cannotBeUndone": "Dies kann nicht rückgängig gemacht werden!",
+    "documentPublishedTitle": "Dokument veröffentlicht",
+    "publishedSuccess": "Dokument erfolgreich veröffentlicht!",
+    "linkCopiedMessage": "Link in die Zwischenablage kopiert!",
+    "documentEdited": "Das Dokument wurde erfolgreich bearbeitet.",
+    "documentEditedTitle": "Dokument bearbeitet",
+    "documentEditedMessage": "Dokument erfolgreich bearbeitet!",
+    "fileUploaded": "Datei wurde erfolgreich hochgeladen.",
+    "annotationsAdded": "{count} Annotationen wurden hinzugefügt.",
+    "issuesOccurred": "Es sind einige Probleme aufgetreten",
+    "uploadedWithWarnings": "Mit Warnungen hochgeladen",
+    "uploadedFile": "Hochgeladene Datei",
+    "documentCreated": "Dokument erfolgreich erstellt."
+  },
+  "downloadPdf": {
+    "title": "PDF herunterladen",
+    "includeAnnotations": "Annotationen im PDF einschließen",
+    "toasts": {
+      "successTitle": "PDF erfolgreich heruntergeladen",
+      "successMessage": "Ihr PDF wurde heruntergeladen.",
+      "successMessageWithAnnotations": "Ihr PDF mit Annotationen wurde heruntergeladen.",
+      "failedTitle": "PDF-Download fehlgeschlagen",
+      "unknownError": "Unbekannter Fehler"
+    }
+  },
+  "templateOptional": "Vorlage (optional):",
+  "noTemplateCreateEmpty": "Keine (leeres Dokument erstellen)",
+  "templatePrefillHint": "Wählen Sie eine Vorlage aus, um den Dokumentinhalt vorauszufüllen (Typ 4: Dokument - Allgemein)"
+}

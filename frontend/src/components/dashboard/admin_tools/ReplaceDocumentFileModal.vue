@@ -5,7 +5,7 @@
       size="xl"
   >
     <template #title>
-      Replace document file
+      {{ $t('dashboard.adminTools.replaceDocumentFile.modalTitle') }}
     </template>
 
     <template #body>
@@ -18,31 +18,28 @@
               class="spinner-border"
               role="status"
           >
-            <span class="visually-hidden">Replacing...</span>
+            <span class="visually-hidden">{{ $t('dashboard.adminTools.replaceDocumentFile.replacing') }}</span>
           </div>
         </div>
 
         <div v-else>
           <p class="mb-3">
-            Upload a new PDF or ZIP to overwrite the file stored for an existing document.
-            The document keeps the same title, id, and links; only the file bytes change.
-            The uploaded file type must match the document type.
-            For PDFs, existing CARE annotations and comments on that document are removed.
+            {{ $t('dashboard.adminTools.replaceDocumentFile.help') }}
           </p>
 
           <div class="mb-3">
             <label
                 class="form-label"
                 for="replace-doc-type-filter"
-            >Type</label>
+            >{{ $t('dashboard.adminTools.replaceDocumentFile.typeLabel') }}</label>
             <select
                 id="replace-doc-type-filter"
                 v-model="typeFilter"
                 class="form-select"
             >
-              <option value="all">All (PDF &amp; ZIP)</option>
-              <option value="pdf">PDF only</option>
-              <option value="zip">ZIP only</option>
+              <option value="all">{{ $t('dashboard.adminTools.replaceDocumentFile.typeAll') }}</option>
+              <option value="pdf">{{ $t('dashboard.adminTools.replaceDocumentFile.typePdfOnly') }}</option>
+              <option value="zip">{{ $t('dashboard.adminTools.replaceDocumentFile.typeZipOnly') }}</option>
             </select>
           </div>
 
@@ -58,15 +55,22 @@
               v-if="selectedDocument"
               class="small text-muted mt-2 mb-3"
           >
-            Selected:
-            <strong>{{ selectedDocument.name || "(unnamed)" }}</strong>
-            (#{{ selectedDocument.id }}, {{ selectedDocument.typeName }}).
+            <i18n-t
+              keypath="dashboard.adminTools.replaceDocumentFile.selected"
+              tag="span"
+              :id="selectedDocument.id"
+              :type="selectedDocument.typeName"
+            >
+              <template #name>
+                <strong>{{ selectedDocument.name || $t('dashboard.adminTools.replaceDocumentFile.unnamed') }}</strong>
+              </template>
+            </i18n-t>
           </p>
           <p
               v-else
               class="small text-muted mt-2 mb-3"
           >
-            Select one document in the table (10 per page; use search or next page for more).
+            {{ $t('dashboard.adminTools.replaceDocumentFile.selectHint') }}
           </p>
 
           <BasicForm
@@ -85,14 +89,14 @@
       >
         <BasicButton
             class="btn btn-secondary"
-            text="Close"
-            title="Close"
+            :text="$t('common.close')"
+            :title="$t('common.close')"
             @click="$refs.replaceModal.close()"
         />
         <BasicButton
             class="btn btn-primary"
-            text="Replace file"
-            title="Replace file"
+            :text="$t('dashboard.adminTools.replaceDocumentFile.replaceButton')"
+            :title="$t('dashboard.adminTools.replaceDocumentFile.replaceButton')"
             :disabled="!canSubmit"
             @click="replace"
         />
@@ -106,6 +110,7 @@ import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import { resolveApiMessage } from "@/assets/utils";
 
 const DOC_TYPE_PDF = 0;
 const DOC_TYPE_ZIP = 4;
@@ -138,11 +143,6 @@ export default {
       formData: {
         file: null,
       },
-      columns: [
-        {name: "ID", key: "id", sortable: true},
-        {name: "Title", key: "name", sortable: true, multiline: true},
-        {name: "Type", key: "typeName", sortable: true},
-      ],
       tableOptions: {
         striped: true,
         hover: true,
@@ -157,6 +157,13 @@ export default {
     };
   },
   computed: {
+    columns() {
+      return [
+        {name: this.$t("dashboard.adminTools.replaceDocumentFile.columns.id"), key: "id", sortable: true},
+        {name: this.$t("dashboard.adminTools.replaceDocumentFile.columns.title"), key: "name", sortable: true, multiline: true},
+        {name: this.$t("dashboard.adminTools.replaceDocumentFile.columns.type"), key: "typeName", sortable: true},
+      ];
+    },
     tableData() {
       const all = this.$store.getters["table/document/getAll"] || [];
       return all
@@ -177,7 +184,7 @@ export default {
           })
           .map((doc) => ({
             ...doc,
-            name: doc.name || "(unnamed)",
+            name: doc.name || this.$t("dashboard.adminTools.replaceDocumentFile.unnamed"),
             typeName: this.typeLabel(doc.type),
           }));
     },
@@ -194,7 +201,7 @@ export default {
         {
           key: "file",
           type: "file",
-          label: "Replacement file",
+          label: this.$t("dashboard.adminTools.replaceDocumentFile.fileLabel"),
           accept: this.selectedDocument
               ? TYPE_EXTENSION[this.selectedDocument.type]
               : this.acceptForFilter,
@@ -232,12 +239,12 @@ export default {
      */
     typeLabel(type) {
       if (type === DOC_TYPE_PDF) {
-        return "PDF";
+        return this.$t("dashboard.adminTools.replaceDocumentFile.typePdf");
       }
       if (type === DOC_TYPE_ZIP) {
-        return "ZIP";
+        return this.$t("dashboard.adminTools.replaceDocumentFile.typeZip");
       }
-      return "Unknown";
+      return this.$t("dashboard.adminTools.replaceDocumentFile.typeUnknown");
     },
 
     /**
@@ -294,8 +301,11 @@ export default {
 
       if (fileExtension !== expectedExtension) {
         this.eventBus.emit("toast", {
-          title: "Type mismatch",
-          message: `Document is ${this.typeLabel(this.selectedDocument.type)}; please upload a ${expectedExtension} file.`,
+          title: this.$t("dashboard.adminTools.replaceDocumentFile.toasts.typeMismatch.title"),
+          message: this.$t("dashboard.adminTools.replaceDocumentFile.toasts.typeMismatch.message", {
+            type: this.typeLabel(this.selectedDocument.type),
+            extension: expectedExtension,
+          }),
           variant: "danger",
         });
         return;
@@ -305,7 +315,8 @@ export default {
       this.$refs.replaceModal.waiting = true;
 
       const documentId = Number(this.selectedDocument.id);
-      const documentName = this.selectedDocument.name || "(unnamed)";
+      const documentName = this.selectedDocument.name
+        || this.$t("dashboard.adminTools.replaceDocumentFile.unnamed");
 
       this.$socket.emit("documentReplaceFile", {
         documentId,
@@ -317,15 +328,21 @@ export default {
 
         if (res.success) {
           this.eventBus.emit("toast", {
-            title: "File replaced",
-            message: `Updated file for “${documentName}” (#${documentId}).`,
+            title: this.$t("dashboard.adminTools.replaceDocumentFile.toasts.success.title"),
+            message: this.$t("dashboard.adminTools.replaceDocumentFile.toasts.success.message", {
+              name: documentName,
+              id: documentId,
+            }),
             variant: "success",
           });
           this.$refs.replaceModal.close();
         } else {
           this.eventBus.emit("toast", {
-            title: "Replace failed",
-            message: res.message || "Could not replace document file.",
+            title: this.$t("dashboard.adminTools.replaceDocumentFile.toasts.failed.title"),
+            message: resolveApiMessage(
+              res,
+              "dashboard.adminTools.replaceDocumentFile.toasts.failed.fallback",
+            ),
             variant: "danger",
           });
         }

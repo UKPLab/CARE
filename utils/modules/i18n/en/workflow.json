@@ -1,0 +1,162 @@
+{
+  "inspectStep": "Inspect Step",
+  "general": "General",
+  "stepType": "Step Type",
+  "navigation": "Navigation",
+  "previousStep": "Previous Step",
+  "allowBackward": "Allow Backward",
+  "documentReference": "Document Reference",
+  "firstStep": "First step",
+  "configuration": "Configuration",
+  "noConfigurationDefined": "No configuration defined.",
+  "stepTypes": {
+    "annotator": "Annotator",
+    "editor": "Editor",
+    "modal": "Modal"
+  },
+  "dashboard": {
+    "title": "Workflows",
+    "addWorkflow": "Add Workflow",
+    "exportWorkflows": "Export Workflows",
+    "exportAll": "Export All",
+    "importWorkflows": "Import Workflows",
+    "types": {
+      "system": "System",
+      "user": "User"
+    },
+    "columns": {
+      "hidden": "Hidden"
+    },
+    "actions": {
+      "copyWorkflow": "Copy Workflow",
+      "editWorkflow": "Edit Workflow",
+      "renameWorkflow": "Rename Workflow",
+      "exportWorkflow": "Export Workflow",
+      "toggleHidden": "Toggle Hidden",
+      "deleteWorkflow": "Delete Workflow"
+    },
+    "visibility": {
+      "hidden": "hidden",
+      "visible": "visible"
+    },
+    "toasts": {
+      "workflowUpdated": {
+        "title": "Workflow Updated",
+        "message": "Workflow is now {state} in frontend"
+      },
+      "updateFailed": "Update Failed",
+      "workflowDeleted": {
+        "title": "Workflow Deleted",
+        "message": "Workflow has been deleted"
+      },
+      "deleteFailed": "Delete Failed"
+    },
+    "confirmDelete": {
+      "title": "Delete Workflow",
+      "message": "Are you sure you want to delete the workflow \"{name}\"?",
+      "warning": "This action cannot be undone."
+    }
+  },
+  "exportFormatModal": {
+    "title": "Export Workflows"
+  },
+  "importFormatModal": {
+    "title": "Import Workflows"
+  },
+  "createModal": {
+    "title": "Workflow",
+    "success": {
+      "linkCopied": {
+        "title": "Link copied",
+        "message": "Workflow link copied to clipboard!"
+      }
+    },
+    "errors": {
+      "linkNotCopied": {
+        "title": "Link not copied",
+        "message": "Could not copy workflow link to clipboard!"
+      }
+    }
+  },
+  "editModal": {
+    "title": "Edit Workflow: {name}",
+    "workflow": "Workflow",
+    "description": "Description",
+    "copiedStep": "Copied Step",
+    "copiedStepValue": "{name} ({type})",
+    "unnamedStep": "Unnamed step",
+    "loadingWorkflow": "Loading workflow...",
+    "loadingWorkflowGraph": "Loading workflow graph...",
+    "savingChanges": "Saving changes...",
+    "stepTypes": {
+      "annotater": "Annotater",
+      "editor": "Editor",
+      "modal": "Modal",
+      "annotaterStep": "Annotater Step",
+      "editorStep": "Editor Step",
+      "modalStep": "Modal Step"
+    },
+    "errors": {
+      "saveFailed": "Save Failed",
+      "saveStepFailed": "Failed to save step"
+    }
+  },
+  "renameModal": {
+    "title": "Rename Workflow",
+    "description": "This will rename the existing workflow.",
+    "currentWorkflow": "Current Workflow",
+    "renamingWorkflow": "Renaming workflow...",
+    "renameWorkflow": "Rename Workflow",
+    "form": {
+      "newWorkflowName": "New Workflow Name",
+      "enterNewWorkflowName": "Enter new workflow name"
+    },
+    "errors": {
+      "workflowNotFound": {
+        "title": "Error",
+        "message": "Workflow not found"
+      },
+      "creationFailed": "Creation Failed",
+      "hideOriginalFailed": "Hide Original Failed",
+      "renameFailed": "Rename Failed",
+      "renameFailedMessage": "Failed to rename workflow"
+    },
+    "success": {
+      "title": "Workflow Renamed",
+      "message": "Workflow \"{oldName}\" has been renamed to \"{newName}\""
+    }
+  },
+  "fields": {
+    "name": {
+      "label": "Name of the Workflow:",
+      "placeholder": "My workflow"
+    },
+    "description": {
+      "label": "Description of the Workflow:",
+      "placeholder": "Workflow description"
+    },
+    "hideInFrontend": {
+      "label": "Hide Workflow in Frontend:",
+      "help": "If enabled, this workflow will be hidden from users in the frontend."
+    },
+    "step": {
+      "name": {
+        "label": "Name of the workflow step:",
+        "placeholder": "My workflow step"
+      },
+      "stepType": {
+        "label": "Select Step Type:",
+        "help": "Choose the type of workflow step."
+      },
+      "allowBackward": {
+        "label": "Allow Backward Navigation:",
+        "help": "Allow users to navigate back to this step."
+      },
+      "configuration": {
+        "label": "Configuration:",
+        "placeholder": "Enter JSON configuration for this step",
+        "help": "Additional configuration settings for this workflow step in JSON format."
+      }
+    }
+  }
+}

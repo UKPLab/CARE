@@ -22,7 +22,7 @@
       >
         <Loader
           :loading="!isRendered"
-          :text="'Loading Page ' + pageNumber"
+          :text="$t('annotator.pdfPage.loadingPage', { pageNumber })"
           class="pageLoader"
         />
 
@@ -377,7 +377,7 @@ export default {
 <style>
 .pageContainer {
   position: relative;
-  border-bottom-style: solid;
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .pageLoader {

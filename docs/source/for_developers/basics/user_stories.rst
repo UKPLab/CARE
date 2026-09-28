@@ -486,6 +486,8 @@ Rename and Delete a Document
 
      - When I try to rename a document to an empty name, I see a validation error.
      - When I cancel the delete confirmation dialog, the document is not deleted.
+     - When the document is a submission file, Documents does not offer delete. A delete
+       does not remove the document.
 
 -----
 
@@ -1467,6 +1469,67 @@ Anonymise Author in ZIP Export
 
 -----
 
+AI and Automation
+~~~~~~~~~~~~~~~~~
+
+-----
+
+Manage AI Credentials and Models
+--------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to configure AI provider credentials and models, so that
+     I can use approved models in CARE.
+
+   :Acceptance:
+     - I can create, edit, disable, and delete my credentials and models.
+     - I can test a model before using it and share a model with users or roles.
+     - Only the owner can change a credential, model, or its sharing.
+
+-----
+
+Configure and Monitor AI Use
+----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to configure AI hooks and spending limits and inspect AI
+     usage, so that model calls are controlled and auditable.
+
+   :Acceptance:
+     - I can create a hook from a prompt template, choose ordered models, and set its output
+       type.
+     - I can manage cost limits for models, hooks, studies, and study steps.
+     - The AI log shows request status, token usage, and cost.
+     - A hook cannot be saved without a prompt template and at least one model.
+
+-----
+
+Automate Events with Triggers
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to run configured actions when CARE events occur, so that
+     recurring work can be automated.
+
+   :Acceptance:
+     - I can create, edit, enable, disable, and delete a trigger by selecting an event and
+       action.
+     - Trigger Logs shows each run, its status, attempts, and any error message.
+     - I can cancel pending or running jobs, retry failed or cancelled jobs, and re-run
+       completed jobs.
+     - I can set how often the trigger queue worker polls for leftover jobs in Settings.
+       The default is 5 minutes. New jobs still start when the event fires. A server
+       restart is required after changing this setting.
+     - Non-admin users cannot manage triggers or trigger logs.
+
+-----
+
 Admin Features
 ~~~~~~~~~~~~~~
 
@@ -1892,6 +1955,27 @@ View Study Sessions as Coordinator
      - All editing options are disabled.
      - If I have the right to view private user information, participant real names are
        shown in the session table; otherwise they are not visible.
+
+-----
+
+Import and Export Content Templates
+-----------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to export a content template to a file and import
+     it on another CARE instance, so that I can reuse the email, document, or prompt
+     text.
+
+   :Acceptance:
+     - From Dashboard → Templates I can export one template, or every template on
+       my list. A public template I have not copied is not included.
+     - Import reads JSON and YAML.
+     - The file includes the saved text for each language.
+     - Import creates a new template that I own, with that text, and it is not published.
+     - I can publish it afterwards with the existing publish action.
+     - Only an admin can import an email template.
 
 -----
 

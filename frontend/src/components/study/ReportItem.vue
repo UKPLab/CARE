@@ -4,7 +4,7 @@
     v-else
     id="emptyText"
   >
-    (no text)
+    {{$t('report.noText')}}
   </a>
   <BasicButton
     id="cite"
@@ -12,7 +12,7 @@
     class="btn btn-link btn-sm"
     data-placement="top"
     data-toggle="tooltip"
-    :text="citation ? `(ref. ${citation})` : '(show)'"
+    :text="citation ? $t('report.ref', {citation}) : $t('report.show')"
     @click="show()"
   />
 </template>
@@ -87,6 +87,6 @@ export default {
 <style scoped>
 #emptyText {
   font-style: italic;
-  color: darkgrey;
+  color: var(--bs-secondary-color, darkgrey);
 }
 </style>

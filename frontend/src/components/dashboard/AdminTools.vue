@@ -1,17 +1,16 @@
 <template>
   <div>
-    <Card title="Admin Tools">
+    <Card :title="$t('dashboard.adminTools.title')">
       <template #body>
         <p class="text-muted mb-3">
-          Administrative utilities for recovering and maintaining system files.
-          Open a tool below to run a specific admin action.
+          {{ $t('dashboard.adminTools.description') }}
         </p>
 
         <div class="d-flex flex-column gap-2 align-items-start">
           <BasicButton
               class="btn btn-outline-secondary"
-              text="Replace document file"
-              title="Replace an existing PDF or ZIP file on disk"
+              :text="$t('dashboard.adminTools.replaceDocumentFile.button')"
+              :title="$t('dashboard.adminTools.replaceDocumentFile.buttonTitle')"
               icon="arrow-repeat"
               @click="openReplaceDocumentFileModal"
           />

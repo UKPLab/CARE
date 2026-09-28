@@ -1,0 +1,14 @@
+{
+  "assignmentId": "Aufgaben-ID:",
+  "courseId": "Kurs-ID:",
+  "apiKey": "Moodle-API-Schlüssel:",
+  "apiUrl": "Moodle-URL:",
+  "refresh": "Aktualisieren",
+  "refreshTooltip": "Aufgabenliste aktualisieren",
+  "placeholders": {
+    "assignmentId": "Aufgaben-ID eingeben",
+    "courseId": "Kurs-ID eingeben",
+    "apiKey": "API-Schlüssel eingeben",
+    "apiUrl": "https://example.moodle.com"
+  }
+}

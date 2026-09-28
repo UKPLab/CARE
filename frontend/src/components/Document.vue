@@ -1,13 +1,13 @@
 <template>
   <!-- Error state when document not found or deleted -->
   <div v-if="documentError" class="document-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
-    <div class="error-card text-center p-5 bg-white rounded shadow">
+    <div class="error-card text-center p-5 bg-body rounded shadow">
       <i class="bi bi-file-earmark-x text-danger" style="font-size: 5rem;"></i>
       <h2 class="mt-4 text-danger">{{ documentError.title }}</h2>
       <p class="text-muted mb-4">{{ documentError.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>Go to Dashboard
+          <i class="bi bi-house me-2"></i>{{ $t('components.documentRoute.errors.goToDashboard') }}
         </router-link>
       </div>
     </div>
@@ -38,6 +38,7 @@
 import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
 import Editor from "@/components/editor/Editor.vue"
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "DocumentRoute",
@@ -82,15 +83,15 @@ export default {
      */
     setDocumentError(message, errorCode) {
       const titleMap = {
-        'DOCUMENT_NOT_FOUND': 'Document Not Found',
-        'ACCESS_DENIED': 'Access Denied',
-        'FILE_MISSING': 'File Not Available',
+        'DOCUMENT_NOT_FOUND': this.$t('components.documentRoute.errors.documentNotFoundTitle'),
+        'ACCESS_DENIED': this.$t('components.documentRoute.errors.accessDeniedTitle'),
+        'FILE_MISSING': this.$t('components.documentRoute.errors.fileMissingTitle'),
       };
 
       // Use predefined message if error code exists
       this.documentError = {
-        title: titleMap[errorCode] || 'Document Error',
-        message: message || 'An unexpected error occurred.'
+        title: titleMap[errorCode] || this.$t('components.documentRoute.errors.documentErrorTitle'),
+        message: message ? resolveApiMessage({ success: false, message }) : this.$t('components.documentRoute.errors.unexpectedError')
       };
 
       // Also emit toast for immediate feedback
@@ -113,12 +114,12 @@ export default {
 }
 
 .document-error-page {
-  background-color: #f5f5f5;
+  background-color: var(--bs-tertiary-bg, #f5f5f5);
   min-height: 100vh;
 }
 
 .error-card {
   max-width: 500px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--bs-border-color, #e0e0e0);
 }
 </style>

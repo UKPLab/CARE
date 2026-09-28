@@ -1,0 +1,25 @@
+{
+    "reqTitle": "Anfrage senden",
+    "cmdTitle": "Befehl senden",
+    "cmdToSend": "der zu sendende Befehl",
+    "serviceToContact": "der zu kontaktierende Dienst",
+    "waitingForResponse": "Antwort wird erwartet",
+    "payload": "Dateninhalt",
+    "placeholders": "Platzhalter",
+    "emptyMsgHistory": "Keine Nachrichten gesendet/empfangen.",
+    "seePayload": "Dateninhalt ansehen",
+    "request": "Anfrage",
+    "readOnlyMode": "Schreibgeschützter Modus",
+    "copyJsonSuccess": {
+        "title": "JSON kopiert",
+        "message": "JSON in die Zwischenablage kopiert!"
+    },
+    "editJson": "JSON bearbeiten",
+    "history": "Verlauf",
+    "configurator": "Konfigurator",
+    "downloadDocument": "Dokument herunterladen",
+    "annotator": {
+        "searchTags": "Tags suchen",
+        "expandAdder": "Adder erweitern"
+    }
+}

@@ -14,6 +14,21 @@ const app = Vue.createApp({
     render: () => Vue.h(App)
 });
 
+
+import { createI18n } from 'vue-i18n'
+import i18nBundles from '@i18n/i18n-bundles.js'
+import { DEFAULT_LOCALE, getInitialLocale } from '@/assets/locale.js'
+
+export const i18n = createI18n({
+  legacy: true,
+  globalInjection: true,
+  locale: getInitialLocale(),
+  fallbackLocale: DEFAULT_LOCALE,
+  messages: i18nBundles,
+});
+
+app.use(i18n);
+
 // activate devtools in development mode
  
 if (process.env.NODE_ENV !== 'production') {
@@ -74,5 +89,10 @@ app.use(store);
 import subscribeTable from "@/plugins/subscribeTable";
 
 app.use(subscribeTable);
+
+// Expose `this.$ai` to every component for AI / LLM requests via ack callbacks
+import ai from "@/plugins/ai";
+
+app.use(ai);
 
 router.isReady().then(() => app.mount('#app'));

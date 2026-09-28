@@ -6,10 +6,10 @@
       @click="(setting.type === 'boolean' || setting.type === 'bool') && $event.preventDefault()"
     >
       <div class="d-inline-flex align-items-center gap-1 flex-wrap justify-content-md-end">
-        <span>{{ setting.displayName || setting.key }}</span>
+        <span>{{ translateMaybeKey(setting.displayName || setting.key) }}</span>
         <FormHelp
           v-if="setting.description"
-          :help="setting.description"
+          :help="translateMaybeKey(setting.description)"
           icon-name="info-circle"
           button-class="text-muted flex-shrink-0"
         />
@@ -19,7 +19,7 @@
       <template v-if="setting.type === 'edits'">
         <EditorModal
           :model-value="setting.value"
-          :title="'Edit ' + setting.key"
+          :title="$t('common.editItem', { item: setting.key })"
           @update:model-value="$emit('update:value', $event)"
         />
       </template>
@@ -50,7 +50,7 @@
             :value="setting.value"
             type="color"
             class="form-control form-control-color"
-            title="Pick a color"
+            :title="$t('settings.pickColor')"
             @input="updateColorValue($event.target.value)"
           />
           <input
@@ -69,11 +69,27 @@
           <BasicButton
             v-if="hasResetValue"
             class="btn btn-outline-secondary btn-sm"
-            text="Reset"
+            :text="$t('common.reset')"
             :disabled="(setting.value || '').toLowerCase() === resetValue.toLowerCase()"
             @click="$emit('update:value', resetValue)"
           />
         </div>
+      </template>
+      <template v-else-if="isLocaleSetting">
+        <select
+          :id="'set-' + setting.key"
+          :value="localeValue"
+          class="form-select"
+          @change="$emit('update:value', $event.target.value)"
+        >
+          <option
+            v-for="lang in supportedLocales"
+            :key="lang.code"
+            :value="lang.code"
+          >
+            {{ lang.name }}
+          </option>
+        </select>
       </template>
       <template v-else-if="isEmailTemplateSetting">
         <select
@@ -82,7 +98,7 @@
           class="form-select"
           @change="$emit('update:value', $event.target.value)"
         >
-          <option value="">None (use default email)</option>
+          <option value="">{{ $t('settings.noneUseDefaultEmail') }}</option>
           <option
             v-for="template in filteredEmailTemplates"
             :key="template.id"
@@ -105,10 +121,13 @@
 </template>
 
 <script>
+import { translateMaybeKey } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
+import { emailTemplateTypes } from "@/assets/templateTypes";
+import { DEFAULT_LOCALE, LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/locale.js";
 
 /**
  * Renders one setting row: label (displayName, optional description tooltip) and input for setting.type.
@@ -131,13 +150,22 @@ export default {
     emailTemplates() {
       // Show only the user's own templates (copies count, since copies have userId === currentUser).
       return this.$store.getters["table/template/getAll"]
-        .filter(t => !t.deleted && [1, 2, 3, 6, 7].includes(t.type) && t.userId === this.user?.id)
+        .filter(t => !t.deleted && emailTemplateTypes.includes(t.type) && t.userId === this.user?.id)
         .map(t => ({ id: t.id, name: t.name, type: t.type }));
     },
     isEmailTemplateSetting() {
       const s = this.setting;
       return !!(s && s.key && s.key.startsWith("email.template.")
         && (s.type === "number" || s.type === "integer"));
+    },
+    isLocaleSetting() {
+      return this.setting?.key === LOCALE_SETTING_KEY;
+    },
+    supportedLocales() {
+      return SUPPORTED_LOCALES;
+    },
+    localeValue() {
+      return this.setting?.value || DEFAULT_LOCALE;
     },
     requiredEmailTemplateType() {
       const key = this.setting?.key;
@@ -168,6 +196,7 @@ export default {
     },
   },
   methods: {
+    translateMaybeKey,
     updateColorValue(value) {
       const normalized = value && value.startsWith("#") ? value : `#${value || ""}`;
       if (/^#[0-9a-fA-F]{6}$/.test(normalized)) {

@@ -7,23 +7,23 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name of the Tagset:",
-                placeholder: "My tagset",
+                label: "tags.fields.name.label",
+                placeholder: "tags.fields.name.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "description",
-                label: "Description of the Tagset:",
-                placeholder: "Tagset description",
+                label: "tags.fields.description.label",
+                placeholder: "tags.fields.description.placeholder",
                 type: "text",
                 required: true,
                 default: "",
             },
             {
                 key: "tags",
-                label: "Tags:",
+                label: "tags.fields.tags.label",
                 type: "table",
                 options: {
                     table: "tag", id: "tagSetId"

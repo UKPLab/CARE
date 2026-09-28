@@ -4,23 +4,23 @@
     name="template-detach-modal"
   >
     <template #title>
-      <span>Edit Copy</span>
+      <span>{{ $t("templates.detachModal.title") }}</span>
     </template>
     <template #body>
       <p>
-        Editing this template will detach it from the source. You will no longer receive updates from the original template. Continue?
+        {{ $t("templates.detachModal.description") }}
       </p>
     </template>
     <template #footer>
       <div class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('common.cancel')"
           @click="onCancel"
         />
         <BasicButton
           class="btn btn-primary"
-          text="Continue"
+          :text="$t('common.continue')"
           @click="onConfirm"
         />
       </div>
