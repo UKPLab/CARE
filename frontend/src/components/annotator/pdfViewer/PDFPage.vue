@@ -64,6 +64,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
+import {joinWrappedLines} from "@/assets/pdfViewer/textLayer.js";
 import Loader from "@/basic/Loading.vue";
 import {toRaw} from 'vue';
 
@@ -310,7 +311,7 @@ export default {
           viewport: displayViewport.clone({ dontFlip: true })
         });
         
-        return renderTask.render();
+        return renderTask.render().then(() => joinWrappedLines(textContent, renderTask));
       }).then(() => {
           this.pdf.renderingDone.set(page.pageNumber, true);
           this.isRendered = true;
@@ -393,6 +394,26 @@ export default {
 .pdf-page {
   width: 100%;
   height: auto;
+}
+
+/* The text layer is normally invisible (color: transparent) - it exists only
+   so the browser has real text to search/select against, the visible glyphs
+   come from the canvas underneath. Native find has to make a match legible,
+   which reveals that invisible text rendered in a fallback font on top of the
+   canvas's PDF-font glyphs, producing a doubled/ghosted look. ::search-text
+   lets us suppress just the text color and paint our own plain highlighter-
+   style box instead - declaring any property here opts out of Chrome's own
+   default highlight paint entirely, so background-color must be set
+   explicitly too, not left to fall back to the browser default.
+   Chromium 144+ only; unsupported browsers silently keep today's behavior. */
+.textLayer::search-text {
+  color: transparent;
+  background-color: rgba(255, 223, 0, 0.5);
+}
+
+.textLayer::search-text:current {
+  color: transparent;
+  background-color: rgba(255, 165, 0, 0.7);
 }
 
 </style>

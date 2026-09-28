@@ -1,4 +1,5 @@
 import { markRaw } from 'vue';
+import { joinTextItems } from '@/assets/pdfViewer/textLayer.js';
 
 /**
  *  PDF Store
@@ -62,7 +63,7 @@ export class PDF {
             const textContent = await this.getPage(pageIndex + 1).then((page) => {
                 return page.getTextContent({normalizeWhitespace: true})
             });
-            const text = textContent.items.map(it => it.str).join('');
+            const text = joinTextItems(textContent.items);
 
             this.pageTextCache.set(pageIndex, text);
 
