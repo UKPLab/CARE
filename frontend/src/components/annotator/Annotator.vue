@@ -21,6 +21,7 @@
           />
 
         </div>
+        <AnnotationScrollMarkers/>
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
@@ -93,6 +94,7 @@
  * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
@@ -113,6 +115,7 @@ export default {
   components: {
     SidebarTemplate,
     PDFViewer,
+    AnnotationScrollMarkers,
     AnnotationSidebar,
     Loader,
     TopBarButton,
