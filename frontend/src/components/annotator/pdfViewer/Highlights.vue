@@ -6,6 +6,7 @@
 import {isNodeInRange} from "@/assets/anchoring/range-util";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
+import {getCollapsedAnnotationIds, getSessionScope, getTagColor, isInSessionScope} from "@/assets/annotations";
 
 /**
  * Highlights handling of annotation in pdf document
@@ -47,57 +48,21 @@ export default {
     }
   },
   computed: {
-    study() {
-      return (this.studySession) ? this.$store.getters["table/study/get"](this.studySession.studyId) : null;
-    },
-    studySession() {
-      if (this.studySessionId && this.studySessionId !== 0) {
-        return this.$store.getters["table/study_session/get"](this.studySessionId);
-      } else {
-        return null;
-      }
-    },
-    studySessionIds() {
-      if (this.study) {
-        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studySession.studyId)
-          .map(s => s.id);
-      } else {
-        return null;
-      }
-    },
-    openSessionIds() {
-      return this.$store.getters["table/study_session/getAll"].filter(
-        session => {
-          const study = this.$store.getters["table/study/get"](session.studyId);
-          return study && study.closed === null;
-        }
-      ).map(session => session.id);
-    },
-    showAll() {
-      const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
-      return (showAllComments !== undefined && showAllComments);
+    sessionScope() {
+      return getSessionScope(this.$store, {
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+        showAllDocumentAnnotations: this.showAllDocumentAnnotations,
+      });
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
-    downloadBeforeStudyClosingAllowed() {
-      return this.$store.getters["settings/getValue"]("annotator.download.enabledBeforeStudyClosing") === "true"
-    },
-    collapsedCommentIds() {
-      const commentIds = this.$store.getters['table/comment_state/getFiltered'](
-        state => state.state === 1 &&
-          state.documentId === this.documentId
-      ).map(state => state.commentId);
-      return commentIds;
     },
     commentStates() {
       return this.$store.getters['table/comment_state/getAll'].filter(state => state.documentId === this.documentId && this.filterBySessionAndSettings(state)).filter(state => this.getAnnotationByCommentState(state)?.anchors === null);
     },
     collapsedAnnotationIds() {
-      const annotationIds = this.$store.getters['table/comment/getFiltered'](
-        comment => this.collapsedCommentIds.includes(comment.id)
-      ).map(comment => comment.annotationId);
-      return annotationIds;
+      return getCollapsedAnnotationIds(this.$store, this.documentId);
     },
     annotations() {
       const allAnnotations = this.$store.getters['table/annotation/getAll']
@@ -179,30 +144,7 @@ export default {
         return loaded;
     },
     filterBySessionAndSettings(anno) {
-      if (this.studySessionId && this.studyStepId) {
-        // When showAllDocumentAnnotations is true, show all annotations for the document
-        if (this.showAllDocumentAnnotations && anno.studySessionId === null && anno.studyStepId === null) {
-          return true;
-        }
-        // Otherwise, only show annotations for current session and step
-        const isSessionAndStepMatch = anno.studySessionId === this.studySessionId && anno.studyStepId === this.studyStepId;
-        return isSessionAndStepMatch;
-      } else if (this.studySessionIds) {
-        const isSessionIdIncluded = this.studySessionIds.includes(anno.studySessionId);
-        return isSessionIdIncluded;
-      } else {
-        if (this.showAll) {
-          if (this.downloadBeforeStudyClosingAllowed) {
-            return true;
-          } else {
-            const isSessionNotOpen = !this.openSessionIds.includes(anno.studySessionId);
-            return isSessionNotOpen;
-          }
-        } else {
-          const isSessionNull = anno.studySessionId === null;
-          return isSessionNull;
-        }
-      }
+      return isInSessionScope(anno, this.sessionScope);
     },
     getCommentByAnnotationId(annotationId) {
       return this.$store.getters['table/comment/getFiltered'](
@@ -215,29 +157,7 @@ export default {
       )[0];
     },
     getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
+      return getTagColor(this.$store, tagId);
     },
     handleScrolling(annotationId) {
       const isRecentlyUpdated = this.isRecentlyUpdated(annotationId);
