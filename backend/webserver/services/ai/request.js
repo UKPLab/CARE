@@ -38,21 +38,18 @@ async function beginRequest(service, request, options = {}) {
             return { allowed: false, reason: "AI model is not available" };
         }
 
-        // Inside a study, access (and per-share budget attribution) rides on the
-        // study owner — participants don't carry shares.
-        const accessHolderId = studyId
-            ? await _getStudyOwnerId(service, studyId)
-            : userId;
-        if (!accessHolderId) {
+        // Inside a study, access rides on its creator or owner; participants don't carry shares.
+        const access = await _resolveModelAccessHolder(service, {
+            userId, studyId, studySessionId, studyStepId,
+        }, model);
+        if (!access) {
             return { allowed: false, reason: "Study owner could not be resolved" };
         }
-
-        const isModelOwner = model.userId === accessHolderId;
-        const modelShare = await _findActiveShare(service, "ai_model_share", "aiModelId", accessHolderId, aiModelId);
-        if (!isModelOwner && !modelShare) {
+        const {accessHolderId, modelShare, resolvedStudyId} = access;
+        if (!accessHolderId) {
             return {
                 allowed: false,
-                reason: studyId
+                reason: resolvedStudyId
                     ? "Study creator no longer has access to this AI model"
                     : "You do not have access to this AI model",
             };
@@ -73,7 +70,7 @@ async function beginRequest(service, request, options = {}) {
             if (!isHookOwner && !hookShare) {
                 return {
                     allowed: false,
-                    reason: studyId
+                    reason: resolvedStudyId
                         ? "Study creator no longer has access to this AI hook"
                         : "You do not have access to this AI hook",
                 };
@@ -86,7 +83,7 @@ async function beginRequest(service, request, options = {}) {
                 aiModelShareId: modelShare?.id,
                 aiHookId,
                 aiHookShareId: hookShare?.id,
-                studyId,
+                studyId: resolvedStudyId,
                 studyStepId,
             });
 
@@ -179,14 +176,51 @@ async function _hasInflight(service, userId, studySessionId) {
     return existing !== null;
 }
 
-// Returns the userId of the study's owner, or null if the study is gone.
-async function _getStudyOwnerId(service, studyId) {
-    const study = await service.server.db.models["study"].findByPk(studyId, {
-        attributes: ["userId", "deleted"],
-        raw: true,
-    });
-    if (!study || study.deleted) return null;
-    return Number(study.userId);
+/**
+ * Resolves the study creator or owner who provides access to the selected model.
+ * @param {Object} service - AIService used for database access.
+ * @param {Object} request - Request study identifiers and authenticated user.
+ * @param {Object} model - Selected AI model.
+ * @returns {Promise<Object|null>} Access holder, share and resolved study id.
+ */
+async function _resolveModelAccessHolder(service, request, model) {
+    const models = service.server.db.models;
+    let resolvedStudyId = Number(request.studyId) || null;
+
+    if (!resolvedStudyId && request.studySessionId) {
+        const session = await models["study_session"].findByPk(request.studySessionId, {
+            attributes: ["studyId", "deleted"], raw: true,
+        });
+        if (session && !session.deleted) resolvedStudyId = Number(session.studyId);
+    }
+    if (!resolvedStudyId && request.studyStepId) {
+        const step = await models["study_step"].findByPk(request.studyStepId, {
+            attributes: ["studyId", "deleted"], raw: true,
+        });
+        if (step && !step.deleted) resolvedStudyId = Number(step.studyId);
+    }
+
+    let accessHolderIds = [Number(request.userId)];
+    if (resolvedStudyId) {
+        const study = await models["study"].findByPk(resolvedStudyId, {
+            attributes: ["createdByUserId", "userId", "deleted"], raw: true,
+        });
+        if (!study || study.deleted) return null;
+        accessHolderIds = [...new Set([study.createdByUserId, study.userId]
+            .map(Number)
+            .filter((id) => Number.isInteger(id) && id > 0))];
+    }
+
+    for (const accessHolderId of accessHolderIds) {
+        if (Number(model.userId) === accessHolderId) {
+            return {accessHolderId, modelShare: null, resolvedStudyId};
+        }
+        const modelShare = await _findActiveShare(
+            service, "ai_model_share", "aiModelId", accessHolderId, model.id,
+        );
+        if (modelShare) return {accessHolderId, modelShare, resolvedStudyId};
+    }
+    return {accessHolderId: null, modelShare: null, resolvedStudyId};
 }
 
 // Returns the user's active (non-expired) share row for a model or hook, or null.
