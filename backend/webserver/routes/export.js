@@ -5,7 +5,7 @@ const { faker } = require('@faker-js/faker');
 const JSZip = require('jszip');
 const { deriveUserSeed } = require('../auth/utils');
 const Papa = require('papaparse');
-const { calculateAssessmentScore, scoresFromStoredValue } = require('assessment-score');
+const { calculateAssessmentScore, pickScoresFromGradeRows } = require('assessment-score');
 
 const ASSESSMENT_RESULT_KEY = "assessment_result";
 
@@ -337,30 +337,6 @@ module.exports = function (server) {
             .replace(/[<>:"/\\|?*\x00-\x1F]/g, "_")
             .replace(/\s+/g, " ")
             .trim();
-    }
-
-    /**
-     * Prefer human-saved assessment_result when it has a real score, otherwise the hook/NLP row.
-     *
-     * @param {Array<Object>} rows - document_data rows for one document/session/step group
-     * @returns {Object} Flat map of criterion name to score
-     */
-    function pickScoresFromGradeRows(rows) {
-        let savedScores = {};
-        let hookScores = {};
-        for (const row of rows) {
-            const scores = scoresFromStoredValue(row.value);
-            if (!Object.keys(scores).length) continue;
-            if (row.key === ASSESSMENT_RESULT_KEY) {
-                savedScores = scores;
-            } else if (!Object.keys(hookScores).length) {
-                hookScores = scores;
-            }
-        }
-        if (Object.values(savedScores).some((value) => Number(value) !== 0)) {
-            return savedScores;
-        }
-        return Object.keys(hookScores).length ? hookScores : savedScores;
     }
 
     /**

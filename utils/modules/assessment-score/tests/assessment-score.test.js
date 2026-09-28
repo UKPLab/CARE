@@ -1,4 +1,9 @@
-const { calculateAssessmentScore, buildScoresFromState, scoresFromStoredValue } = require("../index");
+const {
+    calculateAssessmentScore,
+    buildScoresFromState,
+    scoresFromStoredValue,
+    pickScoresFromGradeRows,
+} = require("../index");
 
 describe("scoresFromStoredValue", () => {
     test("flattens NLP assessment arrays", () => {
@@ -13,6 +18,61 @@ describe("scoresFromStoredValue", () => {
     test("flattens numeric maps and currentScore state", () => {
         expect(scoresFromStoredValue({ Clarity: 4, Sources: 2 })).toEqual({ Clarity: 4, Sources: 2 });
         expect(scoresFromStoredValue({ Clarity: { currentScore: 3 } })).toEqual({ Clarity: 3 });
+    });
+
+    test("parses fenced JSON", () => {
+        expect(
+            scoresFromStoredValue('```json\n[{"name":"Clarity","score":4}]\n```')
+        ).toEqual({ Clarity: 4 });
+    });
+
+    test("parses double-encoded JSON", () => {
+        const inner = JSON.stringify([{ name: "Clarity", score: 4 }]);
+        expect(scoresFromStoredValue(JSON.stringify(inner))).toEqual({ Clarity: 4 });
+    });
+
+    test("unwraps an output wrapper", () => {
+        expect(scoresFromStoredValue({ output: { Clarity: 4, Sources: 2 } })).toEqual({
+            Clarity: 4,
+            Sources: 2,
+        });
+    });
+});
+
+describe("pickScoresFromGradeRows", () => {
+    test("prefers a saved row when any criterion is saved, including all zeros", () => {
+        expect(
+            pickScoresFromGradeRows([
+                { key: "aiHook_1", value: [{ name: "Clarity", score: 4 }] },
+                {
+                    key: "assessment_result",
+                    value: { Clarity: { currentScore: 0, isSaved: true } },
+                },
+            ])
+        ).toEqual({ Clarity: 0 });
+    });
+
+    test("uses hook scores when the saved row was not marked saved", () => {
+        expect(
+            pickScoresFromGradeRows([
+                {
+                    key: "assessment_result",
+                    value: { Clarity: { currentScore: 1, isSaved: false } },
+                },
+                { key: "aiHook_1", value: { Clarity: 4 } },
+            ])
+        ).toEqual({ Clarity: 4 });
+    });
+
+    test("keeps saved scores when no hook row has scores", () => {
+        expect(
+            pickScoresFromGradeRows([
+                {
+                    key: "assessment_result",
+                    value: { Clarity: { currentScore: 2, isSaved: false } },
+                },
+            ])
+        ).toEqual({ Clarity: 2 });
     });
 });
 

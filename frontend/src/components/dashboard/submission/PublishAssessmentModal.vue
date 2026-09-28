@@ -245,7 +245,7 @@
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { calculateAssessmentScore, scoresFromStoredValue } from "assessment-score";
+import { calculateAssessmentScore, pickScoresFromGradeRows } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {
   ASSESSMENT_RESULT_KEY,
@@ -776,6 +776,10 @@ export default {
       const svc = cfg.services.find((s) => s.skill || s.hookId) || cfg.services[0];
       return svc || null;
     },
+    /**
+     * Get assessment data keys for a study step.
+     * Always adds assessment_result to the hook/NLP keys.
+     */
     getAssessmentDataKeys(studyStep) {
       const svc = this.getNlpServiceForStudyStep(studyStep);
       const keys = getAssessmentResultKeyCandidates(svc);
@@ -867,23 +871,6 @@ export default {
       }
       return true;
     },
-    pickScoresFromDocumentData(items) {
-      let savedScores = {};
-      let hookScores = {};
-      items.forEach((item) => {
-        const scores = scoresFromStoredValue(item?.value);
-        if (!Object.keys(scores).length) return;
-        if (item.key === ASSESSMENT_RESULT_KEY) {
-          savedScores = scores;
-        } else if (!Object.keys(hookScores).length) {
-          hookScores = scores;
-        }
-      });
-      if (Object.values(savedScores).some((value) => Number(value) !== 0)) {
-        return savedScores;
-      }
-      return Object.keys(hookScores).length ? hookScores : savedScores;
-    },
     /**
      * Retrieves assessment data for a given session.
      * Returns an object with scores and assessment calculation.
@@ -919,7 +906,7 @@ export default {
             && keys.includes(row?.key)
         );
       }
-      const scores = this.pickScoresFromDocumentData(items);
+      const scores = pickScoresFromGradeRows(items);
       const assessment = calculateAssessmentScore(this.selectedConfigurationContent, scores);
 
       return { scores, assessment };
