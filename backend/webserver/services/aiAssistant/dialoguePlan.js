@@ -9,7 +9,7 @@
 
 const {AI_MESSAGE_ROLES} = require("../../../db/models/ai_message");
 
-const ALLOWED_SOURCES = new Set(["pr1", "pr2", "both"]);
+const ALLOWED_SOURCES = new Set(["pr1"]);
 const MAX_ANCHOR_LENGTH = 220;
 // Fixed for reproducible Dialogue decisions and anchor selections.
 const DIALOGUE_MODEL_PARAMETERS = {temperature: 0};
@@ -172,34 +172,34 @@ function shortenAnchorQuote(value) {
 }
 
 /**
- * Returns student-authored anchor candidates for one mapped review.
+ * Returns student-authored candidates from the mapped review inputs.
  *
+ * @param {Object} inputMappings - Configured context-hook input mappings.
  * @param {Object} values - Resolved context-hook values.
- * @param {string} source - Review source key.
  * @returns {string[]} Unique candidate texts.
  */
-function extractSourceCandidates(values, source) {
-    const index = source === "pr1" ? 1 : 2;
-    const review = values?.[`inlineComments[${index}]`];
-    const commentRows = Array.isArray(review) ? review : review?.comments;
-    const comments = Array.isArray(commentRows)
-        ? commentRows.flatMap((comment) => segmentAnchorText(comment?.text || comment?.comment))
-        : [];
-    const feedback = segmentAnchorText(values?.[`editorText[${index}]`]);
-    return [...new Set([...comments, ...feedback])];
+function extractSourceCandidates(inputMappings, values) {
+    const candidates = Object.entries(inputMappings || {}).flatMap(([key, mapping]) => {
+        if (mapping?.type === "editor") return segmentAnchorText(values?.[key]);
+        if (mapping?.type !== "annotator" || mapping.key !== "comments") return [];
+        const comments = values?.[key];
+        const rows = Array.isArray(comments) ? comments : comments?.comments;
+        return Array.isArray(rows)
+            ? rows.flatMap((comment) => segmentAnchorText(comment?.text || comment?.comment))
+            : [];
+    });
+    return [...new Set(candidates)];
 }
 
 /**
  * Builds the compact source snapshot stored with the system message.
  *
+ * @param {Object} inputMappings - Configured context-hook input mappings.
  * @param {Object} values - Resolved context-hook values.
- * @returns {{pr1: string[], pr2: string[]}} Anchor sources.
+ * @returns {{pr1: string[]}} Anchor sources.
  */
-function buildAnchorSources(values = {}) {
-    return {
-        pr1: extractSourceCandidates(values, "pr1"),
-        pr2: extractSourceCandidates(values, "pr2"),
-    };
+function buildAnchorSources(inputMappings = {}, values = {}) {
+    return {pr1: extractSourceCandidates(inputMappings, values)};
 }
 
 /**

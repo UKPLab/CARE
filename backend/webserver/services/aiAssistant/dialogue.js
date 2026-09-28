@@ -1,7 +1,9 @@
 "use strict";
 
 /**
- * Adaptive or fixed dialogue orchestration.
+ * Adaptive or fixed Dialogue orchestration.
+ *
+ * Fixed-plan support is extensible groundwork; final support needs a plan, UI updates, and validation.
  *
  * @module webserver/services/aiAssistant/dialogue
  * @author Mohammed Rawhani
@@ -16,19 +18,15 @@ const {stepTypes} = require("../../../db/models/study_step");
 const {CONFIGURATION_TYPES} = require("../../../db/models/configuration");
 const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
 const core = require("./core.js");
-const anchors = require("./dialogueAnchors.js");
+const dialogueAdaptive = require("./dialogueAdaptive.js");
 const dialoguePlan = require("./dialoguePlan.js");
 const turns = require("./turns.js");
 const {
-    buildQuestionMetadata,
     buildAnswerMetadata,
     getCurrentQuestion,
     requireCurrentQuestion,
-    countFollowUps,
-    buildDecisionValues,
     buildAnchorSources,
     normalizeDialoguePlan,
-    parseDialogueDecision,
     renderQuestion,
     selectNextPlanQuestion,
 } = dialoguePlan;
@@ -223,14 +221,17 @@ async function getDialogueConversation(service, client, data) {
  * @returns {Promise<Object>} Resolved prompt and anchor-source snapshot.
  */
 async function resolveDialogueSystemPrompt(service, client, context, values) {
-    if (!context.contextHookId) return {systemPrompt: null, anchorSources: {pr1: [], pr2: []}};
+    if (!context.contextHookId) return {systemPrompt: null, anchorSources: {pr1: []}};
     const promptValues = core.buildPromptValues(context.contextService?.inputs, values);
     const systemPrompt = (await core.getAIService(service).call(
         "resolveHookPrompt",
         client,
         {hookId: context.contextHookId, values: promptValues},
     )).promptText;
-    return {systemPrompt, anchorSources: buildAnchorSources(promptValues)};
+    return {
+        systemPrompt,
+        anchorSources: buildAnchorSources(context.contextService?.inputs, promptValues),
+    };
 }
 
 /**
@@ -384,48 +385,6 @@ async function createDialogueTurn(
 }
 
 /**
- * Prepares an adaptive follow-up or the next configured question.
- *
- * The decision outcome is stored with the response, so invalid model output
- * can be told apart from an intentional "next".
- *
- * @param {Object} service - Assistant service.
- * @param {Object} client - Authenticated client.
- * @param {Object} context - Validated dialogue context.
- * @param {Object} turn - Persisted turn and prior step history.
- * @param {Object} question - Answered question.
- * @param {string} requestId - Request identifier.
- * @returns {Promise<Object>} Final assistant content, metadata and model id.
- */
-async function prepareAdaptiveResponse(service, client, context, turn, question, requestId) {
-    const skipped = turn.userMessage.metadata?.dialogue?.skipped === true;
-    const followUpsUsed = countFollowUps(turn.previousMessages, question.id);
-    const canFollowUp = !skipped && followUpsUsed < question.maxFollowUps;
-    const nextQuestion = selectNextPlanQuestion(context.plan, [...turn.previousMessages, turn.userMessage]);
-    const anchorState = nextQuestion
-        ? await anchors.prepareDialogueAnchors(service, client, context, turn, requestId)
-        : {};
-    if (!canFollowUp) {
-        const payload = dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState);
-        payload.metadata.dialogue.decision = {requested: false};
-        return {...payload, aiModelId: anchorState.aiModelId || null};
-    }
-    const {output, aiModelId} = await turns.requestHookCompletion(
-        service, client, context, context.decisionHookId,
-        buildDecisionValues(question, turn.userMessage.content), requestId,
-        turn.assistantMessage.id, dialoguePlan.DIALOGUE_MODEL_PARAMETERS,
-    );
-    const decision = parseDialogueDecision(output);
-    const payload = decision.action === "follow_up"
-        ? {content: decision.content, metadata: buildQuestionMetadata("follow_up", question, {
-            followUpIndex: followUpsUsed + 1,
-        })}
-        : dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState);
-    payload.metadata.dialogue.decision = {requested: true, action: decision.action, valid: decision.valid};
-    return {...payload, aiModelId};
-}
-
-/**
  * Stores one Dialogue answer and returns the next question or completion message.
  *
  * @param {Object} service - AIAssistantService runtime.
@@ -461,7 +420,7 @@ async function sendDialogueAnswer(service, client, data) {
     const messages = currentConversation ? await service.server.db.models["ai_message"].getVisibleMessages(currentConversation.id, context.studyStep.id) : [];
     const question = requireCurrentQuestion(context.plan, messages, data?.questionId);
     const resolvedContext = currentConversation
-        ? {systemPrompt: null, anchorSources: {pr1: [], pr2: []}}
+        ? {systemPrompt: null, anchorSources: {pr1: []}}
         : await resolveDialogueSystemPrompt(service, client, context, data?.values || {});
     const turn = await createDialogueTurn(
         service,
@@ -534,7 +493,7 @@ async function retryDialogueMessage(service, client, data) {
  */
 async function prepareDialogueResponse(service, client, context, turn, question, requestId) {
     if (context.plan.adaptive) {
-        return prepareAdaptiveResponse(service, client, context, turn, question, requestId);
+        return dialogueAdaptive.prepareResponse(service, client, context, turn, question, requestId);
     }
     const nextQuestion = selectNextPlanQuestion(context.plan, [...turn.previousMessages, turn.userMessage]);
     return dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion);

@@ -4,7 +4,6 @@ const fs = require("fs");
 const path = require("path");
 
 const PLAN_JSON_PATHS = [
-    "20260824121000-basic-configuration-dialogue_plan_fixed.json",
     "20260824121000-basic-configuration-dialogue_plan_adaptive.json",
 ];
 

@@ -95,16 +95,8 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 
-const RADIO_TYPES = Object.freeze([
-  "likert",
-  "multipleChoice",
-  "multiple_choice",
-  "singleChoice",
-  "single_choice",
-  "mcq",
-  "choice",
-]);
-const CHECKBOX_TYPES = Object.freeze(["multiChoice", "multi_choice", "checkbox"]);
+const RADIO_TYPES = Object.freeze(["likert", "singleChoice"]);
+const CHECKBOX_TYPES = Object.freeze(["multipleChoice"]);
 
 /**
  * Renders the answer control for a Dialogue question.

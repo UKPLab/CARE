@@ -45,7 +45,7 @@ async function loadAnchorState(service, conversationId, studyStepId) {
     const dialogue = message?.metadata?.dialogue || {};
     return {
         message,
-        anchorSources: dialogue.anchorSources || {pr1: [], pr2: []},
+        anchorSources: dialogue.anchorSources || {pr1: []},
         anchorSelections: dialogue.anchorSelections || {},
         prepared: Object.hasOwn(dialogue, "anchorSelections"),
     };

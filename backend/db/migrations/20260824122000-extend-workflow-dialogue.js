@@ -36,24 +36,8 @@ const assessmentConfigurationField = {
 
 const workflows = [
     {
-        name: "Dialogue Workflow (Fixed)",
-        description: "Single-step Dialogue workflow for fixed questionnaires, surveys, or exams.",
-        steps: [
-            {
-                name: "Dialogue",
-                stepType: 4,
-                allowBackward: false,
-                workflowStepDocument: null,
-                configuration: {
-                    settings: {fields: [dialoguePlanField]},
-                    placeholders: false,
-                },
-            },
-        ],
-    },
-    {
-        name: "Post-validation Dialogue Workflow (AI Adaptive)",
-        description: "A read-only peer review followed by an adaptive AI Dialogue step.",
+        name: "Peer Review Workflow (Reflective Dialogue)",
+        description: "A read-only peer review and feedback step followed by an adaptive reflective Dialogue.",
         steps: [
             {
                 name: "Review",

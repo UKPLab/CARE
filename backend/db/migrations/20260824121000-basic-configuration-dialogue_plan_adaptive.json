@@ -1,7 +1,6 @@
 {
-  "name": "Post-validation Peer-review Dialogue Plan",
-  "type": "dialoguePlan",
-  "title": "Post-validation Dialogue",
+  "name": "Peer Review Reflective Dialogue Plan",
+  "title": "Peer Review Reflective Dialogue",
   "version": "1.3",
   "adaptive": true,
   "allowSkip": true,
@@ -11,7 +10,6 @@
       "help": "Describe what you understood the exposé to be trying to do. There is no required wording.",
       "text": "Thinking about the exposé you reviewed, how would you describe its main aim in your own words?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "understanding_reviewed_work",
       "completeWhen": "The answer describes the exposé's main aim, problem, claim, or focus as the participant understood it.",
@@ -25,7 +23,6 @@
       "help": "Choose any judgment from your review and explain what standard or quality you were looking for.",
       "text": "Think of one judgment you made in your review. What standard or criterion were you using when you made it?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "judgment_criteria",
       "completeWhen": "The answer identifies at least one standard or criterion used to make a judgment about the exposé.",
@@ -39,7 +36,6 @@
       "help": "Explain what you noticed in the exposé that led to the comment.",
       "text": "Thinking about your review, choose one comment you made. What in the exposé led you to make that comment?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "evidence_grounding",
       "anchoredText": "In your review, you wrote: “{{anchor}}” What in the exposé led you to write this feedback?",
@@ -54,7 +50,6 @@
       "help": "Explain the reason behind the point and why it mattered for the exposé.",
       "text": "Thinking about your review, choose one important point you made. If the author asked why you made that point, what would you say?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "judgment_justification_challenge",
       "anchoredText": "In your review, you wrote: “{{anchor}}” If the author asked why you made this point, what would you say?",
@@ -69,7 +64,6 @@
       "help": "Name one suggestion from your review and explain the change you expected it to produce.",
       "text": "Thinking about your review, choose one suggestion you made. What change did you expect it to make to the exposé?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "constructive_implications",
       "completeWhen": "The answer identifies a concrete expected change or consequence of the suggestion.",
@@ -83,7 +77,6 @@
       "help": "If there was something you were unsure about, explain it. If not, you can say that.",
       "text": "Thinking about your review, was there anything you were unsure about? If so, what made you unsure?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "assumptions_uncertainty_limits",
       "completeWhen": "The answer identifies an uncertainty, assumption, missing information, alternative interpretation, or limitation, or clearly states that there was no meaningful uncertainty.",
@@ -97,7 +90,6 @@
       "help": "Describe how you chose which issues were worth including in your review.",
       "text": "Thinking about your review, how did you decide which points to focus on?",
       "source": "pr1",
-      "required": true,
       "answerType": "text",
       "categoryId": "review_strategy_reflection",
       "completeWhen": "The answer explains how the participant selected or prioritized points for the review.",
@@ -107,50 +99,6 @@
       "followUpDirection": "If the selection strategy is unclear, ask how the participant chose between several possible points."
     }
   ],
-  "categories": [
-    {
-      "id": "understanding_reviewed_work",
-      "label": "Understanding the reviewed work",
-      "evidenceGoal": "The participant explains what they understood the reviewed exposé to be trying to do.",
-      "sourceCategory": "Socratic clarification"
-    },
-    {
-      "id": "judgment_criteria",
-      "label": "Criteria used for judgment",
-      "evidenceGoal": "The participant explains the standard or criterion used to judge quality.",
-      "sourceCategory": "Peer-review quality judgment"
-    },
-    {
-      "id": "evidence_grounding",
-      "label": "Evidence grounding",
-      "evidenceGoal": "The participant connects submitted feedback to evidence or features in the reviewed exposé.",
-      "sourceCategory": "Socratic reasons and evidence"
-    },
-    {
-      "id": "judgment_justification_challenge",
-      "label": "Judgment justification and challenge",
-      "evidenceGoal": "The participant explains and justifies a review judgment and can articulate it from the author's perspective.",
-      "sourceCategory": "Socratic reasons, evidence, and perspectives"
-    },
-    {
-      "id": "constructive_implications",
-      "label": "Constructive implications",
-      "evidenceGoal": "The participant explains the intended effect of a suggestion in their feedback.",
-      "sourceCategory": "Socratic implications and consequences"
-    },
-    {
-      "id": "assumptions_uncertainty_limits",
-      "label": "Assumptions, uncertainty, and limits",
-      "evidenceGoal": "The participant identifies assumptions, uncertainty, or limits in their own review, or clearly states that none were salient.",
-      "sourceCategory": "Socratic assumptions and reflection"
-    },
-    {
-      "id": "review_strategy_reflection",
-      "label": "Review strategy and reflection",
-      "evidenceGoal": "The participant explains how they selected priorities and approached the review.",
-      "sourceCategory": "Socratic questions about the question and reflection"
-    }
-  ],
-  "description": "Adaptive post-validation dialogue covering seven peer-review reasoning categories for one review.",
+  "description": "Adaptive reflective dialogue covering seven peer-review reasoning categories for one review.",
   "completionMessage": "Thank you. The dialogue is complete."
 }
