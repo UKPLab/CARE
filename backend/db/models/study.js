@@ -7,6 +7,7 @@ const SequelizeSimpleCache = require("sequelize-simple-cache");
 const {Op, col, literal, where: sqlWhere} = require("sequelize");
 const {STATES} = require("../studyDashboardSortSql.js");
 const {NUMERIC_OPERATORS, NUMERIC_OPERATORS_NE} = require("../../utils/helper/queryTableColumnFilters.js");
+const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
 module.exports = (sequelize, DataTypes) => {
     class Study extends MetaModel {
@@ -630,6 +631,46 @@ module.exports = (sequelize, DataTypes) => {
             return {
                 state: {field: "stateRank"},
                 sessions: {field: "sessions"},
+            };
+        }
+
+        /**
+         * Rows of a scoped study queryTable.
+         *
+         * - `scope.dashboard`: the Studies dashboard grid. Without `studies.fullAccess` (admins
+         *   hold every right) it lists only the studies the viewer runs:
+         *   `(createdByUserId IS NULL AND userId = me) OR createdByUserId = me`.
+         *   This is the rule `dev`'s Study.vue applied to its Vuex rows. It narrows the study ACL
+         *   (AND), it never widens it, and it stays out of getUserFilter so broadcasts, Vuex
+         *   subscriptions and Manage Studies keep the plain ACL, as on `dev`.
+         *   The frontend mirrors it for live rows (Study.vue `dashboardScopeMatcher`).
+         *
+         * @param {Object} scope
+         * @param {Object} ctx
+         * @param {number} ctx.userId
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<Object|null>} WHERE fragment, or null when no restriction applies
+         * @throws {TranslatableError} when a known scope key is present but unusable
+         */
+        static async getQueryTableScopeFilter(scope, ctx = {}) {
+            if (!scope?.dashboard) {
+                return null;
+            }
+            if (scope.dashboard !== true || typeof ctx.hasAccess !== "function") {
+                throw new TranslatableError("errors.queryTable.scopeInvalid");
+            }
+            if (await ctx.hasAccess("frontend.dashboard.studies.fullAccess")) {
+                return null;
+            }
+            const userId = positiveInt(ctx.userId);
+            if (!userId) {
+                throw new TranslatableError("errors.queryTable.scopeInvalid");
+            }
+            return {
+                [Op.or]: [
+                    {[Op.and]: [{createdByUserId: null}, {userId}]},
+                    {createdByUserId: userId},
+                ],
             };
         }
 

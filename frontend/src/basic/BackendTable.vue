@@ -441,6 +441,18 @@ export default {
       default: null,
     },
     /**
+     * Optional client mirror of queryScope for live rows, for scopes that only read the row's
+     * own columns (e.g. the Studies dashboard ownership rule). Called with the raw row; return
+     * true (in scope), false (out of scope) or undefined (cannot tell from this row). Without it,
+     * or on undefined, a scoped table only keeps rows it already loaded. Display only: the
+     * server applies the scope again on every fetch.
+     */
+    queryScopeMatcher: {
+      type: Function,
+      required: false,
+      default: null,
+    },
+    /**
      * Filterable keys offered by the search bar, per table (see basic/table/Search.vue).
      * The backend validates the same keys again — this only drives the UI.
      */
@@ -1918,8 +1930,14 @@ export default {
     passesCurrentFilter(row) {
       // A scope is resolved server-side only (it joins other tables). A row we never loaded cannot
       // be checked here, so it stays out instead of entering the page on a guess.
-      if (this.hasQueryScope && !this.queryItems.some((item) => item.id === row.id)) {
-        return false;
+      if (this.hasQueryScope) {
+        const verdict = this.queryScopeMatcher ? this.queryScopeMatcher(row) : undefined;
+        if (verdict === false) {
+          return false;
+        }
+        if (verdict !== true && !this.queryItems.some((item) => item.id === row.id)) {
+          return false;
+        }
       }
       const q = this.currentQuery || {};
       // Check the row as it is displayed: derived columns (e.g. a workflow title looked up on the

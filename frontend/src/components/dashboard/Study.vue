@@ -56,6 +56,8 @@
             table="study"
             :columns="columns"
             :query-filter="studyQueryFilter"
+            :query-scope="studyQueryScope"
+            :query-scope-matcher="dashboardScopeMatcher"
             :query-filter-schema="studyFilterSchema"
             :query-search-columns="studySearchColumns"
             :enrich-row="(row) => enrichStudyRow(row)"
@@ -205,6 +207,16 @@ export default {
         {key: "projectId", value: this.projectId},
         {key: "template", value: false},
       ];
+    },
+    /**
+     * Dashboard ownership rule, applied server-side: without
+     * fullAccess, only studies the viewer runs.
+     */
+    studyQueryScope() {
+      return {dashboard: true};
+    },
+    canViewAllStudies() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.fullAccess");
     },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
@@ -389,6 +401,22 @@ export default {
     },
   },
   methods: {
+    /**
+     * Client mirror of the dashboard scope for live rows
+     * Same rule as study.getQueryTableScopeFilter
+     * @param {Object} row raw study row from a Delta
+     * @returns {boolean|undefined} undefined when the row lacks the ownership columns
+     */
+    dashboardScopeMatcher(row) {
+      if (this.canViewAllStudies) {
+        return true;
+      }
+      if (!row || !("createdByUserId" in row) || !("userId" in row)) {
+        return undefined;
+      }
+      return (row.createdByUserId === null && row.userId === this.userId)
+          || row.createdByUserId === this.userId;
+    },
     enrichStudyRow(st) {
       let study = {...st};
 
