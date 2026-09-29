@@ -50,14 +50,14 @@ async function loadStudyStepContext(service, client, studySessionId, studyStepId
  * @returns {Promise<Object>} Owned conversation row.
  */
 async function loadOwnedConversation(service, conversationId, userId, studySessionId, descriptor, options = {}) {
-    const row = await service.server.db.models["ai_conversation"].getOwnedConversation(
+    const conversation = await service.server.db.models["ai_conversation"].getOwnedConversation(
         serviceHelpers.requireId(conversationId, "conversationId"),
         userId, studySessionId, descriptor.conversationType, options,
     );
-    if (!row) {
+    if (!conversation) {
         throw new Error(descriptor.notFoundMessage);
     }
-    return row;
+    return conversation;
 }
 
 /**

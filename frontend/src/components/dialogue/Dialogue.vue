@@ -298,24 +298,25 @@ export default {
      * @returns {void}
      */
     sendAnswer(answer) {
-      if (this.readOnly || this.isBusy || !this.currentQuestion || this.retryableMessageId) return;
-      if (answer.skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) return;
+      const skipped = answer.skipped === true;
+      if (this.readOnly || this.isBusy || !this.currentQuestion || (this.retryableMessageId && !skipped)) return;
+      if (skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) return;
       const requestId = this.$aiAssistant.createRequestId();
       this.trackDialogueEvent("dialogueAnswerSubmitted", {
         requestId,
         questionId: this.currentQuestion.id,
       });
-      this.pendingAnswer = answer.skipped ? "Skipped" : answer.answerText;
-      this.pendingSkipped = answer.skipped === true;
+      this.pendingAnswer = skipped ? "Skipped" : answer.answerText;
+      this.pendingSkipped = skipped;
       this.startRequest({
         type: "send",
-        submittedContent: answer.skipped ? "" : answer.answerText.trim(),
+        submittedContent: skipped ? "" : answer.answerText.trim(),
         requestId,
         conversationId: this.activeConversationId,
         questionId: this.currentQuestion.id,
         answerText: answer.answerText,
         answerValue: answer.answerValue,
-        skipped: answer.skipped === true,
+        skipped,
       });
       this.errorMessage = "";
       this.scrollToBottom();

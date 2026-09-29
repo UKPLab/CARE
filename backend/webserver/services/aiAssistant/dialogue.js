@@ -170,7 +170,7 @@ async function getDialogueConversation(service, client, data) {
         data?.studyStepId,
         {requireCurrentStep: false, requireHooks: false},
     );
-    const existing = data?.conversationId
+    const conversation = data?.conversationId
         ? await core.loadOwnedConversation(
             service,
             data.conversationId,
@@ -179,12 +179,12 @@ async function getDialogueConversation(service, client, data) {
             DIALOGUE,
         )
         : await findDialogueConversation(service, context.userId, context.studySession.id);
-    const messages = existing ? await service.server.db.models["ai_message"].getVisibleMessages(existing.id, context.studyStep.id) : [];
+    const messages = conversation ? await service.server.db.models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id) : [];
     const currentQuestion = getCurrentQuestion(context.plan, messages);
     const latestAssistant = [...messages].reverse().find((message) => Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT);
 
     return {
-        activeConversationId: existing?.id || null,
+        activeConversationId: conversation?.id || null,
         messages,
         plan: {
             title: context.plan.title,
@@ -225,26 +225,27 @@ async function resolveDialogueSystemPrompt(service, client, context, values) {
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} context - Dialogue context.
- * @param {Object} currentConversation - Conversation row.
- * @param {string|null} systemPrompt - Resolved system prompt.
- * @param {Object} anchorSources - Student-authored review source snapshot.
+ * @param {Object} conversation - Conversation row.
+ * @param {Object} resolvedContext - Prepared initial context.
+ * @param {string|null} resolvedContext.systemPrompt - Resolved system prompt.
+ * @param {Object} resolvedContext.anchorSources - Review source snapshot.
  * @param {Object} options - Sequelize options.
  * @returns {Promise<void>}
  */
 async function addSystemContextIfNeeded(
     service,
     context,
-    currentConversation,
-    systemPrompt,
-    anchorSources,
+    conversation,
+    resolvedContext,
     options,
 ) {
+    const {systemPrompt, anchorSources} = resolvedContext;
     if (!context.contextHookId) return;
     if (systemPrompt === null) {
         throw new Error("Dialogue context is missing for this study step");
     }
     await service.server.db.models["ai_message"].add({
-        conversationId: currentConversation.id,
+        conversationId: conversation.id,
         studyStepId: context.studyStep.id,
         role: AI_MESSAGE_ROLES.SYSTEM,
         content: systemPrompt,
@@ -264,44 +265,44 @@ async function addSystemContextIfNeeded(
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} context - Dialogue context.
- * @param {Object|null} currentConversation - Existing conversation.
- * @param {string|null} systemPrompt - Resolved system prompt.
- * @param {Object} anchorSources - Student-authored review source snapshot.
+ * @param {Object|null} existingConversation - Existing conversation.
+ * @param {Object} resolvedContext - Prepared initial context.
+ * @param {string|null} resolvedContext.systemPrompt - Resolved system prompt.
+ * @param {Object} resolvedContext.anchorSources - Review source snapshot.
  * @param {Object} options - Sequelize options.
- * @returns {Promise<Object>} Conversation row.
+ * @returns {Promise<Object>} Conversation record.
  */
 async function ensureConversation(
     service,
     context,
-    currentConversation,
-    systemPrompt,
-    anchorSources,
+    existingConversation,
+    resolvedContext,
     options,
 ) {
-    const row = currentConversation || await service.server.db.models["ai_conversation"].add({
+    const conversation = existingConversation || await service.server.db.models["ai_conversation"].add({
         userId: context.userId,
         studySessionId: context.studySession.id,
         type: AI_CONVERSATION_TYPES.DIALOGUE,
         title: context.plan.title,
     }, options);
-    if (!currentConversation) {
-        await addSystemContextIfNeeded(service, context, row, systemPrompt, anchorSources, options);
+    if (!existingConversation) {
+        await addSystemContextIfNeeded(service, context, conversation, resolvedContext, options);
     }
-    return row;
+    return conversation;
 }
 
 /**
  * Adds a question message when the UI answered a not-yet-stored first question.
  *
  * @param {Object} service - AIAssistantService runtime.
- * @param {Object} currentConversation - Conversation row.
+ * @param {Object} conversation - Conversation row.
  * @param {Object} context - Dialogue context.
  * @param {Object} question - Current question.
  * @param {Object[]} existingMessages - Step history loaded in the transaction.
  * @param {Object} options - Sequelize options.
  * @returns {Promise<void>}
  */
-async function addQuestionIfMissing(service, currentConversation, context, question, existingMessages, options) {
+async function addQuestionIfMissing(service, conversation, context, question, existingMessages, options) {
     const existing = existingMessages.find((message) =>
         message?.metadata?.dialogue?.kind === "main_question"
         && String(message.metadata.dialogue.questionId) === String(question.id)
@@ -309,7 +310,7 @@ async function addQuestionIfMissing(service, currentConversation, context, quest
     if (existing) return;
     const rendered = renderQuestion(question, "", {});
     await service.server.db.models["ai_message"].add({
-        conversationId: currentConversation.id,
+        conversationId: conversation.id,
         studyStepId: context.studyStep.id,
         role: AI_MESSAGE_ROLES.ASSISTANT,
         content: rendered.text,
@@ -323,26 +324,26 @@ async function addQuestionIfMissing(service, currentConversation, context, quest
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} context - Dialogue context.
- * @param {Object|null} currentConversation - Existing conversation.
+ * @param {Object|null} existingConversation - Existing conversation.
  * @param {Object} question - Current question.
- * @param {string} answerText - Answer text.
- * @param {*} answerValue - Raw answer value.
- * @param {boolean} skipped - Whether the student skipped the question.
- * @param {string|null} systemPrompt - Resolved system prompt.
- * @param {Object} anchorSources - Student-authored review source snapshot.
+ * @param {Object} answer - Validated answer data.
+ * @param {string} answer.answerText - Answer text.
+ * @param {*} answer.answerValue - Raw answer value.
+ * @param {boolean} answer.skipped - Whether the question was skipped.
+ * @param {Object} resolvedContext - Prepared initial context.
+ * @param {string|null} resolvedContext.systemPrompt - Resolved system prompt.
+ * @param {Object} resolvedContext.anchorSources - Review source snapshot.
  * @returns {Promise<Object>} Conversation, user message, assistant placeholder, and previous messages.
  */
 async function createDialogueTurn(
     service,
     context,
-    currentConversation,
+    existingConversation,
     question,
-    answerText,
-    answerValue,
-    skipped,
-    systemPrompt,
-    anchorSources,
+    answer,
+    resolvedContext,
 ) {
+    const {answerText, answerValue, skipped} = answer;
     const models = service.server.db.models;
     return service.server.db.sequelize.transaction(async (transaction) => {
         await turns.requireNoPendingMessage(
@@ -351,18 +352,17 @@ async function createDialogueTurn(
             context.studySession.id,
             {transaction},
         );
-        const row = await ensureConversation(
+        const conversation = await ensureConversation(
             service,
             context,
-            currentConversation,
-            systemPrompt,
-            anchorSources,
+            existingConversation,
+            resolvedContext,
             {transaction},
         );
-        const previousMessages = await models["ai_message"].getVisibleMessages(row.id, context.studyStep.id, {transaction});
+        const previousMessages = await models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id, {transaction});
         const currentQuestion = requireCurrentQuestion(context.plan, previousMessages, question.id);
-        await addQuestionIfMissing(service, row, context, currentQuestion, previousMessages, {transaction});
-        const turn = await turns.createTurnMessages(service, context, row, {
+        await addQuestionIfMissing(service, conversation, context, currentQuestion, previousMessages, {transaction});
+        const turn = await turns.createTurnMessages(service, context, conversation, {
             user: {content: answerText, metadata: buildAnswerMetadata(currentQuestion, answerValue, skipped)},
             assistant: {metadata: {dialogue: {kind: "pending", questionId: currentQuestion.id}}},
         }, {transaction});
@@ -395,7 +395,7 @@ async function sendDialogueAnswer(service, client, data) {
         throw new Error("Answer content is required");
     }
 
-    const currentConversation = data?.conversationId
+    const conversation = data?.conversationId
         ? await core.loadOwnedConversation(
             service,
             data.conversationId,
@@ -404,23 +404,20 @@ async function sendDialogueAnswer(service, client, data) {
             DIALOGUE,
         )
         : await findDialogueConversation(service, context.userId, context.studySession.id);
-    const messages = currentConversation ? await service.server.db.models["ai_message"].getVisibleMessages(currentConversation.id, context.studyStep.id) : [];
+    const messages = conversation ? await service.server.db.models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id) : [];
     const question = requireCurrentQuestion(context.plan, messages, data?.questionId);
-    const resolvedContext = currentConversation
+    const resolvedContext = conversation
         ? {systemPrompt: null, anchorSources: {pr1: []}}
         : await resolveDialogueSystemPrompt(service, client, context, data?.values || {});
     const turn = await createDialogueTurn(
         service,
         context,
-        currentConversation,
+        conversation,
         question,
-        answerText,
-        skipped ? null : data?.answerValue ?? answerText,
-        skipped,
-        resolvedContext.systemPrompt,
-        resolvedContext.anchorSources,
+        {answerText, answerValue: skipped ? null : data?.answerValue ?? answerText, skipped},
+        resolvedContext,
     );
-    return completeDialogueTurn(service, client, context, turn, turn.question, requestId);
+    return completeDialogueTurn(service, client, context, turn, requestId);
 }
 
 /**
@@ -432,12 +429,12 @@ async function sendDialogueAnswer(service, client, data) {
  * @returns {Promise<Object>} Completed assistant response.
  */
 async function retryDialogueMessage(service, client, data) {
-    const {assistantMessageId, requestId, assistantMessage, userId, conversation: currentConversation} =
+    const {assistantMessageId, requestId, assistantMessage, userId, conversation} =
         await turns.loadRetryableAssistantMessage(service, client, data, DIALOGUE);
     const context = await loadDialogueContext(
         service,
         client,
-        currentConversation.studySessionId,
+        conversation.studySessionId,
         assistantMessage.studyStepId,
         {requireCurrentStep: false},
     );
@@ -451,20 +448,23 @@ async function retryDialogueMessage(service, client, data) {
     await turns.resetMessageForRetry(
         service,
         userId,
-        currentConversation.studySessionId,
-        currentConversation.id,
+        conversation.studySessionId,
+        conversation.id,
         assistantMessageId,
     );
     const completed = await turns.completeTurn(service, {assistantMessage}, async () => {
         const previousMessages = (await service.server.db.models["ai_message"].getVisibleMessages(
-            currentConversation.id, context.studyStep.id,
+            conversation.id, context.studyStep.id,
         )).filter((message) => Number(message.id) < Number(previousUser.id));
-        const turn = {conversation: currentConversation, userMessage: previousUser, assistantMessage, previousMessages};
         const currentQuestion = requireCurrentQuestion(context.plan, previousMessages, question.id);
-        return prepareDialogueResponse(service, client, context, turn, currentQuestion, requestId);
+        const turn = {
+            conversation, userMessage: previousUser, assistantMessage,
+            previousMessages, question: currentQuestion,
+        };
+        return prepareDialogueResponse(service, client, context, turn, requestId);
     });
     return buildDialogueResult(
-        service, context, {conversation: currentConversation, userMessage: null}, completed,
+        service, context, {conversation, userMessage: null}, completed,
     );
 }
 
@@ -474,13 +474,13 @@ async function retryDialogueMessage(service, client, data) {
  * @param {Object} client - Authenticated client.
  * @param {Object} context - Validated dialogue context.
  * @param {Object} turn - Persisted turn and prior history.
- * @param {Object} question - Answered question.
+ * @param {Object} turn.question - Validated answered question.
  * @param {string} requestId - Request identifier.
  * @returns {Promise<Object>} Final response fields.
  */
-async function prepareDialogueResponse(service, client, context, turn, question, requestId) {
+async function prepareDialogueResponse(service, client, context, turn, requestId) {
     if (context.plan.adaptive) {
-        return dialogueAdaptive.prepareResponse(service, client, context, turn, question, requestId);
+        return dialogueAdaptive.prepareResponse(service, client, context, turn, requestId);
     }
     const nextQuestion = selectNextPlanQuestion(context.plan, [...turn.previousMessages, turn.userMessage]);
     return dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion);
@@ -492,13 +492,13 @@ async function prepareDialogueResponse(service, client, context, turn, question,
  * @param {Object} client - Authenticated client.
  * @param {Object} context - Validated dialogue context.
  * @param {Object} turn - Persisted turn and prior history.
- * @param {Object} question - Answered question.
+ * @param {Object} turn.question - Validated answered question.
  * @param {string} requestId - Request identifier.
  * @returns {Promise<Object>} Completed dialogue result.
  */
-async function completeDialogueTurn(service, client, context, turn, question, requestId) {
+async function completeDialogueTurn(service, client, context, turn, requestId) {
     const assistantMessage = await turns.completeTurn(service, turn, () =>
-        prepareDialogueResponse(service, client, context, turn, question, requestId),
+        prepareDialogueResponse(service, client, context, turn, requestId),
     );
     return buildDialogueResult(service, context, turn, assistantMessage);
 }

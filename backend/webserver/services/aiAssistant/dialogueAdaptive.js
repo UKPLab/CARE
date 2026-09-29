@@ -18,11 +18,12 @@ const turns = require("./turns.js");
  * @param {Object} client - Authenticated client.
  * @param {Object} context - Validated Dialogue context.
  * @param {Object} turn - Persisted turn and prior step history.
- * @param {Object} question - Answered question.
+ * @param {Object} turn.question - Validated answered question.
  * @param {string} requestId - Request identifier.
  * @returns {Promise<Object>} Final assistant content, metadata, and model id.
  */
-async function prepareResponse(service, client, context, turn, question, requestId) {
+async function prepareResponse(service, client, context, turn, requestId) {
+    const {question} = turn;
     const skipped = turn.userMessage.metadata?.dialogue?.skipped === true;
     const followUpsUsed = dialoguePlan.countFollowUps(turn.previousMessages, question.id);
     const canFollowUp = !skipped && followUpsUsed < question.maxFollowUps;
@@ -30,7 +31,7 @@ async function prepareResponse(service, client, context, turn, question, request
         context.plan,
         [...turn.previousMessages, turn.userMessage],
     );
-    const anchorState = nextQuestion
+    const anchorState = nextQuestion && !skipped
         ? await anchors.prepareDialogueAnchors(service, client, context, turn, requestId)
         : {};
     if (!canFollowUp) {
@@ -42,11 +43,13 @@ async function prepareResponse(service, client, context, turn, question, request
         service,
         client,
         context,
-        context.decisionHookId,
-        dialoguePlan.buildDecisionValues(question, turn.userMessage.content),
-        requestId,
-        turn.assistantMessage.id,
-        dialoguePlan.DIALOGUE_MODEL_PARAMETERS,
+        {
+            hookId: context.decisionHookId,
+            values: dialoguePlan.buildDecisionValues(question, turn.userMessage.content),
+            requestId,
+            aiMessageId: turn.assistantMessage.id,
+            parameters: dialoguePlan.DIALOGUE_MODEL_PARAMETERS,
+        },
     );
     const decision = dialoguePlan.parseDialogueDecision(output);
     const payload = decision.action === "follow_up"

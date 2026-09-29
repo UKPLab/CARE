@@ -52,14 +52,16 @@ function buildUserContent(content, metadata) {
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} context - Validated chat context.
- * @param {Object|null} conversation - Existing conversation, or null for a new one.
- * @param {string} content - User message content.
- * @param {Object} modelParams - Resolved hook model parameters.
- * @param {Object|null} systemContext - Rendered context for a new conversation.
- * @param {Object|null} userMetadata - Optional user-message metadata.
+ * @param {Object|null} existingConversation - Existing conversation, or null for a new one.
+ * @param {Object} data - Prepared message data.
+ * @param {string} data.content - User message content.
+ * @param {Object} data.modelParams - Resolved model parameters.
+ * @param {Object|null} data.systemContext - Initial prompt context.
+ * @param {Object|null} [data.userMetadata=null] - User-message metadata.
  * @returns {Promise<Object>} Conversation, user message, and assistant placeholder.
  */
-async function createConversationTurn(service, context, conversation, content, modelParams, systemContext, userMetadata = null) {
+async function createConversationTurn(service, context, existingConversation, data) {
+    const {content, modelParams, systemContext, userMetadata = null} = data;
     const models = service.server.db.models;
     return service.server.db.sequelize.transaction(async (transaction) => {
         await turns.requireNoPendingMessage(
@@ -69,9 +71,9 @@ async function createConversationTurn(service, context, conversation, content, m
             {transaction},
         );
 
-        let currentConversation = conversation;
-        if (!currentConversation) {
-            currentConversation = await models["ai_conversation"].add({
+        let conversation = existingConversation;
+        if (!conversation) {
+            conversation = await models["ai_conversation"].add({
                 userId: context.userId,
                 studySessionId: context.studySession.id,
                 type: AI_CONVERSATION_TYPES.CHAT,
@@ -80,12 +82,12 @@ async function createConversationTurn(service, context, conversation, content, m
             }, {transaction});
         }
 
-        if (!conversation && context.includeContext) {
+        if (!existingConversation && context.includeContext) {
             if (systemContext === null) {
                 throw new Error("AI Chat context is missing for this study step");
             }
             await models["ai_message"].add({
-                conversationId: currentConversation.id,
+                conversationId: conversation.id,
                 studyStepId: context.studyStep.id,
                 aiModelId: modelParams.aiModelId,
                 role: AI_MESSAGE_ROLES.SYSTEM,
@@ -94,7 +96,7 @@ async function createConversationTurn(service, context, conversation, content, m
             }, {transaction});
         }
 
-        return turns.createTurnMessages(service, context, currentConversation, {
+        return turns.createTurnMessages(service, context, conversation, {
             user: {aiModelId: modelParams.aiModelId, content: buildUserContent(content, userMetadata), metadata: userMetadata},
             assistant: {aiModelId: modelParams.aiModelId},
         }, {transaction});
@@ -276,10 +278,7 @@ async function sendConversationMessage(service, client, data) {
         service,
         context,
         conversation,
-        content,
-        modelParams,
-        systemContext,
-        userMetadata,
+        {content, modelParams, systemContext, userMetadata},
     );
     return completeConversationTurn(service, client, context, turn, modelParams, requestId);
 }
@@ -346,7 +345,8 @@ async function completeConversationTurn(service, client, context, turn, modelPar
     const assistantMessage = await turns.completeTurn(service, turn, async () => {
         const messages = await service.server.db.models["ai_message"].getModelMessages(turn.conversation.id);
         const content = await turns.requestAssistantCompletion(
-            service, client, context, modelParams, requestId, messages, turn.assistantMessage.id,
+            service, client, context,
+            {modelParams, requestId, messages, aiMessageId: turn.assistantMessage.id},
             {onDelta: createConversationStream(service, client, context, turn, requestId)},
         );
         return {content};

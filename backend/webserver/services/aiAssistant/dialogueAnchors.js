@@ -73,8 +73,13 @@ async function prepareDialogueAnchors(service, client, context, turn, requestId)
     let aiModelId = null;
     if (request.questions.length) {
         const completion = await turns.requestHookCompletion(
-            service, client, context, context.anchorHookId, request.values, requestId,
-            turn.assistantMessage.id, DIALOGUE_MODEL_PARAMETERS,
+            service, client, context, {
+                hookId: context.anchorHookId,
+                values: request.values,
+                requestId,
+                aiMessageId: turn.assistantMessage.id,
+                parameters: DIALOGUE_MODEL_PARAMETERS,
+            },
         );
         const parsed = parseAnchorSelections(completion.output, context.plan.questions, state.anchorSources);
         anchorsValid = request.questions.every((question) => Object.hasOwn(parsed, question.id));

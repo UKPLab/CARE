@@ -34,23 +34,16 @@ async function requireNoPendingMessage(service, userId, studySessionId, options 
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} context - Validated assistant context.
- * @param {Object} modelParams - Resolved hook model parameters.
- * @param {string} requestId - Request identifier used for logging and abort.
- * @param {Object[]} messages - Complete model messages.
- * @param {number|null} [aiMessageId] - Message linked to the AI log.
+ * @param {Object} data - Prepared completion request.
+ * @param {Object} data.modelParams - Resolved model parameters.
+ * @param {string} data.requestId - Logging and abort identifier.
+ * @param {Object[]} data.messages - Complete model messages.
+ * @param {number|null} [data.aiMessageId=null] - Message linked to the AI log.
  * @param {{onDelta?: function(string): void}} [options] - Internal streaming callback.
  * @returns {Promise<string>} Model response content.
  */
-async function requestAssistantCompletion(
-    service,
-    client,
-    context,
-    modelParams,
-    requestId,
-    messages,
-    aiMessageId = null,
-    options = {},
-) {
+async function requestAssistantCompletion(service, client, context, data, options = {}) {
+    const {modelParams, requestId, messages, aiMessageId = null} = data;
     const {additionalParameters, ...credentialParams} = modelParams;
     const result = await core.getAIService(service).call("chatCompletion", client, {
         ...additionalParameters,
@@ -79,23 +72,16 @@ async function requestAssistantCompletion(
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} context - Validated assistant context.
- * @param {number} hookId - Hook providing the prompt template and model.
- * @param {Object} values - Placeholder values for the hook template.
- * @param {string} requestId - Request identifier used for logging and abort.
- * @param {number} aiMessageId - Message linked to the AI log.
- * @param {Object} [parameters] - Model parameters that override the hook configuration.
+ * @param {Object} data - Prepared hook request.
+ * @param {number} data.hookId - Hook providing the prompt and model.
+ * @param {Object} data.values - Prompt placeholder values.
+ * @param {string} data.requestId - Logging and abort identifier.
+ * @param {number} data.aiMessageId - Message linked to the AI log.
+ * @param {Object} [data.parameters] - Model parameter overrides.
  * @returns {Promise<{output: string, aiModelId: number}>} Model response and used model.
  */
-async function requestHookCompletion(
-    service,
-    client,
-    context,
-    hookId,
-    values,
-    requestId,
-    aiMessageId,
-    parameters = {},
-) {
+async function requestHookCompletion(service, client, context, data) {
+    const {hookId, values, requestId, aiMessageId, parameters = {}} = data;
     const aiService = core.getAIService(service);
     const {promptText} = await aiService.call("resolveHookPrompt", client, {hookId, values});
     const modelParams = await aiService.call("resolveHookModel", client, {hookId});
@@ -103,10 +89,12 @@ async function requestHookCompletion(
         service,
         client,
         {...context, hookId},
-        {...modelParams, additionalParameters: {...modelParams.additionalParameters, ...parameters}},
-        requestId,
-        [{role: "user", content: promptText}],
-        aiMessageId,
+        {
+            modelParams: {...modelParams, additionalParameters: {...modelParams.additionalParameters, ...parameters}},
+            requestId,
+            messages: [{role: "user", content: promptText}],
+            aiMessageId,
+        },
     );
     return {output, aiModelId: modelParams.aiModelId};
 }
@@ -230,18 +218,20 @@ async function abortPendingMessage(service, client, data, descriptor) {
  * @param {Object} service - Assistant service.
  * @param {Object} context - Validated study context.
  * @param {Object} conversation - Owned conversation.
- * @param {Object} values - Server-prepared user and assistant fields.
+ * @param {Object} data - Prepared message fields.
+ * @param {Object} data.user - User-message fields.
+ * @param {Object} data.assistant - Assistant-message fields.
  * @param {Object} options - Database transaction options.
  * @returns {Promise<Object>} Persisted turn.
  */
-async function createTurnMessages(service, context, conversation, values, options) {
+async function createTurnMessages(service, context, conversation, data, options) {
     const models = service.server.db.models;
     const base = {conversationId: conversation.id, studyStepId: context.studyStep.id};
     const userMessage = await models["ai_message"].add({
-        ...values.user, ...base, role: AI_MESSAGE_ROLES.USER, status: AI_MESSAGE_STATUSES.COMPLETED,
+        ...data.user, ...base, role: AI_MESSAGE_ROLES.USER, status: AI_MESSAGE_STATUSES.COMPLETED,
     }, options);
     const assistantMessage = await models["ai_message"].add({
-        ...values.assistant, ...base, role: AI_MESSAGE_ROLES.ASSISTANT,
+        ...data.assistant, ...base, role: AI_MESSAGE_ROLES.ASSISTANT,
         content: "", status: AI_MESSAGE_STATUSES.PENDING,
     }, options);
     await models["ai_conversation"].touchConversation(conversation.id, options);
