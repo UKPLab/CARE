@@ -1,0 +1,115 @@
+{
+    "title": "Utilisateurs",
+    "downloadUsers": "Télécharger les utilisateurs",
+    "uploadPassword": "Envoyer les mots de passe vers Moodle",
+    "importCsv": "Importer un CSV",
+    "importViaMoodle": "Importer via Moodle",
+    "addUser": "Ajouter un utilisateur",
+    "editUser": "Modifier l'utilisateur",
+    "viewRights": "Voir les droits",
+    "resetPassword": "Réinitialiser le mot de passe",
+    "deleteUser": "Supprimer l'utilisateur",
+    "columns": {
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "userName": "Utilisateur",
+        "email": "E-mail",
+        "acceptTerms": "Conditions acceptées",
+        "acceptStats": "Statistiques acceptées",
+        "acceptDataSharing": "Partage des données accepté",
+        "verified": "Vérifié",
+        "lastLogin": "Dernière connexion",
+        "roles": "Rôles"
+    },
+    "messages": {
+        "deleteConfirm": "Voulez-vous vraiment supprimer cet utilisateur ?",
+        "deleteTitle": "Supprimer l'utilisateur",
+        "userDeleted": "Utilisateur supprimé",
+        "userDeletedMessage": "L'utilisateur a été supprimé"
+    },
+    "stats": {
+        "exportCsv": "Exporter au format CSV",
+        "exportJson": "Exporter au format JSON",
+        "userStatsTitle": "Statistiques pour {count} utilisateur | Statistiques pour {count} utilisateurs",
+        "columns": {
+            "user": "Utilisateur",
+            "id": "ID",
+            "lastLogin": "Dernière connexion",
+            "time": "Heure",
+            "action": "Action",
+            "data": "Données"
+        },
+        "toasts": {
+            "exportFailedTitle": "Échec de l'export",
+            "exportFailedMessage": "L'export a échoué."
+        }
+    },
+    "roles": {
+        "teacher": "enseignant",
+        "mentor": "tuteur",
+        "student": "étudiant",
+        "guest": "invité",
+        "user": "utilisateur",
+        "admin": "administrateur",
+        "regular": "standard",
+        "maintainer": "mainteneur",
+        "system": "système"
+    },
+    "liveSessions": "Sessions en direct",
+    "viewSessions": "Voir les sessions",
+    "activeSessions": {
+        "title": "Sessions actives",
+        "filteredUser": "Utilisateur filtré :",
+        "activeUsers": "{count} utilisateur(s) actif(s)",
+        "socketId": "ID du socket",
+        "userId": "ID utilisateur",
+        "connectedAt": "Connecté le",
+        "browser": "Navigateur"
+    },
+    "rights": {
+        "assignRights": "Attribuer des droits",
+        "managementTitle": "Gestion des droits",
+        "manageRightsFor": "Gérer les droits pour",
+        "role": "rôle",
+        "selectRightsNote": "Sélectionnez les droits de ce rôle. Remarque : tous les utilisateurs disposent par défaut des droits de base {userRole}.",
+        "selectRole": "Sélectionner un rôle",
+        "manageRights": "Gérer les droits",
+        "rightName": "Nom du droit",
+        "chooseRoleDescription": "Choisissez un rôle à attribuer à l'utilisateur.",
+        "updatedTitle": "Droits du rôle mis à jour",
+        "updatedMessage": "Les droits du rôle ont été mis à jour",
+        "errors": {
+            "loadAvailableRightsFailed": "Impossible de charger les droits disponibles",
+            "loadRoleRightsFailed": "Impossible de charger les droits du rôle",
+            "assignRoleRightsFailed": "Impossible d'attribuer les droits du rôle"
+        }
+    },
+    "roleManagement": {
+        "button": "Gestion des rôles",
+        "title": "Créer un rôle",
+        "fields": {
+            "name": {
+                "label": "Nom du rôle",
+                "placeholder": "Saisissez le nom du rôle",
+                "description": "Créer un nouveau rôle système."
+            },
+            "description": {
+                "placeholder": "Description facultative du rôle"
+            }
+        },
+        "buttons": {
+            "create": "Créer le rôle"
+        },
+        "toasts": {
+            "alreadyExists": {
+                "title": "Ce rôle existe déjà",
+                "message": "Un rôle portant ce nom existe déjà."
+            },
+            "createSuccess": {
+                "title": "Rôle créé",
+                "message": "Le rôle a été créé."
+            },
+            "createFailed": "Impossible de créer le rôle"
+        }
+    }
+}
