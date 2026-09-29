@@ -4,7 +4,13 @@
     <div
         class="card-header d-flex justify-content-between align-items-center"
         style="cursor: pointer"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isExpanded"
+        :aria-controls="panelId"
         @click="$emit('toggle-group', groupIndex)"
+        @keydown.enter.exact.prevent="$emit('toggle-group', groupIndex)"
+        @keydown.space.exact.prevent="$emit('toggle-group', groupIndex)"
     >
       <div class="d-flex align-items-center flex-grow-1">
         <LoadIcon
@@ -50,7 +56,7 @@
     </div>
 
     <!-- Rubric body / criteria list -->
-    <div v-if="isExpanded" class="card-body">
+    <div v-if="isExpanded" :id="panelId" class="card-body">
       <div class="criteria-list">
         <div
             v-for="(criterion, index) in rubric.criteria || []"
@@ -58,6 +64,7 @@
             class="criterion-item"
         >
           <AssessmentCriteria
+              :ref="el => { if (el) criterionRefs[index] = el; }"
               :criterion="criterion"
               :read-only="readOnly"
               :model-value="criterionState(criterion)"
@@ -102,6 +109,7 @@
  */
 import AssessmentCriteria from "@/components/study/assessment/AssessmentCriteria.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import {useId} from "vue";
 
 export default {
   name: "AssessmentRubric",
@@ -145,12 +153,31 @@ export default {
     "toggle-info-panel-pin",
     "focus-next-rubric",
   ],
+  /**
+   * Generate a per-instance id for the panel's aria-controls link.
+   *
+   * @returns {{uid: string}} unique id from Vue's useId()
+   */
+  setup() {
+    return {uid: useId()};
+  },
   data() {
     return {
       expandedCriterionIndex: 0,
+      criterionRefs: {},
     };
   },
   computed: {
+    /**
+     * Unique DOM id for this rubric's panel, used by aria-controls.
+     * Uses Vue's useId(), not groupIndex, because every loaded study step
+     * mounts its own assessment and would repeat the same indices.
+     *
+     * @returns {string} unique panel id
+     */
+    panelId() {
+      return `rubric-panel-${this.uid}`;
+    },
     isGroupSaved() {
       if (!this.rubric || !Array.isArray(this.rubric.criteria)) return false;
       return this.rubric.criteria.every((c) => {
@@ -199,12 +226,21 @@ export default {
       this.expandedCriterionIndex =
           this.expandedCriterionIndex === index ? null : index;
     },
+    /**
+     * Focus the header of this rubric's open criterion, or the first
+     * criterion if none is open.
+     * Called by the parent after an advance opens this rubric.
+     */
+    focusFirstCriterion() {
+      this.criterionRefs[this.expandedCriterionIndex ?? 0]?.focusHeader();
+    },
     onCriterionSavedAndNext(index) {
       const criteria = this.rubric.criteria || [];
       const nextIndex = index + 1;
 
       if (nextIndex < criteria.length) {
         this.expandedCriterionIndex = nextIndex;
+        this.$nextTick(() => this.criterionRefs[nextIndex]?.focusHeader());
       } else {
         this.expandedCriterionIndex = null;
 
