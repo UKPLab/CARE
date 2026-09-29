@@ -224,6 +224,7 @@ async function getConversation(service, client, data) {
         client,
         data?.studySessionId,
         data?.studyStepId,
+        false,
     );
     const conversations = await service.server.db.models["ai_conversation"].getSessionConversations(
         context.userId, context.studySession.id, AI_CONVERSATION_TYPES.CHAT,
