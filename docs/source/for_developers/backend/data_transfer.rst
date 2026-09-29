@@ -69,17 +69,6 @@ AppDataUpdate Socket
 
 The ``appDataUpdate`` socket is the generic way to **create or update rows** in models with ``autoTable = true``. It is defined in ``backend/webserver/sockets/app.js`` inside the ``AppSocket`` class:
 
-Before updating an existing row, ``updateData`` calls ``assertWriteAccess``, which
-applies ``getWriteFilter`` to that row. ``getWriteFilter`` uses the same rules as
-``getReadFilter`` with public access removed: ``publicTable``, ``public`` rows, shared
-rows returned by a model's ``getUserFilter``, column-only ``accessMap`` rights and
-``accessMap`` table rules whose ``by`` is not ``id`` grant read access only, never write
-access. A table rule with ``by: "id"`` collects rows the user owns in the other table
-(e.g. ``study_session`` → ``study``) and grants write; any other ``by`` collects what the
-user's own rows point to (e.g. ``study`` ← ``study_session``), which is membership, not
-ownership. Models implementing ``getUserFilter`` return
-``{owned, shared}`` so the socket applies ``shared`` on the read path only.
-
 .. code-block:: javascript
 
     /**
@@ -101,6 +90,20 @@ ownership. Models implementing ``getUserFilter`` return
     }
 
 This method wraps the internal ``updateData`` logic. It checks access permissions, validates required fields, applies defaults, and then either **creates a new row** or **updates an existing one**. All operations run inside a transaction, and on commit the modified rows are broadcast to subscribed clients (see :ref:`data-flow`).
+
+Write Access
+~~~~~~~~~~~~
+
+Before updating an existing row, ``updateData`` calls ``assertWriteAccess``, which
+applies ``getWriteFilter`` to that row. ``getWriteFilter`` uses the same rules as
+``getReadFilter`` with public access removed: ``publicTable``, ``public`` rows, shared
+rows returned by a model's ``getUserFilter``, column-only ``accessMap`` rights and
+``accessMap`` table rules whose ``by`` is not ``id`` grant read access only, never write
+access. A table rule with ``by: "id"`` collects rows the user owns in the other table
+(e.g. ``study_session`` → ``study``) and grants write; any other ``by`` collects what the
+user's own rows point to (e.g. ``study`` ← ``study_session``), which is membership, not
+ownership. Models implementing ``getUserFilter`` return
+``{owned, shared}`` so the socket applies ``shared`` on the read path only.
 
 When to use 
 ~~~~~~~~~~~
