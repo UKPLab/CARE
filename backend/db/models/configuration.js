@@ -1,12 +1,6 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 
-const CONFIGURATION_TYPES = Object.freeze({
-    ASSESSMENT: 0,
-    VALIDATION: 1,
-    DIALOGUE_PLAN: 2,
-});
-
 module.exports = (sequelize, DataTypes) => {
     /**
      * Configuration model
@@ -15,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
     class Configuration extends MetaModel {
         static autoTable = true;
         static publicTable = true;
-        static configurationTypes = CONFIGURATION_TYPES;
 
         static fields = [
             {
@@ -55,9 +48,9 @@ module.exports = (sequelize, DataTypes) => {
                 placeholder: "0",
                 type: "select",
                 options: [
-                    { name: "basic.configuration.types.assessment", value: CONFIGURATION_TYPES.ASSESSMENT },
-                    { name: "basic.configuration.types.validation", value: CONFIGURATION_TYPES.VALIDATION },
-                    { name: "basic.configuration.types.dialoguePlan", value: CONFIGURATION_TYPES.DIALOGUE_PLAN },
+                    { name: "basic.configuration.types.assessment", value: 0 },
+                    { name: "basic.configuration.types.validation", value: 1 },
+                    { name: "basic.configuration.types.dialoguePlan", value: 2 },
                 ],
                 required: true,
             },
@@ -98,6 +91,5 @@ module.exports = (sequelize, DataTypes) => {
     return Configuration;
 };
 
-module.exports.CONFIGURATION_TYPES = CONFIGURATION_TYPES;
 
 

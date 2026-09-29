@@ -374,4 +374,3 @@ module.exports = (sequelize, DataTypes) => {
     return StudyStep;
 };
 
-module.exports.stepTypes = stepTypes;

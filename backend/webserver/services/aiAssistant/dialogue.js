@@ -14,8 +14,6 @@ const {
     AI_MESSAGE_ROLES,
     AI_MESSAGE_STATUSES,
 } = require("../../../db/models/ai_message");
-const {stepTypes} = require("../../../db/models/study_step");
-const {CONFIGURATION_TYPES} = require("../../../db/models/configuration");
 const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
 const core = require("./core.js");
 const dialogueAdaptive = require("./dialogueAdaptive.js");
@@ -93,7 +91,7 @@ function findDialogueService(services, name) {
 async function loadDialoguePlan(models, studyStep) {
     const configurationId = Number(studyStep.configuration?.settings?.dialoguePlanConfigurationId) || 0;
     const config = configurationId ? await models["configuration"].getById(configurationId) : null;
-    if (!config || config.deleted || Number(config.type) !== CONFIGURATION_TYPES.DIALOGUE_PLAN) {
+    if (!config || config.deleted || Number(config.type) !== 2) {
         throw new Error("Dialogue plan configuration not found");
     }
     const plan = normalizeDialoguePlan(config.content);
@@ -128,7 +126,7 @@ async function loadDialogueContext(
         studySessionId,
         studyStepId,
     );
-    if (Number(studyStep.stepType) !== stepTypes.STEP_TYPE_DIALOGUE) {
+    if (Number(studyStep.stepType) !== models["study_step"].stepTypes.STEP_TYPE_DIALOGUE) {
         throw new Error("Study step is not a Dialogue step");
     }
     if (requireCurrentStep && Number(studySession.studyStepId) !== Number(studyStep.id)) {
