@@ -7,7 +7,7 @@
   "questions": [
     {
       "id": "understanding_1",
-      "help": "Describe what you understood the exposé to be trying to do. There is no required wording.",
+      "help": "Explain what the exposé was mainly trying to find out or achieve. Use your own words; you do not need to summarize every section.",
       "text": "Thinking about the exposé you reviewed, how would you describe its main aim in your own words?",
       "source": "pr1",
       "answerType": "text",
@@ -20,7 +20,7 @@
     },
     {
       "id": "criteria_1",
-      "help": "Choose any judgment from your review and explain what standard or quality you were looking for.",
+      "help": "A criterion is the standard you used to decide whether something was good enough or needed improvement. Explain the standard behind one judgment in your review.",
       "text": "Think of one judgment you made in your review. What standard or criterion were you using when you made it?",
       "source": "pr1",
       "answerType": "text",
@@ -33,7 +33,7 @@
     },
     {
       "id": "evidence_1",
-      "help": "Explain what you noticed in the exposé that led to the comment.",
+      "help": "Explain what you read or noticed in the exposé that led to your feedback. If a comment is quoted, explain what led to that comment; otherwise, choose one of your own.",
       "text": "Thinking about your review, choose one comment you made. What in the exposé led you to make that comment?",
       "source": "pr1",
       "answerType": "text",
@@ -47,7 +47,7 @@
     },
     {
       "id": "justification_1",
-      "help": "Explain the reason behind the point and why it mattered for the exposé.",
+      "help": "Explain why you made the review point and why it mattered. If a point is quoted, explain that point; otherwise, choose one of your own.",
       "text": "Thinking about your review, choose one important point you made. If the author asked why you made that point, what would you say?",
       "source": "pr1",
       "answerType": "text",
@@ -61,7 +61,7 @@
     },
     {
       "id": "implications_1",
-      "help": "Name one suggestion from your review and explain the change you expected it to produce.",
+      "help": "Think of a suggestion you gave the author. Explain what you expected to be different if the author followed it.",
       "text": "Thinking about your review, choose one suggestion you made. What change did you expect it to make to the exposé?",
       "source": "pr1",
       "answerType": "text",
@@ -74,7 +74,7 @@
     },
     {
       "id": "uncertainty_1",
-      "help": "If there was something you were unsure about, explain it. If not, you can say that.",
+      "help": "Think about anything you were unsure of when making your review judgments and explain why. If nothing made you unsure, you can say so.",
       "text": "Thinking about your review, was there anything you were unsure about? If so, what made you unsure?",
       "source": "pr1",
       "answerType": "text",
@@ -87,7 +87,7 @@
     },
     {
       "id": "strategy_1",
-      "help": "Describe how you chose which issues were worth including in your review.",
+      "help": "Explain how you decided which points to include in your feedback and which to leave out. Describe how you made those choices.",
       "text": "Thinking about your review, how did you decide which points to focus on?",
       "source": "pr1",
       "answerType": "text",
