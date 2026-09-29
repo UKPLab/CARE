@@ -32,6 +32,11 @@ module.exports = {
                     type: Sequelize.TEXT,
                     allowNull: true,
                 },
+                includeContext: {
+                    type: Sequelize.BOOLEAN,
+                    allowNull: false,
+                    defaultValue: true,
+                },
                 deleted: {
                     type: Sequelize.BOOLEAN,
                     allowNull: false,
