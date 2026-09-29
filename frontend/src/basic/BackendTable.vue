@@ -2283,12 +2283,34 @@ export default {
           return;
         }
 
-        // This page or before it: numbered pages would shift. After this page: next fetch.
+        // This page or before it. After this page: next fetch, no banner.
         this.pendingInserts += 1;
         this.bumpTotal(1);
       }
     },
-    loadPendingChanges() {
+    /**
+     * Keyset address of page `page` after the result changed.
+     * Walks from the first page with `after`, the same step as Next. No offset.
+     * @param {number} page
+     * @returns {Promise<{nav: Object, page: number}>}
+     */
+    async keysetNavForPage(page) {
+      const target = Math.max(1, Number(page) || 1);
+      if (target === 1) {
+        return {nav: {}, page: 1};
+      }
+      let nav = {};
+      for (let i = 1; i < target; i++) {
+        const result = await this.requestQueryItems(this.buildQueryPayload(nav));
+        const end = result.meta?.endCursor;
+        if (!result.items?.length || !end || !result.meta?.hasNext) {
+          return {nav, page: i};
+        }
+        nav = {after: end};
+      }
+      return {nav, page: target};
+    },
+    async loadPendingChanges() {
       if (this._pendingLoadBusy) return;
       if (!this.currentQuery) {
         this.fetchQueryPage();
@@ -2296,12 +2318,11 @@ export default {
       }
 
       const previousIds = new Set(this.queryItems.map((i) => i.id));
+      const page = this.currentPage;
 
       this._pendingLoadBusy = true;
       this.pendingInserts = 0;
       this.pendingStructural = false;
-      // Keyset window is anchored to a row cursor, not a page index: refetch the
-      // SAME window to reveal in-window changes. currentPage stays put.
       this.pendingLoadPhase = "out";
 
       const reduceMotion =
@@ -2325,9 +2346,21 @@ export default {
         }, reduceMotion ? 0 : 1200);
       };
 
-      // Fetch in parallel with fade-out so the row swap happens while dimmed.
+      // Re-find this page number from the start. The stored `after` still points
+      // at the old window, so a row inserted before it never appears there.
+      // Rows that were not on the page get the enter animation.
+      let nav = page > 1 ? this.currentNav() : {};
+      if (!this.isInfiniteMode) {
+        try {
+          const located = await this.keysetNavForPage(page);
+          this.currentPage = located.page;
+          nav = located.nav;
+        } catch (err) {
+          console.warn("BackendTable keyset page locate failed", err);
+        }
+      }
       this.fetchQueryPage({
-        nav: this.currentNav(),
+        nav,
         highlightNewFrom: previousIds,
         onApplied: () => {
           const wait = Math.max(0, outMs - (Date.now() - startedAt));
