@@ -6,12 +6,6 @@
     <div class="d-flex gap-3">
       <div class="question-marker flex-shrink-0">
         <span :class="markerClass(turn.question)">{{ marker(turn.question) }}</span>
-        <FormHelp
-            v-if="questionHelp(turn.question)"
-            :help="questionHelp(turn.question)"
-            icon-name="info-circle"
-            button-class="text-muted ms-1"
-        />
       </div>
       <div class="flex-grow-1">
         <div class="assistant-message">
@@ -114,7 +108,6 @@
 
 <script>
 import {defineAsyncComponent} from "vue";
-import FormHelp from "@/basic/form/Help.vue";
 import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 import DialogueAnswerInput from "@/components/dialogue/DialogueAnswerInput.vue";
 import {splitDialogueQuestionText} from "@/components/dialogue/dialogueMessages.js";
@@ -130,7 +123,7 @@ const AiMessageMarkdown = defineAsyncComponent(
  */
 export default {
   name: "DialogueQuestion",
-  components: {AiConversationMessage, AiMessageMarkdown, DialogueAnswerInput, FormHelp},
+  components: {AiConversationMessage, AiMessageMarkdown, DialogueAnswerInput},
   props: {
     turn: {
       type: Object,
@@ -193,15 +186,6 @@ export default {
     },
   },
   methods: {
-    /**
-     * Returns the optional student guidance for a main question.
-     *
-     * @param {Object} message - AI question message.
-     * @returns {string} Configured help text.
-     */
-    questionHelp(message) {
-      return message?.metadata?.dialogue?.help || "";
-    },
     /**
      * Builds the question object expected by the answer input.
      *
@@ -276,7 +260,7 @@ export default {
 }
 
 .question-marker {
-  width: 5.5rem;
+  width: 4.5rem;
 }
 
 .dialogue-question-active {

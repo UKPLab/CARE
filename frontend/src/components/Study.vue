@@ -219,6 +219,8 @@
 
             <Dialogue
                 v-if="step.stepType === 4"
+                :is-shown="currentStudyStepId === step.id"
+                :study-description="study?.description || ''"
                 :study-session-id="studySessionId"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
