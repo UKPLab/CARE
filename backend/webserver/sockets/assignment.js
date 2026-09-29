@@ -7,7 +7,7 @@ const TranslatableError = require("../../utils/TranslatableError");
 /**
  * Handle user through websocket
  *
- * @author Dennis Zyska, Alexander Bürkle, Mohammed Rawhani
+ * @author Dennis Zyska, Alexander Bürkle
  * @type {AssignmentSocket}
  * @class AssignmentSocket
  */
@@ -37,16 +37,14 @@ class AssignmentSocket extends Socket {
         const stepDocuments = [];
         for (const step of templateStudySteps) {
             if (step.workflowStepId) {
-                let stepDocument = data['documents'].find(doc => doc.workflowStepId === step.workflowStepId) || null;
+                const stepDocument = data['documents'].find(doc => doc.workflowStepId === step.workflowStepId) || null;
                 const hasOverride = stepDocument != null && stepDocument.documentId != null;
                 let stepDocumentId = hasOverride ? stepDocument.documentId : step.documentId;
                 if (!hasOverride) {
                     const workflowStep = workflowStepById[step.workflowStepId];
                     if (workflowStep && workflowStep.workflowStepDocument != null) {
-                        const linkedStepDocument = data['documents'].find(doc => doc.workflowStepId === workflowStep.workflowStepDocument);
-                        const refStudyStep = linkedStepDocument || templateStudySteps.find((s) => s.workflowStepId === workflowStep.workflowStepDocument);
-                        if (refStudyStep?.documentId != null) {
-                            stepDocument = linkedStepDocument || stepDocument;
+                        const refStudyStep = templateStudySteps.find((s) => s.workflowStepId === workflowStep.workflowStepDocument);
+                        if (refStudyStep && refStudyStep.documentId != null) {
                             stepDocumentId = refStudyStep.documentId;
                         }
                     }
@@ -367,7 +365,7 @@ class AssignmentSocket extends Socket {
                     (a) => String(a.id) === String(assignmentId)
                 );
                 if (!assignment) {
-                    throw new Error(`Selected assignment ${assignmentId} could not be resolved.`);
+                    throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId});
                 }
                 const reviewers = reviewerIds.map((reviewerId) => data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId)));
                 const assignmentData = {
@@ -528,7 +526,7 @@ class AssignmentSocket extends Socket {
                         (a) => String(a.id) === String(assignmentId)
                     );
                     if (!assignment) {
-                        throw new Error(`Selected assignment ${assignmentId} could not be resolved.`);
+                        throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId});
                     }
                     const reviewer = data.selectedReviewer.find((reviewer) => reviewer.id === Number(reviewerId));
                     
