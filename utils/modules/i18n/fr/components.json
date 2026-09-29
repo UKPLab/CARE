@@ -1,0 +1,52 @@
+{
+    "logs": {
+        "title": "Rapports",
+        "columns": {
+            "level": "Niveau",
+            "time": "Heure",
+            "service": "Service",
+            "message": "Message"
+        },
+        "levels": {
+            "error": "Erreur",
+            "warn": "Avertissement",
+            "info": "Info",
+            "debug": "Débogage"
+        }
+    },
+    "comment": {
+        "enterText": "Saisissez du texte...",
+        "noComment": "Aucun commentaire",
+        "sentimentAnalysis": "Analyse de sentiment",
+        "saveCommand": "Enregistrer (Ctrl+Entrée)"
+    },
+    "voteButtons": {
+        "helpful": "Utile",
+        "notHelpful": "Pas utile"
+    },
+    "pdftoolbar": {
+        "minToolbar": "Réduire la barre d'outils",
+        "showToolbar": "Afficher la barre d'outils"
+    },
+    "documentRoute": {
+        "errors": {
+            "goToDashboard": "Aller au tableau de bord",
+            "documentNotFoundTitle": "Document introuvable",
+            "accessDeniedTitle": "Accès refusé",
+            "fileMissingTitle": "Fichier indisponible",
+            "documentErrorTitle": "Erreur de document",
+            "unexpectedError": "Une erreur inattendue s'est produite."
+        }
+    },
+    "studyRoute": {
+        "errors": {
+            "goToDashboard": "Aller au tableau de bord",
+            "studyNotFoundTitle": "Étude introuvable",
+            "accessDeniedTitle": "Accès refusé",
+            "filesMissingTitle": "Fichiers indisponibles",
+            "documentNotFoundTitle": "Document introuvable",
+            "unexpectedError": "Une erreur inattendue s'est produite.",
+            "foreignUnstartedSession": "Cette session d'étude n'a pas encore commencé et appartient à un autre utilisateur."
+        }
+    }
+}

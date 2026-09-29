@@ -1,0 +1,265 @@
+{
+    "title": "Études",
+    "study": "Étude",
+    "template": "Modèle",
+    "savedTemplates": "Modèles enregistrés",
+    "manageStudies": "Gérer les études",
+    "addBulkAssignments": "Attribuer plusieurs évaluations",
+    "addSingleAssignment": "Attribuer une évaluation",
+    "editStudy": "Modifier l'étude",
+    "deleteStudy": "Supprimer l'étude",
+    "openStudy": "Ouvrir l'étude",
+    "restartStudy": "Redémarrer l'étude",
+    "closeStudy": "Clôturer l'étude",
+    "copyLink": "Copier le lien de l'étude",
+    "inspectSessions": "Inspecter les sessions",
+    "saveAsTemplate": "Enregistrer comme modèle",
+    "showInformation": "Afficher les informations",
+    "finishStudy": "Terminer l'étude",
+    "finishStudyAgain": "Terminer l'étude à nouveau",
+    "returnToDashboard": "Retour au tableau de bord",
+    "backToDashboard": "Retour au tableau de bord",
+    "openSessionsBig": "Sessions ouvertes",
+    "openSessionsSmall": "sessions ouvertes",
+    "openSessionsForStudy": "Sessions ouvertes pour {name}",
+    "resumeSession": "Reprendre la session",
+    "startSession": "Démarrer la session",
+    "joinStudy": "Rejoindre l'étude",
+    "startStudy": "Démarrer l'étude",
+    "finishSession": "Terminer la session",
+    "sessionNotStarted": "La session n'a pas encore commencé",
+    "timeLeft": "Temps restant",
+    "notStartedYet": "L'étude n'a pas encore commencé !",
+    "noMoreSessions": "Plus aucune session disponible pour cette étude.",
+    "clickToStart": "Cliquez sur « Démarrer l'étude » pour commencer l'étude utilisateur.",
+    "collaborativeNote": "Il s'agit d'une étude utilisateur {collaborative} : tout le monde peut la rejoindre et y participer simultanément !",
+    "collaborativeEmphasis": "collaborative",
+    "thankYouParticipation": "Merci pour votre participation :-)",
+    "canCloseBrowser": "Vous pouvez maintenant fermer le navigateur !",
+    "thankYouJoining": "Merci de votre participation !",
+    "clickFinishToSubmit": "Cliquez sur le bouton Terminer pour envoyer vos résultats.",
+    "timeExpired": "Le temps est écoulé, aucune modification n'est plus possible.",
+    "foreignUnstartedSession": "Cette session d'étude n'a pas encore commencé et appartient à un autre utilisateur.",
+    "cannotResumeSession": "Vous ne pouvez pas démarrer ni reprendre cette session.",
+    "columns": {
+        "status": "Statut",
+        "created": "Créée",
+        "sessions": "Sessions",
+        "started": "Démarrées",
+        "finished": "Terminées",
+        "sessionLimit": "Limite de sessions",
+        "sessionLimitPerUser": "Limite de sessions par utilisateur",
+        "resumable": "Reprise possible",
+        "collaborative": "Collaborative",
+        "multipleSubmissions": "Envois multiples",
+        "sessionStartFinishEmails": "E-mails de début/fin de session",
+        "parentSessionId": "ID de la session parente"
+    },
+    "status": {
+        "notStarted": "Non démarrée",
+        "running": "En cours",
+        "closed": "Clôturée",
+        "ended": "Terminée"
+    },
+    "messages": {
+        "studyStarted": "Étude démarrée",
+        "enjoy": "Bonne participation !",
+        "studyPublishedSuccess": "Étude publiée !",
+        "participantsCanJoin": "Les participants peuvent la rejoindre via le lien suivant :",
+        "studyDeleted": "Étude supprimée",
+        "studyDeletedMessage": "L'étude a été supprimée",
+        "studyRestarted": "Étude redémarrée",
+        "studyRestartedMessage": "L'étude a été redémarrée",
+        "linkCopied": "Lien copié",
+        "linkCopiedMessage": "Lien de l'étude copié dans le presse-papiers !",
+        "templateCreatedSuccess": "Modèle créé !",
+        "templateCreated": "Modèle créé",
+        "templateCreatedMessage": "Le modèle a été créé.",
+        "templateSaved": "Modèle enregistré",
+        "templateSavedMessage": "Cette étude a été enregistrée comme modèle.",
+        "deleteConfirm": "Voulez-vous vraiment supprimer cette étude ?",
+        "deleteTitle": "Supprimer l'étude",
+        "saveAsTemplateConfirm": "Voulez-vous vraiment enregistrer cette étude comme modèle ?",
+        "saveAsTemplateTitle": "Enregistrer l'étude comme modèle",
+        "studyFinished": "Cette étude s'est terminée le {date}",
+        "studyStartDate": "Début : {date}",
+        "timeLimitNote": "Attention : cette étude est limitée à {minutes} min !",
+        "sessionsLeft": "Il vous reste {sessions} pour cette étude.",
+        "sessionsLeftEmphasis": "{count} session(s)",
+        "sessionWarning": "{count} session(s) d'étude existent actuellement pour cette étude. La supprimer supprimera aussi ces sessions !",
+        "sessionFinished": "Session terminée",
+        "sessionFinishedMessage": "Votre session a été envoyée.",
+        "studySessionErrorTitle": "Erreur de session d'étude",
+        "cannotFinishSession": "Impossible de terminer la session",
+        "studyClosedAutoTerminated": "L'étude a été clôturée. Les sessions sont automatiquement terminées lorsqu'une étude est clôturée."
+    },
+    "loading": {
+        "title": "Chargement de l'étape de l'étude",
+        "nlpError": "Une erreur s'est produite lors du traitement des résultats NLP. Veuillez réessayer ou ignorer l'assistance NLP.",
+        "serviceError": "Une erreur s'est produite lors du traitement des résultats du service. Veuillez réessayer ou ignorer l'assistance du service.",
+        "generalError": "Une erreur s'est produite lors du chargement de l'étape de l'étude. Veuillez réessayer plus tard.",
+        "buttons": {
+            "tryAgain": "Réessayer",
+            "skip": "Ignorer l'assistance NLP",
+            "skipService": "Ignorer l'assistance du service"
+        },
+        "messages": [
+            "Réflexion sur votre demande en cours...",
+            "On y est presque, il ne reste que quelques détails à peaufiner...",
+            "Recherche de la meilleure réponse possible...",
+            "Encore quelques instants, la précision prend du temps...",
+            "Je prépare quelque chose d'intelligent pour vous...",
+            "Un instant... je réfléchis plus vite qu'il n'y paraît...",
+            "J'aligne quelques neurones...",
+            "Un peu de magie linguistique en préparation...",
+            "Votre demande voyage à travers un milliard de neurones...",
+            "Je regarde dans les coins pour trouver les cas limites...",
+            "Petite vérification de plausibilité en cours...",
+            "Je consulte la sagesse des foules...",
+            "Presque prêt..."
+        ],
+        "errorTitle": "Erreur lors du chargement de l'étape de l'étude",
+        "processingTitle": "Traitement des requêtes NLP",
+        "failedTitle": "Échec des requêtes NLP",
+        "processingServiceTitle": "Traitement des requêtes au service",
+        "failedServiceTitle": "Échec des requêtes au service",
+        "readyTitle": "Étape de l'étude prête"
+    },
+    "dashboard": {
+        "activeSessions": {
+            "title": "Sessions d'étude actives",
+            "noSessions": "Vous n'avez aucune session d'étude active. Rejoignez une étude en cliquant sur son lien ou créez votre propre étude."
+        },
+        "closedSessions": {
+            "title": "Sessions d'étude clôturées",
+            "noSessions": "Vous n'avez aucune session d'étude clôturée."
+        },
+        "studyTitle": "Étude : {name}",
+        "studyTitleWithAuthor": "Étude : {name} (de {author})",
+        "noName": "<sans nom>",
+        "noDueDate": "pas de date limite"
+    },
+    "modalTitle": {
+        "createTemplate": "Créer un modèle",
+        "editTemplate": "Modifier le modèle",
+        "newTemplate": "Nouveau modèle",
+        "createStudy": "Créer une étude",
+        "editStudy": "Modifier l'étude",
+        "newStudy": "Nouvelle étude"
+    },
+    "assignUserSession": {
+        "title": "Attribuer des utilisateurs à la session d'étude",
+        "noSessionSelected": "Aucune session d'étude sélectionnée !",
+        "selectSessionToProceed": "Veuillez sélectionner une session d'étude pour continuer.",
+        "selectUsers": "Sélectionner des utilisateurs",
+        "selectUsersDescription": "Sélectionnez les utilisateurs à attribuer à cette session d'étude.",
+        "confirmCopy": "Voulez-vous vraiment copier cette session d'étude pour les utilisateurs suivants ?",
+        "studySessionId": "ID de la session d'étude :",
+        "originalUser": "Utilisateur d'origine :",
+        "selectedUsers": "Utilisateurs sélectionnés :",
+        "usersAssignedToCopy": "Utilisateurs attribués à la copie de la session d'étude :",
+        "steps": {
+            "userSelection": "Sélection des utilisateurs",
+            "confirmation": "Confirmation"
+        },
+        "toasts": {
+            "copiedTitle": "Sessions d'étude copiées",
+            "copiedMessage": "Session d'étude copiée pour {count} utilisateur(s).",
+            "copyFailed": "Échec de la copie"
+        }
+    },
+    "closeModal": {
+        "title": "Clôturer l'étude",
+        "confirm": "Voulez-vous vraiment clôturer l'étude {name} ?",
+        "notifySessions": "Envoyer une notification par e-mail aux participants ayant des sessions ouvertes",
+        "closeStudy": "Clôturer l'étude",
+        "success": {
+            "title": "Étude clôturée",
+            "message": "L'étude a été clôturée"
+        },
+        "errors": {
+            "title": "Échec de la clôture de l'étude"
+        }
+    },
+    "fields": {
+        "name": {
+            "label": "Nom de l'étude :",
+            "placeholder": "Mon étude utilisateur"
+        },
+        "workflowId": {
+            "label": "Sélectionnez le processus de l'étude :",
+            "help": "Choisissez un modèle de processus pour les étapes de l'étude."
+        },
+        "tagSetId": {
+            "label": "Liste d'étiquettes de l'étude :",
+            "help": "Sélectionnez la liste d'étiquettes à utiliser dans l'étude."
+        },
+        "stepDocuments": {
+            "label": "Attribuer des documents aux étapes du processus :"
+        },
+        "description": {
+            "label": "Description de l'étude :",
+            "help": "Ce texte sera affiché au début de l'étude utilisateur !"
+        },
+        "enableEmailNotifications": {
+            "label": "Envoyer une notification par e-mail au début et à la fin des sessions",
+            "help": "Si cette option est activée, le propriétaire de l'étude reçoit un e-mail chaque fois qu'un participant démarre ou termine une session."
+        },
+        "timeLimit": {
+            "label": "De combien de temps un participant dispose-t-il pour l'étude ?",
+            "help": "0 = aucune limite de temps"
+        },
+        "limitSessions": {
+            "label": "Limiter le nombre de sessions de l'étude :",
+            "help": "Définissez le nombre maximal de fois où les participants peuvent démarrer ou reprendre l'étude. Chaque tentative pour terminer l'étude est appelée une session. 0 = nombre de sessions illimité."
+        },
+        "limitSessionsPerUser": {
+            "label": "Limiter le nombre de sessions par utilisateur pour l'étude :",
+            "help": "Définissez le nombre maximal de fois où chaque participant peut démarrer ou reprendre l'étude. Chaque tentative pour terminer l'étude est appelée une session. 0 = nombre de sessions par utilisateur illimité."
+        },
+        "start": {
+            "label": "Les sessions d'étude ne peuvent pas commencer avant le"
+        },
+        "end": {
+            "label": "Les sessions d'étude ne peuvent pas commencer après le :"
+        },
+        "collab": {
+            "label": "L'étude doit-elle être collaborative ?"
+        },
+        "anonymize": {
+            "label": "Les commentaires doivent-ils être anonymisés ?"
+        },
+        "resumable": {
+            "label": "L'étude peut-elle être reprise ?"
+        },
+        "multipleSubmit": {
+            "label": "Autoriser plusieurs envois ?",
+            "help": "Indiquez si les participants peuvent envoyer leur étude plusieurs fois."
+        },
+        "aiCostLimitTotal": {
+            "label": "Limite de coût IA - total ($) :",
+            "help": "Dépenses IA totales autorisées dans cette étude, tous participants confondus. Laissez vide pour ne fixer aucun plafond."
+        },
+        "aiCostLimitPerSession": {
+            "label": "Par session ($) :",
+            "help": "Dépenses IA autorisées pour une seule session. Laissez vide pour ne fixer aucun plafond par session."
+        },
+        "aiCostLimitPerUser": {
+            "label": "Par participant ($) :",
+            "help": "Dépenses IA autorisées par participant dans cette étude. Laissez vide pour ne fixer aucun plafond par participant."
+        },
+        "step": {
+            "documentId": {
+                "label": "Sélectionner un document",
+                "newEmptyDoc": "Nouveau document vide"
+            }
+        }
+    },
+    "units": {
+        "minutes": "min",
+        "sessions": "Session(s)"
+    },
+    "values": {
+        "unlimited": "illimité"
+    }
+}
