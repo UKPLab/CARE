@@ -2,6 +2,7 @@
   <div class="criteria-group-card card">
     <!-- Rubric header -->
     <div
+        ref="rubricHeader"
         class="card-header d-flex justify-content-between align-items-center"
         style="cursor: pointer"
         role="button"
@@ -233,6 +234,13 @@ export default {
      */
     focusFirstCriterion() {
       this.criterionRefs[this.expandedCriterionIndex ?? 0]?.focusHeader();
+    },
+    /**
+     * Move keyboard focus to this rubric's header.
+     * Used as the fallback when the forward control cannot take focus.
+     */
+    focusHeader() {
+      this.$refs.rubricHeader?.focus();
     },
     onCriterionSavedAndNext(index) {
       const criteria = this.rubric.criteria || [];
