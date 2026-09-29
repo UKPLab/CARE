@@ -1,24 +1,7 @@
-const { calculateAssessmentScore, buildScoresFromState } = require('assessment-score');
+const { calculateAssessmentScore, pickScoresFromGradeRows } = require('assessment-score');
 const { getDisplayName, getPrivateAwareName } = require('./export.js');
 
 const ASSESSMENT_RESULT_KEY = "assessment_result";
-
-/**
- * Parses an assessment state payload when it is stored as JSON text.
- *
- * @param {Object} server - The server instance providing the logger.
- * @param {string} rawAssessmentState - The raw JSON string from document_data.
- * @returns {Object} The parsed assessment state or an empty object on failure.
- */
-function parseAssessmentState(server, rawAssessmentState) {
-    try {
-        const parsed = JSON.parse(rawAssessmentState);
-        return parsed && typeof parsed === "object" ? parsed : {};
-    } catch (error) {
-        server.logger.warn("Failed to parse assessment state:", error.message);
-        return {};
-    }
-}
 
 /**
  * Reads the rubric configuration id from a study step configuration payload.
@@ -225,9 +208,13 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
 
     const gradeRows = await server.db.models.document_data.findAll({
         where: {
-            key: ASSESSMENT_RESULT_KEY,
             deleted: false,
-            studySessionId: sessionIds ? { [Op.in]: sessionIds } : { [Op.ne]: null }
+            studySessionId: sessionIds ? { [Op.in]: sessionIds } : { [Op.ne]: null },
+            [Op.or]: [
+                { key: ASSESSMENT_RESULT_KEY },
+                { key: { [Op.like]: "aiHook_%" } },
+                { key: { [Op.like]: "%_assessment" } },
+            ]
         },
         include: [{
             model: server.db.models.document,
@@ -251,9 +238,21 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
         usersById
     } = await loadGradeExportContext(server, gradeRows, users);
 
+    // A document/session/step can have both a human-saved row and a hook/AI row under
+    // different keys; group them so pickScoresFromGradeRows can choose the right one
+    // per group instead of exporting one record per row.
+    const rowsByGroup = new Map();
+    for (const row of gradeRows) {
+        const documentId = row.documentId || row.document?.id;
+        const groupKey = `${documentId}:${row.studySessionId ?? "null"}:${row.studyStepId ?? "null"}`;
+        if (!rowsByGroup.has(groupKey)) rowsByGroup.set(groupKey, []);
+        rowsByGroup.get(groupKey).push(row);
+    }
+
     const records = [];
     const criteriaReferencesByConfigId = new Map();
-    for (const row of gradeRows) {
+    for (const rows of rowsByGroup.values()) {
+        const row = rows[0];
         const document = row.document;
         const ownerUser = usersById.get(document.userId);
         if (!ownerUser) {
@@ -276,9 +275,7 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
         const configurationId = getAssessmentConfigurationId(studyStepConfiguration);
         const studyName = study?.name || `study_${session?.studyId || "unknown"}`;
 
-        const scoreObject = row.value || {};
-        const assessmentState = typeof scoreObject === "string" ? parseAssessmentState(server, scoreObject) : scoreObject;
-        const flatScores = buildScoresFromState(assessmentState);
+        const flatScores = pickScoresFromGradeRows(rows);
         const assessmentConfig = resolveAssessmentConfigurationContent(
             studyStepConfiguration,
             configurationsById
@@ -319,7 +316,6 @@ async function buildGradeRecords(server, projectId, userIds, users, shouldGenera
 }
 
 module.exports = {
-    parseAssessmentState,
     getAssessmentConfigurationId,
     resolveAssessmentConfigurationContent,
     addCriteriaReferenceEntry,
