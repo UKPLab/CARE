@@ -177,6 +177,12 @@ export default {
     this.autoGrow();
   },
   methods: {
+    /** Focuses the message textarea when the composer is available. */
+    focus() {
+      this.$nextTick(() => {
+        if (!this.disabled) this.$refs.textarea?.focus();
+      });
+    },
     /**
      * Emits the new draft and keeps the textarea sized to its content.
      *

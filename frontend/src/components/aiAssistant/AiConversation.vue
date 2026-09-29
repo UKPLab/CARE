@@ -22,6 +22,7 @@
     />
 
     <AiConversationComposer
+        ref="composer"
         v-model="draft"
         v-model:selected-model-id="selectedModelId"
         :models="models"
@@ -33,7 +34,7 @@
         :read-only="readOnly"
         :quote="quote"
         @send="sendMessage"
-        @abort="abortActiveRequest"
+        @abort="abortChatRequest"
         @clear-quote="clearQuote"
         @paste="trackInputPaste"
     />
@@ -193,6 +194,12 @@ export default {
     async handleChatRequestFailed(error) {
       this.clearStream();
       await this.handleRequestFailed(error);
+      this.focusComposer();
+    },
+    /** Aborts the active request and restores the Chat input when available. */
+    async abortChatRequest() {
+      await this.abortActiveRequest();
+      this.focusComposer();
     },
     /** Cancels preparation and loads the newly selected study context. */
     changeContext() {
@@ -298,6 +305,7 @@ export default {
       this.pendingContent = "";
       this.quote = null;
       this.errorMessage = "";
+      this.focusComposer();
     },
     /**
      * Loads a past conversation selected from the history menu.
@@ -347,6 +355,7 @@ export default {
           sourceDocumentId: documentId,
           length: quoteText.length,
         });
+        this.focusComposer();
       }
     },
     /**
@@ -452,6 +461,11 @@ export default {
       this.clearActiveRequest();
       this.errorMessage = "";
       this.scrollToBottom();
+      this.focusComposer();
+    },
+    /** Focuses the Chat composer after its disabled state updates. */
+    focusComposer() {
+      this.$refs.composer?.focus();
     },
     /**
      * Clears only the submitted draft after its user row was accepted.
