@@ -306,44 +306,41 @@ function buildAnswerMetadata(question, answerValue, skipped = false) {
 }
 
 /**
- * Returns the question currently waiting for an answer.
+ * Returns the current question until the next response is saved.
  *
  * @param {Object} plan - Normalized dialogue plan.
  * @param {Object[]} messages - Visible dialogue messages.
  * @returns {Object|null} Current question.
  */
 function getCurrentQuestion(plan, messages = []) {
-    const latest = [...messages].map((message, index) => ({message, index})).reverse()
-        .find(({message}) => {
+    const latest = [...messages].reverse()
+        .find((message) => {
             const kind = message?.metadata?.dialogue?.kind;
             return Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
-                && ["main_question", "follow_up"].includes(kind);
+                && ["main_question", "follow_up", "completion"].includes(kind);
         });
-    const latestQuestionId = latest?.message?.metadata?.dialogue?.questionId;
-    const hasAnswerAfterLatestQuestion = latest && messages.slice(latest.index + 1)
-        .some((message) => Number(message.role) === AI_MESSAGE_ROLES.USER
-            && message?.metadata?.dialogue?.kind === "answer"
-            && String(message.metadata.dialogue.questionId) === String(latestQuestionId));
-    if (latestQuestionId && !hasAnswerAfterLatestQuestion) {
+    if (latest?.metadata?.dialogue?.kind === "completion") return null;
+    const latestQuestionId = latest?.metadata?.dialogue?.questionId;
+    if (latestQuestionId) {
         const configuredQuestion = plan.questions.find(
             (question) => String(question.id) === String(latestQuestionId),
         ) || {};
         const question = {
             ...configuredQuestion,
             id: String(latestQuestionId),
-            number: latest.message.metadata.dialogue.questionNumber
+            number: latest.metadata.dialogue.questionNumber
                 || configuredQuestion.number
                 || null,
-            text: latest.message.content,
-            answerType: latest.message.metadata.dialogue.answerType || "text",
-            options: latest.message.metadata.dialogue.options || [],
-            categoryId: latest.message.metadata.dialogue.categoryId || null,
-            source: latest.message.metadata.dialogue.source || null,
+            text: latest.content,
+            answerType: latest.metadata.dialogue.answerType || "text",
+            options: latest.metadata.dialogue.options || [],
+            categoryId: latest.metadata.dialogue.categoryId || null,
+            source: latest.metadata.dialogue.source || null,
         };
         delete question.anchoredText;
         return question;
     }
-    return selectNextPlanQuestion(plan, messages);
+    return plan.questions[0] || null;
 }
 
 /**
