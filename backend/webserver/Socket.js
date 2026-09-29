@@ -271,12 +271,15 @@ module.exports = class Socket {
                     }
                     // Mixed ops in one txn (e.g. study create+update): pass null so query-mode gets Stale.
                     // Same-op bulk (e.g. multi-delete): pass the operation so clients get per-row Deltas.
+                    // Awaited and caught per call: an un-awaited throw becomes an unhandled
+                    // rejection (exits the Node process), and one failing table must not
+                    // skip the broadcasts for the others.
                     if (byOp.size > 1) {
                         const allRows = [...byOp.values()].flat();
-                        this.broadcastTable(table, allRows, null);
+                        await this.safeBroadcastTable(table, allRows, null);
                     } else {
                         for (const [operation, rows] of byOp) {
-                            this.broadcastTable(table, rows, operation);
+                            await this.safeBroadcastTable(table, rows, operation);
                         }
                     }
                 }
@@ -289,11 +292,26 @@ module.exports = class Socket {
                             where: {id: {[Op.in]: ids}, deleted: false},
                         });
                     }
-                    await this.broadcastTable(table, payload, operation);
+                    await this.safeBroadcastTable(table, payload, operation);
                 }
             }
         } catch (e) {
             this.logger.error("Error in afterCommit sending data to client: " + e);
+        }
+    }
+
+    /**
+     * broadcastTable that logs instead of throwing.
+     * @param {string} tableName
+     * @param {object|Array} data
+     * @param {string|null} [operation]
+     * @returns {Promise<void>}
+     */
+    async safeBroadcastTable(tableName, data, operation = null) {
+        try {
+            await this.broadcastTable(tableName, data, operation);
+        } catch (e) {
+            this.logger.error("Error broadcasting " + tableName + ": " + e);
         }
     }
 
@@ -1632,6 +1650,12 @@ module.exports = class Socket {
             const isQueryMode = typeof queryHolds === "number" && queryHolds > 0;
             const hasSubscription = (socket.appDataSubscriptions?.tables?.[tableName]?.size || 0) > 0;
             if (!hasSubscription && !isQueryMode) {
+                continue;
+            }
+            // Server.js sets socket.user at connect. Skip
+            // if a socket ever lacks it.
+            if (!socket.user || socket.user.id == null) {
+                this.logger.warn("broadcastTable: socket " + socket.id + " has no user, skipped");
                 continue;
             }
             const userId = socket.user.id;
