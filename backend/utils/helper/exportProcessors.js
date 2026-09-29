@@ -1,6 +1,6 @@
 const { dbToDelta, deltaToPlainText, deltaToHtml } = require('editor-delta-conversion');
 const {
-    sanitizeFolderName,
+    getUniqueFolderName,
     getDisplayName,
     getConsentedUserIds,
     appendStoredFileIfExists,
@@ -23,6 +23,9 @@ const STUDY_DOCUMENT_EXTENSIONS = { 0: '.pdf', 4: '.zip' };
  * @param {Object} server - The server instance providing database models.
  * @param {Object} doc - The document record from the database.
  * @param {string} docFolder - The target folder path inside the archive.
+ * @param {boolean} shouldExcludeNonConsentingEdits - Whether to drop edits from users who didn't consent to data sharing.
+ * @param {boolean} shouldExcludeNonConsentingAnnotations - Whether to drop annotations/comments/votes from users who didn't consent to data sharing.
+ * @param {Object<number, string>} docUserRoles - Map of user IDs to their role(s) on this document.
  * @param {Object} archive - The archiver instance to append files to.
  * @param {boolean} shouldGenerateAliases - Whether ZIP author names should be anonymized.
  * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
@@ -63,20 +66,23 @@ async function processDocumentForExport(server, doc, docFolder, shouldExcludeNon
 
             annotations = await attachTagNames(server, annotations);
 
+            let commentVotes = await server.db.models.comment_vote.findAll({
+                where: { commentId: comments.map(c => c.id), deleted: false },
+                raw: true,
+            });
+
             if (shouldExcludeNonConsentingAnnotations) {
                 const allUserIds = [...new Set([
                     ...annotations.map(a => a.userId),
                     ...comments.map(c => c.userId),
+                    ...commentVotes.map(v => v.userId),
                 ].filter(Boolean))];
                 const consentedUserIds = await getConsentedUserIds(server, allUserIds);
                 annotations = annotations.filter(a => !a.userId || consentedUserIds.has(a.userId));
                 comments = comments.filter(c => !c.userId || consentedUserIds.has(c.userId));
+                commentVotes = commentVotes.filter(v => !v.userId || consentedUserIds.has(v.userId));
             }
 
-            const commentVotes = await server.db.models.comment_vote.findAll({
-                where: { commentId: comments.map(c => c.id), deleted: false },
-                raw: true,
-            });
             const commentsWithVotes = comments.map(c => ({
                 ...c,
                 votes: commentVotes.filter(v => v.commentId === c.id),
@@ -167,6 +173,8 @@ async function processDocumentForExport(server, doc, docFolder, shouldExcludeNon
  * @param {Array<number>} userIds - List of user IDs to filter documents by.
  * @param {Array<Object>} users - Full user records for the selected users (for ZIP anonymization).
  * @param {Array<number>} documentTypes - List of document types to include (0=PDF, 1=HTML, 2=Modal, 4=ZIP).
+ * @param {boolean} shouldExcludeNonConsentingEdits - Whether to drop edits from users who didn't consent to data sharing.
+ * @param {boolean} shouldExcludeNonConsentingAnnotations - Whether to drop annotations/comments/votes from users who didn't consent to data sharing.
  * @param {boolean} shouldGenerateAliases - Whether ZIP author names should be anonymized.
  * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
  * @param {string} baseFolderName - The root folder name inside the ZIP archive.
@@ -326,14 +334,32 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
                             raw: true,
                         });
 
+                        let commentVotes = comments.length > 0
+                            ? await server.db.models.comment_vote.findAll({
+                                where: { commentId: comments.map(c => c.id), deleted: false },
+                                raw: true,
+                            })
+                            : [];
+
+                        // Assessments live on the annotator step, so without this the whole
+                        // document_data of an assessment workflow never leaves the database.
+                        let annotatorData = await server.db.models.document_data.findAll({
+                            where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                            raw: true,
+                        });
+
                         if (shouldExcludeNonConsentingAnnotations) {
                             const allUserIds = [...new Set([
                                 ...annotations.map(a => a.userId),
-                                ...comments.map(c => c.userId)
+                                ...comments.map(c => c.userId),
+                                ...commentVotes.map(v => v.userId),
+                                ...annotatorData.map(d => d.userId)
                             ].filter(Boolean))];
                             const consentedIds = await getConsentedUserIds(server, allUserIds);
                             annotations = annotations.filter(a => !a.userId || consentedIds.has(a.userId));
                             comments = comments.filter(c => !c.userId || consentedIds.has(c.userId));
+                            commentVotes = commentVotes.filter(v => !v.userId || consentedIds.has(v.userId));
+                            annotatorData = annotatorData.filter(d => !d.userId || consentedIds.has(d.userId));
                         }
 
                         if (annotations.length > 0) {
@@ -342,10 +368,6 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
                         }
 
                         if (comments.length > 0) {
-                            const commentVotes = await server.db.models.comment_vote.findAll({
-                                where: { commentId: comments.map(c => c.id), deleted: false },
-                                raw: true,
-                            });
                             files.push({
                                 name: 'comments.json',
                                 content: JSON.stringify(
@@ -356,12 +378,6 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
                             sessionHasContent = true;
                         }
 
-                        // Assessments live on the annotator step, so without this the whole
-                        // document_data of an assessment workflow never leaves the database.
-                        const annotatorData = await server.db.models.document_data.findAll({
-                            where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
-                            raw: true,
-                        });
                         if (annotatorData.length > 0) {
                             files.push({ name: 'document_data.json', content: JSON.stringify(annotatorData, null, 2) });
                             sessionHasContent = true;
@@ -386,10 +402,19 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
 
                         let edits = [...templateEdits, ...sessionEdits].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
+                        let documentData = await server.db.models.document_data.findAll({
+                            where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
+                            raw: true,
+                        });
+
                         if (shouldExcludeNonConsentingEdits) {
-                            const editorUserIds = [...new Set(edits.map(e => e.userId).filter(Boolean))];
+                            const editorUserIds = [...new Set([
+                                ...edits.map(e => e.userId),
+                                ...documentData.map(d => d.userId)
+                            ].filter(Boolean))];
                             const consentedIds = await getConsentedUserIds(server, editorUserIds);
                             edits = edits.filter(e => !e.userId || consentedIds.has(e.userId));
+                            documentData = documentData.filter(d => !d.userId || consentedIds.has(d.userId));
                         }
 
                         if (edits.length > 0) {
@@ -403,12 +428,9 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
                             }
                         }
 
-                        const documentData = await server.db.models.document_data.findAll({
-                            where: { documentId: step.documentId, studySessionId: session.id, studyStepId: step.id, deleted: false },
-                            raw: true,
-                        });
                         if (documentData.length > 0) {
                             files.push({ name: 'document_data.json', content: JSON.stringify(documentData, null, 2) });
+                            sessionHasContent = true;
                         }
                         break;
                     }
@@ -545,7 +567,16 @@ async function processStudyBasedExport(server, projectId, userIds, users, hasPri
 
 /**
  * Exports usage statistics for the selected users, respecting each user's acceptStats consent.
+ * @param {Object} server - The server instance providing database models.
+ * @param {Array<Object>} users - Full user records for the selected users.
+ * @param {boolean} shouldGenerateAliases - Whether user names should be anonymized.
+ * @param {boolean} hasPrivateInfoRight - Whether the requester may export real names.
+ * @param {Object<number, string>} userMapping - Map of user IDs to generated aliases.
  * @param {string} behaviourOutputFormat - 'single' for one combined file, 'perUser' for one file per user.
+ * @param {string} behaviourFileFormat - 'csv' or 'json' output file format.
+ * @param {string} baseFolderName - The root folder name inside the ZIP archive.
+ * @param {Object} archive - The archiver instance to append files to.
+ * @returns {Promise<void>}
  */
 async function processUserBehaviourExport(server, users, shouldGenerateAliases, hasPrivateInfoRight, userMapping, behaviourOutputFormat, behaviourFileFormat, baseFolderName, archive) {
     const { Op } = server.db.Sequelize;
@@ -582,8 +613,9 @@ async function processUserBehaviourExport(server, users, shouldGenerateAliases, 
         : createJsonArrayStream(fetchPage, toRecord);
 
     if (behaviourOutputFormat === 'perUser') {
+        const usedFolderNames = new Set();
         for (const user of consentedUsers) {
-            const folderName = sanitizeFolderName(getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping));
+            const folderName = getUniqueFolderName(usedFolderNames, getDisplayName(user, shouldGenerateAliases, hasPrivateInfoRight, userMapping));
             const fetchPage = (lastId, limit) => server.db.models.statistic.findAll({
                 where: { userId: user.id, deleted: false, id: { [Op.gt]: lastId } },
                 order: [['id', 'ASC']],

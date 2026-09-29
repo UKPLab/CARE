@@ -55,6 +55,7 @@
       "declinedStatsSharingEmphasis": "nicht zugestimmt haben",
       "aliasMappingWarning": "Das heruntergeladene ZIP-Archiv enthält eine CSV-Datei, die die generierten Aliasnamen den echten Namen der Studierenden zuordnet.",
       "reviewWarning": "Wir empfehlen dringend, diesen Export vor der Weitergabe sorgfältig zu prüfen, um sicherzustellen, dass keine sensiblen oder unbeabsichtigten Informationen verteilt werden.",
+      "streamError": "Beim Starten des Downloads ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
       "summary": "Zusammenfassung:",
       "downloadSummary": "Sie sind dabei, {type} für {count} Benutzer herunterzuladen.",
       "typeLabel": {

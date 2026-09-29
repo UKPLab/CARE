@@ -6,6 +6,7 @@ const {
     replaceAuthorInZip,
     buildUserMapping,
     sanitizeFolderName,
+    getUniqueFolderName,
     getDisplayName,
     calculateSubmissionVersion,
     resolveHasPrivateInfoRight,
@@ -344,15 +345,7 @@ module.exports = function (server) {
         const usedFolderNames = new Set();
         const getUniqueHashFolderName = (baseHash, userId, sessionId) => {
             const raw = baseHash || `session_${sessionId || "unknown"}_user_${userId}`;
-            const safeBase = sanitizeFolderName(raw);
-            let candidate = safeBase;
-            let suffix = 1;
-            while (usedFolderNames.has(candidate)) {
-                candidate = `${safeBase}_${suffix}`;
-                suffix += 1;
-            }
-            usedFolderNames.add(candidate);
-            return candidate;
+            return getUniqueFolderName(usedFolderNames, raw);
         };
 
         if (gradeFormat === "csv" && mergeCsvFiles) {

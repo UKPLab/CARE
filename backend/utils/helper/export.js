@@ -169,6 +169,27 @@ function sanitizeFolderName(value) {
 }
 
 /**
+ * Sanitizes a folder name and disambiguates it against names already used in the same
+ * archive, so two entries that sanitize to the same value don't overwrite each other.
+ * Mutates `usedNames` with the returned candidate.
+ *
+ * @param {Set<string>} usedNames - Folder names already assigned in this archive.
+ * @param {string|number|null|undefined} baseName - The raw, not-yet-sanitized folder name.
+ * @returns {string} A sanitized folder name unique within `usedNames`.
+ */
+function getUniqueFolderName(usedNames, baseName) {
+    const safeBase = sanitizeFolderName(baseName);
+    let candidate = safeBase;
+    let suffix = 1;
+    while (usedNames.has(candidate)) {
+        candidate = `${safeBase}_${suffix}`;
+        suffix += 1;
+    }
+    usedNames.add(candidate);
+    return candidate;
+}
+
+/**
  * Returns a user's display name based on private info permissions.
  *
  * @param {Object|null} user - The user record.
@@ -485,6 +506,7 @@ module.exports = {
     replaceAuthorInZip,
     buildUserMapping,
     sanitizeFolderName,
+    getUniqueFolderName,
     getPrivateAwareName,
     getDisplayName,
     calculateSubmissionVersion,

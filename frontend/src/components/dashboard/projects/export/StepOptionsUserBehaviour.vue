@@ -13,6 +13,14 @@
 <script>
 import BasicForm from "@/basic/Form.vue";
 
+/**
+ * StepOptionsUserBehaviour
+ *
+ * Provides configuration options for the user behaviour export: whether to
+ * write one combined file or one file per user, and the output file format.
+ *
+ * @author Mélissa Loew
+ */
 export default {
     name: "StepOptionsUserBehaviour",
     components: { BasicForm },

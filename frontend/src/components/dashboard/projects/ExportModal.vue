@@ -440,102 +440,58 @@ export default {
 
       return results;
     },
-    async downloadSubmissions() {
-      try {
-        // get the selected student's user ids
-        const selectedUserIds = this.userSelection.map(row => row.userId);
-        // call helper function to trigger the stream download
-        this.triggerStreamDownload({
-          projectId: this.dataSelection.projectId,
-          exportType: 'submissions',
-          userIds: selectedUserIds,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null
-        });
-        this.$refs.exportStepper.close();
-      } catch (error) {
-        console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
-      }
-    },
-    async downloadGrades() {
+    // Shared by all download* methods below: builds the common payload (projectId,
+    // exportType, userIds, alias settings), merges in the export-type-specific fields,
+    // and handles the shared error/close behavior.
+    async downloadStream(exportType, extraPayload = {}) {
       try {
         const selectedUserIds = this.userSelection.map(row => row.userId);
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
-          exportType: 'grades',
+          exportType,
           userIds: selectedUserIds,
           generateAliases: this.generateAliases,
           fakerSeed: this.generateAliases ? this.fakerSeed : null,
-          gradeFormat: this.gradeFormat,
-          mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+          ...extraPayload
         });
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
+        this.$toast.error(this.$t('dashboard.projects.export.streamError'));
       }
+    },
+    async downloadSubmissions() {
+      await this.downloadStream('submissions');
+    },
+    async downloadGrades() {
+      await this.downloadStream('grades', {
+        gradeFormat: this.gradeFormat,
+        mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+      });
     },
     async downloadDocuments() {
-      try {
-        const selectedUserIds = this.userSelection.map(row => row.userId);
-        this.triggerStreamDownload({
-          projectId: this.dataSelection.projectId,
-          exportType: 'documents',
-          userIds: selectedUserIds,
-          documentTypes: this.selectedDocumentTypes,
-          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null
-        });
-
-        this.$refs.exportStepper.close();
-      } catch (error) {
-          console.error("Streaming error:", error);
-          this.$toast.error("An error occurred starting the stream. Please try again.");
-      }
+      await this.downloadStream('documents', {
+        documentTypes: this.selectedDocumentTypes,
+        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+      });
     },
     async downloadStudies() {
-      try {
-        const selectedUserIds = this.userSelection.map(row => row.userId);
-        this.triggerStreamDownload({
-          projectId: this.dataSelection.projectId,
-          exportType: 'studies',
-          userIds: selectedUserIds,
-          workflowIds: this.selectedWorkflowIds,
-          includeEmptyStudies: this.includeEmptyStudies,
-          includeDocumentFiles: this.includeStudyDocumentFiles,
-          includeGrades: this.includeStudyGrades,
-          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
-          includeAiScores: this.includeStudyIncludeAiScores,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null
-        });
-        this.$refs.exportStepper.close();
-      } catch (error) {
-        console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
-      }
+      await this.downloadStream('studies', {
+        workflowIds: this.selectedWorkflowIds,
+        includeEmptyStudies: this.includeEmptyStudies,
+        includeDocumentFiles: this.includeStudyDocumentFiles,
+        includeGrades: this.includeStudyGrades,
+        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
+        includeAiScores: this.includeStudyIncludeAiScores
+      });
     },
     async downloadUserBehaviour() {
-      try {
-        const selectedUserIds = this.userSelection.map(row => row.userId);
-        this.triggerStreamDownload({
-          projectId: this.dataSelection.projectId,
-          exportType: 'userBehaviour',
-          userIds: selectedUserIds,
-          behaviourOutputFormat: this.behaviourOutputFormat,
-          behaviourFileFormat: this.behaviourFileFormat,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null
-        });
-        this.$refs.exportStepper.close();
-      } catch (error) {
-        console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
-      }
+      await this.downloadStream('userBehaviour', {
+        behaviourOutputFormat: this.behaviourOutputFormat,
+        behaviourFileFormat: this.behaviourFileFormat
+      });
     },
     async downloadAllData() {
       this.wait = true;
