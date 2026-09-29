@@ -57,20 +57,6 @@ async function findDialogueConversation(service, userId, studySessionId) {
 }
 
 /**
- * Loads a Dialogue conversation and validates ownership.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @param {number} userId - Authenticated user identifier.
- * @param {number} studySessionId - Expected study session identifier.
- * @param {Object} [options] - Sequelize query options.
- * @returns {Promise<Object>} Owned Dialogue conversation.
- */
-async function loadDialogueConversation(service, conversationId, userId, studySessionId, options = {}) {
-    return core.loadOwnedConversation(service, conversationId, userId, studySessionId, DIALOGUE, options);
-}
-
-/**
  * Finds a configured Dialogue hook service by its workflow service name.
  *
  * @param {Object[]} services - Study step service declarations.
@@ -185,11 +171,12 @@ async function getDialogueConversation(service, client, data) {
         {requireCurrentStep: false, requireHooks: false},
     );
     const existing = data?.conversationId
-        ? await loadDialogueConversation(
+        ? await core.loadOwnedConversation(
             service,
             data.conversationId,
             context.userId,
             context.studySession.id,
+            DIALOGUE,
         )
         : await findDialogueConversation(service, context.userId, context.studySession.id);
     const messages = existing ? await service.server.db.models["ai_message"].getVisibleMessages(existing.id, context.studyStep.id) : [];
@@ -409,11 +396,12 @@ async function sendDialogueAnswer(service, client, data) {
     }
 
     const currentConversation = data?.conversationId
-        ? await loadDialogueConversation(
+        ? await core.loadOwnedConversation(
             service,
             data.conversationId,
             context.userId,
             context.studySession.id,
+            DIALOGUE,
         )
         : await findDialogueConversation(service, context.userId, context.studySession.id);
     const messages = currentConversation ? await service.server.db.models["ai_message"].getVisibleMessages(currentConversation.id, context.studyStep.id) : [];

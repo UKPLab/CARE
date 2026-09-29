@@ -315,7 +315,6 @@ module.exports = {
     resetMessageForRetry,
     abortPendingMessage,
     createTurnMessages,
-    failAssistantMessage,
     completeTurn,
     buildTurnResult,
 };

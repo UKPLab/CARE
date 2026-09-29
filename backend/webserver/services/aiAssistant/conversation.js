@@ -34,16 +34,6 @@ function buildQuoteMetadata(context, quote) {
 }
 
 /**
- * Renders a quoted source as a markdown blockquote.
- *
- * @param {string} text - Quoted text.
- * @returns {string} Blockquote text.
- */
-function formatQuote(text) {
-    return text.split("\n").map((line) => `> ${line}`).join("\n");
-}
-
-/**
  * Builds the stored and model-visible user message content.
  *
  * @param {string} content - User question text.
@@ -52,7 +42,9 @@ function formatQuote(text) {
  */
 function buildUserContent(content, metadata) {
     const quote = metadata?.quote?.text;
-    return quote ? `${formatQuote(quote)}\n\n${content}` : content;
+    if (!quote) return content;
+    const blockquote = quote.split("\n").map((line) => `> ${line}`).join("\n");
+    return `${blockquote}\n\n${content}`;
 }
 
 /**
@@ -162,26 +154,6 @@ async function loadChatContext(
 }
 
 /**
- * Loads and validates a chat conversation owned by the authenticated user.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {number} conversationId - Conversation identifier.
- * @param {number} userId - Authenticated user identifier.
- * @param {number} studySessionId - Expected study session identifier.
- * @param {Object} [options] - Sequelize query options.
- * @returns {Promise<Object>} Owned chat conversation.
- */
-async function loadConversation(
-    service,
-    conversationId,
-    userId,
-    studySessionId,
-    options = {},
-) {
-    return core.loadOwnedConversation(service, conversationId, userId, studySessionId, CHAT, options);
-}
-
-/**
  * Lists the enabled models configured for a hook.
  *
  * @param {Object} service - AIAssistantService runtime.
@@ -274,11 +246,12 @@ async function sendConversationMessage(service, client, data) {
     const userMetadata = buildQuoteMetadata(context, data?.quote);
     const requestId = serviceHelpers.requireRequestId(data?.requestId);
     const conversation = data?.conversationId
-        ? await loadConversation(
+        ? await core.loadOwnedConversation(
             service,
             data.conversationId,
             context.userId,
             context.studySession.id,
+            CHAT,
         )
         : null;
     context.includeContext = (conversation || data)?.includeContext !== false;
