@@ -617,7 +617,7 @@ export default {
         this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
-        this.$emit("assessment-advance-past-end");
+        this.$emit("assessment-advance-past-end", () => this.rubricRefs[currentGroupIndex]?.focusHeader());
       }
     },
   },

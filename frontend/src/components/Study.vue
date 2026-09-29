@@ -478,18 +478,22 @@ export default {
      * Move keyboard focus to the forward control after the final assessment
      * criterion is marked done. Under forcedAssessment the button is enabled
      * in the same render that triggers this, so retry for a few frames
-     * before giving up.
+     * before giving up. If the control never becomes focusable (e.g. an
+     * earlier criterion is still unsaved), call the fallback instead.
      *
+     * @param {Function} [onGiveUp] - called when the retries run out
      * @param {number} attempt - current attempt number
      */
-    focusForwardControl(attempt = 0) {
+    focusForwardControl(onGiveUp, attempt = 0) {
       const el = (this.$refs.nextButton || this.$refs.finishButton)?.$el;
       if (el && !el.disabled && typeof el.focus === "function") {
         el.focus();
         return;
       }
       if (attempt < 5) {
-        requestAnimationFrame(() => this.focusForwardControl(attempt + 1));
+        requestAnimationFrame(() => this.focusForwardControl(onGiveUp, attempt + 1));
+      } else if (typeof onGiveUp === "function") {
+        onGiveUp();
       }
     },
     setStudyError(message, errorCode) {

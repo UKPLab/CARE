@@ -135,7 +135,6 @@
             </select>
 
             <BasicButton
-                ref="markDoneButton"
                 :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
                 :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
                 text=""
@@ -373,9 +372,11 @@ export default {
      * @param {string} refName - name of the ref to focus
      */
     focusEl(refName) {
-      const c = this.$refs[refName];
-      const el = c && c.$el ? c.$el : c;
-      if (el && typeof el.focus === "function") el.focus();
+      const target = this.$refs[refName];
+      const el = target && target.$el ? target.$el : target;
+      if (el && typeof el.focus === "function") {
+        el.focus();
+      }
     },
     saveAssessment() {
       if (this.readOnly) return;
