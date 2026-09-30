@@ -6,13 +6,14 @@
  * @author Mohammed Rawhani
  */
 
-export const MESSAGE_ROLES = Object.freeze({
+// Keep in sync with backend/db/models/ai_message.js.
+export const AI_MESSAGE_ROLES = Object.freeze({
   SYSTEM: 0,
   USER: 1,
   ASSISTANT: 2,
 });
 
-export const MESSAGE_STATUSES = Object.freeze({
+export const AI_MESSAGE_STATUSES = Object.freeze({
   PENDING: 0,
   COMPLETED: 1,
   FAILED: 2,

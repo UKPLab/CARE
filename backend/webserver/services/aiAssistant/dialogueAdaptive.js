@@ -55,7 +55,7 @@ async function prepareResponse(service, client, context, turn, requestId) {
     const payload = decision.action === "follow_up"
         ? {
             content: decision.content,
-            metadata: dialoguePlan.buildQuestionMetadata("follow_up", question, {
+            metadata: dialoguePlan.buildQuestionMetadata(dialoguePlan.DIALOGUE_MESSAGE_KINDS.FOLLOW_UP, question, {
                 followUpIndex: followUpsUsed + 1,
             }),
         }

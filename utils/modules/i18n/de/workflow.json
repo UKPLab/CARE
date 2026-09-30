@@ -96,7 +96,8 @@
       "annotaterStep": "Annotater-Schritt",
       "editorStep": "Editor-Schritt",
       "modalStep": "Modal-Schritt",
-      "dialogueStep": "Dialogschritt"
+      "dialogueStep": "Dialogschritt",
+      "dialogue": "Dialog"
     },
     "errors": {
       "saveFailed": "Speichern fehlgeschlagen",

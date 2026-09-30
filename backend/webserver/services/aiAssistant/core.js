@@ -8,7 +8,7 @@
 
 const TranslatableError = require("../../../utils/TranslatableError");
 
-const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
+const helpers = require("../../../utils/helper/ai/helpers.js");
 
 /**
  * Loads and ownership-checks the study session and step behind an assistant call.
@@ -25,10 +25,10 @@ const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
  * @returns {Promise<Object>} Validated user, models, session, and step.
  */
 async function loadStudyStepContext(service, client, studySessionId, studyStepId, {requireOpen = false} = {}) {
-    const userId = serviceHelpers.requireClientUserId(client);
+    const userId = helpers.requireClientUserId(client);
     const models = service.server.db.models;
-    const sessionId = serviceHelpers.requireId(studySessionId, "studySessionId");
-    const stepId = serviceHelpers.requireId(studyStepId, "studyStepId");
+    const sessionId = helpers.requireId(studySessionId, "studySessionId");
+    const stepId = helpers.requireId(studyStepId, "studyStepId");
     const studySession = await models["study_session"].getById(sessionId);
     if (!studySession || Number(studySession.userId) !== userId) {
         throw new TranslatableError("errors.ai.sessionAccessDenied");
@@ -61,7 +61,7 @@ async function loadStudyStepContext(service, client, studySessionId, studyStepId
  */
 async function loadOwnedConversation(service, conversationId, userId, studySessionId, descriptor, options = {}) {
     const conversation = await service.server.db.models["ai_conversation"].getOwnedConversation(
-        serviceHelpers.requireId(conversationId, "conversationId"),
+        helpers.requireId(conversationId, "conversationId"),
         userId, studySessionId, descriptor.conversationType, options,
     );
     if (!conversation) {

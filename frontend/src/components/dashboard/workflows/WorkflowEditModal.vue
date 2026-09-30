@@ -249,7 +249,7 @@ export default {
         case 3: // STEP_TYPE_MODAL
           return this.$t("workflow.editModal.stepTypes.modal");
         case 4: // STEP_TYPE_DIALOGUE
-          return this.$t("workflow.stepTypes.dialogue");
+          return this.$t("workflow.editModal.stepTypes.dialogue");
         default:
           return this.$t("workflow.editModal.stepTypes.annotater"); // Default to annotater
       }

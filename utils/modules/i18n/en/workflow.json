@@ -96,7 +96,8 @@
       "annotaterStep": "Annotater Step",
       "editorStep": "Editor Step",
       "modalStep": "Modal Step",
-      "dialogueStep": "Dialogue Step"
+      "dialogueStep": "Dialogue Step",
+      "dialogue": "Dialogue"
     },
     "errors": {
       "saveFailed": "Save Failed",

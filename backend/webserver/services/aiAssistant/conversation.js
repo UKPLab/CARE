@@ -11,9 +11,14 @@ const TranslatableError = require("../../../utils/TranslatableError");
 
 const {AI_CONVERSATION_TYPES} = require("../../../db/models/ai_conversation");
 const {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} = require("../../../db/models/ai_message");
-const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
+const helpers = require("../../../utils/helper/ai/helpers.js");
 const turns = require("./turns.js");
 const core = require("./core.js");
+
+const CHAT = {
+    conversationType: AI_CONVERSATION_TYPES.CHAT,
+    notFoundKey: "errors.ai.chat.conversationNotFound",
+};
 
 /**
  * Normalizes optional quoted-source metadata for a user message.
@@ -106,11 +111,6 @@ async function createConversationTurn(service, context, existingConversation, da
         }, {transaction});
     });
 }
-
-const CHAT = {
-    conversationType: AI_CONVERSATION_TYPES.CHAT,
-    notFoundKey: "errors.ai.chat.conversationNotFound",
-};
 
 
 /**
@@ -213,7 +213,7 @@ async function getConversation(service, client, data) {
     );
 
     const requestedConversationId = data?.conversationId
-        ? serviceHelpers.requireId(data.conversationId, "conversationId")
+        ? helpers.requireId(data.conversationId, "conversationId")
         : null;
     const activeConversation = requestedConversationId
         ? conversations.find((conversation) => Number(conversation.id) === Number(requestedConversationId))
@@ -254,7 +254,7 @@ async function sendConversationMessage(service, client, data) {
         throw new TranslatableError("errors.ai.chat.contentRequired");
     }
     const userMetadata = buildQuoteMetadata(context, data?.quote);
-    const requestId = serviceHelpers.requireRequestId(data?.requestId);
+    const requestId = helpers.requireRequestId(data?.requestId);
     const conversation = data?.conversationId
         ? await core.loadOwnedConversation(
             service,

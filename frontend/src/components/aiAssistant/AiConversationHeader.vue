@@ -14,14 +14,14 @@
             aria-label="New conversation"
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            :disabled="busy || readOnly"
+            :disabled="isBusy || readOnly"
         />
         <ul class="dropdown-menu dropdown-menu-end conversation-menu">
           <li><h6 class="dropdown-header">New conversation</h6></li>
           <li>
             <BasicButton
                 class="dropdown-item text-wrap"
-                :disabled="busy || readOnly"
+                :disabled="isBusy || readOnly"
                 @click="$emit('new', true)"
             >
               <span class="d-block fw-semibold">With study context</span>
@@ -31,7 +31,7 @@
           <li>
             <BasicButton
                 class="dropdown-item text-wrap"
-                :disabled="busy || readOnly"
+                :disabled="isBusy || readOnly"
                 @click="$emit('new', false)"
             >
               <span class="d-block fw-semibold">Fresh conversation</span>
@@ -48,7 +48,7 @@
             tooltip="History"
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            :disabled="busy"
+            :disabled="isBusy"
         />
         <ul class="dropdown-menu dropdown-menu-end conversation-menu">
           <li><h6 class="dropdown-header">Recent chats</h6></li>
@@ -109,7 +109,7 @@ export default {
       required: false,
       default: null,
     },
-    busy: {
+    isBusy: {
       type: Boolean,
       required: false,
       default: false,

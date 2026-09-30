@@ -9,7 +9,7 @@
 const TranslatableError = require("../../../utils/TranslatableError");
 
 const {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} = require("../../../db/models/ai_message");
-const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
+const helpers = require("../../../utils/helper/ai/helpers.js");
 const core = require("./core.js");
 
 /**
@@ -62,7 +62,7 @@ async function requestAssistantCompletion(service, client, context, data, option
         log: {
             aiMessageId,
             hookModelId,
-            input: serviceHelpers.serializeMessages(messages),
+            input: helpers.serializeMessages(messages),
         },
     });
     const content = result.choices?.[0]?.message?.content;
@@ -112,8 +112,8 @@ async function requestHookCompletion(service, client, context, data) {
  * @returns {Promise<Object>} Validated retry target.
  */
 async function loadRetryableAssistantMessage(service, client, data, descriptor) {
-    const assistantMessageId = serviceHelpers.requireId(data?.assistantMessageId, "assistantMessageId");
-    const requestId = serviceHelpers.requireRequestId(data?.requestId);
+    const assistantMessageId = helpers.requireId(data?.assistantMessageId, "assistantMessageId");
+    const requestId = helpers.requireRequestId(data?.requestId);
     const assistantMessage = await service.server.db.models["ai_message"].getById(assistantMessageId);
     if (
         !assistantMessage ||
@@ -123,7 +123,7 @@ async function loadRetryableAssistantMessage(service, client, data, descriptor) 
     ) {
         throw new TranslatableError("errors.ai.assistant.retryNotAllowed");
     }
-    const userId = serviceHelpers.requireClientUserId(client);
+    const userId = helpers.requireClientUserId(client);
     const conversation = await service.server.db.models["ai_conversation"].getById(
         assistantMessage.conversationId,
     );
@@ -154,14 +154,15 @@ async function resetMessageForRetry(service, userId, studySessionId, conversatio
         await requireNoPendingMessage(service, userId, studySessionId, {transaction});
         const updatedCount = await service.server.db.models["ai_message"].updateMessageIfStatus(
             assistantMessageId,
-            [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED],
             {status: AI_MESSAGE_STATUSES.PENDING, content: "", requestId},
+            [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED],
+            null,
             {transaction},
         );
         if (updatedCount === 0) {
             throw new TranslatableError("errors.ai.assistant.retryNotAllowed");
         }
-        await service.server.db.models["ai_conversation"].touchConversation(conversationId, {transaction});
+        await service.server.db.models["ai_conversation"].touch(conversationId, {transaction});
     });
 }
 
@@ -175,8 +176,8 @@ async function resetMessageForRetry(service, userId, studySessionId, conversatio
  * @returns {Promise<Object>} Abort result.
  */
 async function abortPendingMessage(service, client, data, descriptor) {
-    const requestId = serviceHelpers.requireRequestId(data?.requestId);
-    const userId = serviceHelpers.requireClientUserId(client);
+    const requestId = helpers.requireRequestId(data?.requestId);
+    const userId = helpers.requireClientUserId(client);
     const models = service.server.db.models;
     const assistantMessage = await models["ai_message"].getPendingMessageByRequestId(requestId);
     if (!assistantMessage) {
@@ -196,8 +197,8 @@ async function abortPendingMessage(service, client, data, descriptor) {
     );
     const aborted = await service.server.db.sequelize.transaction(async (transaction) => {
         const updatedCount = await models["ai_message"].updateMessageIfStatus(
-            assistantMessage.id, [AI_MESSAGE_STATUSES.PENDING],
-            {status: AI_MESSAGE_STATUSES.ABORTED, content: ""}, {transaction, requestId},
+            assistantMessage.id, {status: AI_MESSAGE_STATUSES.ABORTED, content: ""},
+            [AI_MESSAGE_STATUSES.PENDING], requestId, {transaction},
         );
         if (updatedCount === 0) return false;
         const log = await models["ai_log"].findOne({
@@ -207,7 +208,7 @@ async function abortPendingMessage(service, client, data, descriptor) {
             transaction,
         });
         if (log) {
-            await core.getAIService(service).call("cancelRequest", client, {logId: log.id}, {db: {transaction}});
+            await core.getAIService(service).call("cancelRequest", client, {logId: log.id}, {transaction});
         }
         return true;
     });
@@ -240,7 +241,7 @@ async function createTurnMessages(service, context, conversation, data, options)
         ...data.assistant, ...base, role: AI_MESSAGE_ROLES.ASSISTANT,
         content: "", status: AI_MESSAGE_STATUSES.PENDING, requestId: data.requestId,
     }, options);
-    await models["ai_conversation"].touchConversation(conversation.id, options);
+    await models["ai_conversation"].touch(conversation.id, options);
     return {conversation, userMessage, assistantMessage};
 }
 
@@ -253,8 +254,8 @@ async function createTurnMessages(service, context, conversation, data, options)
  */
 async function failAssistantMessage(service, assistantMessageId, requestId) {
     await service.server.db.models["ai_message"].updateMessageIfStatus(
-        assistantMessageId, [AI_MESSAGE_STATUSES.PENDING],
-        {status: AI_MESSAGE_STATUSES.FAILED, content: ""}, {requestId},
+        assistantMessageId, {status: AI_MESSAGE_STATUSES.FAILED, content: ""},
+        [AI_MESSAGE_STATUSES.PENDING], requestId,
     );
 }
 
@@ -274,8 +275,8 @@ async function completeTurn(service, turn, requestId, prepareResponse) {
     try {
         const payload = await prepareResponse();
         const changed = await messages.updateMessageIfStatus(
-            turn.assistantMessage.id, [AI_MESSAGE_STATUSES.PENDING],
-            {...payload, status: AI_MESSAGE_STATUSES.COMPLETED}, {requestId},
+            turn.assistantMessage.id, {...payload, status: AI_MESSAGE_STATUSES.COMPLETED},
+            [AI_MESSAGE_STATUSES.PENDING], requestId,
         );
         if (!changed) throw new TranslatableError("errors.ai.assistant.requestAborted");
     } catch (error) {

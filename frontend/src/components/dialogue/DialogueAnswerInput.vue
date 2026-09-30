@@ -48,8 +48,8 @@
           rows="3"
           placeholder="Write your answer..."
           :aria-label="question.text || 'Dialogue answer'"
-          @input="handleTyping"
-          @paste="handlePaste"
+          @input="onInput"
+          @paste="onPaste"
       />
     </fieldset>
 
@@ -194,7 +194,7 @@ export default {
      * @param {InputEvent} event - Textarea input event.
      * @returns {void}
      */
-    handleTyping(event) {
+    onInput(event) {
       if (this.typingStarted || event.inputType === "insertFromPaste") return;
       this.typingStarted = true;
       this.$emit("typing-started", {
@@ -208,7 +208,7 @@ export default {
      * @param {ClipboardEvent} event - Textarea paste event.
      * @returns {void}
      */
-    handlePaste(event) {
+    onPaste(event) {
       const pastedText = (event.clipboardData || window.clipboardData).getData("text");
       if (!pastedText) return;
       this.$emit("paste", {

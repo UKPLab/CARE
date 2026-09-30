@@ -16,7 +16,7 @@
             ref="body"
             :messages="visibleMessages"
             :loading="loading && !visibleMessages.length"
-            :busy="isBusy"
+            :is-busy="isBusy"
             :read-only="readOnly"
             :active-request="activeRequest"
             :sending="sending"
@@ -27,8 +27,8 @@
             @send="sendAnswer"
             @abort="abortActiveRequest"
             @retry="retryMessage"
-            @typing-started="trackDialogueEvent('dialogueTypingStarted', $event)"
-            @paste="trackDialogueEvent('dialogueInputPaste', $event)"
+            @typing-started="logDialogueEvent('dialogueTypingStarted', $event)"
+            @paste="logDialogueEvent('dialogueInputPaste', $event)"
         />
 
         <AiAssistantRequest
@@ -91,7 +91,7 @@ import {
   buildDialogueQuestionMessage,
   isDialogueQuestion,
 } from "@/components/dialogue/dialogueMessages.js";
-import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
+import aiRequestMixin from "@/basic/service/aiRequestMixin";
 import {resolveApiMessage} from "@/assets/utils";
 
 const emptyConversationSnapshot = () => ({
@@ -104,7 +104,7 @@ const emptyConversationSnapshot = () => ({
  * @author Mohammed Rawhani
  */
 export default {
-  name: "DialogueStep",
+  name: "DialogueView",
   components: {AiAssistantRequest, BasicEditor, BasicSidebar, SidebarTemplate, DialogueConversationBody, DialogueHeader},
   mixins: [aiRequestMixin],
   inject: {
@@ -113,15 +113,47 @@ export default {
     },
   },
   props: {
-    studySessionId: {type: Number, required: true},
-    studyStepId: {type: Number, required: true},
-    documentId: {type: Number, required: false, default: null},
-    config: {type: Object, required: false, default: () => ({})},
-    studyData: {type: Object, required: true},
-    orderedStudySteps: {type: Array, required: true},
-    readOnly: {type: Boolean, required: false, default: false},
-    isShown: {type: Boolean, required: false, default: true},
-    studyDescription: {type: String, required: false, default: ""},
+    studySessionId: {
+      type: Number,
+      required: true,
+    },
+    studyStepId: {
+      type: Number,
+      required: true,
+    },
+    documentId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    config: {
+      type: Object,
+      required: false,
+      default: () => ({}),
+    },
+    studyData: {
+      type: Object,
+      required: true,
+    },
+    orderedStudySteps: {
+      type: Array,
+      required: true,
+    },
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    isShown: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
+    studyDescription: {
+      type: String,
+      required: false,
+      default: "",
+    },
   },
   emits: ["update:ready", "update:data"],
   data() {
@@ -185,7 +217,7 @@ export default {
     studyStepId() { this.changeContext(); },
     activeQuestionMessageId: {
       handler(messageId) {
-        if (messageId) this.$nextTick(() => this.trackQuestionShown(messageId));
+        if (messageId) this.$nextTick(() => this.logQuestionShown(messageId));
       },
       immediate: true,
     },
@@ -222,7 +254,7 @@ export default {
      * @param {Object} data - Event metadata.
      * @returns {void}
      */
-    trackDialogueEvent(action, data = {}) {
+    logDialogueEvent(action, data = {}) {
       if (!this.acceptStats) return;
       this.$socket.emit("stats", {
         action,
@@ -240,14 +272,14 @@ export default {
      * @param {string|number} messageId - Active question message id.
      * @returns {void}
      */
-    trackQuestionShown(messageId) {
+    logQuestionShown(messageId) {
       const message = this.visibleMessages.find((entry) => String(entry.id) === String(messageId));
       if (!message) return;
       const dialogue = message.metadata?.dialogue || {};
       const key = [dialogue.kind, dialogue.questionId, dialogue.followUpIndex || 0].join(":");
       if (this.shownQuestionKeys.has(key)) return;
       this.shownQuestionKeys.add(key);
-      this.trackDialogueEvent("dialogueQuestionShown", {
+      this.logDialogueEvent("dialogueQuestionShown", {
         questionId: dialogue.questionId,
         followUpIndex: dialogue.followUpIndex || 0,
       });
@@ -309,7 +341,7 @@ export default {
       if (this.readOnly || this.isBusy || !this.currentQuestion || (this.retryableMessageId && !skipped)) return;
       if (skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) return;
       const requestId = this.$aiAssistant.createRequestId();
-      this.trackDialogueEvent("dialogueAnswerSubmitted", {
+      this.logDialogueEvent("dialogueAnswerSubmitted", {
         requestId,
         questionId: this.currentQuestion.id,
       });

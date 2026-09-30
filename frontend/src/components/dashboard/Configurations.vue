@@ -151,11 +151,12 @@ export default {
       ];
     },
     configurationsTable() {
-      // Indexed by configuration type, matching the configuration model options.
-      const typeKeys = ["assessment", "validation", "dialoguePlan"];
+      const fields = this.$store.getters["table/configuration/getFields"] || [];
+      const typeOptions = fields.find(field => field.key === "type")?.options || [];
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.typeName = this.$t(`basic.configuration.types.${typeKeys[cfg.type]}`);
+        const typeName = typeOptions.find(option => Number(option.value) === Number(cfg.type))?.name;
+        newC.typeName = typeName ? this.$t(typeName) : "";
         return newC;
       });
     },

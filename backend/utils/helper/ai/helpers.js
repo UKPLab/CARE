@@ -10,11 +10,11 @@
 const TranslatableError = require("../../TranslatableError");
 
 /**
- * Validates the RPC client's numeric `userId`.
+ * Requires a user id on the authenticated RPC client.
  *
  * @param {{ userId?: number }} client Incoming RPC invocation context.
- * @returns {number} Positive finite user id.
- * @throws {Error} If the client has no valid user id.
+ * @returns {number} Authenticated user id.
+ * @throws {Error} If the client has no user id.
  */
 function requireClientUserId(client) {
     if (!client || !client.userId) {

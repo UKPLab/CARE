@@ -24,8 +24,8 @@
           class="btn btn-sm btn-outline-secondary ms-1"
           icon="arrow-clockwise"
           title="Retry"
-          :loading="busy"
-          :disabled="busy"
+          :loading="isBusy"
+          :disabled="isBusy"
           @click="$emit('retry', message)"
       />
     </div>
@@ -41,7 +41,7 @@
 import {defineAsyncComponent} from "vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
-import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
+import {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} from "@/assets/aiMessageTypes";
 
 // Lazy so markdown-it + DOMPurify load only when an assistant reply renders.
 const AiMessageMarkdown = defineAsyncComponent(
@@ -66,7 +66,7 @@ export default {
       required: false,
       default: false,
     },
-    busy: {
+    isBusy: {
       type: Boolean,
       required: false,
       default: false,
@@ -81,20 +81,20 @@ export default {
       return Number(this.message.status);
     },
     isUser() {
-      return this.role === MESSAGE_ROLES.USER;
+      return this.role === AI_MESSAGE_ROLES.USER;
     },
     isPending() {
-      return this.status === MESSAGE_STATUSES.PENDING;
+      return this.status === AI_MESSAGE_STATUSES.PENDING;
     },
     isAborted() {
-      return this.status === MESSAGE_STATUSES.ABORTED;
+      return this.status === AI_MESSAGE_STATUSES.ABORTED;
     },
     isError() {
-      return [MESSAGE_STATUSES.FAILED, MESSAGE_STATUSES.ABORTED].includes(this.status);
+      return [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED].includes(this.status);
     },
     displayContent() {
-      if (this.status === MESSAGE_STATUSES.FAILED) return "Response failed.";
-      if (this.status === MESSAGE_STATUSES.ABORTED) return "Response stopped.";
+      if (this.status === AI_MESSAGE_STATUSES.FAILED) return "Response failed.";
+      if (this.status === AI_MESSAGE_STATUSES.ABORTED) return "Response stopped.";
       return this.message.content || "";
     },
   },

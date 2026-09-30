@@ -39,7 +39,7 @@ import BasicIcon from "@/basic/Icon.vue";
  * @author Mohammed Rawhani
  */
 export default {
-  name: "ConversationBodyShell",
+  name: "AiConversationBody",
   components: {BasicIcon},
   props: {
     loading: {

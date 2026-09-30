@@ -4,13 +4,13 @@
         :conversations="conversations"
         :active-conversation-id="activeConversationId"
         :include-context="conversationSnapshot.includeContext"
-        :busy="isBusy"
+        :is-busy="isBusy"
         :read-only="readOnly"
         @new="startNewConversation"
         @select="selectConversation"
     />
 
-    <ConversationBodyShell
+    <AiConversationBody
         ref="body"
         :loading="loading"
         :empty="visibleMessages.length === 0"
@@ -25,11 +25,11 @@
           :key="message.id"
           :message="message"
           :retryable="retryableMessageId === Number(message.id)"
-          :busy="isBusy"
+          :is-busy="isBusy"
           @retry="retryMessage"
-          @copy="trackChatEvent('aiChatAssistantCopy', $event)"
+          @copy="logChatEvent('aiChatAssistantCopy', $event)"
       />
-    </ConversationBodyShell>
+    </AiConversationBody>
 
     <AiConversationComposer
         ref="composer"
@@ -37,7 +37,7 @@
         v-model:selected-model-id="selectedModelId"
         :models="models"
         :error-message="errorMessage"
-        :busy="isBusy"
+        :is-busy="isBusy"
         :can-send="canSend"
         :sending="sending"
         :aborting="aborting"
@@ -47,7 +47,7 @@
         @send="sendMessage"
         @abort="abortChatRequest"
         @clear-quote="quote = null"
-        @paste="trackChatEvent('aiChatInputPaste', $event)"
+        @paste="logChatEvent('aiChatInputPaste', $event)"
     />
 
     <AiAssistantRequest
@@ -73,10 +73,9 @@ import AiAssistantRequest from "@/basic/service/AiAssistantRequest.vue";
 import AiConversationHeader from "@/components/aiAssistant/AiConversationHeader.vue";
 import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 import AiConversationComposer from "@/components/aiAssistant/AiConversationComposer.vue";
-import ConversationBodyShell from "@/components/aiAssistant/ConversationBodyShell.vue";
-import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
-import aiStreamingMixin from "@/components/aiAssistant/aiStreamingMixin";
-import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
+import AiConversationBody from "@/components/aiAssistant/AiConversationBody.vue";
+import aiRequestMixin from "@/basic/service/aiRequestMixin";
+import {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} from "@/assets/aiMessageTypes";
 import {resolveApiMessage} from "@/assets/utils";
 
 const emptyConversationSnapshot = () => ({
@@ -100,9 +99,9 @@ export default {
     AiConversationHeader,
     AiConversationMessage,
     AiConversationComposer,
-    ConversationBodyShell,
+    AiConversationBody,
   },
-  mixins: [aiRequestMixin, aiStreamingMixin],
+  mixins: [aiRequestMixin],
   inject: {
     acceptStats: {
       default: () => false,
@@ -141,6 +140,11 @@ export default {
   },
   data() {
     return {
+      streamRequestId: null,
+      streamTarget: null,
+      streamText: "",
+      streamBuffer: "",
+      streamFrame: null,
       conversationSnapshot: emptyConversationSnapshot(),
       newConversationSelected: false,
       selectedModelId: null,
@@ -164,15 +168,15 @@ export default {
         ...this.messages,
         {
           id: "pending-user",
-          role: MESSAGE_ROLES.USER,
+          role: AI_MESSAGE_ROLES.USER,
           content: this.pendingContent,
-          status: MESSAGE_STATUSES.COMPLETED,
+          status: AI_MESSAGE_STATUSES.COMPLETED,
         },
         {
           id: "pending-assistant",
-          role: MESSAGE_ROLES.ASSISTANT,
+          role: AI_MESSAGE_ROLES.ASSISTANT,
           content: "",
-          status: MESSAGE_STATUSES.PENDING,
+          status: AI_MESSAGE_STATUSES.PENDING,
         },
       ]);
     },
@@ -186,6 +190,19 @@ export default {
     },
   },
   watch: {
+    aborting: {
+      flush: "sync",
+      handler(aborting) {
+        if (aborting) this.clearStream();
+      },
+    },
+    activeRequest: {
+      flush: "sync",
+      handler(request) {
+        this.clearStream();
+        this.streamRequestId = request?.requestId || null;
+      },
+    },
     studySessionId() { this.changeContext(); },
     studyStepId() { this.changeContext(); },
   },
@@ -202,9 +219,59 @@ export default {
     this.loadConversation();
   },
   beforeUnmount() {
+    this.clearStream();
     this.eventBus.off("aiChatQuote", this.onQuote);
   },
   methods: {
+    /**
+     * Accepts only text belonging to this screen's current request.
+     * @param {Object} event - Service refresh envelope.
+     * @returns {void}
+     */
+    handleConversationDelta({service, type, data} = {}) {
+      if (service !== "AIAssistantService" || type !== "conversationDelta") return;
+      const request = this.activeRequest;
+      if (!request || !this.streamRequestId || data?.requestId !== this.streamRequestId
+          || Number(data.studySessionId) !== this.studySessionId || Number(data.studyStepId) !== this.studyStepId
+          || typeof data.text !== "string" || !data.text) return;
+      const conversationId = this.streamTarget?.conversationId || request.conversationId || this.activeConversationId;
+      const assistantMessageId = this.streamTarget?.assistantMessageId || request.assistantMessageId;
+      if ((conversationId && Number(data.conversationId) !== Number(conversationId))
+          || (assistantMessageId && Number(data.assistantMessageId) !== Number(assistantMessageId))) return;
+      this.streamTarget = {conversationId: data.conversationId, assistantMessageId: data.assistantMessageId};
+      this.streamBuffer += data.text;
+      if (this.streamFrame !== null) return;
+      this.streamFrame = requestAnimationFrame(() => {
+        this.streamText += this.streamBuffer;
+        this.streamBuffer = "";
+        this.streamFrame = null;
+        this.scrollToBottom();
+      });
+    },
+    /**
+     * Overlays the preview on the pending row without changing saved history.
+     * @param {Object[]} messages - Saved rows and optional local placeholders.
+     * @returns {Object[]} Visible messages.
+     */
+    withStreamingMessage(messages) {
+      if (!this.activeRequest) return messages;
+      const assistantId = this.streamTarget?.assistantMessageId || this.activeRequest.assistantMessageId;
+      return messages.map((message) => {
+        const matches = message.id === "pending-assistant" || (assistantId && Number(message.id) === Number(assistantId));
+        if (!matches || Number(message.role) !== AI_MESSAGE_ROLES.ASSISTANT
+            || Number(message.status) === AI_MESSAGE_STATUSES.COMPLETED) return message;
+        return {...message, status: AI_MESSAGE_STATUSES.PENDING, content: this.streamText};
+      });
+    },
+    /** Discards partial text; a new request is needed to accept more deltas. */
+    clearStream() {
+      if (this.streamFrame !== null) cancelAnimationFrame(this.streamFrame);
+      this.streamFrame = null;
+      this.streamRequestId = null;
+      this.streamTarget = null;
+      this.streamText = "";
+      this.streamBuffer = "";
+    },
     /**
      * Discards the preview before recovering the persisted failure state.
      * @param {Error} error - Request failure.
@@ -249,7 +316,7 @@ export default {
      * @param {Object} data - Event metadata.
      * @returns {void}
      */
-    trackChatEvent(action, data = {}) {
+    logChatEvent(action, data = {}) {
       if (!this.acceptStats) return;
       this.$socket.emit("stats", {
         action,
@@ -336,7 +403,7 @@ export default {
     selectConversation(conversationId) {
       if (this.isBusy || conversationId === this.activeConversationId) return;
       this.stopRecovery();
-      this.trackChatEvent("aiChatConversationSwitch", {
+      this.logChatEvent("aiChatConversationSwitch", {
         fromConversationId: this.activeConversationId,
         toConversationId: Number(conversationId),
       });
@@ -370,7 +437,7 @@ export default {
       const quoteText = (text || "").trim();
       this.quote = quoteText ? {text: quoteText, studyStepId, documentId, selectors} : null;
       if (this.quote) {
-        this.trackChatEvent("aiChatQuoteCreate", {
+        this.logChatEvent("aiChatQuoteCreate", {
           sourceStudyStepId: studyStepId,
           sourceDocumentId: documentId,
           length: quoteText.length,
@@ -422,7 +489,7 @@ export default {
       if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) return;
       this.errorMessage = "";
       const requestId = this.$aiAssistant.createRequestId();
-      this.trackChatEvent("aiChatRetryClick", {
+      this.logChatEvent("aiChatRetryClick", {
         assistantMessageId: message.id,
       });
       this.startRequest({
@@ -437,7 +504,7 @@ export default {
      * @returns {void}
      */
     onBeforeAbort() {
-      this.trackChatEvent("aiChatAbortClick", {
+      this.logChatEvent("aiChatAbortClick", {
         requestId: this.activeRequest.requestId,
       });
     },

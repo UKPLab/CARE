@@ -7,6 +7,7 @@ const dialogue = require("./aiAssistant/dialogue.js");
 /**
  * Manages AI assistant workflows.
  *
+ * @class
  * @extends Service
  * @author Mohammed Rawhani
  */

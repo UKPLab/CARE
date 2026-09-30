@@ -1,4 +1,8 @@
-import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
+/**
+ * Builds display messages and turns for Dialogue.
+ * @author Mohammed Rawhani
+ */
+import {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} from "@/assets/aiMessageTypes";
 
 const QUESTION_KINDS = Object.freeze(["main_question", "follow_up"]);
 
@@ -8,10 +12,10 @@ const QUESTION_KINDS = Object.freeze(["main_question", "follow_up"]);
  * @param {Object} message - AI message row.
  * @returns {boolean} Whether the message is a question.
  */
-function isDialogueQuestion(message) {
+export function isDialogueQuestion(message) {
   const kind = message?.metadata?.dialogue?.kind;
-  return Number(message?.role) === MESSAGE_ROLES.ASSISTANT
-      && Number(message?.status) === MESSAGE_STATUSES.COMPLETED
+  return Number(message?.role) === AI_MESSAGE_ROLES.ASSISTANT
+      && Number(message?.status) === AI_MESSAGE_STATUSES.COMPLETED
       && QUESTION_KINDS.includes(kind);
 }
 
@@ -22,7 +26,7 @@ function isDialogueQuestion(message) {
  * @returns {boolean} Whether the message is an answer.
  */
 function isDialogueAnswer(message) {
-  return Number(message?.role) === MESSAGE_ROLES.USER
+  return Number(message?.role) === AI_MESSAGE_ROLES.USER
       && message?.metadata?.dialogue?.kind === "answer";
 }
 
@@ -33,7 +37,7 @@ function isDialogueAnswer(message) {
  * @returns {boolean} Whether the message is a response placeholder.
  */
 function isDialogueResponse(message) {
-  return Number(message?.role) === MESSAGE_ROLES.ASSISTANT
+  return Number(message?.role) === AI_MESSAGE_ROLES.ASSISTANT
       && message?.metadata?.dialogue?.kind === "pending";
 }
 
@@ -165,9 +169,9 @@ export function buildDialogueTurns(messages = []) {
 export function buildDialogueQuestionMessage(question) {
   return {
     id: `question_${question.id}`,
-    role: MESSAGE_ROLES.ASSISTANT,
+    role: AI_MESSAGE_ROLES.ASSISTANT,
     content: question.text,
-    status: MESSAGE_STATUSES.COMPLETED,
+    status: AI_MESSAGE_STATUSES.COMPLETED,
     metadata: {
       dialogue: {
         kind: "main_question",
@@ -191,9 +195,9 @@ export function buildDialogueQuestionMessage(question) {
 export function buildDialogueAnswerMessage(question, content, skipped = false) {
   return {
     id: "pending-user",
-    role: MESSAGE_ROLES.USER,
+    role: AI_MESSAGE_ROLES.USER,
     content,
-    status: MESSAGE_STATUSES.COMPLETED,
+    status: AI_MESSAGE_STATUSES.COMPLETED,
     metadata: {
       dialogue: {
         kind: "answer",
@@ -214,9 +218,9 @@ export function buildDialogueAnswerMessage(question, content, skipped = false) {
 export function buildDialoguePendingMessage(question) {
   return {
     id: "pending-assistant",
-    role: MESSAGE_ROLES.ASSISTANT,
+    role: AI_MESSAGE_ROLES.ASSISTANT,
     content: "",
-    status: MESSAGE_STATUSES.PENDING,
+    status: AI_MESSAGE_STATUSES.PENDING,
     metadata: {dialogue: {kind: "pending", questionId: question.id}},
   };
 }
@@ -240,4 +244,3 @@ export function splitDialogueQuestionText(message) {
   return {before, anchor, after};
 }
 
-export {isDialogueQuestion};

@@ -33,12 +33,11 @@ module.exports = class LiteLLMRPC extends RPC {
      * @param {string} data.model - Model identifier (provider-specific, e.g. "gpt-4o", "ollama/llama3")
      * @param {Array<Object>} data.messages - OpenAI-format messages array
      * @param {number} data.outputMode - Optional. Internal CARE output mode. `1` repairs JSON content in the Python bridge.
-     * @param {Object} [options] - Internal streaming options.
-     * @param {function(string): void} [options.onDelta] - Receives temporary answer text.
+     * @param {function(string): void|null} [onDelta=null] - Receives temporary answer text.
      * @returns {Promise<Object>} LiteLLM response with choices and usage
      * @throws {Error} If the RPC service call fails
      */
-    async chatCompletion(data, {onDelta} = {}) {
+    async chatCompletion(data, onDelta = null) {
         const {
             __requestId: requestId,
             __timeoutMs: requestedTimeoutMs,

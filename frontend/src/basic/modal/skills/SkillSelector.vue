@@ -47,14 +47,14 @@ export default {
       return all.filter((hook) =>
         hook.enabled
         && !hook.deleted
-        && (!this.isAIAssistantService || Number(hook.outputMode ?? 0) === 0)
+        && (!this.isAiAssistantService || Number(hook.outputMode ?? 0) === 0)
       );
     },
-    isAIAssistantService() {
+    isAiAssistantService() {
       return ["aiChat", "aiDialogue"].includes(this.serviceType);
     },
     skillOptions() {
-      const skillOpts = this.isAIAssistantService
+      const skillOpts = this.isAiAssistantService
         ? []
         : this.nlpSkills.map((skill) => ({
           value: skill.name,

@@ -119,7 +119,7 @@ export default {
       required: false,
       default: "",
     },
-    busy: {
+    isBusy: {
       type: Boolean,
       required: false,
       default: false,
@@ -158,7 +158,7 @@ export default {
   emits: ["update:modelValue", "update:selectedModelId", "send", "abort", "clear-quote", "paste"],
   computed: {
     disabled() {
-      return this.busy || this.readOnly || this.models.length === 0;
+      return this.isBusy || this.readOnly || this.models.length === 0;
     },
     selectedModelName() {
       const model = this.models.find((item) => Number(item.id) === this.selectedModelId);

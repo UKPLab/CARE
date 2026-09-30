@@ -11,7 +11,16 @@ const TranslatableError = require("../../../utils/TranslatableError");
 
 const {AI_MESSAGE_ROLES} = require("../../../db/models/ai_message");
 
-const ALLOWED_SOURCES = new Set(["pr1"]);
+const DIALOGUE_SOURCES = Object.freeze({REVIEW: "pr1"});
+const DIALOGUE_MESSAGE_KINDS = Object.freeze({
+    MAIN_QUESTION: "main_question",
+    FOLLOW_UP: "follow_up",
+    ANSWER: "answer",
+    PENDING: "pending",
+    COMPLETION: "completion",
+    CONTEXT: "context",
+});
+const ALLOWED_SOURCES = new Set(Object.values(DIALOGUE_SOURCES));
 const MAX_ANCHOR_LENGTH = 220;
 // Fixed for reproducible Dialogue decisions and anchor selections.
 // TODO: some models reject temperature 0; let the hook model parameters override it.
@@ -202,7 +211,7 @@ function extractSourceCandidates(inputMappings, values) {
  * @returns {{pr1: string[]}} Anchor sources.
  */
 function buildAnchorSources(inputMappings = {}, values = {}) {
-    return {pr1: extractSourceCandidates(inputMappings, values)};
+    return {[DIALOGUE_SOURCES.REVIEW]: extractSourceCandidates(inputMappings, values)};
 }
 
 /**
@@ -278,12 +287,12 @@ function buildQuestionMetadata(kind, question, rendered = {}) {
             questionNumber: question.number || null,
             answerType: question.answerType,
             options: question.options,
-            help: kind === "main_question" ? question.help || null : null,
+            help: kind === DIALOGUE_MESSAGE_KINDS.MAIN_QUESTION ? question.help || null : null,
             categoryId: question.categoryId,
             source: question.source,
             anchorText: rendered.anchorText || null,
             anchorVerified: rendered.anchorVerified === true,
-            followUpIndex: kind === "follow_up" ? rendered.followUpIndex || 1 : null,
+            followUpIndex: kind === DIALOGUE_MESSAGE_KINDS.FOLLOW_UP ? rendered.followUpIndex || 1 : null,
         },
     };
 }
@@ -299,7 +308,7 @@ function buildQuestionMetadata(kind, question, rendered = {}) {
 function buildAnswerMetadata(question, answerValue, skipped = false) {
     return {
         dialogue: {
-            kind: "answer",
+            kind: DIALOGUE_MESSAGE_KINDS.ANSWER,
             questionId: question.id,
             answerType: question.answerType,
             answerValue,
@@ -320,9 +329,9 @@ function getCurrentQuestion(plan, messages = []) {
         .find((message) => {
             const kind = message?.metadata?.dialogue?.kind;
             return Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
-                && ["main_question", "follow_up", "completion"].includes(kind);
+                && [DIALOGUE_MESSAGE_KINDS.MAIN_QUESTION, DIALOGUE_MESSAGE_KINDS.FOLLOW_UP, DIALOGUE_MESSAGE_KINDS.COMPLETION].includes(kind);
         });
-    if (latest?.metadata?.dialogue?.kind === "completion") return null;
+    if (latest?.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.COMPLETION) return null;
     const latestQuestionId = latest?.metadata?.dialogue?.questionId;
     if (latestQuestionId) {
         const configuredQuestion = plan.questions.find(
@@ -375,7 +384,7 @@ function requireCurrentQuestion(plan, messages, questionId) {
 function countFollowUps(messages, questionId) {
     return messages.filter((message) =>
         Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
-        && message?.metadata?.dialogue?.kind === "follow_up"
+        && message?.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.FOLLOW_UP
         && String(message.metadata.dialogue.questionId) === String(questionId)
     ).length;
 }
@@ -408,15 +417,17 @@ function buildDecisionValues(question, answerText) {
  */
 function buildNextQuestionResponse(plan, question, anchorState = {}) {
     if (!question) {
-        return {content: plan.completionMessage, metadata: {dialogue: {kind: "completion"}}};
+        return {content: plan.completionMessage, metadata: {dialogue: {kind: DIALOGUE_MESSAGE_KINDS.COMPLETION}}};
     }
     const rendered = renderQuestion(
         question, anchorState.anchorSelections?.[question.id], anchorState.anchorSources,
     );
-    return {content: rendered.text, metadata: buildQuestionMetadata("main_question", question, rendered)};
+    return {content: rendered.text, metadata: buildQuestionMetadata(DIALOGUE_MESSAGE_KINDS.MAIN_QUESTION, question, rendered)};
 }
 
 module.exports = {
+    DIALOGUE_SOURCES,
+    DIALOGUE_MESSAGE_KINDS,
     DIALOGUE_MODEL_PARAMETERS,
     buildNextQuestionResponse,
     buildQuestionMetadata,

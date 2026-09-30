@@ -23,9 +23,6 @@ const AI_MESSAGE_STATUSES = Object.freeze({
 
 module.exports = (sequelize, DataTypes) => {
     class AiMessage extends MetaModel {
-        static messageRoles = AI_MESSAGE_ROLES;
-        static messageStatuses = AI_MESSAGE_STATUSES;
-
         /**
          * Loads displayable messages, optionally limited to a dialogue step.
          * @param {number} conversationId - Conversation id.
@@ -76,19 +73,6 @@ module.exports = (sequelize, DataTypes) => {
                 transaction: options.transaction,
             });
             return rows.map((message) => ({role: roles[message.role], content: message.content}));
-        }
-
-        /**
-         * Fails assistant responses left pending, e.g. by a server restart.
-         * @param {Object} [options] - Database options.
-         * @returns {Promise<number>} Number of failed messages.
-         */
-        static async failPendingMessages(options = {}) {
-            const [count] = await this.update({status: AI_MESSAGE_STATUSES.FAILED}, {
-                where: {role: AI_MESSAGE_ROLES.ASSISTANT, status: AI_MESSAGE_STATUSES.PENDING, deleted: false},
-                transaction: options.transaction,
-            });
-            return count;
         }
 
         /**
@@ -185,19 +169,32 @@ module.exports = (sequelize, DataTypes) => {
         /**
          * Changes an assistant only while its status still matches.
          * @param {number} id - Assistant message id.
+         * @param {Object} data - Server-prepared message fields.
          * @param {number[]} statuses - Allowed current statuses.
-         * @param {Object} values - Server-prepared message fields.
+         * @param {string|null} [requestId=null] - Only change the row while this request owns it.
          * @param {Object} [options] - Database options.
-         * @param {string} [options.requestId] - Only change the row while this request owns it.
          * @returns {Promise<number>} Number of changed messages.
          */
-        static async updateMessageIfStatus(id, statuses, values, options = {}) {
-            const [count] = await this.update(values, {
+        static async updateMessageIfStatus(id, data, statuses, requestId = null, options = {}) {
+            const [count] = await this.update(data, {
                 where: {
                     id, role: AI_MESSAGE_ROLES.ASSISTANT,
                     status: {[Op.in]: statuses}, deleted: false,
-                    ...(options.requestId ? {requestId: options.requestId} : {}),
+                    ...(requestId ? {requestId} : {}),
                 },
+                transaction: options.transaction,
+            });
+            return count;
+        }
+
+        /**
+         * Fails assistant responses left pending, e.g. by a server restart.
+         * @param {Object} [options] - Database options.
+         * @returns {Promise<number>} Number of failed messages.
+         */
+        static async failPendingMessages(options = {}) {
+            const [count] = await this.update({status: AI_MESSAGE_STATUSES.FAILED}, {
+                where: {role: AI_MESSAGE_ROLES.ASSISTANT, status: AI_MESSAGE_STATUSES.PENDING, deleted: false},
                 transaction: options.transaction,
             });
             return count;

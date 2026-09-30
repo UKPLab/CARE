@@ -11,7 +11,7 @@
  */
 
 const turns = require("./turns.js");
-const {DIALOGUE_MODEL_PARAMETERS, parseAnchorSelections} = require("./dialoguePlan.js");
+const {DIALOGUE_MODEL_PARAMETERS, DIALOGUE_SOURCES, parseAnchorSelections} = require("./dialoguePlan.js");
 
 /**
  * Builds the backend-owned source-scoped anchor-preparation request.
@@ -45,7 +45,7 @@ async function loadAnchorState(service, conversationId, studyStepId) {
     const dialogue = message?.metadata?.dialogue || {};
     return {
         message,
-        anchorSources: dialogue.anchorSources || {pr1: []},
+        anchorSources: dialogue.anchorSources || {[DIALOGUE_SOURCES.REVIEW]: []},
         anchorSelections: dialogue.anchorSelections || {},
         prepared: Object.hasOwn(dialogue, "anchorSelections"),
     };

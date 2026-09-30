@@ -14,8 +14,6 @@ const AI_CONVERSATION_TYPES = Object.freeze({
 
 module.exports = (sequelize, DataTypes) => {
     class AiConversation extends MetaModel {
-        static conversationTypes = AI_CONVERSATION_TYPES;
-
         /**
          * Finds a conversation within its authenticated session and type.
          * @param {number} id - Conversation id.
@@ -57,7 +55,7 @@ module.exports = (sequelize, DataTypes) => {
          * @param {Object} [options] - Database options.
          * @returns {Promise<number>} Number of updated conversations.
          */
-        static async touchConversation(id, options = {}) {
+        static async touch(id, options = {}) {
             const conversation = await this.findOne({
                 where: {id, deleted: false},
                 transaction: options.transaction,

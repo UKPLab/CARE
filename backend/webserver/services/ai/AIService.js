@@ -90,9 +90,9 @@ module.exports = class AIService extends Service {
      */
     async call(action, client, data = {}, options = {}) {
         const actions = {
-            chatCompletion: () => chat.chatCompletion(this, client, data, options.log, {onDelta: options.onDelta}),
+            chatCompletion: () => chat.chatCompletion(this, client, data, options.log, options.onDelta),
             abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
-            cancelRequest: () => request.cancelRequest(this, data?.logId, options.db),
+            cancelRequest: () => request.cancelRequest(this, data?.logId, options),
             loadHook: () => hook.loadEnabledHook(this, data?.hookId),
             resolveHookModel: () => hook.resolveSelectedHookModel(this, data?.hookId, data?.aiModelId),
             resolveHookPrompt: () => hook.resolveHookPrompt(this, data?.hookId, data?.values),

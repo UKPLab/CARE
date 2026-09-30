@@ -37,7 +37,7 @@
             class="mt-3"
             :message="turn.response"
             :retryable="isRetryable(turn.response)"
-            :busy="isBusy"
+            :is-busy="isBusy"
             @retry="$emit('retry', $event)"
         />
 
@@ -79,7 +79,7 @@
               class="mt-3"
               :message="followUp.response"
               :retryable="isRetryable(followUp.response)"
-              :busy="isBusy"
+              :is-busy="isBusy"
               @retry="$emit('retry', $event)"
           />
 

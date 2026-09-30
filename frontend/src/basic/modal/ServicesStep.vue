@@ -168,7 +168,7 @@ export default {
         if (!skill.skillName) return !this.isServiceRequired(index);
         if (this.isTemplateMode) return true;
         if (this.serviceAt(index).inputMapping === false) return true;
-        if (this.isAIAssistantService(index)) return skill.inputMappingValid;
+        if (this.isAiAssistantService(index)) return skill.inputMappingValid;
         // Hook: only requires a chosen hook (inputs are optional, like template mode for skills).
         if (this.isHook(skill)) return true;
         // Normal mode: require all skill inputs to be mapped.
@@ -234,7 +234,7 @@ export default {
      * @param {number} index Service index
      * @returns {boolean} Whether the service is handled by the AI assistant flow
      */
-    isAIAssistantService(index) {
+    isAiAssistantService(index) {
       return ["aiChat", "aiDialogue"].includes(this.serviceAt(index).type);
     },
     /**

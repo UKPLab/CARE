@@ -1,4 +1,4 @@
-import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
+import {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} from "@/assets/aiMessageTypes";
 import {resolveApiMessage} from "@/assets/utils";
 
 /**
@@ -34,11 +34,11 @@ export default {
     },
     isBusy() {
       return this.loading || !!this.activeRequest
-          || this.messages.some((message) => Number(message.status) === MESSAGE_STATUSES.PENDING);
+          || this.messages.some((message) => Number(message.status) === AI_MESSAGE_STATUSES.PENDING);
     },
     latestAssistantId() {
       const assistants = this.messages.filter(
-          (message) => Number(message.role) === MESSAGE_ROLES.ASSISTANT
+          (message) => Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
       );
       return assistants.length ? Number(assistants[assistants.length - 1].id) : null;
     },
@@ -48,7 +48,7 @@ export default {
           (message) => Number(message.id) === this.latestAssistantId
       );
       if (!latest) return null;
-      return [MESSAGE_STATUSES.FAILED, MESSAGE_STATUSES.ABORTED].includes(Number(latest.status))
+      return [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED].includes(Number(latest.status))
           ? Number(latest.id)
           : null;
     },
@@ -140,22 +140,21 @@ export default {
         return false;
       }
       const user = request.type === "send" && this.messages.find((message) =>
-        Number(message.role) === MESSAGE_ROLES.USER
+        Number(message.role) === AI_MESSAGE_ROLES.USER
           && Number(message.id) > request.previousMessageId
           && message.content === request.submittedContent
           && (!request.questionId || String(message.metadata?.dialogue?.questionId) === String(request.questionId)));
       const assistant = this.messages.find((message) =>
-        Number(message.role) === MESSAGE_ROLES.ASSISTANT
+        Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
           && (request.type === "retry"
             ? Number(message.id) === Number(request.assistantMessageId)
             : user && Number(message.id) > Number(user.id)));
       if (user) {
         this.acceptPendingInput?.(request);
         this.resetPending();
-        request.accepted = true;
       }
       const settled = !!assistant && (request.type !== "retry" || assistant.updatedAt !== request.previousAssistantUpdatedAt)
-          && Number(assistant.status) !== MESSAGE_STATUSES.PENDING;
+          && Number(assistant.status) !== AI_MESSAGE_STATUSES.PENDING;
       if (settled && this.recoverableRequest === request) {
         if (!this.activeRequest) this.errorMessage = "";
         this.stopRecovery();
@@ -176,8 +175,8 @@ export default {
      */
     scheduleRecovery() {
       if (this.activeRequest || this.recoveryTimer !== null || this.recovering) return;
-      if (!this.messages.some((message) => Number(message.role) === MESSAGE_ROLES.ASSISTANT
-          && Number(message.status) === MESSAGE_STATUSES.PENDING)) return;
+      if (!this.messages.some((message) => Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
+          && Number(message.status) === AI_MESSAGE_STATUSES.PENDING)) return;
       this.recoveryTimer = setTimeout(async () => {
         this.recoveryTimer = null;
         this.recovering = true;
@@ -227,11 +226,7 @@ export default {
         await this.reloadConversation({silent: true});
       }
       if (this.activeRequest !== request) return;
-      if (dispatched && !this.reconcileRequest(request)) {
-        this.errorMessage += !request.accepted
-            ? " The outcome could not be confirmed. Your input is retained; refresh before sending again."
-            : " Your answer was saved. Checking the response outcome.";
-      }
+      if (dispatched) this.reconcileRequest(request);
       this.clearActiveRequest();
     },
     /**

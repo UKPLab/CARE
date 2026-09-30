@@ -1,7 +1,7 @@
-"""Collect LiteLLM streams while forwarding temporary answer text.
+"""Collect LiteLLM streams while forwarding temporary answer text."""
 
-Author: Mohammed Rawhani
-"""
+__author__ = "Mohammed Rawhani"
+
 import asyncio
 import litellm
 from litellm import Router

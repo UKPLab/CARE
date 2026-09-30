@@ -89,10 +89,10 @@ async function loadModelProviderParams(service, aiModelId) {
  *   (hook runs, admin model tests). `hookModelId` proves which server-selected
  *   fallback row is running. `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
- * @param {{onDelta?: function(string): void}} [options] Internal temporary text callback.
+ * @param {function(string): void|null} [onDelta=null] Internal temporary text callback.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
-async function chatCompletion(service, client, data, logOptions = {}, options = {}) {
+async function chatCompletion(service, client, data, logOptions = {}, onDelta = null) {
     const requestStartedAt = Date.now();
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
@@ -141,9 +141,9 @@ async function chatCompletion(service, client, data, logOptions = {}, options = 
 
     // Time to first streamed text; stays null for non-streaming calls.
     let ttftMs = null;
-    const onDelta = options.onDelta && ((text) => {
+    const handleDelta = onDelta && ((text) => {
         if (ttftMs === null) ttftMs = Date.now() - requestStartedAt;
-        options.onDelta(text);
+        onDelta(text);
     });
 
     let response;
@@ -154,7 +154,7 @@ async function chatCompletion(service, client, data, logOptions = {}, options = 
             ...completionParams,
             ...providerParams,
             __requestId: requestId,
-        }, {onDelta});
+        }, handleDelta);
     } catch (error) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`

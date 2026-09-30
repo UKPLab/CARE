@@ -30,7 +30,7 @@ module.exports = {
                 description: plan.description,
                 userId,
                 hideInFrontend: false,
-                type: 2,
+                type: 2, // Dialogue plan
                 content: toJsonb(plan),
                 deleted: false,
                 createdAt: now,

@@ -1,5 +1,5 @@
 <template>
-  <ConversationBodyShell
+  <AiConversationBody
       ref="shell"
       :loading="loading"
       :empty="messages.length === 0"
@@ -11,7 +11,7 @@
           v-if="item.type === 'question'"
           :turn="item"
           :read-only="readOnly"
-          :is-busy="busy"
+          :is-busy="isBusy"
           :active-request="activeRequest"
           :sending="sending"
           :aborting="aborting"
@@ -28,15 +28,15 @@
           v-else
           :message="item.message"
           :retryable="retryableMessageId === Number(item.message.id)"
-          :busy="busy"
+          :is-busy="isBusy"
           @retry="$emit('retry', $event)"
       />
     </template>
-  </ConversationBodyShell>
+  </AiConversationBody>
 </template>
 
 <script>
-import ConversationBodyShell from "@/components/aiAssistant/ConversationBodyShell.vue";
+import AiConversationBody from "@/components/aiAssistant/AiConversationBody.vue";
 import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 import DialogueQuestion from "@/components/dialogue/DialogueQuestion.vue";
 import {buildDialogueTurns} from "@/components/dialogue/dialogueMessages.js";
@@ -48,7 +48,7 @@ import {buildDialogueTurns} from "@/components/dialogue/dialogueMessages.js";
  */
 export default {
   name: "DialogueConversationBody",
-  components: {ConversationBodyShell, AiConversationMessage, DialogueQuestion},
+  components: {AiConversationBody, AiConversationMessage, DialogueQuestion},
   props: {
     messages: {
       type: Array,
@@ -59,7 +59,7 @@ export default {
       required: false,
       default: false,
     },
-    busy: {
+    isBusy: {
       type: Boolean,
       required: false,
       default: false,
