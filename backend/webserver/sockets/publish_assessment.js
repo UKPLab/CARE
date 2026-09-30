@@ -1,6 +1,7 @@
 const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
+const {workflowStepPairs} = require("../../utils/helper/workflowStepPairs.js");
 
 // Service fields returned with each export session so the client can locate assessment scores.
 // Prompts and other step settings stay on the server.
@@ -131,12 +132,7 @@ class PublishAssessmentSocket extends Socket {
         }
         // Keep each pick as a (workflowId, stepNumber) pair: a bare step-number list would let a
         // "workflow A / step 1" pick select step 1 of a workflow B study.
-        const pickedSteps = (Array.isArray(assessmentScope.steps) ? assessmentScope.steps : [])
-            .map((step) => ({
-                workflowId: positiveInt(step?.workflowId),
-                stepNumber: positiveInt(step?.stepNumber),
-            }))
-            .filter((step) => step.workflowId && step.stepNumber);
+        const pickedSteps = workflowStepPairs(assessmentScope.steps);
 
         const sessionIds = await this.resolveSelectionIds("study_session", selection);
         if (sessionIds.length === 0) {

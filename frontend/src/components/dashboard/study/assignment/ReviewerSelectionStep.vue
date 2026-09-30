@@ -38,7 +38,12 @@
 <script>
 import BackendTable from "@/basic/BackendTable.vue";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
-import {emptySelection} from "@/basic/table/emptySelection.js";
+import {
+  applySavedSelection,
+  cloneSelection,
+  emptySelection,
+  selectionRestoreInfo,
+} from "@/basic/table/emptySelection.js";
 
 /**
  * Step component for selecting which users will act as reviewers in the assignment.
@@ -166,17 +171,11 @@ export default {
         assignmentReviewer.hasDocuments = true;
       }
       if (this.filterSelectedDocuments) {
-        if (this.assignmentType === "study_session" && this.assignmentSelection) {
-          assignmentReviewer.fromSessions = {
-            allMatching: this.assignmentSelection.allMatching,
-            excludeIds: this.assignmentSelection.excludeIds || [],
-            ids: this.assignmentSelection.ids || [],
-            filter: this.assignmentSelection.filter || [],
-            query: this.assignmentSelection.query || {},
-            scope: this.assignmentSelection.scope || null,
-          };
-        } else if (this.assignmentType === "submission" && this.assignmentSelection) {
-          assignmentReviewer.fromSubmissions = {
+        // The server resolves these rows again and takes the users behind them.
+        const sourceKey = {study_session: "fromSessions", submission: "fromSubmissions"}[this.assignmentType];
+        if (sourceKey && this.assignmentSelection) {
+          // Key order matters: restoreSelection compares scopes with JSON.stringify.
+          assignmentReviewer[sourceKey] = {
             allMatching: this.assignmentSelection.allMatching,
             excludeIds: this.assignmentSelection.excludeIds || [],
             ids: this.assignmentSelection.ids || [],
@@ -227,14 +226,8 @@ export default {
   methods: {
     restoreSelection() {
       const saved = this.initialSelection;
-      if (!saved) return;
-      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
-      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
-      const hasSelection = !!saved.allMatching || hasRows || hasIds;
-      const query = saved.query || {};
-      const hasSearch = !!String(query.search || "").trim()
-        || Object.keys(query.columnFilters || {}).length > 0;
-      if (!hasSelection && !hasSearch) return;
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
 
       const ar = saved.scope?.assignmentReviewer || {};
       this._restoring = true;
@@ -256,10 +249,8 @@ export default {
       this.$nextTick(() => {
         this._restoring = false;
         const table = this.$refs.reviewerTable;
-        if (hasSearch) table?.applySearch?.(query);
-        if (hasSelection) table?.applySelection?.(saved);
-        const live = table?.getSelection?.();
-        this.selection = live ? {...live} : emptySelection();
+        applySavedSelection(table, saved, restore);
+        this.selection = cloneSelection(table?.getSelection?.());
         this.$emit("update:selection", this.selection);
         this.$emit("update:isValid", this.isValid);
       });
@@ -272,8 +263,7 @@ export default {
       this.$emit("update:isValid", false);
     },
     onSelectionChange() {
-      const selection = this.$refs.reviewerTable?.getSelection();
-      this.selection = selection ? {...selection} : emptySelection();
+      this.selection = cloneSelection(this.$refs.reviewerTable?.getSelection());
       this.$emit("update:selection", this.selection);
     },
     getSelection() {

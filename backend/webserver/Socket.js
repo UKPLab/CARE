@@ -10,7 +10,7 @@ const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../ut
 const {dashboardSortInclude} = require("../utils/helper/queryTableJoinSort.js");
 const {ensureStudyDashboardSortFresh} = require("../db/studyDashboardSortRefresh.js");
 const {SECRET_COLUMN_SET, hiddenColumns} = require("../utils/helper/sensitiveColumns.js");
-const {positiveInt} = require("../utils/helper/positiveInt.js");
+const {uniquePositiveInts} = require("../utils/helper/positiveInt.js");
 
 // Upper bound for a query-scoped bulk ("select all matching")
 const MAX_BULK_SELECTION = 100000;
@@ -990,10 +990,7 @@ module.exports = class Socket {
      * @throws {TranslatableError} when the cleaned list is longer than max
      */
     sanitizeIds(ids, max) {
-        if (!Array.isArray(ids)) {
-            return [];
-        }
-        const clean = [...new Set(ids.map((id) => positiveInt(id)).filter(Boolean))];
+        const clean = uniquePositiveInts(ids);
         if (clean.length > max) {
             throw new TranslatableError("errors.queryTable.idListTooLarge", {limit: max});
         }

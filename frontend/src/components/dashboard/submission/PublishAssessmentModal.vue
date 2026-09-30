@@ -258,7 +258,12 @@ import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
-import {emptySelection} from "@/basic/table/emptySelection.js";
+import {
+  applySavedSelection,
+  cloneSelection,
+  emptySelection,
+  selectionRestoreInfo,
+} from "@/basic/table/emptySelection.js";
 import {
   ASSESSMENT_RESULT_KEY,
   getAssessmentResultKeyCandidates,
@@ -651,23 +656,14 @@ export default {
     },
     restoreSessionSelection() {
       const saved = this.sessionSelection;
-      if (!saved) return;
-      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
-      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
-      const hasSelection = !!saved.allMatching || hasRows || hasIds;
-      const query = saved.query || {};
-      const hasSearch = !!String(query.search || "").trim()
-        || Object.keys(query.columnFilters || {}).length > 0;
-      if (!hasSelection && !hasSearch) return;
-      const table = this.$refs.sessionTable;
-      if (hasSearch) table?.applySearch?.(query);
-      if (hasSelection) table?.applySelection?.(saved);
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
+      applySavedSelection(this.$refs.sessionTable, saved, restore);
     },
     onSessionSelectionChange() {
       if (!this.sessionStepLive) return;
       // Snapshot while the table exists: the stepper unmounts it before the confirmation step.
-      const selection = this.$refs.sessionTable?.getSelection();
-      this.sessionSelection = selection ? {...selection} : emptySelection();
+      this.sessionSelection = cloneSelection(this.$refs.sessionTable?.getSelection());
     },
     sessionLink(hash) {
       return `${window.location.origin}/review/${hash}`;

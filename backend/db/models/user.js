@@ -8,7 +8,7 @@ const {generateAnimalUsername} = require("../../utils/helper/generator");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
 const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
-const {positiveInt} = require("../../utils/helper/positiveInt.js");
+const {uniquePositiveInts} = require("../../utils/helper/positiveInt.js");
 
 module.exports = (sequelize, DataTypes) => {
     class User extends MetaModel {
@@ -577,6 +577,40 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * WHERE fragment for "users behind these rows": resolves a BackendTable selection of
+         * `table` through the caller's row scope, then maps each non-deleted row to a user id.
+         * An empty selection matches no user.
+         *
+         * @param {Object} ctx needs `resolveQueryTableIds`
+         * @param {"study_session"|"submission"} table selection table
+         * @param {Object} sel { filter, query, scope, excludeIds, ids, allMatching }
+         * @param {string} userExpr SQL for the row's user id, evaluated per `table` row
+         * @returns {Promise<Object>}
+         */
+        static async usersBehindSelection(ctx, table, sel, userExpr) {
+            const rowIds = await ctx.resolveQueryTableIds({
+                table,
+                filter: sel.filter || [],
+                query: sel.query || {},
+                scope: sel.scope || null,
+                excludeIds: sel.excludeIds || [],
+                includeIds: sel.allMatching ? null : (sel.ids || []),
+            });
+            if (rowIds.length === 0) {
+                return {id: {[Op.in]: [-1]}};
+            }
+            return {
+                id: {
+                    [Op.in]: sequelize.literal(
+                        `(SELECT DISTINCT ${userExpr} FROM "${table}"`
+                        + ` WHERE "${table}"."id" IN (${rowIds.join(",")})`
+                        + ` AND "${table}"."deleted" = false)`
+                    ),
+                },
+            };
+        }
+
+        /**
          * Reviewer picker scope: optionally restrict to users behind a session or submission
          * selection ("from previous selected") or an explicit id list (document path).
          *
@@ -600,64 +634,22 @@ module.exports = (sequelize, DataTypes) => {
             }
 
             if (Array.isArray(reviewer.userIds)) {
-                const ids = [...new Set(
-                    reviewer.userIds.map((id) => positiveInt(id)).filter(Boolean)
-                )];
+                const ids = uniquePositiveInts(reviewer.userIds);
                 if (ids.length === 0) {
                     conditions.push({id: {[Op.in]: [-1]}});
                 } else {
                     conditions.push({id: {[Op.in]: ids}});
                 }
             } else if (reviewer.fromSessions && typeof ctx.resolveQueryTableIds === "function") {
-                const fromSessions = reviewer.fromSessions;
-                const sessionIds = await ctx.resolveQueryTableIds({
-                    table: "study_session",
-                    filter: fromSessions.filter || [],
-                    query: fromSessions.query || {},
-                    scope: fromSessions.scope || null,
-                    excludeIds: fromSessions.excludeIds || [],
-                    includeIds: fromSessions.allMatching ? null : (fromSessions.ids || []),
-                });
-                if (sessionIds.length === 0) {
-                    conditions.push({id: {[Op.in]: [-1]}});
-                } else {
-                    const idList = sessionIds.join(",");
-                    const userExpr =
-                        '(SELECT "study"."userId" FROM "study" WHERE "study"."id" = "study_session"."studyId")';
-                    conditions.push({
-                        id: {
-                            [Op.in]: sequelize.literal(
-                                `(SELECT DISTINCT ${userExpr} FROM "study_session"`
-                                + ` WHERE "study_session"."id" IN (${idList})`
-                                + ' AND "study_session"."deleted" = false)'
-                            ),
-                        },
-                    });
-                }
+                // A session belongs to its study's owner, not to study_session.userId.
+                conditions.push(await User.usersBehindSelection(
+                    ctx, "study_session", reviewer.fromSessions,
+                    '(SELECT "study"."userId" FROM "study" WHERE "study"."id" = "study_session"."studyId")'
+                ));
             } else if (reviewer.fromSubmissions && typeof ctx.resolveQueryTableIds === "function") {
-                const fromSubmissions = reviewer.fromSubmissions;
-                const submissionIds = await ctx.resolveQueryTableIds({
-                    table: "submission",
-                    filter: fromSubmissions.filter || [],
-                    query: fromSubmissions.query || {},
-                    scope: fromSubmissions.scope || null,
-                    excludeIds: fromSubmissions.excludeIds || [],
-                    includeIds: fromSubmissions.allMatching ? null : (fromSubmissions.ids || []),
-                });
-                if (submissionIds.length === 0) {
-                    conditions.push({id: {[Op.in]: [-1]}});
-                } else {
-                    const idList = submissionIds.join(",");
-                    conditions.push({
-                        id: {
-                            [Op.in]: sequelize.literal(
-                                '(SELECT DISTINCT "submission"."userId" FROM "submission"'
-                                + ` WHERE "submission"."id" IN (${idList})`
-                                + ' AND "submission"."deleted" = false)'
-                            ),
-                        },
-                    });
-                }
+                conditions.push(await User.usersBehindSelection(
+                    ctx, "submission", reviewer.fromSubmissions, '"submission"."userId"'
+                ));
             }
 
             if (conditions.length === 0) {

@@ -156,7 +156,7 @@ import AssignmentSelectionStep from "./assignment/AssignmentSelectionStep.vue";
 import ReviewerSelectionStep from "./assignment/ReviewerSelectionStep.vue";
 import DistributionStep from "./assignment/DistributionStep.vue";
 import ConfirmationStep from "./assignment/ConfirmationStep.vue";
-import {emptySelection} from "@/basic/table/emptySelection.js";
+import {cloneSelection, emptySelection} from "@/basic/table/emptySelection.js";
 
 /**
  * Modal for bulk creating assignments
@@ -376,19 +376,7 @@ export default {
   watch: {
     assignmentType(next, prev) {
       if (!prev || next === prev) return;
-      this.assignmentModalValue = [];
-      this.selectedAssignmentUserIds = [];
-      this.assignmentSelection = emptySelection();
-      this.reviewerQuerySelection = emptySelection();
-      this.selectedReviewer = [];
-      this.assignmentSelectionValid = false;
-      this.reviewerSelectionValid = false;
-      this.reviewerSelectionMode = {};
-      this.roleSelection = {};
-      this.reviewerSelection = {};
-      this.selectionValid = false;
-      this.numberOfReviews = 0;
-      this.distributionValid = false;
+      this.resetDownstreamSelection();
     },
   },
   methods: {
@@ -412,6 +400,15 @@ export default {
       this.templateStepModalValue = {};
       this.workflowMappingStepModalValue = {};
       this.isWorkflowMappingComplete = false;
+      this.templateValid = false;
+      this.workflowMappingValid = false;
+      this.resetDownstreamSelection();
+    },
+    /**
+     * Clears everything picked after the assignment type: assignments, reviewers, distribution.
+     * Shared by reset() and the assignmentType watcher, since a new type invalidates all of it.
+     */
+    resetDownstreamSelection() {
       this.assignmentModalValue = [];
       this.selectedAssignmentUserIds = [];
       this.assignmentSelection = emptySelection();
@@ -422,8 +419,6 @@ export default {
       this.reviewerSelection = {};
       this.selectionValid = false;
       this.numberOfReviews = 0;
-      this.templateValid = false;
-      this.workflowMappingValid = false;
       this.assignmentSelectionValid = false;
       this.reviewerSelectionValid = false;
       this.distributionValid = false;
@@ -432,11 +427,11 @@ export default {
       const panel = this.stepContent[this.activeStep];
       if (panel === "assignment-selection" && this.assignmentType !== "submission") return;
       if (panel !== "session-selection" && panel !== "assignment-selection") return;
-      this.assignmentSelection = selection ? {...selection} : emptySelection();
+      this.assignmentSelection = cloneSelection(selection);
     },
     onReviewerSelection(selection) {
       if (this.stepContent[this.activeStep] !== "reviewer-selection") return;
-      this.reviewerQuerySelection = selection ? {...selection} : emptySelection();
+      this.reviewerQuerySelection = cloneSelection(selection);
     },
     /**
      * Before Distribution / Confirm: turn queryTable selection (including select-all)

@@ -24,7 +24,7 @@
         :columns="submissionColumns"
         :query-filter-schema="submissionFilterSchema"
         :query-search-columns="submissionSearchColumns"
-        :options="submissionTableOptions"
+        :options="sessionTableOptions"
         :max-table-height="'50vh'"
         @selection-change="onSubmissionSelectionChange"
     />
@@ -43,7 +43,12 @@
 import BasicTable from "@/basic/Table.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
-import {emptySelection} from "@/basic/table/emptySelection.js";
+import {
+  applySavedSelection,
+  cloneSelection,
+  emptySelection,
+  selectionRestoreInfo,
+} from "@/basic/table/emptySelection.js";
 
 /**
  * Step component for selecting the items to be assigned in the bulk assignment wizard.
@@ -153,9 +158,6 @@ export default {
         {name: this.$t("common.firstName"), key: "firstName"},
         {name: this.$t("common.lastName"), key: "lastName"},
       ];
-    },
-    submissionTableOptions() {
-      return this.sessionTableOptions;
     },
     canReadPublicInformation() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPublicInfo");
@@ -308,13 +310,8 @@ export default {
     restoreSessionSelection() {
       const saved = this.initialSelection;
       if (!this.isSessionType || !saved) return;
-      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
-      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
-      const hasSelection = !!saved.allMatching || hasRows || hasIds;
-      const query = saved.query || {};
-      const hasSearch = !!String(query.search || "").trim()
-        || Object.keys(query.columnFilters || {}).length > 0;
-      if (!hasSelection && !hasSearch) return;
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
       // Workflow (query scope) can change while this step is unmounted.
       // A different list is a fresh page: no checks, no search, no chips.
       const sameScope = JSON.stringify(saved.scope ?? null) === JSON.stringify(this.queryScope ?? null);
@@ -326,17 +323,14 @@ export default {
       }
       this.$nextTick(() => {
         const table = this.$refs.sessionTable;
-        if (hasSearch) table?.applySearch?.(query);
-        if (hasSelection) table?.applySelection?.(saved);
-        const live = table?.getSelection?.();
-        this.sessionSelection = live ? {...live} : emptySelection();
+        applySavedSelection(table, saved, restore);
+        this.sessionSelection = cloneSelection(table?.getSelection?.());
         this.$emit("update:selection", this.sessionSelection);
         this.$emit("update:isValid", this.isValid);
       });
     },
     onSessionSelectionChange() {
-      const selection = this.$refs.sessionTable?.getSelection();
-      this.sessionSelection = selection ? {...selection} : emptySelection();
+      this.sessionSelection = cloneSelection(this.$refs.sessionTable?.getSelection());
       this.$emit("update:selection", this.sessionSelection);
     },
     slimSubmission(row) {
@@ -351,7 +345,7 @@ export default {
       };
     },
     publishSubmissionSelection(selection) {
-      const raw = selection ? {...selection} : emptySelection();
+      const raw = cloneSelection(selection);
       const rows = (raw.rows || []).map((row) => this.slimSubmission(row));
       const slim = {...raw, rows};
       this.submissionSelection = slim;
@@ -362,17 +356,11 @@ export default {
     restoreSubmissionSelection() {
       const saved = this.initialSelection;
       if (!this.isSubmissionType || !saved) return;
-      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
-      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
-      const hasSelection = !!saved.allMatching || hasRows || hasIds;
-      const query = saved.query || {};
-      const hasSearch = !!String(query.search || "").trim()
-        || Object.keys(query.columnFilters || {}).length > 0;
-      if (!hasSelection && !hasSearch) return;
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
       this.$nextTick(() => {
         const table = this.$refs.submissionTable;
-        if (hasSearch) table?.applySearch?.(query);
-        if (hasSelection) table?.applySelection?.(saved);
+        applySavedSelection(table, saved, restore);
         this.publishSubmissionSelection(table?.getSelection?.() || saved);
       });
     },

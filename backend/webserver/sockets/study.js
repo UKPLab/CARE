@@ -50,17 +50,18 @@ class StudySocket extends Socket {
      */
     async resolveBulkStudyIds(data) {
         const selection = data?.selection;
+        // New objects on purpose: a client `scope` is never forwarded (bulk uses the plain study
+        // ACL), and explicit picks come from top-level `studyIds`, not `selection.ids`.
         if (selection && selection.allMatching) {
-            return await this.resolveQueryTableIds({
-                table: "study",
-                filter: selection.filter || [],
-                query: selection.query || {},
-                excludeIds: selection.excludeIds || [],
+            return await this.resolveSelectionIds("study", {
+                allMatching: true,
+                filter: selection.filter,
+                query: selection.query,
+                excludeIds: selection.excludeIds,
             });
         }
-        return await this.resolveQueryTableIds({
-            table: "study",
-            includeIds: Array.isArray(data?.studyIds) ? data.studyIds : [],
+        return await this.resolveSelectionIds("study", {
+            ids: Array.isArray(data?.studyIds) ? data.studyIds : [],
         });
     }
 

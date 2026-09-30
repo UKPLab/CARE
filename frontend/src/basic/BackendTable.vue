@@ -2233,18 +2233,13 @@ export default {
         this.processedDeleteIds.add(row.id);
         if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
 
+        // Current page → animate + backfill immediately (no banner). Off-page (before or after
+        // the current keyset window): the window is anchored to row cursors, so out-of-window
+        // rows leaving don't shift our rows — just adjust the count, no banner.
         if (currentIds.has(row.id)) {
-          // Current page → animate + backfill immediately (no banner)
           this.markRowDeleted(row.id);
-          this.bumpTotal(-1);
-        } else if (own) {
-          this.bumpTotal(-1);
-        } else {
-          // Off-page (before or after the current keyset window): the window is
-          // anchored to row cursors, so out-of-window rows leaving don't shift our
-          // rows — just adjust the count, no banner.
-          this.bumpTotal(-1);
         }
+        this.bumpTotal(-1);
         return;
       }
 
@@ -2545,7 +2540,6 @@ export default {
       this._pinnedRow = target;
       this.visibleFirstRow = target;
       this.visibleLastRow = Math.min(Math.max(0, this.total - 1), target + visible - 1);
-      this._thumbFraction = null;
       const windowStart = this.rowsBefore;
       const windowEnd = windowStart + this.loadedCount;
       if (target >= windowStart && target < windowEnd) {
@@ -2826,6 +2820,31 @@ export default {
       }, 120);
     },
     /**
+     * Swap the whole infinite window for a freshly fetched block starting at `offset`.
+     * Both cursors become valid again and pending delete / placeholder rows are dropped.
+     * @param {Object[]} items rows of the new block
+     * @param {Object|null} meta queryTable meta (its `offset` wins over the requested one)
+     * @param {number} offset requested offset
+     * @param {{clearEntering?: boolean}} [options] also drop enter-animation ids
+     */
+    replaceWindow(items, meta, offset, {clearEntering = false} = {}) {
+      this.queryItems = items;
+      this.virtualStart = 0;
+      this.virtualEnd = items.length;
+      this.rowsBefore = (meta && Number.isFinite(meta.offset)) ? meta.offset : offset;
+      this.windowStartCursorValid = true;
+      this.windowEndCursorValid = true;
+      this._emptyBlockKey = null;
+      this.applyWindowMeta(meta, {start: true, end: true});
+      this.deletingIds = new Set();
+      this.placeholderIds = new Set();
+      if (clearEntering) {
+        this.enteringIds = [];
+        this.enteringBottomIds = [];
+      }
+      this.syncWindowQuery();
+    },
+    /**
      * Load the window around an absolute row index. Keyset cannot address "row N", so this is
      * the one place that sends an offset; the window keeps walking by cursor afterwards.
      */
@@ -2853,19 +2872,7 @@ export default {
           }
           return;
         }
-        this.queryItems = items;
-        this.virtualStart = 0;
-        this.virtualEnd = items.length;
-        this.rowsBefore = (meta && Number.isFinite(meta.offset)) ? meta.offset : offset;
-        this.windowStartCursorValid = true;
-        this.windowEndCursorValid = true;
-        this._emptyBlockKey = null;
-        this.applyWindowMeta(meta, {start: true, end: true});
-        this.deletingIds = new Set();
-        this.placeholderIds = new Set();
-        this.enteringIds = [];
-        this.enteringBottomIds = [];
-        this.syncWindowQuery();
+        this.replaceWindow(items, meta, offset, {clearEntering: true});
         const loadedLast = this.rowsBefore + Math.max(0, items.length - 1);
         const show = Math.min(targetRow, loadedLast);
         const local = Math.max(0, show - this.rowsBefore);
@@ -2928,17 +2935,7 @@ export default {
           this.buildQueryPayload({offset, limit: wanted})
         );
         if (!this.isInfiniteMode || token !== this._seekToken) return;
-        this.queryItems = items;
-        this.virtualStart = 0;
-        this.virtualEnd = items.length;
-        this.rowsBefore = (meta && Number.isFinite(meta.offset)) ? meta.offset : offset;
-        this.windowStartCursorValid = true;
-        this.windowEndCursorValid = true;
-        this._emptyBlockKey = null;
-        this.applyWindowMeta(meta, {start: true, end: true});
-        this.deletingIds = new Set();
-        this.placeholderIds = new Set();
-        this.syncWindowQuery();
+        this.replaceWindow(items, meta, offset);
 
         if (anchorIndex >= 0) {
           const localIndex = items.findIndex((row) => row.id === anchorId);

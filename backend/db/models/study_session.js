@@ -6,6 +6,7 @@ const {Op, literal} = require("sequelize");
 const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
 const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
+const {workflowStepPairs} = require("../../utils/helper/workflowStepPairs.js");
 
 module.exports = (sequelize, DataTypes) => {
     class StudySession extends MetaModel {
@@ -174,12 +175,7 @@ module.exports = (sequelize, DataTypes) => {
             }
             const configurationId = positiveInt(assessment.configurationId);
             const projectId = positiveInt(assessment.projectId);
-            const steps = (Array.isArray(assessment.steps) ? assessment.steps : [])
-                .map((step) => ({
-                    workflowId: positiveInt(step?.workflowId),
-                    stepNumber: positiveInt(step?.stepNumber),
-                }))
-                .filter((step) => step.workflowId && step.stepNumber);
+            const steps = workflowStepPairs(assessment.steps);
             if (!configurationId || steps.length === 0) {
                 throw new TranslatableError("errors.queryTable.scopeInvalid");
             }
@@ -277,8 +273,7 @@ module.exports = (sequelize, DataTypes) => {
                 spec.submissionExtId = {
                     type: "numeric",
                     operators: NUMERIC_OPERATORS,
-                    sql: `(SELECT "submission"."extId" FROM "submission"`
-                        + ` WHERE "submission"."id" = ${columns.submissionId})`,
+                    sql: columns.submissionExtId,
                 };
             }
             return spec;
