@@ -153,7 +153,7 @@ a database in a docker container and populates it with the necessary schemas.
 
 .. warning::
 
-        The ``make dev`` command only works on Linux systems.
+        The ``make dev`` command works on Unix-like systems.
         On Windows, you need to start the frontend and backend separately.
         Use ``make dev-frontend`` + ``make dev-backend`` for wizard-skipped backend runs, or
         ``make dev-frontend`` + ``make dev-backend-wizard`` to test the first-time setup wizard flow.
@@ -252,7 +252,7 @@ More Commands
     * - ``make doc_clean``
       - Clean the Sphinx documentation.
     * - ``make dev``
-      - Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix only)
+      - Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix-like systems only)
     * - ``make dev-wizard``
       - Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)
     * - ``make dev-backend``
@@ -299,4 +299,3 @@ More Commands
       - Remove ``node_modules``, ``dist``, docker containers/networks, and reset the DB state.
     * - ``make kill``
       - Kill all Node.js processes (Unix only).
-
