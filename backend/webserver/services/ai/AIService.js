@@ -94,7 +94,7 @@ module.exports = class AIService extends Service {
             abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
             cancelRequest: () => request.cancelRequest(this, data?.logId, options.db),
             loadHook: () => hook.loadEnabledHook(this, data?.hookId),
-            resolveHookModel: () => hook.resolveHookModelParams(this, data?.hookId, data?.aiModelId),
+            resolveHookModel: () => hook.resolveSelectedHookModel(this, data?.hookId, data?.aiModelId),
             resolveHookPrompt: () => hook.resolveHookPrompt(this, data?.hookId, data?.values),
         };
         if (!actions[action]) {

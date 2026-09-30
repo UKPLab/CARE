@@ -92,6 +92,7 @@ import {
   isDialogueQuestion,
 } from "@/components/dialogue/dialogueMessages.js";
 import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
+import {resolveApiMessage} from "@/assets/utils";
 
 const emptyConversationSnapshot = () => ({
   activeConversationId: null, messages: [],
@@ -284,7 +285,7 @@ export default {
         return true;
       } catch (error) {
         if (!this.isCurrentSnapshotLoad(context)) return false;
-        this.errorMessage = error.message || "Failed to load Dialogue";
+        this.errorMessage = error.key || error.message ? resolveApiMessage(error) : "Failed to load Dialogue";
         return false;
       } finally {
         if (context.loadId === this.snapshotLoadId) this.loading = false;

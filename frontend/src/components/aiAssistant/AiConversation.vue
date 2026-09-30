@@ -77,6 +77,7 @@ import ConversationBodyShell from "@/components/aiAssistant/ConversationBodyShel
 import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
 import aiStreamingMixin from "@/components/aiAssistant/aiStreamingMixin";
 import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
+import {resolveApiMessage} from "@/assets/utils";
 
 const emptyConversationSnapshot = () => ({
   conversations: [],
@@ -291,7 +292,7 @@ export default {
         return true;
       } catch (error) {
         if (!this.isCurrentSnapshotLoad(context)) return false;
-        this.errorMessage = error.message || "Failed to load AI chat";
+        this.errorMessage = error.key || error.message ? resolveApiMessage(error) : "Failed to load AI chat";
         return false;
       } finally {
         if (context.loadId === this.snapshotLoadId) this.loading = false;

@@ -1,4 +1,5 @@
 import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
+import {resolveApiMessage} from "@/assets/utils";
 
 /**
  * Shared request lifecycle for AI conversation surfaces (chat and dialogue).
@@ -220,7 +221,7 @@ export default {
       const request = this.activeRequest;
       if (!request) return;
       const dispatched = this.$refs.aiAssistantRequest?.dispatched;
-      this.errorMessage = error.message || this.requestFailedText;
+      this.errorMessage = error.key || error.message ? resolveApiMessage(error) : this.requestFailedText;
       if (dispatched) {
         this.recoverableRequest = request;
         await this.reloadConversation({silent: true});
@@ -262,7 +263,7 @@ export default {
         await this.reloadConversation({silent: true});
         if (this.activeRequest !== activeRequest) return;
         if (this.reconcileRequest(activeRequest)) this.clearActiveRequest();
-        else this.errorMessage = `${error.message || this.abortFailedText}. Stop was not confirmed; waiting for the request outcome.`;
+        else this.errorMessage = `${error.key || error.message ? resolveApiMessage(error) : this.abortFailedText}. Stop was not confirmed; waiting for the request outcome.`;
       } finally {
         if (this.activeRequest === activeRequest) this.aborting = false;
       }
