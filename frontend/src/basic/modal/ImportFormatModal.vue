@@ -387,17 +387,19 @@ export default {
       }
 
       this.$refs.stepper.setWaiting(false);
-      const successKey = importedCount === 1
-        ? 'modals.importExport.import.success.single'
-        : 'modals.importExport.import.success.multiple';
-      this.eventBus.emit("toast", {
-        title: this.$t('modals.importExport.import.success.title'),
-        message: this.$t(successKey, {
-          count: importedCount,
-          table: displayTable,
-        }),
-        variant: "success",
-      });
+      if (importedCount > 0) {
+        const successKey = importedCount === 1
+          ? 'modals.importExport.import.success.single'
+          : 'modals.importExport.import.success.multiple';
+        this.eventBus.emit("toast", {
+          title: this.$t('modals.importExport.import.success.title'),
+          message: this.$t(successKey, {
+            count: importedCount,
+            table: displayTable,
+          }),
+          variant: "success",
+        });
+      }
       this.close();
     },
   },

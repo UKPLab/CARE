@@ -486,6 +486,8 @@ Rename and Delete a Document
 
      - When I try to rename a document to an empty name, I see a validation error.
      - When I cancel the delete confirmation dialog, the document is not deleted.
+     - When the document is a submission file, Documents does not offer delete. A delete
+       does not remove the document.
 
 -----
 
@@ -1953,6 +1955,27 @@ View Study Sessions as Coordinator
      - All editing options are disabled.
      - If I have the right to view private user information, participant real names are
        shown in the session table; otherwise they are not visible.
+
+-----
+
+Import and Export Content Templates
+-----------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to export a content template to a file and import
+     it on another CARE instance, so that I can reuse the email, document, or prompt
+     text.
+
+   :Acceptance:
+     - From Dashboard → Templates I can export one template, or every template on
+       my list. A public template I have not copied is not included.
+     - Import reads JSON and YAML.
+     - The file includes the saved text for each language.
+     - Import creates a new template that I own, with that text, and it is not published.
+     - I can publish it afterwards with the existing publish action.
+     - Only an admin can import an email template.
 
 -----
 

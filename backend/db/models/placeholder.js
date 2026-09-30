@@ -27,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
       placeholderDescription: DataTypes.TEXT,
       placeholderExample: DataTypes.TEXT,
       placeholderType: DataTypes.STRING,
+      placeholderOptions: DataTypes.JSONB,
       required: DataTypes.BOOLEAN,
       deleted: DataTypes.BOOLEAN,
       createdAt: DataTypes.DATE,

@@ -69,7 +69,12 @@ class AppSocket extends Socket {
         let newEntry = null;
 
 
-        if (("id" in data.data && data.data.id !== 0) &&
+        const isExistingRow = "id" in data.data && data.data.id !== 0;
+        if (isExistingRow) {
+            await this.assertWriteAccess(data.table, data.data.id, options);
+        }
+
+        if (isExistingRow &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data || 'enabled' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
@@ -244,6 +249,7 @@ class AppSocket extends Socket {
     async sendSystemRoles() {
         try {
             const roles = await this.models["user_role"].findAll({
+                where: {deleted: false},
                 attributes: ["id", "name"],
                 raw: true,
             });
