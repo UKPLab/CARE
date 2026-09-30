@@ -12,6 +12,7 @@ const {AI_MESSAGE_ROLES} = require("../../../db/models/ai_message");
 const ALLOWED_SOURCES = new Set(["pr1"]);
 const MAX_ANCHOR_LENGTH = 220;
 // Fixed for reproducible Dialogue decisions and anchor selections.
+// TODO: some models reject temperature 0; let the hook model parameters override it.
 const DIALOGUE_MODEL_PARAMETERS = {temperature: 0};
 
 /**
