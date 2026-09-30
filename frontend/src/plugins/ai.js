@@ -16,6 +16,8 @@
 // LiteLLM server-side timeout is 120s. Keep a small buffer so the real
 // server error reaches the caller before the client gives up.
 const DEFAULT_TIMEOUT_MS = 130000;
+// An adaptive Dialogue turn can run two model calls in a row (anchor, then decision).
+const DIALOGUE_TIMEOUT_MS = 2 * DEFAULT_TIMEOUT_MS;
 
 const createRequestId = () => {
     if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
@@ -224,7 +226,7 @@ export default {
                                 socket,
                                 "sendDialogueAnswer",
                                 params,
-                                {...opts, abortCommand: "abortDialogueMessage"},
+                                {timeout: DIALOGUE_TIMEOUT_MS, ...opts, abortCommand: "abortDialogueMessage"},
                             );
                         },
 
@@ -254,7 +256,7 @@ export default {
                                 socket,
                                 "retryDialogueMessage",
                                 params,
-                                {...opts, abortCommand: "abortDialogueMessage"},
+                                {timeout: DIALOGUE_TIMEOUT_MS, ...opts, abortCommand: "abortDialogueMessage"},
                             );
                         },
 
