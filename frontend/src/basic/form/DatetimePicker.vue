@@ -1,4 +1,3 @@
-
 <template>
   <FormElement ref="formElement" :options="options">
     <template #element>
@@ -35,6 +34,11 @@ import FormElement from "@/basic/form/Element.vue"
 export default {
   name: "DatetimePicker",
   components: {FormElement},
+  inject: {
+    formData: {
+      default: () => null,
+    },
+  },
   props: {
     options: {
       type: Object,
@@ -57,7 +61,7 @@ export default {
     }
   },
   watch: {
-     modelValue(oldVal, newVal) {
+    modelValue(oldVal, newVal) {
       if (oldVal !== newVal) {
         if (this.modelValue !== null && this.modelValue !== undefined) {
           this.currentDate = new Date(this.modelValue);
@@ -75,7 +79,9 @@ export default {
           this.time = null;
         } else {
           if (this.time === null) {
-            this.time = "00:00";
+            this.time = this.options.disablePast && this.date === this.today 
+              ? this.currentTime 
+              : "00:00"
           } else {
             this.emitDate();
           }
@@ -102,18 +108,26 @@ export default {
   },
 
   mounted() {
-    this.originalValue = this.modelValue;
-    this.currentDate = this.modelValue ? new Date(this.modelValue) : null;
+    this.originalValue = this.formData?.value?.id
+      ? this.modelValue
+      : null;
+
+    this.currentDate = this.modelValue
+      ? new Date(this.modelValue)
+      : null;
 
     // update the allowed date and time every 30 seconds while the form is open.
-    this.clockTimer = setInterval(() => {
-      this.now = new Date();
-    }, 30_000);
-
+    if (this.options.disablePast) {
+      this.clockTimer = setInterval(() => {
+        this.now = new Date();
+      }, 30_000);
+    }
   },
 
   beforeUnmount() {
-    clearInterval(this.clockTimer);
+    if (this.options.disablePast) {
+      clearInterval(this.clockTimer);
+    }
   },
 
   methods: {
@@ -132,12 +146,8 @@ export default {
 
     parse() {
       if (this.currentDate !== null) {
-        const day = ("0" + this.currentDate.getDate()).slice(-2);
-        const month = ("0" + (this.currentDate.getMonth() + 1)).slice(-2);
-        this.date = this.currentDate.getFullYear() + "-" + (month) + "-" + (day);
-        const hours = ("0" + this.currentDate.getHours()).slice(-2);
-        const minutes = ("0" + this.currentDate.getMinutes()).slice(-2);
-        this.time = hours + ":" + minutes;
+        this.date = this.formatLocalDate(this.currentDate);
+        this.time = this.formatLocalTime(this.currentDate);
       } else {
         this.date = null
         this.time = null
