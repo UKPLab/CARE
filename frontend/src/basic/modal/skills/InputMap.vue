@@ -19,26 +19,28 @@
       >
         <FormRadio
             :model-value="submissionFileSelections[input]?.[0] || null"
-            :options="{ key: `submission_file_${input}`, label: 'nlp.inputMap.selectFilesToInclude', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
+            :options="{ key: `submission_file_${studyStepId || 'standalone'}_${serviceIndex}_${input}`, label: 'nlp.inputMap.selectFilesToInclude', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
             @update:model-value="toggleSubmissionFile(input, $event)"
         />
       </div>
     </div>
 
-    <h6 class="text-secondary mt-4">{{ $t('nlp.inputMap.outputMapping') }}</h6>
-    <div
-        v-for="output in skillOutputs"
-        :key="output"
-        class="mb-2"
-    >
-      <label class="form-label">{{ output }}:</label>
-      <FormSelect
-          :model-value="outputMappings[output]"
-          :options="{ options: outputDataOptions }"
-          :value-as-object="true"
-          @update:model-value="updateOutputMapping(output, $event)"
-      />
-    </div>
+    <template v-if="outputMapping">
+      <h6 class="text-secondary mt-4">{{ $t('nlp.inputMap.outputMapping') }}</h6>
+      <div
+          v-for="output in skillOutputs"
+          :key="output"
+          class="mb-2"
+      >
+        <label class="form-label">{{ output }}:</label>
+        <FormSelect
+            :model-value="outputMappings[output]"
+            :options="{ options: outputDataOptions }"
+            :value-as-object="true"
+            @update:model-value="updateOutputMapping(output, $event)"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -48,7 +50,7 @@
  * Dynamically generates input fields based on the selected skill's configuration
  * This supports both study-based and non-study-based workflows
  *
- * @author Manu Sundar Raj Nandyal, Dennis Zyska
+ * @author Manu Sundar Raj Nandyal, Dennis Zyska, Mohammed Rawhani
  */
 import FormSelect from "@/basic/form/Select.vue";
 import FormRadio from "@/basic/form/Radio.vue";
@@ -106,14 +108,24 @@ export default {
       type: Number,
       default: null,
     },
+    outputMapping: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
+    serviceIndex: {
+      type: Number,
+      default: 0,
+    },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "validation-change"],
   data() {
     return {
       inputMappings: {},
       outputMappings: {},
       isUpdatingFromWithin: false,
       hookPlaceholders: [],
+      hookPlaceholdersLoaded: false,
       submissionFileSelections: {},
     };
   },
@@ -216,6 +228,7 @@ export default {
       return Object.keys(skill.config.input.data || {});
     },
     skillOutputs() {
+      if (!this.outputMapping) return [];
       // A hook produces a single output (the completion) → one destination row.
       if (this.isHook) {
         return ["result"];
@@ -224,6 +237,13 @@ export default {
       const skill = this.nlpSkills.find((s) => s.name === this.skillName);
       if (!skill) return [];
       return Object.keys(skill.config.output.data || {});
+    },
+    inputMappingValid() {
+      if (this.isHook && !this.hookPlaceholdersLoaded) return false;
+      return this.skillInputs.every((input) => {
+        const mapping = this.inputMappings[input];
+        return mapping && mapping.value !== null && mapping.value !== undefined;
+      });
     },
     tableBasedParameter() {
       for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
@@ -335,11 +355,19 @@ export default {
     },
     hookTemplateId: {
       handler(templateId) {
+        this.hookPlaceholdersLoaded = false;
         if (templateId) {
           this.fetchHookPlaceholders(templateId);
         } else {
           this.hookPlaceholders = [];
+          this.hookPlaceholdersLoaded = true;
         }
+      },
+      immediate: true,
+    },
+    inputMappingValid: {
+      handler(isValid) {
+        this.$emit("validation-change", isValid);
       },
       immediate: true,
     },
@@ -375,17 +403,9 @@ export default {
         }
 
         if (typeof newValue === 'object') {
-          // New format: { ...inputMappings, output: {...outputMappings} }
-          if (newValue.output) {
-            this.outputMappings = {...newValue.output};
-            // Extract input mappings (everything except output key)
-            const {output, ...inputMappings} = newValue;
-            this.inputMappings = {...inputMappings};
-          } else {
-            // Legacy format: just input mappings
-            this.inputMappings = {...newValue};
-            this.outputMappings = {};
-          }
+          const {output, ...inputMappings} = newValue;
+          this.inputMappings = {...inputMappings};
+          this.outputMappings = this.outputMapping && output ? {...output} : {};
           // Restore submission file selections from saved mapping (hook mode).
           const fileSelections = {};
           Object.entries(this.inputMappings).forEach(([key, val]) => {
@@ -408,7 +428,7 @@ export default {
         this.isUpdatingFromWithin = true;
         const updated = {...source, selectedFiles: next, filePatterns: this.buildFilePatterns(next)};
         this.inputMappings = {...this.inputMappings, [input]: updated};
-        this.$emit("update:modelValue", {...this.inputMappings, output: {...this.outputMappings}});
+        this.$emit("update:modelValue", this.getMappingValue());
         this.$nextTick(() => { this.isUpdatingFromWithin = false; });
       }
     },
@@ -433,7 +453,16 @@ export default {
           }
           return indexes.map((index) => tokenInnerText(placeholder.placeholderKey, index));
         }).filter(Boolean);
+        this.hookPlaceholdersLoaded = true;
       });
+    },
+    /**
+     * Build the mapping value supported by this service declaration.
+     * @returns {Object} Input mappings with optional output mappings
+     */
+    getMappingValue() {
+      if (!this.outputMapping) return {...this.inputMappings};
+      return {...this.inputMappings, output: {...this.outputMappings}};
     },
     // Append resolved document and submission-derived sources for the current step
     appendResolvedDocSources(sources, stepIndex) {
@@ -490,10 +519,7 @@ export default {
         [input]: effectiveSource,
       };
 
-      this.$emit("update:modelValue", {
-        ...this.inputMappings,
-        output: {...this.outputMappings},
-      });
+      this.$emit("update:modelValue", this.getMappingValue());
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
@@ -508,10 +534,7 @@ export default {
         [output]: source
       };
 
-      this.$emit('update:modelValue', {
-        ...this.inputMappings,
-        output: {...this.outputMappings}
-      });
+      this.$emit('update:modelValue', this.getMappingValue());
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
@@ -583,6 +606,11 @@ export default {
             if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
             break;
           case 3: // Modal
+            break;
+          case 4: // Dialogue
+            if (stepIndex === currentWorkflowStepIndex && this.isHook) {
+              this.appendResolvedDocSources(sources, stepIndex);
+            }
             break;
         }
         // get assessment from previous steps

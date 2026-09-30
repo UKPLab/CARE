@@ -3,6 +3,7 @@
 const Service = require("../../Service.js");
 const chat = require("./chat");
 const hook = require("./hook");
+const request = require("./request");
 
 /**
  * AIService — AI / LLM RPC handlers.
@@ -10,7 +11,7 @@ const hook = require("./hook");
  * Implementation is split across `./ai/` modules and shared backend AI helpers.
  *
  * @extends Service
- * @author Akash Gundapuneni, Mohamed Rawhani
+ * @author Akash Gundapuneni, Mohammed Rawhani
  */
 module.exports = class AIService extends Service {
     /**
@@ -29,6 +30,18 @@ module.exports = class AIService extends Service {
             ],
             resTypes: [],
         });
+    }
+
+    /**
+     * Fails requests a previous server run left in progress, so they no longer block sessions.
+     */
+    async init() {
+        try {
+            const count = await this.server.db.models["ai_log"].failInProgressLogs();
+            this.logger.info(`Failed ${count} AI requests left in progress`);
+        } catch (error) {
+            this.logger.error("Failed to release in-progress AI requests: " + error.message);
+        }
     }
 
     /**
@@ -64,5 +77,29 @@ module.exports = class AIService extends Service {
             return handlers[command]();
         }
         return super.command(client, command, data);
+    }
+
+    /**
+     * Runs an internal AI action for other backend services.
+     *
+     * @param {string} action Internal action name.
+     * @param {Object} client Authenticated service client.
+     * @param {Object} [data] Action payload.
+     * @param {Object} [options] Internal action options.
+     * @returns {Promise<*>}
+     */
+    async call(action, client, data = {}, options = {}) {
+        const actions = {
+            chatCompletion: () => chat.chatCompletion(this, client, data, options.log, options.onDelta),
+            abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
+            cancelRequest: () => request.cancelRequest(this, data?.logId, options),
+            loadHook: () => hook.loadEnabledHook(this, data?.hookId),
+            resolveHookModel: () => hook.resolveSelectedHookModel(this, data?.hookId, data?.aiModelId),
+            resolveHookPrompt: () => hook.resolveHookPrompt(this, data?.hookId, data?.values),
+        };
+        if (!actions[action]) {
+            throw new Error(`Unknown AI action: ${action}`);
+        }
+        return actions[action]();
     }
 };

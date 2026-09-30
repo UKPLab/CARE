@@ -15,6 +15,7 @@ import socketio  # pyright: ignore[reportMissingImports]
 import litellm
 from json_repair import repair_json  # pyright: ignore[reportMissingImports]
 from litellm import Router
+from streaming import StreamingRouter, stream_completion
 
 OUTPUT_MODE_TEXT = 0
 OUTPUT_MODE_JSON = 1
@@ -50,7 +51,7 @@ def create_app():
         if model_cache and hasattr(model_cache, "flush_cache"):
             model_cache.flush_cache()
 
-    def build_router(model, completion_params):
+    def build_router(model, completion_params, router_class=Router):
         fallback_models = normalize_model_list(completion_params.pop("fallback_models", []))
         model_order = [model] + [m for m in fallback_models if m != model]
 
@@ -77,7 +78,7 @@ def create_app():
         }
         if fallback_models:
             router_kwargs["fallbacks"] = [{model: fallback_models}]
-        return Router(**router_kwargs)
+        return router_class(**router_kwargs)
 
     def normalize_reasoning_content(response_data):
         if not isinstance(response_data, dict):
@@ -192,6 +193,7 @@ def create_app():
         """
         data = data or {}
         request_id = data.get("requestId")
+        stream_id = data.get("streamId")
         timeout_ms = data.get("timeoutMs")
         params = data.get("params") or {}
 
@@ -217,6 +219,8 @@ def create_app():
             "task": None,
         }
         with active_requests_lock:
+            if request_id in active_requests:
+                return {"success": False, "message": "Request is already active"}
             active_requests[request_id] = request_state
 
         try:
@@ -224,6 +228,9 @@ def create_app():
             should_repair_json = output_mode == OUTPUT_MODE_JSON
             completion_params = {k: v for k, v in params.items()
                                  if k not in ("model", "messages", "outputMode") and v is not None}
+            completion_params["stream"] = bool(stream_id)
+            if not stream_id:
+                completion_params.pop("stream_options", None)
 
             if "timeout" not in completion_params and timeout_ms:
                 completion_params["timeout"] = int(timeout_ms) / 1000
@@ -232,15 +239,28 @@ def create_app():
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 try:
-                    router = build_router(model, completion_params)
-                    task = loop.create_task(router.acompletion(
-                        model=model,
-                        messages=messages,
-                        **completion_params,
-                    ))
+                    if stream_id:
+                        router = build_router(model, completion_params, StreamingRouter)
+
+                        def emit_delta(text):
+                            """Forward answer text while the request is active."""
+                            if not request_state["cancelled"]:
+                                sio.emit("chatCompletionDelta", {"streamId": stream_id, "text": text}, to=sid)
+
+                        completion = stream_completion(
+                            router, model, messages, completion_params, emit_delta,
+                        )
+                    else:
+                        router = build_router(model, completion_params)
+                        completion = router.acompletion(
+                            model=model, messages=messages, **completion_params,
+                        )
+                    task = loop.create_task(completion)
                     with active_requests_lock:
                         request_state["loop"] = loop
                         request_state["task"] = task
+                        if request_state["cancelled"]:
+                            task.cancel()
                     request_state["response"] = loop.run_until_complete(task)
                 except asyncio.CancelledError:
                     request_state["error"] = RuntimeError("Request aborted")

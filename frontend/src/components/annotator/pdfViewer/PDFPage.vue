@@ -269,7 +269,13 @@ export default {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "pdfPageResizeChange",
-            data: {documentId: this.documentId, pageNumber: this.pageNumber, width: width}
+            data: {
+              documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
+              pageNumber: this.pageNumber,
+              width: width,
+            }
           });
         }
       }

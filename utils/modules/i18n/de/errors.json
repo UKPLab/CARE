@@ -436,6 +436,38 @@
     "startAfterEnd": "Die Startzeit muss vor der Endzeit liegen."
   },
   "ai": {
+    "assistant": {
+      "stepNotInSession": "Dieser Schritt gehört nicht zu dieser Studiensitzung.",
+      "retryNotAllowed": "Diese KI-Antwort kann nicht erneut angefordert werden.",
+      "retryLatestOnly": "Nur die letzte KI-Antwort kann erneut angefordert werden.",
+      "requestAborted": "Die KI-Anfrage wurde abgebrochen.",
+      "userRequired": "Sie müssen angemeldet sein.",
+      "requestIdRequired": "Eine Anfrage-ID ist erforderlich.",
+      "inputMissing": "Eine erforderliche KI-Eingabe fehlt: {key}.",
+      "inputInvalid": "Ungültige KI-Eingabe: {key}.",
+      "invalidId": "Fehlende oder ungültige ID: {name}."
+    },
+    "chat": {
+      "conversationNotFound": "KI-Unterhaltung nicht gefunden.",
+      "currentStepOnly": "Der KI-Chat ist nur im aktuellen Studienschritt verfügbar.",
+      "notConfigured": "Für diesen Studienschritt ist kein KI-Chat eingerichtet.",
+      "contextMissing": "Der KI-Chat-Kontext für diesen Studienschritt fehlt.",
+      "contentRequired": "Bitte geben Sie eine Nachricht ein."
+    },
+    "dialogue": {
+      "notFound": "KI-Dialog nicht gefunden.",
+      "planNotFound": "Die Konfiguration des Dialogplans wurde nicht gefunden.",
+      "planEmpty": "Der Dialogplan enthält keine Fragen.",
+      "wrongStepType": "Dieser Studienschritt ist kein Dialogschritt.",
+      "currentStepOnly": "Der Dialog ist nur im aktuellen Studienschritt verfügbar.",
+      "decisionHookRequired": "Ein adaptiver Dialog benötigt einen Entscheidungs-Hook.",
+      "anchorHookRequired": "Ein adaptiver Dialog mit verankerten Fragen benötigt einen Anker-Hook.",
+      "contextMissing": "Der Dialogkontext für diesen Studienschritt fehlt.",
+      "skipNotAllowed": "In diesem Dialog können keine Fragen übersprungen werden.",
+      "answerRequired": "Bitte geben Sie eine Antwort ein.",
+      "complete": "Dieser Dialog ist bereits abgeschlossen.",
+      "questionInactive": "Diese Frage ist nicht mehr aktiv."
+    },
     "requestAlreadyPending": "In dieser Sitzung steht bereits eine KI-Anfrage von Ihnen aus.",
     "studyOwnerUnavailable": "Der Besitzer der Studie konnte nicht ermittelt werden.",
     "sessionAccessDenied": "Sie haben keinen Zugriff auf diese Studiensitzung.",

@@ -30,7 +30,7 @@ function deny(reason, key, params = {}) {
  */
 async function beginRequest(service, request, options = {}) {
     const {
-        userId, aiModelId, aiHookId, requestId, input,
+        userId, aiModelId, aiHookId, aiMessageId, requestId, input,
         studySessionId, studyStepId, documentId,
     } = request || {};
 
@@ -55,9 +55,9 @@ async function beginRequest(service, request, options = {}) {
         }
 
         // Inside a study, access (and per-share budget attribution) rides on the
-        // study owner — participants don't carry shares.
+        // study creator or owner — participants don't carry shares.
         const accessHolderId = studyId
-            ? await _getStudyOwnerId(service, studyId)
+            ? await _getStudyAccessHolderId(service, studyId, {aiModelId, aiHookId})
             : userId;
         if (!accessHolderId) {
             return deny(
@@ -148,6 +148,7 @@ async function beginRequest(service, request, options = {}) {
             userId,
             aiModelId,
             aiHookId: aiHookId || null,
+            aiMessageId: aiMessageId || null,
             documentId: documentId || null,
             studySessionId: studySessionId || null,
             studyStepId: studyStepId || null,
@@ -178,10 +179,10 @@ async function beginRequest(service, request, options = {}) {
  * @param {Object} outcome - Parsed response fields to save (output, tokens, costs, etc).
  */
 async function completeRequest(service, logId, outcome) {
-    await service.server.db.models["ai_log"].updateById(logId, {
+    await service.server.db.models["ai_log"].update({
         ...outcome,
         status: "completed",
-    });
+    }, {where: {id: logId, status: "in_progress"}});
 }
 
 /**
@@ -190,12 +191,15 @@ async function completeRequest(service, logId, outcome) {
  * @param {Object} service - AIService, used for DB access.
  * @param {number} logId - The ai_log row id returned by beginRequest.
  * @param {string} [errorMessage] - Error text to save on the log row.
+ * @param {number|null} [totalLatencyMs] - Total failed-request latency.
+ * @returns {Promise<void>}
  */
-async function failRequest(service, logId, errorMessage) {
-    await service.server.db.models["ai_log"].updateById(logId, {
+async function failRequest(service, logId, errorMessage, totalLatencyMs = null) {
+    await service.server.db.models["ai_log"].update({
         status: "failed",
         output: errorMessage || "Unknown error",
-    });
+        totalLatencyMs,
+    }, {where: {id: logId, status: "in_progress"}});
 }
 
 /**
@@ -203,9 +207,14 @@ async function failRequest(service, logId, errorMessage) {
  *
  * @param {Object} service - AIService, used for DB access.
  * @param {number} logId - The ai_log row id returned by beginRequest.
+ * @param {Object} [options] - Sequelize update options.
+ * @returns {Promise<{cancelled: boolean}>} Cancellation result.
  */
-async function cancelRequest(service, logId) {
-    await service.server.db.models["ai_log"].updateById(logId, { status: "aborted" });
+async function cancelRequest(service, logId, options = {}) {
+    await service.server.db.models["ai_log"].update(
+        {status: "aborted"},
+        {where: {id: logId, status: "in_progress"}, ...options},
+    );
     return { cancelled: true };
 }
 
@@ -272,6 +281,30 @@ async function _getStudyOwnerId(service, studyId) {
     });
     if (!study || study.deleted) return null;
     return Number(study.userId);
+}
+
+// Returns the study creator when they can use the hook (or model), else the owner.
+// Assignment studies are owned by students but created by the instructor who holds the shares.
+async function _getStudyAccessHolderId(service, studyId, { aiModelId, aiHookId }) {
+    const study = await service.server.db.models["study"].findByPk(studyId, {
+        attributes: ["createdByUserId", "userId", "deleted"],
+        raw: true,
+    });
+    if (!study || study.deleted) return null;
+    const ownerId = Number(study.userId);
+    const creatorId = Number(study.createdByUserId);
+    if (!creatorId || creatorId === ownerId) return ownerId;
+
+    const [tableName, fkColumn, entityId] = aiHookId
+        ? ["ai_hook", "aiHookId", aiHookId]
+        : ["ai_model", "aiModelId", aiModelId];
+    const entity = await service.server.db.models[tableName].findByPk(entityId, {
+        attributes: ["userId"],
+        raw: true,
+    });
+    const creatorHasAccess = Number(entity?.userId) === creatorId
+        || await _findActiveShare(service, `${tableName}_share`, fkColumn, creatorId, entityId);
+    return creatorHasAccess ? creatorId : ownerId;
 }
 
 // Returns the user's active (non-expired) share row for a model or hook, or null.
@@ -465,7 +498,8 @@ async function _sumHookShareAttributable(service, cap, ownerId) {
     return _sumAttributableForEntity(service, { aiHookId: hookShare.aiHookId }, ownerId, cap.resetAt);
 }
 
-// Owner's own usage on the entity + usage by anyone in studies they own.
+// Owner's own usage on the entity + usage by anyone in studies they own or created
+// (access may come from the creator, see _getStudyAccessHolderId).
 // entityWhere narrows to one model or one hook.
 async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt) {
     const Sequelize = service.server.db.Sequelize;
@@ -494,7 +528,7 @@ async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt)
                 model: models["study"],
                 as: "study",
                 required: true,
-                where: { userId: ownerId },
+                where: { [Op.or]: [{ userId: ownerId }, { createdByUserId: ownerId }] },
                 attributes: [],
             }],
         }],
