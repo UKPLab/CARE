@@ -31,9 +31,17 @@ async function prepareResponse(service, client, context, turn, requestId) {
         context.plan,
         [...turn.previousMessages, turn.userMessage],
     );
-    const anchorState = nextQuestion && !skipped
-        ? await anchors.prepareDialogueAnchors(service, client, context, turn, requestId)
-        : {};
+    const anchorState = !nextQuestion
+    ? {}
+    : skipped
+        ? await anchors.loadAnchorState(
+            service,
+            turn.conversation.id,
+            context.studyStep.id,
+        )
+        : await anchors.prepareDialogueAnchors(
+            service, client, context, turn, requestId,
+        );
     if (!canFollowUp) {
         const payload = dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState);
         payload.metadata.dialogue.decision = {requested: false};
