@@ -1,0 +1,516 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-14T14:37:26.078Z",
+  "traceCount": 38,
+  "recording": {
+    "name": "806-grant-template-access",
+    "status": "finished",
+    "startTime": "2026-08-14T14:30:21.139Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "VAQXt_4WTiJxz3NqAABj"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-14T14:30:41.406Z"
+  },
+  "traces": [
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 7,
+          "name": "Recording 8/14/2026, 4:30:21 PM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-14T14:30:21.140Z",
+          "startTime": "2026-08-14T14:30:21.139Z",
+          "updatedAt": "2026-08-14T14:30:21.140Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "VAQXt_4WTiJxz3NqAABj"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:30:21.153Z",
+      "endTime": "2026-08-14T14:30:21.153Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:21.977Z",
+      "endTime": "2026-08-14T14:30:21.977Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/users",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.503Z",
+      "endTime": "2026-08-14T14:30:24.503Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "9252b6bc-b8db-459b-8ce9-7064ab8ea2e0",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.506Z",
+      "endTime": "2026-08-14T14:30:24.506Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "9ea53d04-5710-4142-bcf4-f87644e65ca2",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.506Z",
+      "endTime": "2026-08-14T14:30:24.506Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "ce63eb9c-7c62-4c35-bd2a-211668a48195",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.506Z",
+      "endTime": "2026-08-14T14:30:24.506Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "00c8f73a-4fd6-4977-8656-cdf0a0b19e62",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.506Z",
+      "endTime": "2026-08-14T14:30:24.506Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "a554f9ab-2826-456a-ad51-f9baea54f2f7",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.506Z",
+      "endTime": "2026-08-14T14:30:24.506Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "fd4a5af8-7ccd-4866-9d9e-7a53aabb6dca",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.517Z",
+      "endTime": "2026-08-14T14:30:24.517Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.517Z",
+      "endTime": "2026-08-14T14:30:24.517Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.520Z",
+      "endTime": "2026-08-14T14:30:24.520Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "userMonitorSubscribe",
+      "payload": {},
+      "direction": true,
+      "startTime": "2026-08-14T14:30:24.520Z",
+      "endTime": "2026-08-14T14:30:24.520Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "shield-lock",
+          "title": "Rights Management"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:25.698Z",
+      "endTime": "2026-08-14T14:30:25.698Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:25.700Z",
+      "endTime": "2026-08-14T14:30:25.700Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_right"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:25.702Z",
+      "endTime": "2026-08-14T14:30:25.702Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "userGetAllRights",
+      "payload": {},
+      "direction": true,
+      "startTime": "2026-08-14T14:30:25.702Z",
+      "endTime": "2026-08-14T14:30:25.702Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:26.168Z",
+      "endTime": "2026-08-14T14:30:26.168Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 655,
+          "clientY": 200,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:26.991Z",
+      "endTime": "2026-08-14T14:30:26.991Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "userGetRoleBasedRights",
+      "payload": {
+        "roleId": 6
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:27.832Z",
+      "endTime": "2026-08-14T14:30:27.832Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:28.448Z",
+      "endTime": "2026-08-14T14:30:28.448Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 681,
+          "clientY": 616,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:31.308Z",
+      "endTime": "2026-08-14T14:30:31.308Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "userAssignRoleRights",
+      "payload": {
+        "roleId": 6,
+        "newRights": [
+          "frontend.dashboard.templates.view"
+        ],
+        "deletedRights": []
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:36.051Z",
+      "endTime": "2026-08-14T14:30:36.051Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:36.054Z",
+      "endTime": "2026-08-14T14:30:36.054Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Assign Rights"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:36.053Z",
+      "endTime": "2026-08-14T14:30:36.053Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "025efe7a-70ab-49ac-ba18-cf96b67b7f0a",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:36.058Z",
+      "endTime": "2026-08-14T14:30:36.058Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "b5ecc41a-f45f-434d-b149-9b3e2063ac08",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:36.058Z",
+      "endTime": "2026-08-14T14:30:36.058Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard",
+          "from": "/dashboard/users"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.135Z",
+      "endTime": "2026-08-14T14:30:39.135Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "userMonitorUnsubscribe",
+      "payload": {},
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.139Z",
+      "endTime": "2026-08-14T14:30:39.139Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "2e816b4e-b833-4eaa-9d1a-a9bdf12272c5",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.139Z",
+      "endTime": "2026-08-14T14:30:39.139Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "unsubscribeAppData",
+      "payload": "739dc6e4-26b4-4561-b605-f771a7c5caca",
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.139Z",
+      "endTime": "2026-08-14T14:30:39.139Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.149Z",
+      "endTime": "2026-08-14T14:30:39.149Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.151Z",
+      "endTime": "2026-08-14T14:30:39.151Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.151Z",
+      "endTime": "2026-08-14T14:30:39.151Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "document"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.151Z",
+      "endTime": "2026-08-14T14:30:39.151Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "study"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.151Z",
+      "endTime": "2026-08-14T14:30:39.151Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.151Z",
+      "endTime": "2026-08-14T14:30:39.151Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 989,
+          "clientY": 5,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:39.942Z",
+      "endTime": "2026-08-14T14:30:39.942Z"
+    },
+    {
+      "recordingId": 7,
+      "userId": 4,
+      "socketId": "VAQXt_4WTiJxz3NqAABj",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:30:40.260Z",
+      "endTime": "2026-08-14T14:30:40.260Z"
+    }
+  ]
+}

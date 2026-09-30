@@ -174,12 +174,12 @@ export default {
 
 .card-body {
   font-size: smaller;
-  color: #929292;
+  color: var(--bs-secondary-color, #929292);
 }
 
 .card-header {
   font-size: smaller;
-  color: #929292;
+  color: var(--bs-secondary-color, #929292);
 }
 
 .card-footer {

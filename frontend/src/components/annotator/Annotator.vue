@@ -318,7 +318,7 @@ export default {
           id: 'toggle-nlp',
           icon: 'robot',
           title: this.nlpActive ? this.$t('annotator.deactivateNlpSupport') : this.$t('annotator.activateNlpSupport'),
-          color: this.nlpActive ? '#097969' : '#777777',
+          color: this.nlpActive ? 'var(--care-nlp-active)' : 'var(--care-nlp-idle)',
           action: 'toggleNlp'
         });
       }
@@ -701,11 +701,6 @@ export default {
 </script>
 
 <style scoped>
-
-
-IconBoostrap[disabled] {
-  background-color: darkgrey;
-}
 
 .sidebar-highlight {
   border: 2px solid #ff9800 !important;

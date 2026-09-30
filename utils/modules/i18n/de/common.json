@@ -104,6 +104,7 @@
     "summarize": "Zusammenfassen",
     "apply": "Anwenden",
     "unknown": "Unbekannt",
+    "selectPlaceholder": "Auswählen...",
     "use": "Verwenden",
     "hideReplies": "Antworten verbergen",
     "showReplies": "Antworten anzeigen ({count})",

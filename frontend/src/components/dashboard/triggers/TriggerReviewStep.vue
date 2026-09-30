@@ -1,29 +1,17 @@
 <template>
-  <div class="summary-container">
-    <div
-      v-for="section in summarySections"
-      :key="section.title"
-      class="mb-4"
-    >
-      <h6>{{ section.title }}</h6>
-      <div
-        v-for="item in section.items"
-        :key="item.label"
-        class="summary-item"
-      >
-        <strong>{{ item.label }}:</strong> {{ item.value }}
-      </div>
-    </div>
-    <div class="alert alert-info mt-3">
-      <i class="bi bi-info-circle"></i>
-      Please review the information above before submitting.
-    </div>
-  </div>
+  <BasicDetails
+    :sections="summarySections"
+    :note="$t('triggers.review.note')"
+  />
 </template>
 
 <script>
+import BasicDetails from "@/basic/Details.vue";
+import { translateMaybeKey } from "@/assets/utils";
+
 export default {
   name: "TriggerReviewStep",
+  components: { BasicDetails },
   props: {
     triggerForm: { type: Object, required: true },
     eventData: { type: Object, required: true },
@@ -37,18 +25,18 @@ export default {
     summarySections() {
       return [
         {
-          title: "Trigger info",
+          title: this.$t("triggers.steps.info"),
           items: this.itemsForFields(this.settingsFields, this.triggerForm),
         },
         {
-          title: "Event",
+          title: this.$t("triggers.common.event"),
           items: this.itemsForFields(this.eventFields, {
             ...this.triggerForm,
             ...this.eventData,
           }),
         },
         {
-          title: "Action",
+          title: this.$t("triggers.common.action"),
           items: this.preprocessingAction
             ? this.preprocessingItems()
             : this.itemsForFields(this.actionFields, {
@@ -65,36 +53,42 @@ export default {
     },
     itemsForFields(fields, data) {
       return fields.map((field) => ({
+        key: field.key,
         label: field.label,
-        value: this.formatValue(field, data) || "N/A",
+        value: this.formatValue(field, data) || this.$t("triggers.common.notAvailable"),
       }));
     },
     formatValue(field, data) {
       const value = data[field.key];
       if (field.type === "select" && field.options?.length) {
-        return field.options.find((option) => this.sameValue(option.value, value))?.name
-          ?? (value == null ? "" : String(value));
+        const optionName = field.options.find((option) => this.sameValue(option.value, value))?.name;
+        return optionName ? translateMaybeKey(optionName) : (value == null ? "" : String(value));
       }
-      if (field.type === "boolean" || field.type === "bool") return value ? "Yes" : "No";
+      if (field.type === "boolean" || field.type === "bool") return value ? this.$t("triggers.common.yes") : this.$t("triggers.common.no");
       return value == null ? "" : String(value);
     },
     preprocessingItems() {
       const actionField = this.actionFields[0];
+      const selectedActionName = actionField?.options?.find(
+        (option) => this.sameValue(option.value, this.triggerForm.triggerActionId)
+      )?.name;
       const items = [
         {
-          label: actionField?.label || "Then (action)",
-          value: actionField?.options?.find(
-            (option) => this.sameValue(option.value, this.triggerForm.triggerActionId)
-          )?.name || "N/A",
+          key: "action",
+          label: actionField?.label || this.$t("triggers.fields.thenAction"),
+          value: selectedActionName
+            ? translateMaybeKey(selectedActionName)
+            : this.$t("triggers.common.notAvailable"),
         },
-        { label: "NLP skill", value: this.actionData.skillName || "N/A" },
+        { key: "skill", label: this.$t("triggers.review.nlpSkill"), value: this.actionData.skillName || this.$t("triggers.common.notAvailable") },
       ];
 
       Object.entries(this.actionData.inputMappings || {}).forEach(([parameter, mapping]) => {
         if (parameter !== "output" && mapping) {
           items.push({
-            label: `Input: ${parameter}`,
-            value: mapping.name || mapping.table || "N/A",
+            key: `input-${parameter}`,
+            label: this.$t("triggers.review.input", { parameter }),
+            value: mapping.name || mapping.table || this.$t("triggers.common.notAvailable"),
           });
         }
       });
@@ -102,7 +96,8 @@ export default {
       const names = this.actionData.validationConfigurationNames || {};
       Object.entries(this.actionData.baseFiles || {}).forEach(([id, selection]) => {
         items.push({
-          label: `Base file (${names[id] || id})`,
+          key: `base-${id}`,
+          label: this.$t("triggers.review.baseFile", { name: names[id] || id }),
           value: selection,
         });
       });
@@ -111,24 +106,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.summary-container {
-  padding: 1rem;
-}
-
-.summary-item {
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #e9ecef;
-}
-
-.summary-item:last-of-type {
-  border-bottom: none;
-}
-
-.summary-item strong {
-  display: inline-block;
-  min-width: 180px;
-  color: #495057;
-}
-</style>

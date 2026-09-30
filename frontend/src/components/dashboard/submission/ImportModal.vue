@@ -33,7 +33,7 @@
       <div class="confirm-container">
         <h4 class="mb-3">{{ $t('dashboard.importModal.confirmImport') }}</h4>
         <div class="card mb-3">
-          <div class="card-body bg-light">
+          <div class="card-body bg-body-tertiary">
             <h5 class="card-title">{{ $t('dashboard.importModal.importSummary') }}</h5>
             <ul class="list-unstyled mb-0">
               <li>• {{ $t('dashboard.importModal.submissionsToImport') }} {{ selectedSubmissions.length }}</li>

@@ -10,7 +10,20 @@
   "downloadedConfigMessage": "Konfiguration {name} heruntergeladen",
   "services": {
     "availableServices": "Verfügbare Dienste",
-    "noServices": "Für diesen Schritt ist keine Dienstkonfiguration verfügbar."
+    "noServices": "Für diesen Schritt ist keine Dienstkonfiguration verfügbar.",
+    "costLimits": "Kostenlimits (optional)",
+    "totalCostLimit": "Gesamt ($)",
+    "sessionCostLimit": "Pro Sitzung ($)",
+    "userCostLimit": "Pro Benutzer ($)",
+    "noLimit": "Kein Limit",
+    "totalCostLimitHelp": "Gesamtausgabenlimit",
+    "sessionCostLimitHelp": "Ausgabenlimit pro Sitzung",
+    "userCostLimitHelp": "Ausgabenlimit pro Benutzer"
+  },
+  "hooks": {
+    "requestTitle": "KI-Hook-Anfrage",
+    "requestFailed": "KI-Hook-Anfrage fehlgeschlagen",
+    "documentLoadFailed": "Dokument konnte nicht geladen werden"
   },
   "inputConfirm": {
     "confirmSelections": "Bestätigen Sie Ihre Auswahl",
@@ -37,6 +50,7 @@
   "inputMap": {
     "inputMapping": "Input-Zuordnung",
     "outputMapping": "Output-Zuordnung",
+    "selectFilesToInclude": "Einzubeziehende Dateien auswählen:",
     "saveInDocumentData": "In Dokumentdaten speichern",
     "insertIntoEditor": "In den Editor einfügen",
     "sources": {

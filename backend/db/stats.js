@@ -1,8 +1,10 @@
 /**
  * Periodic PostgreSQL activity statistics logger.
  *
- * Runs the two provided pg_stat_activity queries on an interval and logs
- * the aggregated counts and a shortlist of the oldest active queries.
+ * Runs the pg_stat_activity / pg_stat_database / pg_locks queries on an interval
+ * and logs the aggregated counts and a shortlist of the oldest active queries.
+ * The same snapshot logic is exposed as `snapshot()` for on-demand callers
+ * (e.g. the perf load-testing tool).
  *
  * Configuration (env):
  *   PG_STATS_INTERVAL_MS  Interval in ms (default 60000)
@@ -23,137 +25,148 @@
 let _timer = null;
 
 /**
- * Start the periodic PostgreSQL statistics scheduler.
+ * Convert an object with possibly string-based numeric fields to integers where
+ * appropriate. Non-numeric values are preserved.
  *
- * Creates an interval that periodically captures:
- *  - Connection state counts (pg_stat_activity)
- *  - Oldest active queries (>1s)
- *  - Database-level counters (pg_stat_database) for current DB
- *  - Lock summary (pg_locks)
- *
- * Results are emitted via logger.info with message 'pg_stat_activity snapshot'.
- * Multiple concurrent invocations are ignored (idempotent start).
- *
- * @param {import('sequelize').Sequelize} sequelize - Initialized Sequelize instance (must be Postgres dialect)
- * @param {object} logger - Winston logger instance (child acceptable) used for output
- * @param {object} [options] - Optional overrides
- * @param {number} [options.intervalMs] - Override collection interval in ms (default env PG_STATS_INTERVAL_MS or 100000)
- * @param {number} [options.minAgeMs] - (Currently unused after fixed 1s query; retained for compatibility)
- * @param {number} [options.topN] - (Currently unused after fixed LIMIT 10; retained for compatibility)
- * @returns {void}
+ * @private
+ * @param {Record<string, any>} row - Raw row object from pg_stat_activity aggregation query
+ * @returns {Record<string, (number|any)>} Normalized row with numeric strings parsed
  */
-function start(sequelize, logger, options = {}) {
-	if (_timer) return; // already running
-	const intervalMs = parseInt(process.env.PG_STATS_INTERVAL_MS || options.intervalMs || '100000', 10);
-	const minAgeMs = parseInt(process.env.PG_STATS_MIN_AGE_MS || options.minAgeMs || '10000', 10);
-	const topN = parseInt(process.env.PG_STATS_TOP_N || options.topN || '10', 10);
+function normalizeCountRow(row) {
+	const out = {};
+	Object.entries(row).forEach(([k, v]) => {
+		const num = parseInt(v, 10);
+		out[k] = isNaN(num) ? v : num;
+	});
+	return out;
+}
 
-	/**
-	 * Best-effort snapshot of Sequelize connection pool status.
-	 *
-	 * Sequelize uses `sequelize-pool` under the hood; depending on configuration
-	 * (and replication), `connectionManager.pool` can be a single pool or an
-	 * object with `read`/`write` pools.
-	 *
-	 * This function is intentionally defensive: it never throws and returns
-	 * `null` when pool metrics are unavailable.
-	 *
-	 * @private
-	 * @param {import('sequelize').Sequelize} sequelizeInstance
-	 * @returns {object|null}
-	 */
-	function getSequelizePoolStats(sequelizeInstance) {
-		function readMaybeFn(obj, key) {
-			if (!obj) return undefined;
-			const v = obj[key];
-			if (typeof v === 'function') {
-				try {
-					return v.call(obj);
-				} catch (_) {
-					return undefined;
-				}
+/**
+ * Best-effort snapshot of Sequelize connection pool status.
+ *
+ * Sequelize uses `sequelize-pool` under the hood; depending on configuration
+ * (and replication), `connectionManager.pool` can be a single pool or an
+ * object with `read`/`write` pools. Intentionally defensive: never throws and
+ * returns `null` when pool metrics are unavailable.
+ *
+ * @private
+ * @param {import('sequelize').Sequelize} sequelizeInstance
+ * @returns {object|null}
+ */
+function getSequelizePoolStats(sequelizeInstance) {
+	function readMaybeFn(obj, key) {
+		if (!obj) return undefined;
+		const v = obj[key];
+		if (typeof v === 'function') {
+			try {
+				return v.call(obj);
+			} catch (_) {
+				return undefined;
 			}
-			return v;
 		}
-
-		function poolSnapshot(pool) {
-			if (!pool) return null;
-			const snap = {
-				max: readMaybeFn(pool, 'max') ?? readMaybeFn(pool, 'maxSize'),
-				min: readMaybeFn(pool, 'min') ?? readMaybeFn(pool, 'minSize'),
-				size: readMaybeFn(pool, 'size'),
-				available: readMaybeFn(pool, 'available'),
-				using: readMaybeFn(pool, 'using'),
-				waiting: readMaybeFn(pool, 'waiting')
-			};
-			// Drop keys that came back undefined to keep logs tidy
-			Object.keys(snap).forEach((k) => {
-				if (snap[k] === undefined) delete snap[k];
-			});
-			return Object.keys(snap).length ? snap : null;
-		}
-
-		try {
-			const cm = sequelizeInstance && sequelizeInstance.connectionManager;
-			const pool = cm && cm.pool;
-			if (!pool) return null;
-
-			// Replication mode can expose separate read/write pools
-			if (pool.read || pool.write) {
-				const out = {};
-				if (Array.isArray(pool.read)) out.read = pool.read.map(poolSnapshot);
-				else if (pool.read) out.read = poolSnapshot(pool.read);
-
-				if (Array.isArray(pool.write)) out.write = pool.write.map(poolSnapshot);
-				else if (pool.write) out.write = poolSnapshot(pool.write);
-
-				return Object.keys(out).length ? out : null;
-			}
-
-			return poolSnapshot(pool);
-		} catch (_) {
-			return null;
-		}
+		return v;
 	}
 
-	/**
-	 * Collect one snapshot of PostgreSQL runtime statistics and emit via logger.
-	 *
-	 * Steps:
-	 *  1. Connection state counts (active/idle/total)
-	 *  2. Oldest active queries ( > 1 second ) capped at 10
-	 *  3. Database cumulative counters + derived ratios (cache hit %, rollback %)
-	 *  4. Lock inventory (counts per mode, waiting locks, sample of waiters)
-	 *
-	 * Any individual subsection failure is logged (warn/error) but does not abort remaining sections.
-	 *
-	 * @private
-	 * @returns {Promise<void>}
-	 */
-	async function collect() {
-		try {
-			// First query: counts
-			const [countRows] = await sequelize.query(`
-				SELECT
-					COUNT(*) AS total,
-					COUNT(*) FILTER (WHERE state='active') AS active,
-					COUNT(*) FILTER (WHERE state='idle') AS idle
-				FROM pg_stat_activity;`);
-			const counts = countRows && countRows[0] ? normalizeCountRow(countRows[0]) : {};
-			const sequelizePool = getSequelizePoolStats(sequelize);
-			// Second query: EXACT user requested static query (1s min age, LIMIT 10)
-			const [oldestRows] = await sequelize.query(`
+	function poolSnapshot(pool) {
+		if (!pool) return null;
+		const snap = {
+			max: readMaybeFn(pool, 'max') ?? readMaybeFn(pool, 'maxSize'),
+			min: readMaybeFn(pool, 'min') ?? readMaybeFn(pool, 'minSize'),
+			size: readMaybeFn(pool, 'size'),
+			available: readMaybeFn(pool, 'available'),
+			using: readMaybeFn(pool, 'using'),
+			waiting: readMaybeFn(pool, 'waiting')
+		};
+		// Drop keys that came back undefined to keep logs tidy
+		Object.keys(snap).forEach((k) => {
+			if (snap[k] === undefined) delete snap[k];
+		});
+		return Object.keys(snap).length ? snap : null;
+	}
+
+	try {
+		const cm = sequelizeInstance && sequelizeInstance.connectionManager;
+		const pool = cm && cm.pool;
+		if (!pool) return null;
+
+		// Replication mode can expose separate read/write pools
+		if (pool.read || pool.write) {
+			const out = {};
+			if (Array.isArray(pool.read)) out.read = pool.read.map(poolSnapshot);
+			else if (pool.read) out.read = poolSnapshot(pool.read);
+
+			if (Array.isArray(pool.write)) out.write = pool.write.map(poolSnapshot);
+			else if (pool.write) out.write = poolSnapshot(pool.write);
+
+			return Object.keys(out).length ? out : null;
+		}
+
+		return poolSnapshot(pool);
+	} catch (_) {
+		return null;
+	}
+}
+
+/**
+ * Collect one snapshot of PostgreSQL runtime statistics and return it.
+ *
+ * Shared by the periodic logger (`start`) and on-demand callers such as the
+ * perf tool's metric sampler. Captures:
+ *  1. Connection state counts (active/idle/total)
+ *  2. Sequelize pool status (incl. using/waiting — the pool-exhaustion signal)
+ *  3. Oldest active queries ( > 1 second ) capped at 10
+ *  4. Database cumulative counters + derived ratios (cache hit %, rollback %, deadlocks)
+ *  5. Lock inventory (counts per mode, waiting locks, sample of waiters)
+ *
+ * Any individual subsection failure is captured in the returned object under
+ * the relevant key and does not abort the remaining sections. Never throws.
+ *
+ * @param {import('sequelize').Sequelize} sequelize - Postgres-dialect Sequelize instance
+ * @param {object} [logger] - Optional logger for sub-query error reporting
+ * @returns {Promise<Object>} { counts, sequelizePool, oldestActive, dbStats, locks, collectedAt }
+ */
+async function snapshot(sequelize, logger = null) {
+	const result = {
+		counts: {},
+		sequelizePool: null,
+		oldestActive: [],
+		dbStats: {},
+		locks: { total: 0, waiting: 0, byMode: [], waitingSamples: [] },
+		collectedAt: new Date().toISOString()
+	};
+
+	// Connection state counts
+	try {
+		const [countRows] = await sequelize.query(`
+			SELECT
+				COUNT(*) AS total,
+				COUNT(*) FILTER (WHERE state='active') AS active,
+				COUNT(*) FILTER (WHERE state='idle') AS idle
+			FROM pg_stat_activity;`);
+		result.counts = countRows && countRows[0] ? normalizeCountRow(countRows[0]) : {};
+	} catch (e) {
+		if (logger) logger.error('pg_stat_activity counts query failed: ' + e.message);
+	}
+
+	result.sequelizePool = getSequelizePoolStats(sequelize);
+
+	// Oldest active queries (>1s), capped at 10
+	try {
+		const [oldestRows] = await sequelize.query(`
                 SELECT pid, now()-query_start AS age, wait_event_type||':'||COALESCE(wait_event,'') AS wait,
                     COALESCE(backend_type,'') AS backend, left(query,120) AS query
                 FROM pg_stat_activity
                 WHERE state='active' AND now()-query_start > interval '1 second'
                 ORDER BY query_start
                 LIMIT 10;`);
+		result.oldestActive = oldestRows || [];
+	} catch (e) {
+		if (logger) logger.error('pg_stat_activity oldest query failed: ' + e.message);
+	}
 
-			// DB-level counters (pg_stat_database) for current DB
-			let dbStats = {};
-			try {
-				const [dbRows] = await sequelize.query(`
+	// DB-level counters (pg_stat_database) for current DB
+	try {
+		const [dbRows] = await sequelize.query(`
                     SELECT datname,
                            xact_commit,
                            xact_rollback,
@@ -173,98 +186,111 @@ function start(sequelize, logger, options = {}) {
                            CASE WHEN (xact_commit + xact_rollback) > 0 THEN round( (xact_rollback::numeric / (xact_commit + xact_rollback)) * 100, 2) ELSE NULL END AS rollback_pct
                     FROM pg_stat_database
                     WHERE datname = current_database();`);
-				if (dbRows && dbRows[0]) {
-					const r = dbRows[0];
-					dbStats = {
-						datname: r.datname,
-						commits: parseInt(r.xact_commit,10),
-						rollbacks: parseInt(r.xact_rollback,10),
-						rollback_pct: r.rollback_pct !== null ? Number(r.rollback_pct) : null,
-						cache_hit_pct: r.cache_hit_pct !== null ? Number(r.cache_hit_pct) : null,
-						blks_hit: parseInt(r.blks_hit,10),
-						blks_read: parseInt(r.blks_read,10),
-						tup_returned: parseInt(r.tup_returned,10),
-						tup_fetched: parseInt(r.tup_fetched,10),
-						tup_inserted: parseInt(r.tup_inserted,10),
-						tup_updated: parseInt(r.tup_updated,10),
-						tup_deleted: parseInt(r.tup_deleted,10),
-						deadlocks: parseInt(r.deadlocks,10),
-						temp_files: parseInt(r.temp_files,10),
-						temp_bytes: parseInt(r.temp_bytes,10),
-						blk_read_time: r.blk_read_time !== null ? Number(r.blk_read_time) : null,
-						blk_write_time: r.blk_write_time !== null ? Number(r.blk_write_time) : null
-					};
-				}
-			} catch (eDb) {
-				logger.error('pg_stat_database query failed: ' + eDb.message);
-			}
+		if (dbRows && dbRows[0]) {
+			const r = dbRows[0];
+			result.dbStats = {
+				datname: r.datname,
+				commits: parseInt(r.xact_commit, 10),
+				rollbacks: parseInt(r.xact_rollback, 10),
+				rollback_pct: r.rollback_pct !== null ? Number(r.rollback_pct) : null,
+				cache_hit_pct: r.cache_hit_pct !== null ? Number(r.cache_hit_pct) : null,
+				blks_hit: parseInt(r.blks_hit, 10),
+				blks_read: parseInt(r.blks_read, 10),
+				tup_returned: parseInt(r.tup_returned, 10),
+				tup_fetched: parseInt(r.tup_fetched, 10),
+				tup_inserted: parseInt(r.tup_inserted, 10),
+				tup_updated: parseInt(r.tup_updated, 10),
+				tup_deleted: parseInt(r.tup_deleted, 10),
+				deadlocks: parseInt(r.deadlocks, 10),
+				temp_files: parseInt(r.temp_files, 10),
+				temp_bytes: parseInt(r.temp_bytes, 10),
+				blk_read_time: r.blk_read_time !== null ? Number(r.blk_read_time) : null,
+				blk_write_time: r.blk_write_time !== null ? Number(r.blk_write_time) : null
+			};
+		}
+	} catch (eDb) {
+		if (logger) logger.error('pg_stat_database query failed: ' + eDb.message);
+	}
 
-			// Locks summary (pg_locks)
-			let locks = { total: 0, waiting: 0, byMode: [], waitingSamples: [] };
-			try {
-				const [lockCounts] = await sequelize.query(`
+	// Locks summary (pg_locks)
+	try {
+		const [lockCounts] = await sequelize.query(`
                     SELECT mode, COUNT(*) AS count
                     FROM pg_locks
                     GROUP BY mode
                     ORDER BY count DESC;`);
-				const [waitingCountRows] = await sequelize.query(`
+		const [waitingCountRows] = await sequelize.query(`
                     SELECT COUNT(*) AS waiting
                     FROM pg_locks
                     WHERE NOT granted;`);
-				const waitingCount = waitingCountRows && waitingCountRows[0] ? parseInt(waitingCountRows[0].waiting,10) : 0;
-				let waitingSamples = [];
-				if (waitingCount > 0) {
-					const [waitingDetails] = await sequelize.query(`
+		const waitingCount = waitingCountRows && waitingCountRows[0] ? parseInt(waitingCountRows[0].waiting, 10) : 0;
+		let waitingSamples = [];
+		if (waitingCount > 0) {
+			const [waitingDetails] = await sequelize.query(`
                         SELECT pid, locktype, mode, relation::regclass AS relation,
                                virtualxid, virtualtransaction, transactionid,
                                granted
                         FROM pg_locks
                         WHERE NOT granted
                         LIMIT 10;`);
-					waitingSamples = waitingDetails || [];
-				}
-				locks = {
-					total: lockCounts ? lockCounts.reduce((a,c)=> a + parseInt(c.count,10), 0) : 0,
-					waiting: waitingCount,
-					byMode: (lockCounts || []).map(r => ({ mode: r.mode, count: parseInt(r.count,10) })),
-					waitingSamples
-				};
-			} catch (eL) {
-				logger.error('pg_locks query failed: ' + eL.message);
-			}
+			waitingSamples = waitingDetails || [];
+		}
+		result.locks = {
+			total: lockCounts ? lockCounts.reduce((a, c) => a + parseInt(c.count, 10), 0) : 0,
+			waiting: waitingCount,
+			byMode: (lockCounts || []).map(r => ({ mode: r.mode, count: parseInt(r.count, 10) })),
+			waitingSamples
+		};
+	} catch (eL) {
+		if (logger) logger.error('pg_locks query failed: ' + eL.message);
+	}
 
+	return result;
+}
+
+/**
+ * Start the periodic PostgreSQL statistics scheduler.
+ *
+ * Creates an interval that periodically captures a `snapshot()` and emits it via
+ * logger.info with message 'pg_stat_activity snapshot'. Multiple concurrent
+ * invocations are ignored (idempotent start).
+ *
+ * @param {import('sequelize').Sequelize} sequelize - Initialized Sequelize instance (must be Postgres dialect)
+ * @param {object} logger - Winston logger instance (child acceptable) used for output
+ * @param {object} [options] - Optional overrides
+ * @param {number} [options.intervalMs] - Override collection interval in ms (default env PG_STATS_INTERVAL_MS or 100000)
+ * @param {number} [options.minAgeMs] - (Currently unused after fixed 1s query; retained for compatibility)
+ * @param {number} [options.topN] - (Currently unused after fixed LIMIT 10; retained for compatibility)
+ * @returns {void}
+ */
+function start(sequelize, logger, options = {}) {
+	if (_timer) return; // already running
+	const intervalMs = parseInt(process.env.PG_STATS_INTERVAL_MS || options.intervalMs || '100000', 10);
+	const minAgeMs = parseInt(process.env.PG_STATS_MIN_AGE_MS || options.minAgeMs || '10000', 10);
+	const topN = parseInt(process.env.PG_STATS_TOP_N || options.topN || '10', 10);
+
+	/**
+	 * Collect one snapshot and emit it via the logger. Never throws.
+	 * @private
+	 * @returns {Promise<void>}
+	 */
+	async function collect() {
+		try {
+			const snap = await snapshot(sequelize, logger);
 			logger.info('pg_stat_activity snapshot', {
 				pg_stat_activity: {
-					counts,
-					oldestActive: oldestRows || [],
-					sequelizePool,
-					dbStats,
-					locks,
+					counts: snap.counts,
+					oldestActive: snap.oldestActive,
+					sequelizePool: snap.sequelizePool,
+					dbStats: snap.dbStats,
+					locks: snap.locks,
 					intervalMs,
-					collectedAt: new Date().toISOString()
+					collectedAt: snap.collectedAt
 				}
 			});
 		} catch (e) {
 			logger.error('pg_stat_activity scheduler error: ' + e.message);
 		}
-	}
-
-	// Normalize returned numeric strings to integers
-	/**
-	 * Convert object with possibly string-based numeric fields to integers where appropriate.
-	 * Non-numeric values are preserved.
-	 *
-	 * @private
-	 * @param {Record<string, any>} row - Raw row object from pg_stat_activity aggregation query
-	 * @returns {Record<string, (number|any)>} Normalized row with numeric strings parsed
-	 */
-	function normalizeCountRow(row) {
-		const out = {};
-		Object.entries(row).forEach(([k,v]) => {
-			const num = parseInt(v, 10);
-			out[k] = isNaN(num) ? v : num;
-		});
-		return out;
 	}
 
 	// Kick off immediately then schedule
@@ -273,14 +299,14 @@ function start(sequelize, logger, options = {}) {
 	logger.debug(`Started pg_stat_activity scheduler (interval ${intervalMs} ms, minAge ${minAgeMs} ms, topN ${topN}).`);
 }
 
+/**
+ * Stop the running statistics scheduler interval if active. Safe to call
+ * multiple times.
+ *
+ * @param {object} [logger] - Logger for optional debug message
+ * @returns {void}
+ */
 function stop(logger) {
-	/**
-	 * Stop the running statistics scheduler interval if active.
-	 * Safe to call multiple times.
-	 *
-	 * @param {object} [logger] - Logger for optional debug message
-	 * @returns {void}
-	 */
 	if (_timer) {
 		clearInterval(_timer);
 		_timer = null;
@@ -288,5 +314,4 @@ function stop(logger) {
 	}
 }
 
-module.exports = { start, stop };
-
+module.exports = { start, stop, snapshot };

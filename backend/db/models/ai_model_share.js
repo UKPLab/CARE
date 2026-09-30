@@ -28,7 +28,7 @@ module.exports = (sequelize, DataTypes) => {
         ];
 
         // Requester may write a foreign userId (the share recipient) when they own the referenced ai_model.
-        // AppSocket#updateData calls MetaModel.validateForeignUserId for this.
+        // MetaModel.add / updateById always call validateForeignUserId for this.
         static foreignOwner = {column: "aiModelId", table: "ai_model"};
 
         static associate(models) {

@@ -390,10 +390,10 @@ export default {
 
 <style scoped>
 .bi-gear {
-  color: #6c757d; /* Bootstrap muted color */
+  color: var(--bs-secondary-color, #6c757d); /* Bootstrap muted color */
   cursor: pointer;
 }
 .bi-gear:hover {
-  color: #0d6efd; /* Bootstrap primary color */
+  color: var(--bs-primary, #0d6efd); /* Bootstrap primary color */
 }
 </style>

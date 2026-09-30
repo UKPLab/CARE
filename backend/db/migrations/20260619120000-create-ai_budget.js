@@ -102,6 +102,36 @@ module.exports = {
                 },
             }, { transaction });
 
+            // Cap load on each request ORs these entity FKs.
+            await queryInterface.addIndex('ai_budget', ['aiModelId'], {
+                name: 'ai_budget_aiModelId_index',
+                transaction,
+            });
+            await queryInterface.addIndex('ai_budget', ['aiModelShareId'], {
+                name: 'ai_budget_aiModelShareId_index',
+                transaction,
+            });
+            await queryInterface.addIndex('ai_budget', ['aiHookId'], {
+                name: 'ai_budget_aiHookId_index',
+                transaction,
+            });
+            await queryInterface.addIndex('ai_budget', ['aiHookShareId'], {
+                name: 'ai_budget_aiHookShareId_index',
+                transaction,
+            });
+            await queryInterface.addIndex('ai_budget', ['studyId'], {
+                name: 'ai_budget_studyId_index',
+                transaction,
+            });
+            await queryInterface.addIndex('ai_budget', ['studyStepId', 'aiHookId'], {
+                name: 'ai_budget_studyStepId_aiHookId_index',
+                transaction,
+            });
+            await queryInterface.addIndex('ai_budget', ['userId'], {
+                name: 'ai_budget_userId_index',
+                transaction,
+            });
+
             // Exactly one valid entity FK pattern must match.
             await queryInterface.sequelize.query(`
                 ALTER TABLE "ai_budget" ADD CONSTRAINT "chk_ai_budget_shape" CHECK (

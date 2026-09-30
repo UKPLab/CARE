@@ -324,8 +324,8 @@ export default {
 
 <style scoped>
 .floating-info-panel {
-  background: white;
-  border: 1px solid #dee2e6;
+  background: var(--bs-body-bg, white);
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   overflow-y: auto;
@@ -333,16 +333,16 @@ export default {
 }
 
 .info-panel-header {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 12px 16px;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px 8px 0 0;
   position: relative;
 }
 
 .info-panel-header h6 {
   margin: 0;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   padding-right: 30px; /* Make room for pin button */
 }
@@ -365,7 +365,7 @@ export default {
 
 .btn-close.pinned {
   opacity: 1;
-  color: #0d6efd;
+  color: var(--bs-primary, #0d6efd);
 }
 
 .info-panel-content {
@@ -373,7 +373,7 @@ export default {
 }
 
 .info-panel-content p {
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
   line-height: 1.4;
 }
 
@@ -383,12 +383,12 @@ export default {
 }
 
 .scoring-item {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   transition: background-color 0.2s;
 }
 
 .scoring-item:hover {
-  background-color: #e9ecef;
+  background-color: var(--bs-secondary-bg, #e9ecef);
 }
 
 .badge {
@@ -405,18 +405,18 @@ export default {
 
 .floating-info-panel::-webkit-scrollbar-track,
 .scoring-list::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: var(--bs-tertiary-bg, #f1f1f1);
   border-radius: 3px;
 }
 
 .floating-info-panel::-webkit-scrollbar-thumb,
 .scoring-list::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: var(--bs-secondary-color, #c1c1c1);
   border-radius: 3px;
 }
 
 .floating-info-panel::-webkit-scrollbar-thumb:hover,
 .scoring-list::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: var(--bs-body-color, #a8a8a8);
 }
 </style>

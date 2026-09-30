@@ -659,7 +659,7 @@ module.exports = (sequelize, DataTypes) => {
                 afterUpdate: async (user, options) => {
                     const {context, transaction} = options;
                     const {userRoles, roleMap} = context || {};
-                    if (userRoles && roleMap) {
+                    if (userRoles) {
                         await assignUserRoles(user, userRoles, roleMap, true, transaction);
                     }
                 },

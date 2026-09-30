@@ -1,26 +1,33 @@
 <template>
-    <Card :title="$t('templates.dashboard.title')">
-      <template #headerElements>
+    <DashboardListPage
+      :title="$t('templates.dashboard.title')"
+      :columns="columns"
+      :data="templates"
+      :buttons="buttons"
+      :table-options="options"
+      @action="action"
+    >
+      <template #headerActions>
         <BasicButton
-          class="btn-outline-secondary btn-sm me-2"
+          class="btn-secondary btn-sm me-2"
           :title="$t('templates.dashboard.browsePublicTemplates')"
           :text="$t('templates.dashboard.publicTemplates')"
           icon="globe"
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
-          class="btn-outline-secondary btn-sm me-2"
+          class="btn-secondary btn-sm me-2"
           :title="$t('modals.importExport.wiring.templates.importTooltip')"
           :text="$t('common.import')"
           icon="upload"
-          @click="$refs.importFormatModal.open('template')"
+          @click="$refs.importFormatModal.open('template', null, { socket: { name: 'templateImport' } })"
         />
         <BasicButton
-          class="btn-outline-secondary btn-sm me-2"
+          class="btn-secondary btn-sm me-2"
           :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
           :text="$t('common.exportAll')"
           icon="download"
-          @click="$refs.exportFormatModal.open(null, 'template')"
+          @click="openExport(null)"
         />
         <BasicButton
           class="btn-primary btn-sm"
@@ -30,29 +37,22 @@
           @click="$refs.templateModal.open(0)"
         />
       </template>
-      <template #body>
-        <BasicTable
-          :columns="columns"
-          :data="templates"
-          :options="options"
-          :buttons="buttons"
-          @action="action"
-        />
-      </template>
-    </Card>
+    </DashboardListPage>
     <TemplateModal ref="templateModal" />
     <PublishModal ref="publishModal" />
     <ConfirmModal ref="deleteConf" />
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
-    <ExportFormatModal ref="exportFormatModal" :title="$t('modals.importExport.wiring.templates.exportTitle')" />
+    <ExportFormatModal
+      ref="exportFormatModal"
+      :title="$t('modals.importExport.wiring.templates.exportTitle')"
+      @formatSelected="onExportFormat"
+    />
     <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.templates.importTitle')" />
   </template>
   
   <script>
-  import Card from "@/basic/dashboard/card/Card.vue";
-  import BasicTable from "@/basic/Table.vue";
   import BasicButton from "@/basic/Button.vue";
   import TemplateModal from "./templates/TemplateModal.vue";
   import PublishModal from "./templates/PublishModal.vue";
@@ -60,9 +60,13 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
-  import { resolveApiMessage } from "@/assets/utils";
   import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
   import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
+  import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+  import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+  import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
+  import { emailTemplateTypes } from "@/assets/templateTypes";
+  import { resolveApiMessage } from "@/assets/utils";
   /**
    * Templates dashboard component
    *
@@ -76,8 +80,7 @@
     name: "DashboardTemplates",
     subscribeTable: ["template"],
     components: {
-      Card,
-      BasicTable,
+      DashboardListPage,
       BasicButton,
       TemplateModal,
       PublishModal,
@@ -90,14 +93,8 @@
     },
     data() {
       return {
-        options: {
-          striped: true,
-          hover: true,
-          bordered: false,
-          borderless: false,
-          small: false,
-          pagination: 10,
-        },
+        options: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
+        exportTemplateId: null,
       };
     },
     computed: {
@@ -122,7 +119,7 @@
               ...t,
               typeName: this.typeName(t.type),
               // Public email templates (types 1, 2, 3, 6, 7) cannot be deleted
-              canDelete: !(t.public && [1, 2, 3, 6, 7].includes(t.type)),
+              canDelete: !(t.public && emailTemplateTypes.includes(t.type)),
               isCopy,
               hasUpdate,
               sourceStatus,
@@ -133,14 +130,7 @@
       buttons() {
         return [
           // Edit metadata - own non-copy templates only
-          {
-            icon: "pencil",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("edit", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
@@ -148,16 +138,9 @@
             filterMode: "and",
             title: this.$t("templates.dashboard.actions.editTemplate"),
             action: "edit",
-          },
-          // Edit content - own non-copy templates only
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          }),
+          // Open template editor - own non-copy templates only
+          dashboardRowAction("open", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "isCopy", value: false },
@@ -165,42 +148,21 @@
             filterMode: "and",
             title: this.$t("templates.dashboard.actions.editContent"),
             action: "editContent",
-          },
-          // Edit content - for copies (detaches first)
-          {
-            icon: "box-arrow-in-right",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          }),
+          // Open template editor - for copies (detaches first)
+          dashboardRowAction("open", {
             filter: [{ key: "isCopy", value: true }],
             title: this.$t("templates.dashboard.actions.editContent"),
             action: "editContentCopy",
-          },
+          }),
           // View content (read-only) - for copies
-          {
-            icon: "eye",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("view", {
             filter: [{ key: "isCopy", value: true }],
             title: this.$t("templates.dashboard.actions.viewContentReadOnly"),
             action: "viewContent",
-          },
+          }),
           // Publish - own non-copy non-public templates only
-          {
-            icon: "cloud-arrow-up",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("publish", {
             filter: [
               { key: "public", value: false },
               { key: "userId", value: this.userId },
@@ -209,14 +171,11 @@
             filterMode: "and",
             title: this.$t("templates.dashboard.actions.publishTemplate"),
             action: "togglePublished",
-          },
+          }),
           // Published badge - own non-copy public templates only
-          {
-            icon: "check-circle",
+          dashboardRowButton("check-circle", {
             options: {
-              iconOnly: true,
               specifiers: {
-                "btn-outline-secondary": true,
                 disabled: true,
               },
             },
@@ -228,41 +187,20 @@
             filterMode: "and",
             title: this.$t("templates.dashboard.actions.publishedCannotBeUnpublished"),
             action: null,
-          },
+          }),
           // Source updated - copies with updates available (opens modal with Update / Make new copy)
-          {
-            icon: "arrow-clockwise",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-primary": true,
-              },
-            },
+          dashboardRowAction("sync", {
             filter: [{ key: "hasUpdate", value: true }],
             title: this.$t("templates.dashboard.actions.sourceUpdated"),
             action: "openUpdateModal",
-          },
+          }),
           // Export
-          {
-            icon: "download",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("download", {
             title: this.$t('templates.dashboard.actions.exportTemplate'),
             action: "export",
-          },
+          }),
           // Delete - own templates that can be deleted (including copies)
-          {
-            icon: "trash",
-            options: {
-              iconOnly: true,
-              specifiers: {
-                "btn-outline-secondary": true,
-              },
-            },
+          dashboardRowAction("delete", {
             filter: [
               { key: "userId", value: this.userId },
               { key: "canDelete", value: true }
@@ -270,7 +208,7 @@
             filterMode: "and",
             title: this.$t("templates.dashboard.actions.deleteTemplate"),
             action: "delete",
-          },
+          }),
         ];
       },
       userId() {
@@ -347,7 +285,7 @@
             this.$refs.updateModal.open(data.params);
             break;
           case "export":
-            this.$refs.exportFormatModal.open(data.params.id, "template");
+            this.openExport(data.params.id);
             break;
         }
       },
@@ -377,6 +315,25 @@
               });
             }
           });
+        });
+      },
+      // template_content is not in the client store, so the file has to come from the server.
+      openExport(id = null) {
+        this.exportTemplateId = id;
+        this.$refs.exportFormatModal.open();
+      },
+      onExportFormat(format) {
+        const templateId = this.exportTemplateId;
+        this.$socket.emit("templateExport", templateId ? { templateId } : {}, (result) => {
+          if (!result?.success) {
+            this.eventBus.emit("toast", {
+              title: this.$t("errors.download.exportFailedTitle"),
+              message: resolveApiMessage(result),
+              variant: "danger",
+            });
+            return;
+          }
+          this.$refs.exportFormatModal.downloadItems(result.data, format, templateId, "template");
         });
       },
       deleteTemplate(template) {

@@ -1,6 +1,7 @@
 "use strict";
 
 const { resolveTemplate } = require("../../templateResolver.js");
+const TranslatableError = require("../../../TranslatableError.js");
 
 /**
  * Resolves recipients for an email trigger action.
@@ -21,7 +22,7 @@ async function resolveEmailRecipients(server, recipient, context, options = {}) 
     }
 
     if (recipient !== "uploader") {
-        throw new Error(`Unsupported email recipient "${recipient}".`);
+        throw new TranslatableError("errors.triggers.email.unsupportedRecipient", {recipient});
     }
 
     const userId = context.userId || context.submitterUserId;
@@ -48,12 +49,12 @@ async function sendEmail(server, trigger, context, options = {}) {
     const templateId = config.templateId;
 
     if (!templateId) {
-        throw new Error("Email trigger action requires templateId.");
+        throw new TranslatableError("errors.triggers.email.templateRequired");
     }
 
     const template = await server.db.models["template"].getById(templateId, options);
     if (!template) {
-        throw new Error(`Email template ${templateId} not found.`);
+        throw new TranslatableError("errors.triggers.email.templateNotFound", {templateId});
     }
 
     const recipients = await resolveEmailRecipients(
@@ -63,7 +64,7 @@ async function sendEmail(server, trigger, context, options = {}) {
         options
     );
     if (!recipients.length) {
-        throw new Error("Email trigger action did not resolve any recipients.");
+        throw new TranslatableError("errors.triggers.email.noRecipients");
     }
 
     const sent = [];

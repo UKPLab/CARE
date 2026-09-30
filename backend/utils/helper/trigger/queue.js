@@ -1,6 +1,7 @@
 "use strict";
 
 const { Op } = require("sequelize");
+const TranslatableError = require("../../TranslatableError");
 const { QUEUE_STATUS } = require("../../triggerQueueStatus.js");
 const { getTriggerWithCatalog } = require("./context.js");
 
@@ -195,22 +196,22 @@ async function isQueueItemCancelled(server, queueItemId) {
 async function retryQueueItem(server, queueItemId, options = {}) {
     const item = await getQueueItem(server, queueItemId, options);
     if (!item) {
-        throw new Error("Queue item not found.");
+        throw new TranslatableError("errors.triggers.queueItemNotFound");
     }
 
     const retryableStatuses = [QUEUE_STATUS.FAILED, QUEUE_STATUS.CANCELLED];
     if (!retryableStatuses.includes(item.status)) {
-        throw new Error("Only failed or cancelled queue items can be retried.");
+        throw new TranslatableError("errors.triggers.retryInvalidStatus");
     }
 
     const trigger = await getTriggerWithCatalog(server, item.triggerId, options);
     if (!trigger) {
-        throw new Error("Associated trigger rule not found.");
+        throw new TranslatableError("errors.triggers.associatedRuleNotFound");
     }
 
     const retriesUsed = Math.max(0, Number(item.attemptCount || 0) - 1);
     if (retriesUsed >= Number(trigger.maxRetries || 0)) {
-        throw new Error("Maximum retries for this trigger have been reached.");
+        throw new TranslatableError("errors.triggers.maxRetriesReached");
     }
 
     const [updatedCount] = await server.db.models[QUEUE_TABLE].update({
@@ -223,7 +224,7 @@ async function retryQueueItem(server, queueItemId, options = {}) {
         transaction: options.transaction,
     });
     if (!updatedCount) {
-        throw new Error("Queue item is already being retried.");
+        throw new TranslatableError("errors.triggers.alreadyRetrying");
     }
 
     return await getQueueItem(server, item.id, options);
@@ -241,15 +242,15 @@ async function retryQueueItem(server, queueItemId, options = {}) {
 async function rerunQueueItem(server, queueItemId, options = {}) {
     const item = await getQueueItem(server, queueItemId, options);
     if (!item) {
-        throw new Error("Queue item not found.");
+        throw new TranslatableError("errors.triggers.queueItemNotFound");
     }
     if (item.status !== QUEUE_STATUS.COMPLETED) {
-        throw new Error("Only completed queue items can be re-run.");
+        throw new TranslatableError("errors.triggers.rerunInvalidStatus");
     }
 
     const trigger = await getTriggerWithCatalog(server, item.triggerId, options);
     if (!trigger) {
-        throw new Error("Associated trigger rule not found.");
+        throw new TranslatableError("errors.triggers.associatedRuleNotFound");
     }
 
     const persistedConfig = item.configuration || {};
@@ -281,12 +282,12 @@ async function rerunQueueItem(server, queueItemId, options = {}) {
 async function cancelQueueItem(server, queueItemId, options = {}) {
     const item = await getQueueItem(server, queueItemId, options);
     if (!item) {
-        throw new Error("Queue item not found.");
+        throw new TranslatableError("errors.triggers.queueItemNotFound");
     }
 
     const cancellableStatuses = [QUEUE_STATUS.PENDING, QUEUE_STATUS.RUNNING];
     if (!cancellableStatuses.includes(item.status)) {
-        throw new Error("Only pending or running queue items can be cancelled.");
+        throw new TranslatableError("errors.triggers.cancelInvalidStatus");
     }
 
     const [updatedCount] = await server.db.models[QUEUE_TABLE].update({
@@ -301,7 +302,7 @@ async function cancelQueueItem(server, queueItemId, options = {}) {
         transaction: options.transaction,
     });
     if (!updatedCount) {
-        throw new Error("Queue item is no longer cancellable.");
+        throw new TranslatableError("errors.triggers.noLongerCancellable");
     }
 
     return await getQueueItem(server, queueItemId, options);

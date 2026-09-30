@@ -75,6 +75,7 @@ Sections in this chapter :
 | :ref:`i18n-backend` — ``TranslatableError``, backend ``translateMaybeKey``, …
 | :ref:`i18n-add-language` — new UI language
 | :ref:`i18n-test` — verify in the UI and logs
+| :ref:`i18n-linter` — automated i18n checks
 
 .. _i18n-add-key:
 
@@ -754,20 +755,16 @@ handled in ``Socket.js`` — see :ref:`logging-i18n`.
 
 **Why a dedicated class**:
 
-Keys alone can travel in a plain ``Error`` message — that works for simple cases. ``TranslatableError`` is for
-when you need a **structured, intentional** user-facing error:
+* **Structured payload** — carries the i18n **key**, optional **params** for placeholders
+  (e.g. ``{ validationLimit: 10 }``), and an optional machine-readable **code``. A plain ``Error``
+  only has ``message``; bolting ``params`` / ``code`` onto arbitrary errors is fragile in catch handlers.
+* **Security boundary** — in ``Socket.js``, only errors with a known i18n key
+  (``TranslatableError``, ``generateError``, or legacy ``Error("errors.*")``) become
+  ``{ key, params, code }`` in the client callback. Anything else (DB failures, bugs, plain English
+  ``Error``) is logged in full and mapped to ``errors.server.unexpectedError`` for the user.
 
-* **Structured payload** — not just a string. Carries the i18n **key**, optional **params** for placeholders
-  (e.g. ``{ validationLimit: 10 }``), and an optional machine-readable **code** for the socket/HTTP response.
-  A standard ``Error`` only has ``message``; attaching ``params`` and ``code`` to arbitrary errors is fragile
-  and easy to get wrong in catch handlers.
-* **Error filtering (security boundary)** — ``isTranslatable`` marks errors the transport layer may expose to
-  the client. In ``Socket.js``, only errors with a known i18n key (``TranslatableError``, ``generateError``,
-  or ``Error("errors.*")``) become ``{ key, params, code }`` in the callback. Raw database or system
-  exceptions fall through to a generic ``errors.server.unexpectedError`` — full detail stays in the logs.
-
-You can also use ``throw new Error("errors.*")`` or ``generateError(code, key)`` for simpler cases. The
-table below lists all patterns.
+**Rule of thumb:** user-facing → ``TranslatableError`` or ``generateError``; internal / unexpected →
+plain ``Error`` (not for UI text). Patterns:
 
 .. list-table::
    :header-rows: 1
@@ -775,16 +772,16 @@ table below lists all patterns.
 
    * - Pattern
      - When to use
-   * - ``throw new Error("errors.namespace.key")``
-     - Simple error, no placeholders
    * - ``throw new TranslatableError("errors.namespace.key")``
-     - Same as above, explicit translatable type
+     - error, key only
    * - ``throw new TranslatableError("errors.namespace.key", { name })``
-     - Error with ``{placeholder}`` values in the message
+     - error with ``{placeholder}`` values
    * - ``throw new TranslatableError("errors.namespace.key", { count: 5 }, "SOME_CODE")``
-     - Key + params + machine-readable ``code``
+     - key + params + machine-readable ``code``
    * - ``throw generateError("SOME_CODE", "errors.namespace.key")``
-     - Machine ``code`` + key, **no** params
+     - machine ``code`` + key, **no** params
+   * - ``throw new Error("...")``
+     - **Internal only** — not for user-facing UI text
 
 **Files:** ``backend/utils/TranslatableError.js``, ``backend/utils/generic.js`` (``generateError``)
 
@@ -997,6 +994,37 @@ The ``fr/index.js`` file comes from the copy in step 1 (same imports as ``en/ind
 3. Trigger a socket or API error and confirm ``resolveApiMessage`` shows the right text
 4. If you added backend logging or socket errors, confirm English output uses ``translateMaybeKey`` where needed
 5. If you added new keys, repeat steps 1–3 in each supported locale (``en``, ``de``, …)
+
+
+.. _i18n-linter:
+
+7. Linter information
+---------------------
+
+What is checked
+~~~~~~~~~~~~~~~
+
+**Frontend (ESLint +** ``frontend/scripts/check-i18n-keys.mjs`` **)**
+
+* **Vue templates** — ``@intlify/vue-i18n/no-raw-text`` flags hardcoded English in template text.
+* **Missing keys**
+* **Hardcoded English in script** — string props such as ``title``, ``message``, ``label``, ``text``
+  in ``<script>`` / ``.js`` that look like user-facing English.
+* **Unused catalog keys** — keys present in JSON that are referenced on **neither** frontend nor
+  backend.
+
+**Backend (** ``backend/scripts/check-i18n-keys.mjs`` **)**
+
+* **User-facing errors** — ``TranslatableError`` and ``generateError(code, key)``: the key must exist
+  in the catalog; leftover English in those helpers is flagged.
+* **Model / migration UI strings** — props such as ``label``, ``placeholder``, ``title``, ``message``,
+  ``text`` (and option ``name`` where applicable): if the value looks like an i18n key, it must exist
+  in EN; models also flag leftover English on those props.
+
+.. note::
+
+   To ignore certain lines, add ``// i18n-lint-ignore`` on that line.
+
 
 See also
 --------

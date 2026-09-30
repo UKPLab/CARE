@@ -19,7 +19,7 @@
       >
         <FormRadio
             :model-value="submissionFileSelections[input]?.[0] || null"
-            :options="{ key: `submission_file_${input}`, label: 'Select files to include:', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
+            :options="{ key: `submission_file_${input}`, label: 'nlp.inputMap.selectFilesToInclude', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
             @update:model-value="toggleSubmissionFile(input, $event)"
         />
       </div>
@@ -53,7 +53,7 @@
 import FormSelect from "@/basic/form/Select.vue";
 import FormRadio from "@/basic/form/Radio.vue";
 import deepEqual from "deep-equal";
-import { tokenInnerText } from "@/components/editor/template/placeholderTokens.js";
+import { tokenInnerText } from "placeholder-tokens";
 
 export default {
   name: "InputMap",
@@ -676,6 +676,6 @@ export default {
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 </style>

@@ -7,6 +7,7 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
@@ -59,6 +60,26 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Socket writes must come from the model owner. Share recipients stay read-only.
+         * Trusted backend paths omit context.currentUserId and skip this check.
+         *
+         * @param {import('sequelize').Model} aiModel Mutated instance triggering the hook.
+         * @param {{ context?: { currentUserId?: number } }} [options={}]
+         */
+        static validateOwner(aiModel, options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            const ownerUserId = Number(
+                aiModel._previousDataValues?.userId ?? aiModel.userId
+            );
+            if (ownerUserId !== currentUserId) {
+                throw new TranslatableError("errors.ai.model.updateNotAllowed");
+            }
+        }
+
+        /**
          * Ensures linked credentials exist, belong to this model owner, and allow enablement semantics.
          *
          * @param {import('sequelize').Model} aiModel Mutated instance triggering the hook.
@@ -74,15 +95,15 @@ module.exports = (sequelize, DataTypes) => {
             });
 
             if (!credential || credential.deleted) {
-                throw new Error("Selected AI credential does not exist");
+                throw new TranslatableError("errors.ai.credential.selectedNotFound");
             }
 
             if (credential.userId !== aiModel.userId) {
-                throw new Error("Selected AI credential does not belong to this user");
+                throw new TranslatableError("errors.ai.credential.selectedNotOwned");
             }
 
             if (!credential.enabled && aiModel.enabled) {
-                throw new Error("Cannot enable this model while its credential is disabled");
+                throw new TranslatableError("errors.ai.model.credentialDisabled");
             }
         }
     }
@@ -106,9 +127,11 @@ module.exports = (sequelize, DataTypes) => {
         tableName: 'ai_model',
         hooks: {
             beforeCreate: async (aiModel, options) => {
+                AiModel.validateOwner(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
             beforeUpdate: async (aiModel, options) => {
+                AiModel.validateOwner(aiModel, options);
                 await AiModel.validateCredentialOwnership(aiModel, options);
             },
         },

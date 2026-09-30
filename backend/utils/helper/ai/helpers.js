@@ -8,21 +8,6 @@
  */
 
 /**
- * Validates the RPC client's numeric `userId`.
- *
- * @param {{ userId?: number }} client Incoming RPC invocation context.
- * @returns {number} Positive finite user id.
- * @throws {Error} If the client has no valid user id.
- */
-function requireClientUserId(client) {
-    const id = Number(client?.userId);
-    if (!Number.isInteger(id) || id <= 0) {
-        throw new Error("Invalid user context");
-    }
-    return id;
-}
-
-/**
  * Flattens OpenAI-compatible messages into text while retaining role labels.
  *
  * @param {unknown} messages Serialized chat history.
@@ -69,19 +54,6 @@ function extractInputText(messages) {
 }
 
 /**
- * Deduplicates positive integer values after optional coercion.
- *
- * @param {Iterable<unknown>} values Source iterable.
- * @param {(value: unknown) => number} [pick] Mapper applied before filtering.
- * @returns {number[]}
- */
-function uniquePositiveInts(values, pick = (value) => Number(value)) {
-    return [...new Set((values || []).map(pick).filter((number) => (
-        Number.isInteger(number) && number > 0
-    )))];
-}
-
-/**
  * Builds parameters for a LiteLLM completion call.
  *
  * @param {Object} credential Credential row supplying provider authentication.
@@ -109,8 +81,6 @@ function buildLiteLLMParams(credential, modelName) {
 }
 
 module.exports = {
-    requireClientUserId,
     extractInputText,
-    uniquePositiveInts,
     buildLiteLLMParams,
 };

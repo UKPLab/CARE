@@ -157,7 +157,7 @@ export default {
       return this.currentUserMaxRevisionDepth >= this.maxRevisions + 1;
     },
     assignmentTitle() {
-      return this.assignment?.title || this.$t("assignments.dashboard.submissionsModal.fallbackAssignmentTitle", { id: this.assignmentId });
+      return this.assignment?.name || this.$t("assignments.dashboard.submissionsModal.fallbackAssignmentTitle", { id: this.assignmentId });
     },
     submissions() {
       return this.$store.getters["table/submission/getFiltered"](

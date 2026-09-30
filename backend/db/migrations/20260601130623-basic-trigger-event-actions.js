@@ -5,13 +5,13 @@ const triggerEvents = [
     name: 'submission.uploaded',
     enabled: true,
     configuration: {
-      label: 'Assignment',
-      description: 'Fires when a student uploads a submission for a selected assignment.',
+      label: 'triggers.metadata.events.assignment.label',
+      description: 'triggers.metadata.events.assignment.description',
       provides: ['userId', 'submissionId', 'projectId', 'assignmentId'],
       formSchema: [
         {
           key: 'assignmentId',
-          label: 'Assignment',
+          label: 'triggers.metadata.events.assignment.fields.assignment',
           type: 'select',
           required: true,
           optionsSource: {
@@ -32,24 +32,24 @@ const triggerActions = [
     name: 'Email notification',
     enabled: true,
     configuration: {
-      label: 'Send an email',
-      description: 'Sends an email to a recipient derived from the event context.',
+      label: 'triggers.metadata.actions.email.label',
+      description: 'triggers.metadata.actions.email.description',
       requires: ['userId'],
       handler: 'send_email',
       formSchema: [
         {
           key: 'recipient',
-          label: 'Send to',
+          label: 'triggers.metadata.actions.email.fields.recipient',
           type: 'select',
           required: true,
           options: [
-            { name: 'The uploader', value: 'uploader' },
-            { name: 'All admins', value: 'admins' },
+            { name: 'triggers.metadata.actions.email.options.uploader', value: 'uploader' },
+            { name: 'triggers.metadata.actions.email.options.admins', value: 'admins' },
           ],
         },
         {
           key: 'templateId',
-          label: 'Email template',
+          label: 'triggers.metadata.actions.email.fields.template',
           type: 'select',
           required: true,
           optionsSource: {
@@ -66,9 +66,8 @@ const triggerActions = [
     name: 'AI Preprocessing',
     enabled: true,
     configuration: {
-      label: 'AI Preprocessing',
-      description:
-        'Runs an NLP skill on the uploaded submission with the same skill, input mapping, and base file options as Dashboard → Submissions → Apply Skills. Results are stored in document_data.',
+      label: 'triggers.metadata.actions.aiPreprocessing.label',
+      description: 'triggers.metadata.actions.aiPreprocessing.description',
       requires: ['submissionId'],
       handler: 'nlp_preprocess',
       componentSchema: [

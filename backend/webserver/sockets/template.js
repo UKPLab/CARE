@@ -8,6 +8,7 @@ const {
   resolveTemplateToDelta,
   getMissingRequiredPlaceholders,
   getDuplicatePlaceholderIds,
+  getDuplicatePlaceholderOptionTokens,
   getUsedPlaceholders,
   formatMissingPlaceholderError,
 } = require("../../utils/helper/templateResolver");
@@ -37,20 +38,20 @@ class TemplateSocket extends Socket {
     let studyStep = null;
 
     if (context.documentId && !(await this.checkDocumentAccess(context.documentId))) {
-      throw new Error("Access denied");
+      throw new TranslatableError("errors.templates.accessDenied");
     }
 
     if (context.studyStepId) {
       studyStep = await this.models["study_step"].getById(context.studyStepId, options);
       if (!studyStep) {
-        throw new Error("Study step not found");
+        throw new TranslatableError("errors.templates.resolveContextStudyStepNotFound");
       }
       if (studyStep.documentId) {
         if (!(await this.checkDocumentAccess(studyStep.documentId))) {
-          throw new Error("Access denied");
+          throw new TranslatableError("errors.templates.accessDenied");
         }
         if (context.documentId && studyStep.documentId !== context.documentId) {
-          throw new Error("Study step does not match document");
+          throw new TranslatableError("errors.templates.resolveContextStepDocumentMismatch");
         }
       } else if (!context.studySessionId) {
         // add() can leave documentId null for editor/modal steps; there is no document ACL then,
@@ -61,7 +62,7 @@ class TemplateSocket extends Socket {
           hasStepAccess = !!study && (await this.checkUserAccess(study.userId));
         }
         if (!hasStepAccess) {
-          throw new Error("Access denied");
+          throw new TranslatableError("errors.templates.accessDenied");
         }
       }
     }
@@ -69,7 +70,7 @@ class TemplateSocket extends Socket {
     if (context.studySessionId) {
       const studySession = await this.models["study_session"].getById(context.studySessionId, options);
       if (!studySession) {
-        throw new Error("Study session not found");
+        throw new TranslatableError("errors.templates.resolveContextStudySessionNotFound");
       }
 
       let hasSessionAccess =
@@ -82,11 +83,11 @@ class TemplateSocket extends Socket {
       }
 
       if (!hasSessionAccess) {
-        throw new Error("Access denied");
+        throw new TranslatableError("errors.templates.accessDenied");
       }
 
       if (studyStep?.studyId && studySession.studyId !== studyStep.studyId) {
-        throw new Error("Study session does not match study step");
+        throw new TranslatableError("errors.templates.resolveContextSessionStepMismatch");
       }
     }
   }
@@ -107,35 +108,24 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Object>}            
    */
   async createTemplate(data, options) {
-    if (!data.name || !data.description || data.type === undefined || data.content === undefined) {
-        throw new TranslatableError("errors.templates.missingCreateFields");
+    if (data?.content === undefined) {
+      throw new TranslatableError("errors.templates.missingCreateFields");
     }
-    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(data.type)) {
-      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
-    }
-
     const defaultLanguage = data.defaultLanguage || "en";
-    const templatePayload = {
+    return this.models["template"].createWithContents({
       name: data.name,
       description: data.description,
       type: data.type,
       defaultLanguage,
       public: data.public ?? false,
       userId: this.userId,
-    };
-
-    const template = await this.models["template"].add(templatePayload, { transaction: options.transaction });
-
-    await this.models["template_content"].add(
-      {
-        templateId: template.id,
-        language: defaultLanguage,
-        content: data.content,
-      },
-      { transaction: options.transaction }
-    );
-
-    return template;
+    }, [{
+      language: defaultLanguage,
+      content: data.content,
+    }], {
+      transaction: options.transaction,
+      isAdmin: await this.isAdmin(),
+    });
   }
 
   /**
@@ -144,6 +134,7 @@ class TemplateSocket extends Socket {
    * Fetches the template and returns its content as Quill Delta format for the given language.
    * - For owners: returns stable content from template_content composed with draft edits (like documents)
    * - For non-owners: returns only stable content (no drafts)
+   * - Non-admins are rejected for email templates (including owners)
    *
    * @socketEvent templateGetContent
    * @param {Object} data                  The data object
@@ -151,7 +142,10 @@ class TemplateSocket extends Socket {
    * @param {string} data.language         Language code (required, e.g. 'en', 'de')
    * @param {Object} options
    * @param {Object} options.transaction
-   * @returns {Promise<Object>}            
+   * @returns {Promise<Object>}
+   * @throws {Error} if templateId or language is missing, or the template does not exist
+   * @throws {Error} if the caller is not the owner and the template is not public
+   * @throws {Error} if the caller is not an admin and the template is an email type
    */
   async getContent(data, options){
     if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
@@ -164,9 +158,14 @@ class TemplateSocket extends Socket {
     
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
+    const isAdmin = await this.isAdmin();
+    const isEmailType = this.models["template"].emailTemplateTypes.includes(template.type);
     
     if (!isOwner && !isPublicFromOthers) {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
+    }
+    if (!isAdmin && isEmailType) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateView");
     }
 
     const langRow = await this.models["template_content"].getByTemplateIdAndLanguage(
@@ -196,7 +195,7 @@ class TemplateSocket extends Socket {
         // when they omit required placeholders. Discard such invalid drafts and fall back
         // to stable content; valid drafts are still resumed.
         let composedIsInvalid = false;
-        if ([1, 2, 3, 6, 7].includes(template.type)) {
+        if (isEmailType) {
           const missing = await getMissingRequiredPlaceholders(
             { ops: composed.ops },
             template.type,
@@ -260,6 +259,10 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.copiedCannotBeEdited");
     }
 
+    if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateEdit");
+    }
+
     const bulkEdits = data.ops.map((op, idx) => ({
       userId: this.userId,
       templateId: data.templateId,
@@ -282,7 +285,7 @@ class TemplateSocket extends Socket {
    *
    * @socketEvent templatePlaceholderAdd
    * @param {Object} data                   The data object
-   * @param {number} data.templateType      Template type (required, 1-8)
+   * @param {number} data.templateType      Template type (required, must be in allTemplateTypes)
    * @param {string} data.placeholderKey    Placeholder key (required, e.g., "username")
    * @param {string} data.placeholderLabel  i18n key for label (required, e.g. "templates.placeholders.labels.emailGeneral.username")
    * @param {string} data.placeholderType   Placeholder type (required, e.g., "text")
@@ -293,7 +296,7 @@ class TemplateSocket extends Socket {
    */
   async addPlaceholder(data, options) {
     if (!(await this.isAdmin())) throw new TranslatableError("errors.templates.accessDenied");
-    if (!data.templateType || ![1, 2, 3, 4, 5, 6, 7, 8].includes(data.templateType)) {
+    if (!data.templateType || !this.models["template"].allTemplateTypes.includes(data.templateType)) {
       throw new TranslatableError("errors.templates.typeRequired");
     }
     if (!data.placeholderKey || !data.placeholderLabel || !data.placeholderType) {
@@ -373,6 +376,9 @@ class TemplateSocket extends Socket {
     if (!isOwner && !isPublicFromOthers) {
       throw new TranslatableError("errors.templates.viewPlaceholdersOwnOrPublicOnly");
     }
+    if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateView");
+    }
 
     return await this.models["placeholder"].getAllByKey(
       "type",
@@ -395,17 +401,17 @@ class TemplateSocket extends Socket {
    * @returns {Promise<Array>}
    */
   async getUsedPlaceholders(data, options) {
-    if (!data.templateId) throw new Error("Template ID is required");
+    if (!data.templateId) throw new TranslatableError("errors.templates.templateIdRequired");
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) {
-      throw new Error("Template not found");
+      throw new TranslatableError("errors.templates.notFound");
     }
 
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
     if (!isOwner && !isPublicFromOthers) {
-      throw new Error("Access denied: You can only view placeholders for templates that you own or public templates from others");
+      throw new TranslatableError("errors.templates.viewPlaceholdersOwnOrPublicOnly");
     }
 
     return await getUsedPlaceholders(data.templateId, this.models, { transaction: options.transaction });
@@ -433,6 +439,9 @@ class TemplateSocket extends Socket {
     const isPublicFromOthers = template.public === true && !isOwner;
     if (!isOwner && !isPublicFromOthers) {
       throw new TranslatableError("errors.templates.viewOwnOrPublicOnly");
+    }
+    if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateView");
     }
 
     const languages = await this.models["template_content"].getLanguages(data.templateId, options);
@@ -466,6 +475,9 @@ class TemplateSocket extends Socket {
     }
     if (template.userId !== this.userId) {
       throw new TranslatableError("errors.templates.addLanguageOwnOnly");
+    }
+    if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateEdit");
     }
 
     const templateContentModel = this.models["template_content"];
@@ -530,7 +542,7 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.notFound");
     }
     const isAdmin = await this.isAdmin();
-    const isEmailTemplate = [1, 2, 3, 6].includes(template.type);
+    const isEmailTemplate = this.models["template"].emailTemplateTypes.includes(template.type);
     const isOwner = template.userId === this.userId;
     const isPublicFromOthers = template.public === true && !isOwner;
 
@@ -570,7 +582,7 @@ class TemplateSocket extends Socket {
   }
 
   /**
-   * Reject save when merged content contains duplicate placeholder ids.
+   * Reject save when merged content contains duplicate placeholder ids or duplicate option names.
    *
    * @param {Object} content - Delta content with ops
    * @param {number} templateType - Template type
@@ -586,10 +598,15 @@ class TemplateSocket extends Socket {
       options
     );
     if (duplicates.length > 0) {
-      throw new Error(
-        `This template has duplicate bracket placeholder ids: ${duplicates.join(", ")}. ` +
-        `Each ~key[N]~ must appear at most once. Legacy ~key~ tokens without [N] are unchanged and may repeat.`
-      );
+      throw new TranslatableError("errors.templates.duplicateBracketPlaceholders", {
+        ids: duplicates.join(", "),
+      });
+    }
+    const optionDuplicates = getDuplicatePlaceholderOptionTokens(content);
+    if (optionDuplicates.length > 0) {
+      throw new TranslatableError("errors.templates.duplicatePlaceholderOptions", {
+        tokens: optionDuplicates.join(", "),
+      });
     }
   }
 
@@ -627,7 +644,7 @@ class TemplateSocket extends Socket {
     }
 
     if (edits.length === 0) {
-      if ([1, 2, 3, 6, 7].includes(template.type)) {
+      if (this.models["template"].emailTemplateTypes.includes(template.type)) {
         const missing = await getMissingRequiredPlaceholders(
           { ops: baseContent.ops },
           template.type,
@@ -650,8 +667,8 @@ class TemplateSocket extends Socket {
     const editsDelta = new Delta(dbToDelta(edits));
     const mergedDelta = baseContent.compose(editsDelta);
 
-    // Email templates (types 1, 2, 3, 6, 7) must include all required placeholders
-    if ([1, 2, 3, 6, 7].includes(template.type)) {
+    // Email templates must include all required placeholders
+    if (this.models["template"].emailTemplateTypes.includes(template.type)) {
       const missing = await getMissingRequiredPlaceholders(
         { ops: mergedDelta.ops },
         template.type,
@@ -707,6 +724,10 @@ class TemplateSocket extends Socket {
 
     const template = await this.models["template"].getById(data.templateId);
     if (!template) return;
+
+    if (this.models["template"].emailTemplateTypes.includes(template.type) && !(await this.isAdmin())) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateEdit");
+    }
 
     if (template.userId === this.userId) {
       await this.saveTemplate(data.templateId, data.language, options);
@@ -783,7 +804,7 @@ class TemplateSocket extends Socket {
     if (!data.sourceTemplateId) throw new TranslatableError("errors.templates.sourceTemplateIdRequired");
 
     const source = await this.models["template"].getById(data.sourceTemplateId);
-    if (!(await this.isAdmin()) && [1, 2, 3, 6, 7].includes(source?.type)) {
+    if (!(await this.isAdmin()) && this.models["template"].emailTemplateTypes.includes(source?.type)) {
       throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCopy");
     }
 
@@ -823,6 +844,9 @@ class TemplateSocket extends Socket {
     const copy = await this.models["template"].getById(data.templateId);
     if (!copy) throw new TranslatableError("errors.templates.notFound");
     if (copy.userId !== this.userId) throw new TranslatableError("errors.templates.updateOwnCopiesOnly");
+    if (this.models["template"].emailTemplateTypes.includes(copy.type) && !(await this.isAdmin())) {
+      throw new TranslatableError("errors.templates.adminOnlyEmailTemplateUpdateFromSource");
+    }
 
     return await this.models["template"].updateFromSource(
       data.templateId,
@@ -852,11 +876,11 @@ class TemplateSocket extends Socket {
       throw new TranslatableError("errors.templates.deleteOwnOnly");
     }
 
-    if (template.public && [1, 2, 3, 6, 7].includes(template.type)) {
+    if (template.public && this.models["template"].emailTemplateTypes.includes(template.type)) {
       throw new TranslatableError("errors.templates.publicEmailCannotDelete");
     }
 
-    if ([1, 2, 3, 6, 7].includes(template.type)) {
+    if (this.models["template"].emailTemplateTypes.includes(template.type)) {
       const usedBySettings = await this.models["setting"].findAll({
         where: {
           key: {[Op.like]: "email.template.%"},
@@ -872,6 +896,115 @@ class TemplateSocket extends Socket {
     }
 
     return await this.models["template"].deleteById(data.templateId, {transaction: options.transaction});
+  }
+
+  /**
+   * Saved body text for templates the caller owns.
+   * Export all is the dashboard table: own rows, including copies. Another user's
+   * public template is not included. template_content is not in the client store.
+   * sourceId is omitted because it only points at a row in this database.
+   * Drafts in template_edit are not included.
+   *
+   * @socketEvent templateExport
+   * @param {Object} data
+   * @param {number} [data.templateId]
+   * @param {Object} options
+   * @returns {Promise<Object>}
+   * @throws {TranslatableError}
+   */
+  async exportTemplates(data, options) {
+    const Template = this.models["template"];
+    const isAdmin = await this.isAdmin();
+    const templates = await Template.findOwnedWithContent(
+      this.userId,
+      isAdmin,
+      data?.templateId,
+      options
+    );
+
+    if (data?.templateId && templates.length === 0) {
+      throw new TranslatableError("errors.templates.notFound");
+    }
+
+    return templates.map((template) => {
+      const row = template.get({ plain: true });
+      return {
+        name: row.name,
+        description: row.description,
+        type: row.type,
+        defaultLanguage: row.defaultLanguage,
+        public: row.public,
+        template_content: (row.template_contents || []).map((contentRow) => ({
+          language: contentRow.language,
+          content: contentRow.content,
+        })),
+      };
+    });
+  }
+
+  /**
+   * Create a template from an export file, including each saved language body.
+   * Uses this.userId. A userId or sourceId in the file is ignored so the row
+   * is not a locked copy of a template that only exists in the source database.
+   * public is always false. Publishing stays on the existing publish action.
+   *
+   * @socketEvent templateImport
+   * @param {Object} data
+   * @param {Array<Object>} [data.template_content]
+   * @param {Object} options
+   * @param {Object} options.transaction
+   * @returns {Promise<Object>}
+   * @throws {TranslatableError}
+   */
+  async importTemplate(data, options) {
+    const isAdmin = await this.isAdmin();
+    const type = this.models["template"].assertCreateAllowed({
+      name: data?.name,
+      description: data?.description,
+      type: data?.type,
+    }, isAdmin);
+
+    const contents = data?.template_content ?? [];
+    if (!Array.isArray(contents)) {
+      throw new TranslatableError("errors.templates.deltaOperationsRequired");
+    }
+
+    const seen = new Set();
+    const rows = [];
+    for (const row of contents) {
+      if (!row || typeof row.language !== "string" || row.language === "") {
+        throw new TranslatableError("errors.templates.languageRequired");
+      }
+      if (!row.content || !Array.isArray(row.content.ops)) {
+        throw new TranslatableError("errors.templates.deltaOperationsRequired");
+      }
+      if (seen.has(row.language)) {
+        throw new TranslatableError("errors.templates.duplicateImportLanguage", { language: row.language });
+      }
+      seen.add(row.language);
+      rows.push(row);
+    }
+
+    const defaultLanguage = data?.defaultLanguage || rows[0]?.language || "en";
+    if (rows.length > 0 && !seen.has(defaultLanguage)) {
+      throw new TranslatableError("errors.templates.importDefaultLanguageMissing", { language: defaultLanguage });
+    }
+
+    for (const row of rows) {
+      await this.assertNoDuplicatePlaceholders(row.content, type, options);
+    }
+
+    return this.models["template"].createWithContents({
+      name: data?.name,
+      description: data?.description,
+      type: data?.type,
+      defaultLanguage,
+      public: false,
+      userId: this.userId,
+    }, rows, {
+      transaction: options.transaction,
+      isAdmin,
+    });
   }
 
   init() {
@@ -891,6 +1024,8 @@ class TemplateSocket extends Socket {
     this.createSocket("templateDetach", this.detachTemplate, {}, true);
     this.createSocket("templateUpdateFromSource", this.updateFromSource, {}, true);
     this.createSocket("templateDelete", this.deleteTemplate, {}, true);
+    this.createSocket("templateExport", this.exportTemplates, {}, false);
+    this.createSocket("templateImport", this.importTemplate, {}, true);
   }
 }
 

@@ -5,7 +5,7 @@
         <div class="btn-group gap-2">
 
           <BasicButton
-              class="btn-outline-secondary btn-sm"
+              class="btn-secondary btn-sm"
               :text="$t('settings.changeUserSettings')"
               :title="$t('settings.changeUserSettings')"
               icon="sliders"
@@ -14,7 +14,7 @@
           />
 
           <BasicButton
-              class="btn-outline-secondary btn-sm"
+              class="btn-secondary btn-sm"
               :text="$t('settings.exportJson')"
               :title="$t('settings.exportJson')"
               icon="download"
@@ -23,7 +23,7 @@
           />
 
           <BasicButton
-              class="btn-outline-secondary btn-sm"
+              class="btn-secondary btn-sm"
               :text="$t('settings.importJson')"
               :title="$t('settings.importJson')"
               icon="upload"
@@ -32,7 +32,7 @@
           />
 
           <BasicButton
-              class="btn-outline-secondary btn-sm"
+              class="btn-secondary btn-sm"
               :text="$t('common.reload')"
               :title="$t('common.reload')"
               icon="arrow-clockwise"
@@ -361,15 +361,12 @@ export default {
     save() {
       this.$socket.emit("settingSave", this.settings, (res) => {
         if (res.success) {
-          this.settings.forEach((s) => {
-            this.$store.commit("settings/set", { key: s.key, value: s.value });
-          });
           this.eventBus.emit("toast", {
             title: this.$t('common.success'),
             message: resolveApiMessage({ message: res.data }, 'settings.messages.settingsSavedSuccessfully'),
             variant: "success",
           });
-          this.setSettingsSnapshot();
+          this.load(false);
         } else {
           this.eventBus.emit("toast", {
             title: this.$t('errors.settings.errorSaving'),

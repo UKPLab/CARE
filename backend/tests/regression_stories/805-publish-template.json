@@ -1,0 +1,262 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-14T14:37:23.481Z",
+  "traceCount": 14,
+  "recording": {
+    "name": "805-publish-template",
+    "status": "finished",
+    "startTime": "2026-08-14T14:21:09.319Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "gTR9jRDNQyFEgRcqAABd"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-14T14:21:19.525Z"
+  },
+  "traces": [
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "name": "Recording 8/14/2026, 4:21:09 PM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-14T14:21:09.320Z",
+          "startTime": "2026-08-14T14:21:09.319Z",
+          "updatedAt": "2026-08-14T14:21:09.320Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "gTR9jRDNQyFEgRcqAABd"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:21:09.332Z",
+      "endTime": "2026-08-14T14:21:09.332Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:10.506Z",
+      "endTime": "2026-08-14T14:21:10.506Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1245,
+          "clientY": 192,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:13.265Z",
+      "endTime": "2026-08-14T14:21:13.265Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "templateId": 1
+        },
+        "action": "openModalPublishTemplate"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:13.748Z",
+      "endTime": "2026-08-14T14:21:13.748Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "action": "togglePublished",
+          "params": {}
+        },
+        "action": "actionClick"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:13.750Z",
+      "endTime": "2026-08-14T14:21:13.750Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "templatePublish",
+          "props": {
+            "templateId": 1
+          }
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:14.201Z",
+      "endTime": "2026-08-14T14:21:14.201Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "appDataUpdate",
+      "payload": {
+        "data": {
+          "id": 1,
+          "public": true
+        },
+        "table": "template"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:15.158Z",
+      "endTime": "2026-08-14T14:21:15.158Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Yes, publish it!"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:15.159Z",
+      "endTime": "2026-08-14T14:21:15.159Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "templateRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "name": "newtemp",
+          "type": 4,
+          "public": true,
+          "userId": 4,
+          "deleted": false,
+          "sourceId": null,
+          "createdAt": "2026-08-14T14:20:32.906Z",
+          "updatedAt": "2026-08-14T14:21:15.164Z",
+          "description": "hi",
+          "defaultLanguage": "en"
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-14T14:21:15.180Z",
+      "endTime": "2026-08-14T14:21:15.180Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 888,
+          "clientY": 191,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:15.497Z",
+      "endTime": "2026-08-14T14:21:15.497Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "templatePublish",
+          "props": {
+            "templateId": 1
+          }
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:16.974Z",
+      "endTime": "2026-08-14T14:21:16.974Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Close"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:16.976Z",
+      "endTime": "2026-08-14T14:21:16.976Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "templateId": 1
+        },
+        "action": "cancelModalPublishTemplate"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:16.976Z",
+      "endTime": "2026-08-14T14:21:16.976Z"
+    },
+    {
+      "recordingId": 5,
+      "userId": 4,
+      "socketId": "gTR9jRDNQyFEgRcqAABd",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-14T14:21:18.703Z",
+      "endTime": "2026-08-14T14:21:18.703Z"
+    }
+  ]
+}
