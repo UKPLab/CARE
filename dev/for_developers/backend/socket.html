@@ -1088,6 +1088,31 @@ the session limit is updated accordingly. Each reviewer is added as a new <cite>
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="AssignmentSocket.addReviewerRequest">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">addReviewerRequest</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.addReviewerRequest" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>assignmentAdd</cite></p>
+<p>Socket entry point for adding reviewers to an existing study.
+Verifies the caller may manage the target study before delegating to addReviewer,
+which is also called internally by createAssignment for a study it just created.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The data for adding reviewers</p></li>
+<li><p><strong>data.studyId</strong> (<strong>number</strong>) – The ID of the study to which reviewers are to be added</p></li>
+<li><p><strong>data.reviewer</strong> (<strong>Array.&lt;Object&gt;</strong>) – Reviewers to add</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – holds the managed transaction of the database</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TranslatableError</strong> – If the study does not exist or the caller may not manage it</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;void&gt;</strong> – Resolves once reviewers have been added</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="AssignmentSocket.createAssignment">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">createAssignment</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.createAssignment" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>assignmentCreate</cite></p>
