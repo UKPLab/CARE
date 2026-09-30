@@ -7,6 +7,8 @@
  * @author Akash Gundapuneni, Mohammed Rawhani
  */
 
+const TranslatableError = require("../../TranslatableError");
+
 /**
  * Validates the RPC client's numeric `userId`.
  *
@@ -16,7 +18,7 @@
  */
 function requireClientUserId(client) {
     if (!client || !client.userId) {
-        throw new Error("Invalid user context");
+        throw new TranslatableError("errors.ai.assistant.userRequired");
     }
     return client.userId;
 }
@@ -30,7 +32,7 @@ function requireClientUserId(client) {
  */
 function requireId(value, name) {
     if (!value) {
-        throw new Error(`Missing or invalid ${name}`);
+        throw new TranslatableError("errors.ai.assistant.invalidId", {name});
     }
     return value;
 }
@@ -44,7 +46,7 @@ function requireId(value, name) {
 function requireRequestId(value) {
     const requestId = typeof value === "string" ? value.trim() : "";
     if (!requestId) {
-        throw new Error("Missing requestId");
+        throw new TranslatableError("errors.ai.assistant.requestIdRequired");
     }
     return requestId;
 }

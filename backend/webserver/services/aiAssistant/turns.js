@@ -6,6 +6,8 @@
  * @author Mohammed Rawhani
  */
 
+const TranslatableError = require("../../../utils/TranslatableError");
+
 const {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} = require("../../../db/models/ai_message");
 const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
 const core = require("./core.js");
@@ -24,7 +26,7 @@ async function requireNoPendingMessage(service, userId, studySessionId, options 
         userId, studySessionId, options,
     );
     if (pending) {
-        throw new Error("You already have a pending AI request in this session");
+        throw new TranslatableError("errors.ai.requestAlreadyPending");
     }
 }
 
@@ -119,19 +121,19 @@ async function loadRetryableAssistantMessage(service, client, data, descriptor) 
         ![AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED]
             .includes(Number(assistantMessage.status))
     ) {
-        throw new Error("AI response cannot be retried");
+        throw new TranslatableError("errors.ai.assistant.retryNotAllowed");
     }
     const userId = serviceHelpers.requireClientUserId(client);
     const conversation = await service.server.db.models["ai_conversation"].getById(
         assistantMessage.conversationId,
     );
     if (!conversation) {
-        throw new Error(descriptor.notFoundMessage);
+        throw new TranslatableError(descriptor.notFoundKey);
     }
     await core.loadOwnedConversation(service, conversation.id, userId, conversation.studySessionId, descriptor);
     const latestAssistant = await service.server.db.models["ai_message"].getLatestAssistantMessage(conversation.id);
     if (Number(latestAssistant?.id) !== assistantMessageId) {
-        throw new Error("Only the latest AI response can be retried");
+        throw new TranslatableError("errors.ai.assistant.retryLatestOnly");
     }
     return {assistantMessageId, requestId, assistantMessage, userId, conversation};
 }
@@ -157,7 +159,7 @@ async function resetMessageForRetry(service, userId, studySessionId, conversatio
             {transaction},
         );
         if (updatedCount === 0) {
-            throw new Error("AI response cannot be retried");
+            throw new TranslatableError("errors.ai.assistant.retryNotAllowed");
         }
         await service.server.db.models["ai_conversation"].touchConversation(conversationId, {transaction});
     });
@@ -182,7 +184,7 @@ async function abortPendingMessage(service, client, data, descriptor) {
     }
     const conversation = await models["ai_conversation"].getById(assistantMessage.conversationId);
     if (!conversation) {
-        return {aborted: false, message: descriptor.notFoundMessage};
+        return {aborted: false, key: descriptor.notFoundKey};
     }
     await core.loadOwnedConversation(service, conversation.id, userId, conversation.studySessionId, descriptor);
 
@@ -275,7 +277,7 @@ async function completeTurn(service, turn, requestId, prepareResponse) {
             turn.assistantMessage.id, [AI_MESSAGE_STATUSES.PENDING],
             {...payload, status: AI_MESSAGE_STATUSES.COMPLETED}, {requestId},
         );
-        if (!changed) throw new Error("AI request was aborted");
+        if (!changed) throw new TranslatableError("errors.ai.assistant.requestAborted");
     } catch (error) {
         try {
             await failAssistantMessage(service, turn.assistantMessage.id, requestId);

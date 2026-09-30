@@ -6,6 +6,8 @@
  * @author Mohammed Rawhani
  */
 
+const TranslatableError = require("../../../utils/TranslatableError");
+
 const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
 
 /**
@@ -19,7 +21,7 @@ const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
  * @param {number} studySessionId - Study session identifier.
  * @param {number} studyStepId - Study step identifier.
  * @param {Object} [options] - Validation options.
- * @param {boolean} [options.requireOpen=false] - Reject finished sessions and closed studies.
+ * @param {boolean} [options.requireOpen=false] - Reject finished sessions and closed or expired studies.
  * @returns {Promise<Object>} Validated user, models, session, and step.
  */
 async function loadStudyStepContext(service, client, studySessionId, studyStepId, {requireOpen = false} = {}) {
@@ -29,18 +31,17 @@ async function loadStudyStepContext(service, client, studySessionId, studyStepId
     const stepId = serviceHelpers.requireId(studyStepId, "studyStepId");
     const studySession = await models["study_session"].getById(sessionId);
     if (!studySession || Number(studySession.userId) !== userId) {
-        throw new Error("Study session not found");
+        throw new TranslatableError("errors.ai.sessionAccessDenied");
     }
     const studyStep = await models["study_step"].getById(stepId);
     if (!studyStep || Number(studyStep.studyId) !== Number(studySession.studyId)) {
-        throw new Error("Study step does not belong to this study session");
+        throw new TranslatableError("errors.ai.assistant.stepNotInSession");
     }
     if (requireOpen) {
-        // Same finished/closed rules as finishStudySession.
-        const study = await models["study"].getById(studySession.studyId);
-        if (studySession.end || !study || study.closed) {
-            throw new Error("Study session is no longer open");
+        if (studySession.end) {
+            throw new TranslatableError("errors.studies.studySession.alreadyFinished");
         }
+        await models["study"].checkStudyOpen(studySession.studyId);
     }
     return {userId, models, studySession, studyStep};
 }
@@ -54,7 +55,7 @@ async function loadStudyStepContext(service, client, studySessionId, studyStepId
  * @param {number} studySessionId - Expected study session identifier.
  * @param {Object} descriptor - Conversation-type descriptor.
  * @param {number} descriptor.conversationType - Expected `ai_conversation.type`.
- * @param {string} descriptor.notFoundMessage - Error thrown when validation fails.
+ * @param {string} descriptor.notFoundKey - Translation key used when validation fails.
  * @param {Object} [options] - Sequelize query options.
  * @returns {Promise<Object>} Owned conversation row.
  */
@@ -64,7 +65,7 @@ async function loadOwnedConversation(service, conversationId, userId, studySessi
         userId, studySessionId, descriptor.conversationType, options,
     );
     if (!conversation) {
-        throw new Error(descriptor.notFoundMessage);
+        throw new TranslatableError(descriptor.notFoundKey);
     }
     return conversation;
 }
@@ -78,7 +79,7 @@ async function loadOwnedConversation(service, conversationId, userId, studySessi
 function getAIService(service) {
     const aiService = service.server.services["AIService"];
     if (!aiService) {
-        throw new Error("AIService is not available");
+        throw new TranslatableError("errors.ai.serviceUnavailable");
     }
     return aiService;
 }
@@ -97,7 +98,7 @@ function buildPromptValues(inputMappings, suppliedValues) {
 
     for (const [key, mapping] of Object.entries(mappings)) {
         if (!Object.prototype.hasOwnProperty.call(supplied, key)) {
-            throw new Error(`Missing AI Chat input: ${key}`);
+            throw new TranslatableError("errors.ai.assistant.inputMissing", {key});
         }
         if (mapping?.type === "configuration") {
             values[key] = {type: "serviceReplacement", input: mapping};
@@ -117,7 +118,7 @@ function buildPromptValues(inputMappings, suppliedValues) {
         }
         // File references are built above from stored mappings only; client ones could point at any submission.
         if (supplied[key]?.type === "serviceReplacement") {
-            throw new Error(`Invalid AI Chat input: ${key}`);
+            throw new TranslatableError("errors.ai.assistant.inputInvalid", {key});
         }
         values[key] = supplied[key];
     }

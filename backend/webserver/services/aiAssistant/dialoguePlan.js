@@ -7,6 +7,8 @@
  * @author Mohammed Rawhani
  */
 
+const TranslatableError = require("../../../utils/TranslatableError");
+
 const {AI_MESSAGE_ROLES} = require("../../../db/models/ai_message");
 
 const ALLOWED_SOURCES = new Set(["pr1"]);
@@ -355,10 +357,10 @@ function getCurrentQuestion(plan, messages = []) {
 function requireCurrentQuestion(plan, messages, questionId) {
     const question = getCurrentQuestion(plan, messages);
     if (!question) {
-        throw new Error("Dialogue is already complete");
+        throw new TranslatableError("errors.ai.dialogue.complete");
     }
     if (questionId && String(question.id) !== String(questionId)) {
-        throw new Error("Question is no longer active");
+        throw new TranslatableError("errors.ai.dialogue.questionInactive");
     }
     return question;
 }

@@ -9,6 +9,8 @@
  * @author Mohammed Rawhani
  */
 
+const TranslatableError = require("../../../utils/TranslatableError");
+
 const {AI_CONVERSATION_TYPES} = require("../../../db/models/ai_conversation");
 const {
     AI_MESSAGE_ROLES,
@@ -32,7 +34,7 @@ const {
 
 const DIALOGUE = {
     conversationType: AI_CONVERSATION_TYPES.DIALOGUE,
-    notFoundMessage: "AI dialogue not found",
+    notFoundKey: "errors.ai.dialogue.notFound",
 };
 
 const DIALOGUE_SERVICES = {
@@ -78,11 +80,11 @@ async function loadDialoguePlan(models, studyStep) {
     const configurationId = Number(studyStep.configuration?.settings?.dialoguePlanConfigurationId) || 0;
     const config = configurationId ? await models["configuration"].getById(configurationId) : null;
     if (!config || config.deleted || Number(config.type) !== 2) {
-        throw new Error("Dialogue plan configuration not found");
+        throw new TranslatableError("errors.ai.dialogue.planNotFound");
     }
     const plan = normalizeDialoguePlan(config.content);
     if (!plan.questions.length) {
-        throw new Error("Dialogue plan has no questions");
+        throw new TranslatableError("errors.ai.dialogue.planEmpty");
     }
     return plan;
 }
@@ -115,10 +117,10 @@ async function loadDialogueContext(
         {requireOpen},
     );
     if (Number(studyStep.stepType) !== models["study_step"].stepTypes.STEP_TYPE_DIALOGUE) {
-        throw new Error("Study step is not a Dialogue step");
+        throw new TranslatableError("errors.ai.dialogue.wrongStepType");
     }
     if (requireCurrentStep && Number(studySession.studyStepId) !== Number(studyStep.id)) {
-        throw new Error("Dialogue is only available for the current study step");
+        throw new TranslatableError("errors.ai.dialogue.currentStepOnly");
     }
 
     const services = Array.isArray(studyStep.configuration?.services)
@@ -138,10 +140,10 @@ async function loadDialogueContext(
 
     const plan = await loadDialoguePlan(models, studyStep);
     if (requireHooks && plan.adaptive && !decisionHookId) {
-        throw new Error("Adaptive Dialogue requires a decision hook");
+        throw new TranslatableError("errors.ai.dialogue.decisionHookRequired");
     }
     if (requireHooks && plan.adaptive && !anchorHookId && plan.questions.some((question) => question.anchoredText)) {
-        throw new Error("Adaptive Dialogue with anchored questions requires an anchor hook");
+        throw new TranslatableError("errors.ai.dialogue.anchorHookRequired");
     }
 
     return {
@@ -244,7 +246,7 @@ async function addSystemContextIfNeeded(
     const {systemPrompt, anchorSources} = resolvedContext;
     if (!context.contextHookId) return;
     if (systemPrompt === null) {
-        throw new Error("Dialogue context is missing for this study step");
+        throw new TranslatableError("errors.ai.dialogue.contextMissing");
     }
     await service.server.db.models["ai_message"].add({
         conversationId: conversation.id,
@@ -394,10 +396,10 @@ async function sendDialogueAnswer(service, client, data) {
     const skipped = data?.skipped === true;
     const answerText = String(data?.answerText ?? "").trim();
     if (skipped && !context.plan.allowSkip) {
-        throw new Error("This Dialogue does not allow skipping questions");
+        throw new TranslatableError("errors.ai.dialogue.skipNotAllowed");
     }
     if (!skipped && !answerText) {
-        throw new Error("Answer content is required");
+        throw new TranslatableError("errors.ai.dialogue.answerRequired");
     }
 
     const conversation = data?.conversationId
@@ -449,7 +451,7 @@ async function retryDialogueMessage(service, client, data) {
         String(entry.id) === String(previousUser?.metadata?.dialogue?.questionId)
     );
     if (!previousUser || !question) {
-        throw new Error("AI response cannot be retried");
+        throw new TranslatableError("errors.ai.assistant.retryNotAllowed");
     }
     await turns.resetMessageForRetry(
         service,

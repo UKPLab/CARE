@@ -103,6 +103,11 @@ export default {
     ConversationBodyShell,
   },
   mixins: [aiRequestMixin, aiStreamingMixin],
+  inject: {
+    acceptStats: {
+      default: () => false,
+    },
+  },
   props: {
     studySessionId: {
       type: Number,
@@ -245,6 +250,7 @@ export default {
      * @returns {void}
      */
     trackChatEvent(action, data = {}) {
+      if (!this.acceptStats) return;
       this.$socket.emit("stats", {
         action,
         data: {

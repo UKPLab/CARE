@@ -107,6 +107,11 @@ export default {
   name: "DialogueStep",
   components: {AiAssistantRequest, BasicEditor, BasicSidebar, SidebarTemplate, DialogueConversationBody, DialogueHeader},
   mixins: [aiRequestMixin],
+  inject: {
+    acceptStats: {
+      default: () => false,
+    },
+  },
   props: {
     studySessionId: {type: Number, required: true},
     studyStepId: {type: Number, required: true},
@@ -218,6 +223,7 @@ export default {
      * @returns {void}
      */
     trackDialogueEvent(action, data = {}) {
+      if (!this.acceptStats) return;
       this.$socket.emit("stats", {
         action,
         data: {

@@ -7,6 +7,8 @@
  * @author Mohammed Rawhani
  */
 
+const TranslatableError = require("../../../utils/TranslatableError");
+
 const {AI_CONVERSATION_TYPES} = require("../../../db/models/ai_conversation");
 const {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} = require("../../../db/models/ai_message");
 const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
@@ -85,7 +87,7 @@ async function createConversationTurn(service, context, existingConversation, da
 
         if (!existingConversation && context.includeContext) {
             if (systemContext === null) {
-                throw new Error("AI Chat context is missing for this study step");
+                throw new TranslatableError("errors.ai.chat.contextMissing");
             }
             await models["ai_message"].add({
                 conversationId: conversation.id,
@@ -107,7 +109,7 @@ async function createConversationTurn(service, context, existingConversation, da
 
 const CHAT = {
     conversationType: AI_CONVERSATION_TYPES.CHAT,
-    notFoundMessage: "AI conversation not found",
+    notFoundKey: "errors.ai.chat.conversationNotFound",
 };
 
 
@@ -138,7 +140,7 @@ async function loadChatContext(
         {requireOpen},
     );
     if (requireCurrentStep && Number(studySession.studyStepId) !== Number(studyStep.id)) {
-        throw new Error("AI Chat is only available for the current study step");
+        throw new TranslatableError("errors.ai.chat.currentStepOnly");
     }
 
     const services = Array.isArray(studyStep.configuration?.services)
@@ -147,7 +149,7 @@ async function loadChatContext(
     const serviceConfig = services.find((entry) => entry?.type === "aiChat");
     const hookId = Number(serviceConfig?.hookId);
     if (!serviceConfig || !Number.isInteger(hookId) || hookId <= 0) {
-        throw new Error("AI Chat is not configured for this study step");
+        throw new TranslatableError("errors.ai.chat.notConfigured");
     }
     await core.getAIService(service).call("loadHook", client, {hookId});
 
@@ -217,7 +219,7 @@ async function getConversation(service, client, data) {
         ? conversations.find((conversation) => Number(conversation.id) === Number(requestedConversationId))
         : conversations[0] || null;
     if (requestedConversationId && !activeConversation) {
-        throw new Error("AI conversation not found");
+        throw new TranslatableError("errors.ai.chat.conversationNotFound");
     }
     const models = await getHookModels(service, client, context.hookId);
 
@@ -249,7 +251,7 @@ async function sendConversationMessage(service, client, data) {
     );
     const content = typeof data?.content === "string" ? data.content.trim() : "";
     if (!content) {
-        throw new Error("Message content is required");
+        throw new TranslatableError("errors.ai.chat.contentRequired");
     }
     const userMetadata = buildQuoteMetadata(context, data?.quote);
     const requestId = serviceHelpers.requireRequestId(data?.requestId);

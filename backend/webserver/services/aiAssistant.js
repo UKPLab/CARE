@@ -26,7 +26,7 @@ module.exports = class AIAssistantService extends Service {
                 "retryDialogueMessage",
                 "abortDialogueMessage",
             ],
-            resTypes: [],
+            resTypes: ["conversationDelta"],
         });
     }
 
