@@ -2101,6 +2101,9 @@ export default {
       }
 
       this._backfillBusy = true;
+      // Any fetchQueryPage started while this request is in flight (search, sort, page, ...)
+      // bumps _queryToken; its result owns the page and also clears placeholderIds.
+      const token = this._queryToken;
       try {
         const visibleIds = new Set(remaining.map((i) => i.id));
         // Fill from the *next* page (after current endCursor), not by re-sorting the
@@ -2110,6 +2113,7 @@ export default {
           ? this.buildQueryPayload({after: endCursor})
           : this.buildQueryPayload(this.currentNav());
         const {items: nextItems, meta} = await this.requestQueryItems(nextPayload);
+        if (token !== this._queryToken) return;
         const bottomFill = nextItems
           .filter((row) => !visibleIds.has(row.id))
           .slice(0, need);
@@ -2132,6 +2136,7 @@ export default {
         }, 1100);
       } catch (err) {
         console.warn("BackendTable backfillAfterDeletes failed", err);
+        if (token !== this._queryToken) return;
         this.queryItems = remaining;
         this.placeholderIds = new Set();
       } finally {
@@ -2389,6 +2394,12 @@ export default {
           }
         },
         onError: () => {
+          this.pendingLoadPhase = null;
+          this._pendingLoadBusy = false;
+        },
+        // A newer fetch (search, sort, page size, ...) replaced this one; its result owns the
+        // page now, so only drop the banner's dimmed/busy state.
+        onIgnored: () => {
           this.pendingLoadPhase = null;
           this._pendingLoadBusy = false;
         },
