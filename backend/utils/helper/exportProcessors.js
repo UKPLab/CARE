@@ -34,10 +34,15 @@ const STUDY_DOCUMENT_EXTENSIONS = { 0: '.pdf', 4: '.zip' };
  */
 async function processDocumentForExport(server, doc, docFolder, shouldExcludeNonConsentingEdits, shouldExcludeNonConsentingAnnotations, docUserRoles, archive, shouldGenerateAliases, userMapping, ownerUser) {
     // document_data for all types, at the doc level.
-    const documentData = await server.db.models.document_data.findAll({
+    let documentData = await server.db.models.document_data.findAll({
         where: { documentId: doc.id, deleted: false },
         raw: true,
     });
+    if (shouldExcludeNonConsentingEdits || shouldExcludeNonConsentingAnnotations) {
+        const dataUserIds = [...new Set(documentData.map(d => d.userId).filter(Boolean))];
+        const consentedUserIds = await getConsentedUserIds(server, dataUserIds);
+        documentData = documentData.filter(d => !d.userId || consentedUserIds.has(d.userId));
+    }
     if (documentData.length > 0) {
         archive.append(JSON.stringify(documentData, null, 2), { name: `${docFolder}/document_data.json` });
     }
