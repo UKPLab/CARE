@@ -99,8 +99,11 @@ export default {
       return this.$store.getters["table/document/getAll"];
     },
     documentData() {
+      // Same keys the backend grades export reads (buildGradeRecords in exportGrades.js).
+      const isGradeKey = (key) => typeof key === "string" &&
+        (key === "assessment_result" || key.startsWith("aiHook_") || key.endsWith("_assessment"));
       return this.$store.getters["table/document_data/getFiltered"](
-        (d) => d.key === "assessment_result" && d.studySessionId !== null && !d.deleted
+        (d) => isGradeKey(d.key) && d.studySessionId !== null && !d.deleted
       );
     },
     studySteps() {
