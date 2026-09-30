@@ -12,6 +12,13 @@ module.exports = (sequelize, DataTypes) => {
 				right: "frontend.dashboard.assignments.viewAll",
 				columns: this.getAttributes(),
 			},
+			// Owners of the referenced assignment may read and write its shares.
+			{
+				table: "assignment",
+				by: "id",
+				target: "assignmentId",
+				columns: this.getAttributes(),
+			},
 		];
 
 		static associate(models) {
