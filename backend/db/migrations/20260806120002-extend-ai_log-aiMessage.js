@@ -18,22 +18,11 @@ module.exports = {
                 type: Sequelize.INTEGER,
                 allowNull: true,
             }, { transaction });
-
-            await queryInterface.addIndex('ai_log', ['studySessionId', 'status'], {
-                name: 'ai_log_studySessionId_status_index',
-                transaction,
-            });
-            await queryInterface.addIndex('ai_log', ['requestId'], {
-                name: 'ai_log_requestId_index',
-                transaction,
-            });
         });
     },
 
     async down(queryInterface) {
         await queryInterface.sequelize.transaction(async (transaction) => {
-            await queryInterface.removeIndex('ai_log', 'ai_log_requestId_index', { transaction });
-            await queryInterface.removeIndex('ai_log', 'ai_log_studySessionId_status_index', { transaction });
             await queryInterface.removeColumn('ai_log', 'ttftMs', { transaction });
             await queryInterface.removeColumn('ai_log', 'totalLatencyMs', { transaction });
             await queryInterface.removeColumn('ai_log', 'aiMessageId', { transaction });
