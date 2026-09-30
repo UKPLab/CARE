@@ -106,19 +106,6 @@ function serializeMessages(messages) {
 }
 
 /**
- * Deduplicates positive integer values after optional coercion.
- *
- * @param {Iterable<unknown>} values Source iterable.
- * @param {(value: unknown) => number} [pick] Mapper applied before filtering.
- * @returns {number[]}
- */
-function uniquePositiveInts(values, pick = (value) => Number(value)) {
-    return [...new Set((values || []).map(pick).filter((number) => (
-        Number.isInteger(number) && number > 0
-    )))];
-}
-
-/**
  * Builds parameters for a LiteLLM completion call.
  *
  * @param {Object} credential Credential row supplying provider authentication.

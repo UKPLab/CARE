@@ -10,16 +10,26 @@
         @select="selectConversation"
     />
 
-    <AiConversationBody
+    <ConversationBodyShell
         ref="body"
-        :messages="visibleMessages"
-        :include-context="conversationSnapshot.includeContext"
         :loading="loading"
-        :busy="isBusy"
-        :retryable-message-id="retryableMessageId"
-        @retry="retryMessage"
-        @copy="trackAssistantCopy"
-    />
+        :empty="visibleMessages.length === 0"
+        loading-text="Loading chat..."
+        :empty-title="conversationSnapshot.includeContext ? 'Start a study chat' : 'Start a fresh conversation'"
+        :empty-subtitle="conversationSnapshot.includeContext
+            ? 'A new chat uses the context configured for this step.'
+            : 'Discuss any topic. No study context is added automatically.'"
+    >
+      <AiConversationMessage
+          v-for="message in visibleMessages"
+          :key="message.id"
+          :message="message"
+          :retryable="retryableMessageId === Number(message.id)"
+          :busy="isBusy"
+          @retry="retryMessage"
+          @copy="trackChatEvent('aiChatAssistantCopy', $event)"
+      />
+    </ConversationBodyShell>
 
     <AiConversationComposer
         ref="composer"
@@ -28,6 +38,7 @@
         :models="models"
         :error-message="errorMessage"
         :busy="isBusy"
+        :can-send="canSend"
         :sending="sending"
         :aborting="aborting"
         :pending="!!activeRequest"
@@ -35,8 +46,8 @@
         :quote="quote"
         @send="sendMessage"
         @abort="abortChatRequest"
-        @clear-quote="clearQuote"
-        @paste="trackInputPaste"
+        @clear-quote="quote = null"
+        @paste="trackChatEvent('aiChatInputPaste', $event)"
     />
 
     <AiAssistantRequest
@@ -60,8 +71,9 @@
 <script>
 import AiAssistantRequest from "@/basic/service/AiAssistantRequest.vue";
 import AiConversationHeader from "@/components/aiAssistant/AiConversationHeader.vue";
-import AiConversationBody from "@/components/aiAssistant/AiConversationBody.vue";
+import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 import AiConversationComposer from "@/components/aiAssistant/AiConversationComposer.vue";
+import ConversationBodyShell from "@/components/aiAssistant/ConversationBodyShell.vue";
 import aiRequestMixin from "@/components/aiAssistant/aiRequestMixin";
 import aiStreamingMixin from "@/components/aiAssistant/aiStreamingMixin";
 import {MESSAGE_ROLES, MESSAGE_STATUSES} from "@/components/aiAssistant/messageConstants";
@@ -85,8 +97,9 @@ export default {
   components: {
     AiAssistantRequest,
     AiConversationHeader,
-    AiConversationBody,
+    AiConversationMessage,
     AiConversationComposer,
+    ConversationBodyShell,
   },
   mixins: [aiRequestMixin, aiStreamingMixin],
   props: {
@@ -357,32 +370,6 @@ export default {
         });
         this.focusComposer();
       }
-    },
-    /**
-     * Logs pasted chat input text.
-     *
-     * @param {Object} data - Paste metadata.
-     * @returns {void}
-     */
-    trackInputPaste(data) {
-      this.trackChatEvent("aiChatInputPaste", data);
-    },
-    /**
-     * Logs copied assistant text.
-     *
-     * @param {Object} data - Copy metadata.
-     * @returns {void}
-     */
-    trackAssistantCopy(data) {
-      this.trackChatEvent("aiChatAssistantCopy", data);
-    },
-    /**
-     * Clears the pending quote.
-     *
-     * @returns {void}
-     */
-    clearQuote() {
-      this.quote = null;
     },
     /**
      * Renders a quote as a markdown blockquote for the outgoing message.

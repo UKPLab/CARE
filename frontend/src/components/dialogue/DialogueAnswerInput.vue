@@ -1,9 +1,5 @@
 <template>
   <form class="dialogue-answer-input mt-3" @submit.prevent="submit">
-    <div v-if="errorMessage" class="alert alert-danger py-2 mb-3">
-      {{ errorMessage }}
-    </div>
-
     <fieldset :disabled="isBusy || readOnly">
       <template v-if="usesCheckboxes">
         <div
@@ -135,11 +131,6 @@ export default {
       type: Boolean,
       required: false,
       default: false,
-    },
-    errorMessage: {
-      type: String,
-      required: false,
-      default: "",
     },
     allowSkip: {
       type: Boolean,

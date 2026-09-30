@@ -15,7 +15,7 @@
         class="conversation-state text-center text-muted"
     >
       <div class="empty-icon rounded-circle mx-auto mb-3">
-        <BasicIcon :icon-name="emptyIcon" :size="28" />
+        <BasicIcon icon-name="chat-dots" :size="28" />
       </div>
       <div class="fw-semibold text-body">{{ emptyTitle }}</div>
       <div v-if="emptySubtitle" class="small mt-1">{{ emptySubtitle }}</div>
@@ -56,11 +56,6 @@ export default {
       type: String,
       required: false,
       default: "Loading...",
-    },
-    emptyIcon: {
-      type: String,
-      required: false,
-      default: "chat-dots",
     },
     emptyTitle: {
       type: String,

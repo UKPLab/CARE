@@ -124,6 +124,11 @@ export default {
       required: false,
       default: false,
     },
+    canSend: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     sending: {
       type: Boolean,
       required: false,
@@ -158,13 +163,6 @@ export default {
     selectedModelName() {
       const model = this.models.find((item) => Number(item.id) === this.selectedModelId);
       return model ? model.name : "Select model";
-    },
-    canSend() {
-      return (
-          !this.disabled &&
-          !!this.selectedModelId &&
-          this.modelValue.trim().length > 0
-      );
     },
   },
   watch: {

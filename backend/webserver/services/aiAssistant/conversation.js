@@ -159,6 +159,7 @@ async function loadChatContext(
  * Lists the enabled models configured for a hook.
  *
  * @param {Object} service - AIAssistantService runtime.
+ * @param {Object} client - Authenticated service client.
  * @param {number} hookId - AI hook identifier.
  * @returns {Promise<Object[]>} Safe model options ordered by hook priority.
  */
@@ -226,7 +227,7 @@ async function getConversation(service, client, data) {
 }
 
 /**
- * Creates or continues a chat conversation with one non-streaming model response.
+ * Creates or continues a chat conversation and streams the model response.
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.

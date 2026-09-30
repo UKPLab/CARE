@@ -15,7 +15,6 @@
           :active-request="activeRequest"
           :sending="sending"
           :aborting="aborting"
-          :error-message="errorMessage"
           :active-question-message-id="activeQuestionMessageId"
           :retryable-message-id="retryableMessageId"
           :allow-skip="allowSkip"
@@ -84,11 +83,6 @@ export default {
       type: Boolean,
       required: false,
       default: false,
-    },
-    errorMessage: {
-      type: String,
-      required: false,
-      default: "",
     },
     activeQuestionMessageId: {
       type: [String, Number],

@@ -132,6 +132,13 @@ async function chatCompletion(service, client, data, logOptions = {}, options = 
         throw new Error(guard.reason);
     }
 
+    // Time to first streamed text; stays null for non-streaming calls.
+    let ttftMs = null;
+    const onDelta = options.onDelta && ((text) => {
+        if (ttftMs === null) ttftMs = Date.now() - requestStartedAt;
+        options.onDelta(text);
+    });
+
     let response;
     try {
         const providerParams = logOptions.providerParams
@@ -140,7 +147,7 @@ async function chatCompletion(service, client, data, logOptions = {}, options = 
             ...completionParams,
             ...providerParams,
             __requestId: requestId,
-        }, {onDelta: options.onDelta});
+        }, {onDelta});
     } catch (error) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
@@ -172,6 +179,7 @@ async function chatCompletion(service, client, data, logOptions = {}, options = 
         totalTokens: usage?.total_tokens ?? null,
         costs: parseNumericCost(payload?.response_cost),
         totalLatencyMs: Date.now() - requestStartedAt,
+        ttftMs,
     });
 
     return {choices};

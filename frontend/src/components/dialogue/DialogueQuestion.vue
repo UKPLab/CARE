@@ -50,7 +50,6 @@
             :active-request="activeRequest"
             :sending="sending"
             :aborting="aborting"
-            :error-message="errorMessage"
             :allow-skip="allowSkip"
             @send="$emit('send', $event)"
             @abort="$emit('abort')"
@@ -93,7 +92,6 @@
               :active-request="activeRequest"
               :sending="sending"
               :aborting="aborting"
-              :error-message="errorMessage"
               :allow-skip="allowSkip"
               @send="$emit('send', $event)"
               @abort="$emit('abort')"
@@ -153,11 +151,6 @@ export default {
       type: Boolean,
       required: false,
       default: false,
-    },
-    errorMessage: {
-      type: String,
-      required: false,
-      default: "",
     },
     activeQuestionMessageId: {
       type: [String, Number],

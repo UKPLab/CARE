@@ -35,8 +35,8 @@ async function loadEnabledHook(service, hookId) {
 }
 
 /**
- * Resolves the hook's primary model (priority 1) into the model string plus the owner's
- * credential parameters required by the LiteLLM passthrough.
+ * Resolves the selected hook model, or the highest-priority one, into the model string plus
+ * the owner's credential parameters required by the LiteLLM passthrough.
  *
  * @param {Object} service - AIService runtime with DB access.
  * @param {Object} service.server - CARE webserver instance (DB access).

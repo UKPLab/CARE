@@ -27,9 +27,6 @@ DOMPurify.addHook("afterSanitizeAttributes", (node) => {
 /**
  * Renders assistant markdown as sanitized HTML.
  *
- * Kept as a single component so the renderer stays isolated: streaming can later
- * feed a growing `text` prop here without touching the rest of the chat.
- *
  * @author Mohammed Rawhani
  */
 export default {
