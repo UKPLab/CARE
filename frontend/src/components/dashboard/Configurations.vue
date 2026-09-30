@@ -182,9 +182,11 @@ export default {
       ];
     },
     configurationsTable() {
+      // Indexed by configuration type, matching the configuration model options.
+      const typeKeys = ["assessment", "validation", "dialoguePlan"];
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.typeName = cfg.type === 0 ? this.$t('basic.configuration.types.assessment') : this.$t('basic.configuration.types.validation');
+        newC.typeName = this.$t(`basic.configuration.types.${typeKeys[cfg.type]}`);
         return newC;
       });
     },
