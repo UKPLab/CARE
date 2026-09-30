@@ -14,11 +14,12 @@ function readJsonFromDisk(filename) {
 }
 
 const plans = PLAN_JSON_PATHS.map(readJsonFromDisk);
+const BOT_USER_ID = 2;
 
 module.exports = {
     async up(queryInterface, Sequelize) {
         const adminId = await queryInterface.rawSelect("user", {where: {userName: "admin"}}, ["id"]);
-        const userId = adminId || 1;
+        const userId = adminId || BOT_USER_ID;
         const now = new Date();
         const toJsonb = (obj) => Sequelize.literal(`'${JSON.stringify(obj).replace(/'/g, "''")}'::jsonb`);
 
