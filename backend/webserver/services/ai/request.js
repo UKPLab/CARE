@@ -413,7 +413,8 @@ async function _sumHookShareAttributable(service, cap, ownerId) {
     return _sumAttributableForEntity(service, { aiHookId: hookShare.aiHookId }, ownerId, cap.resetAt);
 }
 
-// Owner's own usage on the entity + usage by anyone in studies they own.
+// Owner's own usage on the entity + usage by anyone in studies they own or created
+// (access may come from the creator, see _resolveModelAccessHolder).
 // entityWhere narrows to one model or one hook.
 async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt) {
     const Sequelize = service.server.db.Sequelize;
@@ -442,7 +443,7 @@ async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt)
                 model: models["study"],
                 as: "study",
                 required: true,
-                where: { userId: ownerId },
+                where: { [Op.or]: [{ userId: ownerId }, { createdByUserId: ownerId }] },
                 attributes: [],
             }],
         }],
