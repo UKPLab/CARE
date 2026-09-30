@@ -133,7 +133,11 @@ export default {
      * @returns {boolean} Whether the assistant outcome is persisted.
      */
     reconcileRequest(request = this.activeRequest || this.recoverableRequest) {
-      if (!request) return false;
+      if (!request) {
+        // A pending row without a local request comes from a reload during a response.
+        this.scheduleRecovery();
+        return false;
+      }
       const user = request.type === "send" && this.messages.find((message) =>
         Number(message.role) === MESSAGE_ROLES.USER
           && Number(message.id) > request.previousMessageId
@@ -165,9 +169,12 @@ export default {
       this.recoveryTimer = null;
       this.recoverableRequest = null;
     },
-    /** Reloads a persisted pending response after its local request has settled. */
+    /**
+     * Reloads while a persisted response is pending and no local request is active.
+     * Ends on its own: the backend fails pending rows on timeout or restart.
+     */
     scheduleRecovery() {
-      if (this.activeRequest || !this.recoverableRequest || this.recoveryTimer !== null || this.recovering) return;
+      if (this.activeRequest || this.recoveryTimer !== null || this.recovering) return;
       if (!this.messages.some((message) => Number(message.role) === MESSAGE_ROLES.ASSISTANT
           && Number(message.status) === MESSAGE_STATUSES.PENDING)) return;
       this.recoveryTimer = setTimeout(async () => {
@@ -179,7 +186,7 @@ export default {
           this.recovering = false;
           this.scheduleRecovery();
         }
-      }, 1000);
+      }, 2000);
     },
 
     /**

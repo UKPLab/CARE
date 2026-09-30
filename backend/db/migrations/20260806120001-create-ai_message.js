@@ -47,6 +47,11 @@ module.exports = {
                     type: Sequelize.INTEGER,
                     allowNull: false,
                 },
+                // Request that currently owns an assistant response; set again on retry.
+                requestId: {
+                    type: Sequelize.STRING,
+                    allowNull: true,
+                },
                 deleted: {
                     type: Sequelize.BOOLEAN,
                     allowNull: false,

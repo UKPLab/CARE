@@ -31,6 +31,18 @@ module.exports = class AIAssistantService extends Service {
     }
 
     /**
+     * Fails responses a previous server run left pending, so sessions can send again.
+     */
+    async init() {
+        try {
+            const count = await this.server.db.models["ai_message"].failPendingMessages();
+            this.logger.info(`Failed ${count} AI responses left pending`);
+        } catch (error) {
+            this.logger.error("Failed to release pending AI responses: " + error.message);
+        }
+    }
+
+    /**
      * Routes conversation commands.
      *
      * @param {Object} client Service socket client.

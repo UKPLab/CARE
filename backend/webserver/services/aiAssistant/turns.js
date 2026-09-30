@@ -143,15 +143,16 @@ async function loadRetryableAssistantMessage(service, client, data, descriptor) 
  * @param {number} studySessionId - Study session identifier.
  * @param {number} conversationId - Conversation identifier.
  * @param {number} assistantMessageId - Assistant message identifier.
+ * @param {string} requestId - Retry request that takes ownership of the message.
  * @returns {Promise<void>}
  */
-async function resetMessageForRetry(service, userId, studySessionId, conversationId, assistantMessageId) {
+async function resetMessageForRetry(service, userId, studySessionId, conversationId, assistantMessageId, requestId) {
     await service.server.db.sequelize.transaction(async (transaction) => {
         await requireNoPendingMessage(service, userId, studySessionId, {transaction});
         const updatedCount = await service.server.db.models["ai_message"].updateMessageIfStatus(
             assistantMessageId,
             [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED],
-            {status: AI_MESSAGE_STATUSES.PENDING, content: ""},
+            {status: AI_MESSAGE_STATUSES.PENDING, content: "", requestId},
             {transaction},
         );
         if (updatedCount === 0) {
@@ -174,16 +175,8 @@ async function abortPendingMessage(service, client, data, descriptor) {
     const requestId = serviceHelpers.requireRequestId(data?.requestId);
     const userId = serviceHelpers.requireClientUserId(client);
     const models = service.server.db.models;
-    const log = await models["ai_log"].findOne({
-        where: {requestId, userId, status: "in_progress", deleted: false},
-        raw: true,
-    });
-    if (!log?.aiMessageId) {
-        return {aborted: false, message: "No pending AI request found"};
-    }
-
-    const assistantMessage = await models["ai_message"].getById(log.aiMessageId);
-    if (!assistantMessage || Number(assistantMessage.role) !== AI_MESSAGE_ROLES.ASSISTANT) {
+    const assistantMessage = await models["ai_message"].getPendingMessageByRequestId(requestId);
+    if (!assistantMessage) {
         return {aborted: false, message: "No pending AI response found"};
     }
     const conversation = await models["ai_conversation"].getById(assistantMessage.conversationId);
@@ -192,25 +185,34 @@ async function abortPendingMessage(service, client, data, descriptor) {
     }
     await core.loadOwnedConversation(service, conversation.id, userId, conversation.studySessionId, descriptor);
 
-    const aborted = await service.server.db.sequelize.transaction(async (transaction) => {
-        const updatedCount = await models["ai_message"].updateMessageIfStatus(
-            assistantMessage.id, [AI_MESSAGE_STATUSES.PENDING],
-            {status: AI_MESSAGE_STATUSES.ABORTED, content: ""}, {transaction},
-        );
-        if (updatedCount === 0) return false;
-        await core.getAIService(service).call("cancelRequest", client, {logId: log.id}, {db: {transaction}});
-        return true;
-    });
-    if (!aborted) {
-        return {aborted: false, message: "AI request is no longer pending"};
-    }
-
-    const result = await core.getAIService(service).call(
+    // Stop the provider first; it only finds logs that are still in progress.
+    const providerResult = await core.getAIService(service).call(
         "abortChatCompletion",
         client,
         {requestId, reason: "request aborted"},
     );
-    return {...result, aborted: true};
+    const aborted = await service.server.db.sequelize.transaction(async (transaction) => {
+        const updatedCount = await models["ai_message"].updateMessageIfStatus(
+            assistantMessage.id, [AI_MESSAGE_STATUSES.PENDING],
+            {status: AI_MESSAGE_STATUSES.ABORTED, content: ""}, {transaction, requestId},
+        );
+        if (updatedCount === 0) return false;
+        const log = await models["ai_log"].findOne({
+            where: {requestId, userId, status: "in_progress", deleted: false},
+            attributes: ["id"],
+            raw: true,
+            transaction,
+        });
+        if (log) {
+            await core.getAIService(service).call("cancelRequest", client, {logId: log.id}, {db: {transaction}});
+        }
+        return true;
+    });
+    // The stopped request may already have marked the message failed.
+    if (!aborted && providerResult?.aborted !== true) {
+        return {aborted: false, message: "AI request is no longer pending"};
+    }
+    return {aborted: true};
 }
 
 /**
@@ -219,6 +221,7 @@ async function abortPendingMessage(service, client, data, descriptor) {
  * @param {Object} context - Validated study context.
  * @param {Object} conversation - Owned conversation.
  * @param {Object} data - Prepared message fields.
+ * @param {string} data.requestId - Request that owns the pending assistant.
  * @param {Object} data.user - User-message fields.
  * @param {Object} data.assistant - Assistant-message fields.
  * @param {Object} options - Database transaction options.
@@ -232,7 +235,7 @@ async function createTurnMessages(service, context, conversation, data, options)
     }, options);
     const assistantMessage = await models["ai_message"].add({
         ...data.assistant, ...base, role: AI_MESSAGE_ROLES.ASSISTANT,
-        content: "", status: AI_MESSAGE_STATUSES.PENDING,
+        content: "", status: AI_MESSAGE_STATUSES.PENDING, requestId: data.requestId,
     }, options);
     await models["ai_conversation"].touchConversation(conversation.id, options);
     return {conversation, userMessage, assistantMessage};
@@ -242,34 +245,39 @@ async function createTurnMessages(service, context, conversation, data, options)
  * Releases an assistant placeholder if it is still pending.
  * @param {Object} service - Assistant service.
  * @param {number} assistantMessageId - Assistant id.
+ * @param {string} requestId - Request that must still own the assistant.
  * @returns {Promise<void>}
  */
-async function failAssistantMessage(service, assistantMessageId) {
+async function failAssistantMessage(service, assistantMessageId, requestId) {
     await service.server.db.models["ai_message"].updateMessageIfStatus(
         assistantMessageId, [AI_MESSAGE_STATUSES.PENDING],
-        {status: AI_MESSAGE_STATUSES.FAILED, content: ""},
+        {status: AI_MESSAGE_STATUSES.FAILED, content: ""}, {requestId},
     );
 }
 
 /**
  * Prepares the complete visible response before changing the pending row.
+ *
+ * Writes only while `requestId` owns the row, so a stopped request cannot overwrite a retry.
+ *
  * @param {Object} service - Assistant service.
  * @param {Object} turn - Persisted turn.
+ * @param {string} requestId - Request that owns the pending assistant.
  * @param {Function} prepareResponse - Async final content/metadata preparation.
  * @returns {Promise<Object>} Completed assistant row.
  */
-async function completeTurn(service, turn, prepareResponse) {
+async function completeTurn(service, turn, requestId, prepareResponse) {
     const messages = service.server.db.models["ai_message"];
     try {
         const payload = await prepareResponse();
         const changed = await messages.updateMessageIfStatus(
             turn.assistantMessage.id, [AI_MESSAGE_STATUSES.PENDING],
-            {...payload, status: AI_MESSAGE_STATUSES.COMPLETED},
+            {...payload, status: AI_MESSAGE_STATUSES.COMPLETED}, {requestId},
         );
         if (!changed) throw new Error("AI request was aborted");
     } catch (error) {
         try {
-            await failAssistantMessage(service, turn.assistantMessage.id);
+            await failAssistantMessage(service, turn.assistantMessage.id, requestId);
         } catch (cleanupError) {
             service.server.logger.error("Failed to release pending AI response", cleanupError);
         }

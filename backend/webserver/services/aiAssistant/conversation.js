@@ -58,10 +58,11 @@ function buildUserContent(content, metadata) {
  * @param {Object} data.modelParams - Resolved model parameters.
  * @param {Object|null} data.systemContext - Initial prompt context.
  * @param {Object|null} [data.userMetadata=null] - User-message metadata.
+ * @param {string} data.requestId - Request that owns the assistant placeholder.
  * @returns {Promise<Object>} Conversation, user message, and assistant placeholder.
  */
 async function createConversationTurn(service, context, existingConversation, data) {
-    const {content, modelParams, systemContext, userMetadata = null} = data;
+    const {content, modelParams, systemContext, userMetadata = null, requestId} = data;
     const models = service.server.db.models;
     return service.server.db.sequelize.transaction(async (transaction) => {
         await turns.requireNoPendingMessage(
@@ -97,6 +98,7 @@ async function createConversationTurn(service, context, existingConversation, da
         }
 
         return turns.createTurnMessages(service, context, conversation, {
+            requestId,
             user: {aiModelId: modelParams.aiModelId, content: buildUserContent(content, userMetadata), metadata: userMetadata},
             assistant: {aiModelId: modelParams.aiModelId},
         }, {transaction});
@@ -116,7 +118,9 @@ const CHAT = {
  * @param {Object} client - Authenticated service client.
  * @param {number} studySessionId - Study session identifier.
  * @param {number} studyStepId - Study step identifier.
- * @param {boolean} [requireCurrentStep=true] - Whether the step must be the session's current step.
+ * @param {Object} [options] - Context validation options.
+ * @param {boolean} [options.requireCurrentStep=true] - Whether the step must be the session's current step.
+ * @param {boolean} [options.requireOpen=true] - Whether the session and study must still be open.
  * @returns {Promise<Object>} Validated chat context.
  */
 async function loadChatContext(
@@ -124,13 +128,14 @@ async function loadChatContext(
     client,
     studySessionId,
     studyStepId,
-    requireCurrentStep = true,
+    {requireCurrentStep = true, requireOpen = true} = {},
 ) {
     const {userId, studySession, studyStep} = await core.loadStudyStepContext(
         service,
         client,
         studySessionId,
         studyStepId,
+        {requireOpen},
     );
     if (requireCurrentStep && Number(studySession.studyStepId) !== Number(studyStep.id)) {
         throw new Error("AI Chat is only available for the current study step");
@@ -199,7 +204,7 @@ async function getConversation(service, client, data) {
         client,
         data?.studySessionId,
         data?.studyStepId,
-        false,
+        {requireCurrentStep: false, requireOpen: false},
     );
     const conversations = await service.server.db.models["ai_conversation"].getSessionConversations(
         context.userId, context.studySession.id, AI_CONVERSATION_TYPES.CHAT,
@@ -279,7 +284,7 @@ async function sendConversationMessage(service, client, data) {
         service,
         context,
         conversation,
-        {content, modelParams, systemContext, userMetadata},
+        {content, modelParams, systemContext, userMetadata, requestId},
     );
     return completeConversationTurn(service, client, context, turn, modelParams, requestId);
 }
@@ -300,7 +305,7 @@ async function retryConversationMessage(service, client, data) {
         client,
         conversation.studySessionId,
         assistantMessage.studyStepId,
-        false,
+        {requireCurrentStep: false},
     );
     const modelParams = await core.getAIService(service).call(
         "resolveHookModel",
@@ -313,6 +318,7 @@ async function retryConversationMessage(service, client, data) {
         conversation.studySessionId,
         conversation.id,
         assistantMessageId,
+        requestId,
     );
 
     return completeConversationTurn(
@@ -343,7 +349,7 @@ async function abortConversationMessage(service, client, data) {
  * @returns {Promise<Object>} Completed turn and conversation state.
  */
 async function completeConversationTurn(service, client, context, turn, modelParams, requestId) {
-    const assistantMessage = await turns.completeTurn(service, turn, async () => {
+    const assistantMessage = await turns.completeTurn(service, turn, requestId, async () => {
         const messages = await service.server.db.models["ai_message"].getModelMessages(turn.conversation.id);
         const content = await turns.requestAssistantCompletion(
             service, client, context,

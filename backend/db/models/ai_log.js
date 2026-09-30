@@ -11,6 +11,19 @@ module.exports = (sequelize, DataTypes) => {
     class AiLog extends MetaModel {
         static autoTable = true;
 
+        /**
+         * Fails requests left in progress, e.g. by a server restart.
+         * @param {Object} [options] - Database options.
+         * @returns {Promise<number>} Number of failed logs.
+         */
+        static async failInProgressLogs(options = {}) {
+            const [count] = await this.update({status: "failed"}, {
+                where: {status: "in_progress", deleted: false},
+                transaction: options.transaction,
+            });
+            return count;
+        }
+
         static associate(models) {
             AiLog.belongsTo(models["study_session"], { foreignKey: "studySessionId", as: "studySession" });
             AiLog.belongsTo(models["ai_message"], { foreignKey: "aiMessageId", as: "message" });

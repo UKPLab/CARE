@@ -97,6 +97,7 @@ async function loadDialoguePlan(models, studyStep) {
  * @param {Object} [options] - Context validation options.
  * @param {boolean} [options.requireCurrentStep=true] - Whether the step must be current.
  * @param {boolean} [options.requireHooks=true] - Whether execution hooks must be available.
+ * @param {boolean} [options.requireOpen=true] - Whether the session and study must still be open.
  * @returns {Promise<Object>} Dialogue context.
  */
 async function loadDialogueContext(
@@ -104,13 +105,14 @@ async function loadDialogueContext(
     client,
     studySessionId,
     studyStepId,
-    {requireCurrentStep = true, requireHooks = true} = {},
+    {requireCurrentStep = true, requireHooks = true, requireOpen = true} = {},
 ) {
     const {userId, models, studySession, studyStep} = await core.loadStudyStepContext(
         service,
         client,
         studySessionId,
         studyStepId,
+        {requireOpen},
     );
     if (Number(studyStep.stepType) !== models["study_step"].stepTypes.STEP_TYPE_DIALOGUE) {
         throw new Error("Study step is not a Dialogue step");
@@ -168,7 +170,7 @@ async function getDialogueConversation(service, client, data) {
         client,
         data?.studySessionId,
         data?.studyStepId,
-        {requireCurrentStep: false, requireHooks: false},
+        {requireCurrentStep: false, requireHooks: false, requireOpen: false},
     );
     const conversation = data?.conversationId
         ? await core.loadOwnedConversation(
@@ -333,6 +335,7 @@ async function addQuestionIfMissing(service, conversation, context, question, ex
  * @param {Object} resolvedContext - Prepared initial context.
  * @param {string|null} resolvedContext.systemPrompt - Resolved system prompt.
  * @param {Object} resolvedContext.anchorSources - Review source snapshot.
+ * @param {string} requestId - Request that owns the assistant placeholder.
  * @returns {Promise<Object>} Conversation, user message, assistant placeholder, and previous messages.
  */
 async function createDialogueTurn(
@@ -342,6 +345,7 @@ async function createDialogueTurn(
     question,
     answer,
     resolvedContext,
+    requestId,
 ) {
     const {answerText, answerValue, skipped} = answer;
     const models = service.server.db.models;
@@ -363,6 +367,7 @@ async function createDialogueTurn(
         const currentQuestion = requireCurrentQuestion(context.plan, previousMessages, question.id);
         await addQuestionIfMissing(service, conversation, context, currentQuestion, previousMessages, {transaction});
         const turn = await turns.createTurnMessages(service, context, conversation, {
+            requestId,
             user: {content: answerText, metadata: buildAnswerMetadata(currentQuestion, answerValue, skipped)},
             assistant: {metadata: {dialogue: {kind: "pending", questionId: currentQuestion.id}}},
         }, {transaction});
@@ -416,6 +421,7 @@ async function sendDialogueAnswer(service, client, data) {
         question,
         {answerText, answerValue: skipped ? null : data?.answerValue ?? answerText, skipped},
         resolvedContext,
+        requestId,
     );
     return completeDialogueTurn(service, client, context, turn, requestId);
 }
@@ -451,8 +457,9 @@ async function retryDialogueMessage(service, client, data) {
         conversation.studySessionId,
         conversation.id,
         assistantMessageId,
+        requestId,
     );
-    const completed = await turns.completeTurn(service, {assistantMessage}, async () => {
+    const completed = await turns.completeTurn(service, {assistantMessage}, requestId, async () => {
         const previousMessages = (await service.server.db.models["ai_message"].getVisibleMessages(
             conversation.id, context.studyStep.id,
         )).filter((message) => Number(message.id) < Number(previousUser.id));
@@ -497,7 +504,7 @@ async function prepareDialogueResponse(service, client, context, turn, requestId
  * @returns {Promise<Object>} Completed dialogue result.
  */
 async function completeDialogueTurn(service, client, context, turn, requestId) {
-    const assistantMessage = await turns.completeTurn(service, turn, () =>
+    const assistantMessage = await turns.completeTurn(service, turn, requestId, () =>
         prepareDialogueResponse(service, client, context, turn, requestId),
     );
     return buildDialogueResult(service, context, turn, assistantMessage);

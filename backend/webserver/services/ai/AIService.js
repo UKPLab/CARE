@@ -33,6 +33,18 @@ module.exports = class AIService extends Service {
     }
 
     /**
+     * Fails requests a previous server run left in progress, so they no longer block sessions.
+     */
+    async init() {
+        try {
+            const count = await this.server.db.models["ai_log"].failInProgressLogs();
+            this.logger.info(`Failed ${count} AI requests left in progress`);
+        } catch (error) {
+            this.logger.error("Failed to release in-progress AI requests: " + error.message);
+        }
+    }
+
+    /**
      * Runs an AI hook for RPC clients and internal trigger jobs.
      *
      * @param {*} client Authenticated client context.

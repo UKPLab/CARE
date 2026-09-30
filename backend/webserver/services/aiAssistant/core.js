@@ -18,9 +18,11 @@ const serviceHelpers = require("../../../utils/helper/ai/helpers.js");
  * @param {Object} client - Authenticated service client.
  * @param {number} studySessionId - Study session identifier.
  * @param {number} studyStepId - Study step identifier.
+ * @param {Object} [options] - Validation options.
+ * @param {boolean} [options.requireOpen=false] - Reject finished sessions and closed studies.
  * @returns {Promise<Object>} Validated user, models, session, and step.
  */
-async function loadStudyStepContext(service, client, studySessionId, studyStepId) {
+async function loadStudyStepContext(service, client, studySessionId, studyStepId, {requireOpen = false} = {}) {
     const userId = serviceHelpers.requireClientUserId(client);
     const models = service.server.db.models;
     const sessionId = serviceHelpers.requireId(studySessionId, "studySessionId");
@@ -32,6 +34,13 @@ async function loadStudyStepContext(service, client, studySessionId, studyStepId
     const studyStep = await models["study_step"].getById(stepId);
     if (!studyStep || Number(studyStep.studyId) !== Number(studySession.studyId)) {
         throw new Error("Study step does not belong to this study session");
+    }
+    if (requireOpen) {
+        // Same finished/closed rules as finishStudySession.
+        const study = await models["study"].getById(studySession.studyId);
+        if (studySession.end || !study || study.closed) {
+            throw new Error("Study session is no longer open");
+        }
     }
     return {userId, models, studySession, studyStep};
 }
@@ -101,11 +110,14 @@ function buildPromptValues(inputMappings, suppliedValues) {
                 input: {
                     ...mapping,
                     submissionId: mapping.submissionId ?? null,
-                    pdfDocumentId: mapping.pdfDocumentId ?? suppliedInput.pdfDocumentId ?? null,
                     pdfText: suppliedInput.pdfText ?? null,
                 },
             };
             continue;
+        }
+        // File references are built above from stored mappings only; client ones could point at any submission.
+        if (supplied[key]?.type === "serviceReplacement") {
+            throw new Error(`Invalid AI Chat input: ${key}`);
         }
         values[key] = supplied[key];
     }

@@ -79,6 +79,19 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Fails assistant responses left pending, e.g. by a server restart.
+         * @param {Object} [options] - Database options.
+         * @returns {Promise<number>} Number of failed messages.
+         */
+        static async failPendingMessages(options = {}) {
+            const [count] = await this.update({status: AI_MESSAGE_STATUSES.FAILED}, {
+                where: {role: AI_MESSAGE_ROLES.ASSISTANT, status: AI_MESSAGE_STATUSES.PENDING, deleted: false},
+                transaction: options.transaction,
+            });
+            return count;
+        }
+
+        /**
          * Loads the system context for one study step.
          * @param {number} conversationId - Conversation id.
          * @param {number} studyStepId - Study step id.
@@ -156,11 +169,26 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Finds the pending assistant response owned by a request.
+         * @param {string} requestId - Request identifier.
+         * @param {Object} [options] - Database options.
+         * @returns {Promise<Object|null>} Pending assistant row.
+         */
+        static async getPendingMessageByRequestId(requestId, options = {}) {
+            return this.findOne({
+                where: {requestId, role: AI_MESSAGE_ROLES.ASSISTANT, status: AI_MESSAGE_STATUSES.PENDING, deleted: false},
+                raw: true,
+                transaction: options.transaction,
+            });
+        }
+
+        /**
          * Changes an assistant only while its status still matches.
          * @param {number} id - Assistant message id.
          * @param {number[]} statuses - Allowed current statuses.
          * @param {Object} values - Server-prepared message fields.
          * @param {Object} [options] - Database options.
+         * @param {string} [options.requestId] - Only change the row while this request owns it.
          * @returns {Promise<number>} Number of changed messages.
          */
         static async updateMessageIfStatus(id, statuses, values, options = {}) {
@@ -168,6 +196,7 @@ module.exports = (sequelize, DataTypes) => {
                 where: {
                     id, role: AI_MESSAGE_ROLES.ASSISTANT,
                     status: {[Op.in]: statuses}, deleted: false,
+                    ...(options.requestId ? {requestId: options.requestId} : {}),
                 },
                 transaction: options.transaction,
             });
@@ -190,6 +219,7 @@ module.exports = (sequelize, DataTypes) => {
         content: DataTypes.TEXT,
         metadata: DataTypes.JSONB,
         status: DataTypes.INTEGER,
+        requestId: DataTypes.STRING,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
