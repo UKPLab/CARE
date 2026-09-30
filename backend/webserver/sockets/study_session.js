@@ -45,11 +45,11 @@ class StudySessionSocket extends Socket {
         let session;
         let shouldSendSessionStartEmail = false;
         if (data.studySessionId && data.studySessionId !== 0) {
+            await this.assertWriteAccess("study_session", data.studySessionId, options);
             const existing = await this.models["study_session"].getById(data.studySessionId, {transaction: options.transaction});
             if (!existing) {
                 throw new TranslatableError("errors.studies.studySession.notFound");
             }
-            await this.assertWriteAccess("study_session", data.studySessionId, options);
             shouldSendSessionStartEmail = existing.start == null;
             session = await this.models["study_session"].updateById(data.studySessionId,
                 {start: Date.now()},
@@ -183,11 +183,11 @@ class StudySessionSocket extends Socket {
             throw new TranslatableError("errors.studies.studySession.idRequired");
         }
 
+        await this.assertWriteAccess("study_session", data.studySessionId, options);
         const session = await this.models["study_session"].getById(data.studySessionId, {transaction: options.transaction});
         if (!session) {
             throw new TranslatableError("errors.studies.studySession.notFound");
         }
-        await this.assertWriteAccess("study_session", data.studySessionId, options);
 
         if (session.end) {
             throw new TranslatableError("errors.studies.studySession.alreadyFinished");
@@ -251,11 +251,13 @@ class StudySessionSocket extends Socket {
      * 
      * @socketEvent studySessionCopy
      * @param {object} data The data object containing the study session information and target user IDs.
-     * @param {object} data.studySession The study session object to be duplicated.
+     * @param {number} data.studySession.id The ID of the study session to be duplicated.
      * @param {number[]} data.userIds An array of user IDs to assign the duplicated session to.
      * @param {object} options  Configuration for the database operation.
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure atomicity.
      * @returns {Promise<StudySessions[]>} A promise that resolves with an array of the newly created study session objects for each target user.
+     * @throws {TranslatableError} notFound if the study session does not exist.
+     * @throws {TranslatableError} ACCESS_DENIED if the user cannot write to the session's study.
      */
     async copyStudySession(data, options) {
         let studySessions = [];
