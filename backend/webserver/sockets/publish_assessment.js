@@ -86,22 +86,27 @@ class PublishAssessmentSocket extends Socket {
     }
 
     /**
-     * Step of a study that runs the picked configuration, one per study.
+     * Step of a study that runs the picked configuration, one per study. Steps are matched by
+     * (workflowId, stepNumber) pair. If a study matches several picked
+     * pairs, the pair picked first wins
      * @param {number[]} studyIds
      * @param {number} configurationId
-     * @param {number[]} stepNumbers
+     * @param {Array<{workflowId: number, stepNumber: number}>} pickedSteps in selection order
      * @returns {Promise<Map<number, Object>>} studyId → study_step row
      */
-    async resolveAssessmentSteps(studyIds, configurationId, stepNumbers) {
-        if (studyIds.length === 0) {
+    async resolveAssessmentSteps(studyIds, configurationId, pickedSteps) {
+        if (studyIds.length === 0 || pickedSteps.length === 0) {
             return new Map();
         }
         const steps = await this.models["study_step"].findForAssessment(
-            studyIds, configurationId, stepNumbers
+            studyIds, configurationId, pickedSteps
         );
+        const pickOrder = new Map(pickedSteps.map((step, index) => [`${step.workflowId}:${step.stepNumber}`, index]));
+        const rank = (step) => pickOrder.get(`${step.workflowId}:${step.stepNumber}`) ?? Infinity;
         const byStudy = new Map();
         for (const step of steps) {
-            if (!byStudy.has(step.studyId)) {
+            const current = byStudy.get(step.studyId);
+            if (!current || rank(step) < rank(current)) {
                 byStudy.set(step.studyId, step);
             }
         }
@@ -124,9 +129,14 @@ class PublishAssessmentSocket extends Socket {
         if (!configurationId) {
             throw new TranslatableError("errors.validation.requiredFieldMissing", {fieldKey: "configurationId"});
         }
-        const stepNumbers = [...new Set((Array.isArray(assessmentScope.steps) ? assessmentScope.steps : [])
-            .map((step) => positiveInt(step?.stepNumber))
-            .filter(Boolean))];
+        // Keep each pick as a (workflowId, stepNumber) pair: a bare step-number list would let a
+        // "workflow A / step 1" pick select step 1 of a workflow B study.
+        const pickedSteps = (Array.isArray(assessmentScope.steps) ? assessmentScope.steps : [])
+            .map((step) => ({
+                workflowId: positiveInt(step?.workflowId),
+                stepNumber: positiveInt(step?.stepNumber),
+            }))
+            .filter((step) => step.workflowId && step.stepNumber);
 
         const sessionIds = await this.resolveSelectionIds("study_session", selection);
         if (sessionIds.length === 0) {
@@ -142,7 +152,7 @@ class PublishAssessmentSocket extends Socket {
         const stepByStudy = await this.resolveAssessmentSteps(
             [...new Set(sessions.map((session) => session.studyId).filter(Boolean))],
             configurationId,
-            stepNumbers
+            pickedSteps
         );
 
         return {
