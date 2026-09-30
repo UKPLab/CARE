@@ -594,8 +594,7 @@ export default {
             }
         );
         this.$emit("update:data", value);
-      }).catch((err) => {
-        console.error("Failed to save assessment data", err);
+      }).catch(() => {
         this.eventBus.emit("toast", {
           title: this.$t("assessment.save.failedTitle"),
           message: this.$t("assessment.save.failedMessage"),
