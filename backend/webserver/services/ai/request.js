@@ -12,68 +12,115 @@
 const { Op } = require("sequelize");
 const { AI_BUDGET_LIMIT_TYPES: LT } = require("../../../db/models/ai_budget.js");
 
+function deny(reason, key, params = {}) {
+    return { allowed: false, reason, key, params };
+}
+
 /**
  * Decides if an AI request can run. If yes, creates the ai_log row for it.
  * Blocks a second request from the same user in the same session while one is still running.
  *
  * @param {Object} service - AIService, used for DB access.
- * @param {Object} request - The request being made (user, model, hook, study, etc).
+ * @param {Object} request - The request being made (user, model, hook, session, etc).
+ *   Client `studyId` is ignored. Study access is resolved from `studySessionId`.
  * @param {Object} [options] - Optional flags.
  * @param {boolean} [options.bypassChecks] - Skip the access + cap checks (used for admin test prompts).
+ * @param {number} [options.hookModelId] - Server-selected hook model row for hook executions.
  * @returns {Promise<{ allowed: boolean, logId?: number, reason?: string }>}
  */
 async function beginRequest(service, request, options = {}) {
     const {
         userId, aiModelId, aiHookId, aiMessageId, requestId, input,
-        studyId, studySessionId, studyStepId, documentId,
+        studySessionId, studyStepId, documentId,
     } = request || {};
 
     if (await _hasInflight(service, userId, studySessionId)) {
-        return { allowed: false, reason: "You already have a pending AI request in this session" };
+        return deny(
+            "You already have a pending AI request in this session",
+            "errors.ai.requestAlreadyPending"
+        );
     }
 
     if (!options.bypassChecks) {
+        // NlpRequest never sends studyId, and a client studyId is not a membership proof.
+        const studyContext = await _resolveStudyContext(service, {
+            studySessionId, studyStepId, userId,
+        });
+        if (studyContext.error) return studyContext.error;
+        const studyId = studyContext.studyId;
+
         const model = await service.server.db.models["ai_model"].findByPk(aiModelId, { raw: true });
         if (!model || model.deleted || !model.enabled) {
-            return { allowed: false, reason: "AI model is not available" };
+            return deny("AI model is not available", "errors.ai.model.notAvailable");
         }
 
-        // Inside a study, access rides on its creator or owner; participants don't carry shares.
-        const access = await _resolveModelAccessHolder(service, {
-            userId, studyId, studySessionId, studyStepId,
-        }, model);
-        if (!access) {
-            return { allowed: false, reason: "Study owner could not be resolved" };
-        }
-        const {accessHolderId, modelShare, resolvedStudyId} = access;
+        // Inside a study, access (and per-share budget attribution) rides on the
+        // study creator or owner — participants don't carry shares.
+        const accessHolderId = studyId
+            ? await _getStudyAccessHolderId(service, studyId, {aiModelId, aiHookId})
+            : userId;
         if (!accessHolderId) {
-            return {
-                allowed: false,
-                reason: resolvedStudyId
-                    ? "Study creator no longer has access to this AI model"
-                    : "You do not have access to this AI model",
-            };
+            return deny(
+                "Study owner could not be resolved",
+                "errors.ai.studyOwnerUnavailable"
+            );
         }
 
-        // Model access does not imply hook access, a hook must be owned by, or actively shared with
         let hookShare = null;
+        let skipModelShare = false;
         if (aiHookId) {
             const hook = await service.server.db.models["ai_hook"].findByPk(aiHookId, {
-                attributes: ["userId", "deleted"],
+                attributes: ["userId", "deleted", "enabled"],
                 raw: true,
             });
             if (!hook || hook.deleted) {
-                return { allowed: false, reason: "AI hook is not available" };
+                return deny("AI hook is not available", "errors.ai.hook.notAvailable");
+            }
+            if (!hook.enabled) {
+                return deny("AI hook is disabled", "errors.ai.hook.disabled");
             }
             const isHookOwner = hook.userId === accessHolderId;
             hookShare = await _findActiveShare(service, "ai_hook_share", "aiHookId", accessHolderId, aiHookId);
             if (!isHookOwner && !hookShare) {
-                return {
-                    allowed: false,
-                    reason: resolvedStudyId
-                        ? "Study creator no longer has access to this AI hook"
-                        : "You do not have access to this AI hook",
-                };
+                return studyId
+                    ? deny(
+                        "Study creator no longer has access to this AI hook",
+                        "errors.ai.hook.studyOwnerAccessDenied"
+                    )
+                    : deny(
+                        "You do not have access to this AI hook",
+                        "errors.ai.hook.accessDenied"
+                    );
+            }
+            if (options.hookModelId) {
+                const hookModel = await service.server.db.models["ai_hook_models"].findOne({
+                    where: {id: options.hookModelId, aiHookId, aiModelId, deleted: false},
+                    attributes: ["id"],
+                    raw: true,
+                });
+                if (!hookModel) {
+                    return deny("AI hook model mismatch", "errors.ai.hook.modelNotFound");
+                }
+                // The server selected this bound model. A shared hook is enough;
+                // study participants do not also need a model share.
+                skipModelShare = true;
+            }
+        }
+
+        let modelShare = null;
+        if (!skipModelShare) {
+            const isModelOwner = model.userId === accessHolderId;
+            modelShare = await _findActiveShare(service, "ai_model_share", "aiModelId", accessHolderId, aiModelId);
+            if (!isModelOwner && !modelShare) {
+                return studyId
+                    ? deny(
+                        "Study creator no longer has access to this AI model",
+                        "errors.ai.model.studyOwnerAccessDenied"
+                    )
+                    : deny(
+                        "You do not have access to this AI model",
+                        "errors.ai.model.accessDenied"
+                    );
             }
         }
 
@@ -83,33 +130,45 @@ async function beginRequest(service, request, options = {}) {
                 aiModelShareId: modelShare?.id,
                 aiHookId,
                 aiHookShareId: hookShare?.id,
-                studyId: resolvedStudyId,
+                studyId,
                 studyStepId,
             });
 
             for (const cap of caps) {
                 const used = await _sumLogsFor(service, cap, { userId, studySessionId, accessHolderId });
                 if (used >= cap.costLimit) {
-                    return { allowed: false, reason: _capDenyMessage(cap, used) };
+                    return {allowed: false, ..._capDenial(cap, used)};
                 }
             }
         }
     }
 
-    const log = await service.server.db.models["ai_log"].add({
-        userId,
-        aiModelId,
-        aiHookId: aiHookId || null,
-        aiMessageId: aiMessageId || null,
-        documentId: documentId || null,
-        studySessionId: studySessionId || null,
-        studyStepId: studyStepId || null,
-        requestId,
-        input,
-        status: "in_progress",
-        requestStart: new Date(),
-    });
-    return { allowed: true, logId: log.id };
+    try {
+        const log = await service.server.db.models["ai_log"].add({
+            userId,
+            aiModelId,
+            aiHookId: aiHookId || null,
+            aiMessageId: aiMessageId || null,
+            documentId: documentId || null,
+            studySessionId: studySessionId || null,
+            studyStepId: studyStepId || null,
+            requestId,
+            input,
+            status: "in_progress",
+            requestStart: new Date(),
+        });
+        return { allowed: true, logId: log.id };
+    } catch (err) {
+        // Unique index ai_log_one_inflight_per_user_session: a concurrent beginRequest
+        // passed _hasInflight() before either insert landed.
+        if (/duplicate key|unique constraint/i.test(String(err.message))) {
+            return deny(
+                "You already have a pending AI request in this session",
+                "errors.ai.requestAlreadyPending"
+            );
+        }
+        throw err;
+    }
 }
 
 /**
@@ -176,51 +235,76 @@ async function _hasInflight(service, userId, studySessionId) {
     return existing !== null;
 }
 
-/**
- * Resolves the study creator or owner who provides access to the selected model.
- * @param {Object} service - AIService used for database access.
- * @param {Object} request - Request study identifiers and authenticated user.
- * @param {Object} model - Selected AI model.
- * @returns {Promise<Object|null>} Access holder, share and resolved study id.
- */
-async function _resolveModelAccessHolder(service, request, model) {
-    const models = service.server.db.models;
-    let resolvedStudyId = Number(request.studyId) || null;
-
-    if (!resolvedStudyId && request.studySessionId) {
-        const session = await models["study_session"].findByPk(request.studySessionId, {
-            attributes: ["studyId", "deleted"], raw: true,
-        });
-        if (session && !session.deleted) resolvedStudyId = Number(session.studyId);
-    }
-    if (!resolvedStudyId && request.studyStepId) {
-        const step = await models["study_step"].findByPk(request.studyStepId, {
-            attributes: ["studyId", "deleted"], raw: true,
-        });
-        if (step && !step.deleted) resolvedStudyId = Number(step.studyId);
+// Study access comes from the session row. Ignore any client studyId.
+async function _resolveStudyContext(service, { studySessionId, studyStepId, userId }) {
+    const sessionId = Number(studySessionId);
+    if (!Number.isInteger(sessionId) || sessionId <= 0) {
+        return { studyId: null };
     }
 
-    let accessHolderIds = [Number(request.userId)];
-    if (resolvedStudyId) {
-        const study = await models["study"].findByPk(resolvedStudyId, {
-            attributes: ["createdByUserId", "userId", "deleted"], raw: true,
-        });
-        if (!study || study.deleted) return null;
-        accessHolderIds = [...new Set([study.createdByUserId, study.userId]
-            .map(Number)
-            .filter((id) => Number.isInteger(id) && id > 0))];
+    const session = await service.server.db.models["study_session"].findByPk(sessionId, {
+        attributes: ["id", "studyId", "userId", "deleted"],
+        raw: true,
+    });
+    if (!session || session.deleted) {
+        return { error: deny("Study session is not available", "errors.ai.sessionAccessDenied") };
     }
 
-    for (const accessHolderId of accessHolderIds) {
-        if (Number(model.userId) === accessHolderId) {
-            return {accessHolderId, modelShare: null, resolvedStudyId};
+    const studyId = Number(session.studyId);
+    const ownerId = await _getStudyOwnerId(service, studyId);
+    const callerId = Number(userId);
+    const isParticipant = Number(session.userId) === callerId;
+    const isOwner = ownerId === callerId;
+    if (!isParticipant && !isOwner) {
+        return { error: deny("You do not have access to this study session", "errors.ai.sessionAccessDenied") };
+    }
+
+    const stepId = Number(studyStepId);
+    if (Number.isInteger(stepId) && stepId > 0) {
+        const step = await service.server.db.models["study_step"].findByPk(stepId, {
+            attributes: ["id", "studyId", "deleted"],
+            raw: true,
+        });
+        if (!step || step.deleted || Number(step.studyId) !== studyId) {
+            return { error: deny("Study step does not belong to this session", "errors.ai.sessionAccessDenied") };
         }
-        const modelShare = await _findActiveShare(
-            service, "ai_model_share", "aiModelId", accessHolderId, model.id,
-        );
-        if (modelShare) return {accessHolderId, modelShare, resolvedStudyId};
     }
-    return {accessHolderId: null, modelShare: null, resolvedStudyId};
+
+    return { studyId };
+}
+
+// Returns the userId of the study's owner, or null if the study is gone.
+async function _getStudyOwnerId(service, studyId) {
+    const study = await service.server.db.models["study"].findByPk(studyId, {
+        attributes: ["userId", "deleted"],
+        raw: true,
+    });
+    if (!study || study.deleted) return null;
+    return Number(study.userId);
+}
+
+// Returns the study creator when they can use the hook (or model), else the owner.
+// Assignment studies are owned by students but created by the instructor who holds the shares.
+async function _getStudyAccessHolderId(service, studyId, { aiModelId, aiHookId }) {
+    const study = await service.server.db.models["study"].findByPk(studyId, {
+        attributes: ["createdByUserId", "userId", "deleted"],
+        raw: true,
+    });
+    if (!study || study.deleted) return null;
+    const ownerId = Number(study.userId);
+    const creatorId = Number(study.createdByUserId);
+    if (!creatorId || creatorId === ownerId) return ownerId;
+
+    const [tableName, fkColumn, entityId] = aiHookId
+        ? ["ai_hook", "aiHookId", aiHookId]
+        : ["ai_model", "aiModelId", aiModelId];
+    const entity = await service.server.db.models[tableName].findByPk(entityId, {
+        attributes: ["userId"],
+        raw: true,
+    });
+    const creatorHasAccess = Number(entity?.userId) === creatorId
+        || await _findActiveShare(service, `${tableName}_share`, fkColumn, creatorId, entityId);
+    return creatorHasAccess ? creatorId : ownerId;
 }
 
 // Returns the user's active (non-expired) share row for a model or hook, or null.
@@ -282,16 +366,17 @@ async function _sumLogsFor(service, cap, ctx) {
 }
 
 // Human-readable deny message for the cap that blocked the request.
-function _capDenyMessage(cap, used) {
+function _capDenial(cap, used) {
     const limit = Number(cap.costLimit).toFixed(2);
     const spent = used.toFixed(2);
-    if (cap.aiModelId) return `Model budget exhausted: $${spent} / $${limit}`;
-    if (cap.aiModelShareId) return `Model share budget exhausted: $${spent} / $${limit}`;
-    if (cap.aiHookShareId) return `Hook share budget exhausted: $${spent} / $${limit}`;
-    if (cap.studyStepId) return `Step-hook budget exhausted: $${spent} / $${limit}`;
-    if (cap.aiHookId) return `Hook budget exhausted: $${spent} / $${limit}`;
-    if (cap.studyId) return `Study budget exhausted: $${spent} / $${limit}`;
-    return `Budget exhausted: $${spent} / $${limit}`;
+    const params = {spent, limit};
+    if (cap.aiModelId) return {reason: `Model budget exhausted: $${spent} / $${limit}`, key: "errors.budget.modelExhausted", params};
+    if (cap.aiModelShareId) return {reason: `Model share budget exhausted: $${spent} / $${limit}`, key: "errors.budget.modelShareExhausted", params};
+    if (cap.aiHookShareId) return {reason: `Hook share budget exhausted: $${spent} / $${limit}`, key: "errors.budget.hookShareExhausted", params};
+    if (cap.studyStepId) return {reason: `Step-hook budget exhausted: $${spent} / $${limit}`, key: "errors.budget.stepHookExhausted", params};
+    if (cap.aiHookId) return {reason: `Hook budget exhausted: $${spent} / $${limit}`, key: "errors.budget.hookExhausted", params};
+    if (cap.studyId) return {reason: `Study budget exhausted: $${spent} / $${limit}`, key: "errors.budget.studyExhausted", params};
+    return {reason: `Budget exhausted: $${spent} / $${limit}`, key: "errors.budget.exhausted", params};
 }
 
 /// Sum helpers
@@ -414,7 +499,7 @@ async function _sumHookShareAttributable(service, cap, ownerId) {
 }
 
 // Owner's own usage on the entity + usage by anyone in studies they own or created
-// (access may come from the creator, see _resolveModelAccessHolder).
+// (access may come from the creator, see _getStudyAccessHolderId).
 // entityWhere narrows to one model or one hook.
 async function _sumAttributableForEntity(service, entityWhere, ownerId, resetAt) {
     const Sequelize = service.server.db.Sequelize;

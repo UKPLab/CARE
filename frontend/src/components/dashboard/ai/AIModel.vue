@@ -6,7 +6,7 @@
     @hide="resetForm"
   >
     <template #title>
-      {{ modelForm.id ? "Edit AI Model" : "Add AI Model" }}
+      {{ modelForm.id ? $t("ai.models.editTitle") : $t("ai.models.addTitle") }}
     </template>
     <template #body>
       <BasicForm
@@ -21,18 +21,19 @@
       <span class="btn-group">
         <BasicButton
           class="btn btn-secondary"
-          text="Cancel"
+          :text="$t('ai.common.cancel')"
           @click="$refs.modal.close()"
         />
         <BasicButton
           class="btn btn-outline-secondary"
           :disabled="isTestingModel"
-          :text="isTestingModel ? 'Testing...' : 'Send Test Prompt'"
+          :text="isTestingModel ? $t('ai.models.testing') : $t('ai.models.sendTestPrompt')"
           @click="testModel"
         />
         <BasicButton
           class="btn btn-primary"
-          :text="modelForm.id ? 'Update' : 'Add'"
+          :disabled="isSaving"
+          :text="modelForm.id ? $t('ai.common.update') : $t('ai.common.add')"
           @click="saveModel"
         />
       </span>
@@ -50,15 +51,14 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import { resolveApiMessage } from "@/assets/utils";
+
+const APP_DATA_TIMEOUT_MS = 10000;
 
 export default {
   name: "AIModel",
   components: { BasicModal, BasicForm, BasicButton },
   props: {
-    currentUserId: {
-      type: Number,
-      required: true,
-    },
     credentialRows: {
       type: Array,
       default: () => [],
@@ -70,6 +70,7 @@ export default {
       modelForm: {},
       isTestingModel: false,
       isLoadingModels: false,
+      isSaving: false,
       modelOptions: [],
       modelLookupError: "",
     };
@@ -95,7 +96,7 @@ export default {
     },
     modelFields() {
       const labelButton = {
-        text: this.isLoadingModels ? this.$t("common.loading") : this.$t("dashboard.ai.loadModels"),
+        text: this.isLoadingModels ? this.$t("common.loading") : this.$t("ai.models.loadModels"),
         disabled: !this.canLoadModelOptions || this.isLoadingModels,
         class: "btn-outline-secondary btn-sm",
         action: "loadModelOptions",
@@ -103,93 +104,93 @@ export default {
       const modelField = this.modelOptionValues.length
         ? {
             key: "model",
-            label: "Model Name",
+            label: this.$t("ai.models.modelName"),
             type: "select",
             required: true,
             default: "",
             labelButton,
-            help: "Select the model you want to use, e.g. gpt-4o or claude-3-5-sonnet.",
+            help: this.$t("ai.models.modelSelectHelp"),
             options: [
-              { value: "", name: "Select model" },
+              { value: "", name: this.$t("ai.models.selectModel") },
               ...this.modelOptionValues.map((model) => ({ value: model, name: model })),
             ],
           }
         : {
             key: "model",
-            label: "Model Name",
+            label: this.$t("ai.models.modelName"),
             type: "text",
             required: true,
             default: "",
             labelButton,
-            placeholder: "Model name",
-            help: "Select a credential, then load models from LiteLLM, or enter a model name.",
+            placeholder: this.$t("ai.models.modelNamePlaceholder"),
+            help: this.$t("ai.models.modelLoadHelp"),
           };
 
       return [
         {
           key: "name",
-          label: "Name",
+          label: this.$t("ai.common.name"),
           type: "text",
           required: true,
           default: "",
-          placeholder: "Name",
-          help: "A display name for this AI model inside CARE.",
+          placeholder: this.$t("ai.models.namePlaceholder"),
+          help: this.$t("ai.models.nameHelp"),
         },
         {
           key: "aiCredentialId",
-          label: "Your Credentials",
+          label: this.$t("ai.models.yourCredentials"),
           type: "select",
           required: true,
           default: null,
           options: [
-            { value: null, name: "Select credential" },
+            { value: null, name: this.$t("ai.models.selectCredential") },
             ...this.selectableCredentialRows.map((credential) => ({
               value: credential.id,
               name: credential.name,
             })),
           ],
-          help: "Select the credential that you want to use to access the model.",
+          help: this.$t("ai.models.credentialHelp"),
         },
         modelField,
         {
           key: "description",
-          label: "Description (optional)",
+          label: this.$t("ai.models.description"),
           type: "textarea",
           default: "",
           rows: 2,
-          help: "Optional notes to help identify when this model should be used.",
+          help: this.$t("ai.models.descriptionHelp"),
         },
         {
           key: "additionalParameters",
-          label: "Additional Parameters (JSON, optional)",
+          label: this.$t("ai.models.additionalParameters"),
           type: "json",
           default: {},
           rows: 4,
           placeholder: "{}",
-          help: "Optional parameters as JSON, such as temperature, top_p, or fallback_models.",
+          help: this.$t("ai.models.additionalParametersHelp"),
         },
         {
           key: "freeModel",
-          label: "Free Model",
+          label: this.$t("ai.models.freeModel"),
           type: "switch",
           default: false,
-          help: "Free/self-hosted models bypass all spending caps. When disabled, costs are tracked.",
+          help: this.$t("ai.models.freeModelHelp"),
         },
         ...(!this.modelForm.freeModel
           ? [{
               key: "costLimit",
-              label: "Cost limit ($)",
+              label: this.$t("ai.budgets.costLimitUsd"),
               type: "number",
               default: "",
               min: 0,
               step: 0.01,
-              placeholder: "No limit",
-              help: "Global cap across all users on this model.",
+              placeholder: this.$t("ai.common.noLimit"),
+              help: this.$t("ai.models.costLimitHelp"),
             }]
           : []),
         {
           key: "enabled",
-          label: "Enabled",
+          label: this.$t("ai.status.enabled"),
           type: "switch",
           default: true,
         },
@@ -216,10 +217,6 @@ export default {
     open(row = null) {
       this.resetForm();
       if (row) {
-        if (Number(row.userId) !== Number(this.currentUserId)) {
-          this.toastError("Only model owners can edit this model");
-          return;
-        }
         this.modelForm = {
           id: row.id,
           name: row.name || "",
@@ -238,6 +235,7 @@ export default {
       this.modelForm = {};
       this.isTestingModel = false;
       this.isLoadingModels = false;
+      this.isSaving = false;
       this.clearModelOptions();
       this.eventBus.emit("resetFormField");
     },
@@ -258,47 +256,55 @@ export default {
       this.modelOptions = [];
       this.modelLookupError = "";
     },
-    emitAiServiceCommand(command, data = {}) {
-      return new Promise((resolve, reject) => {
-        this.$socket.emit("serviceCommand", {
-          service: "AIService",
-          command,
-          data,
-        }, (result) => {
-          if (result?.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(result?.message || "AI service request failed"));
-          }
-        });
-      });
-    },
     async loadModelOptions() {
       if (!this.modelForm.aiCredentialId) {
-        this.toastError("Credential is required");
+        this.toastError(this.$t("ai.errors.credentialIsRequired"));
         return;
       }
 
       this.isLoadingModels = true;
       this.modelLookupError = "";
       try {
-        const result = await this.emitAiServiceCommand("getValidModels", {
+        const result = await this.$ai.getValidModels({
           credentialId: this.modelForm.aiCredentialId,
         });
         this.modelOptions = Array.isArray(result?.models) ? result.models : [];
         if (this.modelOptions.length === 0) {
-          this.modelLookupError = "No models were returned for this credential.";
+          this.modelLookupError = this.$t("ai.models.noModels");
         }
       } catch (error) {
         this.modelOptions = [];
-        this.modelLookupError = error.message || "Failed to load models";
+        this.modelLookupError = resolveApiMessage(error, "ai.errors.loadModels");
         this.toastError(this.modelLookupError);
       } finally {
         this.isLoadingModels = false;
       }
     },
-    saveModel() {
-      if (!this.$refs.form.validate()) return;
+    emitAppDataUpdate(table, data, errorKey) {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          reject(new Error(this.$t("ai.errors.requestTimeout", {
+            timeoutMs: APP_DATA_TIMEOUT_MS,
+            command: table,
+          })));
+        }, APP_DATA_TIMEOUT_MS);
+        this.$socket.emit("appDataUpdate", { table, data }, (result) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (result?.success) {
+            resolve(result.data);
+          } else {
+            reject(new Error(resolveApiMessage(result, errorKey)));
+          }
+        });
+      });
+    },
+    async saveModel() {
+      if (!this.$refs.form.validate() || this.isSaving) return;
 
       const payload = {
         id: this.modelForm.id || 0,
@@ -311,15 +317,10 @@ export default {
         freeModel: !!this.modelForm.freeModel,
       };
 
-      this.$socket.emit("appDataUpdate", {
-        table: "ai_model",
-        data: payload,
-      }, (result) => {
-        if (!result.success) {
-          this.toastError(result.message || "Failed to save model");
-          return;
-        }
-        const savedModelId = result.data?.id || result.data || this.modelForm.id;
+      this.isSaving = true;
+      try {
+        const saved = await this.emitAppDataUpdate("ai_model", payload, "ai.errors.saveModel");
+        const savedModelId = saved?.id || saved || this.modelForm.id;
         const rawCostLimit = this.modelForm.costLimit;
         const hasCostLimit = rawCostLimit !== "" && rawCostLimit !== null && rawCostLimit !== undefined;
         const costLimitValue = Number(rawCostLimit);
@@ -327,55 +328,57 @@ export default {
           && hasCostLimit
           && Number.isFinite(costLimitValue)
           && costLimitValue >= 0;
-        // Standard appDataUpdate chain: save the model, then update or create the ai_budget row.
+        // Update, create, or soft-delete the cap. An empty field or a free model
+        // must drop the old row, or request.js still enforces it.
+        const existing = this.findExistingCapRow(savedModelId);
+        let capData = null;
         if (wantsCap) {
-          const existing = this.findExistingCapRow(savedModelId);
-          const capData = existing
+          capData = existing
             ? { id: existing.id, costLimit: costLimitValue }
             : { aiModelId: Number(savedModelId), limitType: 0, costLimit: costLimitValue };
-          this.$socket.emit("appDataUpdate", { table: "ai_budget", data: capData }, (capResult) => {
-            if (!capResult?.success) {
-              this.toastError(capResult?.message || "Failed to save cost limit");
-            }
-          });
+        } else if (existing) {
+          capData = { id: existing.id, deleted: true };
+        }
+        if (capData) {
+          await this.emitAppDataUpdate("ai_budget", capData, "ai.errors.saveCostLimit");
         }
         this.$refs.modal.close();
-        this.toastSuccess(this.modelForm.id ? "Model updated" : "Model created");
-      });
+        this.toastSuccess(this.modelForm.id ? this.$t("ai.messages.modelUpdated") : this.$t("ai.messages.modelCreated"));
+      } catch (error) {
+        this.toastError(error?.message || resolveApiMessage(error, "ai.errors.saveModel"));
+      } finally {
+        this.isSaving = false;
+      }
     },
-    testModel() {
+    async testModel() {
       if (!this.$refs.form.validate()) return;
 
       this.isTestingModel = true;
-      this.$socket.emit("serviceCommand", {
-        service: "AIService",
-        command: "testModel",
-        data: {
+      try {
+        const result = await this.$ai.testModel({
           aiModelId: this.modelForm.id || null,
           credentialId: this.modelForm.aiCredentialId,
           model: this.modelForm.model.trim(),
           additionalParameters: this.modelForm.additionalParameters || {},
-        },
-      }, (result) => {
+        });
+        const outputText = result?.outputText ? String(result.outputText) : "";
+        this.toastSuccess(outputText ? this.$t("ai.messages.modelTestOutput", { output: outputText }) : this.$t("ai.messages.modelTestSuccess"));
+      } catch (error) {
+        this.toastError(resolveApiMessage(error, "ai.errors.modelTestFailed"));
+      } finally {
         this.isTestingModel = false;
-        if (result?.success) {
-          const outputText = result.data?.outputText ? String(result.data.outputText) : "";
-          this.toastSuccess(outputText ? `Model test successful. Output: ${outputText}` : "Model test successful.");
-        } else {
-          this.toastError(result?.message || "Model test failed");
-        }
-      });
+      }
     },
     toastSuccess(message) {
       this.eventBus.emit("toast", {
-        title: "Success",
+        title: this.$t("ai.common.success"),
         message,
         variant: "success",
       });
     },
     toastError(message) {
       this.eventBus.emit("toast", {
-        title: "Error",
+        title: this.$t("ai.common.error"),
         message,
         variant: "danger",
       });

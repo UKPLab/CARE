@@ -66,6 +66,20 @@ module.exports = {
         defaultValue: Sequelize.fn('NOW'),
       },
     });
+
+    // Per-request share lookup is hook + user or role. Visibility loads by userId or roleId.
+    await queryInterface.addIndex('ai_hook_share', ['aiHookId', 'userId'], {
+      name: 'ai_hook_share_aiHookId_userId_index',
+    });
+    await queryInterface.addIndex('ai_hook_share', ['aiHookId', 'roleId'], {
+      name: 'ai_hook_share_aiHookId_roleId_index',
+    });
+    await queryInterface.addIndex('ai_hook_share', ['userId'], {
+      name: 'ai_hook_share_userId_index',
+    });
+    await queryInterface.addIndex('ai_hook_share', ['roleId'], {
+      name: 'ai_hook_share_roleId_index',
+    });
   },
 
   async down(queryInterface, Sequelize) {

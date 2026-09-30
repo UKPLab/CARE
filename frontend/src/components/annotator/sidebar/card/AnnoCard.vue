@@ -65,7 +65,7 @@
           <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="x-square-fill"
+                  icon="x-square"
                   :title="$t('common.cancel')"
                   @click="editingTag = false"
           />
@@ -100,14 +100,14 @@
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="floppy-fill"
+                  icon="floppy"
                   :title="$t('common.save')"
                   @click="save"
               />
               <SidebarButton
                   :loading="false"
                   :props="$props"
-                  icon="x-square-fill"
+                  icon="x-square"
                   :title="$t('common.cancel')"
                   @click="cancel"
               />
@@ -137,7 +137,7 @@
                   v-if="settingResponse && !readOnly"
                   :loading="false"
                   :props="$props"
-                  icon="reply-fill"
+                  icon="reply"
                   :title="$t('common.reply')"
                   @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
               />
@@ -693,7 +693,7 @@ export default {
 
 .replies {
   font-size: smaller;
-  color: #929292;
+  color: var(--bs-secondary-color, #929292);
 }
 
 @keyframes flickerAnimation {
@@ -752,11 +752,11 @@ export default {
 }
 
 .annoBlockquote:hover {
-  color: #000000;
+  color: var(--bs-body-color, #000000);
 }
 
 .check-icon:hover {
-  color: #007bff !important;
+  color: var(--bs-primary, #007bff) !important;
 }
 
 .header-hoverable {
@@ -764,13 +764,13 @@ export default {
 }
 
 .header-hoverable:hover {
-  background-color: #e9ecef !important;
+  background-color: var(--bs-secondary-bg, #e9ecef) !important;
   border-radius: 4px;
 }
 
 .card-header {
   font-size: smaller;
-  color: #929292;
+  color: var(--bs-secondary-color, #929292);
   transition: background-color 0.2s ease;
 }
 </style>

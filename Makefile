@@ -34,7 +34,7 @@ help:
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
 	@echo "make clean             				Delete development files"
-	@echo "make lint             				Run linter (only frontend)"
+	@echo "make lint             				Run linter"
 	@echo "make kill             				Kill all node instances (only unix)"
 	@echo "make modules          				Install npm packages in all utils/modules subdirectories"
 	@echo "make audit            				npm audit for frontend, backend, and utils/modules packages"
@@ -57,7 +57,8 @@ doc_clean:
 # Local file: deps need their own node_modules (Node resolves from the linked package path).
 UTILS_MODULES_UPTODATE := \
 	utils/modules/editor-delta-conversion/node_modules/.uptodate \
-	utils/modules/assessment-score/node_modules/.uptodate
+	utils/modules/assessment-score/node_modules/.uptodate \
+	utils/modules/placeholder-tokens/node_modules/.uptodate
 
 .PHONY: test
 test: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
@@ -71,10 +72,21 @@ test-rpc: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/editor-delta-conversion && npm run test:module -- tests/editor-delta-conversion.test.js
 	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
+	cd utils/modules/placeholder-tokens && npm run test:module -- tests/placeholder-tokens.test.js
 
 .PHONY: lint
-lint: frontend/node_modules/.uptodate
-	cd frontend && npm run frontend-lint
+lint: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
+	@set +e; \
+	(cd frontend && npm run frontend-lint); s1=$$?; \
+	echo ''; echo '=== Frontend i18n ==='; \
+	(cd frontend && npm run frontend-i18n-check); s2=$$?; \
+	echo ''; echo '=== Backend i18n ==='; \
+	(cd backend && npm run backend-i18n-check); s3=$$?; \
+	echo ''; echo '=== Lint summary ==='; \
+	echo "frontend eslint+i18n exit=$$s1/$$s2  backend i18n exit=$$s3"; \
+	if [ $$s1 -ne 0 ]; then exit $$s1; fi; \
+	if [ $$s2 -ne 0 ]; then exit $$s2; fi; \
+	exit $$s3
 
 .PHONY: docker
 docker:
@@ -102,7 +114,7 @@ dev-wizard: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTI
 	cd frontend && npm run frontend-dev & cd backend && npm run start
 
 .PHONY: dev-frontend
-dev-frontend: frontend/node_modules/.uptodate
+dev-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev
 
 .PHONY: dev-build
@@ -124,7 +136,7 @@ dev-backend-watch: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run start:watch
 
 .PHONY: dev-build-frontend
-dev-build-frontend: frontend/node_modules/.uptodate
+dev-build-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-dev-build
 
 .PHONY: build
@@ -132,7 +144,7 @@ build:
 	@docker compose -f docker-compose.yml -p ${PROJECT_NAME} up --build -d
 
 .PHONY: build-frontend
-build-frontend: frontend/node_modules/.uptodate
+build-frontend: frontend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd frontend && npm run frontend-build
 
 .PHONY: rpc_moodle_build
@@ -245,6 +257,7 @@ ifeq ($(OS),Windows_NT)
 	@if exist "backend\node_modules" rmdir /S /Q "backend\node_modules"
 	@if exist "utils\modules\editor-delta-conversion\node_modules" rmdir /S /Q "utils\modules\editor-delta-conversion\node_modules"
 	@if exist "utils\modules\assessment-score\node_modules" rmdir /S /Q "utils\modules\assessment-score\node_modules"
+	@if exist "utils\modules\placeholder-tokens\node_modules" rmdir /S /Q "utils\modules\placeholder-tokens\node_modules"
 	@if exist "dist" rmdir /S /Q "dist"
 	@for %%F in (files*) do if "%%~nxF" neq "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" del "%%F"
 else
@@ -252,6 +265,7 @@ else
 	rm -rf backend/node_modules
 	rm -rf care/utils/modules/editor-delta-conversion/node_modules
 	rm -rf care/utils/modules/assessment-score/node_modules
+	rm -rf care/utils/modules/placeholder-tokens/node_modules
 	rm -rf dist
 	find files -maxdepth 1 -type f ! -name "8852a746-360e-4c31-add2-4d1c75bfb96d.pdf" -exec rm {} \;
 endif
@@ -309,10 +323,10 @@ modules: install-utils-modules
 # All three audits run even if one fails; exit 1 if any failed (npm.cmd avoids PowerShell execution policy on npm.ps1).
 ifeq ($(OS),Windows_NT)
 audit:
-	@powershell -NoProfile -Command "$$e=0; foreach ($$p in @('frontend','backend','utils/modules/editor-delta-conversion','utils/modules/assessment-score')) { Write-Host ''; Write-Host ('=== npm audit: ' + $$p + ' ==='); npm.cmd audit --prefix (Join-Path '$(CURDIR)' $$p); if ($$LASTEXITCODE -ne 0) { $$e=1 } }; exit $$e"
+	@powershell -NoProfile -Command "$$e=0; foreach ($$p in @('frontend','backend','utils/modules/editor-delta-conversion','utils/modules/assessment-score','utils/modules/placeholder-tokens')) { Write-Host ''; Write-Host ('=== npm audit: ' + $$p + ' ==='); npm.cmd audit --prefix (Join-Path '$(CURDIR)' $$p); if ($$LASTEXITCODE -ne 0) { $$e=1 } }; exit $$e"
 else
 audit:
-	@st=0; for d in frontend backend utils/modules/editor-delta-conversion utils/modules/assessment-score; do \
+	@st=0; for d in frontend backend utils/modules/editor-delta-conversion utils/modules/assessment-score utils/modules/placeholder-tokens; do \
 		echo ""; echo "=== npm audit: $$d ==="; \
 		npm audit --prefix $$d || st=1; \
 	done; exit $$st

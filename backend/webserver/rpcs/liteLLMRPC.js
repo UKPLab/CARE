@@ -32,7 +32,7 @@ module.exports = class LiteLLMRPC extends RPC {
      * @param {Object} data - Arbitrary params forwarded to litellm.completion()
      * @param {string} data.model - Model identifier (provider-specific, e.g. "gpt-4o", "ollama/llama3")
      * @param {Array<Object>} data.messages - OpenAI-format messages array
-     * @param {number} [data.outputMode] - Internal CARE output mode. `1` repairs JSON content in the Python bridge.
+     * @param {number} data.outputMode - Optional. Internal CARE output mode. `1` repairs JSON content in the Python bridge.
      * @param {Object} [options] - Internal streaming options.
      * @param {function(string): void} [options.onDelta] - Receives temporary answer text.
      * @returns {Promise<Object>} LiteLLM response with choices and usage
@@ -71,9 +71,9 @@ module.exports = class LiteLLMRPC extends RPC {
             await this.abortChatCompletion(requestId, "RPC acknowledgement timed out");
             throw err;
         }
-        if (!response['success']) {
-            this.logger.error("chatCompletion error: " + response['message']);
-            throw new Error(response['message']);
+        if (!response.success) {
+            this.logger.error("chatCompletion error: " + response.message);
+            throw new Error(response.message);
         }
         return response;
     }
@@ -118,9 +118,9 @@ module.exports = class LiteLLMRPC extends RPC {
      */
     async getProviders() {
         const response = await this.emit("getProviders", {}, this.timeout);
-        if (!response['success']) {
-            this.logger.error("getProviders error: " + response['message']);
-            throw new Error(response['message']);
+        if (!response.success) {
+            this.logger.error("getProviders error: " + response.message);
+            throw new Error(response.message);
         }
         return response.data || {providers: []};
     }
@@ -129,17 +129,17 @@ module.exports = class LiteLLMRPC extends RPC {
      * Fetch models available for the supplied credential.
      *
      * @param {Object} data
-     * @param {string} [data.provider]
+     * @param {string} data.provider - Optional provider slug
      * @param {string} data.apiKey
-     * @param {string} [data.apiBaseUrl]
-     * @param {string} [data.apiVersion]
+     * @param {string} data.apiBaseUrl - Optional
+     * @param {string} data.apiVersion - Optional
      * @returns {Promise<Object>}
      */
     async getValidModels(data) {
         const response = await this.emit("getValidModels", data || {}, this.timeout);
-        if (!response['success']) {
-            this.logger.error("getValidModels error: " + response['message']);
-            throw new Error(response['message']);
+        if (!response.success) {
+            this.logger.error("getValidModels error: " + response.message);
+            throw new Error(response.message);
         }
         return response.data || {models: []};
     }
@@ -148,7 +148,7 @@ module.exports = class LiteLLMRPC extends RPC {
      * Ask the Python bridge to abort an in-flight chat completion.
      *
      * @param {string} requestId
-     * @param {string} [reason]
+     * @param {string} reason - Optional abort reason
      * @returns {Promise<Object>}
      */
     async abortChatCompletion(requestId, reason = "request aborted") {
@@ -158,9 +158,9 @@ module.exports = class LiteLLMRPC extends RPC {
 
         try {
             const response = await this.emit("abortChatCompletion", {requestId, reason}, 5000);
-            if (!response['success']) {
-                this.logger.error("abortChatCompletion error: " + response['message']);
-                return {aborted: false, message: response['message']};
+            if (!response.success) {
+                this.logger.error("abortChatCompletion error: " + response.message);
+                return {aborted: false, message: response.message};
             }
             return response.data || {aborted: true};
         } catch (err) {

@@ -6,6 +6,7 @@
  * @author Akash Gundapuneni
  */
 const MetaModel = require('../MetaModel.js');
+const TranslatableError = require("../../utils/TranslatableError");
 
 module.exports = (sequelize, DataTypes) => {
     class AiLog extends MetaModel {
@@ -27,6 +28,15 @@ module.exports = (sequelize, DataTypes) => {
         static associate(models) {
             AiLog.belongsTo(models["study_session"], { foreignKey: "studySessionId", as: "studySession" });
             AiLog.belongsTo(models["ai_message"], { foreignKey: "aiMessageId", as: "message" });
+        }
+
+        // appDataUpdate always sets context.currentUserId. request.js writes omit it.
+        static rejectClientWrite(options = {}) {
+            const currentUserId = Number(options?.context?.currentUserId);
+            if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+                return;
+            }
+            throw new TranslatableError("errors.ai.log.updateNotAllowed");
         }
     }
 
@@ -61,6 +71,14 @@ module.exports = (sequelize, DataTypes) => {
         sequelize,
         modelName: 'ai_log',
         tableName: 'ai_log',
+        hooks: {
+            beforeCreate: (_row, options) => {
+                AiLog.rejectClientWrite(options);
+            },
+            beforeUpdate: (_row, options) => {
+                AiLog.rejectClientWrite(options);
+            },
+        },
     });
 
     return AiLog;

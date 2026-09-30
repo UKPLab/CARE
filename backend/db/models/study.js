@@ -1,6 +1,7 @@
 'use strict';
 
 const TranslatableError = require("../../utils/TranslatableError");
+const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 
@@ -196,31 +197,31 @@ module.exports = (sequelize, DataTypes) => {
             advanced: true
         }, {
             key: "aiCostLimitTotal",
-            label: "AI cost limit - total ($):",
+            label: "studies.fields.aiCostLimitTotal.label",
             type: "number",
             required: false,
             default: null,
             advanced: true,
             size: 4,
-            help: "Total AI spend allowed in this study across all participants. Leave empty for no cap."
+            help: "studies.fields.aiCostLimitTotal.help"
         }, {
             key: "aiCostLimitPerSession",
-            label: "Per session ($):",
+            label: "studies.fields.aiCostLimitPerSession.label",
             type: "number",
             required: false,
             default: null,
             advanced: true,
             size: 4,
-            help: "AI spend allowed in a single session. Leave empty for no per-session cap."
+            help: "studies.fields.aiCostLimitPerSession.help"
         }, {
             key: "aiCostLimitPerUser",
-            label: "Per participant ($):",
+            label: "studies.fields.aiCostLimitPerUser.label",
             type: "number",
             required: false,
             default: null,
             advanced: true,
             size: 4,
-            help: "AI spend allowed per participant in this study. Leave empty for no per-participant cap."
+            help: "studies.fields.aiCostLimitPerUser.help"
         },];
 
         /**
@@ -560,7 +561,8 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize: sequelize, modelName: 'study', tableName: 'study', hooks: {
             beforeCreate: async (study, options) => {
-            // Set default projectId from user settings if not provided
+                assertStartBeforeEnd(study, "errors.studies.startAfterEnd");
+                // Set default projectId from user settings if not provided
                 const userId = study.dataValues.userId;
                 const defaultProjectId = await sequelize.models.user_setting.get('projects.default', userId);        
                 if (defaultProjectId) {
@@ -577,6 +579,11 @@ module.exports = (sequelize, DataTypes) => {
                 await Study.createBudgets(study, options, studyStepsMap || {});
             },
             beforeUpdate: async (study, options) => {
+                // Close/restart omit start/end; skip so existing inverted rows can still be closed.
+                if (study.changed("start") || study.changed("end")) {
+                    assertStartBeforeEnd(study, "errors.studies.startAfterEnd");
+                }
+
                 // Keep close metadata in model layer to avoid transport-specific logic.
                 if (study.changed("closed") && study.closed && !study.userIdClosed) {
                     const closingUserId = options.context?.currentUserId;

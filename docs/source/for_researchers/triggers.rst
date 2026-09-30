@@ -24,4 +24,8 @@ Open **Triggers > Trigger Logs** to inspect execution status, attempts, and erro
 - Retry failed or cancelled jobs.
 - Run completed jobs again.
 
+The worker also checks for leftover pending jobs on an interval. Set **Trigger queue
+poll interval (minutes)** in Settings (default 5). New jobs still start as soon as
+the event fires. Restart the server after changing this setting.
+
 Non-admin users cannot access triggers or trigger logs.

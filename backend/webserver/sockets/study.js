@@ -2,6 +2,17 @@ const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {getEmailContent} = require("../../utils/helper/email");
 
+/** Coordinator and createStudySteps use workflowStepId as `id`. */
+function stepDocumentsFromStudySteps(studySteps) {
+    return (studySteps || [])
+        .filter((step) => step.workflowStepId)
+        .map((step) => ({
+            id: step.workflowStepId,
+            documentId: step.documentId,
+            configuration: step.configuration || {},
+        }));
+}
+
 /**
  * Handle all studies through websocket
  *
@@ -36,32 +47,24 @@ class StudySocket extends Socket {
      */
     async saveStudyAsTemplate(data, options) {
         if (data.onlyTemplate && data.templateData) {
-            const templateData = {
-                ...data.templateData,
-                userId: this.socket.user.id,
+            const {stepDocuments, study_step, ...templateFields} = data.templateData;
+            return await this.models['study'].add({
+                ...templateFields,
+                userId: this.userId,
                 template: true,
-            };
-            
-            return await this.models['study'].add(templateData, {
+            }, {
                 transaction: options.transaction,
-                context: { stepDocuments: data.templateData.stepDocuments || [] }
+                context: {
+                    stepDocuments: Array.isArray(stepDocuments) && stepDocuments.length
+                        ? stepDocuments
+                        : stepDocumentsFromStudySteps(study_step),
+                }
             });
         } else {
             const currentStudy = await this.models['study'].getById(data['id']);
 
             if (await this.checkUserAccess(currentStudy.userId)) {
                 const studySteps = await this.models['study_step'].getAllByKey("studyId", currentStudy.id);
-                
-                const stepDocuments = [];
-                for (const step of studySteps) {
-                    if (step.workflowStepId) {
-                        stepDocuments.push({
-                            id: step.workflowStepId,
-                            documentId: step.documentId,
-                            configuration: step.configuration
-                        });
-                    }
-                }
 
                 const newStudyData = {
                     ...currentStudy,
@@ -72,7 +75,7 @@ class StudySocket extends Socket {
                 
                 return await this.models['study'].add(newStudyData, {
                     transaction: options.transaction,
-                    context: { stepDocuments: stepDocuments }
+                    context: { stepDocuments: stepDocumentsFromStudySteps(studySteps) }
                 });
             } else {
                 throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");

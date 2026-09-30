@@ -49,10 +49,10 @@ export default {
 .text-placeholder {
   font-size: 1rem;
   line-height: 1.5;
-  color: #212529;
-  background-color: #ffffff;
+  color: var(--bs-body-color, #212529);
+  background-color: var(--bs-body-bg, #ffffff);
   padding: 0.75rem 1rem;
   border-radius: 0.375rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 </style>

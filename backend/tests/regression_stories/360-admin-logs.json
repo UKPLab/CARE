@@ -1,0 +1,481 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:47:27.866Z",
+  "traceCount": 16,
+  "recording": {
+    "name": "360-admin-logs",
+    "status": "finished",
+    "startTime": "2026-08-10T23:41:05.298Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "90oWDZwTlp-h7ZFKAAAZ"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:41:15.666Z"
+  },
+  "traces": [
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 21,
+          "name": "Recording 8/11/2026, 1:41:05 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:41:05.299Z",
+          "startTime": "2026-08-10T23:41:05.298Z",
+          "updatedAt": "2026-08-10T23:41:05.299Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "90oWDZwTlp-h7ZFKAAAZ"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:41:05.307Z",
+      "endTime": "2026-08-10T23:41:05.307Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:06.451Z",
+      "endTime": "2026-08-10T23:41:06.451Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/logs",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.363Z",
+      "endTime": "2026-08-10T23:41:08.363Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "58289591-16ab-4623-8614-b78d9e37a6cd",
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.374Z",
+      "endTime": "2026-08-10T23:41:08.374Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "e97d4ae1-aeac-4c81-bf63-d6dac3d8c357",
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.375Z",
+      "endTime": "2026-08-10T23:41:08.375Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "0e300a8a-eeac-4b2f-9673-83d27bb97f28",
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.375Z",
+      "endTime": "2026-08-10T23:41:08.375Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "a3f0c040-d071-4d42-8c5b-7225f6a84b25",
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.376Z",
+      "endTime": "2026-08-10T23:41:08.376Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "03759e5b-3e69-495e-b87b-7a1bd37b86fd",
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.376Z",
+      "endTime": "2026-08-10T23:41:08.376Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "a2714fec-293f-47d1-97e2-d4a0ba7c1080",
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.376Z",
+      "endTime": "2026-08-10T23:41:08.376Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "logGetAll",
+      "payload": {
+        "page": 0
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.435Z",
+      "endTime": "2026-08-10T23:41:08.435Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "logGetAll",
+      "payload": {
+        "page": 0,
+        "limit": 10,
+        "order": null,
+        "filter": {}
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:08.440Z",
+      "endTime": "2026-08-10T23:41:08.440Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "logAll",
+      "payload": {
+        "rows": [
+          {
+            "id": 59,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "pg_stat_activity snapshot",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:40:59.133Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:40:59.133Z",
+            "updatedAt": "2026-08-10T23:40:59.133Z"
+          },
+          {
+            "id": 58,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Using sendmail transport",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:40:37.509Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:40:37.509Z",
+            "updatedAt": "2026-08-10T23:40:37.509Z"
+          },
+          {
+            "id": 57,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Using sendmail transport",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:38:06.030Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:38:06.029Z",
+            "updatedAt": "2026-08-10T23:38:06.030Z"
+          },
+          {
+            "id": 56,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Using sendmail transport",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:37:08.528Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:37:08.528Z",
+            "updatedAt": "2026-08-10T23:37:08.528Z"
+          },
+          {
+            "id": 55,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Client connected with data undefined",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:36:41.706Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:36:41.706Z",
+            "updatedAt": "2026-08-10T23:36:41.706Z"
+          },
+          {
+            "id": 54,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "pg_stat_activity snapshot",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:35:59.128Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:59.127Z",
+            "updatedAt": "2026-08-10T23:35:59.128Z"
+          },
+          {
+            "id": 53,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "The request for skill sentiment_classification is sent to the fallback nlp service",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:35:01.425Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:01.425Z",
+            "updatedAt": "2026-08-10T23:35:01.425Z"
+          },
+          {
+            "id": 52,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "The request for skill sentiment_classification is sent to the fallback nlp service",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:35:01.411Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:01.411Z",
+            "updatedAt": "2026-08-10T23:35:01.411Z"
+          },
+          {
+            "id": 51,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Client connected with data undefined",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:35:01.317Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:01.317Z",
+            "updatedAt": "2026-08-10T23:35:01.317Z"
+          },
+          {
+            "id": 50,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "The request for skill sentiment_classification is sent to the fallback nlp service",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:33:29.693Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:33:29.693Z",
+            "updatedAt": "2026-08-10T23:33:29.693Z"
+          }
+        ],
+        "count": 59
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:41:08.454Z",
+      "endTime": "2026-08-10T23:41:08.454Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "logAll",
+      "payload": {
+        "rows": [
+          {
+            "id": 59,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "pg_stat_activity snapshot",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:40:59.133Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:40:59.133Z",
+            "updatedAt": "2026-08-10T23:40:59.133Z"
+          },
+          {
+            "id": 58,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Using sendmail transport",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:40:37.509Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:40:37.509Z",
+            "updatedAt": "2026-08-10T23:40:37.509Z"
+          },
+          {
+            "id": 57,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Using sendmail transport",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:38:06.030Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:38:06.029Z",
+            "updatedAt": "2026-08-10T23:38:06.030Z"
+          },
+          {
+            "id": 56,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Using sendmail transport",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:37:08.528Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:37:08.528Z",
+            "updatedAt": "2026-08-10T23:37:08.528Z"
+          },
+          {
+            "id": 55,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Client connected with data undefined",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:36:41.706Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:36:41.706Z",
+            "updatedAt": "2026-08-10T23:36:41.706Z"
+          },
+          {
+            "id": 54,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "pg_stat_activity snapshot",
+            "service": "webServer",
+            "createdAt": "2026-08-10T23:35:59.128Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:59.127Z",
+            "updatedAt": "2026-08-10T23:35:59.128Z"
+          },
+          {
+            "id": 53,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "The request for skill sentiment_classification is sent to the fallback nlp service",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:35:01.425Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:01.425Z",
+            "updatedAt": "2026-08-10T23:35:01.425Z"
+          },
+          {
+            "id": 52,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "The request for skill sentiment_classification is sent to the fallback nlp service",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:35:01.411Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:01.411Z",
+            "updatedAt": "2026-08-10T23:35:01.411Z"
+          },
+          {
+            "id": 51,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "Client connected with data undefined",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:35:01.317Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:35:01.317Z",
+            "updatedAt": "2026-08-10T23:35:01.317Z"
+          },
+          {
+            "id": 50,
+            "level": "info",
+            "userId": null,
+            "deleted": false,
+            "message": "The request for skill sentiment_classification is sent to the fallback nlp service",
+            "service": "Service/NLPService",
+            "createdAt": "2026-08-10T23:33:29.693Z",
+            "deletedAt": null,
+            "timestamp": "2026-08-10T23:33:29.693Z",
+            "updatedAt": "2026-08-10T23:33:29.693Z"
+          }
+        ],
+        "count": 59
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:41:08.456Z",
+      "endTime": "2026-08-10T23:41:08.456Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 463,
+          "clientY": 469,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:09.168Z",
+      "endTime": "2026-08-10T23:41:09.168Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 323,
+          "clientY": 16,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:14.469Z",
+      "endTime": "2026-08-10T23:41:14.469Z"
+    },
+    {
+      "recordingId": 21,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:41:14.847Z",
+      "endTime": "2026-08-10T23:41:14.847Z"
+    }
+  ]
+}

@@ -19,6 +19,13 @@ const DEFAULT_TIMEOUT_MS = 130000;
 // An adaptive Dialogue turn can run two model calls in a row (anchor, then decision).
 const DIALOGUE_TIMEOUT_MS = 2 * DEFAULT_TIMEOUT_MS;
 
+const createAIError = (key, params = {}, message = key) => {
+    const error = new Error(message);
+    error.key = key;
+    error.params = params;
+    return error;
+};
+
 const createRequestId = () => {
     if (globalThis.crypto && typeof globalThis.crypto.randomUUID === "function") {
         return globalThis.crypto.randomUUID();
@@ -73,7 +80,7 @@ const emitServiceCommand = (socket, service, command, data = {}, opts = {}) => {
             settled = true;
             clearTimer();
             sendAbort(`client timeout after ${timeoutMs}ms`);
-            reject(new Error(`AI request timed out after ${timeoutMs}ms (command: ${command})`));
+            reject(createAIError("ai.errors.requestTimeout", {timeoutMs, command}));
         }, timeoutMs);
 
         socket.emit("serviceCommand", {
@@ -86,13 +93,17 @@ const emitServiceCommand = (socket, service, command, data = {}, opts = {}) => {
             clearTimer();
 
             if (!response) {
-                reject(new Error(`No response received from ${service}`));
+                reject(createAIError("ai.errors.noResponse"));
                 return;
             }
             if (response.success) {
                 resolve(response.data);
             } else {
-                reject(new Error(response.message || `${service} request failed`));
+                reject(createAIError(
+                    response.key || "ai.errors.requestFailed",
+                    response.params || {},
+                    response.message
+                ));
             }
         });
     });
@@ -167,6 +178,38 @@ export default {
                          */
                         getStatus() {
                             return emitAiCommand(socket, "getStatus", {}, {timeout: 10000});
+                        },
+
+                        /**
+                         * List LiteLLM provider ids for the credential form.
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{providers: string[]}>}
+                         */
+                        getProviders(opts = {}) {
+                            return emitAiCommand(socket, "getProviders", {}, opts);
+                        },
+
+                        /**
+                         * List models available for a credential.
+                         * @param {object} params - { credentialId }
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{models: string[]}>}
+                         */
+                        getValidModels(params, opts = {}) {
+                            return emitAiCommand(socket, "getValidModels", params, opts);
+                        },
+
+                        /**
+                         * Send a short test prompt through a model or credential.
+                         * @param {object} params - { aiModelId, credentialId, model, additionalParameters }
+                         * @param {object} [opts]
+                         * @param {number} [opts.timeout] - override client-side timeout (ms)
+                         * @returns {Promise<{outputText?: string}>}
+                         */
+                        testModel(params, opts = {}) {
+                            return emitAiCommand(socket, "testModel", params, opts);
                         },
                     };
                 },

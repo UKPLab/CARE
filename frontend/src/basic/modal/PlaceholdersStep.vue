@@ -503,16 +503,16 @@ export default {
 }
 
 .section-title {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #dee2e6;
+  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .short-preview {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #ddd);
   border-radius: 0.5rem;
   padding: 1rem;
 }
@@ -523,10 +523,10 @@ export default {
 }
 
 .legend {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .legend-items {
@@ -545,17 +545,17 @@ export default {
 }
 
 .placeholders-config {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .placeholder-item {
-  background-color: #ffffff;
+  background-color: var(--bs-body-bg, #ffffff);
   padding: 1rem;
   border-radius: 0.5rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .placeholder-header {
@@ -573,8 +573,8 @@ export default {
 }
 
 .placeholder-type {
-  background-color: #6c757d;
-  color: white;
+  background-color: var(--bs-secondary-bg, #6c757d);
+  color: var(--bs-body-color, white);
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   font-size: 0.7rem;
@@ -584,22 +584,22 @@ export default {
 
 .comparison-inputs,
 .single-input {
-  background-color: #f1f3f4;
+  background-color: var(--bs-secondary-bg, #f1f3f4);
   padding: 0.75rem;
   border-radius: 0.375rem;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color, #e9ecef);
 }
 
 .input-group {
-  background-color: #ffffff;
+  background-color: var(--bs-body-bg, #ffffff);
   padding: 0.5rem;
   border-radius: 0.25rem;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
 }
 
 .form-label {
   font-weight: 500;
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   margin-bottom: 0.5rem;
 }
 
@@ -608,7 +608,7 @@ export default {
 }
 
 .form-control:focus {
-  border-color: #0d6efd;
+  border-color: var(--bs-primary, #0d6efd);
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 

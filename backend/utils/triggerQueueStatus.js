@@ -8,25 +8,6 @@ const QUEUE_STATUS = Object.freeze({
     FAILED: 4,
 });
 
-const QUEUE_STATUS_LABELS = Object.freeze({
-    [QUEUE_STATUS.PENDING]: "Pending",
-    [QUEUE_STATUS.RUNNING]: "Running",
-    [QUEUE_STATUS.COMPLETED]: "Completed",
-    [QUEUE_STATUS.CANCELLED]: "Cancelled",
-    [QUEUE_STATUS.FAILED]: "Failed",
-});
-
-/**
- * Human-readable label for a trigger queue status integer.
- *
- * @param {number} status Queue status value
- * @returns {string}
- */
-function queueStatusLabel(status) {
-    return QUEUE_STATUS_LABELS[status] ?? String(status);
-}
-
 module.exports = {
     QUEUE_STATUS,
-    queueStatusLabel,
 };

@@ -31,6 +31,10 @@
     "notifyOnSubmissionUpload": {
       "label": "Notify on Submission Upload:",
       "help": "If enabled, sends an email when a student uploads or re-uploads a submission."
+    },
+    "submissionWarning":{
+      "label": "Submission Warning:",
+      "help": "Shown to users as a confirmation prompt when they submit to this assignment. Leave empty for no warning."
     }
   },
   "dashboard": {

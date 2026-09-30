@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * Lightweight glue reachable from AIService orchestration helpers for RPC retrieval and auditing.
+ * Lightweight glue reachable from AIService orchestration helpers for RPC retrieval.
  *
  * @module webserver/services/ai/runtime
  * @author Akash Gundapuneni
@@ -15,33 +15,6 @@
  */
 function getRPC(server) {
     return server.rpcs.LiteLLMRPC || null;
-}
-
-/**
- * Persists a single `ai_log` row swallowing serialization errors — chat flows must remain resilient.
- *
- * @param {{ logger: Object, server: Object }} service AIService (or compatible) shim.
- * @param {Object} logData Sequelize-friendly column/value bag matching `ai_log` columns.
- */
-async function logAiCall(service, logData) {
-    try {
-        await service.server.db.models.ai_log.add({
-            userId: logData.userId,
-            aiModelId: logData.aiModelId || null,
-            requestId: logData.requestId || null,
-            input: logData.input || null,
-            output: logData.output || null,
-            reasoning: logData.reasoning || null,
-            inputTokens: logData.inputTokens ?? null,
-            outputTokens: logData.outputTokens ?? null,
-            totalTokens: logData.totalTokens ?? null,
-            costs: logData.costs ?? null,
-            status: logData.status || null,
-            requestStart: logData.requestStart || null,
-        });
-    } catch (error) {
-        service.logger.warn("Failed to write ai_log entry: " + error.message);
-    }
 }
 
 /**
@@ -91,6 +64,5 @@ async function resolveAiModelId(server, userId, data = {}) {
 
 module.exports = {
     getRPC,
-    logAiCall,
     resolveAiModelId,
 };

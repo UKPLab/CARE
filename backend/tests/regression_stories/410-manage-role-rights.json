@@ -1,0 +1,652 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:47:40.522Z",
+  "traceCount": 32,
+  "recording": {
+    "name": "410-manage-role-rights",
+    "status": "finished",
+    "startTime": "2026-08-10T23:45:16.230Z",
+    "userId": 4,
+    "participantSocketIds": [
+      "90oWDZwTlp-h7ZFKAAAZ"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:45:41.933Z"
+  },
+  "traces": [
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 25,
+          "name": "Recording 8/11/2026, 1:45:16 AM",
+          "status": "recording",
+          "userId": 4,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:45:16.231Z",
+          "startTime": "2026-08-10T23:45:16.230Z",
+          "updatedAt": "2026-08-10T23:45:16.231Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "90oWDZwTlp-h7ZFKAAAZ"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:45:16.241Z",
+      "endTime": "2026-08-10T23:45:16.241Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:17.364Z",
+      "endTime": "2026-08-10T23:45:17.364Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 148,
+          "clientY": 105,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:19.354Z",
+      "endTime": "2026-08-10T23:45:19.354Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "to": "/dashboard/users",
+          "from": "/dashboard"
+        },
+        "action": "routeStep"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.162Z",
+      "endTime": "2026-08-10T23:45:21.162Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "7ff873ba-d6a3-41a3-979c-c4394cb6de07",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.171Z",
+      "endTime": "2026-08-10T23:45:21.171Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "049f8b78-a0ff-439e-ae7c-88f6f7c49557",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.171Z",
+      "endTime": "2026-08-10T23:45:21.171Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "dc4dceba-e44f-4cbf-afac-ae67da9fe397",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.174Z",
+      "endTime": "2026-08-10T23:45:21.174Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "877a8a48-01b1-4a14-84ca-925b30d37aa6",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.174Z",
+      "endTime": "2026-08-10T23:45:21.174Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "7ee87394-4371-48c5-8b5b-93f605d36210",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.174Z",
+      "endTime": "2026-08-10T23:45:21.174Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.203Z",
+      "endTime": "2026-08-10T23:45:21.203Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "e84eb113-88ff-4f99-95d8-b5e026cada24",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.174Z",
+      "endTime": "2026-08-10T23:45:21.174Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.200Z",
+      "endTime": "2026-08-10T23:45:21.200Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userMonitorSubscribe",
+      "payload": {},
+      "direction": true,
+      "startTime": "2026-08-10T23:45:21.204Z",
+      "endTime": "2026-08-10T23:45:21.204Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "shield-lock",
+          "title": "Rights Management"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:23.244Z",
+      "endTime": "2026-08-10T23:45:23.244Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_role"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:23.247Z",
+      "endTime": "2026-08-10T23:45:23.247Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userGetAllRights",
+      "payload": {},
+      "direction": true,
+      "startTime": "2026-08-10T23:45:23.247Z",
+      "endTime": "2026-08-10T23:45:23.247Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "user_right"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:23.247Z",
+      "endTime": "2026-08-10T23:45:23.247Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "user_rightRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "name": "backend.socket.user.getUsers.student",
+          "createdAt": "2026-08-10T22:35:47.743Z",
+          "updatedAt": "2026-08-10T22:35:47.743Z",
+          "description": "access to get all students"
+        },
+        {
+          "id": 2,
+          "name": "backend.socket.user.getUsers.mentor",
+          "createdAt": "2026-08-10T22:35:47.743Z",
+          "updatedAt": "2026-08-10T22:35:47.743Z",
+          "description": "access to get all mentors"
+        },
+        {
+          "id": 3,
+          "name": "frontend.dashboard.users.view",
+          "createdAt": "2026-08-10T22:35:47.743Z",
+          "updatedAt": "2026-08-10T22:35:47.743Z",
+          "description": "access to view users on the dashboard"
+        },
+        {
+          "id": 4,
+          "name": "backend.socket.user.getUsers.all",
+          "createdAt": "2026-08-10T22:35:47.743Z",
+          "updatedAt": "2026-08-10T22:35:47.743Z",
+          "description": "access to get all users"
+        },
+        {
+          "id": 5,
+          "name": "frontend.dashboard.studies.addBulkAssignments",
+          "createdAt": "2026-08-10T22:35:48.035Z",
+          "updatedAt": "2026-08-10T22:35:48.035Z",
+          "description": "access to the functionality of bulk adding assignments on the dashboard"
+        },
+        {
+          "id": 6,
+          "name": "frontend.dashboard.studies.addSingleAssignments",
+          "createdAt": "2026-08-10T22:35:48.035Z",
+          "updatedAt": "2026-08-10T22:35:48.035Z",
+          "description": "access to the functionality of adding assignments on the dashboard"
+        },
+        {
+          "id": 7,
+          "name": "frontend.dashboard.studies.fullAccess",
+          "createdAt": "2026-08-10T22:35:48.035Z",
+          "updatedAt": "2026-08-10T22:35:48.035Z",
+          "description": "access to view open studies and sessions"
+        },
+        {
+          "id": 8,
+          "name": "frontend.dashboard.studies.view.readOnly",
+          "createdAt": "2026-08-10T22:35:48.035Z",
+          "updatedAt": "2026-08-10T22:35:48.035Z",
+          "description": "access to open sessions in a read-only mode"
+        },
+        {
+          "id": 9,
+          "name": "frontend.dashboard.studies.view.userPrivateInfo",
+          "createdAt": "2026-08-10T22:35:48.035Z",
+          "updatedAt": "2026-08-10T22:35:48.035Z",
+          "description": "access to view user's private information such as first name and last name"
+        },
+        {
+          "id": 10,
+          "name": "frontend.dashboard.home.view",
+          "createdAt": "2026-08-10T22:35:48.308Z",
+          "updatedAt": "2026-08-10T22:35:48.308Z",
+          "description": "access to view home in the dashboard"
+        },
+        {
+          "id": 11,
+          "name": "frontend.dashboard.documents.view",
+          "createdAt": "2026-08-10T22:35:48.308Z",
+          "updatedAt": "2026-08-10T22:35:48.308Z",
+          "description": "access to view documents in the dashboard"
+        },
+        {
+          "id": 12,
+          "name": "frontend.dashboard.tags.view",
+          "createdAt": "2026-08-10T22:35:48.308Z",
+          "updatedAt": "2026-08-10T22:35:48.308Z",
+          "description": "access to view tagsets in the dashboard"
+        },
+        {
+          "id": 13,
+          "name": "frontend.dashboard.projects.view",
+          "createdAt": "2026-08-10T22:35:48.308Z",
+          "updatedAt": "2026-08-10T22:35:48.308Z",
+          "description": "access to view projects in the dashboard"
+        },
+        {
+          "id": 14,
+          "name": "frontend.dashboard.studies.view",
+          "createdAt": "2026-08-10T22:35:48.308Z",
+          "updatedAt": "2026-08-10T22:35:48.308Z",
+          "description": "access to view studies in the dashboard"
+        },
+        {
+          "id": 16,
+          "name": "study.template.delete",
+          "createdAt": "2026-08-10T22:35:48.446Z",
+          "updatedAt": "2026-08-10T22:35:48.446Z",
+          "description": "access to delete templates"
+        },
+        {
+          "id": 17,
+          "name": "frontend.dashboard.templates.view",
+          "createdAt": "2026-08-10T22:35:48.523Z",
+          "updatedAt": "2026-08-10T22:35:48.523Z",
+          "description": "access to view templates in the dashboard"
+        },
+        {
+          "id": 18,
+          "name": "frontend.dashboard.workflows.view",
+          "createdAt": "2026-08-10T22:35:48.566Z",
+          "updatedAt": "2026-08-10T22:35:48.566Z",
+          "description": "access to view workflows in the dashboard"
+        },
+        {
+          "id": 19,
+          "name": "frontend.dashboard.assignments.view",
+          "createdAt": "2026-08-10T22:35:49.131Z",
+          "updatedAt": "2026-08-10T22:35:49.131Z",
+          "description": "access to view assignments in the dashboard"
+        },
+        {
+          "id": 20,
+          "name": "frontend.dashboard.assignments.viewAll",
+          "createdAt": "2026-08-10T22:35:49.154Z",
+          "updatedAt": "2026-08-10T22:35:49.154Z",
+          "description": "access to view all assignments and submissions in the Assignments dashboard view"
+        },
+        {
+          "id": 21,
+          "name": "frontend.dashboard.assignments.uploadForOthers",
+          "createdAt": "2026-08-10T22:35:49.154Z",
+          "updatedAt": "2026-08-10T22:35:49.154Z",
+          "description": "access to upload submissions for other users"
+        },
+        {
+          "id": 22,
+          "name": "frontend.dashboard.assignments.edit",
+          "createdAt": "2026-08-10T22:35:49.154Z",
+          "updatedAt": "2026-08-10T22:35:49.154Z",
+          "description": "access to edit assignments"
+        },
+        {
+          "id": 23,
+          "name": "frontend.dashboard.assignments.replaceDeleteSubmissions",
+          "createdAt": "2026-08-10T22:35:49.154Z",
+          "updatedAt": "2026-08-10T22:35:49.154Z",
+          "description": "access to replace or delete submissions"
+        },
+        {
+          "id": 24,
+          "name": "frontend.dashboard.submissions.view",
+          "createdAt": "2026-08-10T22:35:49.154Z",
+          "updatedAt": "2026-08-10T22:35:49.154Z",
+          "description": "access to view submissions dashboard"
+        },
+        {
+          "id": 25,
+          "name": "frontend.dashboard.session_overview.view",
+          "createdAt": "2026-08-10T22:35:49.274Z",
+          "updatedAt": "2026-08-10T22:35:49.274Z",
+          "description": "access to view session overview in the dashboard"
+        },
+        {
+          "id": 15,
+          "name": "frontend.dashboard.my_sessions.view",
+          "createdAt": "2026-08-10T22:35:48.308Z",
+          "updatedAt": "2026-08-10T22:35:49.275Z",
+          "description": "access to view my sessions in the dashboard"
+        },
+        {
+          "id": 26,
+          "name": "frontend.dashboard.studies.canManageStudies",
+          "createdAt": "2026-08-10T22:35:49.482Z",
+          "updatedAt": "2026-08-10T22:35:49.482Z",
+          "description": "access to manage studies in the dashboard, including bulk closing and deleting studies"
+        },
+        {
+          "id": 27,
+          "name": "frontend.dashboard.studies.view.userPublicInfo",
+          "createdAt": "2026-08-10T22:35:49.492Z",
+          "updatedAt": "2026-08-10T22:35:49.492Z",
+          "description": "access to view public user info (id, userName) in studies"
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:45:23.253Z",
+      "endTime": "2026-08-10T23:45:23.253Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 701,
+          "clientY": 98,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:23.605Z",
+      "endTime": "2026-08-10T23:45:23.605Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "showModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:23.703Z",
+      "endTime": "2026-08-10T23:45:23.703Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 556,
+          "clientY": 188,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:24.769Z",
+      "endTime": "2026-08-10T23:45:24.769Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userGetRoleBasedRights",
+      "payload": {
+        "roleId": 6
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:26.240Z",
+      "endTime": "2026-08-10T23:45:26.240Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Next"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:27.395Z",
+      "endTime": "2026-08-10T23:45:27.395Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 675,
+          "clientY": 393,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:28.937Z",
+      "endTime": "2026-08-10T23:45:28.937Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 800,
+          "clientY": 467,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:37.703Z",
+      "endTime": "2026-08-10T23:45:37.703Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "userAssignRoleRights",
+      "payload": {
+        "roleId": 6,
+        "newRights": [
+          "study.template.delete"
+        ],
+        "deletedRights": []
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:38.766Z",
+      "endTime": "2026-08-10T23:45:38.766Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Assign Rights"
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:38.769Z",
+      "endTime": "2026-08-10T23:45:38.769Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "147ae275-0d40-43cf-ac47-238bf2cd9aad",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:38.772Z",
+      "endTime": "2026-08-10T23:45:38.772Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "name": "stepperModal",
+          "props": {}
+        },
+        "action": "hideModal"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:38.769Z",
+      "endTime": "2026-08-10T23:45:38.769Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "unsubscribeAppData",
+      "payload": "edab2356-c4b0-4495-b36d-a0a04cf0b7e0",
+      "direction": true,
+      "startTime": "2026-08-10T23:45:38.772Z",
+      "endTime": "2026-08-10T23:45:38.772Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:41.146Z",
+      "endTime": "2026-08-10T23:45:41.146Z"
+    },
+    {
+      "recordingId": 25,
+      "userId": 4,
+      "socketId": "90oWDZwTlp-h7ZFKAAAZ",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1098,
+          "clientY": 0,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:45:41.650Z",
+      "endTime": "2026-08-10T23:45:41.650Z"
+    }
+  ]
+}

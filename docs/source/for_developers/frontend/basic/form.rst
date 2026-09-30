@@ -124,6 +124,16 @@ The properties of the ``fields`` object could be extended by the field specific 
       - false
       - null
       - Object
+    * - wrapperClass
+      - Extra CSS class on the field's column wrapper (alongside ``col-md-*`` / ``col-12``)
+      - false
+      - ""
+      - String
+    * - labelButton
+      - Optional button rendered next to the field label. Clicks emit ``button-click`` with ``{ key, action, field }``. Object keys: ``text``, ``title``, ``tooltip``, ``icon``, ``class``, ``disabled``, ``action``.
+      - false
+      - null
+      - Object
 
 .. list-table:: Available extended properties in form fields
     :header-rows: 1
@@ -231,6 +241,22 @@ The properties of the ``fields`` object could be extended by the field specific 
       - N
       - N
       - N 
+      - N
+    * - :ref:`json <form-type-json>`
+      - Y
+      - Y
+      - Y
+      - Y
+      - Y
+      - Y
+      - N
+    * - :ref:`button <form-type-button>`
+      - N
+      - Y
+      - N
+      - N
+      - Y
+      - N
       - N
     * - :ref:`default (*) <form-type-default>`
       - Y
@@ -371,6 +397,49 @@ Using autotable:
 .. _form-type-textarea:
 
 `Textarea`: No specific options.
+
+-----
+
+.. _form-type-json:
+
+`JSON`: A textarea that stores a parsed object (or array) instead of a string. Invalid JSON is shown on the field and is not written to ``v-model``.
+
+Additional options:
+
+* rows — textarea height (default ``5``, or ``20`` when ``large`` is true)
+
+-----
+
+.. _form-type-button:
+
+`Button`: Not a data field. Renders a ``BasicButton`` in the form grid. Clicks are forwarded as ``button-click`` on ``BasicForm``.
+
+.. code-block:: html
+
+    <BasicForm
+        v-model="data"
+        :fields="fields"
+        @button-click="onFormButton"
+    />
+
+.. code-block:: javascript
+
+    {
+        key: "loadModels",
+        type: "button",
+        text: "Load models",
+        action: "loadModelOptions",
+        class: "btn-outline-secondary",
+        disabled: false,
+    }
+
+    onFormButton({ key, action, field }) {
+        // action is the field.action string
+    }
+
+Optional keys: ``icon``, ``title``, ``tooltip``, ``text``, ``class``, ``disabled``, ``action``.
+
+Label-row buttons use the same event via ``labelButton`` on a normal field (see Extended form properties).
 
 -----
 

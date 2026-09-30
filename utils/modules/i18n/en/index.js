@@ -26,6 +26,9 @@ import components from './components.json'
 import workflow from "./workflow.json";
 import templates from './templates.json'
 import assignments from './assignments.json'
+import ai from './ai.json'
+import triggers from './triggers.json'
+import socketProfiler from './socketProfiler.json'
 
 export default {
   common,
@@ -55,5 +58,8 @@ export default {
   components,
   workflow,
   templates,
-  assignments
+  assignments,
+  ai,
+  triggers,
+  socketProfiler
 }
