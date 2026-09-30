@@ -255,7 +255,7 @@ import BackendTable from "@/basic/BackendTable.vue";
 import Loader from "@/basic/Loading.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
+import { calculateAssessmentScore, pickScoresFromGradeRows } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
 import {emptySelection} from "@/basic/table/emptySelection.js";
@@ -684,7 +684,7 @@ export default {
         .join(", ");
     },
     /**
-     * Assessment result keys a step can write: service candidates plus the plain key.
+     * Assessment result keys a step can write: service candidates plus the plain key (always added).
      * Prefers a service with skill/hookId (AI/NLP workflow), otherwise the first service
      * @param {Array<Object>} services step services from the export row
      * @returns {string[]}
@@ -694,7 +694,7 @@ export default {
       // Any service with skill or hookId indicates AI/NLP workflow.
       const service = list.find((s) => s.skill || s.hookId) || list[0] || null;
       const keys = getAssessmentResultKeyCandidates(service);
-      return keys.length ? keys : [ASSESSMENT_RESULT_KEY];
+      return [...new Set([...keys, ASSESSMENT_RESULT_KEY])];
     },
     /**
      * Scores from Vuex document_data for one exported session.
@@ -707,14 +707,26 @@ export default {
       }
       const sessionId = session.id ?? session.sessionId;
       const keys = this.getAssessmentDataKeys(session.services);
-      const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", sessionId) || [];
-      const raw = keys
-        .map((key) => documentDataArray.find(
-          (dd) => dd?.studyStepId === session.studyStepId && dd?.key === key && !dd?.deleted
-        )?.value)
-        .find((value) => value != null);
-      const scoreState = raw && typeof raw === "object" ? raw : {};
-      const scores = buildScoresFromState(scoreState);
+      const bySession = this.$store.getters["table/document_data/getByKey"]("studySessionId", sessionId) || [];
+      const items = bySession.filter(
+        (row) =>
+          !row?.deleted
+          && (row?.studyStepId == null || row?.studyStepId === session.studyStepId)
+          && keys.includes(row?.key)
+      );
+      let scores = pickScoresFromGradeRows(items);
+      // Same fallback rule as the grade export: use document-level hook rows when the session rows have no scores.
+      if (!Object.keys(scores).length && session.documentId != null) {
+        const documentId = Number(session.documentId);
+        const documentRows = (this.$store.getters["table/document_data/getAll"] || []).filter(
+          (row) =>
+            !row?.deleted
+            && row.studySessionId == null
+            && Number(row.documentId) === documentId
+            && keys.includes(row?.key)
+        );
+        scores = pickScoresFromGradeRows(documentRows);
+      }
       return {scores, assessment: calculateAssessmentScore(this.selectedConfigurationContent, scores)};
     },
     open() {

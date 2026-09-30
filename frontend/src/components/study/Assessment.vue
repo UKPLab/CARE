@@ -594,8 +594,7 @@ export default {
             }
         );
         this.$emit("update:data", value);
-      }).catch((err) => {
-        console.error("Failed to save assessment data", err);
+      }).catch(() => {
         this.eventBus.emit("toast", {
           title: this.$t("assessment.save.failedTitle"),
           message: this.$t("assessment.save.failedMessage"),
@@ -617,7 +616,7 @@ export default {
         this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
-        this.$emit("assessment-advance-past-end");
+        this.$emit("assessment-advance-past-end", () => this.rubricRefs[currentGroupIndex]?.focusHeader());
       }
     },
   },

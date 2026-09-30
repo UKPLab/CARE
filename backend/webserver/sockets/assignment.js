@@ -130,6 +130,30 @@ class AssignmentSocket extends Socket {
     }
 
     /**
+     * Socket entry point for adding reviewers to an existing study.
+     * Verifies the caller may manage the target study before delegating to addReviewer,
+     * which is also called internally by createAssignment for a study it just created.
+     *
+     * @socketEvent assignmentAdd
+     * @param {Object} data The data for adding reviewers
+     * @param {number} data.studyId The ID of the study to which reviewers are to be added
+     * @param {Array<Object>} data.reviewer Reviewers to add
+     * @param {Object} options holds the managed transaction of the database
+     * @returns {Promise<void>} Resolves once reviewers have been added
+     * @throws {TranslatableError} If the study does not exist or the caller may not manage it
+     */
+    async addReviewerRequest(data, options) {
+        const study = await this.models["study"].getById(data['studyId'], {transaction: options.transaction});
+        if (!study) {
+            throw new TranslatableError("errors.studies.studyNotFound");
+        }
+        if (!(await this.checkUserAccess(study.userId))) {
+            throw new TranslatableError("errors.studies.noPermissionManageStudies");
+        }
+        return await this.addReviewer(data, options);
+    }
+
+    /**
      * Document override for one submission assignment.
      * Puts the viewer's visible PDF of that submission (type 0, not deleted, lowest id)
      * on the first workflow step. An empty result leaves the template document in place.
@@ -145,7 +169,7 @@ class AssignmentSocket extends Socket {
             return [];
         }
         // Row scope is the document ACL for this viewer, plus the submission PDF filter.
-        const acl = await this.getFiltersAndAttributes(
+        const acl = await this.getReadFilter(
             this.userId, {submissionId, type: 0, deleted: false}, {}, "document", this.rolesUpdatedAt
         );
         if (!acl.accessAllowed) {
@@ -985,7 +1009,7 @@ class AssignmentSocket extends Socket {
         this.createSocket("assignmentCreateSingle", this.createAssignmentSingle, {}, true);
         this.createSocket("assignmentCreateBulk", this.createAssignmentBulk, {}, true);
         this.createSocket("assignmentBulkResolveSelection", this.resolveBulkSelectionForClient, {}, false);
-        this.createSocket("assignmentAdd", this.addReviewer, {}, true);
+        this.createSocket("assignmentAdd", this.addReviewerRequest, {}, true);
         this.createSocket("assignmentGetInfo", this.getAssignmentInfoFromCourse, {}, false);
     }
 };

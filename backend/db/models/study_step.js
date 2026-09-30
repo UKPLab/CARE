@@ -95,6 +95,46 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Get the study steps of a study, sorted by their order.
+         *
+         * A soft-deleted step breaks the studyStepPrevious chain (getAllByKey excludes it, so the
+         * walk can't find the step that points past it). A corrupted chain (bad migration, manual
+         * DB edit, a reordering race) could also cycle back on itself. Either way the walk stops
+         * rather than looping or silently losing data: any steps left unreachable are still
+         * non-deleted data and are appended at the end (id order) rather than dropped, so an
+         * export or session-progression check never silently loses a live step.
+         * @param studyId
+         * @returns {Promise<[]>} Array of study step objects
+         */
+        static async getSortedStudySteps(studyId) {
+            const studySteps = await sequelize.models.study_step.getAllByKey("studyId", studyId);
+            const studyStepsSorted = [];
+            const visitedIds = new Set();
+            let current = studySteps.find(step => step.studyStepPrevious === null);
+
+            while (current && !visitedIds.has(current.id)) {
+                visitedIds.add(current.id);
+                studyStepsSorted.push(current);
+                current = studySteps.find(step => step.studyStepPrevious === current.id);
+            }
+
+            if (current) {
+                console.warn(`getSortedStudySteps: study ${studyId} has a cycle in studyStepPrevious (step ${current.id} revisited); stopping traversal early.`);
+            }
+
+            if (studyStepsSorted.length < studySteps.length) {
+                const includedIds = new Set(studyStepsSorted.map(step => step.id));
+                const orphanedSteps = studySteps
+                    .filter(step => !includedIds.has(step.id))
+                    .sort((a, b) => a.id - b.id);
+                console.warn(`getSortedStudySteps: study ${studyId} has ${orphanedSteps.length} step(s) unreachable via studyStepPrevious (likely a soft-deleted step broke the chain, or a cycle); appending them out of order instead of dropping them.`);
+                studyStepsSorted.push(...orphanedSteps);
+            }
+
+            return studyStepsSorted;
+        }
+
+        /**
          * Adding a new study step
          * @param data
          * @param options - there must be a context object with the study object

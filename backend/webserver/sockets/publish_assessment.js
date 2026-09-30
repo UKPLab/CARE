@@ -43,7 +43,7 @@ class PublishAssessmentSocket extends Socket {
      * @returns {Promise<Object>} Sequelize WHERE for study_session
      */
     async visibleSessionWhere() {
-        const filters = await this.getFiltersAndAttributes(
+        const filters = await this.getReadFilter(
             this.userId, {deleted: false}, {}, "study_session", this.rolesUpdatedAt
         );
         if (!filters.accessAllowed) {
