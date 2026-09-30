@@ -66,4 +66,7 @@ async def stream_completion(router, model, messages, completion_params, emit_del
     finally:
         collector.cancel()
         await asyncio.gather(collector, return_exceptions=True)
-        await response.aclose()
+        # Not every provider stream wrapper exposes aclose().
+        close = getattr(response, "aclose", None)
+        if close:
+            await close()
