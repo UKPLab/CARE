@@ -26,6 +26,7 @@ import BasicTable from "@/basic/Table.vue";
  * @param {(key: string, params?: Object) => string} t - Translation function ($t from the calling component).
  * @param {string} exportType - The current export type.
  * @param {Array<Object>} userTableData - Current table rows, used to build the grades filter options.
+ * @param {Map<number, Object>} configurationsById - Configurations by id, used for the grades filter labels.
  * @returns {Object} A column definition to slot into the table's columns array.
  */
 function getExportTypeColumn(t, exportType, userTableData, configurationsById) {
