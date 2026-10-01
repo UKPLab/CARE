@@ -1168,6 +1168,8 @@ Complete an Assessment During a Session
        the defined criteria.
      - For each criterion I can select a score and add a comment.
      - My responses are saved automatically as I complete the rubric.
+     - I can complete the rubric using only the keyboard: Enter or Space opens a panel,
+       Ctrl/Cmd+Enter commits my text, and Esc cancels the edit.
 
 -----
 
