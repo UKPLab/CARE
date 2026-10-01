@@ -133,7 +133,12 @@ import BackendTable from "@/basic/BackendTable.vue";
 import BasicForm from "@/basic/Form.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
-import {emptySelection} from "@/basic/table/emptySelection.js";
+import {
+  applySavedSelection,
+  cloneSelection,
+  emptySelection,
+  selectionRestoreInfo,
+} from "@/basic/table/emptySelection.js";
 
 /**
  * One bulk action per mode. Everything that differs between close / open / delete is a string,
@@ -400,23 +405,14 @@ export default {
     },
     restoreStudySelection() {
       const saved = this.selection;
-      if (!saved) return;
-      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
-      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
-      const hasSelection = !!saved.allMatching || hasRows || hasIds;
-      const query = saved.query || {};
-      const hasSearch = !!String(query.search || "").trim()
-        || Object.keys(query.columnFilters || {}).length > 0;
-      if (!hasSelection && !hasSearch) return;
-      const table = this.$refs.studyTable;
-      if (hasSearch) table?.applySearch?.(query);
-      if (hasSelection) table?.applySelection?.(saved);
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
+      applySavedSelection(this.$refs.studyTable, saved, restore);
     },
     onSelectionChange() {
       if (!this.studyStepLive) return;
       // Snapshot while the table exists: the stepper unmounts it before the confirm step.
-      const selection = this.$refs.studyTable?.getSelection();
-      this.selection = selection ? {...selection} : emptySelection();
+      this.selection = cloneSelection(this.$refs.studyTable?.getSelection());
     },
     /**
      * Workflows that actually occur in the current mode's studies — the same list the client-side

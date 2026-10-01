@@ -7,7 +7,7 @@ const {mergeInjects} = require("../../utils/helper/data");
 const {generateError} = require("../../utils/helper/generic.js");
 const {col} = require("sequelize");
 const {makePaginateLazy} = require("sequelize-cursor-pagination");
-const {paginateJoinSort, serializeCursor} = require("../../utils/helper/queryTableJoinSort.js");
+const {paginateJoinSort, serializeCursor, withCopiedFindAll} = require("../../utils/helper/queryTableJoinSort.js");
 const TranslatableError = require("../../utils/TranslatableError");
 
 // Upper bound for one queryTable page. The infinite-scroll window asks for its whole
@@ -588,8 +588,10 @@ class AppSocket extends Socket {
             } else {
                 // Same simple cache as getById/findAll: identical page query (same where/order/
                 // cursor/limit) hits memory; any study write still clears the whole model cache.
+                // The paginator reverses a `before` page in place. Copy first so that cached
+                // array stays in query order and the next Prev does not flip the window.
                 // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
-                const paginateLazy = makePaginateLazy(model, {omitPrimaryKeyFromOrder: true});
+                const paginateLazy = makePaginateLazy(withCopiedFindAll(model), {omitPrimaryKeyFromOrder: true});
                 const connection = paginateLazy({
                     where: allFilter,
                     attributes: allAttributes,
