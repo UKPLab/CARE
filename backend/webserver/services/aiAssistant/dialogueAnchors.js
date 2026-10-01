@@ -105,5 +105,6 @@ async function prepareDialogueAnchors(service, client, context, turn, requestId)
 
 module.exports = {
     buildAnchorPreparationRequest,
+    loadAnchorState,
     prepareDialogueAnchors,
 };
