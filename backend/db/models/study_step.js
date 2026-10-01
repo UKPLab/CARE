@@ -336,23 +336,32 @@ module.exports = (sequelize, DataTypes) => {
 
 
         /**
-         * Steps of these studies that run one assessment configuration.
+         * Steps of these studies that run one assessment configuration, restricted to a given
+         * set of (workflowId, stepNumber) pairs
          * @param {number[]} studyIds
          * @param {number} configurationId
-         * @param {number[]} [stepNumbers]
-         * @returns {Promise<Array<Object>>}
+         * @param {Array<{workflowId: number, stepNumber: number}>} steps allowed (workflowId, stepNumber) pairs
+         * @returns {Promise<Array<Object>>} rows with the study's `workflowId`
          */
-        static async findForAssessment(studyIds, configurationId, stepNumbers = []) {
-            const conditions = [
-                {studyId: {[Op.in]: studyIds}, deleted: false},
-                sqlWhere(literal(this.assessmentConfigurationSql("study_step")), String(configurationId)),
-            ];
-            if (stepNumbers.length > 0) {
-                conditions.push({stepNumber: {[Op.in]: stepNumbers}});
-            }
+        static async findForAssessment(studyIds, configurationId, steps) {
             return this.findAll({
-                where: {[Op.and]: conditions},
-                attributes: ["id", "studyId", "stepNumber", "documentId", "configuration"],
+                where: {
+                    [Op.and]: [
+                        {studyId: {[Op.in]: studyIds}, deleted: false},
+                        sqlWhere(literal(this.assessmentConfigurationSql("study_step")), String(configurationId)),
+                        {
+                            [Op.or]: steps.map((step) => ({
+                                "$study.workflowId$": step.workflowId,
+                                stepNumber: step.stepNumber,
+                            })),
+                        },
+                    ],
+                },
+                include: [{model: sequelize.models.study, as: "study", attributes: [], required: true}],
+                attributes: [
+                    "id", "studyId", "stepNumber", "documentId", "configuration",
+                    [sequelize.col("study.workflowId"), "workflowId"],
+                ],
                 order: [["stepNumber", "ASC"], ["id", "ASC"]],
                 raw: true,
             });

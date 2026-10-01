@@ -255,14 +255,15 @@ import BackendTable from "@/basic/BackendTable.vue";
 import Loader from "@/basic/Loading.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { calculateAssessmentScore, pickScoresFromGradeRows } from "assessment-score";
+import { calculateAssessmentScore } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
-import {emptySelection} from "@/basic/table/emptySelection.js";
 import {
-  ASSESSMENT_RESULT_KEY,
-  getAssessmentResultKeyCandidates,
-} from "@/assets/serviceDocumentDataKeys.js";
+  applySavedSelection,
+  cloneSelection,
+  emptySelection,
+  selectionRestoreInfo,
+} from "@/basic/table/emptySelection.js";
 
 /**
  * Modal for publishing assessment data with CSV export
@@ -275,7 +276,6 @@ export default {
     { table: "workflow" },
     { table: "workflow_step" },
     { table: "configuration", filter: [{ key: "type", value: 0 }] },
-    { table: "document_data" },
     { table: "user_role" },
     { table: "user_role_matching" },
   ],
@@ -651,23 +651,14 @@ export default {
     },
     restoreSessionSelection() {
       const saved = this.sessionSelection;
-      if (!saved) return;
-      const hasRows = Array.isArray(saved.rows) && saved.rows.length > 0;
-      const hasIds = Array.isArray(saved.ids) && saved.ids.length > 0;
-      const hasSelection = !!saved.allMatching || hasRows || hasIds;
-      const query = saved.query || {};
-      const hasSearch = !!String(query.search || "").trim()
-        || Object.keys(query.columnFilters || {}).length > 0;
-      if (!hasSelection && !hasSearch) return;
-      const table = this.$refs.sessionTable;
-      if (hasSearch) table?.applySearch?.(query);
-      if (hasSelection) table?.applySelection?.(saved);
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
+      applySavedSelection(this.$refs.sessionTable, saved, restore);
     },
     onSessionSelectionChange() {
       if (!this.sessionStepLive) return;
       // Snapshot while the table exists: the stepper unmounts it before the confirmation step.
-      const selection = this.$refs.sessionTable?.getSelection();
-      this.sessionSelection = selection ? {...selection} : emptySelection();
+      this.sessionSelection = cloneSelection(this.$refs.sessionTable?.getSelection());
     },
     sessionLink(hash) {
       return `${window.location.origin}/review/${hash}`;
@@ -684,49 +675,16 @@ export default {
         .join(", ");
     },
     /**
-     * Assessment result keys a step can write: service candidates plus the plain key (always added).
-     * Prefers a service with skill/hookId (AI/NLP workflow), otherwise the first service
-     * @param {Array<Object>} services step services from the export row
-     * @returns {string[]}
-     */
-    getAssessmentDataKeys(services) {
-      const list = Array.isArray(services) ? services : [];
-      // Any service with skill or hookId indicates AI/NLP workflow.
-      const service = list.find((s) => s.skill || s.hookId) || list[0] || null;
-      const keys = getAssessmentResultKeyCandidates(service);
-      return [...new Set([...keys, ASSESSMENT_RESULT_KEY])];
-    },
-    /**
-     * Scores from Vuex document_data for one exported session.
-     * @param {Object} session row from publishAssessmentData (needs id / studyStepId / services)
+     * Scores and total for one exported session. The server picks the scores (saved row,
+     * hook/NLP rows, document-level fallback); the client only applies the rubric.
+     * @param {Object} session row from publishAssessmentData (needs studyStepId / scores)
      * @returns {{scores: Object, assessment: Object}}
      */
     getAssessmentDataForSession(session) {
       if (!session?.studyStepId) {
         return {scores: {}, assessment: {}};
       }
-      const sessionId = session.id ?? session.sessionId;
-      const keys = this.getAssessmentDataKeys(session.services);
-      const bySession = this.$store.getters["table/document_data/getByKey"]("studySessionId", sessionId) || [];
-      const items = bySession.filter(
-        (row) =>
-          !row?.deleted
-          && (row?.studyStepId == null || row?.studyStepId === session.studyStepId)
-          && keys.includes(row?.key)
-      );
-      let scores = pickScoresFromGradeRows(items);
-      // Same fallback rule as the grade export: use document-level hook rows when the session rows have no scores.
-      if (!Object.keys(scores).length && session.documentId != null) {
-        const documentId = Number(session.documentId);
-        const documentRows = (this.$store.getters["table/document_data/getAll"] || []).filter(
-          (row) =>
-            !row?.deleted
-            && row.studySessionId == null
-            && Number(row.documentId) === documentId
-            && keys.includes(row?.key)
-        );
-        scores = pickScoresFromGradeRows(documentRows);
-      }
+      const scores = session.scores && typeof session.scores === "object" ? session.scores : {};
       return {scores, assessment: calculateAssessmentScore(this.selectedConfigurationContent, scores)};
     },
     open() {

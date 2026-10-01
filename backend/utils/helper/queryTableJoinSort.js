@@ -128,11 +128,12 @@ async function paginateJoinSort({
         }),
     ]);
 
-    if (travelBack) {
-        rows.reverse();
-    }
+    // Copy: findAll is cached by reference, and reverse() would flip that cached
+    // array. The next identical backward read would flip it again and the page
+    // would walk toward the start.
+    const ordered = travelBack ? rows.slice().reverse() : rows;
 
-    const edges = rows.map((node) => {
+    const edges = ordered.map((node) => {
         const sortVal = node[SORT_ALIAS] ? node[SORT_ALIAS][viewField] : null;
         return {
             node,
@@ -143,6 +144,28 @@ async function paginateJoinSort({
     return {edges, total};
 }
 
+/**
+ * Paginator calls findAll and may reverse the array in place (`before` / fromEnd).
+ * sequelize-simple-cache returns that same array on the next hit, so a second
+ * reverse flips the page and the overflow slice shifts it by one row.
+ * @param {import("sequelize").Model} model
+ * @returns {import("sequelize").Model}
+ */
+function withCopiedFindAll(model) {
+    return new Proxy(model, {
+        get(target, prop, receiver) {
+            if (prop === "findAll") {
+                return async (...args) => {
+                    const rows = await target.findAll(...args);
+                    return Array.isArray(rows) ? rows.slice() : rows;
+                };
+            }
+            const value = Reflect.get(target, prop, receiver);
+            return typeof value === "function" ? value.bind(target) : value;
+        },
+    });
+}
+
 module.exports = {
     paginateJoinSort,
     serializeCursor,
@@ -150,5 +173,6 @@ module.exports = {
     joinKeysetWhere,
     dashboardSortInclude,
     nestedViewKey,
+    withCopiedFindAll,
     SORT_ALIAS,
 };
