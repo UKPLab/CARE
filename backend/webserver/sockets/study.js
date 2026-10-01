@@ -42,24 +42,64 @@ class StudySocket extends Socket {
      * @param {object} data.templateData the template data when onlyTemplate is true
      * @param {object} options Configuration for the database operation.
      * @param {Object} options.transaction A Sequelize DB transaction object.
+     * @param {number} replaceTemplateId - ID of the existing template to soft-delete and replace when editing a saved template.
      * @returns {Promise<*>} A promise that resolves with the newly created study template object from the database.
      * @throws {Error} Throws an error if the user does not have permission to access the source study.
      */
     async saveStudyAsTemplate(data, options) {
         if (data.onlyTemplate && data.templateData) {
             const {stepDocuments, study_step, ...templateFields} = data.templateData;
-            return await this.models['study'].add({
+            const transaction = options.transaction;
+            let oldTemplate = null;
+            if (data.replaceTemplateId != null) {
+                const id = Number(data.replaceTemplateId);
+                if (!Number.isInteger(id) || id <= 0) {
+                    throw new TranslatableError("errors.studies.studyIdRequired");
+                }
+                oldTemplate = await this.models.study.findOne({
+                    where: {id, template: true, deleted: false},
+                    transaction,
+                    lock: transaction.LOCK.UPDATE,
+                });
+                if (!oldTemplate) {
+                    throw new TranslatableError("errors.studies.studyNotFound");
+                }
+
+                if (!(await this.checkUserAccess(oldTemplate.userId))) {
+                    throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");
+                }
+            }
+
+            const selectedSteps = Array.isArray(stepDocuments) && stepDocuments.length
+                ? stepDocuments
+                : stepDocumentsFromStudySteps(study_step);
+            if (oldTemplate && !selectedSteps.length) {
+                throw new TranslatableError("errors.studies.missingContextOrStepDocuments");
+            }
+            const newTemplate = await this.models['study'].add({
                 ...templateFields,
-                userId: this.userId,
+                id: undefined,
+                hash: undefined,
+                parentStudyId: oldTemplate?.id ?? templateFields.parentStudyId,
+                userId: oldTemplate?.userId ?? this.userId,
                 template: true,
             }, {
-                transaction: options.transaction,
+                transaction,
                 context: {
-                    stepDocuments: Array.isArray(stepDocuments) && stepDocuments.length
-                        ? stepDocuments
-                        : stepDocumentsFromStudySteps(study_step),
+                    stepDocuments: selectedSteps,
+                    aiCostLimitTotal: templateFields.aiCostLimitTotal,
+                    aiCostLimitPerSession: templateFields.aiCostLimitPerSession,
+                    aiCostLimitPerUser: templateFields.aiCostLimitPerUser,
                 }
             });
+            if (oldTemplate) {
+                // Study's afterUpdate hook also soft-deletes old steps and AI budgets.
+                await oldTemplate.update(
+                    {deleted: true, deletedAt: new Date()},
+                    {transaction}
+                );
+            }
+            return newTemplate;
         } else {
             const currentStudy = await this.models['study'].getById(data['id']);
 
