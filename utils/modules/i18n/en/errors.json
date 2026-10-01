@@ -195,6 +195,8 @@
         "studyRestartFailed": "Study restart failed",
         "templateSaveFailed": "Template Save Failed",
         "templateCreationFailed": "Template Creation Failed",
+        "formLoadFailed": "Could not load study form",
+        "formLoadTimeout": "Timed out loading form data",
         "sessionNotFinished": "Session Not Finished",
         "stepUpdateFailed": "Step Update Failed",
         "studyClosed": "This study is closed",
@@ -401,6 +403,14 @@
     },
     "database": {
         "failedToUpdateData": "Failed to update data"
+    },
+    "queryTable": {
+        "columnRequired": "Column name is required",
+        "columnNotDistinct": "Column {column} is not available for distinct values",
+        "selectionTooLarge": "Too many rows selected (more than {limit}). Narrow the filter first.",
+        "idListTooLarge": "Too many ids selected. The limit is {limit}; the request was rejected.",
+        "scopeInvalid": "This selection is no longer valid. Go back and choose the workflow steps again.",
+        "inspectStudyRequired": "A study is required to load these sessions."
     },
     "backgroundTask": {
         "noDocumentSocketForClient": "No DocumentSocket found for client",

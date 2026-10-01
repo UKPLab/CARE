@@ -297,7 +297,6 @@
     :items-per-page="limit"
     :items-per-page-list="itemsPerPageList"
     :pages="pages"
-    :show-pages="paginationShowPages"
     :total-items="total"
     @update-items-per-page="paginationItemsPerPageChange"
     @update-page="paginationPageChange"
@@ -418,7 +417,6 @@ export default {
       currentData: [],
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
-      paginationShowPages: 3,
       filter: null, // Can be assigned an object or an array, see example above.
       search: "",
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
@@ -585,6 +583,7 @@ export default {
   watch: {
     currentData: {
       handler() {
+        if (this._unmounting) return;
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -592,8 +591,9 @@ export default {
       deep: true,
     },
     modelValue: {
-      handler() {
-        this.currentData = this.updateValues(this.modelValue);
+      handler(value) {
+        if (deepEqual(this.currentData, value)) return;
+        this.currentData = this.updateValues(value);
       },
       deep: true,
     },
@@ -636,9 +636,6 @@ export default {
         if ("itemsPerPageList" in this.options.pagination) {
           this.itemsPerPageList = this.options.pagination.itemsPerPageList;
         }
-        if ("showPages" in this.options.pagination) {
-          this.paginationShowPages = this.options.pagination.showPages;
-        }
       }
     }
     // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
@@ -664,6 +661,7 @@ export default {
     }, 150);
   },
   beforeUnmount() {
+    this._unmounting = true;
     this.cleanupFixedColumns();
     this.cleanupAllObserver();
   },

@@ -28,11 +28,19 @@
             >
               {{ item }}
             </option>
-            <option :value="0">{{ $t('common.all') }}</option>
+            <!-- "All" only where the parent can stream it (query-mode infinite scroll). -->
+            <option
+              v-if="allowAll"
+              :value="0"
+            >
+              {{ $t('common.all') }}
+            </option>
           </select>
         </div>
       </div>
-      <div class="col-md-auto">
+      <div
+        v-if="itemsPerPageSelect !== 0"
+        class="col-md-auto">
         <nav :aria-label="$t('common.pagination')">
           <ul class="pagination mb-0">
             <!-- First Page Link -->
@@ -58,34 +66,7 @@
                 :disabled="currentPage === 1"
                 @click="changePage(currentPage - 1)"
               >
-                <span aria-hidden="true">&laquo;</span>
-              </button>
-            </li>
-            <!-- Pagination Elements -->
-            <li
-              v-for="p in pages"
-              :key="p"
-              :class="{'active': p === currentPage, 'disabled': (p === currentPage - showPages || p === currentPage + showPages)}"
-              class="page-item"
-            >
-              <button
-                v-if="p === currentPage - showPages"
-                class="page-link"
-              >
-                ...
-              </button>
-              <button
-                v-if="p < currentPage + showPages && p > currentPage - showPages"
-                class="page-link"
-                @click="changePage(p)"
-              >
-                {{ p }}
-              </button>
-              <button
-                v-if="p === currentPage + showPages"
-                class="page-link"
-              >
-                ...
+                {{ $t('common.paginationPrevious') }}
               </button>
             </li>
             <!-- Next Page Link -->
@@ -98,7 +79,7 @@
                 :disabled="currentPage === pages"
                 @click="changePage(currentPage + 1)"
               >
-                <span aria-hidden="true">&raquo;</span>
+                {{ $t('common.next') }}
               </button>
             </li>
             <!-- Last Page Link -->
@@ -117,15 +98,6 @@
           </ul>
         </nav>
       </div>
-
-      <!--<div class="col-md-1">
-        <div class="input-group">
-          <span class="input-group-text" title="Jump to page" >
-            <LoadIcon icon-name="arrow-right" />
-          </span>
-          <input type="text" class="form-control">
-        </div>
-      </div>-->
     </div>
   </div>
 </template>
@@ -152,11 +124,6 @@ export default {
       type: Number,
       required: true
     },
-    showPages: {
-      type: Number,
-      required: false,
-      default: 3
-    },
     itemsPerPageList: {
       type: Array,
       required: false,
@@ -168,6 +135,24 @@ export default {
       default: 10
     },
     totalItems: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    /** Offer the "All" page size. Only tables that stream rows (infinite scroll) may enable it. */
+    allowAll: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    /** 1-based first row currently on screen in "All" mode (0 = unknown). */
+    windowFirst: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    /** 1-based last row currently on screen in "All" mode (0 = unknown). */
+    windowLast: {
       type: Number,
       required: false,
       default: 0,
@@ -187,13 +172,16 @@ export default {
         return "";
       }
 
-      // Handle "All" items case
+      // "All" scrolls a window over the result set, so report what is on screen.
       if (this.itemsPerPageSelect === 0) {
-        return this.$t('common.paginationRange', {
-          start: 1,
-          end: this.totalItems,
-          total: this.totalItems,
-        });
+        if (this.windowFirst > 0 && this.windowLast >= this.windowFirst) {
+          return this.$t('common.paginationRange', {
+            start: this.windowFirst,
+            end: Math.min(this.windowLast, this.totalItems),
+            total: this.totalItems,
+          });
+        }
+        return this.$t('common.paginationEntries', {total: this.totalItems});
       }
 
       const startItem = (this.currentPage - 1) * this.itemsPerPageSelect + 1;
@@ -215,7 +203,8 @@ export default {
     this.itemsPerPageSelect = this.itemsPerPage;
     if (this.itemsPerPageList.length > 0) {
       this.itemsPerPageListSelect = this.itemsPerPageList;
-      if (this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {
+      // 0 means "All" and has its own option; it must not land in the numeric list.
+      if (this.itemsPerPage > 0 && this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {
         this.itemsPerPageListSelect.push(this.itemsPerPage);
       }
       this.itemsPerPageListSelect.sort((a, b) => a - b);

@@ -4,6 +4,7 @@ const path = require("path");
 const {promises: fs} = require("fs");
 const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
 const TranslatableError = require("../../utils/TranslatableError");
+const {Op, literal, where: sqlWhere} = require("sequelize");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
@@ -328,6 +329,51 @@ module.exports = (sequelize, DataTypes) => {
             return count;
         }
 
+
+        /**
+         * Steps of these studies that run one assessment configuration, restricted to a given
+         * set of (workflowId, stepNumber) pairs
+         * @param {number[]} studyIds
+         * @param {number} configurationId
+         * @param {Array<{workflowId: number, stepNumber: number}>} steps allowed (workflowId, stepNumber) pairs
+         * @returns {Promise<Array<Object>>} rows with the study's `workflowId`
+         */
+        static async findForAssessment(studyIds, configurationId, steps) {
+            return this.findAll({
+                where: {
+                    [Op.and]: [
+                        {studyId: {[Op.in]: studyIds}, deleted: false},
+                        sqlWhere(literal(this.assessmentConfigurationSql("study_step")), String(configurationId)),
+                        {
+                            [Op.or]: steps.map((step) => ({
+                                "$study.workflowId$": step.workflowId,
+                                stepNumber: step.stepNumber,
+                            })),
+                        },
+                    ],
+                },
+                include: [{model: sequelize.models.study, as: "study", attributes: [], required: true}],
+                attributes: [
+                    "id", "studyId", "stepNumber", "documentId", "configuration",
+                    [sequelize.col("study.workflowId"), "workflowId"],
+                ],
+                order: [["stepNumber", "ASC"], ["id", "ASC"]],
+                raw: true,
+            });
+        }
+
+        /**
+         * SQL for the assessment configuration a step runs. Coordinator writes it to
+         * `settings.configurationId`; older rows keep it at the top level.
+         * Shared by the Publish Assessment workflow list and the study_session scope filter so
+         * both decide "this step belongs to that configuration" the same way.
+         * @param {string} [alias] table alias of study_step in the surrounding query
+         * @returns {string}
+         */
+        static assessmentConfigurationSql(alias = "study_step") {
+            const column = `"${alias}"."configuration"`;
+            return `COALESCE(${column}#>>'{settings,configurationId}', ${column}#>>'{configurationId}')`;
+        }
 
         /**
          * Helper method for defining associations.

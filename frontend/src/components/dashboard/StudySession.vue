@@ -20,6 +20,7 @@
           <template #body>
             <StudySessionTable 
               :study-id="s.id"
+              :study="s"
               :current-user-only="true"
             />
           </template>
@@ -57,6 +58,7 @@
           <template #body>
             <StudySessionTable 
               :study-id="s.id"
+              :study="s"
               :current-user-only="true"
               :show-closed="true"
             />
