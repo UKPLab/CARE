@@ -17,7 +17,7 @@
  * NLP skills come from the NLPService store; AI hooks from the ai_hook table. Hooks are encoded
  * as `hook:<id>` so the parent can tell them apart from skill names.
  *
- * @author Manu Sundar Raj Nandyal
+ * @author Manu Sundar Raj Nandyal, Mohammed Rawhani
  */
 import FormSelect from "@/basic/form/Select.vue";
 
@@ -30,6 +30,11 @@ export default {
       type: String,
       default: '',
     },
+    serviceType: {
+      type: String,
+      required: false,
+      default: "nlpRequest",
+    },
   },
   emits: ["update:modelValue"],
   computed: {
@@ -39,13 +44,22 @@ export default {
     },
     hooks() {
       const all = this.$store.getters["table/ai_hook/getAll"] || [];
-      return all.filter((hook) => hook.enabled && !hook.deleted);
+      return all.filter((hook) =>
+        hook.enabled
+        && !hook.deleted
+        && (!this.isAiAssistantService || Number(hook.outputMode ?? 0) === 0)
+      );
+    },
+    isAiAssistantService() {
+      return ["aiChat", "aiDialogue"].includes(this.serviceType);
     },
     skillOptions() {
-      const skillOpts = this.nlpSkills.map((skill) => ({
-        value: skill.name,
-        name: `<Skill> ${skill.name}`,
-      }));
+      const skillOpts = this.isAiAssistantService
+        ? []
+        : this.nlpSkills.map((skill) => ({
+          value: skill.name,
+          name: `<Skill> ${skill.name}`,
+        }));
       const hookOpts = this.hooks.map((hook) => ({
         value: `hook:${hook.id}`,
         name: `<Hook> ${hook.name}`,

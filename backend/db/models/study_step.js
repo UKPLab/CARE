@@ -10,8 +10,8 @@ const stepTypes = Object.freeze({
     STEP_TYPE_ANNOTATOR: 1,
     STEP_TYPE_EDITOR: 2,
     STEP_TYPE_MODAL: 3,
+    STEP_TYPE_DIALOGUE: 4,
 });
-
 
 module.exports = (sequelize, DataTypes) => {
     class StudyStep extends MetaModel {
@@ -100,7 +100,12 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<Object|undefined>}
          */
         static async add(data, options = {}) {
-            if ((data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR || data.stepType === StudyStep.stepTypes.STEP_TYPE_MODAL) && (!options.doNotDuplicate && data.documentId === null ) ) {
+            const createsHiddenDocument = [
+                StudyStep.stepTypes.STEP_TYPE_EDITOR,
+                StudyStep.stepTypes.STEP_TYPE_MODAL,
+                StudyStep.stepTypes.STEP_TYPE_DIALOGUE,
+            ].includes(data.stepType);
+            if (createsHiddenDocument && (!options.doNotDuplicate && data.documentId === null ) ) {
                 const study = options.context;
 
                 const expectedDocType = data.stepType === StudyStep.stepTypes.STEP_TYPE_EDITOR
@@ -368,3 +373,4 @@ module.exports = (sequelize, DataTypes) => {
 
     return StudyStep;
 };
+

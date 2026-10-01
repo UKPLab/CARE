@@ -4,9 +4,17 @@
     ref="adder"
     :style="{visibility: isVisible ? 'visible':'hidden'}"
     :class="{ 'is-extended': isExtended }"
-  > 
+  >
+    <BasicButton
+      v-if="hasAiChat"
+      class="adder-ask-ai btn btn-sm btn-outline-primary w-100"
+      icon="chat-quote"
+      text="Ask AI"
+      tooltip="Quote selection to AI chat"
+      @click="askAi"
+    />
     <div
-      v-if="isExtended" 
+      v-if="isExtended"
       class="menu-search-bar">
       <input
         v-model="searchTerm"
@@ -75,6 +83,11 @@ export default {
     },
     studyStepId: {
       type: Number,
+      required: false,
+      default: null,
+    },
+    currentStudyStep: {
+      type: Object,
       required: false,
       default: null,
     },
@@ -183,6 +196,11 @@ export default {
         return false;
       }
       return this.study.anonymize;
+    },
+    hasAiChat() {
+      const step = this.currentStudyStep?.value || this.currentStudyStep;
+      const services = step?.configuration?.services || [];
+      return services.some((service) => service.type === "aiChat");
     }
 
   },
@@ -340,6 +358,36 @@ export default {
       });
 
       this.isVisible = false;
+      document.getSelection()?.removeAllRanges();
+    },
+    /**
+     * Emits the current selection to this study step's AI chat.
+     *
+     * @returns {Promise<void>}
+     */
+    async askAi() {
+      const text = this.selectedRanges.map((range) => range.toString()).join(" ").trim();
+      if (!text) return;
+      const root = document.getElementById('pdfContainer-' + this.documentId);
+      const rangeSelectors = root
+        ? await Promise.all(this.selectedRanges.map(range => this.describe(root, range)))
+        : [];
+      const quote = {
+        text,
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+        selectors: {
+          target: rangeSelectors.map(selector => ({selector})),
+        },
+      };
+      this.eventBus.emit("aiChatQuote", quote);
+      this.eventBus.emit("toast", {
+        title: "Quoted to AI chat",
+        message: "Open the Chat window to add your question.",
+        variant: "success",
+      });
+      this._onClearSelection();
       document.getSelection()?.removeAllRanges();
     },
     async _onSelection(event) {

@@ -89,6 +89,44 @@ async function resolveHookModelParams(service, hookModel) {
 }
 
 /**
+ * Resolves the hook model a user selected, or the highest-priority one, without fallback.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {number} hookId - Target `ai_hook` primary key.
+ * @param {number|null} [aiModelId] - Optional model selected from the hook.
+ * @returns {Promise<Object>} Provider parameters plus the resolved `hookModelId`.
+ */
+async function resolveSelectedHookModel(service, hookId, aiModelId = null) {
+    const hookModels = await loadHookModels(service, hookId);
+    const hookModel = aiModelId === null || aiModelId === undefined
+        ? hookModels[0]
+        : hookModels.find((row) => Number(row.aiModelId) === Number(aiModelId));
+    if (!hookModel) {
+        throw new TranslatableError("errors.ai.hook.modelNotFound");
+    }
+    return {...await resolveHookModelParams(service, hookModel), hookModelId: hookModel.id};
+}
+
+/**
+ * Resolves an enabled hook's prompt template from caller-supplied values.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {number} hookId - Target `ai_hook` primary key.
+ * @param {Object} rawValues - Placeholder values supplied by the caller.
+ * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Prompt and resolved inputs.
+ */
+async function resolveHookPrompt(service, hookId, rawValues = {}) {
+    const hook = await loadEnabledHook(service, hookId);
+    const values = await resolveHookReferences(service, rawValues);
+    const promptText = await resolveTemplateWithValues(
+        hook.templateId,
+        values,
+        service.server.db.models,
+    );
+    return {hook, promptText, resolvedValues: values};
+}
+
+/**
  * Resolves a single backend-side input reference (mirrors NLP `serviceReplacement`, but yields
  * text/JSON for prompt substitution rather than base64).
  *
@@ -113,7 +151,12 @@ async function resolveServiceInput(service, input) {
             return config.content;
         }
         case "submission": {
-            const { selectedFiles = [], pdfText, submissionId, filePatterns = {} } = input;
+            const { selectedFiles = [], pdfText, filePatterns = {} } = input;
+            let {submissionId} = input;
+            if (!submissionId && input.pdfDocumentId) {
+                const document = await service.server.db.models["document"].getById(input.pdfDocumentId);
+                submissionId = document?.submissionId;
+            }
             if (!submissionId || !selectedFiles.length) return "";
 
             // `{ pages, pageCount }` must stay intact so applyTextRangeLimit can slice pages.
@@ -302,4 +345,7 @@ function isFallbackError(error) {
 
 module.exports = {
     runHook,
+    loadEnabledHook,
+    resolveSelectedHookModel,
+    resolveHookPrompt,
 };

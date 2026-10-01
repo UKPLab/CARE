@@ -5,6 +5,7 @@ const stepTypes = Object.freeze({
     STEP_TYPE_ANNOTATOR: 1,
     STEP_TYPE_EDITOR: 2,
     STEP_TYPE_MODAL: 3,
+    STEP_TYPE_DIALOGUE: 4,
 });
 
 
@@ -31,7 +32,8 @@ module.exports = (sequelize, DataTypes) => {
             options: [
                 { value: 1, name: "workflow.stepTypes.annotator" },
                 { value: 2, name: "workflow.stepTypes.editor" },
-                { value: 3, name: "workflow.stepTypes.modal" }
+                { value: 3, name: "workflow.stepTypes.modal" },
+                { value: 4, name: "workflow.stepTypes.dialogue" }
             ],
             icon: "list",
             required: true,
