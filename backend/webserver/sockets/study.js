@@ -42,6 +42,7 @@ class StudySocket extends Socket {
      * @param {object} data.templateData the template data when onlyTemplate is true
      * @param {object} options Configuration for the database operation.
      * @param {Object} options.transaction A Sequelize DB transaction object.
+     * @param {number} replaceTemplateId - ID of the existing template to soft-delete and replace when editing a saved template.
      * @returns {Promise<*>} A promise that resolves with the newly created study template object from the database.
      * @throws {Error} Throws an error if the user does not have permission to access the source study.
      */
@@ -60,8 +61,11 @@ class StudySocket extends Socket {
                     transaction,
                     lock: transaction.LOCK.UPDATE,
                 });
-                if (!oldTemplate) throw new TranslatableError("errors.studies.studyNotFound");
-                if (oldTemplate.userId !== this.userId) {
+                if (!oldTemplate) {
+                    throw new TranslatableError("errors.studies.studyNotFound");
+                }
+
+                if (!(await this.checkUserAccess(oldTemplate.userId))) {
                     throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");
                 }
             }
@@ -77,7 +81,7 @@ class StudySocket extends Socket {
                 id: undefined,
                 hash: undefined,
                 parentStudyId: oldTemplate?.id ?? templateFields.parentStudyId,
-                userId: this.userId,
+                userId: oldTemplate?.userId ?? this.userId,
                 template: true,
             }, {
                 transaction,
