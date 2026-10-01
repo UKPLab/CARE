@@ -40,6 +40,7 @@ function addAIChatService(sourceConfiguration) {
     const configuration = JSON.parse(JSON.stringify(sourceConfiguration || {}));
     const services = Array.isArray(configuration.services) ? configuration.services : [];
     configuration.services = [...services, AI_CHAT_SERVICE];
+    configuration.placeholders = false;
     return configuration;
 }
 
