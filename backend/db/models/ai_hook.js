@@ -35,7 +35,7 @@ module.exports = (sequelize, DataTypes) => {
          * Grants row visibility to anyone with an active ai_hook_share grant for this hook, in addition to the owner.
          *
          * @param {number} userId Viewer's id.
-         * @returns {Promise<object>}
+         * @returns {Promise<{owned: object, shared: object|null}>}
          */
         static async getUserFilter(userId) {
             const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
@@ -53,7 +53,10 @@ module.exports = (sequelize, DataTypes) => {
             });
             const hookIds = [...new Set(shareRows.map((row) => Number(row.aiHookId)))]
                 .filter((id) => Number.isInteger(id) && id > 0);
-            return hookIds.length > 0 ? {id: {[Op.in]: hookIds}} : {id: -1};
+            return {
+                owned: {userId},
+                shared: hookIds.length > 0 ? {id: {[Op.in]: hookIds}} : null,
+            };
         }
 
         static fields = [

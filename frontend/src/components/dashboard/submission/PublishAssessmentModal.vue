@@ -97,6 +97,9 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import PublishAssessmentConfirmationStep from "./PublishAssessmentConfirmationStep.vue";
 import PublishAssessmentPublishingStep from "./PublishAssessmentPublishingStep.vue";
 import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
+import MoodleOptions from "@/basic/form/MoodleOptions.vue";
+import { calculateAssessmentScore, pickScoresFromGradeRows } from "assessment-score";
+import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {
   isStudyClosed,
   getConfigurationIdFromConfig,
@@ -136,6 +139,7 @@ export default {
       linkCollection: "studies",
       selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
       isReviewUrlIncluded: false, // Option to include review URL in Moodle feedback
+      moodleOptions: {},
     };
   },
   computed: {
@@ -351,8 +355,68 @@ export default {
   },
   methods: {
     /**
-     * @deprecated Since the user can select a specific step directly,
-     * this method is no longer in use and can be removed
+     * Calculates the linear conversion factor between assessment points and Moodle grade.
+     * Uses the same logic for both the overview display and the actual grade publishing.
+     */
+    getConversionFactorFromAssessment(assessment) {
+      const totalMaxPoints = assessment.total_max_points ?? 0;
+      const totalMinPoints = assessment.total_min_points ?? 0;
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+
+      const sourcePointsRange = totalMaxPoints - totalMinPoints;
+      const targetGradeRange = assignmentMaxGrade - 0;
+
+      if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
+        let factor = targetGradeRange / sourcePointsRange;
+        // Keep 3 decimal places for display and internal use
+        factor = Math.round(factor * 1000000) / 1000000;
+        return factor;
+      }
+
+      return 0;
+    },
+    isStudyClosed(study) {
+      if (!study) {
+        return false;
+      }
+      return study.closed !== null ? true : false;
+    },
+    /**
+     * Resolve the assessment configuration id linked to a study step configuration.
+     * Prefers settings.configurationId; falls back to a top-level configurationId.
+     */
+    getConfigurationIdFromConfig(cfg) {
+      if (!cfg) return null;
+      return (
+        cfg?.settings?.configurationId ||
+        cfg?.configurationId ||
+        null
+      );
+    },
+    /**
+     * Pick the NLP or AI hook service from a study step configuration.
+     * Prefers a service with skill or hookId; otherwise uses the first entry.
+     */
+    getNlpServiceForStudyStep(studyStep) {
+      if (!studyStep || !studyStep.configuration) return null;
+      const cfg = studyStep.configuration;
+      if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
+
+      const svc = cfg.services.find((s) => s.skill || s.hookId) || cfg.services[0];
+      return svc || null;
+    },
+    /**
+     * Get assessment data keys for a study step.
+     * Always adds assessment_result to the hook/NLP keys.
+     */
+    getAssessmentDataKeys(studyStep) {
+      const svc = this.getNlpServiceForStudyStep(studyStep);
+      const keys = getAssessmentResultKeyCandidates(svc);
+      return [...new Set([...keys, ASSESSMENT_RESULT_KEY])];
+    },
+    /**
+     * @deprecated Since the user can select a specific step directly, 
+     * this method is no longer in use and can be removed 
      * after the testing of the assessment publishing feature.
      *
      * Find the study step for a study that matches the selected configuration.
@@ -441,12 +505,42 @@ export default {
      * Returns an object with scores and assessment calculation.
      */
     getAssessmentDataForSession(session) {
-      return getAssessmentDataForSession(
-        session,
-        this.selectedWorkflows,
-        (studySessionId) => this.$store.getters["table/document_data/getByKey"]("studySessionId", studySessionId),
-        this.selectedConfigurationContent
+      let matchingStudyStep = null;
+      for (const selectedEntry of this.selectedWorkflows) {
+        if (selectedEntry && selectedEntry.studySteps) {
+          matchingStudyStep = selectedEntry.studySteps.find(
+            step => step.studyId === session.studyId
+          );
+          if (matchingStudyStep) break;
+        }
+      }
+
+      if (!matchingStudyStep) {
+        return { scores: {}, assessment: {} };
+      }
+
+      const keys = this.getAssessmentDataKeys(matchingStudyStep);
+      const bySession = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId) || [];
+      const items = bySession.filter(
+        (row) =>
+          (row?.studyStepId == null || row?.studyStepId === matchingStudyStep.id)
+          && keys.includes(row?.key)
       );
+      let scores = pickScoresFromGradeRows(items);
+      // Same fallback rule as the grade export: use document-level hook rows when the session rows have no scores.
+      if (!Object.keys(scores).length) {
+        const documentId = Number(matchingStudyStep.documentId);
+        const documentRows = (this.$store.getters["table/document_data/getAll"] || []).filter(
+          (row) =>
+            row.studySessionId == null
+            && Number(row.documentId) === documentId
+            && keys.includes(row?.key)
+        );
+        scores = pickScoresFromGradeRows(documentRows);
+      }
+      const assessment = calculateAssessmentScore(this.selectedConfigurationContent, scores);
+
+      return { scores, assessment };
     },
     /**
      * Gets the owner user for a given session.
