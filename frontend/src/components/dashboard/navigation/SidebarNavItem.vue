@@ -24,7 +24,7 @@
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
 import LoadIcon from "@/basic/Icon.vue";
-import { navElementLabel } from "./navLabels.js";
+import { navElementLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarNavItem",

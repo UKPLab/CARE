@@ -243,11 +243,11 @@ import BasicIcon from "@/basic/Icon.vue";
 import { tooltip } from "@/assets/tooltip.js";
 import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
-import { tableFixedColumnsData, tableFixedColumnsComputed, tableFixedColumnsMethods } from "@/basic/table/tableFixedColumns.js";
-import { tableDataPipelineData, tableDataPipelineComputed, tableDataPipelineMethods } from "@/basic/table/tableDataPipeline.js";
-import { tableRowInteractionsData, tableRowInteractionsComputed, tableRowInteractionsMethods } from "@/basic/table/tableRowInteractions.js";
-import { tableProgressiveRenderingData, tableProgressiveRenderingMethods } from "@/basic/table/tableProgressiveRendering.js";
-import { tableCellHelpersMethods } from "@/basic/table/tableCellHelpers.js";
+import { tableFixedColumnsData, tableFixedColumnsComputed, tableFixedColumnsMethods } from "@/basic/table/helpers/tableFixedColumns.js";
+import { tableDataPipelineData, tableDataPipelineComputed, tableDataPipelineMethods } from "@/basic/table/helpers/tableDataPipeline.js";
+import { tableRowInteractionsData, tableRowInteractionsComputed, tableRowInteractionsMethods } from "@/basic/table/helpers/tableRowInteractions.js";
+import { tableProgressiveRenderingData, tableProgressiveRenderingMethods } from "@/basic/table/helpers/tableProgressiveRendering.js";
+import { tableCellHelpersMethods } from "@/basic/table/helpers/tableCellHelpers.js";
 
 /**
  * generic table with feature-rich API

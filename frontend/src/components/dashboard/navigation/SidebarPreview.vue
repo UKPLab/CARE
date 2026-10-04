@@ -35,7 +35,7 @@
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
 import SidebarNavItem from "./SidebarNavItem.vue";
-import { navGroupLabel } from "./navLabels.js";
+import { navGroupLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarPreview",

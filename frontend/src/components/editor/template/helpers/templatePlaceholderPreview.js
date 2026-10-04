@@ -14,7 +14,7 @@
 
 import Quill from "quill";
 import { resolveApiMessage } from "@/assets/utils";
-import {buildExamplePreviewHtml, mapPlaceholderPreviewRows} from "@/components/editor/template/placeholderExamplePreview.js";
+import {buildExamplePreviewHtml, mapPlaceholderPreviewRows} from "@/components/editor/template/helpers/placeholderExamplePreview.js";
 
 const Delta = Quill.import('delta');
 

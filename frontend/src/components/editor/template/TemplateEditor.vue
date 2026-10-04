@@ -91,10 +91,10 @@
   import Loader from "@/basic/Loading.vue";
   import BasicModal from "@/basic/Modal.vue";
   import BasicButton from "@/basic/Button.vue";
-  import { quillTemplateToolbarData, quillTemplateToolbarComputed, quillTemplateToolbarMethods } from "@/components/editor/template/quillTemplateToolbar.js";
-  import { templateLanguageSwitchingData, templateLanguageSwitchingComputed, templateLanguageSwitchingMethods } from "@/components/editor/template/templateLanguageSwitching.js";
-  import { templateContentSyncData, templateContentSyncComputed, templateContentSyncMethods } from "@/components/editor/template/templateContentSync.js";
-  import { templatePlaceholderPreviewData, templatePlaceholderPreviewComputed, templatePlaceholderPreviewMethods } from "@/components/editor/template/templatePlaceholderPreview.js";
+  import { quillTemplateToolbarData, quillTemplateToolbarComputed, quillTemplateToolbarMethods } from "@/components/editor/template/helpers/quillTemplateToolbar.js";
+  import { templateLanguageSwitchingData, templateLanguageSwitchingComputed, templateLanguageSwitchingMethods } from "@/components/editor/template/helpers/templateLanguageSwitching.js";
+  import { templateContentSyncData, templateContentSyncComputed, templateContentSyncMethods } from "@/components/editor/template/helpers/templateContentSync.js";
+  import { templatePlaceholderPreviewData, templatePlaceholderPreviewComputed, templatePlaceholderPreviewMethods } from "@/components/editor/template/helpers/templatePlaceholderPreview.js";
 
   export default {
     name: "TemplateEditor",

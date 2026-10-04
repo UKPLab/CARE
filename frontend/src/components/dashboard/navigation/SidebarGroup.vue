@@ -71,7 +71,7 @@
  */
 import LoadIcon from "@/basic/Icon.vue";
 import SidebarNavItem from "./SidebarNavItem.vue";
-import { navGroupLabel } from "./navLabels.js";
+import { navGroupLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarGroup",

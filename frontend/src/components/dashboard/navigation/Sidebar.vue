@@ -78,7 +78,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import Loading from "@/basic/Loading.vue";
 import SidebarGroup from "./SidebarGroup.vue";
 import SidebarPreview from "./SidebarPreview.vue";
-import { sidebarHoverPreviewData, sidebarHoverPreviewComputed, sidebarHoverPreviewMethods } from "./sidebarHoverPreview.js";
+import { sidebarHoverPreviewData, sidebarHoverPreviewComputed, sidebarHoverPreviewMethods } from "./helpers/sidebarHoverPreview.js";
 
 export default {
   subscribeTable: ['nav_group', 'nav_element'],

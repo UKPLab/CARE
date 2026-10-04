@@ -12,7 +12,7 @@
  * @author Mohammad Elwan
  */
 
-import { SUPPORTED_LANGUAGES } from "@/components/editor/template/templateLanguageSwitching.js";
+import { SUPPORTED_LANGUAGES } from "@/components/editor/template/helpers/templateLanguageSwitching.js";
 
 const VIEW_MODE_LABEL_KEYS = {
   edit: "templates.editor.viewMode.edit",

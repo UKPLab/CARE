@@ -115,7 +115,7 @@
 
 <script>
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { getAssessmentDataForSession, getConversionFactorFromAssessment } from "./publishAssessmentScoring.js";
+import { getAssessmentDataForSession, getConversionFactorFromAssessment } from "./helpers/publishAssessmentScoring.js";
 
 /**
  * Publishing-options step (step 5) of the assessment publishing wizard.
@@ -198,7 +198,10 @@ export default {
       const { assessment } = getAssessmentDataForSession(
         firstSession,
         this.selectedWorkflows,
-        (studySessionId) => this.$store.getters["table/document_data/getByKey"]("studySessionId", studySessionId),
+        {
+          getBySession: (studySessionId) => this.$store.getters["table/document_data/getByKey"]("studySessionId", studySessionId),
+          getAll: () => this.$store.getters["table/document_data/getAll"],
+        },
         this.selectedConfigurationContent
       );
 
