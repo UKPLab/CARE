@@ -11,6 +11,10 @@ const chat = require("./chat");
 const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
+const {
+    redactPersonalData,
+    submissionReference,
+} = require("../../../utils/helper/personalData");
 
 /**
  * Loads an enabled, non-deleted AI hook by id.
@@ -108,12 +112,30 @@ async function resolveSelectedHookModel(service, hookId, aiModelId = null) {
 }
 
 /**
- * Resolves an enabled hook's prompt template from caller-supplied values.
+ * Resolves the submission id for a hook submission input.
+ *
+ * Uses `submissionId` when it is set. Otherwise loads `pdfDocumentId` or `documentId` and reads that document's submission.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} input - Submission input.
+ * @returns {Promise<number|null>} Submission id, or null when none is stored.
+ */
+async function resolveSubmissionId(service, input) {
+    const reference = submissionReference(input);
+    if (reference.submissionId) return reference.submissionId;
+    if (!reference.documentId) return null;
+    const document = await service.server.db.models["document"].getById(reference.documentId);
+    const submissionId = Number(document?.submissionId);
+    return Number.isInteger(submissionId) && submissionId > 0 ? submissionId : null;
+}
+
+/**
+ * Fills an enabled hook's prompt and redacts student fields in it.
  *
  * @param {Object} service - AIService runtime with DB access.
  * @param {number} hookId - Target `ai_hook` primary key.
- * @param {Object} rawValues - Placeholder values supplied by the caller.
- * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Prompt and resolved inputs.
+ * @param {Object} [rawValues={}] - Placeholder values from the caller.
+ * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Filled prompt. `promptText` is redacted. `resolvedValues` is not.
  */
 async function resolveHookPrompt(service, hookId, rawValues = {}) {
     const hook = await loadEnabledHook(service, hookId);
@@ -123,7 +145,11 @@ async function resolveHookPrompt(service, hookId, rawValues = {}) {
         values,
         service.server.db.models,
     );
-    return {hook, promptText, resolvedValues: values};
+    return {
+        hook,
+        promptText: redactPersonalData(promptText),
+        resolvedValues: values,
+    };
 }
 
 /**
@@ -152,11 +178,7 @@ async function resolveServiceInput(service, input) {
         }
         case "submission": {
             const { selectedFiles = [], pdfText, filePatterns = {} } = input;
-            let {submissionId} = input;
-            if (!submissionId && input.pdfDocumentId) {
-                const document = await service.server.db.models["document"].getById(input.pdfDocumentId);
-                submissionId = document?.submissionId;
-            }
+            const submissionId = await resolveSubmissionId(service, input);
             if (!submissionId || !selectedFiles.length) return "";
 
             // `{ pages, pageCount }` must stay intact so applyTextRangeLimit can slice pages.
@@ -260,11 +282,10 @@ async function runHook(service, client, data) {
     }
 
     try {
-        const hook = await loadEnabledHook(service, hookId);
-        const hookModels = await loadHookModels(service, hookId);
         const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
-        const values = await resolveHookReferences(service, rawValues);
-        const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
+        await loadEnabledHook(service, hookId);
+        const hookModels = await loadHookModels(service, hookId);
+        const {hook, promptText} = await resolveHookPrompt(service, hookId, rawValues);
 
         let lastError;
         for (const [index, hookModel] of hookModels.entries()) {
