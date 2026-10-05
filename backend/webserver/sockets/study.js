@@ -65,12 +65,7 @@ class StudySocket extends Socket {
                     throw new TranslatableError("errors.studies.studyNotFound");
                 }
 
-                if (
-                    !(
-                      (await this.checkUserAccess(oldTemplate.userId)) ||
-                      (await this.hasAccess("study.template.edit"))
-                    )
-                  ) {
+                if (!(await this.checkUserAccess(oldTemplate.userId) || await this.hasAccess("study.template.edit"))) {
                     throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");
                 }
             }
