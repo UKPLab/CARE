@@ -40,9 +40,9 @@ class StudySocket extends Socket {
      * @param {number} data.id the ID of the study to save as template (required if onlyTemplate is false)
      * @param {boolean} data.onlyTemplate if true, creates template directly from provided data without creating a study
      * @param {object} data.templateData the template data when onlyTemplate is true
+     * @param {number} data.replaceTemplateId - ID of the existing template to soft-delete and replace when editing a saved template.
      * @param {object} options Configuration for the database operation.
      * @param {Object} options.transaction A Sequelize DB transaction object.
-     * @param {number} replaceTemplateId - ID of the existing template to soft-delete and replace when editing a saved template.
      * @returns {Promise<*>} A promise that resolves with the newly created study template object from the database.
      * @throws {Error} Throws an error if the user does not have permission to access the source study.
      */
@@ -65,7 +65,12 @@ class StudySocket extends Socket {
                     throw new TranslatableError("errors.studies.studyNotFound");
                 }
 
-                if (!(await this.checkUserAccess(oldTemplate.userId))) {
+                if (
+                    !(
+                      (await this.checkUserAccess(oldTemplate.userId)) ||
+                      (await this.hasAccess("study.template.edit"))
+                    )
+                  ) {
                     throw new TranslatableError("errors.studies.noPermissionSaveAsTemplate");
                 }
             }
