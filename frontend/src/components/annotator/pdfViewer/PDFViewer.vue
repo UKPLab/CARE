@@ -13,7 +13,6 @@
       :id="'pdfToolbar-' + documentId"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
-      :is-zooming="isZooming"
       :pdf-dark-mode="pdfDarkMode"
       @toggle-pdf-theme="togglePdfTheme"
       @update:zoom-form-data="zoomFormData = $event"
@@ -111,7 +110,6 @@ export default {
       MIN_SCALE: 0.25,
       MAX_SCALE: 10.0,
       DEFAULT_SCALE_DELTA: 1.1,
-      isZooming: false,
       toolbarVisible: false,
       zoomFormData: {
         zoom: 1.0,
@@ -151,12 +149,8 @@ export default {
     },
     zoomFormData: {
       handler(newZoom) {
-        if (!this.isZooming) {
-          this.isZooming = true;
+        if (this.scale !== newZoom.zoom) {
           this.scale = newZoom.zoom;
-          setTimeout(() => {
-            this.isZooming = false;
-          }, 1000);
         }
       },
       deep: true,
@@ -212,30 +206,15 @@ export default {
       localStorage.setItem("care.pdfDark", this.pdfDarkMode);
     },
     zoomIn() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale * this.DEFAULT_SCALE_DELTA;
       this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // Match the debounce timeout
     },
     zoomOut() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale / this.DEFAULT_SCALE_DELTA;
       this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // Match the debounce timeout
     },
     resetZoom() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       this.scale = this.originalScale || this.DEFAULT_SCALE;
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000);
     },
     updateVisibility(page) {
       let stateChanged = false;
