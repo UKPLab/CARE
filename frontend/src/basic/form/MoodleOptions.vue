@@ -158,17 +158,25 @@ export default defineComponent({
     },
     modelValue: {
       handler() {
-        this.moodleOptions = this.modelValue;
+        this.moodleOptions = this.withSettingsDefaults(this.modelValue);
       },
       deep: true,
     },
   },
   mounted() {
-    this.moodleOptions = this.modelValue;
+    this.moodleOptions = this.withSettingsDefaults(this.modelValue);
   },
   methods: {
+    withSettingsDefaults(value) {
+      return {
+        courseID: this.moodleCourseId,
+        apiKey: this.moodleAPIKey,
+        apiUrl: this.moodleAPIUrl,
+        ...(value && typeof value === "object" ? value : {}),
+      };
+    },
     reset() {
-      this.moodleOptions = {};
+      this.moodleOptions = this.withSettingsDefaults({});
     },
     validate() {
       return this.$refs.form.validate();

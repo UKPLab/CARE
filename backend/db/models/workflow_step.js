@@ -12,6 +12,14 @@ module.exports = (sequelize, DataTypes) => {
     class WorkflowStep extends MetaModel {
         static autoTable = true;
         static publicTable = true;
+        static accessMap = [
+            {
+                table: "workflow",
+                by: "id",
+                target: "workflowId",
+                columns: this.getAttributes()
+            }
+        ];
 
         static stepTypes = stepTypes;
 

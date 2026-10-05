@@ -165,8 +165,8 @@ Template types (see :doc:`Templates <templates>` for details):
 +--------------------------+--------+
 | Email - Study Close      | 6      |
 +--------------------------+--------+
-- Placeholders (e.g. ``~username~``, ``~link~``) are resolved per type by the backend (``backend/utils/templateResolver.js``).  
-- Content is stored per language in ``template_language_content``; the Editor shows TemplateEditor and, for email types, a **Placeholders** sidebar (TemplateConfigurator) when editing a template (``templateId`` provided).
+- Placeholders (e.g. ``~username~``, ``~link~``) are resolved per type by the backend (``backend/utils/helper/templateResolver.js``).  
+- Content is stored per language in ``template_content``; the Editor shows TemplateEditor and, for email types (1, 2, 3, 6, 7) and prompt templates (type 8), a **Placeholders** sidebar (TemplateConfigurator) when editing a template (``templateId`` provided).
 
 .. code-block:: html
 
