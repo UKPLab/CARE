@@ -153,6 +153,11 @@ export default {
       required: false,
       default: null,
     },
+    forceReadOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     withoutHistory: {
       type: Boolean,
       required: false,
@@ -232,6 +237,9 @@ export default {
       return emailTemplateTypes.includes(this.template.type) || this.template.type === 8;
     },
     readOnlyOverwrite() {
+      if (this.forceReadOnly) {
+        return true;
+      }
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
