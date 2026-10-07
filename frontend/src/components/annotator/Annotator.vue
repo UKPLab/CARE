@@ -121,6 +121,7 @@ export default {
   provide() {
     return {
       documentId: computed(() => this.documentId),
+      readOnly: computed(() => this.readOnly || this.forceReadOnly),
       studyStepId: computed(() => this.studyStepId),
       showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
@@ -169,6 +170,11 @@ export default {
       default: false,
     },
     sidebarDisabled: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    forceReadOnly: {
       type: Boolean,
       required: false,
       default: false,
