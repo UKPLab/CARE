@@ -24,6 +24,7 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
+            active-side-bar="annotations"
             :is-shown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"

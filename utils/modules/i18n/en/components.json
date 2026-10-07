@@ -43,7 +43,13 @@
         "label": "Views",
         "showStrip": "Show view switcher",
         "hideStrip": "Hide view switcher",
-        "stepFallback": "Step {number}"
+        "stepFallback": "Step {number}",
+        "annotationsOfStep": "{step}: Annotations",
+        "assessmentOfStep": "{step}: Assessment",
+        "emptySidebar": "This step has no sidebar content.",
+        "split": {
+            "row": "Split side by side"
+        }
         },
         "errors": {
         "goToDashboard": "Go to Dashboard",

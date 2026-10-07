@@ -43,7 +43,13 @@
         "label": "Ansichten",
         "showStrip": "Ansichtsleiste einblenden",
         "hideStrip": "Ansichtsleiste ausblenden",
-        "stepFallback": "Schritt {number}"
+        "stepFallback": "Schritt {number}",
+        "annotationsOfStep": "{step}: Anmerkungen",
+        "assessmentOfStep": "{step}: Bewertung",
+        "emptySidebar": "Dieser Schritt hat keine Inhalte in der Seitenleiste.",
+        "split": {
+            "row": "Nebeneinander teilen"
+        }
         },
         "errors": {
         "goToDashboard": "Zum Dashboard",

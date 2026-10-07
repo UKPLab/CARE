@@ -31,7 +31,7 @@
           :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
-          :active-side-bar="defaultActiveSidebar"
+          :active-side-bar="defaultActiveSidebar || activeSidebar"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
@@ -157,6 +157,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    activeSidebar: {
+      type: String,
+      required: false,
+      default: null,
     },
     withoutHistory: {
       type: Boolean,
