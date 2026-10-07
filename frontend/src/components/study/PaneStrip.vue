@@ -106,8 +106,8 @@ export default {
   data() {
     return {
       // Split layouts, named after the CSS flex-direction they use
-      directions: ["row"],
-      splitIcons: {row: "layout-split"},
+      directions: ["row", "column"],
+      splitIcons: {row: "layout-split", column: "view-stacked"},
     };
   },
   computed: {
@@ -205,5 +205,53 @@ export default {
 .study-container[data-split] .canvasWrapper {
   max-width: 100%;
   height: auto !important;
+}
+
+/* Stacked: earlier step on top, current step below. 52.5px is the top bar, 44px the strip. */
+.study-container[data-split="column"] {
+  flex-direction: column;
+}
+
+.study-container[data-split="column"] > .study-pane {
+  flex: 0 0 auto;
+}
+
+.study-container[data-split="column"] .vh-100,
+.study-container[data-split="column"] .min-vh-100 {
+  height: calc((100vh - 96.5px) / 2 + 52.5px) !important;
+  min-height: 0 !important;
+}
+
+/* The lower pane does not sit under the top bar, so it needs no room for it */
+.study-container[data-split="column"] > .study-pane ~ .study-pane .vh-100,
+.study-container[data-split="column"] > .study-pane ~ .study-pane .min-vh-100 {
+  height: calc((100vh - 96.5px) / 2) !important;
+}
+
+.study-container[data-split="column"] > .study-pane ~ .study-pane .top-padding {
+  padding-top: 0;
+}
+
+.study-container[data-split="column"] > .study-pane ~ .study-pane .sidebar-container {
+  margin-top: 0;
+}
+
+/* Stacked: the sidebar leaves the lower pane and runs down the right edge, next to both panes */
+.study-container[data-split="column"] > .study-pane #sidebarContainer {
+  position: fixed;
+  top: 96.5px;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.study-container[data-split="column"]:has(> .study-pane .sidebar-wrapper.sidebar-visible) {
+  padding-right: 400px;
+}
+
+/* Stacked: a PDF page gets half of the width, like side by side, so more of it fits into the pane */
+.study-container[data-split="column"] [id^="pdfContainer-"] {
+  max-width: 50%;
+  margin: 0 auto;
 }
 </style>

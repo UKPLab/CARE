@@ -48,7 +48,8 @@
         "assessmentOfStep": "{step}: Assessment",
         "emptySidebar": "This step has no sidebar content.",
         "split": {
-            "row": "Split side by side"
+            "row": "Split side by side",
+            "column": "Split top and bottom"
         }
         },
         "errors": {
