@@ -39,6 +39,8 @@
         }
     },
     "studyRoute": {
+        "previousStep": "Previous: {step}",
+        "nextStep": "Next: {step}",
         "panes": {
         "label": "Views",
         "showStrip": "Show view switcher",

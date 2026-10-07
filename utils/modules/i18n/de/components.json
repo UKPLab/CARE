@@ -39,6 +39,8 @@
         }
     },
     "studyRoute": {
+        "previousStep": "Vorherige: {step}",
+        "nextStep": "Weiter: {step}",
         "panes": {
         "label": "Ansichten",
         "showStrip": "Ansichtsleiste einblenden",

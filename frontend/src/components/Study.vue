@@ -59,10 +59,11 @@
           currentStudyStep.studyStepPrevious !== null
         "
           class="btn btn-outline-primary me-3"
-          :title="$t('common.previous')"
+          :title="previousLabel"
+          :props="{ key: 'studyNav.previous' }"
           @click="updateStep(currentStudyStep.studyStepPrevious)"
       >
-        {{ $t('common.previous') }}
+        {{ previousLabel }}
       </TopBarButton>
 
       <TopBarButton
@@ -88,10 +89,11 @@
           ref="nextButton"
           :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
           class="btn btn-outline-primary ms-3"
-          :title="$t('common.next')"
+          :title="nextLabel"
+          :props="{ key: 'studyNav.next' }"
           @click="next()"
       >
-        {{ $t('common.next') }}
+        {{ nextLabel }}
       </TopBarButton>
 
       <TopBarButton
@@ -324,6 +326,12 @@ export default {
         labels[step.id] = isDuplicate ? `${names[index]} ${index + 1}` : names[index];
         return labels;
       }, {});
+    },
+    previousLabel() {
+      return this.$t('components.studyRoute.previousStep', {step: this.stepLabels[this.currentStudyStep?.studyStepPrevious]});
+    },
+    nextLabel() {
+      return this.$t('components.studyRoute.nextStep', {step: this.stepLabels[this.nextStudyStep?.id]});
     },
     lookBackSteps() {
       return this.earlierStepsOf(this.currentStudyStep);
