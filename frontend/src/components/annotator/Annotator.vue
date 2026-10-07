@@ -18,10 +18,11 @@
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
               @copy="onCopy"
+              @loaded="pdf = $event"
           />
 
         </div>
-        <AnnotationScrollMarkers/>
+        <AnnotationScrollMarkers :pdf="pdf"/>
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
@@ -190,6 +191,7 @@ export default {
   emits: ['update:data'],
   data() {
     return {
+      pdf: null,
       downloading: false,
       assessmentViewActive: true,
       maxSidebarWidth: 400,

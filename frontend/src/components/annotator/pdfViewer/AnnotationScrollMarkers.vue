@@ -49,6 +49,14 @@ export default {
       default: false,
     },
   },
+  props: {
+    /** PDF store of the viewer (pdfStore.js), null until the file is loaded */
+    pdf: {
+      type: Object,
+      required: false,
+      default: null,
+    },
+  },
   data() {
     return {
       markers: [],
@@ -70,8 +78,14 @@ export default {
     annotations() {
       this.updateMarkers();
     },
+    pdf() {
+      this.textTops.clear();
+      this.updateMarkers();
+    },
   },
   created() {
+    // Estimated position of annotations on not yet rendered pages, by annotation id
+    this.textTops = new Map();
     this.updateMarkers = debounce(this.computeMarkers, 200);
   },
   mounted() {
@@ -102,39 +116,62 @@ export default {
     observeContent() {
       Array.from(this.container.children).forEach(child => this.resizeObserver.observe(child));
     },
-    computeMarkers() {
+    async computeMarkers() {
       const container = this.container;
       if (!container || container.scrollHeight === 0) {
         this.markers = [];
         return;
       }
+      await this.loadTextTops();
       const pages = container.querySelectorAll(".scrolling-page");
       const contentTop = container.getBoundingClientRect().top - container.scrollTop;
 
       this.markers = this.annotations.map(anno => {
-        const element = this.getPositionElement(anno, pages);
-        if (!element) {
+        const top = this.getPosition(anno, pages);
+        if (top === null) {
           return null;
         }
         const color = getTagColor(this.$store, anno.tagId);
         return {
           id: anno.id,
-          top: (element.getBoundingClientRect().top - contentTop) / container.scrollHeight * 100,
+          top: (top - contentTop) / container.scrollHeight * 100,
           color: color ? "#" + color : null,
         };
       }).filter(marker => marker !== null);
     },
     /**
-     * Returns the element marking the annotation's position: its first highlight once the page is rendered,
-     * otherwise the top of its page (annotations only store text offsets and a page number, no y-coordinate).
+     * Estimates the position of annotations from the PDF text layout, for pages that are not rendered yet.
      */
-    getPositionElement(anno, pages) {
+    async loadTextTops() {
+      if (!this.pdf) {
+        return;
+      }
+      await Promise.all(this.annotations.filter(anno => !this.textTops.has(anno.id)).map(async anno => {
+        const selectors = anno.selectors?.target?.[0]?.selector;
+        const pageNumber = selectors?.find(s => s.type === "PagePositionSelector")?.number;
+        const offset = selectors?.find(s => s.type === "TextPositionSelector")?.start;
+        const top = pageNumber && offset !== undefined
+          ? await this.pdf.getTextTop(pageNumber - 1, offset).catch(() => null)
+          : null;
+        this.textTops.set(anno.id, top);
+      }));
+    },
+    /**
+     * Returns the viewport y-coordinate of the annotation: its first highlight once the page is rendered,
+     * otherwise the estimate from the text layout, or the top of its page if there is none.
+     */
+    getPosition(anno, pages) {
       const highlight = anno.anchors?.[0]?.highlights?.[0];
       if (highlight && highlight.isConnected && !isInPlaceholder(highlight)) {
-        return highlight;
+        return highlight.getBoundingClientRect().top;
       }
       const pageNumber = anno.selectors?.target?.[0]?.selector?.find(s => s.type === "PagePositionSelector")?.number;
-      return pages[pageNumber - 1] ?? null;
+      const wrapper = pages[pageNumber - 1]?.querySelector(".canvasWrapper");
+      if (!wrapper) {
+        return null;
+      }
+      const rect = wrapper.getBoundingClientRect();
+      return rect.top + (this.textTops.get(anno.id) ?? 0) * rect.width;
     },
     jumpTo(annotationId) {
       this.eventBus.emit("pdfScroll", annotationId);
