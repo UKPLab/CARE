@@ -39,6 +39,12 @@
         }
     },
     "studyRoute": {
+        "panes": {
+        "label": "Ansichten",
+        "showStrip": "Ansichtsleiste einblenden",
+        "hideStrip": "Ansichtsleiste ausblenden",
+        "stepFallback": "Schritt {number}"
+        },
         "errors": {
         "goToDashboard": "Zum Dashboard",
         "studyNotFoundTitle": "Studie nicht gefunden",

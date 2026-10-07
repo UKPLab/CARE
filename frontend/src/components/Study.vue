@@ -115,9 +115,17 @@
   <div
       v-if="studySessionId !== 0 && !studyError"
       class="study-container"
+      :class="{ 'pane-open': shownStepId !== null }"
   >
+    <PaneStrip
+        v-if="currentStudyStep"
+        v-model="shownStepId"
+        :current-step="currentStudyStep"
+        :earlier-steps="lookBackSteps"
+        :ordered-steps="orderedStudySteps"
+    />
     <div v-for="step in orderedStudySteps" :key="'step_' + step.id">
-      <div v-show="currentStudyStepId === step.id">
+      <div v-show="isStepVisible(step.id)">
         <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
           <div v-if="!(studySession && studySession.start === null)">
@@ -137,7 +145,8 @@
 
             <Annotator
                 v-if="step.stepType === 1"
-                :is-shown="currentStudyStepId === step.id"
+                :force-read-only="step.id !== currentStudyStepId"
+                :is-shown="isStepVisible(step.id)"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
                 @error="error"
@@ -161,8 +170,9 @@
             <Editor
                 v-if="step.stepType === 2"
                 ref="editor"
+                :force-read-only="step.id !== currentStudyStepId"
                 :document-id="step.documentId"
-                :is-shown="currentStudyStepId === step.id"
+                :is-shown="isStepVisible(step.id)"
                 :study-step-id="step.id"
                 :without-history="true"
                 @update:data="updateStudyData(step.id, 'editor', $event)"
@@ -212,6 +222,7 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import PaneStrip from "@/components/study/PaneStrip.vue";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
@@ -230,6 +241,7 @@ export default {
     Annotator,
     Editor,
     TopBarButton,
+    PaneStrip,
     StepModal,
     LoadingModal
   },
@@ -275,9 +287,23 @@ export default {
       nlpModalStepId: null,
       pendingNlpInsertion: null,
       studyError: null,
+      shownStepId: null,
     };
   },
   computed: {
+    lookBackSteps() {
+      // Earlier steps that "Previous" could reach from here, in workflow order.
+      // Only Annotator (1) and Editor (2) steps, because those can be forced read-only.
+      const steps = [];
+      let step = this.currentStudyStep;
+      while (step && step.allowBackward && step.studyStepPrevious) {
+        step = this.$store.getters["table/study_step/get"](step.studyStepPrevious);
+        if (step && [1, 2].includes(step.stepType) && this.isStepLoaded(step.id)) {
+          steps.unshift(step);
+        }
+      }
+      return steps;
+    },
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
     },
@@ -449,6 +475,10 @@ export default {
     },
   },
   watch: {
+    currentStudyStepId() {
+      // Every step starts with the strip closed
+      this.shownStepId = null;
+    },
     studySession() {
       if (this.study && this.study.timeLimit > 0 && this.studySession) {
         //studySession required, otherwise not all data may be there yet
@@ -534,6 +564,11 @@ export default {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       this.updateStep(nextStep.id);
+    },
+    isStepVisible(stepId) {
+      // An earlier step takes the place of the current one while its tab is selected
+      const selected = this.lookBackSteps.find((step) => step.id === this.shownStepId);
+      return stepId === (selected ? selected.id : this.currentStudyStepId);
     },
     isStepLoaded(stepId) {
       if (stepId in this.loadingReady) {
