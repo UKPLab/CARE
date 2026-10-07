@@ -163,6 +163,21 @@ export function omitObjectAttributeSubset(obj, keys) {
 }
 
 /**
+ * Toggles a value's membership in an array in place: removes it if present, appends it otherwise.
+ *
+ * @param {Array} array the array to mutate
+ * @param {*} value the value to toggle
+ */
+export function toggleArrayItem(array, value) {
+    const idx = array.indexOf(value);
+    if (idx >= 0) {
+        array.splice(idx, 1);
+    } else {
+        array.push(value);
+    }
+}
+
+/**
  * Returns a copy of the first argument object, where the attributes are replaced by the contents of the second
  * argument object, iff the attribute is present in the latter.
  *

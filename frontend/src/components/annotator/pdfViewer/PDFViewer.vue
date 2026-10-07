@@ -178,7 +178,7 @@ export default {
       },
       (res) => {
         if (res.success) {
-          const loadingTask = pdfjsLib.getDocument(res['data']['file']);
+          const loadingTask = pdfjsLib.getDocument({ data: res['data']['file'] });
           loadingTask.promise
             .then((pdf) => {
               this.pdf = new PDF();
