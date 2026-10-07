@@ -245,7 +245,7 @@
 import BasicTable from "@/basic/Table.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { calculateAssessmentScore, buildScoresFromState } from "assessment-score";
+import { calculateAssessmentScore, pickScoresFromGradeRows } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
 import {
   ASSESSMENT_RESULT_KEY,
@@ -282,6 +282,7 @@ export default {
       linkCollection: "studies",
       selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
       isReviewUrlIncluded: false, // Option to include review URL in Moodle feedback
+      moodleOptions: {},
     };
   },
   computed: {
@@ -760,8 +761,8 @@ export default {
       return study.closed !== null ? true : false;
     },
     /**
-     * Detect if a study step uses AI workflow by checking for services with skills.
-     * Any service with a skill property indicates AI workflow.
+     * Resolve the assessment configuration id linked to a study step configuration.
+     * Prefers settings.configurationId; falls back to a top-level configurationId.
      */
     getConfigurationIdFromConfig(cfg) {
       if (!cfg) return null;
@@ -771,24 +772,26 @@ export default {
         null
       );
     },
+    /**
+     * Pick the NLP or AI hook service from a study step configuration.
+     * Prefers a service with skill or hookId; otherwise uses the first entry.
+     */
     getNlpServiceForStudyStep(studyStep) {
       if (!studyStep || !studyStep.configuration) return null;
       const cfg = studyStep.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Find any configured NLP skill or AI hook.
       const svc = cfg.services.find((s) => s.skill || s.hookId) || cfg.services[0];
-
       return svc || null;
     },
     /**
-     * Get assessment data key for a study step.
-     * Returns canonical AI/NLP keys, otherwise "assessment_result".
+     * Get assessment data keys for a study step.
+     * Always adds assessment_result to the hook/NLP keys.
      */
     getAssessmentDataKeys(studyStep) {
       const svc = this.getNlpServiceForStudyStep(studyStep);
       const keys = getAssessmentResultKeyCandidates(svc);
-      return keys.length ? keys : [ASSESSMENT_RESULT_KEY];
+      return [...new Set([...keys, ASSESSMENT_RESULT_KEY])];
     },
     /**
      * @deprecated Since the user can select a specific step directly, 
@@ -881,7 +884,6 @@ export default {
      * Returns an object with scores and assessment calculation.
      */
     getAssessmentDataForSession(session) {
-      // Search across all selected workflows to find the matching study step
       let matchingStudyStep = null;
       for (const selectedEntry of this.selectedWorkflows) {
         if (selectedEntry && selectedEntry.studySteps) {
@@ -895,18 +897,27 @@ export default {
       if (!matchingStudyStep) {
         return { scores: {}, assessment: {} };
       }
-      // fetch document_data for this session and study step
-      // Try both AI workflow keys and non-AI key (assessment_result)
-      const documentDataArray = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId);
-      const documentDataItem = documentDataArray.find(
-        (dd) => dd?.studyStepId === matchingStudyStep.id && dd?.key === ASSESSMENT_RESULT_KEY
-      );
-      const assessmentRaw = documentDataItem?.value || {};
 
-      const scoreState = assessmentRaw || {};
-      const scores = buildScoresFromState(scoreState);
-      const configContent = this.selectedConfigurationContent;
-      const assessment = calculateAssessmentScore(configContent, scores);
+      const keys = this.getAssessmentDataKeys(matchingStudyStep);
+      const bySession = this.$store.getters["table/document_data/getByKey"]("studySessionId", session.sessionId) || [];
+      const items = bySession.filter(
+        (row) =>
+          (row?.studyStepId == null || row?.studyStepId === matchingStudyStep.id)
+          && keys.includes(row?.key)
+      );
+      let scores = pickScoresFromGradeRows(items);
+      // Same fallback rule as the grade export: use document-level hook rows when the session rows have no scores.
+      if (!Object.keys(scores).length) {
+        const documentId = Number(matchingStudyStep.documentId);
+        const documentRows = (this.$store.getters["table/document_data/getAll"] || []).filter(
+          (row) =>
+            row.studySessionId == null
+            && Number(row.documentId) === documentId
+            && keys.includes(row?.key)
+        );
+        scores = pickScoresFromGradeRows(documentRows);
+      }
+      const assessment = calculateAssessmentScore(this.selectedConfigurationContent, scores);
 
       return { scores, assessment };
     },

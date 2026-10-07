@@ -34,6 +34,7 @@
                   :rubric="rubric"
                   :group-index="groupIndex"
                   :is-expanded="!!expandedGroups[groupIndex]"
+                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :assessment-state="assessmentState"
                   :read-only="computedReadOnly"
                   :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
@@ -139,11 +140,12 @@ export default {
       default: null,
     },
   },
-  emits: ["state-changed", "assessment-ready-changed", "update:data"],
+  emits: ["state-changed", "assessment-ready-changed", "update:data", "assessment-advance-past-end"],
   data() {
     return {
       error: null,
       expandedGroups: {},
+      rubricRefs: {},
       assessmentState: {},
       showInfoPanel: false,
       selectedCriterion: null,
@@ -592,8 +594,12 @@ export default {
             }
         );
         this.$emit("update:data", value);
-      }).catch((err) => {
-        console.error("Failed to save assessment data", err);
+      }).catch(() => {
+        this.eventBus.emit("toast", {
+          title: this.$t("assessment.save.failedTitle"),
+          message: this.$t("assessment.save.failedMessage"),
+          variant: "danger",
+        });
       });
     },
     onFocusNextRubric(currentGroupIndex) {
@@ -607,8 +613,10 @@ export default {
         const newExpanded = {};
         newExpanded[nextIndex] = true;
         this.expandedGroups = newExpanded;
+        this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
+        this.$emit("assessment-advance-past-end", () => this.rubricRefs[currentGroupIndex]?.focusHeader());
       }
     },
   },
