@@ -40,8 +40,9 @@
           class="dropdown"
       >
         <BasicButton
-            class="btn-sm"
-            :class="[isSplit(direction) ? 'btn-primary' : 'btn-outline-secondary', { 'dropdown-toggle': hasChoice }]"
+            class="btn-sm btn-outline-secondary"
+            :class="{ 'dropdown-toggle': hasChoice }"
+            :aria-pressed="isSplit(direction)"
             :data-bs-toggle="hasChoice ? 'dropdown' : null"
             :aria-expanded="hasChoice ? 'false' : null"
             :title="splitTitle(direction)"
@@ -54,6 +55,7 @@
           <li v-for="tab in earlierTabs" :key="tab.step.id">
             <BasicButton
                 class="dropdown-item"
+                :aria-current="isSplit(direction) && modelValue === tab.step.id ? 'true' : null"
                 :title="tab.label"
                 :props="{ key: 'studyPane.split', direction, from: layout, stepId: tab.step.id }"
                 @click="split(direction, tab.step.id)"
@@ -170,6 +172,22 @@ export default {
   padding-top: 4px;
   z-index: 1020;
 }
+
+/* An active split button is marked by aria-pressed, not by a class: changing its class would break its menu.
+   It and the chosen menu entry get the colours of an active tab (btn-primary). */
+.pane-strip .btn[aria-pressed="true"],
+.pane-strip .dropdown-item[aria-current="true"] {
+  background-color: var(--care-accent, var(--bs-primary));
+  border-color: var(--care-accent, var(--bs-primary));
+  color: var(--care-on-accent, #fff);
+}
+
+/* A button whose menu is open is not lit up, so only the active split is */
+.pane-strip .btn.show:not([aria-pressed="true"]) {
+  background-color: transparent;
+  border-color: var(--bs-btn-border-color);
+  color: var(--bs-btn-color);
+}
 </style>
 
 <style>
@@ -249,9 +267,10 @@ export default {
   padding-right: 400px;
 }
 
-/* Stacked: a PDF page gets half of the width, like side by side, so more of it fits into the pane */
-.study-container[data-split="column"] [id^="pdfContainer-"] {
-  max-width: 50%;
+/* In both split layouts a PDF page has the same width. A page only redraws when its width changes,
+   so switching between the layouts does not make it redraw. */
+.study-container[data-split] [id^="pdfContainer-"] {
+  max-width: calc(50vw - 100px);
   margin: 0 auto;
 }
 </style>
