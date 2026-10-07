@@ -11,11 +11,6 @@
       }"
       class="pageContainer"
     >
-      <canvas
-        v-show="!isRendered"
-        :id="'placeholder-canvas-' + pageNumber + '-' + documentId"
-        :style="canvasStyle"
-      />
       <div
         :id="'canvas-wrapper-' + pageNumber + '-' + documentId"
         class="canvasWrapper"
@@ -151,12 +146,6 @@ export default {
           .filter(a => a !== undefined)
       )
     },
-     canvasStyle() {
-      return {
-        transform: `scale(${1 / this.devicePixelRatio})`,
-        transformOrigin: '0 0',
-      };
-    }
   },
   watch: {
     zoomValue: {
@@ -169,7 +158,6 @@ export default {
           const currentWidth = wrapper.getBoundingClientRect().width;
           const newWidth = (currentWidth / oldValue) * newValue;
           wrapper.style.width = newWidth + 'px';
-          wrapper.style.height = (newWidth * 1.4142) + 'px';
           
           this.currentWidth = newWidth;
           
@@ -178,6 +166,8 @@ export default {
           
           this.destroyPage();
           this.init();
+        } else {
+          this.applyZoomToWrapper();
         }
       }
     },
@@ -217,21 +207,15 @@ export default {
       });
     },
     setA4() {
-      const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber + '-' + this.documentId);
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-      const width = wrapper.getBoundingClientRect().width;
-      this.originalWidth = width; 
-      const height = width * 1.4142;
-      canvas.height = height;
-      canvas.width = width;
-      this.currentWidth = width;
+      this.originalWidth = wrapper.getBoundingClientRect().width;
+      this.currentWidth = this.originalWidth;
     },
     applyZoomToWrapper() {
       if (this.originalWidth > 0) {
         const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
         const width = this.originalWidth * this.zoomValue;
         wrapper.style.width = width + 'px';
-        wrapper.style.height = (width * 1.4142) + 'px';
         this.currentWidth = width;
       }
     },
@@ -388,6 +372,8 @@ export default {
 
 .canvasWrapper {
   position: relative;
+  /* Same height before and after rendering, so the scroll height does not jump (A4 ratio) */
+  aspect-ratio: 1 / 1.4142;
 }
 
 .pdf-page {
