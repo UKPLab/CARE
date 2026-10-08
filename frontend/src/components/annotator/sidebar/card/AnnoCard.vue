@@ -45,42 +45,15 @@
       </div>
     </template>
       <template #body>
-        <div v-if="editingTag && annotationId" class="d-flex align-items-center">
-          <select
-            v-model="selectedTagId"
-            class="form-select form-select-md"
-            :style="{
-              display: 'inline-block',
-              borderLeft: '4px solid #' + color,
-              height: '38px',
-              fontSize: 'small',
-              fontStyle: 'italic'
-            }"
-            @change="saveTagChange"
-          >
-            <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
-              {{ tag.name }}
-            </option>
-          </select>
-          <SidebarButton
-                  :loading="false"
-                  :props="$props"
-                  icon="x-square"
-                  :title="$t('common.cancel')"
-                  @click="editingTag = false"
-          />
-        </div>
-        <div
-            v-else-if="annotationId && !editingTag"
-            :style="'border-color:#' + color"
-            :title="tagName"
-            class="blockquote card-text annoBlockquote"
-            data-placement="top"
-            data-toogle="tooltip"
-            @click="scrollTo(annotationId)"
-        >
-          <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
-        </div>
+        <AnnotationTag
+            ref="annotationTag"
+            :annotation-id="annotationId"
+            :comment-id="commentId"
+            :editing-tag="editingTag"
+            :selected-tag-id="selectedTagId"
+            @update:editing-tag="editingTag = $event"
+            @update:selected-tag-id="selectedTagId = $event"
+        />
         <Comment
             ref="main_comment"
             :comment-id="commentId"
@@ -139,16 +112,12 @@
                   :props="$props"
                   icon="reply"
                   :title="$t('common.reply')"
-                  @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
+                  @click="$refs.main_comment.reply(); $refs.replies.expandForNewReply()"
               />
-              <NLPService
-                  v-if="summarizationAvailable && comment.userId === userId && !readOnly"
-                  :data="summarizationRequestData"
-                  :skill="summarizationSkillName"
-                  icon-name="file-text"
-                  :title="$t('common.summarize')"
-                  type="button"
-                  @response="summarizeResponse"
+              <AnnotationSummarize
+                  :annotation-id="annotationId"
+                  :comment-id="commentId"
+                  @summarized="showReplies = true"
               />
               <VoteButtons :comment="comment"/>
               <SidebarButton
@@ -165,7 +134,7 @@
                 :props="$props"
                 icon="tag"
                 :title="$t('tags.editMainTag')"
-                @click="toggleEditTag"
+                @click="$refs.annotationTag.toggleEditTag()"
             />
               <SidebarButton
                   v-if="comment.userId === userId && !readOnly"
@@ -181,41 +150,14 @@
       </template>
 
       <template #thread>
-        <div
-            v-if="showReplies"
-            class="d-grid gap-1 my-2"
-        >
-          <span
-              v-for="c in displayedComments"
-              :key="c.id"
-          >
-            <Comment
-                :comment-id="c.id"
-                :level="1"
-            />
-          </span>
-          <div class="btn-group">
-            <BasicButton
-            v-if="showExtenderButton"
-            class="btn btn-light btn-sm"
-            :text="$t('common.showMore')"
-            @click="maxComments+=5"
-            />
-            <BasicButton
-            v-if="!showExtenderButton && numChildComments > defaultNumComments"
-            class="btn btn-light btn-sm"
-            :text="$t('common.showLess')"
-            @click="maxComments=defaultNumComments"
-            />
-            <BasicButton
-            v-if="maxComments > defaultNumComments"
-            class="btn btn-light btn-sm"
-            :text="$t('common.hideReplies')"
-            @click="maxComments=defaultNumComments; showReplies = !showReplies"
-            />
-          </div>
-            
-        </div>
+        <AnnotationReplies
+            ref="replies"
+            :comment-id="commentId"
+            :show-replies="showReplies"
+            :max-comments="maxComments"
+            @update:show-replies="showReplies = $event"
+            @update:max-comments="maxComments = $event"
+        />
       </template>
     </SideCard>
   </template>
@@ -225,11 +167,13 @@ import SideCard from "./Card.vue";
 import Comment from "./Comment.vue";
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
-import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
+import AnnotationTag from "./AnnotationTag.vue";
+import AnnotationSummarize from "./AnnotationSummarize.vue";
+import AnnotationReplies from "./AnnotationReplies.vue";
 
 /** Annotation elements
  *
@@ -240,8 +184,8 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "AnnoCard",
-  subscribeTable: ['tag', 'tag_set', 'comment_state'],
-  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton},
+  subscribeTable: ['comment_state'],
+  components: {VoteButtons, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton, AnnotationTag, AnnotationSummarize, AnnotationReplies},
   inject: {
     documentId: {
       type: Number,
@@ -290,15 +234,6 @@ export default {
     defaultNumComments() {
       return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
     },
-    studySession() {
-      return this.$store.getters["table/study_session/get"](this.studySessionId);
-    },
-    study() {
-      if (!this.studySession) {
-        return null;
-      }
-      return this.$store.getters["table/study/get"](this.studySession.studyId);
-    },
     commentState() {
       return this.$store.getters['table/comment_state/getFiltered'](
         a => a.commentId === this.commentId && a.userId === this.userId
@@ -306,16 +241,6 @@ export default {
     },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
-    tagSetTags() {
-      if ( this.study && this.study.tagSetId) {
-        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
-      }
-      else{
-        const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
-        const currentlySelectedTagId = this.annotation ? this.annotation.tagId : null; //this is important because the current tag on the Id could be added by another user
-        return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
-      }
     },
     settingResponse() {
       return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
@@ -335,78 +260,8 @@ export default {
     numberReplies() {
       return this.$store.getters["table/comment/countByKey"]("parentCommentId", this.commentId, true);
     },
-    childComments() {
-      return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId).sort(
-          function (a, b) {
-            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
-            if (keyA < keyB) return -1;
-            if (keyA > keyB) return 1;
-            return 0;
-          }
-      );
-    },
-    numChildComments() {
-      if (this.childComments){
-        return this.childComments.length;
-      }
-      return 0;
-    },
-    displayedComments() {
-      return this.childComments.slice(0, this.maxComments);
-    },
-    showExtenderButton() {
-      return this.numChildComments > this.maxComments;
-    },
     comment() {
       return this.$store.getters['table/comment/get'](this.commentId);
-    },
-    color() {
-      if (this.annotationId)
-        return this.getColor(this.annotation.tagId);
-      return null;
-    },
-    tagName() {
-      if (this.annotationId) {
-        const tag = this.$store.getters['table/tag/get'](this.annotation.tagId);
-        if (tag)
-          return tag.name;
-      }
-      return null;
-    },
-    summarizationMinLength() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.minLength'));
-    },
-    summarizationMaxLength() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.maxLength'));
-    },
-    summarizationRequestData() {
-      return {
-        text: this.annotation.text,
-        params: {
-          min_length: this.summarizationMinLength,
-          max_length: this.summarizationMaxLength
-        }
-      }
-    },
-    summarizationMinAnnoLength() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.annoLength'));
-    },
-    summarizationActivated() {
-      return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.activated') === "true";
-    },
-    summarizationSkillName() {
-      return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.skillName');
-    },
-    nlpEnabled() {
-      return this.$store.getters["settings/getValue"]("service.nlp.enabled") === "true";
-    },
-    summarizationAvailable() {
-      if (!this.nlpEnabled)
-        return false;
-      if (this.annotation)
-        return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
-            && this.summarizationActivated;
-      return null;
     },
   },
   watch: {
@@ -461,58 +316,15 @@ export default {
   },
   methods: {
     formatLocalizedDate,
-    getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
-    },
     shakeIt() {
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);
-    },
-    truncatedText(text) {
-      const thresh = 150;
-      const len = text.length;
-
-      if (len > thresh) {
-        const overflow = len - thresh - " ... ".length;
-        const center = Math.floor(len / 2);
-        const cutoff_l = center - Math.floor(overflow / 2);
-        const cutoff_r = center + Math.floor(overflow / 2) + overflow % 2;
-
-        return text.slice(0, cutoff_l) + " ... " + text.slice(cutoff_r);
-      } else {
-        return text;
-      }
     },
     loading() {
       if (this.annotationId && !this.annotation) {
         return true;
       }
       return false;
-    },
-    scrollTo(annotationId) {
-      this.eventBus.emit('pdfScroll', annotationId);
     },
     handleHeaderClick() {
       if (this.collapsed && !this.editedByMyself) {
@@ -581,36 +393,6 @@ export default {
       this.$refs.collab.removeCollab();
       this.edit_mode = null;
     },
-    toggleEditTag() {
-      this.editingTag = !this.editingTag;
-      if (this.editingTag) {
-        this.selectedTagId = this.annotation.tagId;
-      } else {
-        this.selectedTagId = null;
-      }
-      this.$nextTick(() => {
-        // Focus the select for better UX
-        const select = this.$el.querySelector('select[autofocus]');
-        if (select) select.focus();
-      });
-    },
-    saveTagChange() {
-      if (this.selectedTagId !== this.annotation.tagId) {
-        this.$socket.emit('annotationUpdate', {
-          annotationId: this.annotation.id,
-          tagId: this.selectedTagId,
-        }, (res) => {
-          if (!res.success) {
-            this.eventBus.emit("toast", {
-              title: this.$t('errors.tags.tagUpdateFailed'),
-              message: resolveApiMessage(res),
-              variant: "danger",
-            });
-          }
-        });
-      }
-      this.editingTag = false;
-    },
     remove() {
       if (this.annotationId) {
         this.$socket.emit('annotationUpdate', {
@@ -647,25 +429,6 @@ export default {
     toEditMode(status) {
       this.edit_mode = status;
     },
-    summarizeResponse(data) {
-      this.$socket.emit('commentUpdate', {
-        "documentId": this.documentId,
-        "parentCommentId": this.commentId,
-        "studySessionId": this.studySessionId,
-        "studyStepId": this.studyStepId,
-        "text": "Summarization: " + data[0]['summary_text'],
-        "userId": "Bot"
-      }, (res) => {
-        if (!res.success) {
-          this.eventBus.emit("toast", {
-            title: this.$t('errors.annotator.commentNotUpdated'),
-            message: resolveApiMessage(res),
-            variant: "danger",
-          });
-        }
-      });
-      this.showReplies = true;
-    },
     putFocus() {
       this.shakeIt();
     },
@@ -674,23 +437,6 @@ export default {
 </script>
 
 <style>
-.blockquote {
-  padding-left: 1em;
-  padding-right: 1em;
-  font-style: italic;
-  --tw-border-opacity: 1;
-  border-color: rgba(209, 213, 219, var(--tw-border-opacity));
-  border-sizing: border-box;
-  border-style: solid;
-  border-left-width: 4px;
-  font-size: small;
-  border-right-width: 0;
-  border-top-width: 0;
-  border-bottom-width: 0;
-  cursor: pointer;
-}
-
-
 .replies {
   font-size: smaller;
   color: var(--bs-secondary-color, #929292);
@@ -749,10 +495,6 @@ export default {
   -moz-animation: flickerAnimation 2s infinite;
   -o-animation: flickerAnimation 2s infinite;
   animation: flickerAnimation 2s infinite;
-}
-
-.annoBlockquote:hover {
-  color: var(--bs-body-color, #000000);
 }
 
 .check-icon:hover {
