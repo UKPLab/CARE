@@ -39,6 +39,7 @@
         }
     },
     "studyRoute": {
+        "instructions": "Show study instructions",
         "previousStep": "Previous: {step}",
         "nextStep": "Next: {step}",
         "panes": {

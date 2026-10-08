@@ -22,6 +22,26 @@
       @finish="finalFinish"
       @start="start"
   />
+  <StudyModal
+      v-if="studySession && studySession.start"
+      ref="studyInfoModal"
+      info-only
+      :study-id="studyId"
+      :study-closed="studyClosed"
+      :study-session-id="studySessionId"
+  />
+  <Teleport to="#topBarNavItems">
+    <li v-if="study && study.description && studySession && studySession.start" class="nav-item">
+      <TopBarButton
+          class="btn rounded-circle"
+          :title="$t('components.studyRoute.instructions')"
+          :props="{ key: 'studyInstructions.open' }"
+          @click="$refs.studyInfoModal.open()"
+      >
+        <LoadIcon icon-name="info-circle" :size="18"/>
+      </TopBarButton>
+    </li>
+  </Teleport>
   <FinishModal
       v-if="!studyError"
       ref="studyFinishModal"
