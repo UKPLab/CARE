@@ -168,7 +168,7 @@ export default {
           collab: s.collab,
           multipleSubmit: s.multipleSubmit,
           showDeleteTemplateButton: this.showDeleteTemplateButton,
-          showEditTemplateButton: this.showEditTemplateButton,
+          showEditTemplateButton: this.showEditTemplateButton || s.userId === this.userId,
         };
       });
     },
@@ -177,6 +177,9 @@ export default {
     },
     showEditTemplateButton() {
       return this.$store.getters["auth/checkRight"]("study.template.edit");
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
     },
   },
   methods: {
