@@ -81,6 +81,10 @@ export default {
       }
       return this.$store.getters["table/assignment/get"](this.assignmentId);
     },
+    assignmentPastDeadline() {
+      const end = this.assignment?.end ? new Date(this.assignment.end) : null;
+      return !!(end && new Date() > end);
+    },
     tableRows() {
       if (!this.assignmentId) {
         return this.rows;
@@ -107,7 +111,7 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null,
+            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null && !this.assignmentPastDeadline,
             isStudyLocked,
             studyUsageCount,
             name: submission.name || "-",
