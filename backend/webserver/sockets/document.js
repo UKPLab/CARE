@@ -1355,9 +1355,10 @@ class DocumentSocket extends Socket {
             throw new TranslatableError( "errors.assignment.notFound", {assignmentId});
         }
 
-        if (assignment.closed) {
-            throw new TranslatableError("errors.documents.replaceAssignmentClosed");
-        }
+        this.models["assignment"].assertSubmissionChangesAllowed(
+            assignment,
+            "errors.documents.replaceAssignmentClosed"
+        );
 
         const oldSubmission = await this.models["submission"].findOne({
             where: {

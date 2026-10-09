@@ -75,9 +75,10 @@ class SubmissionSocket extends Socket {
         }
 
         const assignment = await this.models['assignment'].getById(submission.assignmentId, { transaction });
-        if (assignment && assignment.closed) {
-            throw new TranslatableError("errors.submission.deleteAssignmentClosed");
-        }
+        this.models['assignment'].assertSubmissionChangesAllowed(
+            assignment,
+            "errors.submission.deleteAssignmentClosed"
+        );
 
         const documents = await this.models['document'].findAll({
             where: { submissionId: id, deleted: false },
