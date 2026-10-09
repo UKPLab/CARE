@@ -111,10 +111,10 @@
       }
     },
     "submissions": {
-      "activeTitle": "Aktive Assignments",
-      "noActive": "Sie haben keine aktiven Assignments.",
-      "closedTitle": "Geschlossene Assignments",
-      "noClosed": "Sie haben keine geschlossenen Assignments.",
+      "activeTitle": "Meine Aufgaben",
+      "noActive": "Sie haben keine Aufgaben.",
+      "closedTitle": "Geschlossene Aufgaben",
+      "noClosed": "Sie haben keine geschlossenen Aufgaben.",
       "noDueDate": "kein Fälligkeitsdatum",
       "unlimited": "Unbegrenzt",
       "remainingLeft": "{count} Submission(s) übrig",
