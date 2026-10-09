@@ -9,9 +9,10 @@ Where files live
 
 All translation keys live under ``utils/modules/i18n/``:
 
-* ``en/*.json``, ``de/*.json`` — key catalogs per UI language (one file = one namespace, e.g. ``users.json``)
-* ``en/index.js``, ``de/index.js`` — import JSON files and bundle namespaces for the frontend
-* ``i18n-bundles.js`` — bundles ``en`` / ``de`` namespaces for ``vue-i18n``
+* ``en/*.json``, ``de/*.json``, ``fr/*.json`` — key catalogs per UI language (one file = one namespace, e.g. ``users.json``)
+* ``en/index.js``, ``de/index.js``, ``fr/index.js`` — import JSON files and bundle namespaces for the frontend
+* ``i18n-bundles.js`` — bundles ``en`` / ``de`` / ``fr`` namespaces for ``vue-i18n``
+* ``index.js`` — CommonJS entry that exposes the same ``messages`` map
 
 Related code:
 
@@ -970,6 +971,14 @@ file. **Keys must stay identical** — only the text changes.
 
 The ``fr/index.js`` file comes from the copy in step 1 (same imports as ``en/index.js``, pointing at
 ``fr/*.json``).
+
+Add the locale to the ``messages`` map in ``utils/modules/i18n/index.js`` as well:
+
+.. code-block:: javascript
+
+   const fr = require('./fr');
+
+   const messages = { en, de, fr };
 
 **3. Add French to the language switcher** in ``frontend/src/assets/locale.js``:
 

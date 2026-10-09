@@ -1,0 +1,23 @@
+{
+    "title": "Évaluation",
+    "noConfiguration": "Aucune configuration d'évaluation disponible.",
+    "totalPoints": "{points} / {maxPoints} pts",
+    "criteria": {
+        "unnamedCriterion": "Critère sans nom",
+        "justification": "Justification :",
+        "noJustification": "Aucune justification fournie",
+        "editPlaceholder": "Modifiez la justification...",
+        "edit": "Modifier",
+        "changeScore": "Modifier la note",
+        "saved": "Évaluation enregistrée",
+        "save": "Enregistrer l'évaluation",
+        "saveEdit": "Enregistrer",
+        "cancel": "Annuler"
+    },
+    "rubric": {
+        "unnamedRubric": "Grille sans nom",
+        "noCriteria": "Aucun critère défini pour cette grille.",
+        "scoreTitle": "Grille : {score} / {max} pts",
+        "scoreBadge": "{score} pts"
+    }
+}
