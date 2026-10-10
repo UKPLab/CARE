@@ -95,6 +95,13 @@
       </div>
     </div>
   </div>
+  <!-- The line between the two documents of a split; dragging it shares the room differently -->
+  <div
+      v-if="layout"
+      class="pane-divider"
+      :class="isSplit('row') ? 'pane-divider-row' : 'pane-divider-column'"
+      @pointerdown="startResize"
+  />
 </template>
 
 <script>
@@ -221,6 +228,29 @@ export default {
       // Switching between side by side and stacked keeps a flipped split flipped
       this.$emit("update:layout", this.layout?.endsWith("-reverse") ? `${direction}-reverse` : direction);
     },
+    // The share of the first document (left, or on top) is kept as --split on the study container
+    startResize(event) {
+      const container = document.querySelector(".study-container[data-split]");
+      const sideBySide = this.isSplit("row");
+      const divider = event.target;
+      const move = (moveEvent) => {
+        const box = container.getBoundingClientRect();
+        const width = container.clientWidth - parseFloat(getComputedStyle(container).paddingRight);
+        const share = sideBySide
+          ? (moveEvent.clientX - box.left) / width
+          : (moveEvent.clientY - 96.5) / (window.innerHeight - 96.5);
+        // Each document keeps at least a fifth of the room
+        container.style.setProperty("--split", Math.min(Math.max(share, 0.2), 0.8));
+      };
+      const stop = () => {
+        divider.removeEventListener("pointermove", move);
+        document.body.style.userSelect = "";
+      };
+      divider.setPointerCapture(event.pointerId);
+      divider.addEventListener("pointermove", move);
+      divider.addEventListener("pointerup", stop, {once: true});
+      document.body.style.userSelect = "none";
+    },
     flip() {
       const flipped = this.layout.endsWith("-reverse");
       this.$emit("update:layout", flipped ? this.layout.replace("-reverse", "") : `${this.layout}-reverse`);
@@ -307,6 +337,40 @@ export default {
   min-width: 0;
 }
 
+/* Side by side, the left document gets the share set by the divider, the right one the rest */
+:is(.study-container[data-split="row"] > .study-pane:not(.study-pane ~ .study-pane),
+  .study-container[data-split="row-reverse"] > .study-pane ~ .study-pane) {
+  flex: 0 0 calc(var(--split, 0.5) * 100%);
+}
+
+/* The divider: 6px to grab, centred on the border between the documents */
+.pane-divider {
+  position: fixed;
+  z-index: 11;
+  touch-action: none;
+}
+
+.pane-divider:hover,
+.pane-divider:active {
+  background-color: var(--care-accent, var(--bs-primary));
+}
+
+.pane-divider-row {
+  top: 96.5px;
+  bottom: 0;
+  left: calc(var(--split, 0.5) * (100vw - var(--sidebar-width, 0px)) - 3px);
+  width: 6px;
+  cursor: col-resize;
+}
+
+.pane-divider-column {
+  top: calc(96.5px + var(--split, 0.5) * (100vh - 96.5px) - 3px);
+  left: 0;
+  right: var(--sidebar-width, 0px);
+  height: 6px;
+  cursor: row-resize;
+}
+
 /* In a split, the sidebar leaves its pane and runs down the right edge, next to both panes,
    which share the rest of the width. Each document keeps at least 300px. */
 .study-container[data-split] > .study-pane #sidebarContainer {
@@ -368,7 +432,7 @@ export default {
 
 .study-container[data-split^="column"] .vh-100,
 .study-container[data-split^="column"] .min-vh-100 {
-  height: calc((100vh - 96.5px) / 2 + 52.5px) !important;
+  height: calc((100vh - 96.5px) * var(--split, 0.5) + 52.5px) !important;
   min-height: 0 !important;
 }
 
@@ -376,7 +440,7 @@ export default {
    so it needs no room for it */
 :is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
   .study-container[data-split="column-reverse"] > .study-pane:not(.study-pane ~ .study-pane)) :is(.vh-100, .min-vh-100) {
-  height: calc((100vh - 96.5px) / 2) !important;
+  height: calc((100vh - 96.5px) * (1 - var(--split, 0.5))) !important;
 }
 
 :is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
