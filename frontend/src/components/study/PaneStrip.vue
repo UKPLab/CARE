@@ -1,6 +1,6 @@
 <template>
   <Teleport to="#topBarNavItems">
-    <li v-if="earlierSteps.length > 0" class="nav-item">
+    <li class="nav-item">
       <TopBarButton
           class="btn rounded-circle"
           :title="isOpen ? $t('components.studyRoute.panes.hideStrip') : $t('components.studyRoute.panes.showStrip')"
@@ -8,7 +8,7 @@
           :aria-expanded="isOpen"
           @click="select(isOpen ? null : currentStep.id)"
       >
-        <LoadIcon icon-name="window-split" :size="18"/>
+        <LoadIcon icon-name="bar-chart-steps" :size="18"/>
       </TopBarButton>
     </li>
   </Teleport>
@@ -16,24 +16,44 @@
       v-if="isOpen"
       class="pane-strip bg-body-tertiary border-bottom d-flex align-items-center px-3"
   >
-    <div
-        class="d-flex gap-1"
-        role="tablist"
+    <ol
+        class="d-flex align-items-center gap-1 list-unstyled mb-0 overflow-auto"
         :aria-label="$t('components.studyRoute.panes.label')"
     >
-      <BasicButton
-          v-for="tab in tabs"
-          :key="tab.step.id"
-          class="btn-sm"
-          :class="isOnScreen(tab.step) ? 'btn-primary' : 'btn-outline-secondary'"
-          role="tab"
-          :aria-selected="isOnScreen(tab.step)"
-          :title="tab.label"
-          :props="{ key: 'studyPane.tab', stepId: tab.step.id }"
-          @click="select(tab.step.id)"
-      />
-    </div>
-    <div class="ms-auto d-flex gap-1">
+      <li
+          v-for="(step, index) in steps"
+          :key="step.id"
+          class="d-flex align-items-center gap-2"
+      >
+        <LoadIcon v-if="index > 0" icon-name="arrow-right" :size="14" class="text-body-tertiary"/>
+        <!-- The current step and the steps it can look back at can be opened -->
+        <BasicButton
+            v-if="canOpen(step)"
+            class="btn-sm text-nowrap d-inline-flex align-items-center gap-1"
+            :class="isOnScreen(step) ? 'btn-primary' : 'btn-outline-secondary'"
+            :title="labels[step.id]"
+            :props="{ key: 'studyPane.tab', stepId: step.id }"
+            @click="select(step.id)"
+        >
+          <span class="fw-semibold">{{ index + 1 }}</span>
+          <LoadIcon :icon-name="stepIcons[step.stepType] || 'question-circle'" :size="14"/>
+          <LoadIcon v-if="index < currentIndex" icon-name="check-circle-fill" :size="12"/>
+        </BasicButton>
+        <!-- Other steps cannot be opened: finished ones have a tick, later ones are greyed out.
+             Each step shows its number and icon; its name is the tooltip and the label on its document. -->
+        <span
+            v-else
+            class="btn btn-sm text-nowrap d-inline-flex align-items-center gap-1 border"
+            :class="{ 'text-body-tertiary': index > currentIndex }"
+            :title="labels[step.id]"
+        >
+          <span class="fw-semibold">{{ index + 1 }}</span>
+          <LoadIcon :icon-name="stepIcons[step.stepType] || 'question-circle'" :size="14"/>
+          <LoadIcon v-if="index < currentIndex" icon-name="check-circle-fill" :size="12"/>
+        </span>
+      </li>
+    </ol>
+    <div v-if="earlierSteps.length > 0" class="ms-auto d-flex gap-1">
       <div
           v-for="direction in directions"
           :key="direction"
@@ -69,7 +89,7 @@
 
 <script>
 /**
- * Tab strip to look back at earlier study steps
+ * Bar of all workflow steps, from which earlier steps can be looked at read-only
  *
  * @author Ilyas Mohammed
  */
@@ -91,6 +111,11 @@ export default {
       required: false,
       default: null,
     },
+    // All steps of the study, in workflow order
+    steps: {
+      type: Array,
+      required: true,
+    },
     currentStep: {
       type: Object,
       required: true,
@@ -110,6 +135,8 @@ export default {
       // Split layouts, named after the CSS flex-direction they use
       directions: ["row", "column"],
       splitIcons: {row: "layout-split", column: "view-stacked"},
+      // Icon of each step type (1 Annotator, 2 Editor, 3 Modal), as in the workflow editor
+      stepIcons: {1: "pencil-square", 2: "file-text", 3: "window"},
     };
   },
   computed: {
@@ -120,12 +147,11 @@ export default {
     hasChoice() {
       return this.earlierSteps.length > 1;
     },
-    // One tab per step in workflow order, named as the workflow names the step
-    tabs() {
-      return [...this.earlierSteps, this.currentStep].map((step) => ({step, label: this.labels[step.id]}));
+    currentIndex() {
+      return this.steps.findIndex((step) => step.id === this.currentStep.id);
     },
     earlierTabs() {
-      return this.tabs.filter((tab) => tab.step.id !== this.currentStep.id);
+      return this.earlierSteps.map((step) => ({step, label: this.labels[step.id]}));
     },
   },
   methods: {
@@ -133,6 +159,9 @@ export default {
     select(stepId) {
       this.$emit("update:modelValue", stepId);
       this.$emit("update:layout", null);
+    },
+    canOpen(step) {
+      return step.id === this.currentStep.id || this.earlierSteps.some((earlier) => earlier.id === step.id);
     },
     isOnScreen(step) {
       return this.modelValue === step.id || (this.layout !== null && step.id === this.currentStep.id);
@@ -182,6 +211,16 @@ export default {
   color: var(--care-on-accent, #fff);
 }
 
+/* A step that cannot be opened does not look clickable */
+.pane-strip span.btn {
+  cursor: default;
+}
+
+/* A long workflow scrolls sideways inside the bar instead of pushing the split buttons away */
+.pane-strip > ol {
+  min-width: 0;
+}
+
 /* A button whose menu is open is not lit up, so only the active split is */
 .pane-strip .btn.show:not([aria-pressed="true"]) {
   background-color: transparent;
@@ -202,6 +241,22 @@ export default {
 
 .study-container.pane-open .min-vh-100 {
   min-height: calc(100vh - 44px) !important;
+}
+
+/* Name of the step in the bottom left corner of each shown document, clear of its toolbars.
+   Its holder sits at the bottom of the pane and has no height, so nothing moves. */
+.pane-label-holder {
+  position: relative;
+  height: 0;
+  z-index: 5;
+}
+
+.pane-label-holder > .badge {
+  position: absolute;
+  bottom: 16px;
+  left: 54px;
+  background-color: var(--care-accent, var(--bs-primary));
+  color: var(--care-on-accent, #fff);
 }
 
 /* Split: the selected earlier step and the current step share the screen */

@@ -43,9 +43,9 @@
         "previousStep": "Vorherige: {step}",
         "nextStep": "Weiter: {step}",
         "panes": {
-        "label": "Ansichten",
-        "showStrip": "Ansichtsleiste einblenden",
-        "hideStrip": "Ansichtsleiste ausblenden",
+        "label": "Workflow-Schritte",
+        "showStrip": "Workflow-Schritte einblenden",
+        "hideStrip": "Workflow-Schritte ausblenden",
         "stepFallback": "Schritt {number}",
         "annotationsOfStep": "{step}: Anmerkungen",
         "assessmentOfStep": "{step}: Bewertung",

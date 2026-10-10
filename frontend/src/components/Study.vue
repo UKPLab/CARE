@@ -144,6 +144,7 @@
         v-if="currentStudyStep"
         v-model="shownStepId"
         v-model:layout="splitLayout"
+        :steps="orderedStudySteps"
         :current-step="currentStudyStep"
         :earlier-steps="lookBackSteps"
         :labels="stepLabels"
@@ -243,6 +244,9 @@
 
           </div>
         </div>
+      </div>
+      <div v-if="shownStepId !== null && isStepVisible(step.id)" class="pane-label-holder">
+        <span class="badge">{{ stepLabels[step.id] }}</span>
       </div>
     </div>
   </div>
@@ -527,10 +531,13 @@ export default {
     },
   },
   watch: {
-    currentStudyStepId() {
-      // Every step starts with the strip closed
-      this.shownStepId = null;
-      this.splitLayout = null;
+    currentStudyStepId: {
+      handler(newId, oldId) {
+        // Every step starts on itself with the bar shown, unless the bar was hidden on the step before
+        this.shownStepId = oldId && this.shownStepId === null ? null : (newId ?? null);
+        this.splitLayout = null;
+      },
+      immediate: true,
     },
     studySession() {
       if (this.study && this.study.timeLimit > 0 && this.studySession) {
