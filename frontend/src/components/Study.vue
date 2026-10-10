@@ -660,19 +660,11 @@ export default {
           tabs.push({key: String(number * 10 + 1), type: "assessment", icon: "list-check", step: earlier, title});
         }
       });
-      if (tabs.length > 0 && step.stepType === 2 && !step.configuration?.settings?.configurationId) {
-        // An Editor step (stepType 2) without an assessment has no sidebar content of its own,
-        // so a placeholder stands in for it, after the earlier steps
-        tabs.push({key: "lookBackEmpty", type: "empty", icon: "card-text", step, title: this.stepLabels[step.id]});
-      }
       return tabs;
     },
     activeSidebarTab(step) {
-      // The Editor's sidebar opens on the step's own tab: its assessment, or else the placeholder
-      if (step.configuration?.settings?.configurationId) {
-        return "additionalSidebars";
-      }
-      return this.lookBackTabs(step).length > 0 ? "lookBackEmpty" : null;
+      // The Editor's sidebar opens on the step's own assessment tab, not on the first earlier step's tab
+      return step.configuration?.settings?.configurationId ? "additionalSidebars" : null;
     },
     isStepLoaded(stepId) {
       if (stepId in this.loadingReady) {

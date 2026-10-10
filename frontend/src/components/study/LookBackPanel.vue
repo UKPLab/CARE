@@ -5,9 +5,6 @@
       :config="step.configuration"
       :study-step-id="step.id"
   />
-  <p v-else class="text-muted text-center p-3">
-    {{ $t('components.studyRoute.panes.emptySidebar') }}
-  </p>
 </template>
 
 <script>
