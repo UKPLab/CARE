@@ -196,7 +196,17 @@ class AppSocket extends Socket {
      * @returns {Promise<void>} Resolves when data is successfully retrieved and emitted to the client.
      */
     async sendData(data, options) {
-        await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
+        const model = this.models[data?.table];
+        if (!model?.autoTable) {
+            this.logger.error("appData rejected");
+            return;
+        }
+        // sendTableData skips accessMap table rules, so a table without userId returns every row.
+        const filter = mergeFilter(
+            [Array.isArray(data.filter) ? data.filter : []],
+            model.getAttributes()
+        );
+        await this.sendTable(data.table, filter, Array.isArray(data.include) ? data.include : []);
     }
 
     /**
