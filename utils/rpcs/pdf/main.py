@@ -4,6 +4,8 @@ import socketio
 import pymupdf
 import json
 
+from Metadata import build_comment_annotation_info
+
 __author__ = "Karim Ouf"
 
 def create_app():
@@ -434,7 +436,7 @@ def create_app():
                         position, textType + ": " + comment["text"],
                         icon="Comment"  # Use a comment icon for text annotations
                     )
-                    annot_text_obj.set_info({"title": name, "subject": subject})
+                    annot_text_obj.set_info(build_comment_annotation_info(comment, name, subject))
                     annot_text_obj.set_colors(stroke=color)  # Set the color of the text annotation
                     annot_text_obj.update()  # Apply the color change
 
