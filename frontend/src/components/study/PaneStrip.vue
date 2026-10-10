@@ -219,12 +219,6 @@ export default {
   flex-basis: 400px;
 }
 
-/* In a split, PDF pages shrink to the width of their pane */
-.study-container[data-split] .canvasWrapper {
-  max-width: 100%;
-  height: auto !important;
-}
-
 /* Stacked: earlier step on top, current step below. 52.5px is the top bar, 44px the strip. */
 .study-container[data-split="column"] {
   flex-direction: column;
@@ -267,9 +261,8 @@ export default {
   padding-right: 400px;
 }
 
-/* In both split layouts a PDF page has the same width. A page only redraws when its width changes,
-   so switching between the layouts does not make it redraw. */
-.study-container[data-split] [id^="pdfContainer-"] {
+/* Stacked, a PDF page keeps half the screen width, so a full-width page does not fill the short pane */
+.study-container[data-split="column"] [id^="pdfContainer-"] {
   max-width: calc(50vw - 100px);
   margin: 0 auto;
 }
