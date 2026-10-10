@@ -134,9 +134,19 @@ class AnnotationSocket extends Socket {
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
     async embedAnnotationsForDocument(data, options) {
-        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
+        const documentSocket = this.getSocket("DocumentSocket");
+        if (!documentSocket) {
+            throw new TranslatableError("errors.documents.noAccess");
+        }
+        // Sequelize reads an array where-value as IN.
+        if (!Number.isInteger(data.documentId) || data.documentId <= 0) {
+            throw new TranslatableError("errors.documents.idRequired");
+        }
+        const document = await documentSocket.validateDocument(data.documentId, "id", true);
+
+        const annotations = await this.models['annotation'].getAllByKey("documentId", document.id);
         // Get all comments for the document
-        const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
+        const comments = await this.models['comment'].getAllByKey("documentId", document.id);
 
         // For each annotation, get the corresponding tag and comments
         const annotationsWithTagsAndComments = await Promise.all(
@@ -161,7 +171,6 @@ class AnnotationSocket extends Socket {
                 };
             })
         );
-        const document = await this.models['document'].getById(data.documentId);
         const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
         if (!fs.existsSync(filePath)) {
@@ -177,7 +186,7 @@ class AnnotationSocket extends Socket {
         });
 
         return {
-            documentId: data.documentId,
+            documentId: document.id,
             file: response,
             hash: document.hash,
         };
