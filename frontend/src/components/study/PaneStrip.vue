@@ -155,8 +155,16 @@ export default {
     },
   },
   watch: {
-    // In a split, the panes leave room for the current step's sidebar on the right, as wide as it is dragged
-    layout() {
+    layout: "watchSidebar",
+    modelValue: "watchSidebar",
+  },
+  beforeUnmount() {
+    this.sidebarObserver?.disconnect();
+  },
+  methods: {
+    // While an earlier step is shown, the panes leave room for the current step's sidebar on the right,
+    // as wide as it is dragged
+    watchSidebar() {
       this.sidebarObserver?.disconnect();
       this.$nextTick(() => {
         const container = document.querySelector(".study-container[data-split]");
@@ -170,11 +178,6 @@ export default {
         this.sidebarObserver.observe(sidebar);
       });
     },
-  },
-  beforeUnmount() {
-    this.sidebarObserver?.disconnect();
-  },
-  methods: {
     // Show a single step; this also leaves a split
     select(stepId) {
       this.$emit("update:modelValue", stepId);
@@ -297,6 +300,7 @@ export default {
   right: 0;
   bottom: 0;
   z-index: 10;
+  margin-top: 0;
 }
 
 .study-container[data-split] {
@@ -310,6 +314,23 @@ export default {
 
 .study-container[data-split="row"] .study-pane #sidebarContainer.sidebar-visible {
   max-width: calc(100% - 600px) !important;
+}
+
+/* An earlier step on its own: the current step stays in place but hidden, except its sidebar,
+   so the sidebar stays the current step's one */
+.study-container[data-split="single"] > .study-pane ~ .study-pane {
+  position: fixed;
+  inset: 0;
+}
+
+/* With !important, because PDF pages set their own visibility */
+.study-container[data-split="single"] > .study-pane ~ .study-pane,
+.study-container[data-split="single"] > .study-pane ~ .study-pane :not(#sidebarContainer, #sidebarContainer *) {
+  visibility: hidden !important;
+}
+
+.study-container[data-split="single"] > .study-pane ~ .study-pane #sidebarContainer {
+  visibility: visible;
 }
 
 /* Stacked: earlier step on top, current step below. 52.5px is the top bar, 44px the strip. */
@@ -335,10 +356,6 @@ export default {
 
 .study-container[data-split="column"] > .study-pane ~ .study-pane .top-padding {
   padding-top: 0;
-}
-
-.study-container[data-split="column"] > .study-pane ~ .study-pane .sidebar-container {
-  margin-top: 0;
 }
 
 /* Stacked, a PDF page keeps half the screen width, so a full-width page does not fill the short pane */

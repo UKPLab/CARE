@@ -138,7 +138,7 @@
       v-if="studySessionId !== 0 && !studyError"
       class="study-container"
       :class="{ 'pane-open': shownStepId !== null }"
-      :data-split="splitLayout"
+      :data-split="splitLayout || (shownStepId !== null && shownStepId !== currentStudyStepId ? 'single' : null)"
   >
     <PaneStrip
         v-if="currentStudyStep"
@@ -171,7 +171,7 @@
             <Annotator
                 v-if="step.stepType === 1"
                 :force-read-only="step.id !== currentStudyStepId"
-                :sidebar-disabled="!!splitLayout && step.id === shownStepId"
+                :sidebar-disabled="step.id !== currentStudyStepId"
                 :is-shown="isStepVisible(step.id)"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
@@ -205,7 +205,7 @@
                 ref="editor"
                 :active-sidebar="activeSidebarTab(step)"
                 :force-read-only="step.id !== currentStudyStepId"
-                :sidebar-disabled="!!splitLayout && step.id === shownStepId"
+                :sidebar-disabled="step.id !== currentStudyStepId"
                 :document-id="step.documentId"
                 :is-shown="isStepVisible(step.id)"
                 :study-step-id="step.id"
@@ -626,9 +626,10 @@ export default {
       this.updateStep(nextStep.id);
     },
     isStepVisible(stepId) {
-      // An earlier step takes the place of the current one while its tab is selected; in a split both are shown
+      // An earlier step takes the place of the current one while its tab is selected. The current step stays
+      // shown as well: next to it in a split, otherwise hidden except its sidebar (see PaneStrip.vue)
       const selected = this.lookBackSteps.find((step) => step.id === this.shownStepId);
-      if (selected && this.splitLayout && stepId === this.currentStudyStepId) {
+      if (selected && stepId === this.currentStudyStepId) {
         return true;
       }
       return stepId === (selected ? selected.id : this.currentStudyStepId);
