@@ -2,13 +2,14 @@
   <div
       v-show="isSidebarVisible && resolvedActiveSlot"
       id="sidebarContainer"
+      ref="sidebarContainer"
       class="sidebar-wrapper"
       :class="sidebarClasses"
       :style="sidebarStyle"
   >
-    <div id="hoverHotZone"></div>
+    <div id="hoverHotZone" ref="hoverHotZone"></div>
     <div id="sidebar" class="sidebar border-end d-flex flex-column">
-      <div id="hotZone" class="hot-zone"></div>
+      <div id="hotZone" ref="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
         <div v-if="sidebarConfigs" class="sidebar-header">
@@ -194,12 +195,12 @@ export default {
     maxSidebarWidth: {
       type: Number,
       required: false,
-      default: 400
+      default: 600
     },
     minSidebarWidth: {
       type: Number,
       required: false,
-      default: 0
+      default: 250
     },
     showToggleButton: {
       type: Boolean,
@@ -387,7 +388,8 @@ export default {
      * @author Zheyu Zhang
      */
     initDragController() {
-      const dom = document.querySelector('#hotZone');
+      // Refs, not ids: a study keeps several steps with a sidebar mounted, and an id finds only the first
+      const dom = this.$refs.hotZone;
       const that = this;
 
       let startX, startWidth;
@@ -406,7 +408,8 @@ export default {
       const handleMove = (e) => {
         e.preventDefault();
         let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
+        // maxWidth is in pixels
+        const maxWidthInPixels = this.maxWidth;
         newWidth = Math.max(newWidth, this.minWidth);
         newWidth = Math.min(newWidth, maxWidthInPixels);
         this.width = newWidth;
@@ -433,8 +436,8 @@ export default {
      * @author Zheyu Zhang
      */
     initHoverController() {
-      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
-      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
+      const hoverHotZoneDom = this.$refs.hoverHotZone;
+      this.sidebarContainerDom = this.$refs.sidebarContainer;
       let hoverTimer;
 
       hoverHotZoneDom.addEventListener('mouseenter', () => {

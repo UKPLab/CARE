@@ -154,6 +154,26 @@ export default {
       return this.earlierSteps.map((step) => ({step, label: this.labels[step.id]}));
     },
   },
+  watch: {
+    // In a split, the panes leave room for the current step's sidebar on the right, as wide as it is dragged
+    layout() {
+      this.sidebarObserver?.disconnect();
+      this.$nextTick(() => {
+        const container = document.querySelector(".study-container[data-split]");
+        const sidebar = container?.querySelector(".study-pane #sidebarContainer");
+        if (!sidebar) {
+          return;
+        }
+        this.sidebarObserver = new ResizeObserver(() => {
+          container.style.setProperty("--sidebar-width", `${sidebar.offsetWidth}px`);
+        });
+        this.sidebarObserver.observe(sidebar);
+      });
+    },
+  },
+  beforeUnmount() {
+    this.sidebarObserver?.disconnect();
+  },
   methods: {
     // Show a single step; this also leaves a split
     select(stepId) {
@@ -269,9 +289,27 @@ export default {
   min-width: 0;
 }
 
-/* Side by side, an open sidebar (400px by default) takes its room from both panes, not only from its own */
-.study-container[data-split="row"] > .study-pane:has(.sidebar-wrapper.sidebar-visible) {
-  flex-basis: 400px;
+/* In a split, the sidebar leaves its pane and runs down the right edge, next to both panes,
+   which share the rest of the width. Each document keeps at least 300px. */
+.study-container[data-split] > .study-pane #sidebarContainer {
+  position: fixed;
+  top: 96.5px;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+}
+
+.study-container[data-split] {
+  padding-right: var(--sidebar-width, 0px);
+}
+
+.study-container[data-split] .study-pane #sidebarContainer.sidebar-visible {
+  min-width: 0 !important;
+  max-width: calc(100% - 300px) !important;
+}
+
+.study-container[data-split="row"] .study-pane #sidebarContainer.sidebar-visible {
+  max-width: calc(100% - 600px) !important;
 }
 
 /* Stacked: earlier step on top, current step below. 52.5px is the top bar, 44px the strip. */
@@ -301,19 +339,6 @@ export default {
 
 .study-container[data-split="column"] > .study-pane ~ .study-pane .sidebar-container {
   margin-top: 0;
-}
-
-/* Stacked: the sidebar leaves the lower pane and runs down the right edge, next to both panes */
-.study-container[data-split="column"] > .study-pane #sidebarContainer {
-  position: fixed;
-  top: 96.5px;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-}
-
-.study-container[data-split="column"]:has(> .study-pane .sidebar-wrapper.sidebar-visible) {
-  padding-right: 400px;
 }
 
 /* Stacked, a PDF page keeps half the screen width, so a full-width page does not fill the short pane */

@@ -196,8 +196,8 @@ export default {
     return {
       downloading: false,
       assessmentViewActive: true,
-      maxSidebarWidth: 400,
-      minSidebarWidth: 0,
+      maxSidebarWidth: 600,
+      minSidebarWidth: 250,
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
