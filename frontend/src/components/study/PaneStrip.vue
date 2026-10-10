@@ -54,6 +54,16 @@
       </li>
     </ol>
     <div v-if="earlierSteps.length > 0" class="ms-auto d-flex gap-1">
+      <!-- Swaps the two documents of a split -->
+      <BasicButton
+          v-if="layout"
+          class="btn-sm btn-outline-secondary"
+          :title="$t('components.studyRoute.panes.flip')"
+          :props="{ key: 'studyPane.flip', from: layout }"
+          @click="flip"
+      >
+        <LoadIcon :icon-name="isSplit('row') ? 'arrow-left-right' : 'arrow-down-up'" :size="16"/>
+      </BasicButton>
       <div
           v-for="direction in directions"
           :key="direction"
@@ -132,7 +142,7 @@ export default {
   emits: ["update:modelValue", "update:layout"],
   data() {
     return {
-      // Split layouts, named after the CSS flex-direction they use
+      // Split layouts, named after the CSS flex-direction they use; a flipped split adds "-reverse"
       directions: ["row", "column"],
       splitIcons: {row: "layout-split", column: "view-stacked"},
       // Icon of each step type (1 Annotator, 2 Editor, 3 Modal), as in the workflow editor
@@ -190,7 +200,7 @@ export default {
       return this.modelValue === step.id || (this.layout !== null && step.id === this.currentStep.id);
     },
     isSplit(direction) {
-      return this.layout === direction;
+      return !!this.layout?.startsWith(direction);
     },
     splitTitle(direction) {
       return this.$t(`components.studyRoute.panes.split.${direction}`);
@@ -203,12 +213,17 @@ export default {
     },
     // Show an earlier step left of the current one; picking the same split again closes it
     split(direction, stepId) {
-      if (this.modelValue === stepId && this.layout === direction) {
+      if (this.modelValue === stepId && this.isSplit(direction)) {
         this.select(this.currentStep.id);
         return;
       }
       this.$emit("update:modelValue", stepId);
-      this.$emit("update:layout", direction);
+      // Switching between side by side and stacked keeps a flipped split flipped
+      this.$emit("update:layout", this.layout?.endsWith("-reverse") ? `${direction}-reverse` : direction);
+    },
+    flip() {
+      const flipped = this.layout.endsWith("-reverse");
+      this.$emit("update:layout", flipped ? this.layout.replace("-reverse", "") : `${this.layout}-reverse`);
     },
   },
 }
@@ -312,7 +327,7 @@ export default {
   max-width: calc(100% - 300px) !important;
 }
 
-.study-container[data-split="row"] .study-pane #sidebarContainer.sidebar-visible {
+.study-container[data-split^="row"] .study-pane #sidebarContainer.sidebar-visible {
   max-width: calc(100% - 600px) !important;
 }
 
@@ -333,33 +348,44 @@ export default {
   visibility: visible;
 }
 
+/* Flipped: the current step comes first, left or on top */
+.study-container[data-split="row-reverse"] {
+  flex-direction: row-reverse;
+}
+
 /* Stacked: earlier step on top, current step below. 52.5px is the top bar, 44px the strip. */
 .study-container[data-split="column"] {
   flex-direction: column;
 }
 
-.study-container[data-split="column"] > .study-pane {
+.study-container[data-split="column-reverse"] {
+  flex-direction: column-reverse;
+}
+
+.study-container[data-split^="column"] > .study-pane {
   flex: 0 0 auto;
 }
 
-.study-container[data-split="column"] .vh-100,
-.study-container[data-split="column"] .min-vh-100 {
+.study-container[data-split^="column"] .vh-100,
+.study-container[data-split^="column"] .min-vh-100 {
   height: calc((100vh - 96.5px) / 2 + 52.5px) !important;
   min-height: 0 !important;
 }
 
-/* The lower pane does not sit under the top bar, so it needs no room for it */
-.study-container[data-split="column"] > .study-pane ~ .study-pane .vh-100,
-.study-container[data-split="column"] > .study-pane ~ .study-pane .min-vh-100 {
+/* The lower pane (the second one, or the first one when flipped) does not sit under the top bar,
+   so it needs no room for it */
+:is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
+  .study-container[data-split="column-reverse"] > .study-pane:not(.study-pane ~ .study-pane)) :is(.vh-100, .min-vh-100) {
   height: calc((100vh - 96.5px) / 2) !important;
 }
 
-.study-container[data-split="column"] > .study-pane ~ .study-pane .top-padding {
+:is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
+  .study-container[data-split="column-reverse"] > .study-pane:not(.study-pane ~ .study-pane)) .top-padding {
   padding-top: 0;
 }
 
 /* Stacked, a PDF page keeps half the screen width, so a full-width page does not fill the short pane */
-.study-container[data-split="column"] [id^="pdfContainer-"] {
+.study-container[data-split^="column"] [id^="pdfContainer-"] {
   max-width: calc(50vw - 100px);
   margin: 0 auto;
 }

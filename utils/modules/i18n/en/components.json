@@ -49,6 +49,7 @@
         "stepFallback": "Step {number}",
         "annotationsOfStep": "{step}: Annotations",
         "assessmentOfStep": "{step}: Assessment",
+        "flip": "Swap sides",
         "split": {
             "row": "Split side by side",
             "column": "Split top and bottom"

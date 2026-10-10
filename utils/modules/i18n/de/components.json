@@ -49,6 +49,7 @@
         "stepFallback": "Schritt {number}",
         "annotationsOfStep": "{step}: Anmerkungen",
         "assessmentOfStep": "{step}: Bewertung",
+        "flip": "Seiten tauschen",
         "split": {
             "row": "Nebeneinander teilen",
             "column": "Übereinander teilen"
