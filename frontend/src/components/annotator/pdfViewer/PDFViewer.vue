@@ -218,7 +218,7 @@ export default {
       this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
       setTimeout(() => {
         this.isZooming = false;
-      }, 1000); // Match the debounce timeout
+      }, 1000); // hold zoom clicks until the page repaints
     },
     zoomOut() {
       if (this.isZooming) return;
@@ -227,7 +227,7 @@ export default {
       this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
       setTimeout(() => {
         this.isZooming = false;
-      }, 1000); // Match the debounce timeout
+      }, 1000); // hold zoom clicks until the page repaints
     },
     resetZoom() {
       if (this.isZooming) return;

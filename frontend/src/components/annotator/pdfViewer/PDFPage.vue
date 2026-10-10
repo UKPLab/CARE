@@ -133,7 +133,7 @@ export default {
       originalWidth: 0,
       anchor: null,
       devicePixelRatio: window.devicePixelRatio || 1,
-      isZooming: false
+      resizeHandlerDebounced: undefined,
     };
   },
   computed: {
@@ -170,26 +170,13 @@ export default {
     }
   },
   watch: {
-    zoomValue: {
-      handler(newValue, oldValue) {
-        if (this.isRendered) {
-          this.isZooming = true;
-          const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-          
-          // Calculate new width based on current width and zoom change
-          const currentWidth = wrapper.getBoundingClientRect().width;
-          const newWidth = (currentWidth / oldValue) * newValue;
-          wrapper.style.width = newWidth + 'px';
-          wrapper.style.height = (newWidth * 1.4142) + 'px';
-          
-          this.currentWidth = newWidth;
-          
-          // Force re-anchoring by nullifying existing anchors
-          this.remove_anchors();
-          
-          this.destroyPage();
-          this.init();
-        }
+    zoomValue() {
+      this.applyZoomToWrapper();
+      if (this.renderTask || this.isRendered) {
+        this.destroyPage();
+      }
+      if (this.render) {
+        this.init();
       }
     },
     render() {
@@ -205,14 +192,24 @@ export default {
     this.$nextTick(() => {
       this.setA4();
       this.anchor = new Anchoring(this.pdf, this.pageNumber, this.documentId);
-      this.resizeOb = new ResizeObserver(debounce(this.resizeHandler, 1000));
-      this.resizeOb.observe(document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId));
+      // Watch the container. The wrapper width is a pixel value and stays put when the sidebar moves.
+      this.resizeHandlerDebounced = debounce(() => {
+        this.resizeHandler();
+      }, 200);
+      this.resizeOb = new ResizeObserver(this.resizeHandlerDebounced);
+      const container = this.pdfContainerElement();
+      if (container) {
+        this.resizeOb.observe(container);
+      }
       this.init();
     });
   },
   beforeUnmount() {
     if (this.resizeOb) {
       this.resizeOb.disconnect();
+    }
+    if (this.resizeHandlerDebounced) {
+      this.resizeHandlerDebounced.cancel();
     }
     this.destroyPage();
   },
@@ -227,24 +224,49 @@ export default {
         offset: document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId).offsetTop - 52.5
       });
     },
+    pdfContainerElement() {
+      if (!this.$el || typeof this.$el.closest !== 'function') {
+        return null;
+      }
+      return this.$el.closest('[id^="pdfContainer-"]');
+    },
+    availableWidth() {
+      const container = this.pdfContainerElement();
+      if (!container) {
+        return 0;
+      }
+      return container.clientWidth;
+    },
     setA4() {
+      const width = this.availableWidth();
+      if (width <= 0) {
+        return;
+      }
       const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber + '-' + this.documentId);
-      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-      const width = wrapper.getBoundingClientRect().width;
-      this.originalWidth = width; 
+      if (!canvas) {
+        return;
+      }
+      this.originalWidth = width;
       const height = width * 1.4142;
       canvas.height = height;
       canvas.width = width;
       this.currentWidth = width;
     },
     applyZoomToWrapper() {
-      if (this.originalWidth > 0) {
-        const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-        const width = this.originalWidth * this.zoomValue;
-        wrapper.style.width = width + 'px';
-        wrapper.style.height = (width * 1.4142) + 'px';
-        this.currentWidth = width;
+      if (this.originalWidth <= 0) {
+        return;
       }
+      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
+      const pageContainer = document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId);
+      if (!wrapper || !pageContainer) {
+        return;
+      }
+      const width = this.originalWidth * this.zoomValue;
+      wrapper.style.width = width + 'px';
+      wrapper.style.height = (width * 1.4142) + 'px';
+      // The text layer clips to this box, so the page width has to match the canvas.
+      pageContainer.style.width = width + 'px';
+      this.currentWidth = width;
     },
     init() {
       if (this.render && !this.isRendered) {
@@ -267,22 +289,26 @@ export default {
         });
       }
     },
-    resizeHandler(_event) {
-      if (this.isZooming) return;
-      
-      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-      const width = wrapper.getBoundingClientRect().width;
-      
-      if (width !== this.currentWidth) {
-        this.currentWidth = width;
+    resizeHandler() {
+      const available = this.availableWidth();
+      if (available <= 0 || Math.abs(available - this.originalWidth) < 2) {
+        return;
+      }
+
+      this.setA4();
+      this.applyZoomToWrapper();
+      if (this.isRendered) {
         this.destroyPage();
-        this.init();
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "pdfPageResizeChange",
-            data: {documentId: this.documentId, pageNumber: this.pageNumber, width: width}
-          });
-        }
+      }
+      if (!this.render) {
+        return;
+      }
+      this.init();
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "pdfPageResizeChange",
+          data: {documentId: this.documentId, pageNumber: this.pageNumber, width: available}
+        });
       }
     },
     renderPage(page) {
@@ -301,10 +327,19 @@ export default {
       }
 
       this.renderTask = page.render(renderContext);
+      const rawRenderTask = toRaw(this.renderTask);
+      // cancel() does nothing after resolve, so a replaced task must stop here.
+      const stillCurrent = () => toRaw(this.renderTask) === rawRenderTask;
 
-      toRaw(this.renderTask).promise.then(() => {
+      rawRenderTask.promise.then(() => {
+        if (!stillCurrent()) {
+          return;
+        }
         return page.getTextContent();
       }).then((textContent) => {
+        if (!stillCurrent()) {
+          return;
+        }
         const textLayerDiv = document.getElementById('text-layer-' + page.pageNumber + '-' + this.documentId);
  
         // Use display scale for text layer positioning
@@ -323,10 +358,17 @@ export default {
         
         return renderTask.render();
       }).then(() => {
+          if (!stillCurrent()) {
+            return;
+          }
           this.pdf.renderingDone.set(page.pageNumber, true);
           this.isRendered = true;
           this.add_anchors();
       }).catch(response => {
+        // A replaced paint rejects with this. Leave the task that replaced it.
+        if (response instanceof pdfjsLib.RenderingCancelledException) {
+          return;
+        }
         this.destroyRenderTask();
         console.log(`Failed to render page ${this.pageNumber}: ` + response);
       });
