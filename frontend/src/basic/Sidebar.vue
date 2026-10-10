@@ -31,6 +31,7 @@
                   :disabled="isSingleConfig"
                   @click="changeView(slotName)"
               >
+                <span v-if="config.number" class="fw-semibold me-1">{{ config.number }}</span>
                 <LoadIcon
                     v-if="config.icon"
                     :icon-name="config.icon"
@@ -247,6 +248,7 @@ export default {
             configs.tabs[slotName] = {
               title: props.title,
               icon: props.icon,
+              number: props.number,
               buttons: props.buttons || []
             };
           }

@@ -192,7 +192,7 @@
                 </SidebarTemplate>
               </template>
               <template v-for="tab in lookBackTabs(step)" :key="tab.key" #[tab.key]>
-                <SidebarTemplate :icon="tab.icon" :title="tab.title">
+                <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
                   <template #content>
                     <LookBackPanel :step="tab.step" :type="tab.type"/>
                   </template>
@@ -226,7 +226,7 @@
                 </SidebarTemplate>
               </template>
               <template v-for="tab in lookBackTabs(step)" :key="tab.key" #[tab.key]>
-                <SidebarTemplate :icon="tab.icon" :title="tab.title">
+                <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
                   <template #content>
                     <LookBackPanel :step="tab.step" :type="tab.type"/>
                   </template>
@@ -660,11 +660,11 @@ export default {
         const hasBoth = earlier.stepType === 1 && hasAssessment;
         if (earlier.stepType === 1) {
           const title = hasBoth ? this.$t('components.studyRoute.panes.annotationsOfStep', {step: label}) : label;
-          tabs.push({key: String(number * 10), type: "annotations", icon: "pencil-square", step: earlier, title});
+          tabs.push({key: String(number * 10), type: "annotations", icon: "pencil-square", step: earlier, number, title});
         }
         if (hasAssessment) {
           const title = hasBoth ? this.$t('components.studyRoute.panes.assessmentOfStep', {step: label}) : label;
-          tabs.push({key: String(number * 10 + 1), type: "assessment", icon: "list-check", step: earlier, title});
+          tabs.push({key: String(number * 10 + 1), type: "assessment", icon: "list-check", step: earlier, number, title});
         }
       });
       return tabs;
