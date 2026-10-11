@@ -76,7 +76,6 @@
         "
           ref="finishButton"
           class="btn btn-outline-secondary mx-3"
-          :disabled="!isCurrentStepReady"
           :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
           @click="finish()"
       >
@@ -149,7 +148,7 @@
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
-                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                         @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -173,7 +172,7 @@
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
-                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                         @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -270,6 +269,7 @@ export default {
       localStudyStepId: 0,
       studyData: {},
       stepsReady: {},
+      stepsMissing: {},
       loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
@@ -618,12 +618,32 @@ export default {
       );
       this.$refs.studyFinishModal.close();
     },
+    onAssessmentReady(stepId, payload) {
+      const ready = payload && typeof payload === "object" ? !!payload.ready : !!payload;
+      const missing = payload && typeof payload === "object" && Array.isArray(payload.missing)
+          ? payload.missing
+          : [];
+      this.stepsReady[stepId] = ready;
+      this.stepsMissing[stepId] = missing;
+    },
     finish() {
       // Prevent finishing if study is closed
       if (this.studyClosed) {
         this.eventBus.emit("toast", {
           title: this.$t('studies.messages.cannotFinishSession'),
           message: this.$t('studies.messages.studyClosedAutoTerminated'),
+          variant: "warning",
+        });
+        return;
+      }
+      if (!this.isCurrentStepReady) {
+        const missing = this.stepsMissing[this.currentStudyStepId] || [];
+        const message = missing.length
+            ? this.$t('studies.messages.assessmentIncomplete', { criteria: missing.join(", ") })
+            : this.$t('studies.messages.assessmentIncompleteGeneric');
+        this.eventBus.emit("toast", {
+          title: this.$t('studies.messages.cannotFinishSession'),
+          message,
           variant: "warning",
         });
         return;

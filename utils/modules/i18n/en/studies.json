@@ -94,6 +94,8 @@
     "sessionFinishedMessage": "Your session has been submitted successfully.",
     "studySessionErrorTitle": "Study Session Error",
     "cannotFinishSession": "Cannot finish session",
+    "assessmentIncomplete": "The study cannot be finished until every assessment criterion is saved. Still open: {criteria}.",
+    "assessmentIncompleteGeneric": "The study cannot be finished until the assessment in the sidebar is complete.",
     "studyClosedAutoTerminated": "The study has been closed. Sessions are automatically terminated when a study is closed."
   },
   "loading": {
