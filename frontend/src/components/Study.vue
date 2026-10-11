@@ -194,7 +194,7 @@
               <template v-for="tab in lookBackTabs(step)" :key="tab.key" #[tab.key]>
                 <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
                   <template #content>
-                    <LookBackPanel :step="tab.step" :type="tab.type"/>
+                    <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
                   </template>
                 </SidebarTemplate>
               </template>
@@ -228,7 +228,7 @@
               <template v-for="tab in lookBackTabs(step)" :key="tab.key" #[tab.key]>
                 <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
                   <template #content>
-                    <LookBackPanel :step="tab.step" :type="tab.type"/>
+                    <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
                   </template>
                 </SidebarTemplate>
               </template>
