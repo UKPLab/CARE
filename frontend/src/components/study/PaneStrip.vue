@@ -17,19 +17,19 @@
       class="pane-strip bg-body-tertiary border-bottom d-flex align-items-center px-3"
   >
     <ol
-        class="d-flex align-items-center gap-1 list-unstyled mb-0 overflow-auto"
+        class="d-flex align-items-center gap-2 list-unstyled mb-0 overflow-auto"
         :aria-label="$t('components.studyRoute.panes.label')"
     >
       <li
           v-for="(step, index) in steps"
           :key="step.id"
-          class="d-flex align-items-center gap-2"
+          class="d-flex align-items-center gap-3"
       >
         <LoadIcon v-if="index > 0" icon-name="arrow-right" :size="14" class="text-body-tertiary"/>
         <!-- The current step and the steps it can look back at can be opened -->
         <BasicButton
             v-if="canOpen(step)"
-            class="btn-sm text-nowrap d-inline-flex align-items-center gap-1"
+             class="btn-sm text-nowrap d-inline-flex align-items-center gap-1"
             :class="isOnScreen(step) ? 'btn-primary' : 'btn-outline-secondary'"
             :title="labels[step.id]"
             :props="{ key: 'studyPane.tab', stepId: step.id }"
@@ -238,7 +238,7 @@ export default {
         const width = container.clientWidth - parseFloat(getComputedStyle(container).paddingRight);
         const share = sideBySide
           ? (moveEvent.clientX - box.left) / width
-          : (moveEvent.clientY - 96.5) / (window.innerHeight - 96.5);
+          : (moveEvent.clientY - 104.5) / (window.innerHeight - 104.5);
         // Each document keeps at least a fifth of the room
         container.style.setProperty("--split", Math.min(Math.max(share, 0.2), 0.8));
       };
@@ -265,7 +265,7 @@ export default {
   top: 52.5px;
   left: 0;
   right: 0;
-  height: 44px;
+  height: 52px;
   padding-top: 4px;
   z-index: 1020;
 }
@@ -300,15 +300,15 @@ export default {
 <style>
 /* Room for the open strip */
 .study-container.pane-open {
-  padding-top: 44px;
+  padding-top: 52px;
 }
 
 .study-container.pane-open .vh-100 {
-  height: calc(100vh - 44px) !important;
+  height: calc(100vh - 52px) !important;
 }
 
 .study-container.pane-open .min-vh-100 {
-  min-height: calc(100vh - 44px) !important;
+  min-height: calc(100vh - 52px) !important;
 }
 
 /* Name of the step in the bottom left corner of each shown document, clear of its toolbars.
@@ -356,7 +356,7 @@ export default {
 }
 
 .pane-divider-row {
-  top: 96.5px;
+  top: 104.5px;
   bottom: 0;
   left: calc(var(--split, 0.5) * (100vw - var(--sidebar-width, 0px)) - 3px);
   width: 6px;
@@ -364,7 +364,7 @@ export default {
 }
 
 .pane-divider-column {
-  top: calc(96.5px + var(--split, 0.5) * (100vh - 96.5px) - 3px);
+  top: calc(104.5px + var(--split, 0.5) * (100vh - 104.5px) - 3px);
   left: 0;
   right: var(--sidebar-width, 0px);
   height: 6px;
@@ -375,7 +375,7 @@ export default {
    which share the rest of the width. Each document keeps at least 300px. */
 .study-container[data-split] > .study-pane #sidebarContainer {
   position: fixed;
-  top: 96.5px;
+  top: 104.5px;
   right: 0;
   bottom: 0;
   z-index: 10;
@@ -417,7 +417,7 @@ export default {
   flex-direction: row-reverse;
 }
 
-/* Stacked: earlier step on top, current step below. 52.5px is the top bar, 44px the strip. */
+/* Stacked: earlier step on top, current step below. 52.5px is the top bar, 52px the strip. */
 .study-container[data-split="column"] {
   flex-direction: column;
 }
@@ -432,7 +432,7 @@ export default {
 
 .study-container[data-split^="column"] .vh-100,
 .study-container[data-split^="column"] .min-vh-100 {
-  height: calc((100vh - 96.5px) * var(--split, 0.5) + 52.5px) !important;
+  height: calc((100vh - 104.5px) * var(--split, 0.5) + 52.5px) !important;
   min-height: 0 !important;
 }
 
@@ -440,7 +440,7 @@ export default {
    so it needs no room for it */
 :is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
   .study-container[data-split="column-reverse"] > .study-pane:not(.study-pane ~ .study-pane)) :is(.vh-100, .min-vh-100) {
-  height: calc((100vh - 96.5px) * (1 - var(--split, 0.5))) !important;
+  height: calc((100vh - 104.5px) * (1 - var(--split, 0.5))) !important;
 }
 
 :is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
