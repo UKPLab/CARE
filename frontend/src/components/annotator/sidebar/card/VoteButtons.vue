@@ -1,6 +1,6 @@
 <template>
   <SidebarButton
-    v-if="voteEnabled && (upVotes.length >= 1 || comment.userId !== userId)"
+    v-if="voteEnabled && !readOnly && (upVotes.length >= 1 || comment.userId !== userId)"
     :loading="false"
     :props="$props"
     :title="$t('components.voteButtons.helpful')"
@@ -10,7 +10,7 @@
     @click="vote(1)"
   />
   <SidebarButton
-    v-if="voteEnabled && !voteOnlyUpvote && comment.userId !== userId"
+    v-if="voteEnabled && !readOnly && !voteOnlyUpvote && comment.userId !== userId"
     :loading="false"
     :props="$props"
     :title="$t('components.voteButtons.notHelpful')"
@@ -31,6 +31,13 @@ export default {
   subscribeTable: ["comment_vote"],
   components: {
     SidebarButton,
+  },
+  inject: {
+    readOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   props: {
     comment: {
