@@ -170,6 +170,7 @@
 
             <Annotator
                 v-if="step.stepType === 1"
+                :active-sidebar="activeSidebarTab(step)"
                 :force-read-only="step.id !== currentStudyStepId"
                 :sidebar-disabled="step.id !== currentStudyStepId"
                 :is-shown="isStepVisible(step.id)"
@@ -246,7 +247,10 @@
         </div>
       </div>
       <div v-if="shownStepId !== null && isStepVisible(step.id)" class="pane-label-holder">
-        <span class="badge">{{ stepLabels[step.id] }}</span>
+        <span class="badge d-inline-flex align-items-center gap-1">
+          <LoadIcon v-if="step.id !== currentStudyStepId" icon-name="lock-fill" :size="10"/>
+          {{ stepLabels[step.id] }}
+        </span>
       </div>
     </div>
   </div>
@@ -671,8 +675,13 @@ export default {
       return tabs;
     },
     activeSidebarTab(step) {
-      // The Editor's sidebar opens on the step's own assessment tab, not on the first earlier step's tab
-      return step.configuration?.settings?.configurationId ? "additionalSidebars" : null;
+      // The sidebar opens on the tab of the step on screen: an earlier step while it is shown on its own
+      // or in a split, else the step's own tab (the assessment of an Editor step that has one)
+      const shownTab = this.lookBackTabs(step).find((tab) => tab.step.id === this.shownStepId);
+      if (shownTab) {
+        return shownTab.key;
+      }
+      return step.stepType === 2 && step.configuration?.settings?.configurationId ? "additionalSidebars" : null;
     },
     isStepLoaded(stepId) {
       if (stepId in this.loadingReady) {

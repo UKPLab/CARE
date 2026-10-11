@@ -317,6 +317,13 @@ export default {
     }
   },
   watch: {
+    // A new tab to open, for example when a study shows another step, switches to it
+    activeSideBar(newSlot) {
+      if (newSlot) {
+        this.internalActiveSlot = newSlot;
+        this.$emit('sidebar-change', newSlot);
+      }
+    },
     isSidebarVisible(newVal) {
       if (newVal) {
         this.width = this.originalWidth;

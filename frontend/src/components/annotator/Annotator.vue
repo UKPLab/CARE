@@ -24,7 +24,7 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
-            active-side-bar="annotations"
+            :active-side-bar="activeSidebar || 'annotations'"
             :is-shown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
@@ -179,6 +179,11 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    activeSidebar: {
+      type: String,
+      required: false,
+      default: null,
     },
     documentId: {
       type: Number,
