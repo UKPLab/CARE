@@ -10,7 +10,7 @@
           id="backButton"
           class="btn"
           :title="$t('navigation.topbar.goBack')"
-          @click="toHome()"
+          @click="goBack()"
         >
           <LoadIcon
             :size="16"
@@ -312,6 +312,14 @@ export default {
     async logout() {
       await axios.get(getServerURL() + '/auth/logout', {withCredentials: true})
       await this.$router.push("/login");
+    },
+    async goBack() {
+      const back = window.history.state?.back;
+      if (typeof back === "string" && back.startsWith("/dashboard")) {
+        this.$router.back();
+        return;
+      }
+      await this.toHome();
     },
     async toHome() {
       if (this.$route.path.startsWith('/template/')) {

@@ -98,7 +98,7 @@
       <BasicButton
           class="btn btn-outline-secondary"
           :text="$t('studies.returnToDashboard')"
-          @click="$router.push('/dashboard')"
+          @click="returnToDashboard"
       />
       <vr/>
       <div
@@ -384,6 +384,14 @@ export default {
               });
             }
           });
+    },
+    returnToDashboard() {
+      const back = window.history.state?.back;
+      if (typeof back === "string" && back.startsWith("/dashboard")) {
+        this.$router.back();
+        return;
+      }
+      this.$router.push("/dashboard");
     },
     start() {
       this.startStudy(this.studyId, this.studySessionId);
