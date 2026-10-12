@@ -85,7 +85,7 @@
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
           ref="nextButton"
-          :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
+          :disabled="readOnlyComputed && nextStudyStep && !studyTrajectory.includes(nextStudyStep.id)"
           class="btn btn-outline-primary ms-3"
           :title="$t('common.next')"
           @click="next()"
@@ -533,6 +533,7 @@ export default {
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
+      if (this.warnIfAssessmentIncomplete("next")) return;
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
@@ -626,6 +627,21 @@ export default {
       this.stepsReady[stepId] = ready;
       this.stepsMissing[stepId] = missing;
     },
+    warnIfAssessmentIncomplete(action) {
+      if (this.isCurrentStepReady) return false;
+      const missing = this.stepsMissing[this.currentStudyStepId] || [];
+      const isNext = action === "next";
+      const title = this.$t(isNext ? "studies.messages.cannotGoNext" : "studies.messages.cannotFinishSession");
+      const message = missing.length
+          ? this.$t(isNext ? "studies.messages.assessmentIncompleteNext" : "studies.messages.assessmentIncomplete", { criteria: missing.join(", ") })
+          : this.$t(isNext ? "studies.messages.assessmentIncompleteNextGeneric" : "studies.messages.assessmentIncompleteGeneric");
+      this.eventBus.emit("toast", {
+        title,
+        message,
+        variant: "warning",
+      });
+      return true;
+    },
     finish() {
       // Prevent finishing if study is closed
       if (this.studyClosed) {
@@ -636,18 +652,7 @@ export default {
         });
         return;
       }
-      if (!this.isCurrentStepReady) {
-        const missing = this.stepsMissing[this.currentStudyStepId] || [];
-        const message = missing.length
-            ? this.$t('studies.messages.assessmentIncomplete', { criteria: missing.join(", ") })
-            : this.$t('studies.messages.assessmentIncompleteGeneric');
-        this.eventBus.emit("toast", {
-          title: this.$t('studies.messages.cannotFinishSession'),
-          message,
-          variant: "warning",
-        });
-        return;
-      }
+      if (this.warnIfAssessmentIncomplete("finish")) return;
       this.$refs.studyFinishModal.open();
     },
     handleModalClose(event) {
