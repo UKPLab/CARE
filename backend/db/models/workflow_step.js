@@ -23,6 +23,44 @@ module.exports = (sequelize, DataTypes) => {
 
         static stepTypes = stepTypes;
 
+        // Switch in the study step configuration of every step that allows looking back (see LookBackSpotlight.vue).
+        // The same definition is in the migration 20261012211500-extend-workflow_step-look_back_spotlight.js
+        static lookBackSpotlightField = {
+            key: "lookBackSpotlight",
+            label: "Look-back Spotlight",
+            type: "switch",
+            required: false,
+            default: false,
+            help: "If enabled, documents of earlier steps are dimmed while looking back, except a band at the mouse height. The part being read is logged."
+        };
+
+        /**
+         * Add the look-back spotlight switch to a step that allows looking back, and remove it from one that does not
+         * @param {WorkflowStep} step the step that is about to be saved
+         */
+        static syncLookBackSpotlight(step) {
+            if (typeof step.configuration === "string") {
+                return;
+            }
+            const configuration = step.configuration || {};
+            const settings = configuration.settings || {};
+            const fields = Array.isArray(settings.fields) ? settings.fields : [];
+            const key = WorkflowStep.lookBackSpotlightField.key;
+            const hasSwitch = fields.some(field => field.key === key);
+
+            if (step.allowBackward && !hasSwitch) {
+                step.configuration = {...configuration, settings: {...settings, fields: [...fields, WorkflowStep.lookBackSpotlightField]}};
+            } else if (!step.allowBackward && hasSwitch) {
+                const otherFields = fields.filter(field => field.key !== key);
+                const otherConfiguration = {...configuration, settings: {...settings, fields: otherFields}};
+                // Remove the settings block again if the switch was its only content
+                if (otherFields.length === 0 && Object.keys(settings).length === 1) {
+                    delete otherConfiguration.settings;
+                }
+                step.configuration = otherConfiguration;
+            }
+        }
+
         static fields = [{
             key: "name",
             label: "workflow.fields.step.name.label",
@@ -113,7 +151,11 @@ module.exports = (sequelize, DataTypes) => {
         }, {
             sequelize,
             modelName: 'workflow_step',
-            tableName: 'workflow_step'
+            tableName: 'workflow_step',
+            hooks: {
+                beforeCreate: (step) => WorkflowStep.syncLookBackSpotlight(step),
+                beforeUpdate: (step) => WorkflowStep.syncLookBackSpotlight(step),
+            }
         }
     );
 
