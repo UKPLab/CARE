@@ -335,7 +335,7 @@ export default {
   watch: {
     draft() {
       if (this.tryResolvePendingOperator()) return;
-      // A typed value becomes a chip on Enter, not on Space. Space stays part of the text.
+      // A typed value becomes a chip on Enter
       this.tryPromoteDraftKey();
       this.highlight = -1;
       this.hoverIndex = -1;
@@ -575,8 +575,8 @@ export default {
         }
       }
       this.absorbTokens();
-      this.closeSuggestions();
       this.emitUpdate();
+      this.$refs.input?.blur();
     },
     commitPending(value) {
       this.addToken({
