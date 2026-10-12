@@ -7,7 +7,7 @@ const spotlightField = {
   type: "switch",
   required: false,
   default: false,
-  help: "If enabled, documents of earlier steps are dimmed while looking back, except a band at the mouse height. The part being read is logged."
+  help: "If enabled, documents of earlier steps are dimmed in a split view, except a band at the mouse height. The part being read is logged."
 };
 
 /**

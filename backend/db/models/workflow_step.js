@@ -31,11 +31,23 @@ module.exports = (sequelize, DataTypes) => {
             type: "switch",
             required: false,
             default: false,
-            help: "If enabled, documents of earlier steps are dimmed while looking back, except a band at the mouse height. The part being read is logged."
+            help: "If enabled, documents of earlier steps are dimmed in a split view, except a band at the mouse height. The part being read is logged."
         };
 
         /**
-         * Add the look-back spotlight switch to a step that allows looking back, and remove it from one that does not
+         * Whether a stored switch matches the current definition (the database may store its keys in another order)
+         * @param {Object} field the stored switch
+         * @returns {boolean}
+         */
+        static isCurrentLookBackSpotlightField(field) {
+            const current = WorkflowStep.lookBackSpotlightField;
+            return Object.keys(field).length === Object.keys(current).length
+                && Object.keys(current).every(key => field[key] === current[key]);
+        }
+
+        /**
+         * Add the look-back spotlight switch to a step that allows looking back, and remove it from one that does not.
+         * An outdated switch (for example with an older help text) is replaced by the current one.
          * @param {WorkflowStep} step the step that is about to be saved
          */
         static syncLookBackSpotlight(step) {
@@ -46,10 +58,14 @@ module.exports = (sequelize, DataTypes) => {
             const settings = configuration.settings || {};
             const fields = Array.isArray(settings.fields) ? settings.fields : [];
             const key = WorkflowStep.lookBackSpotlightField.key;
-            const hasSwitch = fields.some(field => field.key === key);
+            const current = fields.find(field => field.key === key);
+            const hasSwitch = current !== undefined;
 
             if (step.allowBackward && !hasSwitch) {
                 step.configuration = {...configuration, settings: {...settings, fields: [...fields, WorkflowStep.lookBackSpotlightField]}};
+            } else if (step.allowBackward && !WorkflowStep.isCurrentLookBackSpotlightField(current)) {
+                const updatedFields = fields.map(field => field.key === key ? WorkflowStep.lookBackSpotlightField : field);
+                step.configuration = {...configuration, settings: {...settings, fields: updatedFields}};
             } else if (!step.allowBackward && hasSwitch) {
                 const otherFields = fields.filter(field => field.key !== key);
                 const otherConfiguration = {...configuration, settings: {...settings, fields: otherFields}};
