@@ -426,7 +426,15 @@
     "tokenNotFound": "API-Token nicht gefunden.",
     "cannotRevokeForeignToken": "Sie koennen das API-Token einer anderen Person nicht widerrufen.",
     "documentNameRequired": "Dokumentname ist erforderlich.",
-    "unsupportedDocumentType": "Ueber diesen Endpunkt koennen nur HTML-Dokumente erstellt werden.",
-    "invalidProjectId": "Ungueltige Projekt-ID."
+    "unsupportedDocumentType": "Ueber diesen Endpunkt koennen nur HTML- oder Modal-Dokumente erstellt werden.",
+    "invalidProjectId": "Ungueltige Projekt-ID.",
+    "invalidTemplateId": "Ungueltige Template-ID.",
+    "documentNotFound": "Dokument nicht gefunden.",
+    "documentNoAccess": "Sie haben keinen Zugriff auf dieses Dokument.",
+    "fileRequired": "Eine Datei ist erforderlich.",
+    "documentHasNoBinaryFile": "Dieses Dokument hat keine PDF- oder ZIP-Datei zum Download.",
+    "documentFileMissing": "Die Dokumentdatei fehlt auf dem Server.",
+    "invalidPublicFlag": "public muss ein Boolean sein.",
+    "noDocumentFields": "Zum Aktualisieren name und/oder public angeben."
   }
 }
