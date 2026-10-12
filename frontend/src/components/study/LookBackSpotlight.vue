@@ -50,6 +50,8 @@ export default {
     this.pane.addEventListener("scroll", this.onScroll, true);
     // Leaving the browser tab means the eyes are elsewhere
     document.addEventListener("visibilitychange", this.endRest);
+    // Reloading or closing the page does not unmount the spotlight, so the rest is ended here
+    window.addEventListener("pagehide", this.endRest);
   },
   beforeUnmount() {
     this.endRest();
@@ -57,6 +59,7 @@ export default {
     this.pane.removeEventListener("pointerleave", this.onLeave);
     this.pane.removeEventListener("scroll", this.onScroll, true);
     document.removeEventListener("visibilitychange", this.endRest);
+    window.removeEventListener("pagehide", this.endRest);
   },
   methods: {
     onMove(event) {
