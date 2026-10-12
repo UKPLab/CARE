@@ -638,6 +638,7 @@ export default {
       if (!Array.isArray(fields) || !fields.length) return sources;
 
       const configField = fields.find(f => f.key === 'configurationId');
+      if (!configField) return sources;
 
       sources.push({
         value: `assessment_step${currentWorkflowStepIndex}`,
