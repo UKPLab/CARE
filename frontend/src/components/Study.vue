@@ -304,6 +304,7 @@ export default {
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
       pendingNlpInsertion: computed(() => this.pendingNlpInsertion),
+      hiddenStudyStepId: computed(() => this.hiddenStudyStepId),
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
@@ -363,6 +364,11 @@ export default {
     },
     lookBackSteps() {
       return this.earlierStepsOf(this.currentStudyStep);
+    },
+    hiddenStudyStepId() {
+      // While an earlier step is shown alone, the current step stays mounted but hidden (see PaneStrip.vue)
+      const single = !this.splitLayout && this.shownStepId !== null && this.shownStepId !== this.currentStudyStepId;
+      return single ? this.currentStudyStepId : null;
     },
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
