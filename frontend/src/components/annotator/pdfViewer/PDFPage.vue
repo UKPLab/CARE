@@ -67,6 +67,17 @@ import {Anchoring} from "@/assets/pdfViewer/anchor.js";
 import Loader from "@/basic/Loading.vue";
 import {toRaw} from 'vue';
 
+// Lightning CSS (Vite's CSS minifier) rejects pseudo-classes after a pseudo-element
+// other than user-action ones, so `::search-text:current` would break the build.
+// Injected at runtime instead - see the ::search-text rule in the style block.
+const SEARCH_TEXT_CURRENT_STYLE_ID = "pdf-search-text-current-style";
+if (typeof document !== "undefined" && !document.getElementById(SEARCH_TEXT_CURRENT_STYLE_ID)) {
+  const style = document.createElement("style");
+  style.id = SEARCH_TEXT_CURRENT_STYLE_ID;
+  style.textContent = ".textLayer::search-text:current { color: transparent; background-color: rgba(255, 165, 0, 0.7); }";
+  document.head.appendChild(style);
+}
+
 export default {
   name: 'PDFPage',
   subscribe: ["comment_state"],
@@ -408,11 +419,6 @@ export default {
 .textLayer::search-text {
   color: transparent;
   background-color: rgba(255, 223, 0, 0.5);
-}
-
-.textLayer::search-text:current {
-  color: transparent;
-  background-color: rgba(255, 165, 0, 0.7);
 }
 
 </style>
