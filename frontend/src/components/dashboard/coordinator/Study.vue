@@ -14,7 +14,7 @@
     </template>
     <template #success>
       <div v-if="isTemplateMode">
-        {{ $t('studies.messages.templateCreatedSuccess') }}
+        {{ $t(templateWasEdited ? 'studies.messages.templateEditedSuccess' : 'studies.messages.templateCreatedSuccess') }}
       </div>
       <div v-else>
         {{ $t('studies.messages.studyPublishedSuccess') }}<br>
@@ -58,6 +58,7 @@ export default {
       isSuccess: false,
       isTemplateMode: false,
       isUsingTemplate: false,
+      templateWasEdited: false,
     }
   },
   computed: {
@@ -88,6 +89,7 @@ export default {
         this.documentId = documentId;
       }
       this.isSuccess = false;
+      this.templateWasEdited = false;
       this.studyId = studyId;
       this.isTemplateMode = templateMode;
       this.isUsingTemplate = copy && studyId !== 0;
@@ -125,9 +127,11 @@ export default {
     },
     handleSubmit(data) {
       if (this.isTemplateMode) {
+        const replacing = !this.isUsingTemplate && this.studyId !== 0;
         this.$socket.emit("studySaveAsTemplate", {
           onlyTemplate: true,
-          templateData: data
+          templateData: data,
+          ...(replacing ? { replaceTemplateId: this.studyId } : {}),
         }, (result) => {
           this.$refs.coordinator.$refs.coordinatorModal.waiting = false;
           if (!result.success) {
@@ -137,9 +141,10 @@ export default {
               variant: "danger",
             });
           } else {
+            this.templateWasEdited = replacing;
             this.eventBus.emit('toast', {
-              title: this.$t('studies.messages.templateCreated'),
-              message: this.$t('studies.messages.templateCreatedMessage'),
+              title: this.$t(replacing ? 'studies.messages.templateEdited' : 'studies.messages.templateCreated'),
+              message: this.$t(replacing ? 'studies.messages.templateEditedMessage' : 'studies.messages.templateCreatedMessage'),
               variant: "success",
             });
             this.studyId = result.data;

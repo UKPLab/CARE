@@ -12,7 +12,14 @@
         "saved": "Assessment saved",
         "save": "Save assessment",
         "saveEdit": "Save",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "keyboardHint": "{mod}+Enter to save · Shift+Enter for a new line · Esc to cancel",
+        "modCtrl": "Ctrl",
+        "modCmd": "Cmd"
+    },
+    "save": {
+        "failedTitle": "Save failed",
+        "failedMessage": "The assessment could not be saved. Your last change may not have been stored."
     },
     "rubric": {
         "unnamedRubric": "Unnamed rubric",
