@@ -34,14 +34,34 @@ Cookie paths
 * ``DELETE /auth/api-tokens/:id`` — owner or admin. Non-admins cannot revoke
   another user's key.
 
-REST paths (this slice)
------------------------
+REST documents
+--------------
 
-* ``GET /rest/v1/documents`` — documents owned by the key owner.
-  Needs token right ``frontend.dashboard.documents.view``.
-* ``POST /rest/v1/documents`` — blank HTML document (``type`` 1). Body
-  ``{ "name": "..." }``. ``uploadedByUserId`` stays null (same as UI Create).
-  Other ``type`` values are rejected.
+Needs token right ``frontend.dashboard.documents.view``. The ``:idOrHash``
+parameter accepts the numeric id or the document hash. List JSON includes both
+fields. Create and upload call the same application functions as the document
+sockets (``createDocument``, ``addDocument``). Socket ``emit`` is not used on
+REST.
+
+* ``GET /rest/v1/documents`` — list. Same visibility as the UI: an admin token
+  sees all documents; other tokens see the owner's documents.
+* ``POST /rest/v1/documents`` — JSON. Blank HTML (``type`` 1, default) or modal
+  (``type`` 2). Body ``{ "name": "..." }``. Optional ``projectId``,
+  ``templateId``. ``uploadedByUserId`` stays null (same as UI Create). PDF/ZIP
+  types are rejected here.
+* ``POST /rest/v1/documents/upload`` — multipart field ``file`` (``.pdf``,
+  ``.zip``, ``.delta``). Same as UI Upload (``addDocument``).
+* ``GET /rest/v1/documents/:idOrHash`` — one document as JSON.
+* ``PATCH /rest/v1/documents/:idOrHash`` — ``name`` and/or ``public`` (publish is
+  ``{ "public": true }``).
+* ``DELETE /rest/v1/documents/:idOrHash`` — dashboard soft-delete.
+* ``GET /rest/v1/documents/:idOrHash/upload`` — PDF or ZIP bytes. HTML/modal
+  return ``errors.rest.documentHasNoBinaryFile``.
+* ``PUT /rest/v1/documents/:idOrHash/upload`` — replace PDF/ZIP bytes (admin,
+  same as UI replace). Id and hash stay the same.
+
+Missing document: ``404`` ``errors.rest.documentNotFound``. Document exists but
+the token must not see or change it: ``403`` ``errors.rest.documentNoAccess``.
 
 The token is rejected if the owner is guest-only, even if the key still exists.
 
