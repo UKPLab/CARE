@@ -112,7 +112,7 @@
     },
     "submissions": {
       "activeTitle": "Meine Aufgaben",
-      "noActive": "Sie haben keine Aufgaben.",
+      "noActive": "Sie haben keine aktiven Aufgaben.",
       "closedTitle": "Geschlossene Aufgaben",
       "noClosed": "Sie haben keine geschlossenen Aufgaben.",
       "noDueDate": "kein Fälligkeitsdatum",
