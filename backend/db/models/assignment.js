@@ -41,7 +41,7 @@ module.exports = (sequelize, DataTypes) => {
 				unlimitedLabel: "assignments.fields.maxRevisions.unlimitedLabel",
 				unlimitedStoredValue: -1,
 				required: true,
-				default: 1,
+				default: 0,
 				help: "assignments.fields.maxRevisions.help",
 			},
 			{
