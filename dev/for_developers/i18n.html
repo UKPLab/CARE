@@ -156,9 +156,10 @@
 <h2>Where files live<a class="headerlink" href="#where-files-live" title="Link to this heading"></a></h2>
 <p>All translation keys live under <code class="docutils literal notranslate"><span class="pre">utils/modules/i18n/</span></code>:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">en/*.json</span></code>, <code class="docutils literal notranslate"><span class="pre">de/*.json</span></code> — key catalogs per UI language (one file = one namespace, e.g. <code class="docutils literal notranslate"><span class="pre">users.json</span></code>)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">en/index.js</span></code>, <code class="docutils literal notranslate"><span class="pre">de/index.js</span></code> — import JSON files and bundle namespaces for the frontend</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">i18n-bundles.js</span></code> — bundles <code class="docutils literal notranslate"><span class="pre">en</span></code> / <code class="docutils literal notranslate"><span class="pre">de</span></code> namespaces for <code class="docutils literal notranslate"><span class="pre">vue-i18n</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">en/*.json</span></code>, <code class="docutils literal notranslate"><span class="pre">de/*.json</span></code>, <code class="docutils literal notranslate"><span class="pre">fr/*.json</span></code> — key catalogs per UI language (one file = one namespace, e.g. <code class="docutils literal notranslate"><span class="pre">users.json</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">en/index.js</span></code>, <code class="docutils literal notranslate"><span class="pre">de/index.js</span></code>, <code class="docutils literal notranslate"><span class="pre">fr/index.js</span></code> — import JSON files and bundle namespaces for the frontend</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">i18n-bundles.js</span></code> — bundles <code class="docutils literal notranslate"><span class="pre">en</span></code> / <code class="docutils literal notranslate"><span class="pre">de</span></code> / <code class="docutils literal notranslate"><span class="pre">fr</span></code> namespaces for <code class="docutils literal notranslate"><span class="pre">vue-i18n</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">index.js</span></code> — CommonJS entry that exposes the same <code class="docutils literal notranslate"><span class="pre">messages</span></code> map</p></li>
 </ul>
 <p>Related code:</p>
 <ul class="simple">
@@ -1001,6 +1002,12 @@ utils/modules/i18n/en/errors.json   →  utils/modules/i18n/fr/errors.json
 </div>
 <p>The <code class="docutils literal notranslate"><span class="pre">fr/index.js</span></code> file comes from the copy in step 1 (same imports as <code class="docutils literal notranslate"><span class="pre">en/index.js</span></code>, pointing at
 <code class="docutils literal notranslate"><span class="pre">fr/*.json</span></code>).</p>
+<p>Add the locale to the <code class="docutils literal notranslate"><span class="pre">messages</span></code> map in <code class="docutils literal notranslate"><span class="pre">utils/modules/i18n/index.js</span></code> as well:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="kd">const</span><span class="w"> </span><span class="nx">fr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./fr&#39;</span><span class="p">);</span>
+
+<span class="kd">const</span><span class="w"> </span><span class="nx">messages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">en</span><span class="p">,</span><span class="w"> </span><span class="nx">de</span><span class="p">,</span><span class="w"> </span><span class="nx">fr</span><span class="w"> </span><span class="p">};</span>
+</pre></div>
+</div>
 <p><strong>3. Add French to the language switcher</strong> in <code class="docutils literal notranslate"><span class="pre">frontend/src/assets/locale.js</span></code>:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="k">export</span><span class="w"> </span><span class="kd">const</span><span class="w"> </span><span class="nx">SUPPORTED_LOCALES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">code</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;de&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">name</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;Deutsch&quot;</span><span class="p">,</span><span class="w"> </span><span class="nx">flag</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;🇩🇪&quot;</span><span class="w"> </span><span class="p">},</span>
