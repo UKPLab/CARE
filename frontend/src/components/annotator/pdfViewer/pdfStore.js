@@ -27,6 +27,7 @@ export class PDF {
         this.pageCount = 0;
         this.cursor = 0;
         this.pageTextCache = new Map();
+        this.pageLayoutCache = new Map();
         this.renderingDone = new Map();
     }
 
@@ -69,6 +70,37 @@ export class PDF {
             return text
         }
 
+    }
+
+    /**
+     * Returns the vertical position of a text offset without rendering the page,
+     * so annotations on not yet rendered pages can be placed close to their final position.
+     *
+     * @param {number} pageIndex 0-based page index
+     * @param {number} offset document-wide text offset (as in the TextPositionSelector)
+     * @returns {Promise<number|null>} distance from the page top in units of the page width, null if unknown
+     */
+    async getTextTop(pageIndex, offset) {
+        if (!this.pageLayoutCache.has(pageIndex)) {
+            const page = await this.getPage(pageIndex + 1);
+            const textContent = await page.getTextContent({normalizeWhitespace: true});
+            const [x0, , x1, y1] = page.view;
+            let start = 0;
+            const items = textContent.items.map(item => {
+                const layout = {start, top: y1 - item.transform[5] - item.height};
+                start += item.str.length;
+                return layout;
+            });
+            this.pageLayoutCache.set(pageIndex, {items, width: x1 - x0});
+        }
+        const {items, width} = this.pageLayoutCache.get(pageIndex);
+
+        let pageStart = 0;
+        for (let i = 0; i < pageIndex; i++) {
+            pageStart += (await this.getPageTextContent(i))?.length ?? 0;
+        }
+        const item = items.findLast(item => item.start <= offset - pageStart);
+        return item ? item.top / width : null;
     }
 
 }

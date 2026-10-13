@@ -229,6 +229,7 @@ import NLPService from "@/basic/service/NLPService.vue";
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { getTagColor } from "@/assets/annotations";
 import BasicButton from "@/basic/Button.vue";
 
 /** Annotation elements
@@ -462,29 +463,7 @@ export default {
   methods: {
     formatLocalizedDate,
     getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
+      return getTagColor(this.$store, tagId);
     },
     shakeIt() {
       this.shake = true;
