@@ -51,21 +51,32 @@
             "confirmSelection": "Confirmer la sélection :",
             "declinedSharingWarning": "Vous avez sélectionné un ou plusieurs étudiants qui {emphasis}.",
             "declinedSharingEmphasis": "n'ont pas accepté le partage des données",
+            "declinedStatsSharingWarning": "Vous avez sélectionné un ou plusieurs utilisateurs qui {emphasis}.",
+            "declinedStatsSharingEmphasis": "n'ont pas accepté le partage des données de comportement",
             "aliasMappingWarning": "L'archive ZIP téléchargée contiendra un fichier CSV qui associe les alias générés aux vrais noms des étudiants.",
             "reviewWarning": "Nous vous recommandons vivement de vérifier soigneusement cet export avant de le partager, afin de ne diffuser aucune information sensible ou non souhaitée.",
+            "streamError": "Une erreur est survenue au démarrage du téléchargement. Veuillez réessayer.",
             "summary": "Résumé :",
-            "downloadSummary": "Vous êtes sur le point de télécharger les travaux de {count} étudiant(s).",
-            "fileCount": "{count} fichier(s)"
+            "downloadSummary": "Vous êtes sur le point de télécharger {type} pour {count} utilisateur(s).",
+            "typeLabel": {
+                "submissions": "les travaux",
+                "grades": "les notes",
+                "documents": "les documents",
+                "studies": "les études",
+                "userBehaviour": "les données de comportement des utilisateurs"
+            },
+            "unitCount": {
+                "submissions": "{count} travail/travaux",
+                "studies": "{count} étude(s)",
+                "documents": "{count} document(s)"
+            }
         },
         "columns": {
             "name": "Nom du projet",
             "public": "Public",
             "closed": "Clôturé",
             "username": "Nom d'utilisateur",
-            "studentName": "Nom de l'étudiant",
-            "files": "Fichiers",
-            "acceptedDataSharing": "Partage des données accepté",
-            "lastSubmitted": "Dernière remise"
+            "acceptedDataSharing": "Partage des données accepté"
         },
         "actions": {
             "copy": "Copier le projet",
@@ -104,10 +115,49 @@
             "noteLabel": "Remarque :",
             "accountSpecificHint": "Les alias sont liés à votre compte et ne correspondront pas aux exports d'autres utilisateurs.",
             "gradeFileFormat": "Format du fichier de notes",
-            "mergeCsvFiles": "Fusionner les fichiers CSV par étude, étape et configuration"
+            "mergeCsvFiles": "Fusionner les fichiers CSV par étude, étape et configuration",
+            "userBehaviour": {
+                "title": "Options des données de comportement",
+                "fileLayout": "Organisation des fichiers",
+                "singleCombinedFile": "Un seul fichier combiné",
+                "onePerUser": "Un fichier par utilisateur",
+                "fileFormat": "Format de fichier"
+            },
+            "excludeNonConsentingEdits": "Exclure les modifications des utilisateurs sans consentement",
+            "excludeNonConsentingAnnotations": "Exclure les annotations et commentaires des utilisateurs sans consentement",
+            "documents": {
+                "title": "Options des documents",
+                "typesToInclude": "Types de documents à inclure",
+                "typePdf": "PDF — Inclut les annotations et les commentaires",
+                "typeHtml": "HTML — Inclut les modifications, le texte brut et le HTML",
+                "typeModal": "Modale — Inclut les modifications, le texte brut et le HTML",
+                "typeZip": "ZIP — Inclut le fichier ZIP"
+            },
+            "studies": {
+                "title": "Options des études",
+                "noWorkflowsFound": "Aucun workflow trouvé pour ce projet.",
+                "filterByWorkflow": "Filtrer par workflow",
+                "noWorkflowsSelected": "Aucun workflow sélectionné",
+                "allWorkflowsSelected": "Tous les workflows sélectionnés",
+                "includeEmptyStudies": "Inclure les études sans session",
+                "includeDocumentFiles": "Inclure les fichiers PDF et ZIP",
+                "includeScores": "Inclure les scores",
+                "includeAiScores": "Inclure les scores assistés par l'IA"
+            }
         },
-        "exportSelectSubmissions": "Sélectionnez les travaux à télécharger :",
-        "noSubmissionsFound": "Aucun travail trouvé pour ce projet.",
+        "exportSelectUsers": {
+            "title": "Sélectionner les utilisateurs pour l'export des données :",
+            "noUsersFound": "Aucun utilisateur avec des données trouvé pour ce projet.",
+            "fullName": "Nom complet",
+            "roles": "Rôles",
+            "acceptBehaviourSharing": "Partage du comportement accepté",
+            "submissions": "Travaux",
+            "documents": "Documents",
+            "studies": "Études",
+            "assessmentConfigurations": "Configuration(s) d'évaluation",
+            "noConfiguration": "Aucune configuration",
+            "noRole": "Aucun rôle"
+        },
         "exportModal": {
             "steps": {
                 "selectStudent": "Sélectionner l'étudiant",
@@ -117,7 +167,10 @@
             },
             "exportReviewers": "Exporter la liste de tous les évaluateurs",
             "exportSubmissions": "Exporter les travaux",
-            "exportGrades": "Exporter les notes"
+            "exportGrades": "Exporter les notes",
+            "exportDocuments": "Exporter les documents",
+            "exportStudies": "Exporter les études",
+            "exportUserBehaviour": "Exporter les données de comportement"
         }
     },
     "settings": {

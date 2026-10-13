@@ -12,7 +12,14 @@
         "saved": "Évaluation enregistrée",
         "save": "Enregistrer l'évaluation",
         "saveEdit": "Enregistrer",
-        "cancel": "Annuler"
+        "cancel": "Annuler",
+        "keyboardHint": "{mod}+Entrée pour enregistrer · Maj+Entrée pour un saut de ligne · Échap pour annuler",
+        "modCtrl": "Ctrl",
+        "modCmd": "Cmd"
+    },
+    "save": {
+        "failedTitle": "Échec de l'enregistrement",
+        "failedMessage": "L'évaluation n'a pas pu être enregistrée. Votre dernière modification n'a peut-être pas été prise en compte."
     },
     "rubric": {
         "unnamedRubric": "Grille sans nom",
