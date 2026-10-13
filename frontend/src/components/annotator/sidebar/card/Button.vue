@@ -97,6 +97,10 @@ export default {
 </script>
 
 <style scoped>
+.btn:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
 .start-85 {
   left: 85% !important;
 }

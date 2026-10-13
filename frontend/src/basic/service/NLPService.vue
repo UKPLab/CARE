@@ -160,6 +160,10 @@ export default {
 </script>
 
 <style scoped>
+.btn:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
 .btn[disabled] {
     pointer-events: auto;
     cursor: auto;
