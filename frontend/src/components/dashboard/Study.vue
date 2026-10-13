@@ -379,7 +379,7 @@ export default {
   methods: {
     openStudyCoordinator(id = 0, linkOnly = false) {
       this.modals.studyCoordinator = true;
-      this.$nextTick(() => this.$refs.studyCoordinator?.open(id, null, linkOnly));
+      this.$nextTick(() => this.$refs.studyCoordinator?.open(id, linkOnly));
     },
     openStudySessionModal(studyId) {
       this.modals.studySession = true;
