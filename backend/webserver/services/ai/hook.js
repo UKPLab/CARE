@@ -11,6 +11,7 @@ const chat = require("./chat");
 const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
+const { anonymizeTexSource } = require("../../../utils/helper/text.js");
 
 /**
  * Loads an enabled, non-deleted AI hook by id.
@@ -201,8 +202,10 @@ async function resolveServiceInput(service, input) {
                     if (buffer) {
                         const extracted = await service.server.db.models["document"]
                             .extractZipFiles(buffer, zipFileSpecs);
+                        // Blank student identity before the source reaches the model;
+                        // the PDF is already blinded by the template, the source is not.
                         for (const content of Object.values(extracted)) {
-                            parts.push(content);
+                            parts.push(anonymizeTexSource(content));
                         }
                     }
                 }
