@@ -11,10 +11,7 @@ const chat = require("./chat");
 const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
-const {
-    redactPersonalData,
-    submissionReference,
-} = require("../../../utils/helper/personalData");
+const { redactPersonalData } = require("../../../utils/helper/personalData");
 
 /**
  * Loads an enabled, non-deleted AI hook by id.
@@ -111,6 +108,24 @@ async function resolveSelectedHookModel(service, hookId, aiModelId = null) {
         throw new TranslatableError("errors.ai.hook.modelNotFound");
     }
     return {...await resolveHookModelParams(service, hookModel), hookModelId: hookModel.id};
+}
+
+/**
+ * Picks which id on a hook submission input identifies the submission.
+ *
+ * @param {Object} input - Submission input. `submissionId` wins, otherwise `pdfDocumentId`, then `documentId`.
+ * @returns {Object} `{submissionId}` or `{documentId}` when one is a positive integer, otherwise `{}`.
+ */
+function submissionReference(input) {
+    const submissionId = Number(input?.submissionId);
+    if (Number.isInteger(submissionId) && submissionId > 0) {
+        return {submissionId};
+    }
+    const documentId = Number(input?.pdfDocumentId || input?.documentId);
+    if (Number.isInteger(documentId) && documentId > 0) {
+        return {documentId};
+    }
+    return {};
 }
 
 /**
@@ -285,6 +300,8 @@ async function runHook(service, client, data) {
 
     try {
         const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
+        // Check the hook before its models. A missing or disabled hook should say so,
+        // not that it has no model. resolveHookPrompt loads this hook again when it builds the prompt.
         await loadEnabledHook(service, hookId);
         const hookModels = await loadHookModels(service, hookId);
         const {hook, promptText} = await resolveHookPrompt(service, hookId, rawValues);

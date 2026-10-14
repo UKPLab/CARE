@@ -8,49 +8,16 @@
 
 const REDACTED = "[REDACTED]";
 
-/** `\author`, `\matriculationno`, `\studentID`, and `\birthplace`, with a single `{argument}`. */
-const STUDENT_MACROS = /\\(author|matriculationno|studentID|birthplace)\s*(?:\[[^\]]*\])?\s*\{([^{}]*)\}/g;
+/** `\author`, `\matriculationno`, `\studentID`, and `\birthplace`, including `\newcommand{\name}{value}`. */
+const STUDENT_MACROS = /\\(author|matriculationno|studentID|birthplace)(\s*\})?\s*(?:\[[^\]]*\])?\s*\{([^{}]*)\}/g;
 
-/** Digits after Matrikelnummer, Matrikel-Nr., Matr.-Nr., Student ID, or matriculation number. */
-const LABELLED_STUDENT_ID = /(Matrikelnummer|Matrikel-Nr\.|Matr\.-Nr\.|Student\s+ID|matriculation number)(\s*[:.]?\s*)\d+/gi;
-
-/**
- * Picks the id used to find a submission.
- *
- * `submissionId` wins. Otherwise `pdfDocumentId`, then `documentId`.
- *
- * @param {Object} input - Hook submission input.
- * @returns {{submissionId?: number, documentId?: number}} One id, or an empty object.
- */
-function submissionReference(input) {
-    const submissionId = Number(input?.submissionId);
-    if (Number.isInteger(submissionId) && submissionId > 0) {
-        return {submissionId};
-    }
-    const documentId = Number(input?.pdfDocumentId || input?.documentId);
-    if (Number.isInteger(documentId) && documentId > 0) {
-        return {documentId};
-    }
-    return {};
-}
-
-/**
- * Checks whether a macro match is a definition rather than a filled-in value.
- *
- * @param {string} text - Full source.
- * @param {number} index - Index of the macro's backslash.
- * @returns {boolean} True when `\newcommand`, `\renewcommand`, or `\NewDocumentCommand` sits just before it.
- */
-function isMacroDefinition(text, index) {
-    const prefix = text.slice(Math.max(0, index - 80), index);
-    return /\\(?:re)?newcommand\s*\*?\s*\{?\s*$/.test(prefix)
-        || /\\NewDocumentCommand\s*\{?\s*$/.test(prefix);
-}
+/** Digits after Matrikelnummer, Matrikelnr., Matrikel-Nr., Matr.-Nr., Student ID, or matriculation number. */
+const LABELLED_STUDENT_ID = /(Matrikelnummer|Matrikel-?Nr\.|Matr\.-Nr\.|Student\s+ID|matriculation number)(\s*[:.]?\s*)\d+/gi;
 
 /**
  * Replaces the arguments of `\author`, `\matriculationno`, `\studentID`, and `\birthplace`.
  *
- * Commented-out calls are included. Definitions, arguments that contain `#`, and empty arguments are left as they are.
+ * Commented-out calls are included. Arguments that contain `#`, and empty arguments, are left as they are.
  *
  * @param {string} text - Prompt or LaTeX text.
  * @param {Object} [replacements] - Text written into the macros.
@@ -67,8 +34,8 @@ function replaceLatexMetadata(text, replacements = {}) {
 
     const removed = [];
     STUDENT_MACROS.lastIndex = 0;
-    const updated = text.replace(STUDENT_MACROS, (match, name, argument, offset) => {
-        if (isMacroDefinition(text, offset) || argument.includes("#")) {
+    const updated = text.replace(STUDENT_MACROS, (match, name, closingBrace, argument) => {
+        if (argument.includes("#")) {
             return match;
         }
         const parts = argument.split(/\\and\b/).map((part) => part.trim()).filter(Boolean);
@@ -77,7 +44,7 @@ function replaceLatexMetadata(text, replacements = {}) {
         }
         removed.push(...parts);
         const replacement = name === "author" ? author : other;
-        return `\\${name}{${replacement}}`;
+        return `\\${name}${closingBrace || ""}{${replacement}}`;
     });
     return {text: updated, removed};
 }
@@ -106,5 +73,4 @@ function redactPersonalData(text) {
 module.exports = {
     REDACTED,
     redactPersonalData,
-    submissionReference,
 };
