@@ -395,18 +395,38 @@ class UserSocket extends Socket {
         // Each connection loads its own copy of the session (with the login-time user) once at connect,
         // and every socket reads it as this.user (e.g. StatisticSocket checks acceptStats).
         // Refresh the copy on all of this user's live connections so consent applies everywhere without re-login.
-        options.transaction.afterCommit(async () => {
+        options.transaction.afterCommit(() => {
+            const storedSessionIds = new Set();
             for (const [socketId, sockets] of Object.entries(this.server.availSockets)) {
-                // availSockets can keep entries of disconnected sockets, so also require a live socket
-                if (sockets["UserSocket"]?.userId !== this.userId || !this.io.sockets.sockets.get(socketId)) {
-                    continue;
-                }
-                const session = sockets["UserSocket"].socket.request.session;
-                Object.assign(session.passport.user, consent);
-                session.save();
-                if (socketId !== this.socket.id) {
-                    // Updates the frontend store, which starts/stops the behavior logger in that tab
-                    await sockets["AppSocket"]?.sendUser();
+                try {
+                    // availSockets can keep entries of disconnected sockets, so also require a live socket
+                    if (sockets["UserSocket"]?.userId !== this.userId || !this.io.sockets.sockets.get(socketId)) {
+                        continue;
+                    }
+                    const request = sockets["UserSocket"].socket.request;
+                    Object.assign(request.session.passport.user, consent);
+
+                    // Don't save the socket's copy: it can be older than the stored session (e.g. totpSetupPending
+                    // written over HTTP after connect). Merge into the stored session once per session id instead.
+                    const sid = request.session.id;
+                    if (!storedSessionIds.has(sid)) {
+                        storedSessionIds.add(sid);
+                        request.sessionStore.get(sid, (err, stored) => {
+                            if (err || !stored?.passport?.user) return;
+                            Object.assign(stored.passport.user, consent);
+                            request.sessionStore.set(sid, stored, (setErr) => {
+                                if (setErr) this.logger.warn("Failed to store consent in session: " + setErr);
+                            });
+                        });
+                    }
+
+                    if (socketId !== this.socket.id) {
+                        // Updates the frontend store, which starts/stops the behavior logger in that tab
+                        sockets["AppSocket"]?.sendUser();
+                    }
+                } catch (e) {
+                    // The consent is already committed; don't turn a failed refresh into an error response
+                    this.logger.warn("Failed to refresh consent on socket " + socketId + ": " + e);
                 }
             }
         });
