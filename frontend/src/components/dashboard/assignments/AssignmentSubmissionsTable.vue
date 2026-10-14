@@ -19,6 +19,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import { resolveApiMessage } from "@/assets/utils";
+import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 
@@ -81,10 +82,6 @@ export default {
       }
       return this.$store.getters["table/assignment/get"](this.assignmentId);
     },
-    assignmentPastDeadline() {
-      const end = this.assignment?.end ? new Date(this.assignment.end) : null;
-      return !!(end && new Date() > end);
-    },
     tableRows() {
       if (!this.assignmentId) {
         return this.rows;
@@ -111,7 +108,7 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null && !this.assignmentPastDeadline,
+            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null && !isAssignmentPastDeadline(this.assignment),
             isStudyLocked,
             studyUsageCount,
             name: submission.name || "-",
