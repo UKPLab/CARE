@@ -8,7 +8,7 @@
     <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
       <h6 class="text-secondary mt-4">{{ $t('dashboard.study.workflowStepMapping') }}</h6>
       <p class="text-muted">{{ $t('dashboard.study.mapWorkflowStepToTarget') }}</p>
-      <div v-for="(templateStep, index) in workflowSteps" :key="templateStep.id" class="mb-3">
+      <div v-for="(templateStep, index) in mappableWorkflowSteps" :key="templateStep.id" class="mb-3">
         <label class="form-label">
           <strong>
             {{ $t('dashboard.study.sourceStepTargetStep', {
@@ -46,7 +46,7 @@ import FormSelect from "@/basic/form/Select.vue";
  * target workflow and then maps each annotator/editor step from the template to a
  * corresponding step in the target. Also allows choosing the new study owner (session
  * user vs. study owner) when creating bulk assignments.
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
  */
 export default {
   name: "WorkflowMappingStep",
@@ -87,9 +87,13 @@ export default {
           item => item.workflowId === this.targetWorkflowId
       ) || [];
     },
+    mappableWorkflowSteps() {
+      // Dialogue steps are created without copied sources.
+      return this.workflowSteps.filter(step => step.stepType !== 4);
+    },
     isWorkflowMappingComplete() {
-      if (!this.targetWorkflowId) return false;
-      return this.workflowSteps.every(step => {
+      if (!this.targetWorkflowId || this.mappableWorkflowSteps.length === 0) return false;
+      return this.mappableWorkflowSteps.every(step => {
         return this.workflowMapping[step.id] !== undefined && this.workflowMapping[step.id] !== null;
       });
     },

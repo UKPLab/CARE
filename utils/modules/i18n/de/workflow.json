@@ -12,7 +12,8 @@
   "stepTypes": {
     "annotator": "Annotator",
     "editor": "Editor",
-    "modal": "Modal"
+    "modal": "Modal",
+    "dialogue": "Dialog"
   },
   "dashboard": {
     "title": "Workflows",
@@ -94,7 +95,9 @@
       "modal": "Modal",
       "annotaterStep": "Annotater-Schritt",
       "editorStep": "Editor-Schritt",
-      "modalStep": "Modal-Schritt"
+      "modalStep": "Modal-Schritt",
+      "dialogueStep": "Dialogschritt",
+      "dialogue": "Dialog"
     },
     "errors": {
       "saveFailed": "Speichern fehlgeschlagen",

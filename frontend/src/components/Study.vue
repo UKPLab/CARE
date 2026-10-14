@@ -122,6 +122,7 @@
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal
+                v-if="step.stepType !== 4"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
                 :config="step.configuration"
@@ -156,6 +157,21 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <SidebarTemplate icon="chat-dots" title="AI Chat">
+                  <template #content>
+                    <AiConversation
+                        :study-session-id="studySessionId"
+                        :study-step-id="step.id"
+                        :document-id="step.documentId"
+                        :service="getAiChatService(step)"
+                        :study-data="studyData"
+                        :ordered-study-steps="orderedStudySteps"
+                        :read-only="readOnlyComputed"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
             </Annotator>
 
             <Editor
@@ -180,6 +196,21 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <SidebarTemplate icon="chat-dots" title="AI Chat">
+                  <template #content>
+                    <AiConversation
+                        :study-session-id="studySessionId"
+                        :study-step-id="step.id"
+                        :document-id="step.documentId"
+                        :service="getAiChatService(step)"
+                        :study-data="studyData"
+                        :ordered-study-steps="orderedStudySteps"
+                        :read-only="readOnlyComputed"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
             </Editor>
 
             <StepModal
@@ -188,6 +219,21 @@
                 :is-last-step="step.id === lastStep.id"
                 @close="handleModalClose"
                 @update:data="updateStudyData(step.id, 'modal', $event)"
+            />
+
+            <Dialogue
+                v-if="step.stepType === 4"
+                :is-shown="currentStudyStepId === step.id"
+                :study-description="study?.description || ''"
+                :study-session-id="studySessionId"
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :study-data="studyData"
+                :ordered-study-steps="orderedStudySteps"
+                :read-only="readOnlyComputed"
+                @update:ready="stepsReady[step.id] = $event"
+                @update:data="updateStudyData(step.id, 'dialogue', $event)"
             />
 
           </div>
@@ -217,11 +263,15 @@ import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
+import AiConversation from "@/components/aiAssistant/AiConversation.vue";
+import Dialogue from "@/components/dialogue/Dialogue.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
+    AiConversation,
+    Dialogue,
     SidebarTemplate,
     Assessment,
     LoadIcon,
@@ -313,11 +363,12 @@ export default {
         const prev = steps[i - 1];
         const prevLoaded = this.isStepLoaded(prev.id);
         const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
+        const prevRequiresReady = prevHasAssessment || Number(prev.stepType) === 4;
 
         const readyMap = this.stepsReady || {};
         const hasEntry = Object.hasOwn(readyMap, prev.id);
 
-        const prevReady = prevHasAssessment
+        const prevReady = prevRequiresReady
             ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
             : true;                                  // no assessment → always ready
 
@@ -530,12 +581,23 @@ export default {
     handleLoadingError(errorData) {
       this.setStudyError(errorData.message, errorData.code);
     },
+    getAiChatService(step) {
+      const services = step.configuration?.services || [];
+      return services.find(service => service.type === "aiChat") || null;
+    },
+    hasAiChat(step) {
+      return !!this.getAiChatService(step);
+    },
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
+      const step = this.studySteps.find((entry) => Number(entry.id) === Number(stepId));
+      if (Number(step?.stepType) === 4) {
+        return true;
+      }
       if (stepId in this.loadingReady) {
         return this.loadingReady[stepId];
       }

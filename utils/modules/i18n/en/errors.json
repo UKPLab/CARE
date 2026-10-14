@@ -426,6 +426,38 @@
         "startAfterEnd": "Start time must be before end time."
     },
     "ai": {
+        "assistant": {
+            "stepNotInSession": "This step does not belong to this study session.",
+            "retryNotAllowed": "This AI response cannot be retried.",
+            "retryLatestOnly": "Only the latest AI response can be retried.",
+            "requestAborted": "The AI request was aborted.",
+            "userRequired": "A signed-in user is required.",
+            "requestIdRequired": "A request ID is required.",
+            "inputMissing": "Required AI input is missing: {key}.",
+            "inputInvalid": "Invalid AI input: {key}.",
+            "invalidId": "Missing or invalid ID: {name}."
+        },
+        "chat": {
+            "conversationNotFound": "AI conversation not found.",
+            "currentStepOnly": "AI chat is only available for the current study step.",
+            "notConfigured": "AI chat is not configured for this study step.",
+            "contextMissing": "AI chat context is missing for this study step.",
+            "contentRequired": "Please enter a message."
+        },
+        "dialogue": {
+            "notFound": "AI dialogue not found.",
+            "planNotFound": "Dialogue plan configuration not found.",
+            "planEmpty": "The dialogue plan has no questions.",
+            "wrongStepType": "This study step is not a dialogue step.",
+            "currentStepOnly": "Dialogue is only available for the current study step.",
+            "decisionHookRequired": "Adaptive dialogue requires a decision hook.",
+            "anchorHookRequired": "Adaptive dialogue with anchored questions requires an anchor hook.",
+            "contextMissing": "Dialogue context is missing for this study step.",
+            "skipNotAllowed": "This dialogue does not allow skipping questions.",
+            "answerRequired": "Please enter an answer.",
+            "complete": "This dialogue is already complete.",
+            "questionInactive": "This question is no longer active."
+        },
         "requestAlreadyPending": "You already have a pending AI request in this session.",
         "studyOwnerUnavailable": "The study owner could not be resolved.",
         "sessionAccessDenied": "You do not have access to this study session.",
