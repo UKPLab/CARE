@@ -620,12 +620,8 @@ export default {
       this.$refs.studyFinishModal.close();
     },
     onAssessmentReady(stepId, payload) {
-      const ready = payload && typeof payload === "object" ? !!payload.ready : !!payload;
-      const missing = payload && typeof payload === "object" && Array.isArray(payload.missing)
-          ? payload.missing
-          : [];
-      this.stepsReady[stepId] = ready;
-      this.stepsMissing[stepId] = missing;
+      this.stepsReady[stepId] = payload.ready;
+      this.stepsMissing[stepId] = payload.missing;
     },
     warnIfAssessmentIncomplete(action) {
       if (this.isCurrentStepReady) return false;
