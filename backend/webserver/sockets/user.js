@@ -205,6 +205,9 @@ class UserSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves when the passwords have been uploaded.
      */
     async userPublishMoodle(data) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
         const feedback = data['users'].map((user) => ({
             extId: user.extId,
             text: "Username: " + user.userName + "\nPassword: " + user.password,
