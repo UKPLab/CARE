@@ -384,15 +384,35 @@ class UserSocket extends Socket {
             throw new TranslatableError("errors.users.failedToUpdateUser");
         }
 
-        return _.omit(await this.models["user"].updateById(user.id,
-                {
-                    acceptStats: data.acceptStats,
-                    acceptDataSharing: data.acceptDataSharing,
-                    acceptTerms: data.acceptTerms,
-                    acceptedAt: (user.acceptedAt === null) ? new Date() : user.acceptedAt,
-                }, {transaction: options.transaction}),
-            ['passwordHash', 'salt', 'initialPassword', 'createdAt', 'updatedAt', 'deletedAt', 'deleted']);
+        const consent = {
+            acceptStats: data.acceptStats,
+            acceptDataSharing: data.acceptDataSharing,
+            acceptTerms: data.acceptTerms,
+            acceptedAt: (user.acceptedAt === null) ? new Date() : user.acceptedAt,
+        };
+        const updatedUser = await this.models["user"].updateById(user.id, consent, {transaction: options.transaction});
 
+        // Each connection loads its own copy of the session (with the login-time user) once at connect,
+        // and every socket reads it as this.user (e.g. StatisticSocket checks acceptStats).
+        // Refresh the copy on all of this user's live connections so consent applies everywhere without re-login.
+        options.transaction.afterCommit(async () => {
+            for (const [socketId, sockets] of Object.entries(this.server.availSockets)) {
+                // availSockets can keep entries of disconnected sockets, so also require a live socket
+                if (sockets["UserSocket"]?.userId !== this.userId || !this.io.sockets.sockets.get(socketId)) {
+                    continue;
+                }
+                const session = sockets["UserSocket"].socket.request.session;
+                Object.assign(session.passport.user, consent);
+                session.save();
+                if (socketId !== this.socket.id) {
+                    // Updates the frontend store, which starts/stops the behavior logger in that tab
+                    await sockets["AppSocket"]?.sendUser();
+                }
+            }
+        });
+
+        return _.omit(updatedUser,
+            ['passwordHash', 'salt', 'initialPassword', 'createdAt', 'updatedAt', 'deletedAt', 'deleted']);
     }
 
     /**
