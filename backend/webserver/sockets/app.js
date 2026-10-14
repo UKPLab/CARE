@@ -198,8 +198,8 @@ class AppSocket extends Socket {
     async sendData(data, options) {
         const model = this.models[data?.table];
         if (!model?.autoTable) {
-            this.logger.error("appData rejected");
-            return;
+            this.logger.error("appData rejected: " + data?.table);
+            throw generateError("ACCESS_DENIED", "errors.common.accessDenied");
         }
         // sendTableData skips accessMap table rules, so a table without userId returns every row.
         const filter = mergeFilter(
