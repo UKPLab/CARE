@@ -144,9 +144,8 @@ class AnnotationSocket extends Socket {
         }
         const document = await documentSocket.validateDocument(data.documentId, "id", true);
 
-        const annotations = await this.models['annotation'].getAllByKey("documentId", document.id);
-        // Get all comments for the document
-        const comments = await this.models['comment'].getAllByKey("documentId", document.id);
+        // Same rule as the documents page: notes with no study session, or from a closed study.
+        const {annotations, comments} = await documentSocket.notesForClosedStudiesOrNoSession(document.id);
 
         // For each annotation, get the corresponding tag and comments
         const annotationsWithTagsAndComments = await Promise.all(
