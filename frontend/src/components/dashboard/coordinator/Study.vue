@@ -56,7 +56,6 @@ export default {
   data() {
     return {
       studyId: 0,
-      documentId: 0,
       isSuccess: false,
       isTemplateMode: false,
       isUsingTemplate: false,
@@ -127,10 +126,14 @@ export default {
       }
       return Promise.all(waits);
     },
-    async open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false, studyRow = null) {
-      if (documentId !== null) {
-        this.documentId = documentId;
-      }
+    /**
+     * @param {number} studyId 0 for a new study
+     * @param {boolean} loadInitialized show the success view right away
+     * @param {boolean} templateMode create/edit a template
+     * @param {boolean} copy start a new study/template from studyId
+     * @param {Object|null} studyRow row from the backend table; the full `study` table is not in Vuex
+     */
+    async open(studyId, loadInitialized = false, templateMode = false, copy = false, studyRow = null) {
       this.isSuccess = false;
       this.templateWasEdited = false;
       this.studyId = studyId;
@@ -158,11 +161,11 @@ export default {
       }
       const aiOverrides = studyId !== 0 ? this.findExistingStudyCaps(studyId) : {};
       this.$refs.coordinator.open(
-        studyId,
-        {documentId: this.documentId, isTemplateMode: templateMode},
-        copy,
-        aiOverrides,
-        this.studyRecord
+          studyId,
+          {isTemplateMode: templateMode},
+          copy,
+          aiOverrides,
+          this.studyRecord
       );
     },
     findExistingStudyCaps(studyId) {

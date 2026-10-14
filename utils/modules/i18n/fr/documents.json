@@ -1,0 +1,81 @@
+{
+    "title": "Documents",
+    "preparingPdf": "Préparation de votre PDF...",
+    "templateOptional": "Modèle (facultatif) :",
+    "noTemplateCreateEmpty": "Aucun (créer un document vide)",
+    "templatePrefillHint": "Sélectionnez un modèle pour préremplir le contenu du document (type 4 : Document - Général)",
+    "document": "Document",
+    "documentDefaultName": "document",
+    "addDocument": "Ajouter un document",
+    "uploadDocument": "Importer un document",
+    "uploadNewDocument": "Importer un nouveau document",
+    "createDocument": "Créer un document",
+    "createNewDocument": "Créer un nouveau document",
+    "renameDocument": "Renommer le document...",
+    "deleteDocument": "Supprimer le document...",
+    "accessDocument": "Accéder au document...",
+    "publishDocument": "Publier le document...",
+    "downloadPdfWithAnnotations": "Télécharger le PDF avec les annotations",
+    "exportDelta": "Exporter au format Delta (JSON) dans un fichier local",
+    "exportHtml": "Exporter au format HTML dans un fichier local",
+    "openStudyCoordinator": "Ouvrir le coordinateur d'étude...",
+    "importAnnotations": "Importer des annotations",
+    "typeOfDocument": "Type de document",
+    "chooseDocumentType": "Choisissez le type de document...",
+    "nameOfDocument": "Nom du document",
+    "yesPublish": "Oui, publier !",
+    "types": {
+        "pdf": "PDF",
+        "html": "HTML",
+        "modal": "MODALE",
+        "generalHtml": "Document HTML général",
+        "studyModal": "Modale d'étude (utilisable uniquement dans les études)"
+    },
+    "fields": {
+        "name": {
+            "label": "Nom du document :",
+            "placeholder": "Mon document"
+        },
+        "hash": {
+            "label": "Identifiant unique (hash) du document"
+        },
+        "userId": {
+            "label": "ID utilisateur du document"
+        },
+        "public": {
+            "label": "Le document est-il publié ?"
+        }
+    },
+    "messages": {
+        "deleteConfirm": "Voulez-vous vraiment supprimer ce document ?",
+        "deleteTitle": "Supprimer le document",
+        "studyWarning": "{count} étude(s) utilisent actuellement ce document. Le supprimer supprimera aussi ces études !",
+        "documentPublished": "Document publié !",
+        "documentAvailableAt": "Le document est disponible via le lien suivant :",
+        "publishConfirm": "Voulez-vous vraiment publier ce document ?",
+        "cannotBeUndone": "Cette action est irréversible !",
+        "documentPublishedTitle": "Document publié",
+        "publishedSuccess": "Document publié !",
+        "linkCopiedMessage": "Lien copié dans le presse-papiers !",
+        "documentEdited": "Le document a été modifié.",
+        "documentEditedTitle": "Document modifié",
+        "documentEditedMessage": "Document modifié !",
+        "fileUploaded": "Le fichier a été importé.",
+        "annotationsAdded": "{count} annotation(s) ajoutée(s).",
+        "issuesOccurred": "Des problèmes sont survenus",
+        "uploadedWithWarnings": "Importé avec des avertissements",
+        "uploadedFile": "Fichier importé",
+        "documentCreated": "Document créé."
+    },
+    "downloadPdf": {
+        "title": "Télécharger le PDF",
+        "includeAnnotations": "Inclure les annotations dans le PDF",
+        "toasts": {
+            "successTitle": "PDF téléchargé",
+            "successMessage": "Votre PDF a été téléchargé.",
+            "successMessageWithAnnotations": "Votre PDF avec annotations a été téléchargé.",
+            "failedTitle": "Échec du téléchargement du PDF",
+            "unknownError": "Erreur inconnue"
+        }
+    }
+}

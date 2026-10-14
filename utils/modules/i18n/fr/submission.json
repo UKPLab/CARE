@@ -1,0 +1,100 @@
+{
+    "dashboard": {
+        "buttons": {
+            "importMoodle": "Importer via Moodle"
+        },
+        "columns": {
+            "id": "ID",
+            "createdAt": "Créé le"
+        },
+        "actions": {
+            "download": "Télécharger les fichiers du travail"
+        },
+        "toasts": {
+            "noDocumentsTitle": "Aucun document trouvé",
+            "noDocumentsMessage": "Ce travail ne contient aucun document à télécharger",
+            "downloadErrorTitle": "Erreur de téléchargement",
+            "downloadErrorMessage": "Impossible de télécharger {name} : {error}",
+            "downloadCompleteTitle": "Téléchargement terminé",
+            "downloadCompleteMessage": "Travail {id} téléchargé avec {count} document(s)",
+            "downloadFailedTitle": "Échec du téléchargement",
+            "downloadFailedMessage": "Échec du téléchargement : {error}"
+        }
+    },
+    "publishAssessment": {
+        "title": "Publier l'évaluation",
+        "selectConfiguration": "Sélectionnez la configuration d'évaluation :",
+        "selectConfigurationDescription": "Choisissez la configuration d'évaluation dont vous voulez exporter les données.",
+        "selectWorkflows": "Sélectionnez les processus :",
+        "selectWorkflowsDescription": "Sélectionnez une ou plusieurs étapes de processus qui utilisent la configuration choisie. Le nombre de sessions (ouvertes/fermées) disponibles est indiqué pour chaque étape.",
+        "selectSessions": "Sélectionnez les sessions :",
+        "selectSessionsDescriptionPrefix": "Sélectionnez les sessions d'étude à inclure dans l'export de l'évaluation. Notez que seules les",
+        "closedStudySessions": "sessions d'étude fermées",
+        "selectSessionsDescriptionSuffix": "sont affichées ici.",
+        "noSessionsFound": "Aucune session ne correspond aux processus et à la configuration sélectionnés.",
+        "hashCollection": "Regrouper les sessions :",
+        "hashCollectionStudies": "par étude (sessions de chaque étude)",
+        "hashCollectionSessions": "par session (vos propres sessions)",
+        "hashes": "Sessions (identifiant unique) :",
+        "publishingMethod": "Méthode de publication :",
+        "includeReviewUrl": "Inclure l'URL de l'évaluation dans le feedback Moodle",
+        "includeReviewUrlDescription": "Si cette option est cochée, l'URL de l'évaluation est ajoutée comme texte de feedback dans Moodle pour chaque note publiée.",
+        "moodleGradePublishingOverview": "Aperçu de la publication des notes dans Moodle :",
+        "numberOfGradesToPublish": "Nombre de notes à publier :",
+        "assessmentScaleCurrentScores": "Barème d'évaluation (notes actuelles) :",
+        "pointsRange": "de {from} à {to} points",
+        "moodleGradeScaleTarget": "Barème Moodle (cible) :",
+        "selectAssignmentForInformation": "sélectionnez un devoir pour afficher ces informations",
+        "conversionFactor": "Facteur de conversion :",
+        "conversionFactorValue": "1 point d'évaluation = {factor} point(s) Moodle",
+        "conversionNote": "Remarque : toutes les notes d'évaluation sélectionnées seront converties de façon linéaire du barème d'évaluation vers le barème Moodle à l'aide du facteur ci-dessus.",
+        "workflowFallback": "Processus {id}",
+        "steps": {
+            "configuration": "Configuration",
+            "workflow": "Processus",
+            "session": "Session",
+            "confirmation": "Confirmation",
+            "publishing": "Publication"
+        },
+        "columns": {
+            "workflowId": "ID du processus",
+            "workflowName": "Nom du processus",
+            "step": "Étape",
+            "openSessions": "Sessions ouvertes",
+            "closedSessions": "Sessions fermées",
+            "totalSessions": "Total des sessions",
+            "created": "Créé",
+            "study": "Étude",
+            "reviewerFirstName": "Prénom de l'évaluateur",
+            "reviewerLastName": "Nom de l'évaluateur",
+            "ownerFirstName": "Prénom du propriétaire",
+            "ownerLastName": "Nom du propriétaire",
+            "submissionExtId": "ID externe du travail"
+        },
+        "publishMethods": {
+            "downloadCsv": "Télécharger en CSV",
+            "moodle": "Moodle",
+            "email": "E-mail"
+        },
+        "toasts": {
+            "configurationMissing": {
+                "title": "Configuration manquante",
+                "message": "Impossible de charger le contenu de la configuration sélectionnée."
+            },
+            "gradesPublished": {
+                "title": "Notes publiées",
+                "message": "Les notes des sessions sélectionnées ont été publiées dans le devoir"
+            },
+            "failedToPublishGrades": {
+                "title": "Échec de la publication des notes"
+            },
+            "csvExport": {
+                "title": "Export CSV",
+                "message": "Le fichier CSV des données d'évaluation a été généré et exporté"
+            }
+        }
+    },
+    "assign": {
+        "noAdditionalSettings": "Aucun paramètre supplémentaire"
+    }
+}

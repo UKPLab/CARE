@@ -39,8 +39,9 @@
         </div>
       </div>
       <div
-        v-if="itemsPerPageSelect !== 0"
-        class="col-md-auto">
+        v-if="showNavigation"
+        class="col-md-auto"
+      >
         <nav :aria-label="$t('common.pagination')">
           <ul class="pagination mb-0">
             <!-- First Page Link -->
@@ -192,6 +193,10 @@ export default {
         end: endItem,
         total: this.totalItems,
       });
+    },
+    /** No page buttons in "All" mode (rows stream on scroll) or when everything fits on one page. */
+    showNavigation() {
+      return this.itemsPerPageSelect !== 0 && this.pages > 1;
     },
   },
   watch: {
