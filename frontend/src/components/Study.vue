@@ -77,7 +77,7 @@
           ref="finishButton"
           class="btn btn-outline-secondary mx-3"
           :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
-          @click="finish()"
+          @click="finishClicked()"
       >
         {{ studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy') }}
       </TopBarButton>
@@ -648,12 +648,15 @@ export default {
         });
         return;
       }
-      if (this.warnIfAssessmentIncomplete("finish")) return;
       this.$refs.studyFinishModal.open();
+    },
+    finishClicked() {
+      if (this.warnIfAssessmentIncomplete("finish")) return;
+      this.finish();
     },
     handleModalClose(event) {
       if (event.endStudy) {
-        this.finish(); // End the study
+        this.finishClicked(); // End the study
       } else if (event.nextStep) {
         const nextStep = this.nextStudyStep;
         if (nextStep) {
