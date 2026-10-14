@@ -193,6 +193,7 @@ const SUBSECTION_ORDER = {
     "LDAP login",
     "SAML login",
     "Two-factor authentication",
+    "API tokens",
     "Auth redirects",
   ],
   mail: ["Mail service", "Sendmail", "SMTP", "Base URL and verification", "Email templates"],

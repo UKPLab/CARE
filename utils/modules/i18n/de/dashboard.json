@@ -557,6 +557,32 @@
       }
     }
   },
+  "apiTokens": {
+    "title": "API-Tokens",
+    "description": "Erstellen Sie ein Token fuer Skripte, die CARE per HTTP aufrufen. Das Geheimnis wird nur einmal angezeigt. Danach senden Skripte es als Authorization Bearer an /rest/v1, nicht auf dieser Seite.",
+    "disabledByAdmin": "API-Tokens sind in den Einstellungen ausgeschaltet. Eine Administratorin kann sie unter Allgemein, API-Tokens einschalten.",
+    "createTooltip": "API-Token erstellen",
+    "createTitle": "API-Token erstellen",
+    "nameLabel": "Name",
+    "secretLabel": "Geheimnis",
+    "secretOnceWarning": "Kopieren Sie dieses Geheimnis jetzt. CARE zeigt es nicht erneut an.",
+    "revoke": "Widerrufen",
+    "revokeConfirm": "Token \"{name}\" widerrufen? Skripte, die es nutzen, funktionieren dann nicht mehr.",
+    "columns": {
+      "name": "Name",
+      "prefix": "Praefix",
+      "createdAt": "Erstellt",
+      "lastUsedAt": "Zuletzt genutzt",
+      "userId": "Benutzer-ID"
+    },
+    "toasts": {
+      "loadFailed": "Tokens konnten nicht geladen werden",
+      "createFailed": "Token konnte nicht erstellt werden",
+      "revokeFailed": "Token konnte nicht widerrufen werden",
+      "copied": "Geheimnis kopiert",
+      "copyFailed": "Geheimnis konnte nicht kopiert werden"
+    }
+  },
   "sessionOverview": {
     "title": "Übersicht der Studiensitzungen",
     "showOnlyOpenStudies": "Nur offene Studien anzeigen",
