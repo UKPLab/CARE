@@ -78,7 +78,7 @@ import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 /**
  * Modal to show saved study templates
  * 
- * This modal allows users to view, use, and delete saved study templates.
+ * This modal allows users to view, use, edit, and delete saved study templates.
  * Users can browse through their saved templates, delete unwanted ones,
  * and use existing templates to create new studies with pre-configured settings.
  * 
@@ -136,6 +136,11 @@ export default {
     },
     tableButtons() {
       return [
+        dashboardRowAction("edit", {
+          title: this.$t('studies.modalTitle.editTemplate'),
+          filter: [{ key: "showEditTemplateButton", value: true }],
+          action: "editTemplate",
+        }),
         dashboardRowAction("delete", {
           title: this.$t('common.delete'),
           filter: [
@@ -163,12 +168,19 @@ export default {
           collab: s.collab,
           multipleSubmit: s.multipleSubmit,
           showDeleteTemplateButton: this.showDeleteTemplateButton,
+          showEditTemplateButton: this.showEditTemplateButton || s.userId === this.userId,
         };
       });
     },
     showDeleteTemplateButton() {
       return this.$store.getters["auth/checkRight"]("study.template.delete");
-    }
+    },
+    showEditTemplateButton() {
+      return this.$store.getters["auth/checkRight"]("study.template.edit");
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
   },
   methods: {
     open() {
@@ -178,7 +190,9 @@ export default {
       this.$refs.savedTemplatesModal.close();
     },
     handleAction({ action, params }) {
-      if (action === "deleteTemplate") {
+      if (action === "editTemplate") {
+        this.editTemplate(params);
+      } else if (action === "deleteTemplate") {
         this.deleteTemplate(params);
       } else if (action === "useTemplate") {
         this.useTemplate(params);
@@ -226,6 +240,10 @@ export default {
     useTemplate(template) {
       this.close();
       this.$refs.studyCoordinator.open(template.id, null, false, false, true);
+    },
+    editTemplate(template) {
+      this.close();
+      this.$refs.studyCoordinator.open(template.id, null, false, true, false);
     },
     openImport() {
       this.$refs.importFormatModal.open("study", "study_step", {
