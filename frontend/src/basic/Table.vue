@@ -296,6 +296,7 @@
     :current-page="currentPage"
     :items-per-page="limit"
     :items-per-page-list="itemsPerPageList"
+    :allow-all="true"
     :pages="pages"
     :total-items="total"
     @update-items-per-page="paginationItemsPerPageChange"

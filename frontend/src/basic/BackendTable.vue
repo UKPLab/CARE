@@ -340,6 +340,7 @@
     :items-per-page="isInfiniteMode ? 0 : limit"
     :items-per-page-list="itemsPerPageList"
     :allow-all="queryMode"
+    :show-page-numbers="false"
     :window-first="windowFirstVisible"
     :window-last="windowLastVisible"
     :pages="pages"
@@ -1362,10 +1363,9 @@ export default {
         this.currentPage = target;
         this.fetchQueryPage({nav: {before: this.queryMeta.startCursor}, pageOnFailure: from});
       } else {
-        // Reserve, not a path the pager uses. Pagination.vue only has First,
-        // Previous, Next and Last, and changePage clamps to 1..pages, so those
-        // four branches cover every click. Kept in case numbered pages return:
-        // keyset has no "page N" address, so a jump has to walk cursors.
+        // Reserve, not a path this pager uses. Page numbers are hidden here, so
+        // only First, Previous, Next and Last are clickable. Kept in case they
+        // return: keyset has no "page N" address, so a jump has to walk cursors.
         this.hopToPage(target);
       }
     },

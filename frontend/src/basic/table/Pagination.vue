@@ -28,7 +28,6 @@
             >
               {{ item }}
             </option>
-            <!-- "All" only where the parent can stream it (query-mode infinite scroll). -->
             <option
               v-if="allowAll"
               :value="0"
@@ -70,6 +69,35 @@
                 {{ $t('common.paginationPrevious') }}
               </button>
             </li>
+            <!-- Page numbers -->
+            <template v-if="showPageNumbers">
+              <li
+                v-for="p in pages"
+                :key="p"
+                :class="{'active': p === currentPage, 'disabled': (p === currentPage - showPages || p === currentPage + showPages)}"
+                class="page-item"
+              >
+                <button
+                  v-if="p === currentPage - showPages"
+                  class="page-link"
+                >
+                  ...
+                </button>
+                <button
+                  v-if="p < currentPage + showPages && p > currentPage - showPages"
+                  class="page-link"
+                  @click="changePage(p)"
+                >
+                  {{ p }}
+                </button>
+                <button
+                  v-if="p === currentPage + showPages"
+                  class="page-link"
+                >
+                  ...
+                </button>
+              </li>
+            </template>
             <!-- Next Page Link -->
             <li
               :class="{ disabled: currentPage === pages }"
@@ -121,6 +149,18 @@ export default {
       type: Number,
       required: true
     },
+    /** How many page numbers to show on each side of the current page. */
+    showPages: {
+      type: Number,
+      required: false,
+      default: 3
+    },
+    /** Numbered page buttons between Previous and Next */
+    showPageNumbers: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
     currentPage: {
       type: Number,
       required: true
@@ -140,7 +180,7 @@ export default {
       required: false,
       default: 0,
     },
-    /** Offer the "All" page size. Only tables that stream rows (infinite scroll) may enable it. */
+    /** Offer the "All" page size. Off unless the parent opts in. */
     allowAll: {
       type: Boolean,
       required: false,
@@ -173,16 +213,13 @@ export default {
         return "";
       }
 
-      // "All" scrolls a window over the result set, so report what is on screen.
       if (this.itemsPerPageSelect === 0) {
-        if (this.windowFirst > 0 && this.windowLast >= this.windowFirst) {
-          return this.$t('common.paginationRange', {
-            start: this.windowFirst,
-            end: Math.min(this.windowLast, this.totalItems),
-            total: this.totalItems,
-          });
-        }
-        return this.$t('common.paginationEntries', {total: this.totalItems});
+        const hasWindow = this.windowFirst > 0 && this.windowLast >= this.windowFirst;
+        return this.$t('common.paginationRange', {
+          start: hasWindow ? this.windowFirst : 1,
+          end: hasWindow ? Math.min(this.windowLast, this.totalItems) : this.totalItems,
+          total: this.totalItems,
+        });
       }
 
       const startItem = (this.currentPage - 1) * this.itemsPerPageSelect + 1;
