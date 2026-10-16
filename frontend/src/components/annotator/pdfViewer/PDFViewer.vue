@@ -234,8 +234,19 @@ export default {
       // One watch for the column. Pages read the width instead of searching for this div's id.
       this.resizeDebounced = debounce(() => {
         const node = this.$refs.pdfContainerEl;
-        if (node) {
-          this.containerWidth = node.clientWidth;
+        if (!node) {
+          return;
+        }
+        const next = node.clientWidth;
+        if (next <= 0 || Math.abs(next - this.containerWidth) < 2) {
+          return;
+        }
+        this.containerWidth = next;
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "pdfPageResizeChange",
+            data: {documentId: this.documentId, width: next}
+          });
         }
       }, 200);
       this.observer = new ResizeObserver(this.resizeDebounced);

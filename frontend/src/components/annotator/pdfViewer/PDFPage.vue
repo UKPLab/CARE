@@ -103,9 +103,6 @@ export default {
       type: Object,
       required: true,
     },
-    acceptStats: {
-      default: () => false
-    },
   },
   props: {
     pageNumber: {
@@ -243,6 +240,9 @@ export default {
         this.pdf.getPage(this.pageNumber).then((page) => {
           const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber + '-' + this.documentId);
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber + '-' + this.documentId);
+          if (!wrapper || !canvas) {
+            return;
+          }
 
           // Calculate scale based on wrapper width
           this.scale = wrapper.getBoundingClientRect().width / page.getViewport({scale: 1.0}).width;
@@ -278,15 +278,8 @@ export default {
         return;
       }
 
-      const resized = this.originalWidth > 0;
       this.setA4();
       this.refit();
-      if (resized && this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfPageResizeChange",
-          data: {documentId: this.documentId, pageNumber: this.pageNumber, width: available}
-        });
-      }
     },
     renderPage(page) {
       if (this.renderTask) return;
