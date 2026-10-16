@@ -5,6 +5,7 @@
   <div
     v-if="pdf"
     :id="'pdfContainer-' + documentId"
+    ref="pdfContainerEl"
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
@@ -28,6 +29,7 @@
       :page-number="page"
       :render="renderCheck[page - 1]"
       :class="['scrolling-page', { 'pdf-dark': pdfDarkMode }]"
+      :container-width="containerWidth"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
@@ -48,6 +50,7 @@ import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import { resolveApiMessage } from "@/assets/utils";
+import debounce from "lodash.debounce";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -104,6 +107,8 @@ export default {
       pdf: null,
       observer: undefined,
       pdfContainer: null,
+      containerWidth: 0,
+      resizeDebounced: undefined,
       visiblePages: [1],
       scale: 1.0,
       originalScale: null,
@@ -167,6 +172,17 @@ export default {
         this.zoomFormData.zoom = newScale;
       }
     },
+    pdf: {
+      handler(value) {
+        if (!value) {
+          this.disconnectContainerObserver();
+          this.containerWidth = 0;
+          return;
+        }
+        this.watchContainer();
+      },
+      flush: "post",
+    },
   },
   mounted() {
     this.originalScale = this.scale;
@@ -204,9 +220,48 @@ export default {
     );
   },
   unmounted() {
+    this.disconnectContainerObserver();
     this.pdf = null;
   },
   methods: {
+    watchContainer() {
+      const el = this.$refs.pdfContainerEl;
+      if (!el) {
+        return;
+      }
+      this.disconnectContainerObserver();
+      this.containerWidth = el.clientWidth;
+      // One watch for the column. Pages read the width instead of searching for this div's id.
+      this.resizeDebounced = debounce(() => {
+        const node = this.$refs.pdfContainerEl;
+        if (!node) {
+          return;
+        }
+        const next = node.clientWidth;
+        if (next <= 0 || Math.abs(next - this.containerWidth) < 2) {
+          return;
+        }
+        this.containerWidth = next;
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "pdfPageResizeChange",
+            data: {documentId: this.documentId, width: next}
+          });
+        }
+      }, 200);
+      this.observer = new ResizeObserver(this.resizeDebounced);
+      this.observer.observe(el);
+    },
+    disconnectContainerObserver() {
+      if (this.observer) {
+        this.observer.disconnect();
+        this.observer = undefined;
+      }
+      if (this.resizeDebounced) {
+        this.resizeDebounced.cancel();
+        this.resizeDebounced = undefined;
+      }
+    },
     togglePdfTheme() {
       this.pdfDarkMode = !this.pdfDarkMode;
       localStorage.setItem("care.pdfDark", this.pdfDarkMode);
@@ -218,7 +273,7 @@ export default {
       this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
       setTimeout(() => {
         this.isZooming = false;
-      }, 1000); // Match the debounce timeout
+      }, 1000); // hold zoom clicks until the page repaints
     },
     zoomOut() {
       if (this.isZooming) return;
@@ -227,7 +282,7 @@ export default {
       this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
       setTimeout(() => {
         this.isZooming = false;
-      }, 1000); // Match the debounce timeout
+      }, 1000); // hold zoom clicks until the page repaints
     },
     resetZoom() {
       if (this.isZooming) return;
