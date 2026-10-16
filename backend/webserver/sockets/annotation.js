@@ -16,6 +16,117 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
 class AnnotationSocket extends Socket {
 
     /**
+     * Get the annotations that the current user may include in a downloaded PDF.
+     *
+     * Users with full study access keep the researcher export behavior and receive every
+     * annotation for the document. Participants receive their own annotations plus annotations
+     * from studies they joined when the study is closed or collaborative. A study owner receives
+     * all annotations from their study after it is closed.
+     *
+     * @param {number} documentId The document whose annotations should be exported.
+     * @returns {Promise<Array<Object>>} The annotations visible to the current user.
+     */
+    async getDownloadableAnnotations(documentId) {
+        const annotations = await this.models['annotation'].getAllByKey("documentId", documentId);
+
+        if (await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
+            return annotations;
+        }
+
+        const isCurrentUser = (userId) => Number(userId) === Number(this.userId);
+        const ownAnnotations = annotations.filter(annotation => isCurrentUser(annotation.userId));
+        const studySteps = await this.models['study_step'].getAllByKey('documentId', documentId);
+        const studyIds = [...new Set(studySteps.map(step => step.studyId).filter(id => id != null))];
+
+        if (studyIds.length === 0) {
+            return ownAnnotations;
+        }
+
+        const [studies, studySessions] = await Promise.all([
+            this.models['study'].getAllByKeyValues('id', studyIds),
+            this.models['study_session'].getAllByKeyValues('studyId', studyIds),
+        ]);
+        const participantStudyIds = new Set(
+            studySessions
+                .filter(session => isCurrentUser(session.userId))
+                .map(session => Number(session.studyId))
+        );
+        const visibleStudyIds = new Set(
+            studies
+                .filter(study => {
+                    const isParticipant = participantStudyIds.has(Number(study.id));
+                    const isOwner = isCurrentUser(study.userId);
+
+                    return (study.collab && isParticipant) || (study.closed != null && (isParticipant || isOwner));
+                })
+                .map(study => Number(study.id))
+        );
+        const visibleStudySessionIds = new Set(
+            studySessions
+                .filter(session => visibleStudyIds.has(Number(session.studyId)))
+                .map(session => Number(session.id))
+        );
+
+        return annotations.filter(annotation =>
+            isCurrentUser(annotation.userId) ||
+            (annotation.studySessionId != null && visibleStudySessionIds.has(Number(annotation.studySessionId)))
+        );
+    }
+
+    /**
+     * Select root comments attached to downloadable annotations and all replies in their threads.
+     * Document-level comment threads are intentionally excluded because they have no PDF position.
+     *
+     * @param {Array<Object>} comments All comments for the document.
+     * @param {Array<Object>} annotations The annotations permitted in the downloaded PDF.
+     * @returns {Map<number, Array<Object>>} Comments grouped by annotation ID.
+     */
+    getDownloadableCommentsByAnnotation(comments, annotations) {
+        const childrenByParentId = new Map();
+
+        for (const comment of comments) {
+            if (comment.parentCommentId == null) {
+                continue;
+            }
+
+            const parentId = Number(comment.parentCommentId);
+            const children = childrenByParentId.get(parentId) || [];
+            children.push(comment);
+            childrenByParentId.set(parentId, children);
+        }
+
+        const collectThread = (rootComment) => {
+            const thread = [];
+            const visitedCommentIds = new Set();
+
+            const visit = (comment) => {
+                const commentId = Number(comment.id);
+                if (visitedCommentIds.has(commentId)) {
+                    return;
+                }
+
+                visitedCommentIds.add(commentId);
+                thread.push(comment);
+                for (const child of childrenByParentId.get(commentId) || []) {
+                    visit(child);
+                }
+            };
+
+            visit(rootComment);
+            return thread;
+        };
+
+        return new Map(annotations.map(annotation => {
+            const annotationId = Number(annotation.id);
+            const rootComments = comments.filter(comment =>
+                comment.annotationId != null && Number(comment.annotationId) === annotationId
+            );
+
+            return [annotationId, rootComments.flatMap(collectThread)];
+        }));
+    }
+
+    /**
      * Send an annotation to the client by id.
      * A permission check is performed to ensure the user has access to the document containing the annotation.
      *
@@ -134,9 +245,14 @@ class AnnotationSocket extends Socket {
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
     async embedAnnotationsForDocument(data, options) {
-        const annotations = await this.models['annotation'].getAllByKey("documentId", data.documentId);
-        // Get all comments for the document
+        if (!data.documentId) {
+            throw new TranslatableError("errors.documents.idRequired");
+        }
+
+        const document = await this.getSocket("DocumentSocket").validateDocument(data.documentId, 'id', true);
+        const annotations = await this.getDownloadableAnnotations(data.documentId);
         const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
+        const commentsByAnnotation = this.getDownloadableCommentsByAnnotation(comments, annotations);
 
         // For each annotation, get the corresponding tag and comments
         const annotationsWithTagsAndComments = await Promise.all(
@@ -151,17 +267,14 @@ class AnnotationSocket extends Socket {
                     console.warn(`User with ID ${annotation.userId} not found for annotation ${annotation.id}`);
                 }
 
-                // Find all comments for this annotation
-                const annotationComments = comments.filter(c => c.annotationId === annotation.id);
                 return {
                     ...annotation,
                     tag: tag ? tag.name : null,
                     username: annotation.anonymous ? "Anonymous" : user.userName,
-                    comments: annotationComments
+                    comments: commentsByAnnotation.get(Number(annotation.id)) || []
                 };
             })
         );
-        const document = await this.models['document'].getById(data.documentId);
         const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
         if (!fs.existsSync(filePath)) {
