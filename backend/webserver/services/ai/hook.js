@@ -148,6 +148,10 @@ async function resolveSubmissionId(service, input) {
 /**
  * Fills an enabled hook's prompt and redacts student fields in it.
  *
+ * `redactPersonalData` runs on the finished prompt here, after every placeholder is filled.
+ * Chat, dialogue, study-step hooks, and triggers all send that string to the model.
+ * This is the place those strings are cleaned.
+ *
  * @param {Object} service - AIService runtime with DB access.
  * @param {number} hookId - Target `ai_hook` primary key.
  * @param {Object} [rawValues={}] - Placeholder values from the caller.
