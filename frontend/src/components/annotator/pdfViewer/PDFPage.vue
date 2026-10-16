@@ -57,7 +57,6 @@
 
 import * as pdfjsLib from 'pdfjs-dist'
 import {ObserveVisibility} from 'vue3-observe-visibility'
-import debounce from 'lodash.debounce';
 import Highlights from "./Highlights.vue";
 import "pdfjs-dist/web/pdf_viewer.css";
 // import { PDFFindController, EventBus } from "pdfjs-dist/web/pdf_viewer.mjs";
@@ -117,6 +116,10 @@ export default {
       type: Number,
       default: 1.0,
     },
+    containerWidth: {
+      type: Number,
+      required: true,
+    },
     render: {
       type: Boolean,
       required: true
@@ -126,14 +129,12 @@ export default {
   data() {
     return {
       renderTask: undefined,
-      resizeOb: undefined,
       isRendered: false,
       scale: null,
       currentWidth: 0,
       originalWidth: 0,
       anchor: null,
       devicePixelRatio: window.devicePixelRatio || 1,
-      resizeHandlerDebounced: undefined,
     };
   },
   computed: {
@@ -171,13 +172,10 @@ export default {
   },
   watch: {
     zoomValue() {
-      this.applyZoomToWrapper();
-      if (this.renderTask || this.isRendered) {
-        this.destroyPage();
-      }
-      if (this.render) {
-        this.init();
-      }
+      this.refit();
+    },
+    containerWidth() {
+      this.resizeHandler();
     },
     render() {
       this.init();
@@ -190,27 +188,11 @@ export default {
   },
   mounted() {
     this.$nextTick(() => {
-      this.setA4();
       this.anchor = new Anchoring(this.pdf, this.pageNumber, this.documentId);
-      // Watch the container. The wrapper width is a pixel value and stays put when the sidebar moves.
-      this.resizeHandlerDebounced = debounce(() => {
-        this.resizeHandler();
-      }, 200);
-      this.resizeOb = new ResizeObserver(this.resizeHandlerDebounced);
-      const container = this.pdfContainerElement();
-      if (container) {
-        this.resizeOb.observe(container);
-      }
-      this.init();
+      this.resizeHandler();
     });
   },
   beforeUnmount() {
-    if (this.resizeOb) {
-      this.resizeOb.disconnect();
-    }
-    if (this.resizeHandlerDebounced) {
-      this.resizeHandlerDebounced.cancel();
-    }
     this.destroyPage();
   },
   unmounted() {
@@ -224,21 +206,8 @@ export default {
         offset: document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId).offsetTop - 52.5
       });
     },
-    pdfContainerElement() {
-      if (!this.$el || typeof this.$el.closest !== 'function') {
-        return null;
-      }
-      return this.$el.closest('[id^="pdfContainer-"]');
-    },
-    availableWidth() {
-      const container = this.pdfContainerElement();
-      if (!container) {
-        return 0;
-      }
-      return container.clientWidth;
-    },
     setA4() {
-      const width = this.availableWidth();
+      const width = this.containerWidth;
       if (width <= 0) {
         return;
       }
@@ -289,22 +258,30 @@ export default {
         });
       }
     },
+    /**
+     * Size the page box for the current zoom, drop the current paint, and start another when this page should render.
+     *
+     * @returns {void}
+     */
+    refit() {
+      this.applyZoomToWrapper();
+      if (this.renderTask || this.isRendered) {
+        this.destroyPage();
+      }
+      if (this.render) {
+        this.init();
+      }
+    },
     resizeHandler() {
-      const available = this.availableWidth();
+      const available = this.containerWidth;
       if (available <= 0 || Math.abs(available - this.originalWidth) < 2) {
         return;
       }
 
+      const resized = this.originalWidth > 0;
       this.setA4();
-      this.applyZoomToWrapper();
-      if (this.isRendered) {
-        this.destroyPage();
-      }
-      if (!this.render) {
-        return;
-      }
-      this.init();
-      if (this.acceptStats) {
+      this.refit();
+      if (resized && this.acceptStats) {
         this.$socket.emit("stats", {
           action: "pdfPageResizeChange",
           data: {documentId: this.documentId, pageNumber: this.pageNumber, width: available}
@@ -365,7 +342,10 @@ export default {
           this.isRendered = true;
           this.add_anchors();
       }).catch(response => {
-        // A replaced paint rejects with this. Leave the task that replaced it.
+        // A replaced paint must not clear the task that replaced it.
+        if (!stillCurrent()) {
+          return;
+        }
         if (response instanceof pdfjsLib.RenderingCancelledException) {
           return;
         }
