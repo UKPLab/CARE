@@ -1201,7 +1201,7 @@ export default {
 
 .table-wrapper thead th .dropdown-menu {
   z-index: 9999 !important;
-  max-height: 16rem;
+  max-height: 10rem;
   overflow-y: auto;
 }
 
