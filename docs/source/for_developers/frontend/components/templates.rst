@@ -198,6 +198,9 @@ At edit time, TemplateEditor preview (types 1, 2, 3, 6, 7, and 8) substitutes ``
 ``placeholder`` row when set (sample text only; rows may be empty until examples are added).
 ``templateResolve`` uses ``buildPromptPlaceholderValues`` in ``backend/utils/helper/templatePromptValues.js`` for real values from
 ``context`` and the database. AI hooks instead pass a value map from the frontend input mapping.
+``resolveHookPrompt`` then runs ``redactPersonalData`` (``backend/utils/helper/personalData.js``)
+on that finished prompt. Chat, dialogue, study-step hooks, and triggers all send this string
+to the model. The call is the one place those strings are cleaned.
 Many placeholders need ``documentId``, ``studySessionId``, and ``studyStepId``;
 if they are missing, those tokens resolve to an empty string.
 

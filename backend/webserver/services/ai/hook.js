@@ -11,6 +11,7 @@ const chat = require("./chat");
 const TranslatableError = require("../../../utils/TranslatableError");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const { resolveTemplateWithValues } = require("../../../utils/helper/templateResolver");
+const { redactPersonalData } = require("../../../utils/helper/personalData");
 const { anonymizeTexSource } = require("../../../utils/helper/text.js");
 
 /**
@@ -109,12 +110,52 @@ async function resolveSelectedHookModel(service, hookId, aiModelId = null) {
 }
 
 /**
- * Resolves an enabled hook's prompt template from caller-supplied values.
+ * Picks which id on a hook submission input identifies the submission.
+ *
+ * @param {Object} input - Submission input. `submissionId` wins, otherwise `pdfDocumentId`, then `documentId`.
+ * @returns {Object} `{submissionId}` or `{documentId}` when one is a positive integer, otherwise `{}`.
+ */
+function submissionReference(input) {
+    const submissionId = Number(input?.submissionId);
+    if (Number.isInteger(submissionId) && submissionId > 0) {
+        return {submissionId};
+    }
+    const documentId = Number(input?.pdfDocumentId || input?.documentId);
+    if (Number.isInteger(documentId) && documentId > 0) {
+        return {documentId};
+    }
+    return {};
+}
+
+/**
+ * Resolves the submission id for a hook submission input.
+ *
+ * Uses `submissionId` when it is set. Otherwise loads `pdfDocumentId` or `documentId` and reads that document's submission.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} input - Submission input.
+ * @returns {Promise<number|null>} Submission id, or null when none is stored.
+ */
+async function resolveSubmissionId(service, input) {
+    const reference = submissionReference(input);
+    if (reference.submissionId) return reference.submissionId;
+    if (!reference.documentId) return null;
+    const document = await service.server.db.models["document"].getById(reference.documentId);
+    const submissionId = Number(document?.submissionId);
+    return Number.isInteger(submissionId) && submissionId > 0 ? submissionId : null;
+}
+
+/**
+ * Fills an enabled hook's prompt and redacts student fields in it.
+ *
+ * `redactPersonalData` runs on the finished prompt here, after every placeholder is filled.
+ * Chat, dialogue, study-step hooks, and triggers all send that string to the model.
+ * This is the place those strings are cleaned.
  *
  * @param {Object} service - AIService runtime with DB access.
  * @param {number} hookId - Target `ai_hook` primary key.
- * @param {Object} rawValues - Placeholder values supplied by the caller.
- * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Prompt and resolved inputs.
+ * @param {Object} [rawValues={}] - Placeholder values from the caller.
+ * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Filled prompt. `promptText` is redacted. `resolvedValues` is not.
  */
 async function resolveHookPrompt(service, hookId, rawValues = {}) {
     const hook = await loadEnabledHook(service, hookId);
@@ -124,7 +165,11 @@ async function resolveHookPrompt(service, hookId, rawValues = {}) {
         values,
         service.server.db.models,
     );
-    return {hook, promptText, resolvedValues: values};
+    return {
+        hook,
+        promptText: redactPersonalData(promptText),
+        resolvedValues: values,
+    };
 }
 
 /**
@@ -153,11 +198,7 @@ async function resolveServiceInput(service, input) {
         }
         case "submission": {
             const { selectedFiles = [], pdfText, filePatterns = {} } = input;
-            let {submissionId} = input;
-            if (!submissionId && input.pdfDocumentId) {
-                const document = await service.server.db.models["document"].getById(input.pdfDocumentId);
-                submissionId = document?.submissionId;
-            }
+            const submissionId = await resolveSubmissionId(service, input);
             if (!submissionId || !selectedFiles.length) return "";
 
             // `{ pages, pageCount }` must stay intact so applyTextRangeLimit can slice pages.
@@ -263,11 +304,12 @@ async function runHook(service, client, data) {
     }
 
     try {
-        const hook = await loadEnabledHook(service, hookId);
-        const hookModels = await loadHookModels(service, hookId);
         const rawValues = (data?.values && typeof data.values === "object") ? data.values : {};
-        const values = await resolveHookReferences(service, rawValues);
-        const promptText = await resolveTemplateWithValues(hook.templateId, values, service.server.db.models);
+        // Check the hook before its models. A missing or disabled hook should say so,
+        // not that it has no model. resolveHookPrompt loads this hook again when it builds the prompt.
+        await loadEnabledHook(service, hookId);
+        const hookModels = await loadHookModels(service, hookId);
+        const {hook, promptText} = await resolveHookPrompt(service, hookId, rawValues);
 
         let lastError;
         for (const [index, hookModel] of hookModels.entries()) {
