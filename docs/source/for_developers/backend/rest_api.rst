@@ -24,6 +24,12 @@ Two doors
 Secrets start with ``care_``. CARE stores only a SHA-256 hash. The full secret
 is returned once on create.
 
+Each token has an hourly request budget (currently 100; the final number is not
+chosen yet). Once a token uses it up, further requests in that hour return
+``429`` with ``errors.rest.rateLimitExceeded``. Every response carries
+``RateLimit`` and ``RateLimit-Policy`` headers with the remaining count. Tokens
+are counted separately, even for the same user.
+
 Cookie paths
 ------------
 
@@ -39,9 +45,9 @@ REST documents
 
 Needs token right ``frontend.dashboard.documents.view``. The ``:idOrHash``
 parameter accepts the numeric id or the document hash. List JSON includes both
-fields. Create and upload call the same application functions as the document
-sockets (``createDocument``, ``addDocument``). Socket ``emit`` is not used on
-REST.
+fields. The routes call REST-only functions exported from
+``sockets/document.js`` (``createDocument``, ``addDocument``, ...). The socket
+methods are separate and unchanged. Socket ``emit`` is not used on REST.
 
 * ``GET /rest/v1/documents`` — list. Same visibility as the UI: an admin token
   sees all documents; other tokens see the owner's documents.
@@ -62,6 +68,53 @@ REST.
 
 Missing document: ``404`` ``errors.rest.documentNotFound``. Document exists but
 the token must not see or change it: ``403`` ``errors.rest.documentNoAccess``.
+
+REST studies
+------------
+
+List and get need token right ``frontend.dashboard.studies.view``. Create,
+patch, open, close, delete, template, import, and export need
+``frontend.dashboard.studies.canManageStudies``. The ``:idOrHash`` parameter
+accepts the numeric id or the study hash. List JSON includes both fields.
+The routes call REST-only functions exported from ``sockets/study.js``. The
+socket methods are separate and unchanged. Socket ``emit`` is not used on REST.
+Live bulk progress stays on the socket.
+
+* ``GET /rest/v1/studies`` — list. Same visibility as the studies table: not
+  templates, limited to the caller's default project when that setting is set.
+  An admin token sees those studies. Other tokens see studies they created.
+* ``GET /rest/v1/studies/:idOrHash`` — one study as JSON. A template is not
+  part of this list, so it is ``403``.
+* ``POST /rest/v1/studies`` — create from a study template via ``study.add``.
+  Body ``{ "templateId": 1 }`` plus any fields the create form sends (``name``,
+  ``description``, ``workflowId``, ``tagSetId``, limits, dates, switches,
+  ``stepDocuments``). ``userId`` in the body is ignored.
+* ``PATCH /rest/v1/studies/:idOrHash`` — those same fields. A closed study or a
+  template is rejected.
+* ``POST /rest/v1/studies/:idOrHash/close`` — close one study. Optional
+  ``{ "notifySessions": true }`` sends the existing close emails.
+* ``POST /rest/v1/studies/:idOrHash/open`` — reopen one study (``closed``
+  cleared, same as Restart).
+* ``DELETE /rest/v1/studies/:idOrHash`` — soft-delete via ``deleteById``.
+* ``POST /rest/v1/studies/close`` — body ``{ "ids": [1, 2], "notifySessions": false }``.
+* ``POST /rest/v1/studies/open`` — body ``{ "ids": [1, 2] }``.
+* ``POST /rest/v1/studies/delete`` — body ``{ "ids": [1, 2] }``.
+  Open, close, and delete each call one function. The item route passes a
+  single id. The bulk route passes the array.
+* ``POST /rest/v1/studies/:idOrHash/template`` — save that study as a template
+  (``studySaveAsTemplate``).
+* ``GET /rest/v1/studies/:idOrHash/export?format=json`` — the study plus
+  ``study_step`` rows, JSON or ``format=yaml``. Same shape as the dashboard
+  export modal.
+* ``POST /rest/v1/studies/import`` — that same JSON array, or
+  ``{ "format": "yaml", "content": "..." }``. Creates templates the way the
+  dashboard import does (``studySaveAsTemplate`` with ``onlyTemplate``).
+
+Missing study: ``404`` ``errors.rest.studyNotFound``. Study exists but the
+token must not see or change it: ``403`` ``errors.rest.studyNoAccess``.
+
+Sessions, assignments, subscribe, and the live bulk progress channel are not
+in this slice.
 
 The token is rejected if the owner is guest-only, even if the key still exists.
 

@@ -3,10 +3,10 @@
 const {rateLimit, ipKeyGenerator} = require('express-rate-limit');
 
 const WINDOW_MS = 60 * 60 * 1000;
-const LIMIT = 5000;
+const LIMIT = 100;
 
 /**
- * Per-token budget after Bearer lookup. 5000 / hour (GitHub authenticated REST analogue).
+ * Per-token budget after Bearer lookup, per hour. 100 is a placeholder until the real budget is chosen.
  */
 function createRestTokenRateLimit() {
     return rateLimit({
