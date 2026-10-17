@@ -56,6 +56,10 @@ export default {
   padding-left: 2.0rem !important;
 }
 
+.list-group-item:hover {
+  background-color: var(--bs-body-bg, #fff) !important;
+}
+
 .default-subitem.router-link-active,
 .default-subitem.router-link-exact-active {
   background-color: var(--bs-secondary-bg, #e0e0e0) !important;
