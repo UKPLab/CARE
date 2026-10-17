@@ -10,6 +10,7 @@ const {io: Client} = require("socket.io-client");
  * @return {Promise<Socket>}
  */
 exports.getSocketClient = async function (server, port, username, password) {
+    await server.devAdminReady;
     const res = await request(server.http)
         .post('/auth/login')
         .send({

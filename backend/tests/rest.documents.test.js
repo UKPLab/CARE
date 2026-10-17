@@ -20,6 +20,7 @@ describe('REST documents', () => {
     beforeAll(async () => {
         server = new Server();
         server.start(PORT);
+        await server.devAdminReady;
         await server.db.models['setting'].set(SETTING, 'true');
 
         const login = await request(server.http)
@@ -124,6 +125,12 @@ describe('REST documents', () => {
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toBe('errors.rest.invalidProjectId');
         });
+
+        test('POST rejects a non-integer templateId', async () => {
+            const res = await bearerPost({name: 'bad template', templateId: 'nope'});
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.rest.invalidTemplateId');
+        });
     });
 
     describe('get one', () => {
@@ -141,10 +148,20 @@ describe('REST documents', () => {
             await server.db.models['document'].deleteById(id);
         });
 
-        test('GET missing id is 404', async () => {
-            const res = await bearerGet('/rest/v1/documents/99999999');
-            expect(res.statusCode).toBe(404);
-            expect(res.body.message).toBe('errors.rest.documentNotFound');
+        test('item routes on a missing id are 404', async () => {
+            const missing = '/rest/v1/documents/99999999';
+            const calls = [
+                bearerGet(missing),
+                bearerGet(missing + '/upload'),
+                request(server.http).patch(missing).set(auth()).send({name: 'x'}),
+                request(server.http).delete(missing).set(auth()),
+                request(server.http).put(missing + '/upload').set(auth())
+                    .attach('file', writeTempZip('care-rest-missing-put.zip'), 'missing.zip'),
+            ];
+            for (const res of await Promise.all(calls)) {
+                expect(res.statusCode).toBe(404);
+                expect(res.body.message).toBe('errors.rest.documentNotFound');
+            }
         });
     });
 
@@ -186,6 +203,18 @@ describe('REST documents', () => {
             expect(res.body.message).toBe('errors.rest.invalidPublicFlag');
             await server.db.models['document'].deleteById(created.body.document.id);
         });
+
+        test('PATCH rejects an empty name', async () => {
+            const created = await bearerPost({name: 'REST empty name'});
+            expect(created.statusCode).toBe(201);
+            const res = await request(server.http)
+                .patch('/rest/v1/documents/' + created.body.document.id)
+                .set(auth())
+                .send({name: '  '});
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.rest.documentNameRequired');
+            await server.db.models['document'].deleteById(created.body.document.id);
+        });
     });
 
     describe('upload and files', () => {
@@ -210,6 +239,43 @@ describe('REST documents', () => {
                 .set(auth());
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toBe('errors.rest.fileRequired');
+        });
+
+        test('POST upload rejects an unsupported file type', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', writeTempZip('care-rest-notes.zip'), 'notes.txt');
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.file.invalidFileType');
+        });
+
+        test('PUT upload rejects HTML documents and a different file type', async () => {
+            const html = await bearerPost({name: 'REST put html'});
+            expect(html.statusCode).toBe(201);
+            const zipPath = writeTempZip('care-rest-put-types.zip');
+            const uploaded = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', zipPath, 'typed.zip');
+            expect(uploaded.statusCode).toBe(201);
+            try {
+                const onHtml = await request(server.http)
+                    .put('/rest/v1/documents/' + html.body.document.id + '/upload')
+                    .set(auth())
+                    .attach('file', zipPath, 'typed.zip');
+                expect(onHtml.statusCode).toBe(400);
+                expect(onHtml.body.message).toBe('errors.documents.replaceOnlyPdfZip');
+                const mismatch = await request(server.http)
+                    .put('/rest/v1/documents/' + uploaded.body.document.id + '/upload')
+                    .set(auth())
+                    .attach('file', zipPath, 'typed.pdf');
+                expect(mismatch.statusCode).toBe(400);
+                expect(mismatch.body.message).toBe('errors.documents.replaceTypeMismatch');
+            } finally {
+                await server.db.models['document'].deleteById(html.body.document.id);
+                await server.db.models['document'].deleteById(uploaded.body.document.id);
+            }
         });
 
         test('GET file for HTML is 400', async () => {
@@ -405,6 +471,36 @@ describe('REST documents', () => {
                     .set(researcherAuth());
                 expect(res.statusCode).toBe(403);
                 expect(res.body.message).toBe('errors.rest.documentNoAccess');
+            } finally {
+                await server.db.models['document'].deleteById(id);
+            }
+        });
+
+        test('public document: another user can read but not edit or delete it', async () => {
+            const created = await bearerPost({name: 'admin public'});
+            expect(created.statusCode).toBe(201);
+            const id = created.body.document.id;
+            try {
+                const published = await request(server.http)
+                    .patch('/rest/v1/documents/' + id)
+                    .set(auth())
+                    .send({public: true});
+                expect(published.statusCode).toBe(200);
+                const read = await request(server.http)
+                    .get('/rest/v1/documents/' + id)
+                    .set(researcherAuth());
+                expect(read.statusCode).toBe(200);
+                const edit = await request(server.http)
+                    .patch('/rest/v1/documents/' + id)
+                    .set(researcherAuth())
+                    .send({name: 'researcher rename'});
+                expect(edit.statusCode).toBe(403);
+                expect(edit.body.message).toBe('errors.rest.documentNoAccess');
+                const remove = await request(server.http)
+                    .delete('/rest/v1/documents/' + id)
+                    .set(researcherAuth());
+                expect(remove.statusCode).toBe(403);
+                expect(remove.body.message).toBe('errors.rest.documentNoAccess');
             } finally {
                 await server.db.models['document'].deleteById(id);
             }

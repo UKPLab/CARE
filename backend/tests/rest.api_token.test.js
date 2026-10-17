@@ -1,15 +1,13 @@
 const request = require('supertest');
 const Server = require('../webserver/Server.js');
 const {addResearcherUser} = require('./utils.js');
-const {
-    generateSecret,
-    hashSecret,
-    displayPrefixFromSecret,
-} = require('../webserver/utils/apiTokenAuth');
+const {listAttachableRights} = require('../webserver/utils/apiTokenAuth');
+const {REST_RATE_LIMIT} = require('../webserver/middleware/restRateLimit');
 
 const PORT = 3120;
 const SETTING = 'system.auth.apiTokens.enabled';
 const DOCUMENTS_VIEW = 'frontend.dashboard.documents.view';
+const STUDIES_MANAGE = 'frontend.dashboard.studies.canManageStudies';
 
 describe('REST API tokens', () => {
     let server;
@@ -17,6 +15,7 @@ describe('REST API tokens', () => {
     beforeAll(async () => {
         server = new Server();
         server.start(PORT);
+        await server.devAdminReady;
         await server.db.models['setting'].set(SETTING, 'true');
     });
 
@@ -40,24 +39,25 @@ describe('REST API tokens', () => {
         return login(process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     }
 
-    async function guestCookie() {
-        if (!process.env.GUEST_PWD) {
-            return null;
-        }
-        const username = process.env.GUEST_EMAIL || 'guest';
+    async function mint(cookie, body) {
         const res = await request(server.http)
-            .post('/auth/login')
-            .send({username, password: process.env.GUEST_PWD});
-        if (res.statusCode !== 200) {
-            const fallback = await request(server.http)
-                .post('/auth/login')
-                .send({username: 'guest', password: process.env.GUEST_PWD});
-            if (fallback.statusCode !== 200) {
-                return null;
-            }
-            return fallback.headers['set-cookie'];
-        }
-        return res.headers['set-cookie'];
+            .post('/auth/api-tokens')
+            .set('Cookie', cookie)
+            .send(body);
+        expect(res.statusCode).toBe(201);
+        return res.body;
+    }
+
+    async function revoke(cookie, tokenId) {
+        return request(server.http)
+            .delete('/auth/api-tokens/' + tokenId)
+            .set('Cookie', cookie);
+    }
+
+    function bearerGet(url, secret) {
+        return request(server.http)
+            .get(url)
+            .set('Authorization', 'Bearer ' + secret);
     }
 
     describe('cookie without a session', () => {
@@ -197,53 +197,45 @@ describe('REST API tokens', () => {
         });
     });
 
-    describe('guest-only', () => {
-        test('guest-only user cannot mint a token', async () => {
-            const cookie = await guestCookie();
-            if (!cookie) {
-                return;
+    describe('owner demoted to guest-only', () => {
+        let demoted;
+        let demotedCookie;
+        let leftover;
+
+        beforeAll(async () => {
+            const models = server.db.models;
+            demoted = await addResearcherUser(models);
+            demotedCookie = (await login(demoted.user.email, demoted.password)).cookie;
+            leftover = await mint(demotedCookie, {name: 'before demotion', rights: [DOCUMENTS_VIEW]});
+
+            const roleIds = await models['user_role_matching'].getUserRolesById(demoted.user.id);
+            await models['user_role_matching'].deleteUserRoles(demoted.user.id, roleIds);
+            const guestRole = await models['user_role'].findOne({where: {name: 'guest'}, raw: true});
+            await models['user_role_matching'].create({userId: demoted.user.id, userRoleId: guestRole.id});
+        });
+
+        afterAll(async () => {
+            if (leftover) {
+                await server.db.models['api_token'].deleteById(leftover.token.id);
             }
+            if (demoted) {
+                await server.db.models['user'].deleteById(demoted.user.id);
+            }
+        });
+
+        test('guest-only user cannot mint a token', async () => {
             const created = await request(server.http)
                 .post('/auth/api-tokens')
-                .set('Cookie', cookie)
+                .set('Cookie', demotedCookie)
                 .send({name: 'guest token'});
             expect(created.statusCode).toBe(403);
             expect(created.body.message).toBe('errors.rest.guestCannotCreateToken');
         });
 
-        test('Bearer rejects a token whose owner is guest-only', async () => {
-            const email = process.env.GUEST_EMAIL;
-            if (!email) {
-                return;
-            }
-            const guest = await server.db.models['user'].findOne({
-                where: {email},
-                raw: true,
-            });
-            expect(guest).toBeTruthy();
-
-            const secret = generateSecret();
-            const token = await server.db.models['api_token'].add({
-                userId: guest.id,
-                name: 'leftover after demotion',
-                keyHash: hashSecret(secret),
-                prefix: displayPrefixFromSecret(secret),
-            });
-            try {
-                await server.db.models['api_token_right'].add({
-                    apiTokenId: token.id,
-                    userRightName: DOCUMENTS_VIEW,
-                    deleted: false,
-                });
-
-                const res = await request(server.http)
-                    .get('/rest/v1/documents')
-                    .set('Authorization', 'Bearer ' + secret);
-                expect(res.statusCode).toBe(403);
-                expect(res.body.message).toBe('errors.rest.guestCannotUseToken');
-            } finally {
-                await server.db.models['api_token'].deleteById(token.id);
-            }
+        test('Bearer rejects a token whose owner is now guest-only', async () => {
+            const res = await bearerGet('/rest/v1/documents', leftover.secret);
+            expect(res.statusCode).toBe(403);
+            expect(res.body.message).toBe('errors.rest.guestCannotUseToken');
         });
     });
 
@@ -282,6 +274,49 @@ describe('REST API tokens', () => {
             await request(server.http)
                 .delete('/auth/api-tokens/' + created.body.token.id)
                 .set('Cookie', cookie);
+        });
+
+        test('token without a rights list gets every right the owner has', async () => {
+            const created = await mint(researcherCookie, {name: 'researcher default rights'});
+            const rows = await server.db.models['api_token_right'].findAll({
+                where: {apiTokenId: created.token.id, deleted: false},
+                raw: true,
+            });
+            const ownerRights = await listAttachableRights(server.db.models, researcherUserId);
+            expect(rows.map((row) => row.userRightName).sort()).toEqual([...ownerRights].sort());
+            const revoked = await revoke(researcherCookie, created.token.id);
+            expect(revoked.statusCode).toBe(200);
+        });
+
+        test('admin can revoke another user token', async () => {
+            const created = await mint(researcherCookie, {name: 'revoked by admin'});
+            const {cookie} = await adminSession();
+            const revoked = await revoke(cookie, created.token.id);
+            expect(revoked.statusCode).toBe(200);
+            const after = await bearerGet('/rest/v1/documents', created.secret);
+            expect(after.statusCode).toBe(401);
+            expect(after.body.message).toBe('errors.rest.invalidBearer');
+        });
+
+        test('a stored right the owner does not have is refused', async () => {
+            const ownerRights = await listAttachableRights(server.db.models, researcherUserId);
+            expect(ownerRights).not.toContain(STUDIES_MANAGE);
+            const created = await mint(researcherCookie, {name: 'stale right', rights: []});
+            await server.db.models['api_token_right'].add({
+                apiTokenId: created.token.id,
+                userRightName: STUDIES_MANAGE,
+                deleted: false,
+            });
+            try {
+                const res = await request(server.http)
+                    .post('/rest/v1/studies')
+                    .set('Authorization', 'Bearer ' + created.secret)
+                    .send({templateId: 1});
+                expect(res.statusCode).toBe(403);
+                expect(res.body.message).toBe('errors.rest.missingTokenRight');
+            } finally {
+                await revoke(researcherCookie, created.token.id);
+            }
         });
 
         test('admin list includes another user token with userId', async () => {
@@ -342,12 +377,61 @@ describe('REST API tokens', () => {
             expect(res.body.message).toBe('errors.rest.missingBearer');
         });
 
+        test('REST with another auth scheme is 401', async () => {
+            const res = await request(server.http)
+                .get('/rest/v1/documents')
+                .set('Authorization', 'Basic YWRtaW46YWRtaW4=');
+            expect(res.statusCode).toBe(401);
+            expect(res.body.message).toBe('errors.rest.missingBearer');
+        });
+
         test('REST with a wrong secret is 401', async () => {
             const res = await request(server.http)
                 .get('/rest/v1/documents')
                 .set('Authorization', 'Bearer care_deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
             expect(res.statusCode).toBe(401);
             expect(res.body.message).toBe('errors.rest.invalidBearer');
+        });
+
+        test('Bearer use sets lastUsedAt', async () => {
+            const {cookie} = await adminSession();
+            const created = await mint(cookie, {name: 'last used'});
+            try {
+                expect((await bearerGet('/rest/v1/documents', created.secret)).statusCode).toBe(200);
+                let row;
+                for (let attempt = 0; attempt < 20; attempt++) {
+                    row = await server.db.models['api_token'].findOne({where: {id: created.token.id}, raw: true});
+                    if (row.lastUsedAt) {
+                        break;
+                    }
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                }
+                expect(row.lastUsedAt).toBeTruthy();
+            } finally {
+                await revoke(cookie, created.token.id);
+            }
+        });
+
+        test('rate limit blocks a token after REST_RATE_LIMIT requests and leaves other tokens alone', async () => {
+            const {cookie} = await adminSession();
+            const first = await mint(cookie, {name: 'rate a'});
+            const second = await mint(cookie, {name: 'rate b'});
+            try {
+                for (let count = 1; count <= REST_RATE_LIMIT; count++) {
+                    const res = await bearerGet('/rest/v1/documents', first.secret);
+                    expect({count, status: res.statusCode}).toEqual({count, status: 200});
+                }
+                const blocked = await bearerGet('/rest/v1/documents', first.secret);
+                expect(blocked.statusCode).toBe(429);
+                expect(blocked.body.message).toBe('errors.rest.rateLimitExceeded');
+
+                const other = await bearerGet('/rest/v1/documents', second.secret);
+                expect(other.statusCode).toBe(200);
+                expect(Number(/r=(\d+)/.exec(other.headers['ratelimit'])[1])).toBe(REST_RATE_LIMIT - 1);
+            } finally {
+                await revoke(cookie, first.token.id);
+                await revoke(cookie, second.token.id);
+            }
         });
     });
 
