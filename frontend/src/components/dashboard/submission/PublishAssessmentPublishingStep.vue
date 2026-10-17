@@ -115,7 +115,6 @@
 
 <script>
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { getAssessmentDataForSession, getConversionFactorFromAssessment } from "./helpers/publishAssessmentScoring.js";
 
 /**
  * Publishing-options step (step 5) of the assessment publishing wizard.
@@ -125,9 +124,10 @@ import { getAssessmentDataForSession, getConversionFactorFromAssessment } from "
  * isReviewUrlIncluded and moodleOptions. They also need to survive StepperModal
  * remounting step content on every step navigation.
  *
- * selectedAssignmentMaxGrade is a read-only prop; the parent updates it via its
- * selectAssignment handler when this component re-emits MoodleOptions'
- * select-assignment event.
+ * gradeInformation is a read-only prop computed by the parent from the selected
+ * sessions, workflows, configuration and assignment max grade; the parent updates
+ * the max grade via its selectAssignment handler when this component re-emits
+ * MoodleOptions' select-assignment event.
  *
  * Extracted from PublishAssessmentModal.vue.
  * @author CARE Team
@@ -152,16 +152,12 @@ export default {
       type: Array,
       required: true,
     },
-    selectedWorkflows: {
-      type: Array,
-      required: true,
-    },
     selectedConfigurationContent: {
       type: Object,
       default: null,
     },
-    selectedAssignmentMaxGrade: {
-      type: Number,
+    gradeInformation: {
+      type: Object,
       required: true,
     },
   },
@@ -178,45 +174,6 @@ export default {
         { value: "moodle", label: this.$t("submission.publishAssessment.publishMethods.moodle"), disabled: false },
         { value: "email", label: this.$t("submission.publishAssessment.publishMethods.email"), disabled: true },
       ];
-    },
-    // Grade information computed properties
-    gradeInformation() {
-      const numberOfGrades = this.selectedSessions.length || 0;
-
-      if (!this.selectedConfigurationContent || numberOfGrades === 0) {
-        return {
-          numberOfGrades,
-          totalMaxPoints: 0,
-          totalMinPoints: 0,
-          maxGradeFromMoodle: this.selectedAssignmentMaxGrade || 0,
-          conversionFactor: 0,
-        };
-      }
-
-      // Use assessment definition from the first selected session (same config for all)
-      const firstSession = this.selectedSessions[0];
-      const { assessment } = getAssessmentDataForSession(
-        firstSession,
-        this.selectedWorkflows,
-        {
-          getBySession: (studySessionId) => this.$store.getters["table/document_data/getByKey"]("studySessionId", studySessionId),
-          getAll: () => this.$store.getters["table/document_data/getAll"],
-        },
-        this.selectedConfigurationContent
-      );
-
-      const totalMaxPoints = assessment.total_max_points ?? 0;
-      const totalMinPoints = assessment.total_min_points ?? 0;
-      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
-      const conversionFactor = getConversionFactorFromAssessment(assessment, assignmentMaxGrade);
-
-      return {
-        numberOfGrades,
-        totalMaxPoints,
-        totalMinPoints,
-        maxGradeFromMoodle: assignmentMaxGrade,
-        conversionFactor,
-      };
     },
   },
 };

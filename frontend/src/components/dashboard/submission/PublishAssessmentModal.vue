@@ -82,9 +82,8 @@
         v-model:is-review-url-included="isReviewUrlIncluded"
         v-model:moodle-options="moodleOptions"
         :selected-sessions="selectedSessions"
-        :selected-workflows="selectedWorkflows"
         :selected-configuration-content="selectedConfigurationContent"
-        :selected-assignment-max-grade="selectedAssignmentMaxGrade"
+        :grade-information="gradeInformation"
         @select-assignment="selectAssignment"
       />
     </template>
@@ -102,6 +101,7 @@ import {
   getConfigurationIdFromConfig,
   getAssessmentDataForSession,
   convertAssessmentScore,
+  getConversionFactorFromAssessment,
 } from "./helpers/publishAssessmentScoring.js";
 import { buildOrderedWorkflowStepsByWorkflow, buildWorkflowsTable, buildSessionsTable } from "./helpers/publishAssessmentTables.js";
 import { buildCsvRows } from "./helpers/publishAssessmentCsvRows.js";
@@ -311,6 +311,36 @@ export default {
         });
       });
       return names;
+    },
+    // Grade overview shown in the publishing step for Moodle
+    gradeInformation() {
+      const numberOfGrades = this.selectedSessions.length || 0;
+
+      if (!this.selectedConfigurationContent || numberOfGrades === 0) {
+        return {
+          numberOfGrades,
+          totalMaxPoints: 0,
+          totalMinPoints: 0,
+          maxGradeFromMoodle: this.selectedAssignmentMaxGrade || 0,
+          conversionFactor: 0,
+        };
+      }
+
+      // Use assessment definition from the first selected session (same config for all)
+      const { assessment } = this.getAssessmentDataForSession(this.selectedSessions[0]);
+
+      const totalMaxPoints = assessment.total_max_points ?? 0;
+      const totalMinPoints = assessment.total_min_points ?? 0;
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+      const conversionFactor = getConversionFactorFromAssessment(assessment, assignmentMaxGrade);
+
+      return {
+        numberOfGrades,
+        totalMaxPoints,
+        totalMinPoints,
+        maxGradeFromMoodle: assignmentMaxGrade,
+        conversionFactor,
+      };
     },
 
     // Sessions filtered by workflow and configuration
