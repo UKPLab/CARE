@@ -146,7 +146,7 @@ export default {
         if (fileType === ".pdf") {
           // Load and extract text from PDF
           const fileArrayBuffer = await this.data.file.arrayBuffer();
-          const loadingTask = pdfjsLib.getDocument(fileArrayBuffer);
+          const loadingTask = pdfjsLib.getDocument({ data: fileArrayBuffer });
           const pdfDocument = await loadingTask.promise;
           extractedText = await extractTextFromPDF(pdfDocument);
         }

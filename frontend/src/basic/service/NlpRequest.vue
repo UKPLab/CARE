@@ -324,7 +324,7 @@ export default {
           else reject(new Error(resolveApiMessage(res, "nlp.hooks.documentLoadFailed")));
         });
       });
-      const pdf = await pdfjsLib.getDocument(file).promise;
+      const pdf = await pdfjsLib.getDocument({ data: file }).promise;
       return extractPdfPages(pdf);
     },
     /**

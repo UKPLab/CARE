@@ -1,0 +1,123 @@
+{
+    "confirm": "Confirmer",
+    "confirmName": "Confirmer {name}",
+    "pleaseConfirm": "Veuillez confirmer",
+    "sending": "Envoi en cours...",
+    "sendResetEmail": "Envoyer l'e-mail de réinitialisation",
+    "passwordReset": "Réinitialisation du mot de passe",
+    "passwordUpdated": "Mot de passe mis à jour",
+    "passwordResetSuccess": "Le mot de passe a été réinitialisé.",
+    "closeModal": "Fermer",
+    "placeholders": {
+        "documentPreview": "Aperçu du document",
+        "placeholderLegend": "Légende des variables",
+        "configurePlaceholders": "Configurer les variables",
+        "firstDataSource": "Première source de données :",
+        "secondDataSource": "Seconde source de données :",
+        "dataSource": "Source de données :",
+        "selectFirstDataSource": "Sélectionnez la première source de données...",
+        "selectSecondDataSource": "Sélectionnez la seconde source de données...",
+        "selectDataSource": "Sélectionnez une source de données...",
+        "noPlaceholders": "Aucune variable trouvée dans le document.",
+        "documentError": "Erreur de document",
+        "invalidDocumentContent": "Le contenu du document est invalide ou vide. Veuillez réessayer.",
+        "failedToFetchDocument": "Impossible de récupérer le document.",
+        "addInformation": "Ajoutez ici les informations pour la variable :",
+        "dataMissingOrInvalid": "~ Données de la variable manquantes ou invalides ~",
+        "dataMissing": "~ Données de la variable manquantes ~",
+        "firstVersionStep": "Première version (étape {step})",
+        "currentVersionStep": "Version actuelle (étape {step})"
+    },
+    "noContentForThisStep": "Aucun contenu disponible pour cette étape.",
+    "finishStudy": "Terminer l'étude",
+    "exportStudyData": "Exporter les données de l'étude",
+    "returnToStudies": "'Retour aux études'",
+    "revisions": {
+        "revision": "Révision",
+        "revisionOne": "Révision 1",
+        "revisionTwo": "Révision 2"
+    },
+    "chart": "Graphique",
+    "comparisonChart": "Graphique comparatif",
+    "importExport": {
+        "export": {
+            "defaultTitle": "Exporter",
+            "success": {
+                "title": "Export réussi",
+                "single": "{table} exporté au format {format}",
+                "multiple": "{table} exportés au format {format}"
+            }
+        },
+        "import": {
+            "defaultTitle": "Importer",
+            "selectFile": "Sélectionnez un fichier ({extensions}) :",
+            "selectedFile": "Sélectionné : {file}",
+            "selectItemsPrefix": "Sélectionnez les éléments à importer depuis",
+            "confirmQuestion": "Voulez-vous vraiment importer les éléments suivants ({table}) ?",
+            "genericItems": "éléments",
+            "childRecords": "— {count} sous-élément(s)",
+            "fallbackItemLabel": "Élément {index}",
+            "steps": {
+                "fileSelection": "Sélection du fichier",
+                "itemSelection": "Sélection : {item}",
+                "confirmation": "Confirmation",
+                "genericItem": "Élément"
+            },
+            "errors": {
+                "unsupportedFileType": "Type de fichier « {ext} » non pris en charge",
+                "parseFileFailed": "Impossible d'analyser le fichier : {message}",
+                "readFileFailed": "Impossible de lire le fichier",
+                "importError": "Erreur d'importation",
+                "importChildFailed": "Impossible d'importer le sous-élément : {message}",
+                "importItemFailed": "Impossible d'importer « {name} » : {message}"
+            },
+            "success": {
+                "title": "Importation réussie",
+                "single": "{count} {table} importé !",
+                "multiple": "{count} {table} importés !"
+            }
+        },
+        "formats": {
+            "csv": {
+                "label": "Format CSV",
+                "description": "Valeurs séparées par des virgules, compatibles avec les tableurs"
+            },
+            "json": {
+                "label": "Format JSON",
+                "description": "Format JSON standard, correctement mis en forme"
+            },
+            "txt": {
+                "label": "Format TXT",
+                "description": "Texte brut avec objets imbriqués indentés"
+            },
+            "yaml": {
+                "label": "Format YAML",
+                "description": "Format YAML lisible par un humain"
+            }
+        },
+        "wiring": {
+            "configuration": {
+                "exportAllTooltip": "Exporter toutes les configurations",
+                "importTitle": "Importer une configuration",
+                "exportTitle": "Exporter la configuration"
+            },
+            "tags": {
+                "exportAllTooltip": "Exporter toutes les listes d'étiquettes",
+                "importTitle": "Importer des listes d'étiquettes",
+                "exportTitle": "Exporter la liste d'étiquettes"
+            },
+            "templates": {
+                "importTooltip": "Importer des modèles",
+                "exportAllTooltip": "Exporter tous les modèles",
+                "importTitle": "Importer des modèles",
+                "exportTitle": "Exporter le modèle"
+            },
+            "studyTemplates": {
+                "importTooltip": "Importer un modèle",
+                "exportAllTooltip": "Exporter tous les modèles",
+                "importTitle": "Importer des modèles d'étude",
+                "exportTitle": "Exporter le modèle d'étude"
+            }
+        }
+    }
+}
