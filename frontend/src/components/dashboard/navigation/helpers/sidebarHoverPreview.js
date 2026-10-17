@@ -1,10 +1,8 @@
 /**
- * Hover-preview coordination for Sidebar.vue, spread-composed into its own
- * data()/computed/methods (see the data-factory + collision-check contract this
- * issue's plan established for spread-composition modules). Decides which group's
- * floating preview is showing and where, from mouse events and DOM geometry.
- * Reads `this.groupStates` (owned by Sidebar.vue) read-only to skip previewing an
- * already-open group; has no dependency on routing.
+ * Manages the sidebar's floating hover preview, including its visibility
+ * and positioning based on mouse events and DOM geometry.
+ * Exports state, computed properties, and methods for use in Sidebar.vue.
+ * Reads `this.groupStates` to avoid previewing already-expanded groups.
  *
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
