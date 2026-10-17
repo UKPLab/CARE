@@ -18,7 +18,7 @@ const {getEmailContent} = require("../../utils/helper/email.js");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
- * Application operations for documents. Vue (socket wrapper) and REST both call these.
+ * Document actions for /rest/v1/documents only. The socket methods below do not call these.
  * Pass explicit fields; do not pass a socket instance.
  */
 
@@ -510,7 +510,33 @@ class DocumentSocket extends Socket {
      * @returns {Promise<boolean>} A promise that resolves with `true` if the user has access, and `false` otherwise.
      */
     async checkDocumentAccess(documentId) {
-        return userHasDocumentAccess(this.models, this.userId, documentId);
+        const doc = await this.models['document'].getById(documentId);
+
+        if (doc && (doc.public || doc.userId === this.userId || await this.isAdmin())) {
+            return true;
+        }
+
+        const study_steps = await this.models['study_step'].getAllByKey('documentId', documentId);
+        const study_ids = study_steps.map(step => step.studyId);
+        const study_sessions = await this.models['study_session'].getAllByKey('studyId', study_ids );
+        const studies = await this.models['study'].getAllByKey('id',study_ids);
+
+        // check if the document is used in a study where the user is the owner of the study
+        for (const study of studies) {
+            if (study.userId === this.userId) {
+                return true;
+            }
+        }
+        
+        // check if the document is used in a study where the user is a participant
+        for (const session of study_sessions) {
+            if (session.userId === this.userId || await this.hasAccess("frontend.dashboard.studies.fullAccess")) {
+                return true;
+            }
+        }
+
+
+        return false;
     }
 
     /**
@@ -573,21 +599,215 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async addDocument(data, options) {
-        const result = await addDocument({
-            ...data,
-            actingUserId: this.userId,
-        }, {
-            transaction: options.transaction,
-            models: this.models,
-            server: this.server,
-            logger: this.logger,
-        });
-        options.transaction.afterCommit(() => {
-            this.emit("documentRefresh", result.doc);
-        });
-        return result;
-    }
+        let doc = null;
+        let target = "";
+        let annotations = [];
+        let errors = [];
 
+        if (!data['file']) {
+            throw new TranslatableError("errors.file.noFileUploaded");
+        }
+
+        const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
+        if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
+            throw new TranslatableError("errors.file.invalidFileType");
+        }
+
+        if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
+            throw new TranslatableError("errors.documents.noUploadAccess");
+        }
+
+        if (fileType === ".delta") {
+            // Handle HTML and MODAL document types
+            const documentType = data.type === docTypes.DOC_TYPE_MODAL ? docTypes.DOC_TYPE_MODAL : docTypes.DOC_TYPE_HTML;
+
+            doc = await this.models["document"].add({
+                type: documentType,
+                name: data.name.replace(/.delta$/, ""),
+                userId: data.userId ?? this.userId,
+                uploadedByUserId: this.userId,
+                projectId: data.projectId,
+                originalFilename: data.name,
+            }, {transaction: options.transaction});
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.delta`);
+            fs.writeFileSync(target, data.file);
+
+            const deltaContent = JSON.parse(data.file.toString());
+
+            // Create initial database entry for document edits 
+            const initialEdit = {
+                documentId: doc.id,
+                userId: data.userId ?? this.userId,
+                studySessionId: null,
+                studyStepId: null,
+                draft: false,
+                offset: 0,
+                operationType: 0,
+                span: deltaContent.ops.reduce((span, op) => span + (op.insert ? op.insert.length : 0), 0),
+                text: deltaContent.ops.map(op => op.insert).join(''),
+                attributes: null,
+            };
+
+            await this.models["document_edit"].add(initialEdit, {transaction: options.transaction});
+        } else if (fileType === ".zip") {
+            doc = await this.models["document"].add(
+                {
+                    type: docTypes.DOC_TYPE_ZIP,
+                    name: data.name.replace(/.zip$/, ""),
+                    userId: data.userId ?? this.userId,
+                    uploadedByUserId: this.userId,
+                    readyForReview: data.isUploaded ?? false,
+                    projectId: data.projectId,
+                    submissionId: data.submissionId
+                },
+                {transaction: options.transaction}
+            );
+
+            target = path.join(UPLOAD_PATH, `${doc.hash}.zip`);
+            fs.writeFileSync(target, data.file);
+        } else if (fileType === ".pdf") {
+            doc = await this.models["document"].add({
+                type: docTypes.DOC_TYPE_PDF,
+                name: data.name.replace(/.pdf$/, ""),
+                userId: data.userId ?? this.userId,
+                uploadedByUserId: this.userId,
+                readyForReview: data.isUploaded ?? false,
+                projectId: data.projectId,
+                submissionId: data.submissionId,
+                originalFilename: data.name,
+            }, {transaction: options.transaction});
+            target = path.join(UPLOAD_PATH, `${doc.hash}.pdf`);
+            try {
+                const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                    file: data.file,
+                    document: doc
+                });
+                if (!file) {
+                    // Use TranslatableError so the catch below sees `.key` and does not embed this i18n key as a plain-text param.
+                    throw new TranslatableError( "errors.documents.annotationDeleteOriginalFailed");
+                }
+
+                fs.writeFileSync(target, file);
+            } catch (annotationRpcErr) {
+                this.logger.warn("Failed to delete annotations from PDF", annotationRpcErr);
+                if (annotationRpcErr.key) {
+                    errors.push({
+                        message: annotationRpcErr.key,
+                        params: annotationRpcErr.params,
+                    });
+                } else if (typeof annotationRpcErr.message === "string" && i18n.hasKey(annotationRpcErr.message)) {
+                    errors.push({message: annotationRpcErr.message});
+                } else {
+                    errors.push({message: "errors.documents.annotationDeleteFailedGeneric"});
+                }
+                fs.writeFileSync(target, data.file);
+            }
+
+            if (data["importAnnotations"]) {
+                try {
+                    const annotationData = await this.server.rpcs["PDFRPC"].getAnnotations({
+                        file: data['file'],
+                        document: doc,
+                        fileType: fileType,
+                        wholeText: data.wholeText
+                    });
+
+                    if (annotationData.annotations.length !== 0) {
+                        for (const extracted of annotationData.annotations) {
+                            let textPositions;
+                            try {
+                                textPositions = getTextPositions(extracted.text, data.wholeText);
+                            } catch (error) {
+                                if (TranslatableError.is(error)) {
+                                    errors.push({
+                                        message: error.key,
+                                        params: {text: extracted.text, ...(error.params || {})},
+                                    });
+                                    continue;
+                                }
+                                errors.push({
+                                    message: "errors.documents.textPositionExtractionFailed",
+                                    params: {text: extracted.text},
+                                });
+                                continue;
+                            }
+
+                            const selectors = {
+                                target: [{
+                                    selector: [
+                                        {
+                                            type: "TextPositionSelector",
+                                            start: textPositions.start,
+                                            end: textPositions.end
+                                        },
+                                        {
+                                            type: "TextQuoteSelector",
+                                            exact: extracted.text || "",
+                                            prefix: textPositions.prefix || "",
+                                            suffix: textPositions.suffix || ""
+                                        },
+                                        {
+                                            type: "PagePositionSelector",
+                                            number: extracted.page + 1
+                                        }
+                                    ]
+                                }]
+                            };
+
+                            try {
+                                const newAnnotation = {
+                                    documentId: doc.id,
+                                    selectors: selectors,
+                                    tagId: 1, //always use the same tag for all annotations
+                                    studySessionId: doc.studySessionId,
+                                    studyStepId: doc.studyStepId,
+                                    text: extracted.text || null,
+                                    draft: false,
+                                    userId: this.userId,
+                                    anonymous: false,
+                                };
+                                const annotation = await this.models['annotation'].add(newAnnotation, {transaction: options.transaction});
+                                annotations.push(annotation);
+                                let newComment = {
+                                    documentId: annotation.documentId,
+                                    studySessionId: annotation.studySessionId,
+                                    studyStepId: annotation.studyStepId,
+                                    annotationId: annotation.id,
+                                    parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
+                                    anonymous: false,
+                                    tags: "[]",
+                                    draft: false,
+                                    text: extracted.comment || null,
+                                    userId: this.userId
+                                };
+                                await this.models['comment'].add(newComment, {transaction: options.transaction});
+
+                            } catch (annotationErr) {
+                                if (annotationErr.key) {
+                                    errors.push({
+                                        message: annotationErr.key,
+                                        params: annotationErr.params,
+                                    });
+                                } else if (typeof annotationErr.message === "string" && i18n.hasKey(annotationErr.message)) {
+                                    errors.push({message: annotationErr.message});
+                                } else {
+                                    errors.push({message: "errors.documents.annotationAddFailed"});
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                } catch (annotationRpcErr) {
+                    errors.push({message: "errors.documents.automaticAnnotationExtractionFailed"});
+                }
+            }
+        }
+        options.transaction.afterCommit(() => {
+            this.emit("documentRefresh", doc);
+        });
+        return {doc, annotations, errors};
+    }
 
     /**
      * Updates a document's properties after verifying the current user has ownership rights.
@@ -621,17 +841,22 @@ class DocumentSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves with the newly created document's database record.
      */
     async createDocument(data, options) {
-        const doc = await createDocument({
-            userId: this.userId,
+        const doc = await this.models["document"].add({
             name: data.name,
             type: data.type,
-            templateId: data.templateId,
-            projectId: data.projectId,
-        }, {
-            transaction: options.transaction,
-            models: this.models,
-            logger: this.server.logger,
-        });
+            userId: this.userId,
+            projectId: data.projectId
+        }, {transaction: options.transaction});
+
+        // If templateId provided and document is HTML/MODAL type, resolve template and write content
+        if (data.templateId && (doc.type === docTypes.DOC_TYPE_HTML || doc.type === docTypes.DOC_TYPE_MODAL)) {
+            await applyTemplateToDocument(
+                doc,
+                data.templateId,
+                this.models,
+                {transaction: options.transaction, logger: this.server.logger}
+            );
+        } 
 
         options.transaction.afterCommit(() => {
             this.emit("documentRefresh", doc);
@@ -1915,17 +2140,61 @@ class DocumentSocket extends Socket {
      * @throws {Error} - If the user is not an admin or the file type does not match the document
      */
     async replaceDocumentFile(data, options) {
-        return replaceDocumentFile({
-            userId: this.userId,
-            documentId: data.documentId,
-            file: data.file,
-            name: data.name,
-        }, {
-            transaction: options.transaction,
-            models: this.models,
-            server: this.server,
-            logger: this.logger,
-        });
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.documents.replaceFileNoPermission");
+        }
+
+        if (!data || !data.file) {
+            throw new TranslatableError("errors.file.noFileUploaded");
+        }
+
+        if (!data.documentId) {
+            throw new TranslatableError("errors.documents.idRequired");
+        }
+
+        if (!data.name || typeof data.name !== "string") {
+            throw new TranslatableError("errors.documents.replaceFileNameRequired");
+        }
+
+        const document = await this.validateDocument(data.documentId, "id", false);
+        const extensionMap = {
+            [docTypes.DOC_TYPE_PDF]: ".pdf",
+            [docTypes.DOC_TYPE_ZIP]: ".zip",
+        };
+        const expectedExtension = extensionMap[document.type];
+
+        if (!expectedExtension) {
+            throw new TranslatableError("errors.documents.replaceOnlyPdfZip");
+        }
+
+        const fileExtension = data.name.substring(data.name.lastIndexOf(".")).toLowerCase();
+        if (fileExtension !== expectedExtension) {
+            throw new TranslatableError("errors.documents.replaceTypeMismatch", {
+                expected: expectedExtension,
+                actual: fileExtension || "-",
+            });
+        }
+
+        if (document.type === docTypes.DOC_TYPE_PDF) {
+            await this.clearDocumentAnnotations(document.id, options);
+        }
+
+        const target = path.join(UPLOAD_PATH, `${document.hash}${expectedExtension}`);
+        await this.writeReplacementFile(document, data.file, target, expectedExtension, options);
+
+        return {
+            documentId: document.id,
+            hash: document.hash,
+            message: i18n.translateMaybeKey("errors.documents.replaceSuccess", {
+                extension: expectedExtension,
+                documentId: document.id,
+            }),
+            key: "errors.documents.replaceSuccess",
+            params: {
+                extension: expectedExtension,
+                documentId: document.id,
+            },
+        };
     }
 
     /**
@@ -1939,7 +2208,94 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>}
      */
     async clearDocumentAnnotations(documentId, options) {
-        return clearDocumentAnnotations(this.models, documentId, options);
+        const annotations = await this.models["annotation"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
+        const uniqueAnnotationIds = [...new Set((annotations || []).map((annotation) => annotation.id))];
+        for (const annotationId of uniqueAnnotationIds) {
+            await this.models["annotation"].deleteById(annotationId, {transaction: options.transaction});
+        }
+
+        const comments = await this.models["comment"].getAllByKey(
+            "documentId",
+            documentId,
+            {transaction: options.transaction}
+        );
+        const uniqueCommentIds = [...new Set((comments || []).map((comment) => comment.id))];
+        for (const commentId of uniqueCommentIds) {
+            await this.models["comment"].deleteById(commentId, {transaction: options.transaction});
+        }
+    }
+
+    /**
+     * Prepare replacement file bytes (best-effort PDFRPC strip for PDFs).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} expectedExtension - The expected file extension
+     * @returns {Promise<Buffer>} Bytes to write after the DB transaction commits
+     */
+    async prepareReplacementFileBytes(document, fileData, expectedExtension) {
+        if (expectedExtension !== ".pdf") {
+            return fileData;
+        }
+
+        try {
+            const {file} = await this.server.rpcs["PDFRPC"].deleteAllAnnotations({
+                file: fileData,
+                document,
+            });
+            if (!file) {
+                throw new TranslatableError("errors.documents.annotationDeleteOriginalFailed");
+            }
+            return file;
+        } catch (annotationRpcErr) {
+            this.logger.error(
+                "Error deleting annotations during document file replace: " + annotationRpcErr.message
+            );
+            return fileData;
+        }
+    }
+
+    /**
+     * Write a replacement temp file, then rename onto the live hash path after commit.
+     * Temp write happens before commit (failure rolls back annotation deletes). Only the
+     * rename runs in afterCommit. If rename fails after commit, the socket callback fails
+     * so the admin is notified (temp file is left for manual recovery).
+     *
+     * @author Mohammad Elwan
+     * @param {Object} document - The document record
+     * @param {Buffer} fileData - The uploaded file content
+     * @param {string} target - The filesystem path to overwrite
+     * @param {string} expectedExtension - The expected file extension
+     * @param {Object} options - Additional configuration parameter
+     * @param {Object} options.transaction - Sequelize DB transaction options
+     * @returns {Promise<void>}
+     * @throws {Error} - If the temp file cannot be written, or if rename fails after commit
+     */
+    async writeReplacementFile(document, fileData, target, expectedExtension, options) {
+        const bytes = await this.prepareReplacementFileBytes(document, fileData, expectedExtension);
+        const tempPath = `${target}.replace-tmp`;
+        fs.writeFileSync(tempPath, bytes);
+
+        options.transaction.afterCommit(() => {
+            try {
+                fs.renameSync(tempPath, target);
+            } catch (err) {
+                this.logger.error(
+                    `Error promoting replacement file for document #${document.id}: ${err.message}`
+                );
+                throw new TranslatableError("errors.documents.replacePromoteFailed", {
+                    documentId: document.id,
+                    tempPath,
+                    target,
+                    error: err.message,
+                });
+            }
+        });
     }
 
     /**
