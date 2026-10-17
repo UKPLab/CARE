@@ -435,6 +435,21 @@
     "documentHasNoBinaryFile": "Dieses Dokument hat keine PDF- oder ZIP-Datei zum Download.",
     "documentFileMissing": "Die Dokumentdatei fehlt auf dem Server.",
     "invalidPublicFlag": "public muss ein Boolean sein.",
-    "noDocumentFields": "Zum Aktualisieren name und/oder public angeben."
+    "noDocumentFields": "Zum Aktualisieren name und/oder public angeben.",
+    "studyNotFound": "Studie nicht gefunden.",
+    "studyNoAccess": "Sie haben keinen Zugriff auf diese Studie.",
+    "templateIdRequired": "Template-ID ist erforderlich.",
+    "templateNotFound": "Studienvorlage nicht gefunden.",
+    "notAStudyTemplate": "Dieser Datensatz ist keine Studienvorlage.",
+    "studyNameRequired": "Studienname ist erforderlich.",
+    "noStudyFields": "Zum Aktualisieren mindestens ein Studienfeld angeben.",
+    "studyIdsRequired": "ids angeben, ein nicht leeres Array von Studien-IDs.",
+    "invalidStudyIds": "ids muessen Ganzzahlen sein.",
+    "invalidStudyField": "Ein Studienfeld hat den falschen Typ.",
+    "studyAlreadyClosed": "Die Studie ist bereits geschlossen.",
+    "studyNotEditable": "Diese Studie kann nicht bearbeitet werden.",
+    "unsupportedExportFormat": "Exportformat muss json oder yaml sein.",
+    "importContentRequired": "Ein Array von Studien importieren, oder einen json/yaml-String in derselben Form.",
+    "importParseFailed": "Der Studienimport konnte nicht gelesen werden."
   }
 }

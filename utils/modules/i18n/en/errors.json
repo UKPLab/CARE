@@ -435,6 +435,21 @@
         "documentHasNoBinaryFile": "This document has no PDF or ZIP file to download.",
         "documentFileMissing": "The document file is missing on the server.",
         "invalidPublicFlag": "public must be a boolean.",
-        "noDocumentFields": "Provide name and/or public to update."
+        "noDocumentFields": "Provide name and/or public to update.",
+        "studyNotFound": "Study not found.",
+        "studyNoAccess": "You do not have access to this study.",
+        "templateIdRequired": "Template id is required.",
+        "templateNotFound": "Study template not found.",
+        "notAStudyTemplate": "That record is not a study template.",
+        "studyNameRequired": "Study name is required.",
+        "noStudyFields": "Provide at least one study field to update.",
+        "studyIdsRequired": "Provide ids, a non-empty array of study ids.",
+        "invalidStudyIds": "ids must be integers.",
+        "invalidStudyField": "A study field has the wrong type.",
+        "studyAlreadyClosed": "Study is already closed.",
+        "studyNotEditable": "This study cannot be edited.",
+        "unsupportedExportFormat": "Export format must be json or yaml.",
+        "importContentRequired": "Import an array of studies, or a json/yaml content string in that same shape.",
+        "importParseFailed": "Could not parse the study import."
     }
 }
