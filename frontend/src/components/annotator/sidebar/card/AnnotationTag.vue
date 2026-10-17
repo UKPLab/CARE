@@ -42,7 +42,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 /** Annotation tag view/edit
  *
- * Displays the tags assigned to an annotation and allows adding or removing multiple tags.
+ * Displays the annotation's tag and lets the owner change it.
  * Toggled externally through the exposed toggleEditTag() method
  * via $refs.annotationTag.toggleEditTag().
  *
@@ -51,7 +51,6 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "AnnotationTag",
-  subscribeTable: ['tag', 'tag_set'],
   components: {SidebarButton},
   inject: {
     studySessionId: {

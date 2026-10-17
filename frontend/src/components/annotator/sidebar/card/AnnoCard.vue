@@ -184,7 +184,7 @@ import AnnotationReplies from "./AnnotationReplies.vue";
  */
 export default {
   name: "AnnoCard",
-  subscribeTable: ['comment_state'],
+  subscribeTable: ['tag', 'tag_set', 'comment_state'],
   components: {VoteButtons, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton, AnnotationTag, AnnotationSummarize, AnnotationReplies},
   inject: {
     documentId: {
