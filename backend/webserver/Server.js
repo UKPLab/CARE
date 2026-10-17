@@ -117,7 +117,9 @@ module.exports = class Server {
         }).catch((err) => {
             this.logger.error("initMailServer failed: " + err);
         });
-        Promise.resolve(setupDevAdmin(this)); // When DEV_SKIP_WIZARD=true only: creates first admin from env and marks wizard complete.
+        // When DEV_SKIP_WIZARD=true only: creates first admin from env and marks wizard complete.
+        // Tests await this before logging in as admin.
+        this.devAdminReady = setupDevAdmin(this);
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
@@ -508,6 +510,7 @@ module.exports = class Server {
         if (this._statsScheduler) {
             this._statsScheduler.stop(this.logger);
             }
+        this.db.sequelize.close();
         }
 
     /**
