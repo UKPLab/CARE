@@ -54,24 +54,12 @@
             :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             {{ c.name }}
-            <span
+            <SortButton
               v-if="c.sortable"
-              :title="$t('common.sortBy')"
-            >
-              <LoadIcon
-                v-if="c.sortable"
-                :class="{
-                  'bg-success': sortColumn === c.key,
-                  'bg-opacity-50': sortColumn === c.key,
-                  'bg-opacity-10': sortColumn !== c.key,
-                  'bg-black': sortColumn !== c.key,
-                }"
-                :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
-                class="me-1"
-                style="cursor: pointer"
-                @click="sort('sortKey' in c ? c.sortKey : c.key)"
-              />
-            </span>
+              :active="sortColumn === c.key"
+              :direction="sortDirection"
+              @sort="sort('sortKey' in c ? c.sortKey : c.key)"
+            />
             <span v-if="filter && c.filter && hasFilterableData">
               <span
                 aria-expanded="true"
@@ -196,67 +184,11 @@
             :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
-              <TIcon
-                v-if="c.type === 'icon'"
-                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
-                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
-                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
-                :size="c.typeOptions?.size ?? 16"
-              />
-              <TBadge
-                v-else-if="c.type === 'badge'"
-                :options="c.typeOptions ? c.typeOptions : null"
-                :value="r[c.key]"
-              />
-              <TButton
-                v-else-if="c.type === 'button'"
-                :action="r[c.key].action"
-                :stats="r[c.key].stats"
-                :icon="r[c.key].icon"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
+              <TCell
+                :column="c"
+                :row="r"
                 @action="actionEmitter"
               />
-              <TToggle
-                v-else-if="c.type === 'toggle'"
-                :action="r[c.key].action"
-                :value="r[c.key].value"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
-                @action="actionEmitter"
-              />
-              <span v-else-if="c.type === 'datetime'">
-                {{ formatLocalizedDateTime(r[c.key]) }}
-              </span>
-
-              <span v-else-if="c.type === 'icon-selector'">
-                <LoadIcon
-                  v-if="r[c.key].selected"
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  style="color: yellowgreen"
-                />
-                <LoadIcon
-                  v-else
-                  v-tooltip
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  :title="r[c.key].title"
-                  role="button"
-                  @click="actionEmitter({ action: r[c.key].action, params: r })"
-                />
-              </span>
-              <span
-                v-else
-                :class="{
-                  multiline: c.multiline,
-                }"
-                :style="getMultilineStyles(c)"
-              >
-                {{ r[c.key] }}
-              </span>
             </span>
             <span v-else> - </span>
           </td>
@@ -305,17 +237,39 @@
 </template>
 
 <script>
-import TButton from "./table/Button.vue";
 import TButtonGroup from "./table/ButtonGroup.vue";
-import TToggle from "./table/Toggle.vue";
-import TBadge from "./table/Badge.vue";
-import TIcon from "./table/Icon.vue";
+import TCell from "./table/Cell.vue";
+import SortButton from "./table/SortButton.vue";
 import Pagination from "./table/Pagination.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import BasicIcon from "@/basic/Icon.vue";
-import { tooltip } from "@/assets/tooltip.js";
-import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
+import debounce from "lodash.debounce";
+import {
+  fixedColumnClass,
+  fixedColumnIndices,
+  fixedColumnStyle,
+  hasFixedColumns,
+  hasRightFixedColumns,
+  manageColumnClass,
+  measureFixedColumns,
+  observeResize,
+  shouldFixManageColumn,
+} from "./table/fixedColumns.js";
+import {
+  actionClickStats,
+  emptyColspan,
+  initialSort,
+  isRowInSelection,
+  itemsPerPageListFromOptions,
+  maxHeightStyle,
+  nextSort,
+  pageSizeFromOptions,
+  rowButtons,
+  tableClasses,
+  toggleRowSelection,
+  visibleColumns,
+} from "./table/tableHelpers.js";
 
 /**
  * generic table with feature-rich API
@@ -350,14 +304,11 @@ export default {
   components: {
     BasicIcon,
     Pagination,
-    TIcon,
-    TBadge,
+    TCell,
+    SortButton,
     TButtonGroup,
-    TButton,
-    TToggle,
     LoadIcon,
   },
-  directives: { tooltip },
   inject: {
     acceptStats: {
       default: () => false,
@@ -404,15 +355,8 @@ export default {
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
     return {
-      tableClass: {
-        "table-striped": this.options && this.options.striped,
-        "table-hover": this.options && this.options.hover,
-        "table-bordered": this.options && this.options.bordered,
-        "table-borderless": this.options && this.options.borderless,
-        "table-sm": this.options && this.options.small,
-      },
-      sortColumn: this.options && this.options.sort && this.options.sort.column ? this.options.sort.column : null,
-      sortDirection: this.options && this.options.sort && this.options.sort.order ? this.options.sort.order : "ASC",
+      tableClass: tableClasses(this.options),
+      ...initialSort(this.options),
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
       currentData: [],
@@ -425,7 +369,6 @@ export default {
       manageColumnStyle: {},
       debouncedComputeFixedColumns: null,
       hasHorizontalOverflow: false,
-      resizeObserver: null,
       allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
       allChunkSize: 50, // Append the next 50 items on scroll
       allObserver: null,
@@ -442,13 +385,7 @@ export default {
       return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
     },
     tableWrapperStyle() {
-      if (!this.maxTableHeight) return null;
-      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
-      if (!maxHeight) return null;
-      return {
-        maxHeight,
-        overflowY: "auto",
-      };
+      return maxHeightStyle(this.maxTableHeight);
     },
     serverSidePagination() {
       return (
@@ -460,14 +397,7 @@ export default {
       );
     },
     emptyColspan() {
-      let colspan = this.visibleColumns.length;
-      if (this.selectableRows) {
-        colspan += 1;
-      }
-      if (this.buttons.length > 0) {
-        colspan += 1;
-      }
-      return colspan;
+      return emptyColspan(this.visibleColumns.length, this.selectableRows, this.buttons.length > 0);
     },
     total() {
       if (this.serverSidePagination) {
@@ -487,16 +417,8 @@ export default {
         }
         return this.itemsPerPage;
       }
-      // if pagination is enabled, use that
-      if (this.options && this.options.pagination) {
-        if (typeof this.options.pagination === "object") {
-          return this.options.pagination.itemsPerPage;
-        } else {
-          return this.options.pagination;
-        }
-      }
-      // otherwise, use all elements
-      return this.total;
+      // pagination from options, otherwise all elements
+      return pageSizeFromOptions(this.options, this.total);
     },
     pages() {
       if (this.isAllMode) {
@@ -514,9 +436,6 @@ export default {
       }
       
       return this.getFilteredAndSortedData().length;
-    },
-    sortIcon() {
-      return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
     },
     tableData() {
       if (this.serverSidePagination) {
@@ -549,28 +468,22 @@ export default {
           .map(([k, v]) => ({ [k]: v }))
       );
     },
-    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
-    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
     visibleColumns() {
-      if (!this.data || this.data.length === 0) return this.columns;
-      return this.columns.filter((c) => this.data.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
+      return visibleColumns(this.columns, this.data);
     },
     hasFixedColumns() {
-      return this.visibleColumns.some((c) => ["left", "right"].includes(c.fixed));
+      return hasFixedColumns(this.visibleColumns);
     },
     hasRightFixedColumns() {
-      return this.visibleColumns.some((c) => c.fixed === "right");
+      return hasRightFixedColumns(this.visibleColumns);
     },
     // Determine if manage column should be sticky
     shouldFixManageColumn() {
-      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+      return shouldFixManageColumn(this.hasManageButtons, this.hasHorizontalOverflow, this.visibleColumns);
     },
     // Cache the indices to avoid repeated searches
     fixedColumnIndices() {
-      return {
-        lastLeft: this.visibleColumns.findLastIndex((col) => col.fixed === "left"),
-        firstRight: this.visibleColumns.findIndex((col) => col.fixed === "right"),
-      };
+      return fixedColumnIndices(this.visibleColumns);
     },
     selectedCount() {
       return this.currentData.length;
@@ -632,13 +545,7 @@ export default {
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
 
-    if (this.options && this.options.pagination) {
-      if (typeof this.options.pagination === "object") {
-        if ("itemsPerPageList" in this.options.pagination) {
-          this.itemsPerPageList = this.options.pagination.itemsPerPageList;
-        }
-      }
-    }
+    this.itemsPerPageList = itemsPerPageListFromOptions(this.options) ?? this.itemsPerPageList;
     // map columns to filter object (e.g. {column1: {filter1: false, filter2: false})
     this.filter = Object.assign(
       {},
@@ -657,7 +564,7 @@ export default {
     }
   },
   created() {
-    this.debouncedComputeFixedColumns = this.debounce(() => {
+    this.debouncedComputeFixedColumns = debounce(() => {
       this.computeFixedColumnStyles();
     }, 150);
   },
@@ -667,170 +574,41 @@ export default {
     this.cleanupAllObserver();
   },
   methods: {
-    formatLocalizedDateTime,
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();
-        // Use ResizeObserver for better performance if available
-        if (window.ResizeObserver && this.$refs.tableWrapper) {
-          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
-          this.resizeObserver.observe(this.$refs.tableWrapper);
-        } else {
-          // Fallback to window resize
-          window.addEventListener("resize", this.debouncedComputeFixedColumns);
-        }
+        this._stopFixedColumnsResize?.();
+        this._stopFixedColumnsResize = observeResize(
+          [this.$refs.tableWrapper, this.$refs.tableElement],
+          this.debouncedComputeFixedColumns
+        );
       });
     },
     cleanupFixedColumns() {
-      if (this.resizeObserver) {
-        this.resizeObserver.disconnect();
-        this.resizeObserver = null;
-      }
-      if (this.debouncedComputeFixedColumns) {
-        window.removeEventListener("resize", this.debouncedComputeFixedColumns);
-      }
+      this._stopFixedColumnsResize?.();
+      this._stopFixedColumnsResize = null;
+      this.debouncedComputeFixedColumns?.cancel();
     },
     getManageColumnClass() {
-      if (!this.shouldFixManageColumn) return null;
-
-      return {
-        "table-fixed": true,
-        "table-fixed-right": true,
-        "table-fixed-shadow": !this.hasRightFixedColumns,
-      };
+      return manageColumnClass(this.shouldFixManageColumn, this.hasRightFixedColumns);
     },
     getFixedColumnStyle(column) {
-      if (!column?.key || !column?.fixed) return null;
-      return this.fixedColumnStyles[column.key] || null;
+      return fixedColumnStyle(this.fixedColumnStyles, column);
     },
     getFixedColumnClass(column, index) {
-      if (!column?.fixed) return null;
-
-      const { lastLeft, firstRight } = this.fixedColumnIndices;
-      const isLastLeft = column.fixed === "left" && index === lastLeft;
-      const isFirstRight = column.fixed === "right" && index === firstRight;
-
-      return {
-        "table-fixed": true,
-        "table-fixed-left": column.fixed === "left",
-        "table-fixed-right": column.fixed === "right",
-        "table-fixed-shadow": isLastLeft || isFirstRight,
-      };
-    },
-    getManageColumnWidth() {
-      const ref = this.$refs.manageHeader;
-      const el = Array.isArray(ref) ? ref[0] : ref;
-      return el?.offsetWidth || 100; // Default 100px 
+      return fixedColumnClass(column, index, this.fixedColumnIndices);
     },
     computeFixedColumnStyles() {
-      // Check for horizontal overflow
-      const hasOverflow = this.detectHorizontalOverflow();
+      const { hasOverflow, columnStyles, manageColumnStyle } = measureFixedColumns(this.$refs, {
+        columns: this.visibleColumns,
+        hasManageButtons: this.hasManageButtons,
+        manageFallbackWidth: 100,
+      });
       if (hasOverflow !== this.hasHorizontalOverflow) {
         this.hasHorizontalOverflow = hasOverflow;
       }
-
-      // Early return if no fixed columns needed
-      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
-        this.fixedColumnStyles = {};
-        this.manageColumnStyle = {};
-        return;
-      }
-
-      const styles = {};
-      const baseStyle = {
-        position: "sticky",
-        zIndex: 2,
-        background: "var(--bs-body-bg, #fff)",
-      };
-
-      // Compute left-fixed columns
-      let leftOffset = 0;
-      this.visibleColumns.forEach((column) => {
-        if (column.fixed === "left") {
-          styles[column.key] = {
-            ...baseStyle,
-            left: `${leftOffset}px`,
-          };
-          leftOffset += this.getColumnWidth(column);
-        }
-      });
-
-      // Compute right-fixed columns
-      let rightOffset = 0;
-
-      // Reserve space for manage column if it should be fixed
-      if (this.shouldFixManageColumn) {
-        rightOffset = this.getManageColumnWidth();
-      }
-
-      // Process right-fixed columns from right to left
-      [...this.visibleColumns]
-        .reverse()
-        .filter((c) => c.fixed === "right")
-        .forEach((column) => {
-          styles[column.key] = {
-            ...baseStyle,
-            right: `${rightOffset}px`,
-          };
-          rightOffset += this.getColumnWidth(column);
-        });
-
-      // Set manage column style
-      this.manageColumnStyle = this.shouldFixManageColumn
-        ? {
-            ...baseStyle,
-            right: "0px",
-            zIndex: 3, // Higher z-index for manage column
-          }
-        : null;
-
-      this.fixedColumnStyles = styles;
-    },
-    getColumnWidth(column) {
-      // Check explicit width properties first 
-      if (column.fixedWidth) return Number(column.fixedWidth);
-      if (column.widthPx) return Number(column.widthPx);
-      if (column.width) return Number(column.width);
-
-      // Fall back to measuring DOM
-      const ref = this.$refs[`header-${column.key}`];
-      const el = Array.isArray(ref) ? ref[0] : ref;
-      if (el?.offsetWidth) return el.offsetWidth;
-
-      // Default fallback
-      return 150;
-    },
-    detectHorizontalOverflow() {
-      const wrapper = this.$refs.tableWrapper;
-      const table = this.$refs.tableElement;
-
-      if (!wrapper || !table) return false;
-
-      return table.scrollWidth > wrapper.clientWidth;
-    },
-    normalizeCssSize(value) {
-      if (!value) return null;
-      if (typeof value === "number" && !Number.isNaN(value)) {
-        return `${value}px`;
-      }
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (!trimmed) return null;
-        if (/^\d+$/.test(trimmed)) {
-          return `${trimmed}px`;
-        }
-        return trimmed;
-      }
-      return null;
-    },
-    debounce(func, wait = 100) {
-      let timeout;
-      return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          func.apply(this, args);
-        }, wait);
-      };
+      this.fixedColumnStyles = columnStyles;
+      this.manageColumnStyle = manageColumnStyle;
     },
     getFilteredAndSortedData() {
       let data = this.data.map((d) => d);
@@ -938,48 +716,20 @@ export default {
       return data;
     },
     sort(column) {
-      if (this.sortColumn && this.sortColumn === column) {
-        this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
-      } else {
-        this.sortDirection = "ASC";
-      }
-      this.sortColumn = column;
+      const { sortColumn, sortDirection } = nextSort(this.sortColumn, this.sortDirection, column);
+      this.sortColumn = sortColumn;
+      this.sortDirection = sortDirection;
       this.paginationUpdate();
     },
     actionEmitter(data) {
       this.$emit("action", data);
-      let statsParams = {};
-      if (data.stats) {
-        // Only include the stat fields in the stats data
-       Object.entries(data.stats).forEach(([statsKey, paramKey]) => {
-        statsParams[statsKey] = data.params[paramKey];
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", actionClickStats(data));
       }
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "actionClick",
-            data: {
-              action: data.action,
-              params: statsParams,
-            },
-          });
-        }
     },
     selectRow(row) {
       if (this.selectableRows) {
-        if (!this.isRowSelected(row)) {
-          // check if selected
-          if (this.options && this.options.singleSelect) {
-            this.currentData = [row];
-          } else {
-            this.currentData.push(row);
-          }
-        } else {
-          const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
-          if (toRemove >= 0) {
-            this.currentData.splice(toRemove, 1);
-          }
-        }
+        this.currentData = toggleRowSelection(this.currentData, row, this.options && this.options.singleSelect);
       }
     },
     selectAllRows() {
@@ -1017,52 +767,14 @@ export default {
       return deepEqual(row1, row2);
     },
     getFilteredButtons(row) {
-      const filteredButtons = this.buttons.filter((b) => {
-        if (!b.filter || !b.filter.length) return true;
-        
-        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
-        const filterMode = b.filterMode || "or";
-        
-        if (filterMode === "and") {
-          // AND logic: all filters must match
-          return b.filter.every((f) => {
-            if (f.type === "not") {
-              return row[f.key] !== f.value;
-            }
-            return row[f.key] === f.value;
-          });
-        } else {
-          // OR logic (default): at least one filter must match
-          return b.filter.some((f) => {
-            if (f.type === "not") {
-              return row[f.key] !== f.value;
-            }
-            return row[f.key] === f.value;
-          });
-        }
-      });
+      const filteredButtons = rowButtons(this.buttons, row);
 
       // Update this flag if there are any buttons
       if (filteredButtons.length > 0) {
         this.hasManageButtons = true;
       }
 
-
       return filteredButtons;
-    },
-    getMultilineStyles(column) {
-      if (!column.multiline) {
-        return null;
-      }
-      const lines =
-        typeof column.multiline === "number" ? 
-          column.multiline
-          : column.multiline === true
-            ? 2
-            : column.multiline;
-      return {
-        "--line-clamp": lines,
-      };
     },
     setupAllObserver() {
       this.cleanupAllObserver();
@@ -1101,47 +813,15 @@ export default {
     },
 
     isRowSelected(row) {
-      if (row.id !== undefined) {
-        return this.currentData.some(r => r.id === row.id);
-      }
-      return this.currentData.some(r => deepEqual(r, row));
+      return isRowInSelection(this.currentData, row);
     },
   },
 };
 </script>
 
+<style scoped src="./table/table.css"></style>
+
 <style scoped>
-.table-wrapper {
-  position: relative;
-  overflow-x: auto;
-  min-height: 80px;
-  margin-bottom: 1rem;
-}
-
-.table {
-  width: max-content;
-  min-width: 100%;
-  border-spacing: 0;
-  border-collapse: separate;
-}
-
-.table-fixed {
-  position: sticky;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-fixed-left.table-fixed-shadow {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table-fixed-right.table-fixed-shadow {
-  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table thead .table-fixed {
-  z-index: 3;
-}
-
 .form-check-input:disabled {
   cursor: not-allowed;
   pointer-events: initial;
@@ -1149,61 +829,4 @@ export default {
   background-color: var(--bs-secondary-bg, #d8d8d8);
   border: 1px solid var(--bs-border-color, gray);
 }
-
-.pointer {
-  cursor: pointer;
-}
-
-.multiline {
-  display: -webkit-box;
-  -webkit-line-clamp: var(--line-clamp, 2);
-  line-clamp: var(--line-clamp, 2);
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.table-wrapper thead th {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed,
-.table-wrapper thead th.table-fixed-left,
-.table-wrapper thead th.table-fixed-right {
-  z-index: 6 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed-right {
-  z-index: 7 !important;
-}
-
-.table-wrapper tbody td.table-fixed,
-.table-wrapper tbody td.table-fixed-left,
-.table-wrapper tbody td.table-fixed-right {
-  z-index: 2 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th:has(.dropdown-menu.show) {
-  z-index: 5 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th .dropdown-menu {
-  z-index: 9999 !important;
-}
-
-.input-group.input-group-sm,
-.input-group.input-group-sm .input-group-text,
-.input-group.input-group-sm .form-control {
-  position: relative;
-  z-index: 20;
-}
-
 </style>

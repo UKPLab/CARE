@@ -66,24 +66,12 @@
             :style="[getFixedColumnStyle(c), getScrollColumnStyle(c), c.style || {}]"
           >
             {{ c.name }}
-            <span
+            <SortButton
               v-if="c.sortable"
-              :title="$t('common.sortBy')"
-            >
-              <LoadIcon
-                v-if="c.sortable"
-                :class="{
-                  'bg-success': sortColumn === c.key,
-                  'bg-opacity-50': sortColumn === c.key,
-                  'bg-opacity-10': sortColumn !== c.key,
-                  'bg-black': sortColumn !== c.key,
-                }"
-                :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
-                class="me-1"
-                style="cursor: pointer"
-                @click="sort('sortKey' in c ? c.sortKey : c.key)"
-              />
-            </span>
+              :active="sortColumn === c.key"
+              :direction="sortDirection"
+              @sort="sort('sortKey' in c ? c.sortKey : c.key)"
+            />
           </th>
           <th
             v-if="manageColumnActive"
@@ -116,7 +104,7 @@
             :style="{ height: topSpacerHeight + 'px' }"
           ></td>
         </tr>
-        <tr v-if="!showPlaceholderRows && serverSidePagination && total > 0 && sourceData.length === 0">
+        <tr v-if="!showPlaceholderRows && total > 0 && queryItems.length === 0">
           <td
             :colspan="emptyColspan"
             class="text-center"
@@ -124,7 +112,7 @@
             {{ $t('common.loadingFromServer') }}
           </td>
         </tr>
-        <tr v-else-if="!showPlaceholderRows && (!sourceData || sourceData.length === 0)">
+        <tr v-else-if="!showPlaceholderRows && queryItems.length === 0">
           <td
             :colspan="emptyColspan"
             class="text-center"
@@ -153,12 +141,8 @@
               @click.stop=""
             >
               <input
-                class="form-check-input"
+                class="form-check-input pointer"
                 type="checkbox"
-                :class="{
-                  pointer: selectableRows && !r.isDisabled,
-                }"
-                :disabled="r.isDisabled"
                 :checked="isRowSelected(r)"
                 @change="(e) => selectRow(r)"
               />
@@ -169,93 +153,43 @@
             :key="c.key"
             :class="[
               'width' in c ? 'col-' + c.width : 'col-auto',
-              { pointer: selectableRows && !r.isDisabled },
+              { pointer: selectableRows },
               getFixedColumnClass(c, index),
             ]"
             :style="[getFixedColumnStyle(c), getScrollColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
-              <TIcon
-                v-if="c.type === 'icon'"
-                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
-                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
-                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
-                :size="c.typeOptions?.size ?? 16"
-              />
-              <TBadge
-                v-else-if="c.type === 'badge'"
-                :options="c.typeOptions ? c.typeOptions : null"
-                :value="r[c.key]"
-              />
-              <TButton
-                v-else-if="c.type === 'button'"
-                :action="r[c.key].action"
-                :stats="r[c.key].stats"
-                :icon="r[c.key].icon"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
+              <!-- Plain text of a scroll column: fixed width, the content scrolls. -->
+              <TCell
+                :column="c"
+                :row="r"
                 @action="actionEmitter"
-              />
-              <TToggle
-                v-else-if="c.type === 'toggle'"
-                :action="r[c.key].action"
-                :value="r[c.key].value"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
-                @action="actionEmitter"
-              />
-              <span v-else-if="c.type === 'datetime'">
-                {{ formatLocalizedDateTime(r[c.key]) }}
-              </span>
-
-              <span v-else-if="c.type === 'icon-selector'">
-                <LoadIcon
-                  v-if="r[c.key].selected"
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  style="color: yellowgreen"
-                />
-                <LoadIcon
-                  v-else
-                  v-tooltip
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  :title="r[c.key].title"
-                  role="button"
-                  @click="actionEmitter({ action: r[c.key].action, params: r })"
-                />
-              </span>
-              <div
-                v-else-if="isScrollColumn(c)"
-                class="cell-scroll"
-                :style="getScrollCellStyle(c)"
-                @mouseenter="syncNameScrollBar"
               >
-                <div
-                  class="cell-scroll-content"
-                  @scroll="syncNameScrollBar"
-                  @wheel.prevent="onCellScrollWheel"
+                <template
+                  v-if="isScrollColumn(c)"
+                  #text
                 >
-                  {{ r[c.key] }}
-                </div>
-                <div
-                  class="cell-scroll-track"
-                  @mousedown.prevent.stop="onNameScrollBarDown"
-                >
-                  <div class="cell-scroll-thumb"></div>
-                </div>
-              </div>
-              <span
-                v-else
-                :class="{
-                  multiline: c.multiline,
-                }"
-                :style="getMultilineStyles(c)"
-              >
-                {{ r[c.key] }}
-              </span>
+                  <div
+                    class="cell-scroll"
+                    :style="getScrollCellStyle(c)"
+                    @mouseenter="syncNameScrollBar"
+                  >
+                    <div
+                      class="cell-scroll-content"
+                      @scroll="syncNameScrollBar"
+                      @wheel.prevent="onCellScrollWheel"
+                    >
+                      {{ r[c.key] }}
+                    </div>
+                    <div
+                      class="cell-scroll-track"
+                      @mousedown.prevent.stop="onNameScrollBarDown"
+                    >
+                      <div class="cell-scroll-thumb"></div>
+                    </div>
+                  </div>
+                </template>
+              </TCell>
             </span>
             <span v-else> - </span>
           </td>
@@ -286,7 +220,7 @@
       </tbody>
     </table>
     <div
-      v-if="queryMode && queryLoadingVisible && !isInfiniteMode"
+      v-if="queryLoadingVisible && !isInfiniteMode"
       class="infinite-loading-overlay"
       role="status"
       aria-live="polite"
@@ -339,7 +273,7 @@
     :current-page="currentPage"
     :items-per-page="isInfiniteMode ? 0 : limit"
     :items-per-page-list="itemsPerPageList"
-    :allow-all="queryMode"
+    :allow-all="true"
     :show-page-numbers="false"
     :window-first="windowFirstVisible"
     :window-last="windowLastVisible"
@@ -351,20 +285,41 @@
 </template>
 
 <script>
-import TButton from "./table/Button.vue";
 import TButtonGroup from "./table/ButtonGroup.vue";
-import TToggle from "./table/Toggle.vue";
-import TBadge from "./table/Badge.vue";
-import TIcon from "./table/Icon.vue";
+import TCell from "./table/Cell.vue";
+import SortButton from "./table/SortButton.vue";
 import Pagination from "./table/Pagination.vue";
 import TableSearch from "./table/Search.vue";
-import LoadIcon from "@/basic/Icon.vue";
 import Loader from "./Loading.vue";
-import { tooltip } from "@/assets/tooltip.js";
-import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
 import debounce from "lodash.debounce";
 import { matchesTokenList } from "./table/searchTokens.js";
+import {
+  fixedColumnClass,
+  fixedColumnIndices,
+  fixedColumnStyle,
+  hasFixedColumns,
+  hasRightFixedColumns,
+  manageColumnClass,
+  measureFixedColumns,
+  observeResize,
+  shouldFixManageColumn,
+} from "./table/fixedColumns.js";
+import {
+  actionClickStats,
+  emptyColspan,
+  initialSort,
+  isRowInSelection,
+  itemsPerPageListFromOptions,
+  maxHeightStyle,
+  nextSort,
+  normalizeCssSize,
+  pageSizeFromOptions,
+  rowButtons,
+  tableClasses,
+  toggleRowSelection,
+  visibleColumns,
+} from "./table/tableHelpers.js";
 
 /**
  * Server-paginated table (queryTable + Delta). Same column, button, and selection API as
@@ -378,15 +333,11 @@ export default {
   components: {
     Pagination,
     TableSearch,
-    TIcon,
-    TBadge,
+    TCell,
+    SortButton,
     TButtonGroup,
-    TButton,
-    TToggle,
-    LoadIcon,
     Loader,
   },
-  directives: { tooltip },
   inject: {
     acceptStats: {
       default: () => false,
@@ -418,11 +369,10 @@ export default {
       required: false,
       default: null,
     },
-    /** autoTable name — enables queryTable + Delta (issue #88) */
+    /** autoTable name the rows are queried from (queryTable + Delta, issue #88) */
     table: {
       type: String,
-      required: false,
-      default: null,
+      required: true,
     },
     /** subscribeAppData-style filter items for queryTable */
     queryFilter: {
@@ -481,15 +431,8 @@ export default {
   emits: ["action", "update:modelValue", "selectionChange"],
   data: function () {
     return {
-      tableClass: {
-        "table-striped": this.options && this.options.striped,
-        "table-hover": this.options && this.options.hover,
-        "table-bordered": this.options && this.options.bordered,
-        "table-borderless": this.options && this.options.borderless,
-        "table-sm": this.options && this.options.small,
-      },
-      sortColumn: this.options && this.options.sort && this.options.sort.column ? this.options.sort.column : null,
-      sortDirection: this.options && this.options.sort && this.options.sort.order ? this.options.sort.order : "ASC",
+      tableClass: tableClasses(this.options),
+      ...initialSort(this.options),
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
       currentData: [],
@@ -503,8 +446,6 @@ export default {
       manageSizerParams: {},
       debouncedComputeFixedColumns: null,
       hasHorizontalOverflow: false,
-      resizeObserver: null,
-      // Select-all in query-mode: the selection is the query, not a copy of the loaded rows.
       // `allMatching` carries the intention ("every row this query matches"), `excludeIds` the
       // rows unticked afterwards. Both are resolved again on the server when the action runs.
       allMatching: false,
@@ -537,7 +478,7 @@ export default {
       _backfillBusy: false,
       _hopBusy: false,
       _deleteAnimMs: 750,
-      // Infinite scroll ("All" in query-mode): sliding keyset window + row virtualization.
+      // Infinite scroll ("All" page size): sliding keyset window + row virtualization.
       // queryItems holds the loaded window; rowsBefore says where that window sits in the
       // result set, so the spacers can stand in for every row we did not load.
       rowsBefore: 0,
@@ -574,19 +515,16 @@ export default {
     };
   },
   computed: {
-    queryMode() {
-      return !!(this.table && this.serverSidePagination);
-    },
     hasQueryScope() {
       return !!(this.queryScope && Object.keys(this.queryScope).length > 0);
     },
     pendingBannerVisible() {
       // Infinite scroll absorbs inserts with the spacers, so it never needs the banner.
-      return this.queryMode && !this.isInfiniteMode && (this.pendingInserts > 0 || this.pendingStructural);
+      return !this.isInfiniteMode && (this.pendingInserts > 0 || this.pendingStructural);
     },
-    /** "All" page size on a server-side table: sliding window instead of a fixed page. */
+    /** "All" page size: sliding window instead of a fixed page. */
     isInfiniteMode() {
-      return this.queryMode && this.itemsPerPage === 0;
+      return this.itemsPerPage === 0;
     },
     loadedCount() {
       return this.queryItems.length;
@@ -671,7 +609,7 @@ export default {
       if (!this.buttons.length) return false;
       // Reserve the column while the first block is still loading.
       if (this.isInfiniteMode && this.loadedCount === 0) return true;
-      return (this.sourceData || []).some((row) => this.rowButtons(row).length > 0);
+      return this.queryItems.some((row) => this.rowButtons(row).length > 0);
     },
     /**
      * Floor width for Manage: icon-only btn-group-sm is ~2.05rem per button.
@@ -712,7 +650,7 @@ export default {
     infiniteShellStyle() {
       if (!this.isInfiniteMode) return null;
       const height = this.maxTableHeight
-        ? this.normalizeCssSize(this.maxTableHeight)
+        ? normalizeCssSize(this.maxTableHeight)
         : "65vh";
       return height ? {height} : {height: "65vh"};
     },
@@ -731,57 +669,30 @@ export default {
       }
       return this.$t("common.tableUpdatedRefresh");
     },
-    sourceData() {
-      return this.queryItems;
-    },
     isAllRowsSelected() {
       return this.allMatching && this.excludeIds.length === 0;
     },
     /** Dash instead of a tick: all matching rows are selected except a few unticked ones. */
     isSelectionPartial() {
-      return this.queryMode && this.allMatching && this.excludeIds.length > 0;
+      return this.allMatching && this.excludeIds.length > 0;
     },
     tableWrapperStyle() {
-      const style = {};
       if (this.isInfiniteMode) {
         // Fixed height lives on the shell so the custom scrollbar can match it.
-        style.height = "100%";
-        style.overflowY = "auto";
-        style.overflowX = "auto";
-        style.overflowAnchor = "none";
-        return style;
+        return {
+          height: "100%",
+          overflowY: "auto",
+          overflowX: "auto",
+          overflowAnchor: "none",
+        };
       }
-      const maxHeight = this.maxTableHeight ? this.normalizeCssSize(this.maxTableHeight) : null;
-      if (maxHeight) {
-        style.maxHeight = maxHeight;
-        style.overflowY = "auto";
-      }
-      return Object.keys(style).length > 0 ? style : null;
-    },
-    serverSidePagination() {
-      return (
-        this.options &&
-        this.options.pagination &&
-        typeof this.options.pagination === "object" &&
-        "serverSide" in this.options.pagination &&
-        this.options.pagination.serverSide
-      );
+      return maxHeightStyle(this.maxTableHeight);
     },
     emptyColspan() {
-      let colspan = this.visibleColumns.length;
-      if (this.selectableRows) {
-        colspan += 1;
-      }
-      if (this.buttons.length > 0) {
-        colspan += 1;
-      }
-      return colspan;
+      return emptyColspan(this.visibleColumns.length, this.selectableRows, this.buttons.length > 0);
     },
     total() {
       return this.queryMeta.total;
-    },
-    isAllMode() {
-      return this.itemsPerPage === 0;
     },
     limit() {
       // if manually set, use that
@@ -792,25 +703,14 @@ export default {
         }
         return this.itemsPerPage;
       }
-      // if pagination is enabled, use that
-      if (this.options && this.options.pagination) {
-        if (typeof this.options.pagination === "object") {
-          return this.options.pagination.itemsPerPage;
-        } else {
-          return this.options.pagination;
-        }
-      }
-      // otherwise, use all elements
-      return this.total;
+      // pagination from options, otherwise all elements
+      return pageSizeFromOptions(this.options, this.total);
     },
     pages() {
-      if (this.isAllMode) {
+      if (this.isInfiniteMode) {
         return 1;
       }
       return Math.ceil(this.total / this.limit);
-    },
-    sortIcon() {
-      return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
     },
     tableData() {
       if (this.isInfiniteMode) {
@@ -818,7 +718,7 @@ export default {
         // Only the rows around the viewport reach the DOM; the rest of the window stays in memory.
         return this.queryItems.slice(this.virtualStart, this.virtualEnd);
       }
-      return this.sourceData;
+      return this.queryItems;
     },
     /** Free-text part of the search bar. */
     search() {
@@ -828,31 +728,25 @@ export default {
     activeColumnFilters() {
       return this.searchQuery.columnFilters || {};
     },
-    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
-    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
     visibleColumns() {
-      if (!this.sourceData || this.sourceData.length === 0) return this.columns;
-      return this.columns.filter((c) => this.sourceData.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
+      return visibleColumns(this.columns, this.queryItems);
     },
     hasFixedColumns() {
-      return this.visibleColumns.some((c) => ["left", "right"].includes(c.fixed));
+      return hasFixedColumns(this.visibleColumns);
     },
     hasRightFixedColumns() {
-      return this.visibleColumns.some((c) => c.fixed === "right");
+      return hasRightFixedColumns(this.visibleColumns);
     },
     // Determine if manage column should be sticky
     shouldFixManageColumn() {
-      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
+      return shouldFixManageColumn(this.hasManageButtons, this.hasHorizontalOverflow, this.visibleColumns);
     },
     // Cache the indices to avoid repeated searches
     fixedColumnIndices() {
-      return {
-        lastLeft: this.visibleColumns.findLastIndex((col) => col.fixed === "left"),
-        firstRight: this.visibleColumns.findIndex((col) => col.fixed === "right"),
-      };
+      return fixedColumnIndices(this.visibleColumns);
     },
     selectedCount() {
-      if (this.queryMode && this.allMatching) {
+      if (this.allMatching) {
         return Math.max(0, this.total - this.excludeIds.length);
       }
       return this.currentData.length;
@@ -864,7 +758,7 @@ export default {
     /** What an action should run on: either these rows, or "the query minus excludeIds". */
     selectionState() {
       return {
-        allMatching: this.queryMode && this.allMatching,
+        allMatching: this.allMatching,
         excludeIds: [...this.excludeIds],
         rows: this.currentData,
         count: this.selectedCount,
@@ -912,10 +806,8 @@ export default {
     itemsPerPage(newVal) {
       if (newVal === 0) {
         this.currentPage = 1;
-        if (this.queryMode) {
-          // The fetch itself comes from paginationUpdate() / setupQueryMode().
-          this.enterInfiniteMode();
-        }
+        // The fetch itself comes from paginationUpdate() / setupQueryMode().
+        this.enterInfiniteMode();
       } else {
         this.exitInfiniteMode();
       }
@@ -927,7 +819,6 @@ export default {
     },
     queryFilter: {
       handler(value) {
-        if (!this.queryMode) return;
         const key = JSON.stringify(value ?? null);
         if (key === this._filterKey) return;
         this._filterKey = key;
@@ -939,7 +830,6 @@ export default {
     },
     queryScope: {
       handler(value) {
-        if (!this.queryMode) return;
         const key = JSON.stringify(value ?? null);
         if (key === this._scopeKey) return;
         this._scopeKey = key;
@@ -951,7 +841,6 @@ export default {
     },
     searchQuery: {
       handler(value) {
-        if (!this.queryMode) return;
         const next = this.searchQueryKey(value);
         clearTimeout(this.searchDebounceTimer);
         if (next === this._appliedSearchKey) return;
@@ -988,16 +877,10 @@ export default {
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
 
-    if (this.options && this.options.pagination) {
-      if (typeof this.options.pagination === "object") {
-        if ("itemsPerPageList" in this.options.pagination) {
-          this.itemsPerPageList = this.options.pagination.itemsPerPageList;
-        }
-      }
-    }
+    this.itemsPerPageList = itemsPerPageListFromOptions(this.options) ?? this.itemsPerPageList;
 
-    // Consumers may open a query-mode table directly in "All" (infinite scroll).
-    if (this.queryMode && this.options?.pagination?.itemsPerPage === 0) {
+    // Consumers may open the table directly in "All" (infinite scroll).
+    if (this.options?.pagination?.itemsPerPage === 0) {
       this.itemsPerPage = 0;
     }
 
@@ -1025,7 +908,6 @@ export default {
     this.exitInfiniteMode();
   },
   methods: {
-    formatLocalizedDateTime,
     searchQueryKey(value) {
       const search = (value?.search || "").trim();
       const filters = value?.columnFilters || {};
@@ -1038,199 +920,59 @@ export default {
     setupFixedColumns() {
       this.$nextTick(() => {
         this.computeFixedColumnStyles();
-        // Use ResizeObserver for better performance if available
-        if (window.ResizeObserver && this.$refs.tableWrapper) {
-          this.resizeObserver = new ResizeObserver(this.debouncedComputeFixedColumns);
-          this.resizeObserver.observe(this.$refs.tableWrapper);
-          if (this.$refs.tableElement) {
-            this.resizeObserver.observe(this.$refs.tableElement);
-          }
-        } else {
-          // Fallback to window resize
-          window.addEventListener("resize", this.debouncedComputeFixedColumns);
-        }
+        this._stopFixedColumnsResize?.();
+        this._stopFixedColumnsResize = observeResize(
+          [this.$refs.tableWrapper, this.$refs.tableElement],
+          this.debouncedComputeFixedColumns
+        );
       });
     },
     cleanupFixedColumns() {
-      if (this.resizeObserver) {
-        this.resizeObserver.disconnect();
-        this.resizeObserver = null;
-      }
-      if (this.debouncedComputeFixedColumns) {
-        window.removeEventListener("resize", this.debouncedComputeFixedColumns);
-        this.debouncedComputeFixedColumns.cancel();
-      }
+      this._stopFixedColumnsResize?.();
+      this._stopFixedColumnsResize = null;
+      this.debouncedComputeFixedColumns?.cancel();
     },
     getManageColumnClass() {
-      if (!this.shouldFixManageColumn) return null;
-
-      return {
-        "table-fixed": true,
-        "table-fixed-right": true,
-        "table-fixed-shadow": !this.hasRightFixedColumns,
-      };
+      return manageColumnClass(this.shouldFixManageColumn, this.hasRightFixedColumns);
     },
     getFixedColumnStyle(column) {
-      if (!column?.key || !column?.fixed) return null;
-      return this.fixedColumnStyles[column.key] || null;
+      return fixedColumnStyle(this.fixedColumnStyles, column);
     },
     getFixedColumnClass(column, index) {
-      if (!column?.fixed) return null;
-
-      const { lastLeft, firstRight } = this.fixedColumnIndices;
-      const isLastLeft = column.fixed === "left" && index === lastLeft;
-      const isFirstRight = column.fixed === "right" && index === firstRight;
-
-      return {
-        "table-fixed": true,
-        "table-fixed-left": column.fixed === "left",
-        "table-fixed-right": column.fixed === "right",
-        "table-fixed-shadow": isLastLeft || isFirstRight,
-      };
-    },
-    getManageColumnWidth() {
-      const ref = this.$refs.manageHeader;
-      const el = Array.isArray(ref) ? ref[0] : ref;
-      if (el?.offsetWidth) return el.offsetWidth;
-      const n = this.buttons.length || 1;
-      return Math.round(n * 32.8 + 16);
+      return fixedColumnClass(column, index, this.fixedColumnIndices);
     },
     computeFixedColumnStyles() {
-      // Check for horizontal overflow
-      const hasOverflow = this.detectHorizontalOverflow();
+      const { hasOverflow, columnStyles, manageColumnStyle } = measureFixedColumns(this.$refs, {
+        columns: this.visibleColumns,
+        hasManageButtons: this.hasManageButtons,
+        // Header not rendered yet: estimate the icon-only button group.
+        manageFallbackWidth: Math.round((this.buttons.length || 1) * 32.8 + 16),
+      });
       if (hasOverflow !== this.hasHorizontalOverflow) {
         this.hasHorizontalOverflow = hasOverflow;
       }
-
-      // Early return if no fixed columns needed
-      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
-        this.fixedColumnStyles = {};
-        this.manageColumnStyle = {};
-        return;
-      }
-
-      const styles = {};
-      const baseStyle = {
-        position: "sticky",
-        zIndex: 2,
-        background: "var(--bs-body-bg, #fff)",
-      };
-
-      // Compute left-fixed columns
-      let leftOffset = 0;
-      this.visibleColumns.forEach((column) => {
-        if (column.fixed === "left") {
-          styles[column.key] = {
-            ...baseStyle,
-            left: `${leftOffset}px`,
-          };
-          leftOffset += this.getColumnWidth(column);
-        }
-      });
-
-      // Compute right-fixed columns
-      let rightOffset = 0;
-
-      // Reserve space for manage column if it should be fixed
-      if (this.shouldFixManageColumn) {
-        rightOffset = this.getManageColumnWidth();
-      }
-
-      // Process right-fixed columns from right to left
-      [...this.visibleColumns]
-        .reverse()
-        .filter((c) => c.fixed === "right")
-        .forEach((column) => {
-          styles[column.key] = {
-            ...baseStyle,
-            right: `${rightOffset}px`,
-          };
-          rightOffset += this.getColumnWidth(column);
-        });
-
-      // Set manage column style
-      this.manageColumnStyle = this.shouldFixManageColumn
-        ? {
-            ...baseStyle,
-            right: "0px",
-            zIndex: 3, // Higher z-index for manage column
-          }
-        : null;
-
-      this.fixedColumnStyles = styles;
-    },
-    getColumnWidth(column) {
-      // Check explicit width properties first 
-      if (column.fixedWidth) return Number(column.fixedWidth);
-      if (column.widthPx) return Number(column.widthPx);
-      if (column.width) return Number(column.width);
-
-      // Fall back to measuring DOM
-      const ref = this.$refs[`header-${column.key}`];
-      const el = Array.isArray(ref) ? ref[0] : ref;
-      if (el?.offsetWidth) return el.offsetWidth;
-
-      // Default fallback
-      return 150;
-    },
-    detectHorizontalOverflow() {
-      const wrapper = this.$refs.tableWrapper;
-      const table = this.$refs.tableElement;
-
-      if (!wrapper || !table) return false;
-
-      return table.scrollWidth > wrapper.clientWidth;
-    },
-    normalizeCssSize(value) {
-      if (!value) return null;
-      if (typeof value === "number" && !Number.isNaN(value)) {
-        return `${value}px`;
-      }
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (!trimmed) return null;
-        if (/^\d+$/.test(trimmed)) {
-          return `${trimmed}px`;
-        }
-        return trimmed;
-      }
-      return null;
+      this.fixedColumnStyles = columnStyles;
+      this.manageColumnStyle = manageColumnStyle;
     },
     updateValues(data) {
       // Selection is always a row list; a consumer that binds nothing starts empty.
       return Array.isArray(data) ? data : [];
     },
     sort(column) {
-      if (this.sortColumn && this.sortColumn === column) {
-        this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
-      } else {
-        this.sortDirection = "ASC";
-      }
-      this.sortColumn = column;
+      const { sortColumn, sortDirection } = nextSort(this.sortColumn, this.sortDirection, column);
+      this.sortColumn = sortColumn;
+      this.sortDirection = sortDirection;
       this.paginationUpdate();
     },
     actionEmitter(data) {
       this.$emit("action", data);
-      let statsParams = {};
-      if (data.stats) {
-        // Only include the stat fields in the stats data
-       Object.entries(data.stats).forEach(([statsKey, paramKey]) => {
-        statsParams[statsKey] = data.params[paramKey];
-      });
+      if (this.acceptStats) {
+        this.$socket.emit("stats", actionClickStats(data));
       }
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "actionClick",
-            data: {
-              action: data.action,
-              params: statsParams,
-            },
-          });
-        }
     },
     selectRow(row) {
       if (!this.selectableRows) return;
-      if (this.allMatching && this.queryMode) {
+      if (this.allMatching) {
         // Ticks are inverted while "all matching" is on: unticking a row excludes it.
         const index = this.excludeIds.indexOf(row.id);
         if (index >= 0) {
@@ -1244,22 +986,9 @@ export default {
         }
         return;
       }
-      if (!this.isRowSelected(row)) {
-        // check if selected
-        if (this.options && this.options.singleSelect) {
-          this.currentData = [row];
-        } else {
-          this.currentData.push(row);
-        }
-      } else {
-        const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
-        if (toRemove >= 0) {
-          this.currentData.splice(toRemove, 1);
-        }
-      }
+      this.currentData = toggleRowSelection(this.currentData, row, this.options && this.options.singleSelect);
     },
     selectAllRows() {
-      if (!this.queryMode) return;
       // Three header states: empty → select everything the query matches; dash → back to
       // everything (drop the exclusions); tick → clear the selection.
       if (!this.allMatching) {
@@ -1303,7 +1032,6 @@ export default {
      * @param {{search?: string, columnFilters?: Object}} query
      */
     applySearch(query) {
-      if (!this.queryMode) return;
       const next = {
         search: query?.search || "",
         columnFilters: query?.columnFilters ? {...query.columnFilters} : {},
@@ -1341,7 +1069,7 @@ export default {
       };
     },
     paginationPageChange(page) {
-      if (!this.queryMode || this.queryLoading) return;
+      if (this.queryLoading) return;
       // Keyset navigation. First / Prev / Next / Last
       const pages = this.pages || 1;
       const target = Math.min(Math.max(1, page), pages);
@@ -1394,7 +1122,6 @@ export default {
       }
     },
     paginationUpdate() {
-      if (!this.queryMode) return;
       // Sort / page-size change the keyset: always restart from the first page.
       // Otherwise currentPage stays e.g. 2 while fetchQueryPage() (empty nav) already
       // loaded page 1 — clicking First then only changes the number, not the rows.
@@ -1411,30 +1138,7 @@ export default {
      * touch component state (that used to flip hasManageButtons mid-render).
      */
     rowButtons(row) {
-      return this.buttons.filter((b) => {
-        if (!b.filter || !b.filter.length) return true;
-        
-        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
-        const filterMode = b.filterMode || "or";
-        
-        if (filterMode === "and") {
-          // AND logic: all filters must match
-          return b.filter.every((f) => {
-            if (f.type === "not") {
-              return row[f.key] !== f.value;
-            }
-            return row[f.key] === f.value;
-          });
-        } else {
-          // OR logic (default): at least one filter must match
-          return b.filter.some((f) => {
-            if (f.type === "not") {
-              return row[f.key] !== f.value;
-            }
-            return row[f.key] === f.value;
-          });
-        }
-      });
+      return rowButtons(this.buttons, row);
     },
     isScrollColumn(column) {
       return !!(column?.scroll || column?.maxChars);
@@ -1520,35 +1224,17 @@ export default {
       window.addEventListener("mousemove", move);
       window.addEventListener("mouseup", up);
     },
-    getMultilineStyles(column) {
-      if (!column.multiline) {
-        return null;
-      }
-      const lines =
-        typeof column.multiline === "number" ? 
-          column.multiline
-          : column.multiline === true
-            ? 2
-            : column.multiline;
-      return {
-        "--line-clamp": lines,
-      };
-    },
     isRowSelected(row) {
-      if (this.allMatching && this.queryMode) {
+      if (this.allMatching) {
         return !this.excludeIds.includes(row.id);
       }
-      if (row.id !== undefined) {
-        return this.currentData.some(r => r.id === row.id);
-      }
-      return this.currentData.some(r => deepEqual(r, row));
+      return isRowInSelection(this.currentData, row);
     },
 
     // --- queryTable / Delta ---
 
     setupQueryMode() {
-      if (!this.table || !this.$socket) return;
-      if (!this.serverSidePagination) return;
+      if (!this.$socket) return;
 
       this.teardownQueryMode();
       this._deltaHandler = (payload) => this.handleDelta(payload);
@@ -1569,10 +1255,10 @@ export default {
     },
     // Tell the server this table is open so it also sends row updates.
     holdQueryMode() {
-      if (this._queryHold || !this.table || !this.$socket) return;
+      if (this._queryHold || !this.$socket) return;
       this._queryHold = true;
       this._onQueryConnect = () => {
-        if (!this._queryHold || !this.table) return;
+        if (!this._queryHold) return;
         this._queryHeldOnSocket = true;
         this.$socket.emit("queryTableAcquire", {table: this.table});
       };
@@ -1587,7 +1273,7 @@ export default {
         this.$socket.off("connect", this._onQueryConnect);
       }
       this._onQueryConnect = null;
-      if (this._queryHeldOnSocket && this.table && this.$socket) {
+      if (this._queryHeldOnSocket && this.$socket) {
         this.$socket.emit("queryTableRelease", {table: this.table});
       }
       this._queryHold = false;
@@ -1596,7 +1282,7 @@ export default {
     // Stop listening for row updates and tell the server this table closed.
     teardownQueryMode() {
       this.releaseQueryMode();
-      if (!this.table || !this.$socket) return;
+      if (!this.$socket) return;
       if (this._deltaHandler || this._staleHandler) {
         if (this.sockets?.unsubscribe) {
           this.sockets.unsubscribe(this.table + "Delta");
@@ -1724,7 +1410,7 @@ export default {
       }
     },
     fetchQueryPage(options = {}) {
-      if (!this.queryMode || !this.$socket) return;
+      if (!this.$socket) return;
       if (!this.$socket.connected) {
         // Socket uses autoConnect:false; emit+ack before connect is dropped.
         if (!this._pendingConnectFetch) {
@@ -2074,7 +1760,7 @@ export default {
      * No previous-page / top enter. Last page: leave the page short.
      */
     async backfillAfterDeletes() {
-      if (!this.queryMode || this._backfillBusy || !this.$socket?.connected) return;
+      if (this._backfillBusy || !this.$socket?.connected) return;
       if (this.deletingIds && this.deletingIds.size > 0) {
         this.schedulePageBackfill();
         return;
@@ -2199,7 +1885,6 @@ export default {
       return false;
     },
     refetchCurrentWindow() {
-      if (!this.queryMode) return;
       if (this.isInfiniteMode) {
         this.scheduleWindowRefetch();
         return;
@@ -2218,7 +1903,7 @@ export default {
       }
     },
     handleDelta(delta) {
-      if (!this.queryMode || !delta) return;
+      if (!delta) return;
       const {operation, row, originSocketId} = delta;
       if (!row?.id && row?.id !== 0) return;
       if (this.isInfiniteMode) {
@@ -2400,7 +2085,7 @@ export default {
         },
       });
     },
-    // --- Infinite scroll window ("All" in query-mode) ---
+    // --- Infinite scroll window ("All" page size) ---
     //
     // queryItems is a window of at most infiniteMaxRows rows somewhere inside the result set.
     // rowsBefore / rowsAfter are rendered as spacer rows, so the scroll height always matches
@@ -3155,38 +2840,9 @@ export default {
 };
 </script>
 
+<style scoped src="./table/table.css"></style>
+
 <style scoped>
-.table-wrapper {
-  position: relative;
-  overflow-x: auto;
-  min-height: 80px;
-  margin-bottom: 1rem;
-}
-
-.table {
-  width: max-content;
-  min-width: 100%;
-  border-spacing: 0;
-  border-collapse: separate;
-}
-
-.table-fixed {
-  position: sticky;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-fixed-left.table-fixed-shadow {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table-fixed-right.table-fixed-shadow {
-  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table thead .table-fixed {
-  z-index: 3;
-}
-
 .table-manage-col {
   white-space: nowrap;
   box-sizing: border-box;
@@ -3198,18 +2854,6 @@ export default {
   visibility: hidden;
   pointer-events: none;
   white-space: nowrap;
-}
-
-.form-check-input:disabled {
-  cursor: not-allowed;
-  pointer-events: initial;
-  opacity: 0.5;
-  background-color: #d8d8d8;
-  border: 1px solid gray;
-}
-
-.pointer {
-  cursor: pointer;
 }
 
 .table-infinite-shell {
@@ -3296,17 +2940,6 @@ export default {
 .table-virtual.table-striped > tbody > tr.row-stripe-odd > * {
   --bs-table-color-type: var(--bs-table-striped-color);
   --bs-table-bg-type: var(--bs-table-striped-bg);
-}
-
-.multiline {
-  display: -webkit-box;
-  -webkit-line-clamp: var(--line-clamp, 2);
-  line-clamp: var(--line-clamp, 2);
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
 }
 
 .cell-scroll {
@@ -3701,46 +3334,4 @@ export default {
     background: #eceff1 !important;
   }
 }
-
-.table-wrapper thead th {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed,
-.table-wrapper thead th.table-fixed-left,
-.table-wrapper thead th.table-fixed-right {
-  z-index: 6 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed-right {
-  z-index: 7 !important;
-}
-
-.table-wrapper tbody td.table-fixed,
-.table-wrapper tbody td.table-fixed-left,
-.table-wrapper tbody td.table-fixed-right {
-  z-index: 2 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th:has(.dropdown-menu.show) {
-  z-index: 5 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th .dropdown-menu {
-  z-index: 9999 !important;
-}
-
-.input-group.input-group-sm,
-.input-group.input-group-sm .input-group-text,
-.input-group.input-group-sm .form-control {
-  position: relative;
-  z-index: 20;
-}
-
 </style>

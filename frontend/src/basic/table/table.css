@@ -1,0 +1,79 @@
+/*
+ * Layout shared by BasicTable (Table.vue) and BackendTable.vue: scroll wrapper, sticky header,
+ * fixed columns
+ */
+.table-wrapper {
+  position: relative;
+  overflow-x: auto;
+  min-height: 80px;
+  margin-bottom: 1rem;
+}
+
+.table {
+  width: max-content;
+  min-width: 100%;
+  border-spacing: 0;
+  border-collapse: separate;
+}
+
+.table-fixed {
+  position: sticky;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-fixed-left.table-fixed-shadow {
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.table-fixed-right.table-fixed-shadow {
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+}
+
+.table thead .table-fixed {
+  z-index: 3;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.table-wrapper thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed,
+.table-wrapper thead th.table-fixed-left,
+.table-wrapper thead th.table-fixed-right {
+  z-index: 6 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th.table-fixed-right {
+  z-index: 7 !important;
+}
+
+.table-wrapper tbody td.table-fixed,
+.table-wrapper tbody td.table-fixed-left,
+.table-wrapper tbody td.table-fixed-right {
+  z-index: 2 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th:has(.dropdown-menu.show) {
+  z-index: 5 !important;
+  background: var(--bs-body-bg, #fff);
+}
+
+.table-wrapper thead th .dropdown-menu {
+  z-index: 9999 !important;
+}
+
+.input-group.input-group-sm,
+.input-group.input-group-sm .input-group-text,
+.input-group.input-group-sm .form-control {
+  position: relative;
+  z-index: 20;
+}
