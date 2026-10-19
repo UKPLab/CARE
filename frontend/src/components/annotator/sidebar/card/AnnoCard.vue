@@ -144,6 +144,7 @@
                   v-if="numberReplies > 0"
                   ref="repliesToggle"
                   class="btn btn-light btn-sm"
+                  :aria-expanded="showReplies ? 'true' : 'false'"
                   data-placement="top"
                   data-toggle="tooltip"
                   :title="$t('common.reply')"
