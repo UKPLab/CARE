@@ -254,6 +254,7 @@ export default {
       collapseComment: true,
       listeningToFocus: false,
       maxComments: 1,
+      returnFocusEl: null,
     }
   },
   computed: {
@@ -347,7 +348,20 @@ export default {
     },
     openedTextarea(newVal) {
       if (newVal) {
+        // Remember what opened the editor (e.g. the Reply button) to return focus there
+        const opener = document.activeElement;
+        this.returnFocusEl = opener && opener !== document.body ? opener : null;
         this.$nextTick(() => this.$refs.textarea.focus());
+      } else {
+        // Runs before the textarea is removed, so we can tell if the keyboard was in it
+        const hadFocus = this.$refs.textarea && document.activeElement === this.$refs.textarea;
+        const opener = this.returnFocusEl;
+        this.returnFocusEl = null;
+        if (hadFocus && opener) {
+          this.$nextTick(() => {
+            if (opener.isConnected) opener.focus();
+          });
+        }
       }
     },
     editedByMyself(newVal) {
