@@ -58,7 +58,7 @@ export default {
       return [
         { name: this.$t("submission.dashboard.columns.id"), key: "id" },
         { name: this.$t("assignments.dashboard.submissionsTable.columns.name"), key: "name" },
-        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt" },
+        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt", type: "datetime" },
         { name: this.$t("assignments.dashboard.submissionsTable.columns.updatedAt"), key: "updatedAt", type: "datetime" },
       ];
     },
@@ -113,7 +113,7 @@ export default {
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
             description: submission.description || "",
-            createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
+            createdAt: submission.createdAt,
             updatedAt: submission.updatedAt,
           };
         });
