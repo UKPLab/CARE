@@ -43,18 +43,18 @@
         "previousStep": "Previous: {step}",
         "nextStep": "Next: {step}",
         "panes": {
-        "label": "Workflow steps",
-        "workflow": "Workflow",
-        "showStrip": "Show workflow steps",
-        "hideStrip": "Hide workflow steps",
-        "stepFallback": "Step {number}",
-        "annotationsOfStep": "{step}: Annotations",
-        "assessmentOfStep": "{step}: Assessment",
-        "flip": "Swap sides",
-        "split": {
-            "row": "Split side by side",
-            "column": "Split top and bottom"
-        }
+            "label": "Workflow steps",
+            "workflow": "Workflow",
+            "showStrip": "Show workflow steps",
+            "hideStrip": "Hide workflow steps",
+            "stepFallback": "Step {number}",
+            "annotationsOfStep": "{step}: Annotations",
+            "assessmentOfStep": "{step}: Assessment",
+            "flip": "Swap sides",
+            "split": {
+                "row": "Split side by side",
+                "column": "Split top and bottom"
+            }
         },
         "errors": {
         "goToDashboard": "Go to Dashboard",
@@ -66,5 +66,4 @@
         "foreignUnstartedSession": "This study session has not been started yet and belongs to another user."
         }
     }
-
 }
