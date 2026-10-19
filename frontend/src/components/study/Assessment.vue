@@ -639,15 +639,9 @@ export default {
 /* Layout */
 .assessment-section {
   padding: 1rem;
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .assessment-content-container {
-  flex: 1;
-  overflow-y: auto;
   padding-right: 5px;
 }
 
