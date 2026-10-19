@@ -1573,6 +1573,23 @@ Matches the cascade used when a PDF document is deleted.</p>
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.closedStudySessionIds">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">closedStudySessionIds</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">documentId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.closedStudySessionIds" title="Link to this definition"></a></dt>
+<dd><p>Session ids for studies that use this document and are already closed.
+A note with no study session stays included. A note from an open study does not.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>documentId</strong> (<strong>number</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Array.&lt;number&gt;&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.createDocument">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">createDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.createDocument" title="Link to this definition"></a></dt>
 <dd><p>Creates a new HTML-based document record in the database.</p>
@@ -1780,6 +1797,22 @@ This method reads the delta file from the disk and returns it as a Delta object.
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Promise.&lt;Delta&gt;</strong> – A promise that resolves with a new Delta object representing the file’s content.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.notesForClosedStudiesOrNoSession">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">notesForClosedStudiesOrNoSession</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">documentId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.notesForClosedStudiesOrNoSession" title="Link to this definition"></a></dt>
+<dd><p>Notes and comments with no study session, or from a closed study.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>documentId</strong> (<strong>number</strong>) – The ID of the document whose notes and comments are loaded.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Object&gt;</strong> – A promise that resolves with annotations, comments, and allComments.</p>
 </dd>
 </dl>
 </dd></dl>
