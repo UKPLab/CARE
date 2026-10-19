@@ -101,5 +101,9 @@ export default {
 </script>
 
 <style scoped>
-
+/* Plain .btn has no colour variant, so Bootstrap draws no focus ring */
+.btn:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
 </style>
