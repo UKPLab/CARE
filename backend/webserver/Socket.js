@@ -935,7 +935,9 @@ module.exports = class Socket {
             Object.assign(findOptions, viewJoin.join);
         }
 
-        const rows = await scope.model.findAll(findOptions);
+        // Joined view columns change without a study write; never resolve bulk ids from cache.
+        const queryModel = viewJoin ? scope.model.noCache() : scope.model;
+        const rows = await queryModel.findAll(findOptions);
         if (rows.length > MAX_BULK_SELECTION) {
             throw new TranslatableError("errors.queryTable.selectionTooLarge", {limit: MAX_BULK_SELECTION});
         }

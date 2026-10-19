@@ -92,6 +92,8 @@ async function paginateJoinSort({
     const fetchDir = travelBack ? reverseDir(displayDir) : displayDir;
     const seekOffset = (!after && !before && !fromEnd && offset > 0) ? Math.floor(offset) : 0;
 
+    const db = model.noCache();
+
     const include = [dashboardSortInclude(sortModel, [viewField])];
 
     const order = [
@@ -111,7 +113,7 @@ async function paginateJoinSort({
     }
 
     const [rows, total] = await Promise.all([
-        model.findAll({
+        db.findAll({
             where: paginationWhere,
             attributes,
             include,
@@ -120,7 +122,7 @@ async function paginateJoinSort({
             ...(seekOffset > 0 ? {offset: seekOffset} : {}),
             subQuery: false,
         }),
-        model.count({
+        db.count({
             where,
             include: [{model: sortModel, as: SORT_ALIAS, required: true}],
             distinct: true,
@@ -128,9 +130,8 @@ async function paginateJoinSort({
         }),
     ]);
 
-    // Copy: findAll is cached by reference, and reverse() would flip that cached
-    // array. The next identical backward read would flip it again and the page
-    // would walk toward the start.
+    // Copy: never reverse the array findAll returned in place (it may be a cached
+    // reference if the model passed in is cached elsewhere).
     const ordered = travelBack ? rows.slice().reverse() : rows;
 
     const edges = ordered.map((node) => {

@@ -565,13 +565,16 @@ class AppSocket extends Socket {
             const reversedOrder = forwardOrder.map(([col, dir]) => [col, dir === "ASC" ? "DESC" : "ASC"]);
 
             const joinOptions = viewJoin ? viewJoin.join : {};
+            // Sessions and state live on the sort view and change without saving the study.
+            // Skip the cache, or this page keeps the old rows.
+            const pageModel = viewJoin ? model.noCache() : model;
 
             if (offset > 0) {
                 // Cursor payload here is built exactly like sequelize-cursor-pagination's
                 // createCursor (the ordered field values), so the window can keep walking with
                 // after/before from a seeked position.
                 const [rows, rawTotal] = await Promise.all([
-                    model.findAll({
+                    pageModel.findAll({
                         where: allFilter,
                         attributes: allAttributes,
                         order: forwardOrder,
@@ -579,7 +582,7 @@ class AppSocket extends Socket {
                         offset,
                         ...joinOptions,
                     }),
-                    model.count({where: allFilter, ...joinOptions}),
+                    pageModel.count({where: allFilter, ...joinOptions}),
                 ]);
                 edges = rows.map((node) => ({
                     node,
@@ -587,12 +590,9 @@ class AppSocket extends Socket {
                 }));
                 total = rawTotal;
             } else {
-                // Same simple cache as getById/findAll: identical page query (same where/order/
-                // cursor/limit) hits memory; any study write still clears the whole model cache.
-                // The paginator reverses a `before` page in place. Copy first so that cached
-                // array stays in query order and the next Prev does not flip the window.
-                // omitPrimaryKeyFromOrder: we always pass an explicit, id-terminated order ourselves.
-                const paginateLazy = makePaginateLazy(withCopiedFindAll(model), {omitPrimaryKeyFromOrder: true});
+                // Copy the rows first: Prev reverses them in place and must not flip a cached page.
+                // omitPrimaryKeyFromOrder: the order passed here already ends with id.
+                const paginateLazy = makePaginateLazy(withCopiedFindAll(pageModel), {omitPrimaryKeyFromOrder: true});
                 const connection = paginateLazy({
                     where: allFilter,
                     attributes: allAttributes,
@@ -709,7 +709,9 @@ class AppSocket extends Socket {
             Object.assign(findOptions, viewJoin.join);
         }
 
-        const rows = await scope.model.findAll(findOptions);
+        // Joined view columns change without a study write; skip the never-expiring cache.
+        const queryModel = viewJoin ? scope.model.noCache() : scope.model;
+        const rows = await queryModel.findAll(findOptions);
         return {values: rows.map((row) => row.value).filter((value) => value !== null && value !== undefined)};
     }
 
