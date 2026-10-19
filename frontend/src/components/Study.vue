@@ -69,6 +69,7 @@
           v-if="
           !readOnlyComputed &&
           studySession &&
+          !studySessionFinished &&
           lastStep &&
           currentStudyStep &&
           currentStudyStep.stepType !== 3 &&
@@ -76,10 +77,10 @@
         "
           ref="finishButton"
           class="btn btn-outline-secondary mx-3"
-          :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
+          :title="$t('studies.finishStudy')"
           @click="finishClicked()"
       >
-        {{ studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy') }}
+        {{ $t('studies.finishStudy') }}
       </TopBarButton>
 
       <TopBarButton
@@ -236,6 +237,7 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
+      studySessionFinished: computed(() => this.studySessionFinished),
       studyData: computed(() => this.studyData),
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
@@ -404,6 +406,12 @@ export default {
         return this.studySession.studyStepId;
       }
       return null;
+    },
+    studySessionFinished() {
+      if (this.studySession && this.studySession.end) {
+        return true;
+      }
+      return false;
     },
     studyClosed() {
       if (this.study) {
@@ -590,7 +598,7 @@ export default {
         const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
         this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-        if (this.timeLeft < 0 && !this.studySession.end) {
+        if (this.timeLeft < 0 && !this.studySessionFinished) {
           this.finish();
         }
       }
@@ -639,6 +647,9 @@ export default {
       return true;
     },
     finish() {
+      if (this.studySessionFinished) {
+        return;
+      }
       // Prevent finishing if study is closed
       if (this.studyClosed) {
         this.eventBus.emit("toast", {
