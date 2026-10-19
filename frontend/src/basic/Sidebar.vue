@@ -114,7 +114,7 @@
       </div>
     </div>
     <Teleport to="#topBarNavItems">
-      <li v-if="isShown && Object.keys(shownTabs).length" class="nav-item">
+      <li v-if="isToggleShown" class="nav-item">
         <TopBarButton
             :show="isShown"
             :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
@@ -302,12 +302,13 @@ export default {
       return Object.fromEntries(Object.entries(this.sidebarConfigs.tabs).filter(([slotName]) => this.isTabShown(slotName)));
     },
     resolvedActiveSlot() {
-      if (!this.isTabShown) {
-        return this.internalActiveSlot || this.availableSlots[0] || null;
-      }
       // A hidden tab hands over to the first shown one, and comes back once it is shown again
       const shown = Object.keys(this.shownTabs);
       return shown.includes(this.internalActiveSlot) ? this.internalActiveSlot : shown[0] || null;
+    },
+    isToggleShown() {
+      // Without an active slot the sidebar can never be displayed, so the toggle would do nothing
+      return this.isShown && !!this.resolvedActiveSlot;
     },
     isSingleConfig() {
       return Object.keys(this.shownTabs).length === 1;

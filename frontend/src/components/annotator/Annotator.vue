@@ -27,6 +27,7 @@
             :active-side-bar="activeSidebar || 'annotations'"
             :is-tab-shown="isSidebarTabShown"
             :is-shown="isShown"  
+            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"

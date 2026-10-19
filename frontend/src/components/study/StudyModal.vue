@@ -98,7 +98,7 @@
       <BasicButton
           class="btn btn-outline-secondary"
           :text="$t('studies.returnToDashboard')"
-          @click="$router.push('/dashboard')"
+          @click="returnToDashboard"
       />
       <vr/>
       <div
@@ -143,7 +143,7 @@ import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue";
 import BasicTable from "@/basic/Table.vue";
 import Editor from "@/basic/editor/Editor.vue";
-import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
+import { resolveApiMessage, formatLocalizedDateTime, returnToDashboard as returnToDashboardHelper } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -389,6 +389,9 @@ export default {
               });
             }
           });
+    },
+    async returnToDashboard() {
+      await returnToDashboardHelper(this.$router);
     },
     start() {
       this.startStudy(this.studyId, this.studySessionId);

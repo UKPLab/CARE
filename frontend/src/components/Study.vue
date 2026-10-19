@@ -90,6 +90,7 @@
           v-if="
           !readOnlyComputed &&
           studySession &&
+          !studySessionFinished &&
           lastStep &&
           currentStudyStep &&
           currentStudyStep.stepType !== 3 &&
@@ -97,17 +98,16 @@
         "
           ref="finishButton"
           class="btn btn-outline-secondary mx-3"
-          :disabled="!isCurrentStepReady"
-          :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
-          @click="finish()"
+          :title="$t('studies.finishStudy')"
+          @click="finishClicked()"
       >
-        {{ studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy') }}
+        {{ $t('studies.finishStudy') }}
       </TopBarButton>
 
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
           ref="nextButton"
-          :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
+          :disabled="readOnlyComputed && nextStudyStep && !studyTrajectory.includes(nextStudyStep.id)"
           class="btn btn-outline-primary ms-3"
           :title="nextLabel"
           :props="{ key: 'studyNav.next' }"
@@ -182,7 +182,7 @@
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
-                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                         @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -213,7 +213,7 @@
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
-                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                         @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
                     />
@@ -295,6 +295,7 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
+      studySessionFinished: computed(() => this.studySessionFinished),
       studyData: computed(() => this.studyData),
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
@@ -329,6 +330,7 @@ export default {
       localStudyStepId: 0,
       studyData: {},
       stepsReady: {},
+      stepsMissing: {},
       loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
@@ -486,6 +488,12 @@ export default {
       }
       return null;
     },
+    studySessionFinished() {
+      if (this.studySession && this.studySession.end) {
+        return true;
+      }
+      return false;
+    },
     studyClosed() {
       if (this.study) {
         if(this.studySession?.parentStudySessionId !== null && this.studySession?.end === null){
@@ -622,6 +630,7 @@ export default {
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
+      if (this.warnIfAssessmentIncomplete("next")) return;
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
@@ -678,7 +687,7 @@ export default {
         const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
         this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-        if (this.timeLeft < 0 && !this.studySession.end) {
+        if (this.timeLeft < 0 && !this.studySessionFinished) {
           this.finish();
         }
       }
@@ -707,7 +716,29 @@ export default {
       );
       this.$refs.studyFinishModal.close();
     },
+    onAssessmentReady(stepId, payload) {
+      this.stepsReady[stepId] = payload.ready;
+      this.stepsMissing[stepId] = payload.missing;
+    },
+    warnIfAssessmentIncomplete(action) {
+      if (this.isCurrentStepReady) return false;
+      const missing = this.stepsMissing[this.currentStudyStepId] || [];
+      const isNext = action === "next";
+      const title = this.$t(isNext ? "studies.messages.cannotGoNext" : "studies.messages.cannotFinishSession");
+      const message = missing.length
+          ? this.$t(isNext ? "studies.messages.assessmentIncompleteNext" : "studies.messages.assessmentIncomplete", { criteria: missing.join(", ") })
+          : this.$t(isNext ? "studies.messages.assessmentIncompleteNextGeneric" : "studies.messages.assessmentIncompleteGeneric");
+      this.eventBus.emit("toast", {
+        title,
+        message,
+        variant: "warning",
+      });
+      return true;
+    },
     finish() {
+      if (this.studySessionFinished) {
+        return;
+      }
       // Prevent finishing if study is closed
       if (this.studyClosed) {
         this.eventBus.emit("toast", {
@@ -719,9 +750,13 @@ export default {
       }
       this.$refs.studyFinishModal.open();
     },
+    finishClicked() {
+      if (this.warnIfAssessmentIncomplete("finish")) return;
+      this.finish();
+    },
     handleModalClose(event) {
       if (event.endStudy) {
-        this.finish(); // End the study
+        this.finishClicked(); // End the study
       } else if (event.nextStep) {
         const nextStep = this.nextStudyStep;
         if (nextStep) {
