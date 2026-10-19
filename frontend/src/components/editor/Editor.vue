@@ -31,7 +31,7 @@
           :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
-          :active-side-bar="defaultActiveSidebar || activeSidebar"
+          :active-side-bar="activeSidebar || defaultActiveSidebar"
           :is-tab-shown="isSidebarTabShown"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"

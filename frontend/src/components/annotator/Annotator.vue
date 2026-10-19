@@ -24,10 +24,9 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
-            :active-side-bar="activeSidebar || 'annotations'"
+            :active-side-bar="activeSidebar || ($slots.additionalSidebars ? 'additionalSidebars' : 'annotations')"
             :is-tab-shown="isSidebarTabShown"
             :is-shown="isShown"  
-            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
