@@ -1,0 +1,57 @@
+{
+    "title": "Listes d'étiquettes",
+    "tagSet": "Liste d'étiquettes",
+    "addNewTagSet": "Ajouter une liste d'étiquettes",
+    "copyTagSet": "Copier la liste d'étiquettes",
+    "editTagSet": "Modifier la liste d'étiquettes",
+    "deleteTagSet": "Supprimer la liste d'étiquettes",
+    "shareTagSet": "Partager la liste d'étiquettes",
+    "exportTagSet": "Exporter la liste d'étiquettes",
+    "selectAsDefault": "Définir comme liste d'étiquettes par défaut",
+    "columns": {
+        "tags": "Étiquettes",
+        "lastChange": "Dernière modification",
+        "user": "Utilisateur"
+    },
+    "fields": {
+        "name": {
+            "label": "Nom de la liste d'étiquettes :",
+            "placeholder": "Ma liste d'étiquettes"
+        },
+        "description": {
+            "label": "Description de la liste d'étiquettes :",
+            "placeholder": "Description de la liste d'étiquettes"
+        },
+        "tags": {
+            "label": "Étiquettes :"
+        },
+        "tag": {
+            "name": {
+                "placeholder": "Nom de l'étiquette"
+            },
+            "colorCode": {
+                "label": "Couleur",
+                "options": {
+                    "info": "Info",
+                    "warning": "Avertissement",
+                    "success": "Succès",
+                    "danger": "Danger"
+                }
+            },
+            "description": {
+                "placeholder": "Description de l'étiquette"
+            }
+        }
+    },
+    "messages": {
+        "deleteTitle": "Supprimer la liste d'étiquettes",
+        "deleteConfirm": "Voulez-vous vraiment supprimer cette liste d'étiquettes ?",
+        "tagSetDeleted": "Liste d'étiquettes supprimée",
+        "tagSetDeletedMessage": "La liste d'étiquettes a été supprimée",
+        "publishTitle": "Publier la liste d'étiquettes",
+        "publishConfirm": "Voulez-vous vraiment publier cette liste d'étiquettes ? Remarque : une fois publiée, elle ne pourra plus être dépubliée !",
+        "tagSetPublished": "Liste d'étiquettes publiée",
+        "tagSetPublishedMessage": "La liste d'étiquettes a été publiée"
+    },
+    "editMainTag": "Modifier l'étiquette principale"
+}

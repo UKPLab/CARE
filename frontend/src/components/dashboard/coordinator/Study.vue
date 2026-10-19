@@ -54,7 +54,6 @@ export default {
   data() {
     return {
       studyId: 0,
-      documentId: 0,
       isSuccess: false,
       isTemplateMode: false,
       isUsingTemplate: false,
@@ -84,10 +83,7 @@ export default {
     },
   },
   methods: {
-    open(studyId, documentId = null, loadInitialized = false, templateMode = false, copy = false) {
-      if (documentId !== null) {
-        this.documentId = documentId;
-      }
+    open(studyId, loadInitialized = false, templateMode = false, copy = false) {
       this.isSuccess = false;
       this.templateWasEdited = false;
       this.studyId = studyId;
@@ -104,7 +100,7 @@ export default {
 
       this.$refs.coordinator.open(
           studyId,
-          {documentId: this.documentId, isTemplateMode: templateMode},
+          {isTemplateMode: templateMode},
           copy,
           aiOverrides
       );
