@@ -54,7 +54,8 @@
               />
             </div>
           </th>
-          <th
+          <!-- No column filter menus: filtering runs server-side through the search tokens. -->
+          <HeaderCell
             v-for="(c, index) in visibleColumns"
             :key="c.key"
             :ref="'header-' + c.key"
@@ -62,17 +63,12 @@
               'width' in c ? 'col-' + c.width : 'col-auto',
               getFixedColumnClass(c, index),
             ]"
-          
             :style="[getFixedColumnStyle(c), getScrollColumnStyle(c), c.style || {}]"
-          >
-            {{ c.name }}
-            <SortButton
-              v-if="c.sortable"
-              :active="sortColumn === c.key"
-              :direction="sortDirection"
-              @sort="sort('sortKey' in c ? c.sortKey : c.key)"
-            />
-          </th>
+            :column="c"
+            :sort-column="sortColumn"
+            :sort-icon="sortIcon"
+            @sort="sort"
+          />
           <th
             v-if="manageColumnActive"
             ref="manageHeader"
@@ -287,45 +283,43 @@
 <script>
 import TButtonGroup from "./table/ButtonGroup.vue";
 import TCell from "./table/Cell.vue";
-import SortButton from "./table/SortButton.vue";
+import HeaderCell from "./table/HeaderCell.vue";
 import Pagination from "./table/Pagination.vue";
 import TableSearch from "./table/Search.vue";
 import Loader from "./Loading.vue";
 import deepEqual from "deep-equal";
-import debounce from "lodash.debounce";
 import { matchesTokenList } from "./table/searchTokens.js";
 import { resolveApiMessage } from "@/assets/utils";
 import {
-  fixedColumnClass,
-  fixedColumnIndices,
-  fixedColumnStyle,
-  hasFixedColumns,
-  hasRightFixedColumns,
-  manageColumnClass,
-  measureFixedColumns,
-  observeResize,
-  shouldFixManageColumn,
-} from "./table/fixedColumns.js";
-import {
-  actionClickStats,
-  emptyColspan,
-  initialSort,
-  isRowInSelection,
-  itemsPerPageListFromOptions,
-  maxHeightStyle,
-  nextSort,
   normalizeCssSize,
+  tableLayoutComputed,
+  tableLayoutData,
+  visibleColumnsForRows,
+} from "@/basic/table/helpers/tableLayout.js";
+import {
+  tableFixedColumnsComputed,
+  tableFixedColumnsData,
+  tableFixedColumnsMethods,
+} from "@/basic/table/helpers/tableFixedColumns.js";
+import {
+  initialSort,
   pageSizeFromOptions,
-  rowButtons,
-  tableClasses,
-  toggleRowSelection,
-  visibleColumns,
-} from "./table/tableHelpers.js";
+  tableDataPipelineComputed,
+  tableDataPipelineMethods,
+} from "@/basic/table/helpers/tableDataPipeline.js";
+import {
+  tableRowInteractionsData,
+  tableRowInteractionsMethods,
+} from "@/basic/table/helpers/tableRowInteractions.js";
+import { filterRowButtons } from "@/basic/table/helpers/tableCellHelpers.js";
 
 /**
  * Server-paginated table (queryTable + Delta). Same column, button, and selection API as
  * BasicTable; rows come from the socket instead of a Vuex dump. Search tokens filter the
  * query; "All" uses an infinite scroll window.
+ *
+ * Header cells, body cells, layout, fixed columns, sorting and the plain row-selection
+ * path come from the same basic/table modules as BasicTable (Table.vue)
  *
  * @author Andrii Nikitin
  */
@@ -335,7 +329,7 @@ export default {
     Pagination,
     TableSearch,
     TCell,
-    SortButton,
+    HeaderCell,
     TButtonGroup,
     Loader,
   },
@@ -432,21 +426,21 @@ export default {
   emits: ["action", "update:modelValue", "selectionChange"],
   data: function () {
     return {
-      tableClass: tableClasses(this.options),
+      // tableLayout.js
+      ...tableLayoutData(this.options),
+      // tableFixedColumns.js
+      ...tableFixedColumnsData(),
+      // tableRowInteractions.js
+      ...tableRowInteractionsData(),
       ...initialSort(this.options),
       currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
-      currentData: [],
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
       searchQuery: {search: "", columnFilters: {}},
       _appliedSearchKey: "{\"search\":\"\",\"columnFilters\":{}}",
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
-      fixedColumnStyles: {},
-      manageColumnStyle: {},
       manageSizerParams: {},
-      debouncedComputeFixedColumns: null,
-      hasHorizontalOverflow: false,
       // `allMatching` carries the intention ("every row this query matches"), `excludeIds` the
       // rows unticked afterwards. Both are resolved again on the server when the action runs.
       allMatching: false,
@@ -687,11 +681,10 @@ export default {
           overflowAnchor: "none",
         };
       }
-      return maxHeightStyle(this.maxTableHeight);
+      return tableLayoutComputed.tableWrapperStyle.call(this);
     },
-    emptyColspan() {
-      return emptyColspan(this.visibleColumns.length, this.selectableRows, this.buttons.length > 0);
-    },
+    emptyColspan: tableLayoutComputed.emptyColspan,
+    sortIcon: tableDataPipelineComputed.sortIcon,
     total() {
       return this.queryMeta.total;
     },
@@ -730,22 +723,10 @@ export default {
       return this.searchQuery.columnFilters || {};
     },
     visibleColumns() {
-      return visibleColumns(this.columns, this.queryItems);
+      return visibleColumnsForRows(this.columns, this.queryItems);
     },
-    hasFixedColumns() {
-      return hasFixedColumns(this.visibleColumns);
-    },
-    hasRightFixedColumns() {
-      return hasRightFixedColumns(this.visibleColumns);
-    },
-    // Determine if manage column should be sticky
-    shouldFixManageColumn() {
-      return shouldFixManageColumn(this.hasManageButtons, this.hasHorizontalOverflow, this.visibleColumns);
-    },
-    // Cache the indices to avoid repeated searches
-    fixedColumnIndices() {
-      return fixedColumnIndices(this.visibleColumns);
-    },
+    // tableFixedColumns.js
+    ...tableFixedColumnsComputed,
     selectedCount() {
       if (this.allMatching) {
         return Math.max(0, this.total - this.excludeIds.length);
@@ -878,7 +859,10 @@ export default {
   mounted() {
     this.currentData = this.updateValues(this.modelValue);
 
-    this.itemsPerPageList = itemsPerPageListFromOptions(this.options) ?? this.itemsPerPageList;
+    const pagination = this.options && this.options.pagination;
+    if (pagination && typeof pagination === "object" && "itemsPerPageList" in pagination) {
+      this.itemsPerPageList = pagination.itemsPerPageList;
+    }
 
     // Consumers may open the table directly in "All" (infinite scroll).
     if (this.options?.pagination?.itemsPerPage === 0) {
@@ -894,9 +878,7 @@ export default {
     }
   },
   created() {
-    this.debouncedComputeFixedColumns = debounce(() => {
-      this.computeFixedColumnStyles();
-    }, 150);
+    this.initFixedColumns();
   },
   beforeUnmount() {
     this._unmounting = true;
@@ -918,59 +900,20 @@ export default {
       });
       return JSON.stringify({search, columnFilters});
     },
-    setupFixedColumns() {
-      this.$nextTick(() => {
-        this.computeFixedColumnStyles();
-        this._stopFixedColumnsResize?.();
-        this._stopFixedColumnsResize = observeResize(
-          [this.$refs.tableWrapper, this.$refs.tableElement],
-          this.debouncedComputeFixedColumns
-        );
-      });
+    // tableFixedColumns.js
+    ...tableFixedColumnsMethods,
+    // Header not rendered yet: estimate the icon-only button group.
+    getManageColumnFallbackWidth() {
+      return Math.round((this.buttons.length || 1) * 32.8 + 16);
     },
-    cleanupFixedColumns() {
-      this._stopFixedColumnsResize?.();
-      this._stopFixedColumnsResize = null;
-      this.debouncedComputeFixedColumns?.cancel();
-    },
-    getManageColumnClass() {
-      return manageColumnClass(this.shouldFixManageColumn, this.hasRightFixedColumns);
-    },
-    getFixedColumnStyle(column) {
-      return fixedColumnStyle(this.fixedColumnStyles, column);
-    },
-    getFixedColumnClass(column, index) {
-      return fixedColumnClass(column, index, this.fixedColumnIndices);
-    },
-    computeFixedColumnStyles() {
-      const { hasOverflow, columnStyles, manageColumnStyle } = measureFixedColumns(this.$refs, {
-        columns: this.visibleColumns,
-        hasManageButtons: this.hasManageButtons,
-        // Header not rendered yet: estimate the icon-only button group.
-        manageFallbackWidth: Math.round((this.buttons.length || 1) * 32.8 + 16),
-      });
-      if (hasOverflow !== this.hasHorizontalOverflow) {
-        this.hasHorizontalOverflow = hasOverflow;
-      }
-      this.fixedColumnStyles = columnStyles;
-      this.manageColumnStyle = manageColumnStyle;
-    },
+    // tableRowInteractions.js: actionEmitter, deepEqual; selection methods are overridden below
+    ...tableRowInteractionsMethods,
     updateValues(data) {
       // Selection is always a row list; a consumer that binds nothing starts empty.
       return Array.isArray(data) ? data : [];
     },
-    sort(column) {
-      const { sortColumn, sortDirection } = nextSort(this.sortColumn, this.sortDirection, column);
-      this.sortColumn = sortColumn;
-      this.sortDirection = sortDirection;
-      this.paginationUpdate();
-    },
-    actionEmitter(data) {
-      this.$emit("action", data);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", actionClickStats(data));
-      }
-    },
+    // tableDataPipeline.js: same sort toggle as BasicTable; paginationUpdate refetches from the server
+    sort: tableDataPipelineMethods.sort,
     selectRow(row) {
       if (!this.selectableRows) return;
       if (this.allMatching) {
@@ -987,7 +930,7 @@ export default {
         }
         return;
       }
-      this.currentData = toggleRowSelection(this.currentData, row, this.options && this.options.singleSelect);
+      tableRowInteractionsMethods.selectRow.call(this, row);
     },
     selectAllRows() {
       // Three header states: empty → select everything the query matches; dash → back to
@@ -1139,7 +1082,7 @@ export default {
      * touch component state (that used to flip hasManageButtons mid-render).
      */
     rowButtons(row) {
-      return rowButtons(this.buttons, row);
+      return filterRowButtons(this.buttons, row);
     },
     isScrollColumn(column) {
       return !!(column?.scroll || column?.maxChars);
@@ -1229,7 +1172,7 @@ export default {
       if (this.allMatching) {
         return !this.excludeIds.includes(row.id);
       }
-      return isRowInSelection(this.currentData, row);
+      return tableRowInteractionsMethods.isRowSelected.call(this, row);
     },
 
     // --- queryTable / Delta ---

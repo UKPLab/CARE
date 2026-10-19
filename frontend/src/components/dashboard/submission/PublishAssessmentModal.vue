@@ -72,179 +72,25 @@
 
     <!-- STEP 4: Confirmation -->
     <template #step-4>
-      <div class="mb-3">
-        <label
-          for="linkCollection"
-          class="form-label"
-        ><b>{{ $t("submission.publishAssessment.hashCollection") }}</b></label>
-        <select
-          id="linkCollection"
-          v-model="linkCollection"
-          class="form-select"
-          :disabled="sessionSelection.allMatching"
-        >
-          <option value="studies">{{ $t("submission.publishAssessment.hashCollectionStudies") }}</option>
-          <option value="sessions">{{ $t("submission.publishAssessment.hashCollectionSessions") }}</option>
-        </select>
-      </div>
-      <div class="mb-3">
-        <p><b>{{ $t("submission.publishAssessment.hashes") }}</b></p>
-        <!-- Select-all is the query, not a row list: 10k+ hashes cannot be rendered -->
-        <p v-if="sessionSelection.allMatching" class="text-muted">
-          {{ $t("submission.publishAssessment.allMatchingSelected", { count: selectedSessionCount }) }}
-        </p>
-        <ul v-else-if="linkCollection === 'studies'">
-          <li
-            v-for="study in formattedStudies"
-            :key="study.studyId"
-          >
-            <b>{{ study.studyName }} ({{ study.ownerFirstName }} {{ study.ownerLastName }})</b>
-            <ul>
-              <li
-                v-for="session in study.sessions"
-                :key="session.id"
-              >
-                {{ session.firstName }} {{ session.lastName }} (<a
-                  :href="sessionLink(session.hash)"
-                  target="_blank"
-                >{{ session.hash }}</a>)
-              </li>
-            </ul>
-          </li>
-        </ul>
-        <ul v-else-if="linkCollection === 'sessions'">
-          <li
-            v-for="reviewer in formattedSessions"
-            :key="reviewer.userId"
-          >
-            <b>{{ reviewer.firstName }} {{ reviewer.lastName }}</b>
-            <ul>
-              <li
-                v-for="s in reviewer.sessions"
-                :key="s.id"
-              >
-                {{ s.studyName }} (<a
-                  :href="sessionLink(s.hash)"
-                  target="_blank"
-                >{{ s.hash }}</a>)
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
+      <PublishAssessmentConfirmationStep
+        v-model:link-collection="linkCollection"
+        :selected-sessions="sessionSelection.rows"
+        :all-matching="sessionSelection.allMatching"
+        :selected-count="selectedSessionCount"
+      />
     </template>
 
     <!-- STEP 5: Publishing Options -->
     <template #step-5>
-      <div class="mb-3">
-        <label for="publishMethod" class="form-label"><b>{{ $t("submission.publishAssessment.publishingMethod") }}</b></label>
-        <select
-          id="publishMethod"
-          v-model="publishMethod"
-          class="form-select"
-        >
-          <option
-            v-for="opt in publishMethodOptions"
-            :key="opt.value"
-            :value="opt.value"
-            :disabled="opt.disabled"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-      </div>
-      <div v-if="publishMethod === 'moodle'">
-        <div class="mb-3">
-          <div class="form-check">
-            <input
-              id="reviewUrl"
-              v-model="isReviewUrlIncluded"
-              class="form-check-input"
-              type="checkbox"
-            >
-            <label
-              class="form-check-label"
-              for="reviewUrl"
-            >
-              <b>{{ $t("submission.publishAssessment.includeReviewUrl") }}</b>
-            </label>
-            <p class="small text-muted mt-1">
-              {{ $t("submission.publishAssessment.includeReviewUrlDescription") }}
-            </p>
-          </div>
-        </div>
-        <MoodleOptions
-          ref="moodleOptionsForm"
-          v-model="moodleOptions"
-          with-assignment-id
-          @select-assignment="selectAssignment"
-        />
-        <div
-          v-if="selectedSessionCount > 0 && selectedConfigurationContent"
-          class="mt-4"
-        >
-          <label class="form-label"><b>{{ $t("submission.publishAssessment.moodleGradePublishingOverview") }}</b></label>
-          <div class="card">
-            <div class="card-body">
-              <div class="row mb-2">
-                <div class="col-6">
-                  <strong>{{ $t("submission.publishAssessment.numberOfGradesToPublish") }}</strong>
-                </div>
-                <div class="col-6">
-                  {{ gradeInformation.numberOfGrades }}
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-6">
-                  <strong>{{ $t("submission.publishAssessment.assessmentScaleCurrentScores") }}</strong>
-                </div>
-                <div class="col-6">
-                  {{ $t("submission.publishAssessment.pointsRange", {
-                    from: gradeInformation.totalMinPoints,
-                    to: gradeInformation.totalMaxPoints
-                  }) }}
-                </div>
-              </div>
-              <div class="row mb-2">
-                <div class="col-6">
-                  <strong>{{ $t("submission.publishAssessment.moodleGradeScaleTarget") }}</strong>
-                </div>
-                <div class="col-6">
-                  <template v-if="moodleOptions?.assignmentID">
-                    {{ $t("submission.publishAssessment.pointsRange", {
-                      from: 0,
-                      to: gradeInformation.maxGradeFromMoodle
-                    }) }}
-                  </template>
-                  <template v-else>
-                    {{ $t("submission.publishAssessment.selectAssignmentForInformation") }}
-                  </template>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-6">
-                  <strong>{{ $t("submission.publishAssessment.conversionFactor") }}</strong>
-                </div>
-                <div class="col-6">
-                  <template v-if="moodleOptions?.assignmentID">
-                    {{ $t("submission.publishAssessment.conversionFactorValue", {
-                      factor: gradeInformation.conversionFactor
-                    }) }}
-                  </template>
-                  <template v-else>
-                    {{ $t("submission.publishAssessment.selectAssignmentForInformation") }}
-                  </template>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="small text-muted mt-2">
-            <em>
-              {{ $t("submission.publishAssessment.conversionNote") }}
-            </em>
-          </p>
-        </div>
-      </div>
+      <PublishAssessmentPublishingStep
+        v-model:publish-method="publishMethod"
+        v-model:is-review-url-included="isReviewUrlIncluded"
+        v-model:moodle-options="moodleOptions"
+        :selected-session-count="selectedSessionCount"
+        :selected-configuration-content="selectedConfigurationContent"
+        :grade-information="gradeInformation"
+        @select-assignment="selectAssignment"
+      />
     </template>
   </StepperModal>
 </template>
@@ -254,24 +100,37 @@ import BasicTable from "@/basic/Table.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import Loader from "@/basic/Loading.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import MoodleOptions from "@/basic/form/MoodleOptions.vue";
+import PublishAssessmentConfirmationStep from "./PublishAssessmentConfirmationStep.vue";
+import PublishAssessmentPublishingStep from "./PublishAssessmentPublishingStep.vue";
 import { calculateAssessmentScore } from "assessment-score";
-import { downloadObjectsAs, resolveApiMessage, translateMaybeKey } from "@/assets/utils.js";
-import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
+import { NUMERIC_OPERATORS } from "@/basic/table/searchTokens.js";
 import {
   applySavedSelection,
   cloneSelection,
   emptySelection,
   selectionRestoreInfo,
 } from "@/basic/table/emptySelection.js";
+import {
+  getAssessmentDataForSession,
+  convertAssessmentScore,
+  getConversionFactorFromAssessment,
+} from "./helpers/publishAssessmentScoring.js";
+import { buildWorkflowsTable, sessionReviewLink } from "./helpers/publishAssessmentTables.js";
+import { buildCsvRows } from "./helpers/publishAssessmentCsvRows.js";
 
 /**
  * Modal for publishing assessment data with CSV export
+ *
+ * Workflow steps and their session counts (publishAssessmentWorkflows), the session list
+ * (BackendTable on study_session with an assessment query scope) and the exported scores
+ * (publishAssessmentData) are all resolved server-side.
+ *
  * @author: CARE Team
  */
 export default {
   name: "PublishAssessmentModal",
-  components: { BasicTable, BackendTable, Loader, StepperModal, MoodleOptions },
+  components: { BasicTable, BackendTable, Loader, StepperModal, PublishAssessmentConfirmationStep, PublishAssessmentPublishingStep },
   subscribeTable: [
     { table: "workflow" },
     { table: "workflow_step" },
@@ -356,6 +215,7 @@ export default {
         sort: {column: "id", order: "ASC"},
       };
     },
+    // Data sources
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
@@ -379,30 +239,11 @@ export default {
 
     // Table data
     workflowsTable() {
-      return this.workflowRows
-        .map((row) => {
-          const workflow = this.workflows.find((w) => w.id === row.workflowId && !w.deleted);
-          return {
-            workflowId: row.workflowId,
-            workflowName: translateMaybeKey(workflow?.name)
-              || this.$t("submission.publishAssessment.workflowFallback", { id: row.workflowId }),
-            stepNumber: row.stepNumber,
-            description: translateMaybeKey(workflow?.description) || "-",
-            openSessions: row.openSessions,
-            closedSessions: row.closedSessions,
-            totalSessions: row.openSessions + row.closedSessions,
-          };
-        })
-        .sort((a, b) => {
-          if (a.workflowName !== b.workflowName) {
-            return a.workflowName.localeCompare(b.workflowName);
-          }
-          return a.stepNumber - b.stepNumber;
-        })
-        .map((row, index) => ({
-          ...row,
-          id: index + 1,
-        }));
+      return buildWorkflowsTable({
+        workflowRows: this.workflowRows,
+        workflows: this.workflows,
+        t: this.$t,
+      });
     },
     workflowTableColumns() {
       return [
@@ -455,6 +296,23 @@ export default {
         });
       });
       return names;
+    },
+    // Grade overview shown in the publishing step for Moodle
+    gradeInformation() {
+      const numberOfGrades = this.selectedSessionCount;
+      // The point range only depends on the rubric (same config for all sessions), not on scores.
+      const assessment = this.selectedConfigurationContent
+        ? calculateAssessmentScore(this.selectedConfigurationContent, {})
+        : {};
+      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
+
+      return {
+        numberOfGrades,
+        totalMaxPoints: assessment.total_max_points ?? 0,
+        totalMinPoints: assessment.total_min_points ?? 0,
+        maxGradeFromMoodle: assignmentMaxGrade,
+        conversionFactor: getConversionFactorFromAssessment(assessment, assignmentMaxGrade),
+      };
     },
 
     /**
@@ -520,61 +378,6 @@ export default {
     selectedSessionCount() {
       return this.sessionSelection.count;
     },
-    formattedStudies() {
-      // Group the ticked sessions by study
-      const studyMap = {};
-      this.sessionSelection.rows.forEach((session) => {
-        if (!studyMap[session.studyId]) {
-          studyMap[session.studyId] = {
-            studyId: session.studyId,
-            studyName: session.studyName || this.$t("common.unknown"),
-            ownerFirstName: session.ownerFirstName || "-",
-            ownerLastName: session.ownerLastName || "-",
-            sessions: [],
-          };
-        }
-        studyMap[session.studyId].sessions.push(session);
-      });
-      return Object.values(studyMap);
-    },
-    formattedSessions() {
-      // Group the ticked sessions by reviewer
-      const userMap = {};
-      this.sessionSelection.rows.forEach((session) => {
-        if (!userMap[session.userId]) {
-          userMap[session.userId] = {
-            userId: session.userId,
-            firstName: session.firstName || this.$t("common.unknown"),
-            lastName: session.lastName || "",
-            sessions: [],
-          };
-        }
-        userMap[session.userId].sessions.push(session);
-      });
-      return Object.values(userMap);
-    },
-    publishMethodOptions() {
-      return [
-        { value: "csv", label: this.$t("submission.publishAssessment.publishMethods.downloadCsv"), disabled: false },
-        { value: "moodle", label: this.$t("submission.publishAssessment.publishMethods.moodle"), disabled: false },
-        { value: "email", label: this.$t("submission.publishAssessment.publishMethods.email"), disabled: true },
-      ];
-    },
-    // Grade information computed properties
-    gradeInformation() {
-      const numberOfGrades = this.selectedSessionCount;
-      const assessment = this.selectedConfigurationContent
-        ? calculateAssessmentScore(this.selectedConfigurationContent, {})
-        : {};
-
-      return {
-        numberOfGrades,
-        totalMaxPoints: assessment.total_max_points ?? 0,
-        totalMinPoints: assessment.total_min_points ?? 0,
-        maxGradeFromMoodle: this.selectedAssignmentMaxGrade || 0,
-        conversionFactor: this.getConversionFactorFromAssessment(assessment),
-      };
-    },
   },
   watch: {
     selectedConfigurations() {
@@ -592,27 +395,6 @@ export default {
   },
   methods: {
     /**
-     * Calculates the linear conversion factor between assessment points and Moodle grade.
-     * Uses the same logic for both the overview display and the actual grade publishing.
-     */
-    getConversionFactorFromAssessment(assessment) {
-      const totalMaxPoints = assessment.total_max_points ?? 0;
-      const totalMinPoints = assessment.total_min_points ?? 0;
-      const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
-
-      const sourcePointsRange = totalMaxPoints - totalMinPoints;
-      const targetGradeRange = assignmentMaxGrade - 0;
-
-      if (assignmentMaxGrade > 0 && sourcePointsRange > 0) {
-        let factor = targetGradeRange / sourcePointsRange;
-        // Keep 3 decimal places for display and internal use
-        factor = Math.round(factor * 1000000) / 1000000;
-        return factor;
-      }
-
-      return 0;
-    },
-    /**
      * Workflow steps that run the picked configuration, with their session counts.
      */
     loadWorkflows() {
@@ -621,7 +403,7 @@ export default {
         this.workflowsLoading = false;
         return;
       }
-      
+
       const requestedConfigurationId = this.selectedConfigurationId;
       this.workflowsLoading = true;
       this.$socket.emit("publishAssessmentWorkflows", {
@@ -668,9 +450,6 @@ export default {
       // Snapshot while the table exists: the stepper unmounts it before the confirmation step.
       this.sessionSelection = cloneSelection(this.$refs.sessionTable?.getSelection());
     },
-    sessionLink(hash) {
-      return `${window.location.origin}/review/${hash}`;
-    },
     getUserRoles(userId) {
       const roleMatchings = this.userRoleMatchings.filter(
         (urm) => urm.userId === userId && !urm.deleted
@@ -681,19 +460,6 @@ export default {
           return role ? role.name : this.$t("common.unknown");
         })
         .join(", ");
-    },
-    /**
-     * Scores and total for one exported session. The server picks the scores (saved row,
-     * hook/NLP rows, document-level fallback); the client only applies the rubric.
-     * @param {Object} session row from publishAssessmentData (needs studyStepId / scores)
-     * @returns {{scores: Object, assessment: Object}}
-     */
-    getAssessmentDataForSession(session) {
-      if (!session?.studyStepId) {
-        return {scores: {}, assessment: {}};
-      }
-      const scores = session.scores && typeof session.scores === "object" ? session.scores : {};
-      return {scores, assessment: calculateAssessmentScore(this.selectedConfigurationContent, scores)};
     },
     open() {
       this.reset();
@@ -779,6 +545,15 @@ export default {
       return true;
     },
     /**
+     * Scores and total for one exported session. The server picks the scores (saved row,
+     * hook/NLP rows, document-level fallback); the client only applies the rubric.
+     * @param {Object} session row from publishAssessmentData
+     * @returns {{scores: Object, assessment: Object}}
+     */
+    getAssessmentDataForSession(session) {
+      return getAssessmentDataForSession(session, this.selectedConfigurationContent);
+    },
+    /**
      * Uploads the selected sessions' grades to a specific assignment in Moodle.
      * @param {Array<Object>} sessions rows from publishAssessmentData
      */
@@ -788,12 +563,12 @@ export default {
 
         const gradeEntry = {
           extId: session.ownerExtId || "",
-          grade: this.convertAssessmentScore(assessment),
+          grade: convertAssessmentScore(assessment, this.selectedAssignmentMaxGrade),
         };
 
         // Optionally include review URL as feedback text
         if (this.isReviewUrlIncluded && session.hash) {
-          gradeEntry.text = this.sessionLink(session.hash);
+          gradeEntry.text = sessionReviewLink(session.hash);
         }
 
         return gradeEntry;
@@ -822,52 +597,16 @@ export default {
       );
     },
     /**
-     * Converts an assessment score from one scale to another.
-     * Uses the same conversionFactor that is shown in the overview:
-     *   convertedGrade = normalizedPoints * conversionFactor
-     * and then rounds the result to 2 decimal places.
-     */
-    convertAssessmentScore(assessment) {
-      const { total_min_points, achieved_points } = assessment;
-
-      const conversionFactor = this.getConversionFactorFromAssessment(assessment);
-      const normalizedPoints = achieved_points - (total_min_points ?? 0);
-      const convertedGrade = normalizedPoints * conversionFactor;
-      // Round final grade to 2 decimal places
-      return Math.round(convertedGrade * 100) / 100;
-    },
-    /**
-     * Build CSV rows for the selected sessions using assessmentScore utilities.
+     * Build CSV rows for the exported sessions and download them.
      * Each session becomes one row; criteria columns are derived from configuration.
-     * Headers stay English so an export does not change with the UI language.
      * @param {Array<Object>} sessions rows from publishAssessmentData
      */
     downloadCSV(sessions) {
-      const criteriaList = this.criteriaNames;
-      const rows = sessions.map((session) => {
-        const { scores, assessment } = this.getAssessmentDataForSession(session);
-
-        const row = {
-          "User ExtId": session.ownerExtId || "",
-          "User First Name": session.ownerFirstName || "",
-          "User Last Name": session.ownerLastName || "",
-          "User Name": session.ownerUserName || "",
-          "Submission ID": session.submissionId || "",
-          "Submission ExtId": session.submissionExtId || "",
-          "Reviewer First Name": session.firstName || "",
-          "Reviewer Last Name": session.lastName || "",
-          "Reviewer User Name": session.userName || "",
-          "Reviewer Roles": this.getUserRoles(session.userId),
-          "Hash": session.hash || "",
-          "Total Points": assessment.achieved_points ?? 0,
-        };
-
-        // Add dynamic criteria columns
-        criteriaList.forEach((criterionName) => {
-          row[criterionName] = scores[criterionName] ?? 0;
-        });
-
-        return row;
+      const rows = buildCsvRows({
+        sessions,
+        criteriaList: this.criteriaNames,
+        getAssessmentDataForSession: (session) => this.getAssessmentDataForSession(session),
+        getUserRoles: (userId) => this.getUserRoles(userId),
       });
 
       const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");

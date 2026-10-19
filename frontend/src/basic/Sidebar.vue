@@ -112,7 +112,7 @@
       </div>
     </div>
     <Teleport to="#topBarNavItems">
-      <li v-if="isShown" class="nav-item">
+      <li v-if="isToggleShown" class="nav-item">
         <TopBarButton
             :show="isShown"
             :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
@@ -288,6 +288,10 @@ export default {
     },
     resolvedActiveSlot() {
       return this.internalActiveSlot || this.availableSlots[0] || null;
+    },
+    isToggleShown() {
+      // Without an active slot the sidebar can never be displayed, so the toggle would do nothing
+      return this.isShown && !!this.resolvedActiveSlot;
     },
     isSingleConfig() {
       return Object.keys(this.sidebarConfigs.tabs).length === 1;
