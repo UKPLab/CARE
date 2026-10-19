@@ -5,7 +5,12 @@ const createLogger = require("../utils/logger");
 
 let logger = null;
 
-const WATCH_TABLES = new Set(["study", "study_session"]);
+// Columns the study_dashboard_sort view reads. Updates to other columns cannot change it.
+const VIEW_FIELDS = {
+    study: ["start", "end", "closed", "multipleSubmit"],
+    study_session: ["studyId", "deleted"],
+};
+const WATCH_TABLES = new Set(Object.keys(VIEW_FIELDS));
 const STATE_STALE_MS = 60 * 1000;
 const DEBOUNCE_MS = 250;
 
@@ -92,17 +97,46 @@ async function ensureStudyDashboardSortFresh(sequelize, viewField) {
     await refreshStudyDashboardSort(sequelize);
 }
 
+/**
+ * Check if an update touched a column the view depends on.
+ *
+ * @param {string} table
+ * @param {import("sequelize").Model} instance
+ * @returns {boolean}
+ */
+function hasViewRelevantChange(table, instance) {
+    const fields = VIEW_FIELDS[table];
+    if (!fields) {
+        return false;
+    }
+    if (typeof instance?.changed !== "function") {
+        // Cannot tell what changed, so refresh to stay correct.
+        return true;
+    }
+    return fields.some((field) => instance.changed(field));
+}
+
 function attachStudyDashboardSortHooks(sequelize) {
-    const maybeSchedule = (instance, options) => {
+    const getWatchedTable = (instance) => {
         const table = instance?.constructor?.tableName;
-        if (!WATCH_TABLES.has(table)) {
+        return WATCH_TABLES.has(table) ? table : null;
+    };
+    const scheduleAlways = (instance, options) => {
+        if (!getWatchedTable(instance)) {
             return;
         }
         scheduleStudyDashboardSortRefresh(sequelize, options?.transaction);
     };
-    sequelize.addHook("afterCreate", maybeSchedule);
-    sequelize.addHook("afterUpdate", maybeSchedule);
-    sequelize.addHook("afterDestroy", maybeSchedule);
+    const scheduleOnRelevantUpdate = (instance, options) => {
+        const table = getWatchedTable(instance);
+        if (!table || !hasViewRelevantChange(table, instance)) {
+            return;
+        }
+        scheduleStudyDashboardSortRefresh(sequelize, options?.transaction);
+    };
+    sequelize.addHook("afterCreate", scheduleAlways);
+    sequelize.addHook("afterUpdate", scheduleOnRelevantUpdate);
+    sequelize.addHook("afterDestroy", scheduleAlways);
 }
 
 module.exports = {
