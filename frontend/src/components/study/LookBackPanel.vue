@@ -106,7 +106,7 @@ export default {
 
 <style scoped>
 .look-back-header .badge {
-  background-color: var(--care-accent, var(--bs-primary));
-  color: var(--care-on-accent, #fff);
+  background-color: var(--look-back-accent);
+  color: var(--look-back-on-accent);
 }
 </style>

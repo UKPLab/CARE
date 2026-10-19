@@ -8,7 +8,7 @@
           :aria-expanded="isOpen"
           @click="select(isOpen ? null : currentStep.id)"
       >
-        <LoadIcon icon-name="bar-chart-steps" :size="18"/>
+        <LoadIcon icon-name="window-split" :size="18"/>
       </TopBarButton>
     </li>
   </Teleport>
@@ -16,8 +16,9 @@
       v-if="isOpen"
       class="pane-strip bg-body-tertiary border-bottom d-flex align-items-center px-3"
   >
+    <span class="fw-semibold text-nowrap me-3">{{ $t('components.studyRoute.panes.workflow') }}</span>
     <ol
-        class="d-flex align-items-center gap-2 list-unstyled mb-0 overflow-auto"
+        class="d-flex align-items-center gap-2 list-unstyled mb-0 p-1 overflow-auto"
         :aria-label="$t('components.studyRoute.panes.label')"
     >
       <li
@@ -31,6 +32,7 @@
             v-if="canOpen(step)"
              class="btn-sm text-nowrap d-inline-flex align-items-center gap-1"
             :class="isOnScreen(step) ? 'btn-primary' : 'btn-outline-secondary'"
+            :aria-current="step.id === currentStep.id ? 'step' : null"
             :title="labels[step.id]"
             :props="{ key: 'studyPane.tab', stepId: step.id }"
             @click="select(step.id)"
@@ -274,9 +276,16 @@ export default {
    It and the chosen menu entry get the colours of an active tab (btn-primary). */
 .pane-strip .btn[aria-pressed="true"],
 .pane-strip .dropdown-item[aria-current="true"] {
-  background-color: var(--care-accent, var(--bs-primary));
-  border-color: var(--care-accent, var(--bs-primary));
-  color: var(--care-on-accent, #fff);
+  background-color: var(--look-back-accent);
+  border-color: var(--look-back-accent);
+  color: var(--look-back-on-accent);
+}
+
+/* The step the student is on keeps a ring, also while an earlier step is shown.
+   The list has a little padding so its scrolling does not cut the ring off. */
+.pane-strip .btn[aria-current="step"] {
+  outline: 2px solid var(--look-back-accent);
+  outline-offset: 2px;
 }
 
 /* A step that cannot be opened does not look clickable */
@@ -298,6 +307,19 @@ export default {
 </style>
 
 <style>
+/* Look-back colours follow CARE's buttons: the accent colour in dark mode, Bootstrap's primary in light mode.
+   (The accent setting is put on the page in both modes, but only dark mode buttons use it.)
+   Also used by LookBackPanel.vue. */
+:root {
+  --look-back-accent: var(--bs-primary);
+  --look-back-on-accent: #fff;
+}
+
+html[data-bs-theme="dark"] {
+  --look-back-accent: var(--care-accent, var(--bs-primary));
+  --look-back-on-accent: var(--care-on-accent, #fff);
+}
+
 /* Room for the open strip */
 .study-container.pane-open {
   padding-top: 52px;
@@ -323,8 +345,8 @@ export default {
   position: absolute;
   bottom: 16px;
   left: 54px;
-  background-color: var(--care-accent, var(--bs-primary));
-  color: var(--care-on-accent, #fff);
+  background-color: var(--look-back-accent);
+  color: var(--look-back-on-accent);
 }
 
 /* Split: the selected earlier step and the current step share the screen */
@@ -352,7 +374,7 @@ export default {
 
 .pane-divider:hover,
 .pane-divider:active {
-  background-color: var(--care-accent, var(--bs-primary));
+  background-color: var(--look-back-accent);
 }
 
 .pane-divider-row {
