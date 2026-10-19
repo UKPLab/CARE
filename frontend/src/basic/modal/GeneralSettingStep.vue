@@ -150,8 +150,8 @@ export default {
 }
 
 .form-check-input:checked {
-  background-color: var(--bs-primary, #0d6efd);
-  border-color: var(--bs-primary, #0d6efd);
+  background-color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .form-text {

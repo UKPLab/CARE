@@ -298,7 +298,7 @@ export default {
 }
 
 .text-primary {
-  color: var(--bs-primary, #007bff) !important;
+  color: var(--care-primary) !important;
 }
 
 .text-secondary {

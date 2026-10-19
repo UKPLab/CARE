@@ -55,10 +55,15 @@ html[data-bs-theme="dark"] {
    Use it for custom borders and focus glows instead of a hard-coded blue. */
 :root {
   --care-primary: var(--bs-primary);
+  --care-on-primary: #fff;
 }
 
 html[data-bs-theme="dark"] {
   --care-primary: var(--care-accent);
+  --care-on-primary: var(--care-on-accent);
+  /* Bootstrap's link colour drives nav tabs, pagination and btn-link */
+  --bs-link-color: var(--care-accent);
+  --bs-link-hover-color: var(--care-accent-hover);
 }
 
 /* Tell the browser which theme is showing. Bootstrap declares
@@ -150,6 +155,15 @@ html[data-bs-theme="dark"] {
   background-color: var(--care-accent);
   border-color: var(--care-accent);
   color: var(--care-on-accent);
+}
+
+[data-bs-theme="dark"] .text-primary {
+  color: var(--care-accent) !important;
+}
+
+[data-bs-theme="dark"] :is(.bg-primary, .text-bg-primary) {
+  background-color: var(--care-accent) !important;
+  color: var(--care-on-accent) !important;
 }
 
 [data-bs-theme="dark"] .pagination {
