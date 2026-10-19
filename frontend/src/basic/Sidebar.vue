@@ -114,7 +114,7 @@
       </div>
     </div>
     <Teleport to="#topBarNavItems">
-      <li v-if="isShown" class="nav-item">
+      <li v-if="isShown && Object.keys(shownTabs).length" class="nav-item">
         <TopBarButton
             :show="isShown"
             :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
