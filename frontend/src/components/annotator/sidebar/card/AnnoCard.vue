@@ -99,21 +99,6 @@
               class="row"
           >
             <div class="col">
-              <BasicButton
-                  v-if="numberReplies > 0"
-                  class="btn btn-light btn-sm"
-                  data-placement="top"
-                  data-toggle="tooltip"
-                  :title="$t('common.reply')"
-                  :text="showReplies
-                    ? $t('common.hideRepliesCount', { count: numberReplies })
-                    : $t('common.showReplies', { count: numberReplies })"
-                  @click="showReplies = !showReplies; maxComments = defaultNumComments"
-              />
-            </div>
-            <div
-                class="col text-end"
-            >
               <SidebarButton
                   v-if="settingResponse && !readOnly"
                   :loading="false"
@@ -151,6 +136,21 @@
                   icon="trash3"
                   :title="$t('common.delete')"
                   @click="remove"
+              />
+            </div>
+            <!-- Last in the footer, so keyboard users reach it after the actions and can skip the thread -->
+            <div class="col-auto text-end">
+              <BasicButton
+                  v-if="numberReplies > 0"
+                  ref="repliesToggle"
+                  class="btn btn-light btn-sm"
+                  data-placement="top"
+                  data-toggle="tooltip"
+                  :title="$t('common.reply')"
+                  :text="showReplies
+                    ? $t('common.hideRepliesCount', { count: numberReplies })
+                    : $t('common.showReplies', { count: numberReplies })"
+                  @click="showReplies = !showReplies; maxComments = defaultNumComments"
               />
             </div>
           </div>
@@ -273,6 +273,18 @@ export default {
     },
   },
   watch: {
+    showReplies(newVal) {
+      if (newVal) return;
+      // Runs before the thread is removed: if the keyboard was in it, move focus to the toggle
+      const thread = this.$refs.replies && this.$refs.replies.$el;
+      const hadFocus = thread && thread.contains && thread.contains(document.activeElement);
+      if (hadFocus) {
+        this.$nextTick(() => {
+          const toggle = this.$refs.repliesToggle && this.$refs.repliesToggle.$el;
+          if (toggle) toggle.focus();
+        });
+      }
+    },
     commentState: {
     immediate: true,
     handler(newVal) {

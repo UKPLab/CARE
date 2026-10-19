@@ -26,7 +26,7 @@
       @click="$emit('update:maxComments', defaultNumComments)"
       />
       <BasicButton
-      v-if="maxComments > defaultNumComments"
+      v-if="numChildComments > 0"
       class="btn btn-light btn-sm"
       :text="$t('common.hideReplies')"
       @click="$emit('update:maxComments', defaultNumComments); $emit('update:showReplies', !showReplies)"
