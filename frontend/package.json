@@ -10,7 +10,8 @@
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
-    "frontend-lint": "eslint src",
+    "frontend-lint": "npm run test:ui-rules && eslint src",
+    "test:ui-rules": "node --test eslint-rules/*.test.js",
     "frontend-i18n-check": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
