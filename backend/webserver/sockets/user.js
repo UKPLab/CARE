@@ -155,7 +155,7 @@ class UserSocket extends Socket {
      */
     async getUsersFromCourse(options) {
         if (!(await this.isAdmin())) {
-            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
 
         let userTable = await this.server.rpcs["MoodleRPC"].getUsersFromCourse(
@@ -183,7 +183,7 @@ class UserSocket extends Socket {
      */
     async checkUsersExists(data, options) {
         if (!(await this.isAdmin())) {
-            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
+            throw new TranslatableError("errors.users.adminAccessRequired");
         }
         const emails = data.map((user) => user.email);
         const existingEmails = await this.models["user"].filterExistingEmails(emails);
