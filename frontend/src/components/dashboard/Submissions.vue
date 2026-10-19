@@ -231,7 +231,7 @@ export default {
     submissionsBadgeClass(assignment) {
       return this.remainingSubmissionsCount(assignment) === 0
         ? "bg-success text-white"
-        : "bg-light text-dark border";
+        : "bg-body-tertiary text-body border";
     },
     isAssignmentOverdue(assignment) {
       return isAssignmentPastDeadline(assignment);
@@ -244,7 +244,7 @@ export default {
     timeBadgeClass(assignment) {
       if (this.isAssignmentOverdue(assignment)) return "bg-danger text-white";
       if (this.isAssignmentClosingSoon(assignment)) return "bg-warning text-dark";
-      return "bg-light text-dark border";
+      return "bg-body-tertiary text-body border";
     },
     timeBadgeText(assignment) {
       if (!assignment.end) {

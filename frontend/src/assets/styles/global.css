@@ -93,6 +93,12 @@ html[data-bs-theme="dark"] {
   color: var(--bs-body-color) !important;
 }
 
+/* Except on backgrounds Bootstrap keeps light in dark mode (badges), where
+   light text would be unreadable. */
+[data-bs-theme="dark"] :is(.bg-light, .bg-white, .bg-warning).text-dark {
+  color: #212529 !important;
+}
+
 /* Disabled controls lose more contrast against dark than against white. */
 [data-bs-theme="dark"] .btn:disabled,
 [data-bs-theme="dark"] .nav-link.disabled {
