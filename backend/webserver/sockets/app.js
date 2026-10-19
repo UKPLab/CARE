@@ -536,6 +536,7 @@ class AppSocket extends Socket {
         let total;
 
         const viewJoin = await this.applyViewJoin({
+            model,
             needed: Boolean(derivedSortSpec) || scope.needsViewJoin,
             usesStateView: derivedSortSpec?.field === "stateRank" || scope.usesStateView,
         });
@@ -702,6 +703,7 @@ class AppSocket extends Socket {
             raw: true,
         };
         const viewJoin = await this.applyViewJoin({
+            model: scope.model,
             needed: scope.needsViewJoin,
             usesStateView: scope.usesStateView,
         });

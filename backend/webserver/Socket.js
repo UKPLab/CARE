@@ -7,8 +7,6 @@ const {EWMAMonitor} = require("../utils/EWMAMonitor")
 const {mergeFilter} = require("../utils/helper/data.js");
 const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("../utils/helper/queryTableSearch.js");
 const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../utils/helper/queryTableColumnFilters.js");
-const {dashboardSortInclude} = require("../utils/helper/queryTableJoinSort.js");
-const {ensureStudyDashboardSortFresh} = require("../db/studyDashboardSortRefresh.js");
 const {SECRET_COLUMN_SET, hiddenColumns} = require("../utils/helper/sensitiveColumns.js");
 const {uniquePositiveInts} = require("../utils/helper/positiveInt.js");
 
@@ -928,6 +926,7 @@ module.exports = class Socket {
             ...(transaction ? {transaction} : {}),
         };
         const viewJoin = await this.applyViewJoin({
+            model: scope.model,
             needed: scope.needsViewJoin,
             usesStateView: scope.usesStateView,
         });
@@ -945,29 +944,23 @@ module.exports = class Socket {
     }
 
     /**
-     * Refresh `study_dashboard_sort` and build the INNER JOIN when a query reads the view.
+     * Sidecar-view JOIN when a query reads view columns. The model provides the view,
+     * its refresh and the include via getQueryTableViewJoin().
      *
      * @param {Object} params
+     * @param {import("sequelize").Model} params.model queried model
      * @param {boolean} params.needed filter, search, or sort reads the view
-     * @param {boolean} [params.usesStateView] refresh the state column, not only the session count
+     * @param {boolean} [params.usesStateView] forwarded to the model hook
      * @returns {Promise<{sortModel: import("sequelize").Model, join: {include: Object[], subQuery: false}}|null>}
      */
-    async applyViewJoin({needed = false, usesStateView = false} = {}) {
+    async applyViewJoin({model, needed = false, usesStateView = false} = {}) {
         if (!needed) {
             return null;
         }
-        const sortModel = this.models["study_dashboard_sort"];
-        if (!sortModel) {
-            throw new Error("study_dashboard_sort is not available");
+        if (typeof model?.getQueryTableViewJoin !== "function") {
+            throw new Error(`${model?.name || "model"} does not provide getQueryTableViewJoin`);
         }
-        await ensureStudyDashboardSortFresh(
-            this.server.db.sequelize,
-            usesStateView ? "stateRank" : "sessions"
-        );
-        return {
-            sortModel,
-            join: {include: [dashboardSortInclude(sortModel)], subQuery: false},
-        };
+        return await model.getQueryTableViewJoin({usesStateView});
     }
 
     /**

@@ -6,6 +6,8 @@ const MetaModel = require("../MetaModel.js");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const {Op, col, literal, where: sqlWhere} = require("sequelize");
 const {STATES} = require("../studyDashboardSortSql.js");
+const {ensureStudyDashboardSortFresh} = require("../studyDashboardSortRefresh.js");
+const {dashboardSortInclude} = require("../../utils/helper/queryTableJoinSort.js");
 const {NUMERIC_OPERATORS, NUMERIC_OPERATORS_NE} = require("../../utils/helper/queryTableColumnFilters.js");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
 
@@ -620,6 +622,26 @@ module.exports = (sequelize, DataTypes) => {
                 as: "dashboardSort",
                 constraints: false,
             });
+        }
+
+        /**
+         * Sidecar view for queryTable sort / filter / search on state and sessions.
+         * Refreshes study_dashboard_sort when stale, then returns the INNER JOIN onto it.
+         *
+         * @param {Object} [params]
+         * @param {boolean} [params.usesStateView] the query reads state, not only the session count
+         * @returns {Promise<{sortModel: import("sequelize").Model, join: {include: Object[], subQuery: false}}>}
+         */
+        static async getQueryTableViewJoin({usesStateView = false} = {}) {
+            const sortModel = this.associations.dashboardSort?.target;
+            if (!sortModel) {
+                throw new Error("study_dashboard_sort is not available");
+            }
+            await ensureStudyDashboardSortFresh(sequelize, usesStateView ? "stateRank" : "sessions");
+            return {
+                sortModel,
+                join: {include: [dashboardSortInclude(sortModel)], subQuery: false},
+            };
         }
 
         /**

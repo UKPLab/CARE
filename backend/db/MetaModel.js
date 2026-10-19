@@ -21,6 +21,8 @@ module.exports = class MetaModel extends Model {
      * - static getQueryTableSearchColumns(ctx) → whitelist of searchable keys
      * - static getQueryTableFilterColumns(ctx) → filterable keys for the table search bar
      * - static getQueryTableSortColumns() → { [uiKey]: { field } } JOIN sort via a sidecar view
+     * - static getQueryTableViewJoin({usesStateView}) → refresh the sidecar view and return
+     *   { sortModel, join } (required when sort / filter / search reads view columns)
      * - static resolveAppDataResult({data, transaction, context, entry}) → custom appDataUpdate payload; default is entry.id
      */
 
