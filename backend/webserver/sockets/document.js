@@ -77,6 +77,41 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Session ids for studies that use this document and are already closed.
+     * A note with no study session stays included. A note from an open study does not.
+     * @param {number} documentId
+     * @returns {Promise<number[]>}
+     */
+    async closedStudySessionIds(documentId) {
+        const studySteps = await this.models['study_step'].getAllByKey('documentId', documentId);
+        const studyIds = studySteps.map(step => step.studyId);
+        const closedStudies = (await this.models['study'].getAllByKeyValues('id', studyIds)).filter(study => study.closed !== null);
+        const closedStudyIds = closedStudies.map(study => study.id);
+        return (await this.models['study_session'].getAllByKeyValues('studyId', closedStudyIds)).map(session => session.id);
+    }
+
+    /**
+     * Notes and comments with no study session, or from a closed study.
+     *
+     * @param {number} documentId The ID of the document whose notes and comments are loaded.
+     * @returns {Promise<Object>} A promise that resolves with annotations, comments, and allComments.
+     */
+    async notesForClosedStudiesOrNoSession(documentId) {
+        // These three reads do not need each other's results.
+        const [annotations, allComments, closedSessionIds] = await Promise.all([
+            this.models['annotation'].getAllByKey('documentId', documentId),
+            this.models['comment'].getAllByKey('documentId', documentId),
+            this.closedStudySessionIds(documentId),
+        ]);
+        const keep = (row) => row.studySessionId === null || closedSessionIds.includes(row.studySessionId);
+        return {
+            annotations: annotations.filter(keep),
+            comments: allComments.filter(keep),
+            allComments,
+        };
+    }
+
+    /**
      * Validate document existence and access
      * Unified check for: 1) database record exists  2) user has access  3) file exists on disk
      * 
@@ -709,22 +744,11 @@ class DocumentSocket extends Socket {
             } else {
 
                 // send comments and annotations for closed studies and without study session
-                const comments = await this.models['comment'].getAllByKey('documentId', data.documentId);
-                const annotations = await this.models['annotation'].getAllByKey('documentId', data.documentId);
-
-                // get closed studies for the document and filter comments and annotations
-                const studySteps = await this.models['study_step'].getAllByKey('documentId', data.documentId);
-                const studyIds = studySteps.map(s => s.studyId);
-                const closedStudies = (await this.models['study'].getAllByKeyValues('id', studyIds)).filter(s => s.closed !== null);
-                const closeStudyIds = closedStudies.map(s => s.id);
-                const closedSessionIds = (await this.models['study_session'].getAllByKeyValues('studyId', closeStudyIds)).map(s => s.id);
-
-                const closedComments = comments.filter(c => closedSessionIds.includes(c.studySessionId) || c.studySessionId === null);
-                const closedAnnotations = annotations.filter(a => closedSessionIds.includes(a.studySessionId) || a.studySessionId === null);
+                const {annotations: closedAnnotations, comments: closedComments, allComments} = await this.notesForClosedStudiesOrNoSession(data.documentId);
 
                 this.emit("annotationRefresh", closedAnnotations);
                 this.emit("commentRefresh", closedComments);
-                this.emit("comment_voteRefresh", await this.models['comment_vote'].getAllByKeyValues('commentId', comments.map(c => c.id)), false);
+                this.emit("comment_voteRefresh", await this.models['comment_vote'].getAllByKeyValues('commentId', allComments.map(c => c.id)), false);
 
                 const tagIds = new Set(closedAnnotations.flat(1).map(a => a.tagId));
                 this.emit("tagRefresh", await this.models['tag'].getAllByKeyValues('id', Array.from(tagIds)));

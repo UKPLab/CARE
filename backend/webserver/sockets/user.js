@@ -154,6 +154,9 @@ class UserSocket extends Socket {
      * @returns {Promise<*>} The response from the RPC service
      */
     async getUsersFromCourse(options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
 
         let userTable = await this.server.rpcs["MoodleRPC"].getUsersFromCourse(
             {
@@ -179,6 +182,9 @@ class UserSocket extends Socket {
      * @returns {Promise<Awaited<_.LoDashFp.T|*>[]>} An array of objects containing the status of the users
      */
     async checkUsersExists(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
         const emails = data.map((user) => user.email);
         const existingEmails = await this.models["user"].filterExistingEmails(emails);
         const duplicateEmails = existingEmails.map((item) => item.email);
@@ -199,6 +205,9 @@ class UserSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves when the passwords have been uploaded.
      */
     async userPublishMoodle(data) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
         const feedback = data['users'].map((user) => ({
             extId: user.extId,
             text: "Username: " + user.userName + "\nPassword: " + user.password,
@@ -457,11 +466,14 @@ class UserSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once the user rights or an error message have been emitted.
      */
     async getUserRights(data, options) {
-            const userRight = await this.models["user"].getUserRights(data.userId);
-            this.socket.emit("userRight", {
-                success: true, userRight,
-            });
-            return userRight;
+        if (!(await this.checkUserAccess(data.userId))) {
+            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
+        }
+        const userRight = await this.models["user"].getUserRights(data.userId);
+        this.socket.emit("userRight", {
+            success: true, userRight,
+        });
+        return userRight;
     }
 
     async getRoleRights(data, options) {
