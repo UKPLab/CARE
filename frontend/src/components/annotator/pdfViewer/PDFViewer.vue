@@ -14,7 +14,6 @@
       :id="'pdfToolbar-' + documentId"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
-      :is-zooming="isZooming"
       :pdf-dark-mode="pdfDarkMode"
       @toggle-pdf-theme="togglePdfTheme"
       @update:zoom-form-data="zoomFormData = $event"
@@ -116,7 +115,6 @@ export default {
       MIN_SCALE: 0.25,
       MAX_SCALE: 10.0,
       DEFAULT_SCALE_DELTA: 1.1,
-      isZooming: false,
       toolbarVisible: false,
       zoomFormData: {
         zoom: 1.0,
@@ -156,12 +154,8 @@ export default {
     },
     zoomFormData: {
       handler(newZoom) {
-        if (!this.isZooming) {
-          this.isZooming = true;
+        if (this.scale !== newZoom.zoom) {
           this.scale = newZoom.zoom;
-          setTimeout(() => {
-            this.isZooming = false;
-          }, 1000);
         }
       },
       deep: true,
@@ -224,6 +218,13 @@ export default {
     this.pdf = null;
   },
   methods: {
+    /**
+     * Watch the PDF column and publish its width.
+     * Returns immediately when the column element is not in the page.
+     * A later size change under 2 pixels, or a width of 0, is ignored.
+     *
+     * @returns {void}
+     */
     watchContainer() {
       const el = this.$refs.pdfContainerEl;
       if (!el) {
@@ -252,6 +253,12 @@ export default {
       this.observer = new ResizeObserver(this.resizeDebounced);
       this.observer.observe(el);
     },
+    /**
+     * Stop watching the PDF column and cancel a pending width update.
+     * Does nothing when no watch is running.
+     *
+     * @returns {void}
+     */
     disconnectContainerObserver() {
       if (this.observer) {
         this.observer.disconnect();
@@ -267,30 +274,15 @@ export default {
       localStorage.setItem("care.pdfDark", this.pdfDarkMode);
     },
     zoomIn() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale * this.DEFAULT_SCALE_DELTA;
       this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // hold zoom clicks until the page repaints
     },
     zoomOut() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale / this.DEFAULT_SCALE_DELTA;
       this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // hold zoom clicks until the page repaints
     },
     resetZoom() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       this.scale = this.originalScale || this.DEFAULT_SCALE;
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000);
     },
     updateVisibility(page) {
       let stateChanged = false;
