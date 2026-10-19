@@ -111,27 +111,13 @@
                 class="form-select form-select-sm score-dropdown"
                 :title="$t('assessment.criteria.changeScore')"
             >
-              <!-- Use scoring list if present -->
-              <template v-if="hasScoringList">
-                <option
-                    v-for="option in criterion.scoring"
-                    :key="option.points"
-                    :value="option.points"
-                >
-                  {{ option.points }} P
-                </option>
-              </template>
-
-              <!-- Fallback to numeric range -->
-              <template v-else>
-                <option
-                    v-for="point in availablePoints"
-                    :key="point"
-                    :value="point"
-                >
-                  {{ point }} P
-                </option>
-              </template>
+              <option
+                  v-for="point in pointsDescending"
+                  :key="point"
+                  :value="point"
+              >
+                {{ point }} P
+              </option>
             </select>
 
             <BasicButton
@@ -290,6 +276,10 @@ export default {
       const values = [];
       for (let i = min; i <= max; i++) values.push(i);
       return values;
+    },
+    // Highest first, so the native ArrowUp moves to a higher score
+    pointsDescending() {
+      return [...this.availablePoints].sort((a, b) => b - a);
     },
     scoreProxy: {
       get() {
