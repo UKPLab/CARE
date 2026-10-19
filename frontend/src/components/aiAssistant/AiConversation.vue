@@ -10,6 +10,22 @@
         @select="selectConversation"
     />
 
+    <div
+        v-if="conversationSnapshot.contextNearLimit && !readOnly"
+        class="alert alert-warning m-2 py-2 px-3 small d-flex align-items-center justify-content-between"
+        role="alert"
+    >
+      <span>This conversation is getting long. Starting a new conversation usually gives clearer answers.</span>
+      <button
+          type="button"
+          class="btn btn-sm btn-outline-secondary ms-2"
+          :disabled="isBusy"
+          @click="startNewConversation"
+      >
+        New conversation
+      </button>
+    </div>
+
     <AiConversationBody
         ref="body"
         :loading="loading"
@@ -85,6 +101,7 @@ const emptyConversationSnapshot = () => ({
   messages: [],
   models: [],
   defaultModelId: null,
+  contextNearLimit: false,
 });
 
 /**
@@ -358,6 +375,7 @@ export default {
           messages: result.messages || [],
           models: result.models || [],
           defaultModelId: result.defaultModelId || null,
+          contextNearLimit: result.contextNearLimit === true,
         });
         this.selectedModelId = this.resolveSelectedModel(result.defaultModelId);
         if (result.activeConversationId) this.newConversationSelected = false;
@@ -388,6 +406,7 @@ export default {
         activeConversationId: null,
         includeContext,
         messages: [],
+        contextNearLimit: false,
       });
       this.pendingContent = "";
       this.quote = null;

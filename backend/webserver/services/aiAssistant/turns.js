@@ -46,7 +46,8 @@ async function requireNoPendingMessage(service, userId, studySessionId, options 
  */
 async function requestAssistantCompletion(service, client, context, data, options = {}) {
     const {modelParams, requestId, messages, aiMessageId = null} = data;
-    const {additionalParameters, hookModelId, ...credentialParams} = modelParams;
+    // contextWindowTokens is pulled out so it is not forwarded to the provider.
+    const {additionalParameters, hookModelId, contextWindowTokens, ...credentialParams} = modelParams;
     const result = await core.getAIService(service).call("chatCompletion", client, {
         ...additionalParameters,
         ...credentialParams,

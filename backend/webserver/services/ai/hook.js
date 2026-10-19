@@ -85,6 +85,8 @@ async function resolveHookModelParams(service, hookModel) {
         aiModelId: aiModel.id,
         aiCredentialId: credential.id,
         additionalParameters: hookModel.additionalParameters || {},
+        // Carried for the chat context guard; stripped before the provider call.
+        contextWindowTokens: aiModel.contextWindowTokens ?? null,
         ...helpers.buildLiteLLMParams(credential, aiModel.model),
     };
 }
@@ -275,6 +277,7 @@ async function runHook(service, client, data) {
                 const modelParams = await resolveHookModelParams(service, hookModel);
                 const {additionalParameters, aiModelId, ...providerParams} = modelParams;
                 delete providerParams.aiCredentialId;
+                delete providerParams.contextWindowTokens;
 
                 service.logger.info(
                     `runHook: hookId=${hookId} templateId=${hook.templateId} ` +

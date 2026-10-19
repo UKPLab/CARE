@@ -108,6 +108,29 @@ function serializeMessages(messages) {
 }
 
 /**
+ * Approximates the token count of a text (~4 characters per token).
+ * Used only for the chat context-size guard, where a rough measure is enough.
+ *
+ * @param {unknown} text - Message content.
+ * @returns {number} Estimated tokens.
+ */
+function estimateTokens(text) {
+    return typeof text === "string" ? Math.ceil(text.length / 4) : 0;
+}
+
+/**
+ * Sums the estimated tokens of a list of messages.
+ *
+ * @param {Array<{content: unknown}>} messages - Messages to measure.
+ * @returns {number} Estimated tokens.
+ */
+function sumMessageTokens(messages) {
+    return Array.isArray(messages)
+        ? messages.reduce((sum, message) => sum + estimateTokens(message?.content), 0)
+        : 0;
+}
+
+/**
  * Builds parameters for a LiteLLM completion call.
  *
  * @param {Object} credential Credential row supplying provider authentication.
@@ -136,6 +159,8 @@ function buildLiteLLMParams(credential, modelName) {
 
 module.exports = {
     buildLiteLLMParams,
+    estimateTokens,
+    sumMessageTokens,
     extractInputText,
     requireClientUserId,
     requireId,

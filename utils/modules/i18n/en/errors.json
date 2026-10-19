@@ -442,7 +442,8 @@
             "currentStepOnly": "AI chat is only available for the current study step.",
             "notConfigured": "AI chat is not configured for this study step.",
             "contextMissing": "AI chat context is missing for this study step.",
-            "contentRequired": "Please enter a message."
+            "contentRequired": "Please enter a message.",
+            "conversationTooLong": "This conversation has become too long. Please start a new conversation to continue."
         },
         "dialogue": {
             "notFound": "AI dialogue not found.",

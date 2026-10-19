@@ -20,6 +20,39 @@ const CHAT = {
     notFoundKey: "errors.ai.chat.conversationNotFound",
 };
 
+// Chat context guard, as fractions of the model's context window: soft nudges the
+// student to start fresh, hard blocks sending. Hard stays below 1 so the answer
+// still fits inside the window.
+const CONTEXT_SOFT_RATIO = 0.65;
+const CONTEXT_HARD_RATIO = 0.85;
+
+/**
+ * Estimates a conversation's current token size from its stored model history.
+ *
+ * @param {Object} service - AIAssistantService runtime.
+ * @param {number} conversationId - Conversation identifier.
+ * @returns {Promise<number>} Estimated tokens.
+ */
+async function estimateConversationTokens(service, conversationId) {
+    const history = await service.server.db.models["ai_message"].getModelMessages(conversationId);
+    return helpers.sumMessageTokens(history);
+}
+
+/**
+ * Flags a conversation whose size passes the soft fraction of the model window,
+ * so the UI can suggest starting fresh. No window configured means no cap.
+ *
+ * @param {Object} service - AIAssistantService runtime.
+ * @param {number} conversationId - Conversation identifier.
+ * @param {number|null} contextWindowTokens - Model context window, or null.
+ * @returns {Promise<boolean>} Whether the conversation nears the limit.
+ */
+async function isContextNearLimit(service, conversationId, contextWindowTokens) {
+    if (!contextWindowTokens) return false;
+    const tokens = await estimateConversationTokens(service, conversationId);
+    return tokens > contextWindowTokens * CONTEXT_SOFT_RATIO;
+}
+
 /**
  * Normalizes optional quoted-source metadata for a user message.
  *
@@ -183,7 +216,12 @@ async function getHookModels(service, client, hookId) {
             await aiService.call("resolveHookModel", client, {hookId, aiModelId: row.aiModelId});
             const model = await models["ai_model"].getById(row.aiModelId);
             return model
-                ? {id: model.id, name: model.name || model.model, priority: row.priority}
+                ? {
+                    id: model.id,
+                    name: model.name || model.model,
+                    priority: row.priority,
+                    contextWindowTokens: model.contextWindowTokens ?? null,
+                }
                 : null;
         } catch (_error) {
             return null;
@@ -223,13 +261,21 @@ async function getConversation(service, client, data) {
     }
     const models = await getHookModels(service, client, context.hookId);
 
+    const defaultModel = models[0] || null;
+    const defaultModelId = defaultModel?.id || null;
+    let contextNearLimit = false;
+    if (activeConversation && defaultModel) {
+        contextNearLimit = await isContextNearLimit(service, activeConversation.id, defaultModel.contextWindowTokens);
+    }
+
     return {
         conversations,
         activeConversationId: activeConversation?.id || null,
         includeContext: activeConversation?.includeContext !== false,
         messages: activeConversation ? await service.server.db.models["ai_message"].getVisibleMessages(activeConversation.id) : [],
         models,
-        defaultModelId: models[0]?.id || null,
+        defaultModelId,
+        contextNearLimit,
     };
 }
 
@@ -270,6 +316,15 @@ async function sendConversationMessage(service, client, data) {
         client,
         {hookId: context.hookId, aiModelId: data?.aiModelId},
     );
+
+    // Block an existing chat that would pass the hard fraction of the model window.
+    if (conversation && modelParams.contextWindowTokens) {
+        const historyTokens = await estimateConversationTokens(service, conversation.id);
+        const projectedTokens = historyTokens + helpers.estimateTokens(content);
+        if (projectedTokens > modelParams.contextWindowTokens * CONTEXT_HARD_RATIO) {
+            throw new TranslatableError("errors.ai.chat.conversationTooLong");
+        }
+    }
 
     let systemContext = null;
     if (context.includeContext && !conversation) {
@@ -351,6 +406,7 @@ async function abortConversationMessage(service, client, data) {
  * @returns {Promise<Object>} Completed turn and conversation state.
  */
 async function completeConversationTurn(service, client, context, turn, modelParams, requestId) {
+    let turnTokens = 0;
     const assistantMessage = await turns.completeTurn(service, turn, requestId, async () => {
         const messages = await service.server.db.models["ai_message"].getModelMessages(turn.conversation.id);
         const content = await turns.requestAssistantCompletion(
@@ -358,9 +414,15 @@ async function completeConversationTurn(service, client, context, turn, modelPar
             {modelParams, requestId, messages, aiMessageId: turn.assistantMessage.id},
             {onDelta: createConversationStream(service, client, context, turn, requestId)},
         );
+        // Reuse the prompt just built plus the reply, instead of re-reading the conversation.
+        turnTokens = helpers.sumMessageTokens(messages) + helpers.estimateTokens(content);
         return {content};
     });
-    return turns.buildTurnResult(service, turn, assistantMessage);
+    const result = await turns.buildTurnResult(service, turn, assistantMessage);
+    result.contextNearLimit = modelParams.contextWindowTokens
+        ? turnTokens > modelParams.contextWindowTokens * CONTEXT_SOFT_RATIO
+        : false;
+    return result;
 }
 
 /**

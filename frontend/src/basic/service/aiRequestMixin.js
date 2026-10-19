@@ -110,6 +110,7 @@ export default {
         conversations: [...conversations.values()].sort((a, b) =>
           new Date(b.updatedAt) - new Date(a.updatedAt) || Number(b.id) - Number(a.id)),
         messages: result.messages || this.mergeMessages([result.userMessage, result.assistantMessage], existing),
+        contextNearLimit: result.contextNearLimit ?? this.conversationSnapshot.contextNearLimit ?? false,
       };
     },
     /**
