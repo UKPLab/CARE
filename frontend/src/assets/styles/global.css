@@ -122,6 +122,19 @@ html[data-bs-theme="dark"] {
   --bs-btn-disabled-color: var(--care-on-accent);
 }
 
+[data-bs-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: var(--care-accent);
+  --bs-btn-border-color: var(--care-accent);
+  --bs-btn-hover-bg: var(--care-accent);
+  --bs-btn-hover-border-color: var(--care-accent);
+  --bs-btn-hover-color: var(--care-on-accent);
+  --bs-btn-active-bg: var(--care-accent-active);
+  --bs-btn-active-border-color: var(--care-accent-active);
+  --bs-btn-active-color: var(--care-on-accent);
+  --bs-btn-disabled-color: var(--care-accent);
+  --bs-btn-disabled-border-color: var(--care-accent);
+}
+
 
 [data-bs-theme="dark"] .page-item.active .page-link {
   background-color: var(--care-accent);
