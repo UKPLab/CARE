@@ -1925,10 +1925,11 @@ export default {
         // Current page → animate + backfill immediately (no banner). Off-page (before or after
         // the current keyset window): the window is anchored to row cursors, so out-of-window
         // rows leaving don't shift our rows — just adjust the count, no banner.
+        const inResult = currentIds.has(row.id) || this.passesCurrentFilter(row);
         if (currentIds.has(row.id)) {
           this.markRowDeleted(row.id);
         }
-        this.bumpTotal(-1);
+        if (inResult) this.bumpTotal(-1);
         return;
       }
 
@@ -2778,6 +2779,8 @@ export default {
         if (this.processedDeleteIds.has(row.id)) return;
         this.processedDeleteIds.add(row.id);
         if (this.deletingIds.has(row.id) || this.isPlaceholderRow(row.id)) return;
+        // Same as page mode: a delete outside this filter or search is not part of the total.
+        if (!loaded && !this.passesCurrentFilter(row)) return;
         this.bumpTotal(-1);
         if (loaded) {
           if (this.isRowIndexVisible(loadedIndex)) {
