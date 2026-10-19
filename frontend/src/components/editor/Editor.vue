@@ -32,6 +32,7 @@
           :buttons="sidebarButtons"
           :side-bar-width="350"
           :active-side-bar="defaultActiveSidebar || activeSidebar"
+          :is-tab-shown="isSidebarTabShown"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
@@ -160,6 +161,12 @@ export default {
     },
     activeSidebar: {
       type: String,
+      required: false,
+      default: null,
+    },
+    // Decides for each sidebar tab whether it is shown (see basic/Sidebar.vue)
+    isSidebarTabShown: {
+      type: Function,
       required: false,
       default: null,
     },

@@ -171,6 +171,7 @@
             <Annotator
                 v-if="step.stepType === 1"
                 :active-sidebar="activeSidebarTab(step)"
+                :is-sidebar-tab-shown="(slotName) => isSidebarTabShown(step, slotName)"
                 :force-read-only="step.id !== currentStudyStepId"
                 :sidebar-disabled="step.id !== currentStudyStepId"
                 :is-shown="isStepVisible(step.id)"
@@ -205,6 +206,7 @@
                 v-if="step.stepType === 2"
                 ref="editor"
                 :active-sidebar="activeSidebarTab(step)"
+                :is-sidebar-tab-shown="(slotName) => isSidebarTabShown(step, slotName)"
                 :force-read-only="step.id !== currentStudyStepId"
                 :sidebar-disabled="step.id !== currentStudyStepId"
                 :document-id="step.documentId"
@@ -698,6 +700,15 @@ export default {
         return shownTab.key;
       }
       return step.stepType === 2 && step.configuration?.settings?.configurationId ? "additionalSidebars" : null;
+    },
+    isSidebarTabShown(step, slotName) {
+      // Only the tabs of the steps on screen: an earlier step's tabs while it is shown,
+      // and the step's own tabs unless an earlier step is shown alone in its place
+      const lookBackTab = this.lookBackTabs(step).find((tab) => tab.key === slotName);
+      if (lookBackTab) {
+        return lookBackTab.step.id === this.shownStepId;
+      }
+      return this.hiddenStudyStepId !== step.id;
     },
     isStepLoaded(stepId) {
       if (stepId in this.loadingReady) {

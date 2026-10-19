@@ -25,6 +25,7 @@
             v-if="!sidebarDisabled"
             ref="basicSidebar"
             :active-side-bar="activeSidebar || 'annotations'"
+            :is-tab-shown="isSidebarTabShown"
             :is-shown="isShown"  
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
@@ -182,6 +183,12 @@ export default {
     },
     activeSidebar: {
       type: String,
+      required: false,
+      default: null,
+    },
+    // Decides for each sidebar tab whether it is shown (see basic/Sidebar.vue)
+    isSidebarTabShown: {
+      type: Function,
       required: false,
       default: null,
     },

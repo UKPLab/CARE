@@ -15,7 +15,7 @@
         <div v-if="sidebarConfigs" class="sidebar-header">
           <ul class="nav nav-tabs flex-grow-1">
             <li
-                v-for="(config, slotName) in sidebarConfigs.tabs"
+                v-for="(config, slotName) in shownTabs"
                 :key="slotName"
                 class="nav-item"
             >
@@ -183,6 +183,12 @@ export default {
       required: false,
       default: null,
     },
+    // Decides for each tab (by its slot name) whether it is shown; without it all tabs are shown
+    isTabShown: {
+      type: Function,
+      required: false,
+      default: null,
+    },
     isShown: {
       type: Boolean,
       required: false,
@@ -289,11 +295,22 @@ export default {
       // If more than 3, hide everything after first 2
       return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
     },
+    shownTabs() {
+      if (!this.isTabShown) {
+        return this.sidebarConfigs.tabs;
+      }
+      return Object.fromEntries(Object.entries(this.sidebarConfigs.tabs).filter(([slotName]) => this.isTabShown(slotName)));
+    },
     resolvedActiveSlot() {
-      return this.internalActiveSlot || this.availableSlots[0] || null;
+      if (!this.isTabShown) {
+        return this.internalActiveSlot || this.availableSlots[0] || null;
+      }
+      // A hidden tab hands over to the first shown one, and comes back once it is shown again
+      const shown = Object.keys(this.shownTabs);
+      return shown.includes(this.internalActiveSlot) ? this.internalActiveSlot : shown[0] || null;
     },
     isSingleConfig() {
-      return Object.keys(this.sidebarConfigs.tabs).length === 1;
+      return Object.keys(this.shownTabs).length === 1;
     },
     activeSlotConfig() {
       return this.resolvedActiveSlot ? this.sidebarConfigs.tabs[this.resolvedActiveSlot] : null;
