@@ -268,5 +268,28 @@
   },
   "values": {
     "unlimited": "unbegrenzt"
+  },
+  "cards": {
+    "viewToggle": "Ansicht wechseln",
+    "cardView": "Kartenansicht",
+    "tableView": "Tabellenansicht",
+    "open": "Öffnen",
+    "moreActions": "Weitere Aktionen",
+    "perUser": "Max. {limit} Sitzung pro Teilnehmer | Max. {limit} Sitzungen pro Teilnehmer",
+    "emails": "E-Mails",
+    "closesOn": "Endet am {date}",
+    "opensOn": "Beginnt am {date}",
+    "endedOn": "Beendet am {date}",
+    "noNewSessionsSince": "Sitzungen können nach dem {date} nicht starten",
+    "noEndDate": "Kein Enddatum",
+    "empty": {
+      "searchTitle": "Keine Studie passt zu",
+      "filterTitle": "Keine Studie passt zu diesen Filtern",
+      "searchHint": "Unsere Lupe kam mit leeren Händen zurück. Versuchen Sie ein kürzeres Wort, prüfen Sie die Schreibweise oder entfernen Sie einen Filter.",
+      "clearSearch": "Suche zurücksetzen",
+      "create": "Studie erstellen"
+    },
+    "emptyTitle": "Noch keine Studien",
+    "emptyHint": "Erstellen Sie Ihre erste Studie mit \"Hinzufügen\" oder passen Sie die Suche an."
   }
 }

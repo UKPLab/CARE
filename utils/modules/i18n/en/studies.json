@@ -268,5 +268,28 @@
   },
   "values": {
     "unlimited": "unlimited"
+  },
+  "cards": {
+    "viewToggle": "Switch view",
+    "cardView": "Card view",
+    "tableView": "Table view",
+    "open": "Open",
+    "moreActions": "More actions",
+    "perUser": "Max. {limit} session per participant | Max. {limit} sessions per participant",
+    "emails": "Emails",
+    "closesOn": "Closes {date}",
+    "opensOn": "Opens {date}",
+    "endedOn": "Ended {date}",
+    "noNewSessionsSince": "Sessions can't start after {date}",
+    "noEndDate": "No end date",
+    "empty": {
+      "searchTitle": "No studies match",
+      "filterTitle": "No studies match these filters",
+      "searchHint": "Our magnifying glass came back empty-handed. Try a shorter word, check the spelling, or remove a filter.",
+      "clearSearch": "Clear search",
+      "create": "Create a study"
+    },
+    "emptyTitle": "No studies here yet",
+    "emptyHint": "Create your first study with \"Add\", or change the search to see more."
   }
 }

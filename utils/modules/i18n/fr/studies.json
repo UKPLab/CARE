@@ -265,5 +265,28 @@
     },
     "values": {
         "unlimited": "illimité"
+    },
+    "cards": {
+        "viewToggle": "Changer de vue",
+        "cardView": "Vue en cartes",
+        "tableView": "Vue en tableau",
+        "open": "Ouvrir",
+        "moreActions": "Plus d'actions",
+        "perUser": "Max. {limit} session par participant | Max. {limit} sessions par participant",
+        "emails": "E-mails",
+        "closesOn": "Se termine le {date}",
+        "opensOn": "Commence le {date}",
+        "endedOn": "Terminée le {date}",
+        "noNewSessionsSince": "Les sessions ne peuvent plus démarrer après le {date}",
+        "noEndDate": "Pas de date de fin",
+        "empty": {
+            "searchTitle": "Aucune étude ne correspond à",
+            "filterTitle": "Aucune étude ne correspond à ces filtres",
+            "searchHint": "Notre loupe est revenue bredouille. Essayez un mot plus court, vérifiez l'orthographe ou retirez un filtre.",
+            "clearSearch": "Effacer la recherche",
+            "create": "Créer une étude"
+        },
+        "emptyTitle": "Aucune étude pour l'instant",
+        "emptyHint": "Créez votre première étude avec « Ajouter », ou modifiez la recherche."
     }
 }

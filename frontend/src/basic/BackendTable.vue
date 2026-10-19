@@ -19,7 +19,28 @@
       <slot name="additional-buttons"/>
     </template>
   </TableSearch>
+  <!-- Alternative body for the same query window. The table below stays mounted (hidden)
+       so fixed columns and scroll handlers keep their refs while cards are shown. -->
   <div
+    v-if="showCards"
+    class="table-cards-shell"
+  >
+    <slot
+      name="cards"
+      :rows="queryItems"
+      :total="total"
+      :loading="queryLoading"
+      :loading-visible="queryLoadingVisible"
+      :row-buttons="rowButtons"
+      :row-state="cardRowState"
+      :on-action="actionEmitter"
+      :searching="hasActiveSearch"
+      :search-text="search.trim()"
+      :clear-search="clearSearch"
+    />
+  </div>
+  <div
+    v-show="!showCards"
     class="table-scroll-shell"
     :class="{ 'table-infinite-shell': isInfiniteMode }"
     :style="infiniteShellStyle"
@@ -113,7 +134,15 @@
             :colspan="emptyColspan"
             class="text-center"
           >
-            {{ $t('common.noData') }}
+            <slot
+              name="empty"
+              :searching="hasActiveSearch"
+              :search-text="search.trim()"
+              :loading="queryLoading"
+              :clear-search="clearSearch"
+            >
+              {{ $t('common.noData') }}
+            </slot>
           </td>
         </tr>
         <tr
@@ -269,7 +298,7 @@
     :current-page="currentPage"
     :items-per-page="isInfiniteMode ? 0 : limit"
     :items-per-page-list="itemsPerPageList"
-    :allow-all="true"
+    :allow-all="!showCards"
     :show-page-numbers="false"
     :window-first="windowFirstVisible"
     :window-last="windowLastVisible"
@@ -422,6 +451,15 @@ export default {
       required: false,
       default: null,
     },
+    /**
+     * Render the `#cards` slot instead of the table. Paged only: "All" (infinite scroll)
+     * is a table feature, so switching to cards drops back to the default page size.
+     */
+    cardMode: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["action", "update:modelValue", "selectionChange"],
   data: function () {
@@ -512,6 +550,13 @@ export default {
   computed: {
     hasQueryScope() {
       return !!(this.queryScope && Object.keys(this.queryScope).length > 0);
+    },
+    showCards() {
+      return this.cardMode && !!this.$slots.cards;
+    },
+    /** Free text or a filter chip narrows the query (empty states word it differently). */
+    hasActiveSearch() {
+      return this.search.trim() !== "" || Object.keys(this.activeColumnFilters).length > 0;
     },
     pendingBannerVisible() {
       // Infinite scroll absorbs inserts with the spacers, so it never needs the banner.
@@ -783,6 +828,16 @@ export default {
       } else if(!this.hasFixedColumns) {
         this.cleanupFixedColumns();
         this.manageColumnStyle = {};
+      }
+    },
+    showCards(on) {
+      if (!on || !this.isInfiniteMode) return;
+      const size = this.options?.pagination?.itemsPerPage || this.itemsPerPageList[0] || 10;
+      // The pager keeps its own copy of the select; setting it there emits the single refetch.
+      if (this.$refs.pagination) {
+        this.$refs.pagination.itemsPerPageSelect = size;
+      } else {
+        this.paginationItemsPerPageChange(size);
       }
     },
     itemsPerPage(newVal) {
@@ -1465,6 +1520,20 @@ export default {
     },
     isPlaceholderRow(id) {
       return !!(this.placeholderIds && this.placeholderIds.has && this.placeholderIds.has(id));
+    },
+    /** Empty the search bar; the searchQuery watcher refetches like a typed change. */
+    clearSearch() {
+      this.searchQuery = {search: "", columnFilters: {}};
+    },
+    /** Same live-update flags the table rows animate with, for the `#cards` slot. */
+    cardRowState(row) {
+      const id = row?.id;
+      return {
+        deleting: this.isDeletingRow(id),
+        placeholder: !!row?.__skeleton || this.isPlaceholderRow(id),
+        updated: this.isUpdatedRow(id),
+        entering: this.isEnteringRow(id) || this.isEnteringBottomRow(id),
+      };
     },
     bumpTotal(delta) {
       this.queryMeta.total = Math.max(0, (this.queryMeta.total || 0) + delta);
@@ -2799,6 +2868,11 @@ export default {
 <style scoped src="./table/table.css"></style>
 
 <style scoped>
+.table-cards-shell {
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
 .table-manage-col {
   white-space: nowrap;
   box-sizing: border-box;

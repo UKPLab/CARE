@@ -6,7 +6,9 @@
       @click="toggleCollabs()"
     >
       <h5 class="card-title">
-        {{ title }}
+        <slot name="title">
+          {{ title }}
+        </slot>
       </h5>
       <div class="d-flex align-items-center gap-2">
         <div
