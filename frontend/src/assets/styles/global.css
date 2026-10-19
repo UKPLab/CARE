@@ -142,6 +142,20 @@ html[data-bs-theme="dark"] {
   color: var(--care-on-accent);
 }
 
+[data-bs-theme="dark"] .pagination {
+  --bs-pagination-color: var(--care-accent);
+  --bs-pagination-hover-color: var(--care-accent);
+  --bs-pagination-focus-color: var(--care-accent);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-accent) 25%, transparent);
+}
+
+/* In a button group each button overlaps the previous one by 1px, so a grey
+   neighbour hides the right edge of a coloured outline button. Keep the
+   coloured border on top. */
+.btn-group > :is(.btn-outline-danger, .btn-outline-warning) {
+  z-index: 1;
+}
+
 [data-bs-theme="dark"] .form-check-input:checked {
   background-color: var(--care-accent);
   border-color: var(--care-accent);
