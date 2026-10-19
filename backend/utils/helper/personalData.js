@@ -4,6 +4,7 @@
  * Redacts student fields in text sent to a model.
  *
  * @module utils/helper/personalData
+ * @author Mohammad Elwan
  */
 
 const REDACTED = "[REDACTED]";
