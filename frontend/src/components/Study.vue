@@ -31,7 +31,7 @@
       :study-session-id="studySessionId"
   />
   <Teleport to="#topBarNavItems">
-    <li v-if="study && study.description && studySession && studySession.start" class="nav-item">
+    <li v-if="hasInstructions" class="nav-item">
       <TopBarButton
           class="btn rounded-circle"
           :title="$t('components.studyRoute.instructions')"
@@ -138,7 +138,7 @@
       v-if="studySessionId !== 0 && !studyError"
       class="study-container"
       :class="{ 'pane-open': shownStepId !== null }"
-      :data-split="splitLayout || (shownStepId !== null && shownStepId !== currentStudyStepId ? 'single' : null)"
+      :data-split="lookBack.dataSplit"
   >
     <PaneStrip
         v-if="currentStudyStep"
@@ -146,11 +146,11 @@
         v-model:layout="splitLayout"
         :steps="orderedStudySteps"
         :current-step="currentStudyStep"
-        :earlier-steps="lookBackSteps"
+        :earlier-steps="lookBack.earlierSteps"
         :labels="stepLabels"
     />
-    <div v-for="step in orderedStudySteps" :key="'step_' + step.id" :class="{ 'study-pane': isStepVisible(step.id) }">
-      <div v-show="isStepVisible(step.id)">
+    <div v-for="step in orderedStudySteps" :key="'step_' + step.id" :class="{ 'study-pane': lookBack.isVisible(step.id) }">
+      <div v-show="lookBack.isVisible(step.id)">
         <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
           <div v-if="!(studySession && studySession.start === null)">
@@ -170,11 +170,7 @@
 
             <Annotator
                 v-if="step.stepType === 1"
-                :active-sidebar="activeSidebarTab(step)"
-                :is-sidebar-tab-shown="(slotName) => isSidebarTabShown(step, slotName)"
-                :force-read-only="step.id !== currentStudyStepId"
-                :sidebar-disabled="step.id !== currentStudyStepId"
-                :is-shown="isStepVisible(step.id)"
+                v-bind="lookBack.paneProps[step.id]"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
                 @error="error"
@@ -193,7 +189,7 @@
                   </template>
                 </SidebarTemplate>
               </template>
-              <template v-for="tab in lookBackTabs(step)" :key="tab.key" #[tab.key]>
+              <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
                 <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
                   <template #content>
                     <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
@@ -205,12 +201,8 @@
             <Editor
                 v-if="step.stepType === 2"
                 ref="editor"
-                :active-sidebar="activeSidebarTab(step)"
-                :is-sidebar-tab-shown="(slotName) => isSidebarTabShown(step, slotName)"
-                :force-read-only="step.id !== currentStudyStepId"
-                :sidebar-disabled="step.id !== currentStudyStepId"
+                v-bind="lookBack.paneProps[step.id]"
                 :document-id="step.documentId"
-                :is-shown="isStepVisible(step.id)"
                 :study-step-id="step.id"
                 :without-history="true"
                 @update:data="updateStudyData(step.id, 'editor', $event)"
@@ -228,7 +220,7 @@
                   </template>
                 </SidebarTemplate>
               </template>
-              <template v-for="tab in lookBackTabs(step)" :key="tab.key" #[tab.key]>
+              <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
                 <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
                   <template #content>
                     <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
@@ -248,7 +240,7 @@
           </div>
         </div>
       </div>
-      <div v-if="shownStepId !== null && isStepVisible(step.id)" class="pane-label-holder">
+      <div v-if="shownStepId !== null && lookBack.isVisible(step.id)" class="pane-label-holder">
         <span class="badge d-inline-flex align-items-center gap-1">
           <LoadIcon v-if="step.id !== currentStudyStepId" icon-name="lock-fill" :size="10"/>
           {{ stepLabels[step.id] }}
@@ -275,6 +267,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
 import LookBackPanel from "@/components/study/LookBackPanel.vue";
+import {buildLookBack, buildStepLabels} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
@@ -306,7 +299,7 @@ export default {
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
       pendingNlpInsertion: computed(() => this.pendingNlpInsertion),
-      hiddenStudyStepId: computed(() => this.hiddenStudyStepId),
+      hiddenStudyStepId: computed(() => this.lookBack.hiddenStepId),
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
@@ -347,16 +340,8 @@ export default {
   },
   computed: {
     stepLabels() {
-      // Name of each step as the workflow calls it; the step number is added to names that occur more than once
-      const names = this.orderedStudySteps.map((step, index) => {
-        const workflowStep = this.$store.getters["table/workflow_step/get"](step.workflowStepId);
-        return workflowStep?.name || this.$t('components.studyRoute.panes.stepFallback', {number: index + 1});
-      });
-      return this.orderedStudySteps.reduce((labels, step, index) => {
-        const isDuplicate = names.filter((name) => name === names[index]).length > 1;
-        labels[step.id] = isDuplicate ? `${names[index]} ${index + 1}` : names[index];
-        return labels;
-      }, {});
+      return buildStepLabels(this.orderedStudySteps, this.$store.getters["table/workflow_step/get"],
+          (number) => this.$t('components.studyRoute.panes.stepFallback', {number}));
     },
     previousLabel() {
       return this.$t('components.studyRoute.previousStep', {step: this.stepLabels[this.currentStudyStep?.studyStepPrevious]});
@@ -364,13 +349,15 @@ export default {
     nextLabel() {
       return this.$t('components.studyRoute.nextStep', {step: this.stepLabels[this.nextStudyStep?.id]});
     },
-    lookBackSteps() {
-      return this.earlierStepsOf(this.currentStudyStep);
+    hasInstructions() {
+      return !!this.study?.description && !!this.studySession?.start;
     },
-    hiddenStudyStepId() {
-      // While an earlier step is shown alone, the current step stays mounted but hidden (see PaneStrip.vue)
-      const single = !this.splitLayout && this.shownStepId !== null && this.shownStepId !== this.currentStudyStepId;
-      return single ? this.currentStudyStepId : null;
+    lookBack() {
+      return buildLookBack({
+        steps: this.orderedStudySteps, currentStep: this.currentStudyStep, shownStepId: this.shownStepId,
+        splitLayout: this.splitLayout, labels: this.stepLabels, getStep: this.$store.getters["table/study_step/get"],
+        isLoaded: this.isStepLoaded, $t: this.$t,
+      });
     },
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
@@ -636,69 +623,6 @@ export default {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
       this.updateStep(nextStep.id);
-    },
-    isStepVisible(stepId) {
-      // An earlier step takes the place of the current one while its tab is selected. The current step stays
-      // shown as well: next to it in a split, otherwise hidden except its sidebar (see PaneStrip.vue)
-      const selected = this.lookBackSteps.find((step) => step.id === this.shownStepId);
-      if (selected && stepId === this.currentStudyStepId) {
-        return true;
-      }
-      return stepId === (selected ? selected.id : this.currentStudyStepId);
-    },
-    earlierStepsOf(step) {
-      // Earlier steps that "Previous" could reach from the given step, in workflow order.
-      // Only Annotator (1) and Editor (2) steps, because those can be forced read-only.
-      const steps = [];
-      let current = step;
-      while (current && current.allowBackward && current.studyStepPrevious) {
-        current = this.$store.getters["table/study_step/get"](current.studyStepPrevious);
-        if (current && [1, 2].includes(current.stepType) && this.isStepLoaded(current.id)) {
-          steps.unshift(current);
-        }
-      }
-      return steps;
-    },
-    lookBackTabs(step) {
-      // Sidebar tabs of a step that show its earlier steps read-only:
-      // the annotations of Annotator steps (stepType 1) and the assessment of steps that have one.
-      // Their slot names are numbers on purpose: JavaScript lists numeric object keys first and in
-      // ascending order, so these tabs come before the step's own tabs, in workflow order.
-      const tabs = [];
-      this.earlierStepsOf(step).forEach((earlier) => {
-        const number = this.orderedStudySteps.findIndex((s) => s.id === earlier.id) + 1;
-        // A tab is named like its step; only a step with two tabs also says what each one shows
-        const label = this.stepLabels[earlier.id];
-        const hasAssessment = !!earlier.configuration?.settings?.configurationId;
-        const hasBoth = earlier.stepType === 1 && hasAssessment;
-        if (earlier.stepType === 1) {
-          const title = hasBoth ? this.$t('components.studyRoute.panes.annotationsOfStep', {step: label}) : label;
-          tabs.push({key: String(number * 10), type: "annotations", icon: "pencil-square", step: earlier, number, title});
-        }
-        if (hasAssessment) {
-          const title = hasBoth ? this.$t('components.studyRoute.panes.assessmentOfStep', {step: label}) : label;
-          tabs.push({key: String(number * 10 + 1), type: "assessment", icon: "list-check", step: earlier, number, title});
-        }
-      });
-      return tabs;
-    },
-    activeSidebarTab(step) {
-      // The sidebar opens on the tab of the step on screen: an earlier step while it is shown on its own
-      // or in a split, else the step's own tab (the assessment of an Editor step that has one)
-      const shownTab = this.lookBackTabs(step).find((tab) => tab.step.id === this.shownStepId);
-      if (shownTab) {
-        return shownTab.key;
-      }
-      return step.stepType === 2 && step.configuration?.settings?.configurationId ? "additionalSidebars" : null;
-    },
-    isSidebarTabShown(step, slotName) {
-      // Only the tabs of the steps on screen: an earlier step's tabs while it is shown,
-      // and the step's own tabs unless an earlier step is shown alone in its place
-      const lookBackTab = this.lookBackTabs(step).find((tab) => tab.key === slotName);
-      if (lookBackTab) {
-        return lookBackTab.step.id === this.shownStepId;
-      }
-      return this.hiddenStudyStepId !== step.id;
     },
     isStepLoaded(stepId) {
       if (stepId in this.loadingReady) {
