@@ -272,6 +272,12 @@ export default {
         this.init();
       }
     },
+    /**
+     * Store the new column width and refit the page.
+     * Returns immediately when the width is missing or the change is under 2 pixels.
+     *
+     * @returns {void}
+     */
     resizeHandler() {
       const available = this.containerWidth;
       if (available <= 0 || Math.abs(available - this.originalWidth) < 2) {
