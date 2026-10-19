@@ -93,6 +93,11 @@
     "sessionFinishedMessage": "Ihre Sitzung wurde erfolgreich eingereicht.",
     "studySessionErrorTitle": "Fehler in der Studiensitzung",
     "cannotFinishSession": "Sitzung kann nicht beendet werden",
+    "cannotGoNext": "Nächster Schritt nicht möglich",
+    "assessmentIncomplete": "Die Studie kann nicht beendet werden, solange nicht jedes Assessment-Kriterium gespeichert ist. Noch offen: {criteria}.",
+    "assessmentIncompleteGeneric": "Die Studie kann nicht beendet werden, solange das Assessment in der Seitenleiste nicht abgeschlossen ist.",
+    "assessmentIncompleteNext": "Der nächste Schritt ist erst möglich, wenn jedes Assessment-Kriterium gespeichert ist. Noch offen: {criteria}.",
+    "assessmentIncompleteNextGeneric": "Der nächste Schritt ist erst möglich, wenn das Assessment in der Seitenleiste abgeschlossen ist.",
     "studyClosedAutoTerminated": "Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
   },
   "loading": {
