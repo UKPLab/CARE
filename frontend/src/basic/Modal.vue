@@ -310,20 +310,10 @@ export default {
       this.suspendedByChild = false;
     },
     suspendParentModal() {
-      if (!this.parentModal || this.parentModal.suspendedByChild) return;
-      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
-      if (el) {
-        el.classList.add('nested-suspended');
-      }
-      this.parentModal.suspendedByChild = true;
+      this.parentModal?.suspendByChild();
     },
     resumeParentModal() {
-      if (!this.parentModal || !this.parentModal.suspendedByChild) return;
-      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
-      if (el) {
-        el.classList.remove('nested-suspended');
-      }
-      this.parentModal.suspendedByChild = false;
+      this.parentModal?.resumeFromChild();
     }
   }
 };
