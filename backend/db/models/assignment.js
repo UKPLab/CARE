@@ -52,6 +52,7 @@ module.exports = (sequelize, DataTypes) => {
 				size: 6,
 				default: null,
 				required: false,
+				disablePast: true,
 			},
 			{
 				key: "end",
@@ -60,6 +61,7 @@ module.exports = (sequelize, DataTypes) => {
 				size: 6,
 				default: null,
 				required: false,
+				disablePast: true,
 			},
 			{
 				key: "validationConfigurationId",
