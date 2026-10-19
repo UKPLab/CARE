@@ -439,10 +439,6 @@ export default {
   background-color: var(--bs-tertiary-bg, #f2f2f2);
 }
 
-.list-group-item:hover {
-  background-color: var(--bs-body-bg, #fff) !important;
-}
-
 .sidebar-icon {
   height: 25px;
   width: 25px;
