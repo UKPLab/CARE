@@ -248,11 +248,6 @@
           </div>
         </div>
       </div>
-      <LookBackSpotlight
-          v-if="spotlightOn && splitLayout && step.id === shownStepId && step.id !== currentStudyStepId"
-          :step="step"
-          :current-step-id="currentStudyStepId"
-      />
       <div v-if="shownStepId !== null && isStepVisible(step.id)" class="pane-label-holder">
         <span class="badge d-inline-flex align-items-center gap-1">
           <LoadIcon v-if="step.id !== currentStudyStepId" icon-name="lock-fill" :size="10"/>
@@ -280,7 +275,6 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
 import LookBackPanel from "@/components/study/LookBackPanel.vue";
-import LookBackSpotlight from "@/components/study/LookBackSpotlight.vue";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
@@ -301,7 +295,6 @@ export default {
     TopBarButton,
     PaneStrip,
     LookBackPanel,
-    LookBackSpotlight,
     StepModal,
     LoadingModal
   },
@@ -373,9 +366,6 @@ export default {
     },
     lookBackSteps() {
       return this.earlierStepsOf(this.currentStudyStep);
-    },
-    spotlightOn() {
-      return this.currentStep.configuration?.settings?.lookBackSpotlight ?? false;
     },
     hiddenStudyStepId() {
       // While an earlier step is shown alone, the current step stays mounted but hidden (see PaneStrip.vue)
