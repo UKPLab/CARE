@@ -12,7 +12,7 @@
   </button>
   <button
     v-else
-    class="btn btn-sm position-relative border-0"
+    class="btn btn-sm position-relative border-0 care-focus-ring"
     data-placement="top"
     data-toggle="tooltip"
     :title="title"
@@ -97,10 +97,6 @@ export default {
 </script>
 
 <style scoped>
-.btn:focus-visible {
-  outline: 2px solid var(--bs-primary);
-  outline-offset: -2px;
-}
 .start-85 {
   left: 85% !important;
 }

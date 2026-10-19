@@ -4,7 +4,7 @@
       <button
         v-if="requestId === null"
         :title="nlpAvailable ? title : $t('nlp.notAvailable', { name: title })"
-        class="btn btn-sm"
+        class="btn btn-sm care-focus-ring"
         data-placement="top"
         data-toggle="tooltip"
         type="button"
@@ -160,10 +160,6 @@ export default {
 </script>
 
 <style scoped>
-.btn:focus-visible {
-  outline: 2px solid var(--bs-primary);
-  outline-offset: -2px;
-}
 .btn[disabled] {
     pointer-events: auto;
     cursor: auto;

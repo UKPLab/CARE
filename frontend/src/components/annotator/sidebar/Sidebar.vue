@@ -323,7 +323,8 @@ export default {
       const cards = [...event.currentTarget.querySelectorAll(':scope > li[role="article"]')];
       const index = cards.indexOf(event.target.closest('li[role="article"]'));
       const next = index === -1 ? cards[direction > 0 ? 0 : cards.length - 1] : cards[index + direction];
-      const header = next && next.querySelector('.card-focusable');
+      // The chevron is hidden while a card is being edited, so fall back to its first control
+      const header = next && (next.querySelector('.card-focusable') || next.querySelector('textarea, button'));
       if (!header) return;
       event.preventDefault();
       header.focus();

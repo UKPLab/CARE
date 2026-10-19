@@ -6,22 +6,23 @@
   >
     <template #header>
       <div 
-        class="row card-focusable" 
+        class="row" 
         :class="{ 'header-hoverable': collapsed && !editedByMyself }"
         :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
         @click="handleHeaderClick"
-        tabindex="0"
-        @keydown.enter.exact.self.prevent="handleHeaderClick"
-        @keydown.space.exact.self.prevent="handleHeaderClick"
       >
+        <!-- Mouse-only shortcut to open the card; the chevron below is the single keyboard and
+             screen-reader control, so buttons are never nested inside each other -->
         <div class="col" style="display: flex; align-items: center;">
           <div 
             v-if="!editedByMyself"
             :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
-            class="card-focusable"
+            class="card-focusable care-focus-ring"
             style="display: inline-flex; margin-right: 8px;"
-            @click.stop="handleCheckIconClick"
+            role="button"
             tabindex="0"
+            :aria-expanded="!collapsed"
+            @click.stop="handleCheckIconClick"
             @keydown.enter.exact.prevent="handleCheckIconClick"
             @keydown.space.exact.prevent="handleCheckIconClick"
           >
@@ -559,8 +560,6 @@ export default {
 
 <style scoped>
 .card-focusable:focus-visible {
-  outline: 2px solid var(--bs-primary);
-  outline-offset: -2px;
   border-radius: 4px;
 }
 </style>

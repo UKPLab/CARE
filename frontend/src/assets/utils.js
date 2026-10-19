@@ -614,6 +614,7 @@ export function focusNextAnnotationCard(fromEl) {
         target = card.previousElementSibling;
         while (target && !isCard(target)) target = target.previousElementSibling;
     }
-    const header = target && target.querySelector('.card-focusable');
+    // The chevron is hidden while a card is being edited, so fall back to its first control
+    const header = target && (target.querySelector('.card-focusable') || target.querySelector('textarea, button'));
     if (header) header.focus();
 }
