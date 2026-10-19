@@ -1,5 +1,6 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
+const {Op} = require("sequelize");
 const {getEmailContent} = require("../../utils/helper/email");
 
 /** Coordinator and createStudySteps use workflowStepId as `id`. */
@@ -36,8 +37,9 @@ class StudySocket extends Socket {
      *
      * Two client shapes: explicit ids (rows ticked in the table) or a query-scoped selection
      * ("select all matching" — the same filter / search the list used, minus rows unticked
-     * afterwards). Both are resolved against the viewer's row scope, so `canManageStudies` alone
-     * never decides which rows are written: an id outside what the user may list is dropped.
+     * afterwards). Both are resolved against the viewer's row scope and then the write filter,
+     * so `canManageStudies` alone never decides which rows are written: an id the user may not
+     * list, or may list but not write (e.g. only joined via a session), is dropped.
      *
      * @param {Object} data
      * @param {number[]} [data.studyIds] explicitly selected rows
@@ -52,17 +54,31 @@ class StudySocket extends Socket {
         const selection = data?.selection;
         // New objects on purpose: a client `scope` is never forwarded (bulk uses the plain study
         // ACL), and explicit picks come from top-level `studyIds`, not `selection.ids`.
-        if (selection && selection.allMatching) {
-            return await this.resolveSelectionIds("study", {
+        const readableIds = (selection && selection.allMatching)
+            ? await this.resolveSelectionIds("study", {
                 allMatching: true,
                 filter: selection.filter,
                 query: selection.query,
                 excludeIds: selection.excludeIds,
+            })
+            : await this.resolveSelectionIds("study", {
+                ids: Array.isArray(data?.studyIds) ? data.studyIds : [],
             });
+        if (readableIds.length === 0) {
+            return [];
         }
-        return await this.resolveSelectionIds("study", {
-            ids: Array.isArray(data?.studyIds) ? data.studyIds : [],
-        });
+
+        // Read scope also includes studies the user only joined.
+        // Drop those: bulk writes only what the owner or an admin may change.
+        const {filter, accessAllowed} = await this.getWriteFilter(
+            this.userId, {id: {[Op.in]: readableIds}, deleted: false}, {}, "study", this.rolesUpdatedAt
+        );
+        if (!accessAllowed) {
+            return [];
+        }
+        const writableRows = await this.models["study"].getAll({where: filter, attributes: ["id"]}) || [];
+        const writable = new Set(writableRows.map((row) => row.id));
+        return readableIds.filter((id) => writable.has(id));
     }
 
     /**
