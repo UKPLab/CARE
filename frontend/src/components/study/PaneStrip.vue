@@ -84,13 +84,13 @@
           <LoadIcon :icon-name="splitIcons[direction]" :size="16"/>
         </BasicButton>
         <ul v-if="hasChoice" class="dropdown-menu dropdown-menu-end">
-          <li v-for="tab in earlierTabs" :key="tab.step.id">
+          <li v-for="step in earlierSteps" :key="step.id">
             <BasicButton
                 class="dropdown-item"
-                :aria-current="isSplit(direction) && modelValue === tab.step.id ? 'true' : null"
-                :title="tab.label"
-                :props="{ key: 'studyPane.split', direction, from: layout, stepId: tab.step.id }"
-                @click="split(direction, tab.step.id)"
+                :aria-current="isSplit(direction) && modelValue === step.id ? 'true' : null"
+                :title="labels[step.id]"
+                :props="{ key: 'studyPane.split', direction, from: layout, stepId: step.id }"
+                @click="split(direction, step.id)"
             />
           </li>
         </ul>
@@ -169,9 +169,6 @@ export default {
     currentIndex() {
       return this.steps.findIndex((step) => step.id === this.currentStep.id);
     },
-    earlierTabs() {
-      return this.earlierSteps.map((step) => ({step, label: this.labels[step.id]}));
-    },
   },
   watch: {
     layout: "watchSidebar",
@@ -234,13 +231,14 @@ export default {
     startResize(event) {
       const container = document.querySelector(".study-container[data-split]");
       const sideBySide = this.isSplit("row");
+      const top = parseFloat(getComputedStyle(container).getPropertyValue("--look-back-top"));
       const divider = event.target;
       const move = (moveEvent) => {
         const box = container.getBoundingClientRect();
         const width = container.clientWidth - parseFloat(getComputedStyle(container).paddingRight);
         const share = sideBySide
           ? (moveEvent.clientX - box.left) / width
-          : (moveEvent.clientY - 104.5) / (window.innerHeight - 104.5);
+          : (moveEvent.clientY - top) / (window.innerHeight - top);
         // Each document keeps at least a fifth of the room
         container.style.setProperty("--split", Math.min(Math.max(share, 0.2), 0.8));
       };
@@ -264,10 +262,10 @@ export default {
 <style scoped>
 .pane-strip {
   position: fixed;
-  top: 52.5px;
+  top: var(--top-bar-height);
   left: 0;
   right: 0;
-  height: 52px;
+  height: var(--strip-height);
   padding-top: 4px;
   z-index: 1020;
 }
@@ -313,6 +311,10 @@ export default {
 :root {
   --look-back-accent: var(--bs-primary);
   --look-back-on-accent: #fff;
+  /* CARE's top bar, the workflow bar under it, and both together (where the documents start) */
+  --top-bar-height: 52.5px;
+  --strip-height: 52px;
+  --look-back-top: 104.5px;
 }
 
 html[data-bs-theme="dark"] {
@@ -322,15 +324,15 @@ html[data-bs-theme="dark"] {
 
 /* Room for the open strip */
 .study-container.pane-open {
-  padding-top: 52px;
+  padding-top: var(--strip-height);
 }
 
 .study-container.pane-open .vh-100 {
-  height: calc(100vh - 52px) !important;
+  height: calc(100vh - var(--strip-height)) !important;
 }
 
 .study-container.pane-open .min-vh-100 {
-  min-height: calc(100vh - 52px) !important;
+  min-height: calc(100vh - var(--strip-height)) !important;
 }
 
 /* Name of the step in the bottom left corner of each shown document, clear of its toolbars.
@@ -378,7 +380,7 @@ html[data-bs-theme="dark"] {
 }
 
 .pane-divider-row {
-  top: 104.5px;
+  top: var(--look-back-top);
   bottom: 0;
   left: calc(var(--split, 0.5) * (100vw - var(--sidebar-width, 0px)) - 3px);
   width: 6px;
@@ -386,7 +388,7 @@ html[data-bs-theme="dark"] {
 }
 
 .pane-divider-column {
-  top: calc(104.5px + var(--split, 0.5) * (100vh - 104.5px) - 3px);
+  top: calc(var(--look-back-top) + var(--split, 0.5) * (100vh - var(--look-back-top)) - 3px);
   left: 0;
   right: var(--sidebar-width, 0px);
   height: 6px;
@@ -397,7 +399,7 @@ html[data-bs-theme="dark"] {
    which share the rest of the width. Each document keeps at least 300px. */
 .study-container[data-split] > .study-pane #sidebarContainer {
   position: fixed;
-  top: 104.5px;
+  top: var(--look-back-top);
   right: 0;
   bottom: 0;
   z-index: 10;
@@ -439,7 +441,7 @@ html[data-bs-theme="dark"] {
   flex-direction: row-reverse;
 }
 
-/* Stacked: earlier step on top, current step below. 52.5px is the top bar, 52px the strip. */
+/* Stacked: earlier step on top, current step below */
 .study-container[data-split="column"] {
   flex-direction: column;
 }
@@ -454,7 +456,7 @@ html[data-bs-theme="dark"] {
 
 .study-container[data-split^="column"] .vh-100,
 .study-container[data-split^="column"] .min-vh-100 {
-  height: calc((100vh - 104.5px) * var(--split, 0.5) + 52.5px) !important;
+  height: calc((100vh - var(--look-back-top)) * var(--split, 0.5) + var(--top-bar-height)) !important;
   min-height: 0 !important;
 }
 
@@ -462,7 +464,7 @@ html[data-bs-theme="dark"] {
    so it needs no room for it */
 :is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
   .study-container[data-split="column-reverse"] > .study-pane:not(.study-pane ~ .study-pane)) :is(.vh-100, .min-vh-100) {
-  height: calc((100vh - 104.5px) * (1 - var(--split, 0.5))) !important;
+  height: calc((100vh - var(--look-back-top)) * (1 - var(--split, 0.5))) !important;
 }
 
 :is(.study-container[data-split="column"] > .study-pane ~ .study-pane,
