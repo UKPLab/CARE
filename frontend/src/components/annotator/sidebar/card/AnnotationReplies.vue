@@ -15,6 +15,7 @@
     <div class="btn-group">
       <BasicButton
       v-if="showExtenderButton"
+      ref="showMore"
       class="btn btn-light btn-sm"
       :text="$t('common.showMore')"
       @click="$emit('update:maxComments', maxComments + 5)"
@@ -23,7 +24,7 @@
       v-if="!showExtenderButton && numChildComments > defaultNumComments"
       class="btn btn-light btn-sm"
       :text="$t('common.showLess')"
-      @click="$emit('update:maxComments', defaultNumComments)"
+      @click="showLess"
       />
       <BasicButton
       v-if="numChildComments > 0"
@@ -101,6 +102,16 @@ export default {
     expandForNewReply() {
       this.$emit('update:maxComments', this.numChildComments + 1);
       this.$emit('update:showReplies', true);
+    },
+    /**
+     * Shows fewer replies; the Show less button disappears, so focus moves to Show more.
+     * @returns {void}
+     */
+    showLess() {
+      this.$emit('update:maxComments', this.defaultNumComments);
+      this.$nextTick(() => {
+        if (this.$refs.showMore) this.$refs.showMore.$el.focus();
+      });
     },
   }
 }

@@ -115,6 +115,7 @@
               <VoteButtons :comment="comment"/>
               <SidebarButton
                   v-if="comment.userId === userId && !readOnly"
+                  ref="editButton"
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
@@ -135,7 +136,7 @@
                   :props="$props"
                   icon="trash3"
                   :title="$t('common.delete')"
-                  @click="remove"
+                  @click="moveFocusToNextCard(); remove()"
               />
             </div>
             <!-- Last in the footer, so keyboard users reach it after the actions and can skip the thread -->
@@ -178,7 +179,7 @@ import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import AnnotationTag from "./AnnotationTag.vue";
 import AnnotationSummarize from "./AnnotationSummarize.vue";
@@ -274,6 +275,15 @@ export default {
     },
   },
   watch: {
+    editedByMyself(newVal) {
+      if (newVal) return;
+      // Runs before the editor closes: if the keyboard was in this card, land on the Edit button again
+      if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
+        this.$nextTick(() => {
+          if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+        });
+      }
+    },
     showReplies(newVal) {
       if (newVal) return;
       // Runs before the thread is removed: if the keyboard was in it, move focus to the toggle
@@ -446,6 +456,15 @@ export default {
     },
     edit() {
       this.$refs.collab.startCollab();
+    },
+    /**
+     * Before the card is deleted, moves keyboard focus to the next annotation card.
+     * @returns {void}
+     */
+    moveFocusToNextCard() {
+      if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
+        focusNextAnnotationCard(this.$el);
+      }
     },
     toEditMode(status) {
       this.edit_mode = status;

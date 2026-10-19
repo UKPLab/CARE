@@ -596,3 +596,24 @@ export function resolveTheme(saved) {
     const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     return saved || cached || (osPrefersDark ? "dark" : "light");
 }
+
+/**
+ * Moves keyboard focus to the header of the next annotation card in the sidebar feed,
+ * or the previous one when there is no next card. Used before a card or reply is deleted,
+ * so focus is not lost when the focused button disappears.
+ * @param {HTMLElement} fromEl - an element inside the annotation card being left
+ * @returns {void}
+ */
+export function focusNextAnnotationCard(fromEl) {
+    const card = fromEl && fromEl.closest('li[role="article"]');
+    if (!card) return;
+    const isCard = (el) => el && el.getAttribute('role') === 'article';
+    let target = card.nextElementSibling;
+    while (target && !isCard(target)) target = target.nextElementSibling;
+    if (!target) {
+        target = card.previousElementSibling;
+        while (target && !isCard(target)) target = target.previousElementSibling;
+    }
+    const header = target && target.querySelector('.card-focusable');
+    if (header) header.focus();
+}
