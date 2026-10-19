@@ -17,8 +17,8 @@ export default {
                 const name = normalizeName(node.rawName)
                 const classes = staticClasses(node)
                 let messageId
-                if (classes.some((name) => name === 'bi' || name.startsWith('bi-'))) messageId = 'icon'
-                else if (classes.some((name) => ['spinner-border', 'spinner-grow'].includes(name))) messageId = 'loading'
+                if (classes.some((className) => className === 'bi' || className.startsWith('bi-'))) messageId = 'icon'
+                else if (classes.some((className) => ['spinner-border', 'spinner-grow'].includes(className))) messageId = 'loading'
                 else if (['table', 'btable', 'btablelite', 'btablesimple'].includes(name)) messageId = 'table'
                 else if (name === 'bmodal' || classes.includes('modal')) messageId = 'modal'
                 if (messageId) context.report({ node: node.startTag, messageId })

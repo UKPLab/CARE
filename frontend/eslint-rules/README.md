@@ -11,17 +11,25 @@ These rules are registered as the `local` plugin in `../eslint.config.js`:
   Card footers and modal body buttons are unaffected.
 - `dashboard-list-page`: use DashboardListPage for Card + BasicTable layouts in
   top-level dashboard pages. It resolves imported component aliases and leaves
-  tables inside imported modals alone.
+  tables inside imported modals alone. Tables using selection (`v-model` or
+  `model-value`), `count`, or pagination/selection update events are excluded
+  because ListPage does not forward these APIs. Object bindings and dynamic
+  binding/event arguments are also excluded when compatibility cannot be checked.
 - `dashboard-row-buttons`: build dashboard row button objects with
   `dashboardRowAction()` for common actions or `dashboardRowButton()` for custom
   icons. Objects with both `action` and `icon` outside these imported helper calls
-  are reported in dashboard components. Helper overrides remain supported.
+  are reported in dashboard components. Objects assigned to row fields (such as
+  icon-selector cells) are excluded; assignments to `buttons` are still checked.
+  Helper overrides remain supported.
 
 Run the rule regression tests from `frontend`:
 
 ```sh
-node --test eslint-rules/rules.test.js
+npm run test:ui-rules
 ```
+
+The tests also run before ESLint via `npm run frontend-lint`, including through
+`make lint` and the CI lint job.
 
 Run the repository checks from the repository root:
 

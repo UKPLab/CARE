@@ -23,9 +23,14 @@ export default {
                     .map((property) => property.key.name || property.key.value)
                 if (!keys.includes('action') || !keys.includes('icon')) return
                 let parent = node.parent
-                while (parent && !['Property', 'ReturnStatement', 'VariableDeclarator'].includes(parent.type)) {
+                while (parent && !['Property', 'ReturnStatement', 'VariableDeclarator', 'AssignmentExpression'].includes(parent.type)) {
                     if (parent.type === 'CallExpression' && helpers.has(parent.callee.name)) return
                     parent = parent.parent
+                }
+                // Row fields (for example an icon-selector cell) are not row buttons.
+                if (parent?.type === 'AssignmentExpression' && parent.left.type === 'MemberExpression') {
+                    const field = parent.left.computed ? parent.left.property.value : parent.left.property.name
+                    if (field !== 'buttons') return
                 }
                 context.report({ node, messageId: 'helper' })
             },
