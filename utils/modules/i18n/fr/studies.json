@@ -16,7 +16,6 @@
     "saveAsTemplate": "Enregistrer comme modèle",
     "showInformation": "Afficher les informations",
     "finishStudy": "Terminer l'étude",
-    "finishStudyAgain": "Terminer l'étude à nouveau",
     "returnToDashboard": "Retour au tableau de bord",
     "backToDashboard": "Retour au tableau de bord",
     "openSessionsBig": "Sessions ouvertes",
@@ -91,6 +90,11 @@
         "sessionFinishedMessage": "Votre session a été envoyée.",
         "studySessionErrorTitle": "Erreur de session d'étude",
         "cannotFinishSession": "Impossible de terminer la session",
+        "cannotGoNext": "Impossible de passer à l'étape suivante",
+        "assessmentIncomplete": "L'étude ne peut pas être terminée tant que chaque critère d'évaluation n'est pas enregistré. Encore ouvert : {criteria}.",
+        "assessmentIncompleteGeneric": "L'étude ne peut pas être terminée tant que l'évaluation dans la barre latérale n'est pas complète.",
+        "assessmentIncompleteNext": "Vous ne pouvez pas passer à l'étape suivante tant que chaque critère d'évaluation n'est pas enregistré. Encore ouvert : {criteria}.",
+        "assessmentIncompleteNextGeneric": "Vous ne pouvez pas passer à l'étape suivante tant que l'évaluation dans la barre latérale n'est pas complète.",
         "studyClosedAutoTerminated": "L'étude a été clôturée. Les sessions sont automatiquement terminées lorsqu'une étude est clôturée."
     },
     "loading": {
