@@ -618,13 +618,21 @@ export default {
     loadWorkflows() {
       this.workflowRows = [];
       if (!this.selectedConfigurationId) {
+        this.workflowsLoading = false;
         return;
       }
+      
+      const requestedConfigurationId = this.selectedConfigurationId;
       this.workflowsLoading = true;
       this.$socket.emit("publishAssessmentWorkflows", {
-        configurationId: this.selectedConfigurationId,
+        configurationId: requestedConfigurationId,
         projectId: this.projectId,
       }, (res) => {
+        // Stale reply: the selection changed (or was cleared) while waiting.
+        // A newer request owns the loading state, so leave it untouched.
+        if (requestedConfigurationId !== this.selectedConfigurationId) {
+          return;
+        }
         this.workflowsLoading = false;
         if (!res?.success) {
           this.eventBus.emit("toast", {
