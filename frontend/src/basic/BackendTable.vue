@@ -1324,7 +1324,8 @@ export default {
       if (nav.after) query.after = nav.after;
       if (nav.before) query.before = nav.before;
       if (nav.fromEnd) query.fromEnd = true;
-      // Absolute position, used only by the infinite window (jump / refetch in place).
+      // Absolute position: infinite window (jump / refetch in place) and reloading page N
+      // after pending changes. Ignored by the backend when a cursor is sent.
       if (nav.offset > 0) query.offset = nav.offset;
       const payload = {
         table: this.table,
@@ -1360,6 +1361,9 @@ export default {
         after: requestedNav.after || null,
         before: requestedNav.before || null,
         fromEnd: !!requestedNav.fromEnd,
+        // Page loaded by position (loadPendingChanges). The backend ignores offset next to a cursor.
+        offset: (!requestedNav.after && !requestedNav.before && !requestedNav.fromEnd
+          && requestedNav.offset > 0) ? requestedNav.offset : 0,
         search: (this.search || "").trim() || null,
         columnFilters: this.activeColumnFilters,
       };
@@ -1496,6 +1500,7 @@ export default {
         after: q.after || undefined,
         before: q.before || undefined,
         fromEnd: q.fromEnd || undefined,
+        offset: q.offset > 0 ? q.offset : undefined,
         limit: q.fromEnd ? q.limit : undefined,
       };
     },
@@ -1997,26 +2002,14 @@ export default {
       }
     },
     /**
-     * Keyset address of page `page` after the result changed.
-     * Walks from the first page with `after`, the same step as Next. No offset.
+     * Address of page `page` in the changed result: one request with an absolute offset.
      * @param {number} page
-     * @returns {Promise<{nav: Object, page: number}>}
+     * @returns {Object} nav for buildQueryPayload
      */
-    async keysetNavForPage(page) {
+    offsetNavForPage(page) {
       const target = Math.max(1, Number(page) || 1);
-      if (target === 1) {
-        return {nav: {}, page: 1};
-      }
-      let nav = {};
-      for (let i = 1; i < target; i++) {
-        const result = await this.requestQueryItems(this.buildQueryPayload(nav));
-        const end = result.meta?.endCursor;
-        if (!result.items?.length || !end || !result.meta?.hasNext) {
-          return {nav, page: i};
-        }
-        nav = {after: end};
-      }
-      return {nav, page: target};
+      if (target === 1) return {};
+      return {offset: (target - 1) * this.limit};
     },
     async loadPendingChanges() {
       if (this._pendingLoadBusy) return;
@@ -2054,39 +2047,52 @@ export default {
         }, reduceMotion ? 0 : 1200);
       };
 
-      // Re-find this page number from the start. The stored `after` still points
-      // at the old window, so a row inserted before it never appears there.
-      // Rows that were not on the page get the enter animation.
-      let nav = page > 1 ? this.currentNav() : {};
-      if (!this.isInfiniteMode) {
-        try {
-          const located = await this.keysetNavForPage(page);
-          this.currentPage = located.page;
-          nav = located.nav;
-        } catch (err) {
-          console.warn("BackendTable keyset page locate failed", err);
+      const scheduleFinishIn = () => {
+        const wait = Math.max(0, outMs - (Date.now() - startedAt));
+        if (wait > 0) {
+          setTimeout(finishIn, wait);
+        } else {
+          finishIn();
         }
-      }
-      this.fetchQueryPage({
-        nav,
+      };
+      const resetBanner = () => {
+        this.pendingLoadPhase = null;
+        this._pendingLoadBusy = false;
+      };
+      const callbacks = {
         highlightNewFrom: previousIds,
-        onApplied: () => {
-          const wait = Math.max(0, outMs - (Date.now() - startedAt));
-          if (wait > 0) {
-            setTimeout(finishIn, wait);
-          } else {
-            finishIn();
-          }
-        },
-        onError: () => {
-          this.pendingLoadPhase = null;
-          this._pendingLoadBusy = false;
-        },
+        onError: resetBanner,
         // A newer fetch (search, sort, page size, ...) replaced this one; its result owns the
         // page now, so only drop the banner's dimmed/busy state.
-        onIgnored: () => {
-          this.pendingLoadPhase = null;
-          this._pendingLoadBusy = false;
+        onIgnored: resetBanner,
+      };
+
+      // Reload this page number by position. The stored `after` still points at the
+      // old window, so a row inserted before it would never appear there.
+      // Rows that were not on the page get the enter animation.
+      const nav = this.isInfiniteMode
+        ? (page > 1 ? this.currentNav() : {})
+        : this.offsetNavForPage(page);
+      this.fetchQueryPage({
+        ...callbacks,
+        nav,
+        onApplied: (data) => {
+          const total = data?.meta?.total || 0;
+          const shrunkPastPage = !this.isInfiniteMode && nav.offset > 0
+            && !(data?.items?.length) && total > 0;
+          if (!shrunkPastPage) {
+            scheduleFinishIn();
+            return;
+          }
+          // Rows were removed and this page no longer exists: show the new last page.
+          const pageSize = this.limit;
+          const remainder = pageSize > 0 ? total % pageSize : 0;
+          this.currentPage = Math.max(1, Math.ceil(total / pageSize));
+          this.fetchQueryPage({
+            ...callbacks,
+            nav: {fromEnd: true, limit: remainder || pageSize},
+            onApplied: scheduleFinishIn,
+          });
         },
       });
     },

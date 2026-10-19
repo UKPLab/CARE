@@ -486,8 +486,9 @@ class AppSocket extends Socket {
      * @param {string} [data.query.after] endCursor of previous result → next page
      * @param {string} [data.query.before] startCursor of previous result → previous page
      * @param {boolean} [data.query.fromEnd] fetch the last page (no cursor needed)
-     * @param {number} [data.query.offset] row index to start at; only for the infinite-scroll
-     *        window (scrollbar jump / window refetch). Ignored when a cursor is given.
+     * @param {number} [data.query.offset] row index to start at; used by the infinite-scroll
+     *        window (scrollbar jump / window refetch) and to reload page N after pending
+     *        changes. Ignored when a cursor is given.
      * @returns {Promise<{items: Array, meta: Object}>} meta has total, pageSize, startCursor, endCursor, hasNext, hasPrev, offset
      */
     async queryTable(data) {
