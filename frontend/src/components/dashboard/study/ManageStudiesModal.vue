@@ -429,8 +429,11 @@ export default {
         filter: this.baseQueryFilter,
       }, (res) => {
         if (!res?.success) {
-          console.warn("queryTableDistinct failed", res);
           this.workflowIds = [];
+          this.eventBus.emit("toast", {
+            message: resolveApiMessage(res),
+            variant: "danger",
+          });
           return;
         }
         this.workflowIds = res.data?.values || [];

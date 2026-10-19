@@ -294,6 +294,7 @@ import Loader from "./Loading.vue";
 import deepEqual from "deep-equal";
 import debounce from "lodash.debounce";
 import { matchesTokenList } from "./table/searchTokens.js";
+import { resolveApiMessage } from "@/assets/utils";
 import {
   fixedColumnClass,
   fixedColumnIndices,
@@ -1446,7 +1447,10 @@ export default {
             this.currentPage = options.pageOnFailure;
           }
           if (this.isInfiniteMode) this.releaseSupersededWindow();
-          console.warn("queryTable failed", err || response);
+          this.eventBus.emit("toast", {
+            message: resolveApiMessage(response),
+            variant: "danger",
+          });
           if (typeof options.onError === "function") options.onError(err || response);
           return;
         }
