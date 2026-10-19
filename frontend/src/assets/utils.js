@@ -428,6 +428,26 @@ export function downloadDocument(content, fileName, fileType = "") {
 
 
 /**
+ * Navigates back to the dashboard the user came from.
+ *
+ * If the previous history entry is a dashboard route, the browser goes back to it so that
+ * the dashboard keeps its state (tab, scroll position, filters). Otherwise, e.g. when the
+ * page was opened directly via a link, the fallback route is pushed instead.
+ *
+ * @param {Object} router Vue router instance, e.g. this.$router.
+ * @param {string} [fallback="/dashboard"] Route to push when there is no dashboard entry to go back to.
+ * @returns {Promise<void>}
+ */
+export async function returnToDashboard(router, fallback = "/dashboard") {
+    const back = window.history.state?.back;
+    if (typeof back === "string" && back.startsWith("/dashboard")) {
+        router.back();
+        return;
+    }
+    await router.push(fallback);
+}
+
+/**
  * Sort the data in a graph according to a previous key
  * @param key Key to sort the data
  * @returns {[]}
