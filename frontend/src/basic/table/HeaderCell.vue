@@ -20,10 +20,13 @@
       />
     </span>
     <span v-if="filter && column.filter && hasFilterableData">
+      <!-- Fixed: the table wrapper clips an absolutely positioned menu. -->
       <span
         aria-expanded="true"
         aria-haspopup="true"
         data-bs-toggle="dropdown"
+        data-bs-boundary="viewport"
+        data-bs-popper-config='{"strategy":"fixed"}'
         role="button"
         style="cursor: pointer"
       >
@@ -167,5 +170,7 @@ export default {
 
 .table-wrapper thead th .dropdown-menu {
   z-index: 9999 !important;
+  max-height: 10rem;
+  overflow-y: auto;
 }
 </style>
