@@ -7,6 +7,7 @@ const {Op} = require("sequelize");
 const { genPwdHash, genSalt } = require("../auth/utils.js");
 
 const MONITOR_USERS_ROOM = "room:monitor:users";
+const ADMIN_ROLE_NAME = "admin";
 
 /**
  * Handle user through websocket
@@ -153,6 +154,9 @@ class UserSocket extends Socket {
      * @returns {Promise<*>} The response from the RPC service
      */
     async getUsersFromCourse(options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
 
         let userTable = await this.server.rpcs["MoodleRPC"].getUsersFromCourse(
             {
@@ -178,6 +182,9 @@ class UserSocket extends Socket {
      * @returns {Promise<Awaited<_.LoDashFp.T|*>[]>} An array of objects containing the status of the users
      */
     async checkUsersExists(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
         const emails = data.map((user) => user.email);
         const existingEmails = await this.models["user"].filterExistingEmails(emails);
         const duplicateEmails = existingEmails.map((item) => item.email);
@@ -198,6 +205,9 @@ class UserSocket extends Socket {
      * @returns {Promise<Object>} A promise that resolves when the passwords have been uploaded.
      */
     async userPublishMoodle(data) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.users.adminAccessRequired");
+        }
         const feedback = data['users'].map((user) => ({
             extId: user.extId,
             text: "Username: " + user.userName + "\nPassword: " + user.password,
@@ -207,6 +217,48 @@ class UserSocket extends Socket {
             options: data.options,
             feedback: feedback,
         });
+    }
+
+    /**
+     * Load roles that the bulk import flow may assign from client-provided mappings.
+     * Admin is intentionally excluded because the import UI also hides it.
+     *
+     * @returns {Promise<Set<string>>}
+     */
+    async getAllowedBulkCreateRoleNames() {
+        const roles = await this.models["user_role"].findAll({
+            where: {
+                deleted: false,
+                name: {[Op.ne]: ADMIN_ROLE_NAME},
+            },
+            attributes: ["name"],
+            raw: true,
+        });
+        return new Set(roles.map((role) => role.name).filter(Boolean));
+    }
+
+    /**
+     * Keep only client role mappings whose target CARE role is allowed for bulk import.
+     *
+     * @param {Object<string, string>} roleMap Raw client-provided external-role to CARE-role map
+     * @param {Set<string>} allowedRoleNames Backend-authoritative assignable role names
+     * @returns {Object<string, string>}
+     */
+    sanitizeBulkCreateRoleMap(roleMap, allowedRoleNames) {
+        if (!roleMap || typeof roleMap !== "object" || Array.isArray(roleMap)) {
+            return {};
+        }
+
+        return Object.fromEntries(
+            Object.entries(roleMap)
+                .map(([externalRole, careRole]) => [
+                    externalRole,
+                    typeof careRole === "string" ? careRole.trim() : "",
+                ])
+                .filter(([externalRole, careRole]) =>
+                    externalRole && careRole && allowedRoleNames.has(careRole)
+                )
+        );
     }
 
     /**
@@ -221,7 +273,15 @@ class UserSocket extends Socket {
      * @returns {Promise<{createdUsers: Array, errors: Array}>} An object containing the created users and errors
      */
     async bulkCreateUsers(data) {
+        if (!(await this.isAdmin())) {
+            throw new Error("User rights and argument mismatch");
+        }
+
         const users = data["users"];
+        const roleMap = this.sanitizeBulkCreateRoleMap(
+            data["roleMap"],
+            await this.getAllowedBulkCreateRoleNames()
+        );
 
         const createdUsers = [];
         const errors = [];
@@ -234,7 +294,7 @@ class UserSocket extends Socket {
                 if (!user.exists) {
                     createdUser = await this.models["user"].add(user, {
                         transaction, context: {
-                            userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                            userRoles: user.roles, roleMap,
                         },
                     })
 
@@ -245,7 +305,7 @@ class UserSocket extends Socket {
                             firstName: user.firstName, lastName: user.lastName, extId: user.extId, emailVerified: true,
                         }, {
                             transaction, context: {
-                                userRoles: user.roles, roleMap: data["moodleCareRoleMap"],
+                                userRoles: user.roles, roleMap,
                             }
                         });
                     } else {
@@ -333,15 +393,55 @@ class UserSocket extends Socket {
             throw new TranslatableError("errors.users.failedToUpdateUser");
         }
 
-        return _.omit(await this.models["user"].updateById(user.id,
-                {
-                    acceptStats: data.acceptStats,
-                    acceptDataSharing: data.acceptDataSharing,
-                    acceptTerms: data.acceptTerms,
-                    acceptedAt: (user.acceptedAt === null) ? new Date() : user.acceptedAt,
-                }, {transaction: options.transaction}),
-            ['passwordHash', 'salt', 'initialPassword', 'createdAt', 'updatedAt', 'deletedAt', 'deleted']);
+        const consent = {
+            acceptStats: data.acceptStats,
+            acceptDataSharing: data.acceptDataSharing,
+            acceptTerms: data.acceptTerms,
+            acceptedAt: (user.acceptedAt === null) ? new Date() : user.acceptedAt,
+        };
+        const updatedUser = await this.models["user"].updateById(user.id, consent, {transaction: options.transaction});
 
+        // Each connection loads its own copy of the session (with the login-time user) once at connect,
+        // and every socket reads it as this.user (e.g. StatisticSocket checks acceptStats).
+        // Refresh the copy on all of this user's live connections so consent applies everywhere without re-login.
+        options.transaction.afterCommit(() => {
+            const storedSessionIds = new Set();
+            for (const [socketId, sockets] of Object.entries(this.server.availSockets)) {
+                try {
+                    // availSockets can keep entries of disconnected sockets, so also require a live socket
+                    if (sockets["UserSocket"]?.userId !== this.userId || !this.io.sockets.sockets.get(socketId)) {
+                        continue;
+                    }
+                    const request = sockets["UserSocket"].socket.request;
+                    Object.assign(request.session.passport.user, consent);
+
+                    // Don't save the socket's copy: it can be older than the stored session (e.g. totpSetupPending
+                    // written over HTTP after connect). Merge into the stored session once per session id instead.
+                    const sid = request.session.id;
+                    if (!storedSessionIds.has(sid)) {
+                        storedSessionIds.add(sid);
+                        request.sessionStore.get(sid, (err, stored) => {
+                            if (err || !stored?.passport?.user) return;
+                            Object.assign(stored.passport.user, consent);
+                            request.sessionStore.set(sid, stored, (setErr) => {
+                                if (setErr) this.logger.warn("Failed to store consent in session: " + setErr);
+                            });
+                        });
+                    }
+
+                    if (socketId !== this.socket.id) {
+                        // Updates the frontend store, which starts/stops the behavior logger in that tab
+                        sockets["AppSocket"]?.sendUser();
+                    }
+                } catch (e) {
+                    // The consent is already committed; don't turn a failed refresh into an error response
+                    this.logger.warn("Failed to refresh consent on socket " + socketId + ": " + e);
+                }
+            }
+        });
+
+        return _.omit(updatedUser,
+            ['passwordHash', 'salt', 'initialPassword', 'createdAt', 'updatedAt', 'deletedAt', 'deleted']);
     }
 
     /**
@@ -406,11 +506,14 @@ class UserSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once the user rights or an error message have been emitted.
      */
     async getUserRights(data, options) {
-            const userRight = await this.models["user"].getUserRights(data.userId);
-            this.socket.emit("userRight", {
-                success: true, userRight,
-            });
-            return userRight;
+        if (!(await this.checkUserAccess(data.userId))) {
+            throw new TranslatableError("errors.users.userRightsArgumentMismatch");
+        }
+        const userRight = await this.models["user"].getUserRights(data.userId);
+        this.socket.emit("userRight", {
+            success: true, userRight,
+        });
+        return userRight;
     }
 
     async getRoleRights(data, options) {

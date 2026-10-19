@@ -234,16 +234,28 @@ export default {
     assessmentDataKey() {
       return ASSESSMENT_RESULT_KEY;
     },
-    areAllCriteriaSaved() {
-      if (!this.configuration || !this.configuration.rubrics) return false;
+    unsavedCriterionNames() {
+      if (!this.configuration || !this.configuration.rubrics) return [];
+      const names = [];
       for (const rubric of this.configuration.rubrics) {
         if (!rubric.criteria) continue;
         for (const c of rubric.criteria) {
+          if (!c || !c.name) continue;
           const st = this.assessmentState[c.name];
-          if (!st || st.isSaved !== true) return false;
+          if (!st || st.isSaved !== true) names.push(c.name);
         }
       }
-      return true;
+      return names;
+    },
+    areAllCriteriaSaved() {
+      return this.unsavedCriterionNames.length === 0 && !!(this.configuration && this.configuration.rubrics);
+    },
+    assessmentReadyPayload() {
+      const ready = this.isAssessmentComplete;
+      return {
+        ready,
+        missing: ready ? [] : this.unsavedCriterionNames,
+      };
     },
     isAssessmentComplete() {
       if (!this.isLoaded) {
@@ -285,9 +297,9 @@ export default {
       },
       immediate: true,
     },
-    isAssessmentComplete: {
-      handler(v) {
-        this.$emit("assessment-ready-changed", v);
+    assessmentReadyPayload: {
+      handler(payload) {
+        this.$emit("assessment-ready-changed", payload);
       },
       immediate: true,
     },
@@ -594,8 +606,7 @@ export default {
             }
         );
         this.$emit("update:data", value);
-      }).catch((err) => {
-        console.error("Failed to save assessment data", err);
+      }).catch(() => {
         this.eventBus.emit("toast", {
           title: this.$t("assessment.save.failedTitle"),
           message: this.$t("assessment.save.failedMessage"),

@@ -69,7 +69,12 @@ class AppSocket extends Socket {
         let newEntry = null;
 
 
-        if (("id" in data.data && data.data.id !== 0) &&
+        const isExistingRow = "id" in data.data && data.data.id !== 0;
+        if (isExistingRow) {
+            await this.assertWriteAccess(data.table, data.data.id, options);
+        }
+
+        if (isExistingRow &&
             ('deleted' in data.data || 'closed' in data.data || 'public' in data.data || 'end' in data.data || 'disable' in data.data || 'enabled' in data.data)) {
             newEntry = await this.models[data.table].updateById(
                 data.data.id,
@@ -191,7 +196,17 @@ class AppSocket extends Socket {
      * @returns {Promise<void>} Resolves when data is successfully retrieved and emitted to the client.
      */
     async sendData(data, options) {
-        await this.sendTableData(data.table, (data.filter) ? data.filter : [], (data.include) ? data.include : []);
+        const model = this.models[data?.table];
+        if (!model?.autoTable) {
+            this.logger.error("appData rejected: " + data?.table);
+            throw generateError("ACCESS_DENIED", "errors.common.accessDenied");
+        }
+        // sendTableData skips accessMap table rules, so a table without userId returns every row.
+        const filter = mergeFilter(
+            [Array.isArray(data.filter) ? data.filter : []],
+            model.getAttributes()
+        );
+        await this.sendTable(data.table, filter, Array.isArray(data.include) ? data.include : []);
     }
 
     /**
@@ -244,6 +259,7 @@ class AppSocket extends Socket {
     async sendSystemRoles() {
         try {
             const roles = await this.models["user_role"].findAll({
+                where: {deleted: false},
                 attributes: ["id", "name"],
                 raw: true,
             });

@@ -8,7 +8,9 @@ const promptPlaceholders = [
     placeholderLabel: "templates.placeholders.labels.prompt.pdfText",
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.pdfText",
-    placeholderExample: "Document text content from the current PDF context. ... [truncated at 15000 chars if needed]",
+    placeholderExample:
+      "PDF Text: We compared three annotation tools in a graduate seminar (n=24). " +
+      "Reviewers highlighted claims on pages 2–4 and left margin notes about study design.",
   },
   {
     type: 8,
@@ -16,7 +18,9 @@ const promptPlaceholders = [
     placeholderLabel: "templates.placeholders.labels.prompt.editorText",
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.editorText",
-    placeholderExample: "Document text content from the current editor context. ... [truncated at 15000 chars if needed]",
+    placeholderExample:
+      "Editor Text: The introduction should state the research question clearly. " +
+      "Draft paragraph: \"This study examines how peer feedback changes revision quality.\"",
   },
   {
     type: 8,
@@ -25,7 +29,8 @@ const promptPlaceholders = [
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.assessmentResult",
     placeholderExample:
-      '{"clarity":{"currentScore":3,"assessment":"Good structure but weak conclusion"},"sources":{"currentScore":2,"assessment":"Missing one reference"}}',
+      "Assessment Result: {\"Clarity\":{\"currentScore\":3,\"assessment\":\"Clear structure; conclusion could be stronger.\"}," +
+      "\"Sources\":{\"currentScore\":2,\"assessment\":\"Two claims need citations.\"}}",
   },
   {
     type: 8,
@@ -34,7 +39,9 @@ const promptPlaceholders = [
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.inlineComments",
     placeholderExample:
-      '[{"page":2,"quote":"Baseline is unclear","comment":"Please define baseline.","tag":"MajorIssue"},{"page":4,"quote":"Table 2","comment":"Nice comparison.","tag":"Strength"}]',
+      "Inline Comments: [{\"page\":2,\"quote\":\"The baseline is unclear\",\"comment\":\"Define the baseline in the methods section.\"," +
+      "\"tag\":\"MajorIssue\"},{\"page\":4,\"quote\":\"Table 2 summarizes the main findings\",\"comment\":\"Good comparison of conditions.\"," +
+      "\"tag\":\"Strength\"}]",
   },
   {
     type: 8,
@@ -43,7 +50,8 @@ const promptPlaceholders = [
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.nlpAssessmentSuggestion",
     placeholderExample:
-      '[{"name":"clarity","score":3,"justification":"Clear flow with minor issues"},{"name":"sources","score":2,"justification":"Some claims lack citations"}]',
+      "NLP Assessment Suggestion: [{\"name\":\"Clarity\",\"score\":3,\"justification\":\"Logical flow with minor gaps in the conclusion.\"}," +
+      "{\"name\":\"Sources\",\"score\":2,\"justification\":\"Several statements lack supporting references.\"}]",
   },
   {
     type: 8,
@@ -52,7 +60,8 @@ const promptPlaceholders = [
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.previousAssessmentResult",
     placeholderExample:
-      '{"clarity":{"currentScore":2,"assessment":"Argumentation was fragmented"},"sources":{"currentScore":2,"assessment":"References were incomplete"}}',
+      "Previous Assessment Result: {\"Clarity\":{\"currentScore\":2,\"assessment\":\"Argumentation was fragmented in the prior draft.\"}," +
+      "\"Sources\":{\"currentScore\":2,\"assessment\":\"Reference list was incomplete last step.\"}}",
   },
   {
     type: 8,
@@ -61,7 +70,7 @@ const promptPlaceholders = [
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.assessmentConfiguration",
     placeholderExample:
-      '{"type":"assessment","rubrics":[{"name":"overall","criteria":[{"name":"clarity","maxPoints":5},{"name":"sources","maxPoints":5}]}]}',
+      "Assessment Configuration: {\"type\":\"assessment\",\"rubrics\":[{\"name\":\"Overall\",\"criteria\":[{\"name\":\"Clarity\",\"maxPoints\":5},{\"name\":\"Sources\",\"maxPoints\":5}]}]}",
   },
   {
     type: 8,
@@ -69,7 +78,9 @@ const promptPlaceholders = [
     placeholderLabel: "templates.placeholders.labels.prompt.submissionFiles",
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.submissionFiles",
-    placeholderExample: "Extracted text from the file mapped to this instance (e.g. main PDF body)…",
+    placeholderExample:
+      "Submission File: Chapter 1 — Introduction\n\nThis thesis presents a user study on collaborative reading platforms. " +
+      "Participants annotated shared PDFs over three weekly sessions.",
   },
   {
     type: 8,
@@ -78,7 +89,7 @@ const promptPlaceholders = [
     placeholderType: "text",
     placeholderDescription: "templates.placeholders.descriptions.prompt.studyContext",
     placeholderExample:
-      '{"studyName":"Peer Review Pilot","stepName":"Essay feedback","documentTitle":"Draft essay v2.pdf"}',
+      "Study Context: {\"studyName\":\"Peer Review Pilot\",\"stepName\":\"Essay feedback\",\"documentTitle\":\"Draft essay v2.pdf\"}",
   },
 ];
 

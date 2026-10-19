@@ -23,24 +23,17 @@ module.exports = (sequelize, DataTypes) => {
          * This can be used by Socket.js to apply filtering consistently
          * @param {number} userId - The user ID
          * @param {boolean} isAdmin - Whether the user is an admin
-         * @returns {Object} Sequelize filter object
+         * @returns {Object} {owned, shared}: owned = the user's own templates,
+         *          shared = public templates. Socket.js leaves shared out when writing.
          */
         static getUserFilter(userId, isAdmin) {
             const {Op} = require("sequelize");
             
-            if (isAdmin) {
-                // Admins: own templates (all types) OR public templates from others
-                return {[Op.or]: [{userId: userId}, {public: true}]};
-            } else {
-                // Non-admins: own templates (otherTemplateTypes only) OR public templates from others (otherTemplateTypes only)
-                // Email templates (emailTemplateTypes) are admin-only
-                return {
-                    [Op.or]: [
-                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: otherTemplateTypes}}]},
-                        {[Op.and]: [{public: true}, {type: {[Op.in]: otherTemplateTypes}}]}
-                    ]
-                };
-            }
+            // Non-admins are limited to otherTemplateTypes; email templates (emailTemplateTypes) are admin-only.
+            const ofType = (condition) => isAdmin
+                ? condition
+                : {[Op.and]: [condition, {type: {[Op.in]: otherTemplateTypes}}]};
+            return {owned: ofType({userId: userId}), shared: ofType({public: true})};
         }
 
         /**
@@ -75,6 +68,110 @@ module.exports = (sequelize, DataTypes) => {
             const orList = Array.isArray(baseFilter[Op.or]) ? [...baseFilter[Op.or]] : [baseFilter[Op.or]];
             orList.push({ id: { [Op.in]: sourceIds } });
             return { ...baseFilter, [Op.or]: orList };
+        }
+
+        /**
+         * Templates this user owns, each with its saved language bodies.
+         * Same set as the dashboard table, including copies. Another user's
+         * public template is not included. template_content is not in the client store.
+         *
+         * @param {number} userId
+         * @param {boolean} isAdmin
+         * @param {number|null} [templateId]
+         * @param {Object} [options]
+         * @returns {Promise<Object>}
+         */
+        static async findOwnedWithContent(userId, isAdmin, templateId = null, options = {}) {
+            const {Op} = require("sequelize");
+            const where = {
+                deleted: false,
+                userId,
+            };
+            if (!isAdmin) {
+                where.type = { [Op.in]: otherTemplateTypes };
+            }
+            if (templateId) {
+                where.id = templateId;
+            }
+            return this.findAll({
+                where,
+                include: [{
+                    model: this.sequelize.models.template_content,
+                    as: "template_contents",
+                    where: { deleted: false },
+                    required: false,
+                }],
+                order: [
+                    ["id", "ASC"],
+                    [{ model: this.sequelize.models.template_content, as: "template_contents" }, "id", "ASC"],
+                ],
+                transaction: options.transaction,
+            });
+        }
+
+        /**
+         * Reject a create that is missing fields, has an unknown type, or is an email type from a non-admin.
+         *
+         * @param {Object} payload
+         * @param {string} payload.name
+         * @param {string} payload.description
+         * @param {number} payload.type
+         * @param {boolean} isAdmin
+         * @returns {number}
+         * @throws {TranslatableError} if name or description is missing, the type is unknown, or a non-admin creates an email template
+         */
+        static assertCreateAllowed(payload, isAdmin) {
+            if (!payload?.name || !payload.description || payload.type == null) {
+                throw new TranslatableError("errors.templates.missingCreateFields");
+            }
+            const type = Number(payload.type);
+            if (!allTemplateTypes.includes(type)) {
+                throw new TranslatableError("errors.templates.typeRequired");
+            }
+            if (!isAdmin && emailTemplateTypes.includes(type)) {
+                throw new TranslatableError("errors.templates.adminOnlyEmailTemplateCreate");
+            }
+            return type;
+        }
+
+        /**
+         * Create a template and its language bodies.
+         * Email types require options.isAdmin. contents may be empty.
+         *
+         * @param {Object} payload
+         * @param {string} payload.name
+         * @param {string} payload.description
+         * @param {number} payload.type
+         * @param {string} [payload.defaultLanguage]
+         * @param {boolean} [payload.public]
+         * @param {number} payload.userId
+         * @param {Array<Object>} contents Each item has language and content
+         * @param {Object} [options]
+         * @param {boolean} options.isAdmin
+         * @param {Object} [options.transaction]
+         * @returns {Promise<Object>}
+         * @throws {TranslatableError} if name or description is missing, the type is unknown, or a non-admin creates an email template
+         */
+        static async createWithContents(payload, contents, options = {}) {
+            const type = this.assertCreateAllowed(payload, options.isAdmin);
+
+            const template = await this.add({
+                name: payload.name,
+                description: payload.description,
+                type,
+                defaultLanguage: payload.defaultLanguage || "en",
+                public: payload.public ?? false,
+                userId: payload.userId,
+            }, { transaction: options.transaction });
+
+            for (const row of contents) {
+                await this.sequelize.models.template_content.add({
+                    templateId: template.id,
+                    language: row.language,
+                    content: row.content,
+                }, { transaction: options.transaction });
+            }
+            return template;
         }
 
         /**
@@ -128,8 +225,8 @@ module.exports = (sequelize, DataTypes) => {
                     console.warn("Could not determine admin status for user", userId, err);
                 }
                 
-                const userFilter = this.getUserFilter(userId, isAdmin);
-                Object.assign(filter, userFilter);
+                const {owned, shared} = this.getUserFilter(userId, isAdmin);
+                Object.assign(filter, {[Op.or]: [owned, shared]});
             }
             
             let options = {where: filter, raw: true};

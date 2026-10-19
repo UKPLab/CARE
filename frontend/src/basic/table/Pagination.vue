@@ -32,7 +32,10 @@
           </select>
         </div>
       </div>
-      <div class="col-md-auto">
+      <div
+        v-if="showNavigation"
+        class="col-md-auto"
+      >
         <nav :aria-label="$t('common.pagination')">
           <ul class="pagination mb-0">
             <!-- First Page Link -->
@@ -204,6 +207,9 @@ export default {
         end: endItem,
         total: this.totalItems,
       });
+    },
+    showNavigation() {
+      return this.pages > 1;
     },
   },
   watch: {

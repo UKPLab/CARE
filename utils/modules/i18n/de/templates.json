@@ -6,6 +6,31 @@
     "failedToLoad": "Platzhalter konnten nicht geladen werden",
     "duplicateBracketIds": "Dieselbe Klammer-ID kommt mehrfach vor (zum Beispiel zwei ~link[2]~-Token):",
     "duplicateBracketIdsHelp": "Jede ~key[N]~-ID muss eindeutig sein. Ältere ~key~-Token ohne [N] werden hier nicht geprüft und können in älteren E-Mail-Vorlagen weiterhin mehrfach vorkommen. Speichern ist gesperrt, bis alle doppelten Klammer-IDs entfernt wurden.",
+    "options": {
+      "notice": "Hinweis:",
+      "notIncluded": "Der Platzhalter wurde eingefügt, aber diese Optionen wurden nicht übernommen:",
+      "notIncludedHelp": "Korrigiere die Optionszeile und füge einen weiteren Platzhalter ein, wenn die Option im Template enthalten sein soll.",
+      "selectOption": "Option auswählen...",
+      "from": "Von",
+      "to": "Bis",
+      "add": "Option hinzufügen",
+      "labels": {
+        "wordRange": "Wortbereich",
+        "pageRange": "Seitenbereich"
+      },
+      "warnings": {
+        "valueWithoutOption": "Ein Wert wurde eingegeben, aber keine Option ausgewählt, daher wurde er nicht übernommen.",
+        "unknownOption": "Unbekannte Option für {placeholder}, daher wurde sie nicht übernommen.",
+        "noValue": "{option} wurde nicht übernommen (kein Wert eingegeben).",
+        "invalidValue": "{option} wurde nicht übernommen (ungültiger Wert).",
+        "alreadySet": "{option} war bereits gesetzt, daher wurde die spätere Zeile nicht übernommen."
+      },
+      "errors": {
+        "duplicate": "{token} (doppelte Option \"{name}\")",
+        "unknown": "{token} (unbekannte Option \"{name}\")",
+        "invalid": "{token} (ungültiger {option})"
+      }
+    },
     "labels": {
       "emailGeneral": {
         "username": "Benutzername des Empfängers",

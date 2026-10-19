@@ -6,6 +6,31 @@
     "failedToLoad": "Failed to load placeholders",
     "duplicateBracketIds": "The same bracket ID appears more than once (for example, two ~link[2]~ tokens):",
     "duplicateBracketIdsHelp": "Each ~key[N]~ ID must be unique. Legacy ~key~ tokens without [N] are not checked here and can still repeat in older email templates. Saving is blocked until bracket duplicates are removed.",
+    "options": {
+      "notice": "Notice:",
+      "notIncluded": "The placeholder was added, but these options were not included:",
+      "notIncludedHelp": "Fix the option row and insert another placeholder if you want that option in the template.",
+      "selectOption": "Select option...",
+      "from": "From",
+      "to": "To",
+      "add": "Add option",
+      "labels": {
+        "wordRange": "Word range",
+        "pageRange": "Page range"
+      },
+      "warnings": {
+        "valueWithoutOption": "A value was entered but no option was selected, so it was not included.",
+        "unknownOption": "Unknown option for {placeholder}, so it was not included.",
+        "noValue": "{option} was not included (no value entered).",
+        "invalidValue": "{option} was not included (invalid value).",
+        "alreadySet": "{option} was already set, so the later row was not included."
+      },
+      "errors": {
+        "duplicate": "{token} (duplicate option \"{name}\")",
+        "unknown": "{token} (unknown option \"{name}\")",
+        "invalid": "{token} (invalid {option})"
+      }
+    },
     "labels": {
       "emailGeneral": {
         "username": "Recipient username",
