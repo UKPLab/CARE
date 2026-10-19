@@ -1,0 +1,310 @@
+{
+    "fields": {
+        "name": {
+            "label": "Nom du devoir :",
+            "placeholder": "Devoir 1"
+        },
+        "description": {
+            "label": "Description :",
+            "help": "Description facultative affichée pour ce devoir."
+        },
+        "maxRevisions": {
+            "label": "Nombre maximal de révisions :",
+            "help": "Nombre maximal de copies de révision autorisées pour ce devoir. Placez le curseur à la fin pour un nombre illimité.",
+            "unit": "révision(s)",
+            "unlimitedLabel": "illimité"
+        },
+        "start": {
+            "label": "Date de début :"
+        },
+        "end": {
+            "label": "Date de fin :"
+        },
+        "validationConfigurationId": {
+            "label": "Configuration de validation :",
+            "help": "La validation est appliquée avant l'importation du travail."
+        },
+        "allowReUpload": {
+            "label": "Autoriser une nouvelle importation :",
+            "help": "Si cette option est activée, les utilisateurs peuvent remplacer ou supprimer les travaux importés."
+        },
+        "notifyOnSubmissionUpload": {
+            "label": "Notifier lors de l'importation d'un travail :",
+            "help": "Si cette option est activée, un e-mail est envoyé lorsqu'un étudiant importe un travail ou l'importe à nouveau."
+        },
+        "submissionWarning": {
+            "label": "Avertissement de remise :",
+            "help": "Affiché aux utilisateurs comme demande de confirmation lorsqu'ils effectuent une remise pour ce devoir. Laissez vide pour ne pas afficher d'avertissement."
+        }
+    },
+    "dashboard": {
+        "buttons": {
+            "addAssignment": "Ajouter un devoir"
+        },
+        "columns": {
+            "submissionStatus": "Statut de la remise",
+            "assignedTo": "Attribué à",
+            "maxRevisions": "Révisions max.",
+            "disable": "Désactiver",
+            "allowReUpload": "Nouvelle importation autorisée",
+            "parentAssignmentId": "ID du devoir parent"
+        },
+        "status": {
+            "notStarted": "Non commencé",
+            "open": "Ouvert",
+            "closed": "Clôturé"
+        },
+        "actions": {
+            "editAssignment": "Modifier le devoir",
+            "deleteAssignment": "Supprimer le devoir",
+            "inspectSubmissions": "Inspecter les travaux",
+            "uploadMetadata": "Importer des métadonnées",
+            "toggleDisable": "Activer/désactiver",
+            "copyAssignment": "Copier le devoir",
+            "closeAssignment": "Clôturer le devoir"
+        },
+        "fallback": {
+            "userLabel": "Utilisateur {id}"
+        },
+        "confirm": {
+            "close": {
+                "title": "Clôturer le devoir",
+                "message": "Voulez-vous vraiment clôturer ce devoir ?"
+            },
+            "delete": {
+                "title": "Supprimer le devoir",
+                "message": "Voulez-vous vraiment supprimer ce devoir ?"
+            }
+        },
+        "toasts": {
+            "noPermissionEdit": "Vous n'avez pas l'autorisation de modifier les devoirs.",
+            "noPermissionClose": "Vous n'avez pas l'autorisation de clôturer les devoirs.",
+            "noPermissionDisable": "Vous n'avez pas l'autorisation de désactiver ce devoir.",
+            "noPermissionDelete": "Vous n'avez pas l'autorisation de supprimer les devoirs.",
+            "closeSuccess": {
+                "title": "Devoir clôturé",
+                "message": "Le devoir a été clôturé."
+            },
+            "closeFailed": "Échec de la clôture",
+            "updateSuccess": {
+                "title": "Devoir mis à jour",
+                "message": "Le devoir est désormais {state}."
+            },
+            "updateFailed": "Échec de la mise à jour",
+            "deleteSuccess": {
+                "title": "Devoir supprimé",
+                "message": "Le devoir a été supprimé"
+            },
+            "deleteFailed": "Échec de la suppression du devoir",
+            "copyFailed": {
+                "title": "Échec de la copie du devoir",
+                "message": "Le devoir d'origine est introuvable."
+            },
+            "revisionLimitReached": {
+                "title": "Limite de révisions atteinte",
+                "message": "Vous avez atteint le nombre maximal de remises pour ce devoir ({count})."
+            },
+            "uploadNotAllowed": {
+                "title": "Importation non autorisée",
+                "message": "Les remises sont closes pour ce devoir.",
+                "messageAdmin": "Les remises sont closes pour ce devoir. Seuls les administrateurs peuvent encore importer."
+            }
+        },
+        "submissions": {
+            "activeTitle": "Devoirs actifs",
+            "noActive": "Vous n'avez aucun devoir actif.",
+            "closedTitle": "Devoirs clôturés",
+            "noClosed": "Vous n'avez aucun devoir clôturé.",
+            "noDueDate": "pas de date limite",
+            "unlimited": "Illimité",
+            "remainingLeft": "{count} remise(s) restante(s)",
+            "overdueBy": "En retard de {time}"
+        },
+        "modal": {
+            "submitText": "Enregistrer le devoir",
+            "assignMode": {
+                "roles": "Rôles",
+                "users": "Utilisateurs"
+            },
+            "step1": {
+                "rolesHint": "Sélectionnez un ou plusieurs rôles autorisés pour ce devoir.",
+                "usersHint": "Sélectionnez un ou plusieurs utilisateurs autorisés pour ce devoir."
+            },
+            "steps": {
+                "userRoles": "Rôles utilisateurs",
+                "assignment": "Devoir"
+            },
+            "columns": {
+                "role": "Rôle"
+            },
+            "titles": {
+                "copy": "Copier le devoir",
+                "edit": "Modifier le devoir",
+                "new": "Nouveau devoir"
+            },
+            "toasts": {
+                "saveFailed": "Impossible d'enregistrer le devoir",
+                "saveSuccess": {
+                    "title": "Devoir enregistré",
+                    "messageUpdated": "Le devoir a été mis à jour.",
+                    "messageCreated": "Le devoir a été créé."
+                }
+            }
+        },
+        "uploadModal": {
+            "assignmentDescriptionHeading": "Description du devoir",
+            "noDescription": "Aucune description fournie.",
+            "steps": {
+                "assignment": "Devoir"
+            },
+            "fields": {
+                "name": {
+                    "label": "Nom du travail",
+                    "placeholder": "Saisissez un nom pour le travail"
+                },
+                "description": {
+                    "label": "Description du travail",
+                    "placeholder": "Ajoutez une courte description"
+                }
+            },
+            "toasts": {
+                "missingUser": {
+                    "title": "Utilisateur manquant",
+                    "message": "Aucun utilisateur sélectionné pour ce travail."
+                }
+            }
+        },
+        "submissionsModal": {
+            "title": "Travaux pour {title}",
+            "revisionLimitWarning": "Nombre maximal de révisions ({count}) atteint.",
+            "fallbackAssignmentTitle": "Devoir n° {id}"
+        },
+        "submissionsTable": {
+            "columns": {
+                "name": "Nom du travail",
+                "studyUsageCount": "Utilisée dans des études"
+            },
+            "actions": {
+                "replace": "Remplacer le travail",
+                "delete": "Supprimer le travail"
+            },
+            "toasts": {
+                "documentFetchFailed": "Impossible de récupérer le document",
+                "replaceNotAllowed": {
+                    "title": "Remplacement non autorisé",
+                    "message": "Ce travail ne peut pas être remplacé, car un ou plusieurs documents sont utilisés dans des études."
+                },
+                "replaceFailed": {
+                    "title": "Échec du remplacement",
+                    "message": "L'ID du devoir est manquant pour ce travail."
+                },
+                "deleteNotAllowed": {
+                    "title": "Suppression non autorisée",
+                    "message": "Ce travail ne peut pas être supprimé, car un ou plusieurs documents sont utilisés dans des études."
+                },
+                "deleteSuccess": {
+                    "title": "Travail supprimé",
+                    "message": "Le travail a été supprimé"
+                },
+                "deleteFailed": "Impossible de supprimer le travail"
+            },
+            "confirm": {
+                "delete": {
+                    "title": "Supprimer le travail",
+                    "message": "Voulez-vous vraiment supprimer ce travail ?"
+                }
+            }
+        }
+    },
+    "metadata": {
+        "modal": {
+            "title": "Importer des métadonnées"
+        },
+        "steps": {
+            "upload": "Importation",
+            "target": "Cible",
+            "mapping": "Mappage",
+            "preview": "Aperçu",
+            "result": "Résultat"
+        },
+        "fallback": {
+            "assignmentLabel": "Devoir n° {id}"
+        },
+        "upload": {
+            "help": "Importez un fichier de métadonnées au format `.json` ou `.csv`. CARE en extrait les champs disponibles pour que vous puissiez définir la cible et les mappages aux étapes suivantes.",
+            "loadedFile": "Fichier chargé :",
+            "parsedSummary": "{rows} ligne(s) analysée(s) avec {fields} champ(s).",
+            "errors": {
+                "unsupportedFormat": "Format de fichier non pris en charge. Veuillez importer un fichier .json ou .csv.",
+                "noUsableRows": "Le fichier importé ne contient aucune ligne exploitable.",
+                "noUsableFields": "Le fichier importé ne contient aucun champ exploitable.",
+                "parseFailed": "Impossible d'analyser le fichier de métadonnées.",
+                "csvFailed": "Impossible d'analyser le CSV. {details}",
+                "csvUnknownRow": "ligne inconnue",
+                "csvRow": "ligne {row}",
+                "csvMalformed": "Contenu CSV mal formaté."
+            }
+        },
+        "target": {
+            "typeLabel": "Type de cible",
+            "help": "Les métadonnées seront écrites dans les documents des travaux du devoir sélectionné."
+        },
+        "mapping": {
+            "primaryKeyHeading": "Mappage de la clé primaire",
+            "sourceKey": "Clé source",
+            "selectField": "Sélectionnez un champ",
+            "matchAgainst": "Faire correspondre avec",
+            "primaryKeyHelp": "Ce mappage détermine comment CARE associe les lignes importées aux propriétaires des travaux du devoir sélectionné.",
+            "metadataHeading": "Mappages des métadonnées",
+            "targetMetaKey": "metaKey cible",
+            "action": "Action",
+            "addMapping": "Ajouter un mappage",
+            "remove": "Retirer",
+            "empty": "Aucun mappage de métadonnées configuré pour l'instant.",
+            "metaKeyPlaceholder": "thème"
+        },
+        "validation": {
+            "selectSourceKey": "Sélectionnez la clé source importée utilisée pour la correspondance.",
+            "selectTargetField": "Sélectionnez le champ CARE avec lequel la clé primaire doit correspondre.",
+            "addMapping": "Ajoutez au moins un mappage de métadonnées.",
+            "mappingNeedsSource": "Chaque mappage de métadonnées nécessite une clé source.",
+            "mappingNeedsMetaKey": "Chaque mappage de métadonnées nécessite une metaKey cible.",
+            "uniqueMetaKeys": "Les metaKeys cibles doivent être uniques.",
+            "uniquePrimaryKeys": "Les valeurs de clé primaire doivent être renseignées et uniques pour toutes les lignes importées."
+        },
+        "preview": {
+            "warning": "Cette importation ne concerne que le devoir sélectionné. Les métadonnées existantes ayant la même `metaKey` seront écrasées.",
+            "targetType": "Type de cible :",
+            "assignment": "Devoir :",
+            "primaryKeyMapping": "Mappage de la clé primaire :",
+            "mappedFields": "Champs de métadonnées mappés :",
+            "willMatchRows": "Lignes correspondantes :",
+            "rowsWithoutMatch": "Lignes sans travail correspondant :",
+            "willSkipWithoutDocuments": "Lignes correspondantes ignorées faute de documents :",
+            "documentsAffected": "Documents concernés :",
+            "willWriteEntries": "Entrées de métadonnées à écrire :",
+            "willOverwriteEntries": "Entrées de métadonnées existantes à écraser :"
+        },
+        "result": {
+            "wroteSummary": "{entries} entrée(s) de métadonnées écrite(s) dans {documents} document(s) ({matched} ligne(s) correspondante(s)).",
+            "noneWritten": "Aucune entrée de métadonnées n'a été écrite.",
+            "issues": "Problèmes :",
+            "notRunYet": "L'importation n'a pas encore été exécutée."
+        },
+        "issues": {
+            "unknownValue": "inconnu",
+            "unmatched": "Valeur sans correspondance « {value} » : {detail}",
+            "submission": "Travail {id} : {detail}",
+            "row": "Ligne : {detail}",
+            "import": "Importation : {detail}"
+        },
+        "toasts": {
+            "previewFailed": "Impossible d'afficher l'aperçu de l'importation des métadonnées",
+            "importSuccess": {
+                "title": "Métadonnées importées",
+                "message": "{count} entrée(s) de métadonnées écrite(s)."
+            },
+            "importFailed": "Échec de l'importation des métadonnées"
+        }
+    }
+}
