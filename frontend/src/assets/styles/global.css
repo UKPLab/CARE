@@ -51,6 +51,16 @@ html[data-bs-theme="dark"] {
   --care-nlp-idle: #9aa3b0;
 }
 
+/* CARE's primary colour: Bootstrap blue in light mode, the accent in dark mode.
+   Use it for custom borders and focus glows instead of a hard-coded blue. */
+:root {
+  --care-primary: var(--bs-primary);
+}
+
+html[data-bs-theme="dark"] {
+  --care-primary: var(--care-accent);
+}
+
 /* Tell the browser which theme is showing. Bootstrap declares
    color-scheme: light dark, which lets the browser pick scrollbar and native
    control colours from the operating system rather than from CARE. The html
