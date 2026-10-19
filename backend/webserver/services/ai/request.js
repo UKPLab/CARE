@@ -18,7 +18,7 @@ function deny(reason, key, params = {}) {
 
 /**
  * Decides if an AI request can run. If yes, creates the ai_log row for it.
- * Blocks a second request from the same user in the same session while one is still running.
+ * Allows assistant and non-assistant requests together, but only one of each per user/session.
  *
  * @param {Object} service - AIService, used for DB access.
  * @param {Object} request - The request being made (user, model, hook, session, etc).
@@ -34,7 +34,7 @@ async function beginRequest(service, request, options = {}) {
         studySessionId, studyStepId, documentId,
     } = request || {};
 
-    if (await _hasInflight(service, userId, studySessionId)) {
+    if (await _hasInflight(service, userId, studySessionId, aiMessageId)) {
         return deny(
             "You already have a pending AI request in this session",
             "errors.ai.requestAlreadyPending"
@@ -221,12 +221,13 @@ async function cancelRequest(service, logId, options = {}) {
 
 /// Internal helpers
 
-// True if this user already has a request running in this session.
-async function _hasInflight(service, userId, studySessionId) {
+// Match the index's assistant/non-assistant grouping, not individual message ids.
+async function _hasInflight(service, userId, studySessionId, aiMessageId) {
     const existing = await service.server.db.models["ai_log"].findOne({
         where: {
             userId,
             studySessionId: studySessionId ?? null,
+            aiMessageId: aiMessageId ? {[Op.ne]: null} : null,
             status: "in_progress",
             deleted: false,
         },
