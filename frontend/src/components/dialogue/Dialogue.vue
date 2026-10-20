@@ -425,7 +425,7 @@ export default {
 }
 
 .dialogue-instructions {
-  background-color: #fff;
+  background-color: var(--bs-body-bg);
   position: absolute;
   inset: 0;
   overflow-y: auto;
@@ -469,6 +469,6 @@ export default {
 }
 
 .dialogue-sidebar :deep(.sidebar-content) {
-  background-color: #fff;
+  background-color: var(--bs-body-bg);
 }
 </style>

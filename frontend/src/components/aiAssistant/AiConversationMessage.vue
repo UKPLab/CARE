@@ -182,7 +182,7 @@ export default {
 }
 
 .assistant-failed {
-  color: var(--bs-danger);
+  color: var(--bs-danger-text-emphasis);
 }
 
 .assistant-aborted {

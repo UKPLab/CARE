@@ -221,7 +221,7 @@ export default {
     markerClass(message) {
       const dialogueMetadata = message.metadata?.dialogue || {};
       if (dialogueMetadata.kind === "follow_up") {
-        return "badge rounded-pill text-bg-light border text-secondary";
+        return "badge rounded-pill bg-body-tertiary border text-body-secondary";
       }
       return "badge rounded-pill text-bg-primary";
     },
