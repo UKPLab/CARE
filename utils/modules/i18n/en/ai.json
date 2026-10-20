@@ -108,7 +108,7 @@
     "freeModelHelp": "Free or self-hosted models bypass all spending caps. When disabled, costs are tracked.",
     "costLimitHelp": "Global cap across all users on this model.",
     "contextWindowTokens": "Context window (tokens)",
-    "contextWindowHelp": "Model context window in tokens, for example 32000. Chat suggests a new conversation near 65 percent of it and blocks sending near 85 percent. Leave empty for no limit.",
+    "contextWindowHelp": "Conversation size in tokens where chat suggests, then blocks, a new conversation (for example 32000). Leave empty for no limit.",
     "noModels": "No models were returned for this credential.",
     "loadModels": "Load models",
     "addTitle": "Add AI Model"

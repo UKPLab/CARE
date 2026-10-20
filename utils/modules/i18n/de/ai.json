@@ -108,7 +108,7 @@
     "freeModelHelp": "Kostenlose oder selbst gehostete Modelle umgehen alle Ausgabenlimits. Wenn diese Option deaktiviert ist, werden Kosten erfasst.",
     "costLimitHelp": "Globales Limit für alle Benutzer dieses Modells.",
     "contextWindowTokens": "Kontextfenster (Tokens)",
-    "contextWindowHelp": "Kontextfenster des Modells in Tokens, zum Beispiel 32000. Der Chat schlägt bei etwa 65 Prozent eine neue Unterhaltung vor und blockiert das Senden bei etwa 85 Prozent. Leer lassen für kein Limit.",
+    "contextWindowHelp": "Unterhaltungsgröße in Tokens, ab der der Chat eine neue Unterhaltung vorschlägt und dann blockiert (zum Beispiel 32000). Leer lassen für kein Limit.",
     "noModels": "Für diese Zugangsdaten wurden keine Modelle zurückgegeben.",
     "loadModels": "Modelle laden",
     "addTitle": "KI-Modell hinzufügen"
