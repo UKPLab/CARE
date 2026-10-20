@@ -51,6 +51,11 @@ import FormSelect from "@/basic/form/Select.vue";
 export default {
   name: "WorkflowMappingStep",
   components: { FormSelect },
+  subscribeTable: [
+    { table: "assignment" },
+    { table: "submission" },
+    { table: "document" },
+  ],
   props: {
     workflowSteps: {
       type: Array,
@@ -73,6 +78,39 @@ export default {
     };
   },
   computed: {
+    assignmentSourceOptions() {
+      const assignments = this.$store.getters["table/assignment/getAll"] || [];
+      const submissions = this.$store.getters["table/submission/getAll"] || [];
+      const documents = this.$store.getters["table/document/getAll"] || [];
+      const assignmentBySubmission = new Map(submissions
+          .filter(submission => !submission.deleted)
+          .map(submission => [submission.id, submission.assignmentId]));
+      const typesByAssignment = new Map();
+      for (const document of documents) {
+        if (document.deleted || !assignmentBySubmission.has(document.submissionId)) continue;
+        const assignmentId = assignmentBySubmission.get(document.submissionId);
+        if (!typesByAssignment.has(assignmentId)) typesByAssignment.set(assignmentId, new Set());
+        typesByAssignment.get(assignmentId).add(document.type);
+      }
+
+      return assignments.filter(assignment => !assignment.deleted).flatMap(assignment => {
+        const types = typesByAssignment.get(assignment.id);
+        const options = [];
+        if (types?.has(4)) {
+          options.push({
+            name: `<${this.$t('dashboard.study.typeSubmission')}> ${assignment.name}`,
+            value: `submission:assignment:${assignment.id}`,
+          });
+        }
+        if (types?.has(0)) {
+          options.push({
+            name: `<${this.$t('dashboard.study.typeDocument')}> ${assignment.name}`,
+            value: `document:assignment:${assignment.id}`,
+          });
+        }
+        return options;
+      });
+    },
     workflowOptions() {
       return {
         options: this.$store.getters["table/workflow/getAll"].map(workflow => ({
@@ -169,7 +207,7 @@ export default {
           }
         }
       }
-      return options;
+      return stepType === 1 ? [...options, ...this.assignmentSourceOptions] : options;
     },
     reset() {
       this.targetWorkflowId = null;

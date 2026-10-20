@@ -752,6 +752,78 @@ class AssignmentSocket extends Socket {
      * @throws {Error} Throws an error if the underlying duplication methods fail.
      */
     
+    /** Resolve an assignment input in the context of a selected study session. */
+    async resolveAssignmentSource(studySession, sourceType, assignmentId, options) {
+        const unresolved = () => new TranslatableError(
+            "errors.assignment.selectedNotResolved", { assignmentId }
+        );
+        const access = await this.getReadFilter(
+            this.userId, { id: assignmentId, deleted: false }, {}, "assignment", this.rolesUpdatedAt
+        );
+        if (!access.accessAllowed || !await this.models.assignment.findOne({
+            where: access.filter, transaction: options.transaction
+        })) {
+            throw unresolved();
+        }
+
+        const sessionAccess = await this.getReadFilter(
+            this.userId, { id: studySession.id, deleted: false }, {}, "study_session", this.rolesUpdatedAt
+        );
+        const selectedSession = sessionAccess.accessAllowed && await this.models.study_session.findOne({
+            where: sessionAccess.filter, transaction: options.transaction
+        });
+        if (!selectedSession) throw unresolved();
+
+        const steps = await this.models.study_step.findAll({
+            where: { studyId: selectedSession.studyId, deleted: false },
+            transaction: options.transaction
+        });
+        const submissions = new Map();
+        for (const step of steps) {
+            if (!step.documentId) continue;
+            const document = await this.models.document.getById(step.documentId, options);
+            if (!document || document.deleted || !document.submissionId) continue;
+            const submission = await this.models.submission.findOne({
+                where: { id: document.submissionId, deleted: false },
+                transaction: options.transaction
+            });
+            if (submission) submissions.set(submission.id, submission);
+        }
+
+        const matching = [...submissions.values()].filter(item => item.assignmentId === assignmentId);
+        let submission;
+        if (matching.length === 1) {
+            submission = matching[0];
+        } else if (matching.length > 1) {
+            // A placeholder must never silently pick between multiple session inputs.
+            throw unresolved();
+        } else {
+            const authors = [...new Set([...submissions.values()].map(item => item.userId))];
+            if (authors.length !== 1) throw unresolved();
+            submission = await this.models.submission.findOne({
+                where: {
+                    assignmentId, userId: authors[0], parentSubmissionId: null, deleted: false
+                },
+                order: [["createdAt", "DESC"], ["id", "DESC"]],
+                transaction: options.transaction
+            });
+        }
+        if (!submission) throw unresolved();
+
+        const documents = await this.models.document.findAll({
+            where: { submissionId: submission.id, deleted: false },
+            order: [["id", "ASC"]],
+            transaction: options.transaction
+        });
+        const pdf = documents.find(document => document.type === 0);
+        if (sourceType === "document" && !pdf) throw unresolved();
+        if (sourceType === "submission" && !documents.some(document => document.type === 4)) {
+            throw unresolved();
+        }
+        // The annotator uses the PDF; ZIP input is addressed through submissionId in config.
+        return { documentId: pdf?.id || null, submissionId: submission.id };
+    }
+
     async duplicate(data, options) {
 
         const duplicatedDocuments = [];
@@ -759,6 +831,21 @@ class AssignmentSocket extends Socket {
             const currentDocuments = [];
             let previousSubmissionId = null;
             for (const [sourceWorkflowStepId, targetWorkflowStepId] of Object.entries(data.workflowMapping)) {
+                const assignmentSource = typeof targetWorkflowStepId === 'string'
+                    ? /^(submission|document):assignment:([1-9]\d*)$/.exec(targetWorkflowStepId)
+                    : null;
+                if (assignmentSource) {
+                    const source = await this.resolveAssignmentSource(
+                        studySession, assignmentSource[1], Number(assignmentSource[2]), options
+                    );
+                    previousSubmissionId = source.submissionId;
+                    currentDocuments.push({ ...source, workflowStepId: Number(sourceWorkflowStepId) });
+                    continue;
+                }
+                if (targetWorkflowStepId !== 'previousSubmission' &&
+                    !/^[1-9]\d*$/.test(String(targetWorkflowStepId))) {
+                    throw new TranslatableError("errors.assignment.firstStepNotSubmission");
+                }
                 if( targetWorkflowStepId === 'previousSubmission'){
                     // Get the original submission first
                     if(previousSubmissionId === null){
@@ -770,7 +857,13 @@ class AssignmentSocket extends Socket {
                     );
                     
                     // Follow the parent chain to find the root submission
+                    if (!originalSubmission) {
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
+                    }
                     originalSubmission = await this.models['submission'].getRootSubmission(originalSubmission);
+                    if (!originalSubmission) {
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
+                    }
                     
                     // Now find the submission that has previousSubmissionId pointing to this root
                     const latestSubmission = await this.models['submission'].findOne(
@@ -786,6 +879,9 @@ class AssignmentSocket extends Socket {
                         { transaction: options.transaction }
                     );
                     
+                    if (!document) {
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
+                    }
                     currentDocuments.push({
                         documentId: document.id,
                         workflowStepId: Number(sourceWorkflowStepId),
@@ -797,11 +893,17 @@ class AssignmentSocket extends Socket {
                     { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
                     { transaction: options.transaction }
                 );
+                if (!sourceStudyStep || !sourceStudyStep.documentId) {
+                    throw new TranslatableError("errors.assignment.firstStepNotSubmission");
+                }
                 
                 const originalDocument = await this.models['document'].getById(
                     sourceStudyStep.documentId, 
                     { transaction: options.transaction }
                 );
+                if (!originalDocument) {
+                    throw new TranslatableError("errors.assignment.firstStepNotSubmission");
+                }
                 
                 let duplicatedDocument;
                 previousSubmissionId = originalDocument.submissionId;
