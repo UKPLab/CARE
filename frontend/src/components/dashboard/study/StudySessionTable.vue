@@ -169,14 +169,6 @@ export default {
         }));
       }
       buttons.push(
-        dashboardRowAction("copy", {
-          options: sm,
-          title: this.$t('dashboard.study.copySession'),
-          action: "copySession",
-          stats: {
-            studySessionId: "id",
-          },
-        }),
         dashboardRowAction("delete", {
           options: sm,
           filter: [
@@ -310,9 +302,6 @@ export default {
         case "deleteStudySession":
           this.confirmDelete(data.params);
           break;
-        case "copySession":
-          this.copySession(data.params);
-          break;
       }
     },
     confirmDelete(params) {
@@ -343,9 +332,6 @@ export default {
       } catch (_error) {
         this.showErrorToast(this.$t('errors.clipboard.linkNotCopied'), this.$t('errors.clipboard.couldNotCopyStudySession'));
       }
-    },
-    async copySession(params) {
-      this.$refs.assignUserModal.open(params);
     },
     showSuccessToast(title, message) {
       this.eventBus.emit("toast", {
