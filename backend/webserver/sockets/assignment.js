@@ -77,10 +77,13 @@ class AssignmentSocket extends Socket {
                 }
                 
                 const configuration = await this.replaceTemplateValues(
-                    step.configuration,
+                    step.configuration || {},
                     contextData,
                     options
                 );
+                if (assignmentType === 'study_session' && contextData.submissionId != null) {
+                    configuration.submissionId = contextData.submissionId;
+                }
                 
                 stepDocuments.push({
                     id: step.workflowStepId,
