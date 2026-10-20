@@ -29,7 +29,7 @@
       name="cards"
       :rows="queryItems"
       :total="total"
-      :loading="queryLoading"
+      :loading="resultsLoading"
       :loading-visible="queryLoadingVisible"
       :row-buttons="rowButtons"
       :row-state="cardRowState"
@@ -140,7 +140,7 @@
               :searching="hasActiveSearch"
               :search-text="search.trim()"
               :filter-labels="activeFilterLabels"
-              :loading="queryLoading"
+              :loading="resultsLoading"
               :clear-search="clearSearch"
             >
               {{ $t('common.noData') }}
@@ -498,6 +498,7 @@ export default {
       pendingLoadPhase: null, // null | 'out' | 'in'
       processedDeleteIds: new Set(),
       searchDebounceTimer: null,
+      searchPending: false, // search edited, debounced fetch not sent yet
       queryLoading: false,
       queryLoadingVisible: false,
       queryLoadingTimer: null,
@@ -555,6 +556,14 @@ export default {
     },
     showCards() {
       return this.cardMode && !!this.$slots.cards;
+    },
+    /**
+     * Rows on screen are stale: a fetch is in flight or a search edit waits for its debounce.
+     * Empty states read this so clearing a no-hit search does not flash "no data" before
+     * the unfiltered rows arrive.
+     */
+    resultsLoading() {
+      return this.queryLoading || this.searchPending;
     },
     /** Free text or a filter chip narrows the query (empty states word it differently). */
     hasActiveSearch() {
@@ -893,8 +902,15 @@ export default {
       handler(value) {
         const next = this.searchQueryKey(value);
         clearTimeout(this.searchDebounceTimer);
-        if (next === this._appliedSearchKey) return;
+        if (next === this._appliedSearchKey) {
+          this.searchPending = false;
+          return;
+        }
+        // Rows on screen belong to the previous search until the debounced fetch answers.
+        // fetchQueryPage sets queryLoading synchronously, so resultsLoading has no gap.
+        this.searchPending = true;
         this.searchDebounceTimer = setTimeout(() => {
+          this.searchPending = false;
           if (next === this._appliedSearchKey) return;
           this._appliedSearchKey = next;
           this.resetSelection();

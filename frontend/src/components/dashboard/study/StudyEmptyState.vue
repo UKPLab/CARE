@@ -536,6 +536,9 @@ export default {
   background: rgba(255, 255, 255, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 999px;
+  /* overflow: hidden (for the shine) moves an inline-block's baseline to its bottom margin
+     edge, which pushed the trailing "?" below the chip text. Centre the chip on the line. */
+  vertical-align: middle;
   transform-origin: left center;
   animation: se-chip-in 0.42s var(--se-spring) both;
 }
@@ -630,6 +633,11 @@ export default {
   align-items: center;
   gap: 0.4rem;
   font-weight: 600;
+  /* Short fixed reply: keep it on one line. overflow-wrap: anywhere from .se-bubble let the
+     narrow grid slot break it as "I / don' / t". */
+  white-space: nowrap;
+  overflow-wrap: normal;
+  flex-shrink: 0;
   opacity: 0;
   animation:
     se-pop 0.45s var(--se-spring) 1.75s forwards,
