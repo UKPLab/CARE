@@ -43,6 +43,7 @@
       <StudyEmptyState
         :searching="searching"
         :search-text="searchText"
+        :filter-labels="filterLabels"
         :can-create="!!onCreate"
         @clear="clearSearch && clearSearch()"
         @create="onCreate && onCreate()"
@@ -360,6 +361,12 @@ export default {
       type: String,
       required: false,
       default: "",
+    },
+    /** Active filter chips, worded as in the search bar. */
+    filterLabels: {
+      type: Array,
+      required: false,
+      default: () => [],
     },
     clearSearch: {
       type: Function,

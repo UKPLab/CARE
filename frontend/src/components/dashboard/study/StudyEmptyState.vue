@@ -5,7 +5,79 @@
     role="status"
     aria-live="polite"
   >
+    <!-- Search with no hits: a tiny chat. The user asks, CARE types… and does not care. -->
+    <div
+      v-if="searching"
+      :key="chatKey"
+      class="se-chat"
+      :class="{ 'se-chat--sent': sent }"
+    >
+      <div class="se-row se-row--user">
+        <div class="se-bubble se-bubble--user">
+          <span class="visually-hidden">{{ askText }}</span>
+          <span aria-hidden="true"><template
+            v-for="part in visibleAskParts"
+            :key="part.start"
+          ><span
+            v-if="part.kind === 'chip'"
+            class="se-filter"
+          >{{ part.text }}</span><span
+            v-else
+            :class="{ 'se-query': part.kind === 'query' }"
+          >{{ part.text }}</span></template><span
+            v-if="!sent"
+            class="se-caret"
+          /></span>
+          <span
+            class="se-sent"
+            aria-hidden="true"
+          >
+            <LoadIcon
+              icon-name="check2-all"
+              :size="13"
+            />
+          </span>
+        </div>
+      </div>
+
+      <div class="se-row se-row--bot">
+        <span
+          class="se-avatar"
+          aria-hidden="true"
+        >
+          <LogoSvg :height="13" />
+        </span>
+        <div class="se-bot-slot">
+          <div
+            class="se-bubble se-bubble--typing"
+            aria-hidden="true"
+          >
+            <span class="se-dot" />
+            <span class="se-dot" />
+            <span class="se-dot" />
+          </div>
+          <div
+            class="se-bubble se-bubble--bot"
+            :aria-label="$t('studies.cards.empty.chatReplyAria')"
+          >
+            <span aria-hidden="true">{{ $t('studies.cards.empty.chatReplyPrefix') }}</span>
+            <LogoSvg
+              class="se-reply-logo"
+              :height="17"
+              aria-hidden="true"
+            />
+            <span
+              class="se-shrug"
+              aria-hidden="true"
+            >🤷</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- No studies at all: ghost cards and a sparkling plus -->
     <svg
+      v-else
       class="study-empty-art"
       viewBox="0 0 220 150"
       aria-hidden="true"
@@ -27,7 +99,6 @@
           />
         </radialGradient>
       </defs>
-
       <ellipse
         cx="110"
         cy="80"
@@ -35,8 +106,6 @@
         ry="64"
         :fill="'url(#' + uid + '-glow)'"
       />
-
-      <!-- Ghost study cards drifting behind the lens -->
       <g class="ghost ghost--back">
         <rect
           x="34"
@@ -105,46 +174,7 @@
           class="ghost-line ghost-line--soft"
         />
       </g>
-
-      <!-- Search: a lens that keeps looking; nothing to find: a sparkling plus -->
-      <g
-        v-if="searching"
-        class="lens"
-      >
-        <circle
-          cx="0"
-          cy="0"
-          r="22"
-          class="lens-glass"
-        />
-        <circle
-          cx="0"
-          cy="0"
-          r="22"
-          class="lens-ring"
-        />
-        <path
-          d="M -8 -10 A 12 12 0 0 1 6 -14"
-          class="lens-shine"
-        />
-        <line
-          x1="16"
-          y1="16"
-          x2="32"
-          y2="32"
-          class="lens-handle"
-        />
-        <text
-          x="0"
-          y="7"
-          text-anchor="middle"
-          class="lens-mark"
-        >?</text>
-      </g>
-      <g
-        v-else
-        class="spark"
-      >
+      <g class="spark">
         <circle
           cx="160"
           cy="108"
@@ -220,6 +250,26 @@
 // Self-hosted (bundled by Vite, no third-party font CDN), SIL Open Font License 1.1.
 import "@fontsource-variable/inter/opsz.css";
 import LoadIcon from "@/basic/Icon.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
+
+/** Typing pause before the chat replays with the new query. */
+const CHAT_SETTLE_MS = 450;
+/** Typewriter for the question: start delay, per character, pause on a chip, cap for the text part. */
+const TYPE_START_MS = 300;
+const TYPE_CHAR_MS = 32;
+const TYPE_CHIP_MS = 220;
+const TYPE_TEXT_BUDGET_MS = 2000;
+/** Beat between the last character and "sent". */
+const SEND_PAUSE_MS = 280;
+
+function partLength(part) {
+  return part.kind === "chip" ? 1 : part.text.length;
+}
+
+function prefersReducedMotion() {
+  return typeof window !== "undefined" && !!window.matchMedia
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
 
 let instance = 0;
 
@@ -231,7 +281,7 @@ let instance = 0;
  */
 export default {
   name: "StudyEmptyState",
-  components: { LoadIcon },
+  components: { LoadIcon, LogoSvg },
   props: {
     /** The search bar holds text or filter chips. */
     searching: {
@@ -243,6 +293,12 @@ export default {
       type: String,
       required: false,
       default: "",
+    },
+    /** Active filter chips, worded as in the search bar. */
+    filterLabels: {
+      type: Array,
+      required: false,
+      default: () => [],
     },
     canCreate: {
       type: Boolean,
@@ -261,7 +317,110 @@ export default {
     instance += 1;
     return {
       uid: `study-empty-${instance}`,
+      chatQuery: this.searchText,
+      chatFilters: [...this.filterLabels],
+      chatKey: 0,
+      typed: 0,
+      sent: false,
     };
+  },
+  computed: {
+    askSignature() {
+      return JSON.stringify([this.searchText, this.filterLabels]);
+    },
+    /** The question as typewriter units: text runs (per character) and chips (whole). */
+    askParts() {
+      const parts = [];
+      let start = 0;
+      const push = (kind, text) => {
+        parts.push({ kind, text, start });
+        start += partLength({ kind, text });
+      };
+      push("text", `${this.$t("studies.cards.empty.chatAskPrefix")} `);
+      if (this.chatQuery) {
+        push("query", `“${this.chatQuery}”`);
+      } else {
+        push("text", this.$t("studies.cards.empty.chatStudies"));
+      }
+      if (this.chatFilters.length > 0) {
+        push("text", ` ${this.$t("studies.cards.empty.chatWithFilters")} `);
+        this.chatFilters.forEach((label) => push("chip", label));
+      }
+      push("text", this.$t("studies.cards.empty.chatAskSuffix"));
+      return parts;
+    },
+    askLength() {
+      return this.askParts.reduce((sum, part) => sum + partLength(part), 0);
+    },
+    askText() {
+      return this.askParts
+        .map((part, index) => (part.kind === "chip" && this.askParts[index + 1]?.kind === "chip" ? `${part.text}, ` : part.text))
+        .join("");
+    },
+    visibleAskParts() {
+      return this.askParts
+        .map((part) => {
+          if (part.kind === "chip") return this.typed > part.start ? part : null;
+          return { ...part, text: part.text.slice(0, Math.max(0, this.typed - part.start)) };
+        })
+        .filter((part) => part && part.text);
+    },
+  },
+  watch: {
+    searching(on) {
+      if (!on) return;
+      this.chatQuery = this.searchText;
+      this.chatFilters = [...this.filterLabels];
+      this.startTyping();
+    },
+    chatKey() {
+      this.startTyping();
+    },
+    // The text changes per keystroke; replay the chat once the user pauses.
+    askSignature() {
+      clearTimeout(this._chatTimer);
+      this._chatTimer = setTimeout(() => {
+        if (this.askSignature === JSON.stringify([this.chatQuery, this.chatFilters])) return;
+        this.chatQuery = this.searchText;
+        this.chatFilters = [...this.filterLabels];
+        this.chatKey += 1;
+      }, CHAT_SETTLE_MS);
+    },
+  },
+  mounted() {
+    if (this.searching) this.startTyping();
+  },
+  beforeUnmount() {
+    clearTimeout(this._chatTimer);
+    clearTimeout(this._typeTimer);
+  },
+  methods: {
+    /** Types the question out, then marks it sent so CARE's side of the scene starts. */
+    startTyping() {
+      clearTimeout(this._typeTimer);
+      this.typed = 0;
+      this.sent = false;
+      if (prefersReducedMotion()) {
+        this.typed = this.askLength;
+        this.sent = true;
+        return;
+      }
+      const chars = this.askParts
+        .filter((part) => part.kind !== "chip")
+        .reduce((sum, part) => sum + part.text.length, 0);
+      const charMs = Math.min(TYPE_CHAR_MS, TYPE_TEXT_BUDGET_MS / Math.max(chars, 1));
+      const step = () => {
+        if (this.typed >= this.askLength) {
+          this._typeTimer = setTimeout(() => { this.sent = true; }, SEND_PAUSE_MS);
+          return;
+        }
+        const part = this.askParts.find((p) => this.typed >= p.start && this.typed < p.start + partLength(p));
+        this.typed += 1;
+        const delay = part.kind === "chip" ? TYPE_CHIP_MS : charMs * (0.6 + Math.random() * 0.8);
+        this._typeTimer = setTimeout(step, delay);
+      };
+      this._typeTimer = setTimeout(step, TYPE_START_MS);
+    },
   },
 };
 </script>
@@ -271,12 +430,15 @@ export default {
   --se-accent-rgb: var(--bs-primary-rgb);
   --se-violet-rgb: 111, 92, 230;
   --se-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --se-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --se-bot-bg: var(--bs-body-bg);
+  --se-bot-border: rgba(15, 23, 42, 0.1);
 
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
-  padding: 2.5rem 1rem 2.75rem;
+  padding: 2.25rem 1rem 2.75rem;
   text-align: center;
   font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
   font-optical-sizing: auto;
@@ -287,13 +449,210 @@ export default {
 
 [data-bs-theme="dark"] .study-empty {
   --se-violet-rgb: 167, 151, 255;
+  --se-bot-bg: color-mix(in srgb, var(--bs-body-bg) 86%, #ffffff 14%);
+  --se-bot-border: rgba(255, 255, 255, 0.1);
 }
 
 .study-empty--compact {
-  padding: 1.75rem 1rem 2rem;
+  padding: 1.5rem 1rem 2rem;
 }
 
-/* ---------- Illustration ---------- */
+/* ======================= Chat scene ======================= */
+
+.se-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(100%, 23rem);
+  margin-bottom: 1rem;
+  padding: 1rem 1rem 1.1rem;
+  text-align: left;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(var(--se-accent-rgb), 0.08), transparent 60%),
+    radial-gradient(120% 90% at 0% 100%, rgba(var(--se-violet-rgb), 0.08), transparent 60%);
+  border: 1px solid rgba(var(--bs-secondary-rgb), 0.14);
+}
+
+.se-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.se-row--user {
+  justify-content: flex-end;
+}
+
+.se-bubble {
+  position: relative;
+  max-width: 85%;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  border-radius: 16px;
+  overflow-wrap: anywhere;
+}
+
+/* 1. The question pops in from the right. */
+.se-bubble--user {
+  padding-right: 2rem;
+  color: #fff;
+  background: linear-gradient(135deg, rgb(var(--se-accent-rgb)), color-mix(in srgb, rgb(var(--se-accent-rgb)) 70%, rgb(var(--se-violet-rgb)) 30%));
+  border-bottom-right-radius: 5px;
+  box-shadow: 0 6px 16px -8px rgba(var(--se-accent-rgb), 0.7);
+  transform-origin: bottom right;
+  animation: se-pop 0.45s var(--se-spring) 0.1s both;
+}
+
+.se-query {
+  font-weight: 700;
+}
+
+/* Typewriter caret, gone once the message is sent. */
+.se-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 1px;
+  vertical-align: -0.18em;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.9);
+  animation: se-caret 0.9s steps(1) infinite;
+}
+
+/* Same wording as the search chips: frosted pills that drop into the sentence as it is typed. */
+.se-filter {
+  position: relative;
+  display: inline-block;
+  margin: 0.12rem 0.2rem 0.12rem 0;
+  padding: 0.05rem 0.5rem;
+  overflow: hidden;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+  white-space: nowrap;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  transform-origin: left center;
+  animation: se-chip-in 0.42s var(--se-spring) both;
+}
+
+.se-filter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: se-shine 0.7s ease 0.15s both;
+  pointer-events: none;
+}
+
+.se-sent {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.4rem;
+  display: inline-flex;
+  opacity: 0;
+  color: rgba(255, 255, 255, 0.85);
+  animation: se-fade 0.25s ease 0.05s forwards;
+}
+
+/* CARE's side waits until the question is fully typed and sent. */
+.se-chat:not(.se-chat--sent) .se-sent,
+.se-chat:not(.se-chat--sent) .se-avatar,
+.se-chat:not(.se-chat--sent) .se-bubble--typing,
+.se-chat:not(.se-chat--sent) .se-bubble--bot,
+.se-chat:not(.se-chat--sent) .se-shrug {
+  animation: none;
+}
+
+/* 2. CARE thinks about it… */
+.se-avatar {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--se-bot-bg);
+  border: 1px solid var(--se-bot-border);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08);
+  opacity: 0;
+  animation: se-pop 0.35s var(--se-spring) 0.2s forwards;
+}
+
+.se-bot-slot {
+  display: grid;
+  min-width: 0;
+}
+
+.se-bot-slot > .se-bubble {
+  grid-area: 1 / 1;
+  justify-self: start;
+}
+
+.se-bubble--bot,
+.se-bubble--typing {
+  color: var(--bs-emphasis-color);
+  background: var(--se-bot-bg);
+  border: 1px solid var(--se-bot-border);
+  border-bottom-left-radius: 5px;
+  box-shadow: 0 4px 12px -6px rgba(15, 23, 42, 0.18);
+  transform-origin: bottom left;
+}
+
+.se-bubble--typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  opacity: 0;
+  animation: se-typing-life 1.5s ease 0.3s forwards;
+}
+
+.se-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bs-secondary-color);
+  animation: se-bounce 0.9s ease-in-out infinite;
+}
+
+.se-dot:nth-child(2) { animation-delay: 0.15s; }
+.se-dot:nth-child(3) { animation-delay: 0.3s; }
+
+/* 3. …and does not CARE. */
+.se-bubble--bot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  opacity: 0;
+  animation:
+    se-pop 0.45s var(--se-spring) 1.75s forwards,
+    se-wiggle 0.6s ease-in-out 2.3s 1;
+}
+
+.se-reply-logo {
+  margin-top: -1px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.12));
+}
+
+[data-bs-theme="dark"] .se-reply-logo {
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
+}
+
+.se-shrug {
+  display: inline-block;
+  font-size: 1rem;
+  transform-origin: 50% 80%;
+  animation: se-shrug 1.8s ease-in-out 2.55s infinite;
+}
+
+/* ======================= No studies: illustration ======================= */
 
 .study-empty-art {
   width: 200px;
@@ -306,15 +665,8 @@ export default {
   width: 170px;
 }
 
-.glow-stop-a {
-  stop-color: rgb(var(--se-violet-rgb));
-  stop-opacity: 0.16;
-}
-
-.glow-stop-b {
-  stop-color: rgb(var(--se-violet-rgb));
-  stop-opacity: 0;
-}
+.glow-stop-a { stop-color: rgb(var(--se-violet-rgb)); stop-opacity: 0.16; }
+.glow-stop-b { stop-color: rgb(var(--se-violet-rgb)); stop-opacity: 0; }
 
 .ghost-card {
   fill: var(--bs-body-bg);
@@ -327,21 +679,10 @@ export default {
   stroke: rgba(255, 255, 255, 0.12);
 }
 
-.ghost-pill {
-  fill: rgba(var(--bs-secondary-rgb), 0.22);
-}
-
-.ghost-pill--accent {
-  fill: rgba(var(--se-violet-rgb), 0.35);
-}
-
-.ghost-line {
-  fill: rgba(var(--bs-secondary-rgb), 0.2);
-}
-
-.ghost-line--soft {
-  fill: rgba(var(--bs-secondary-rgb), 0.12);
-}
+.ghost-pill { fill: rgba(var(--bs-secondary-rgb), 0.22); }
+.ghost-pill--accent { fill: rgba(var(--se-violet-rgb), 0.35); }
+.ghost-line { fill: rgba(var(--bs-secondary-rgb), 0.2); }
+.ghost-line--soft { fill: rgba(var(--bs-secondary-rgb), 0.12); }
 
 .ghost {
   transform-box: fill-box;
@@ -357,42 +698,6 @@ export default {
   animation: se-float 6s ease-in-out -3s infinite;
 }
 
-/* Lens wanders over the cards, as if still looking. */
-.lens {
-  animation: se-search 5.5s ease-in-out infinite;
-}
-
-.lens-glass {
-  fill: rgba(var(--se-accent-rgb), 0.08);
-}
-
-.lens-ring {
-  fill: none;
-  stroke: rgb(var(--se-accent-rgb));
-  stroke-width: 4;
-}
-
-.lens-shine {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.75);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-}
-
-.lens-handle {
-  stroke: rgb(var(--se-accent-rgb));
-  stroke-width: 6;
-  stroke-linecap: round;
-}
-
-.lens-mark {
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: 700;
-  fill: rgb(var(--se-accent-rgb));
-  animation: se-blink 5.5s ease-in-out infinite;
-}
-
 .spark-disc {
   fill: rgb(var(--se-accent-rgb));
   filter: drop-shadow(0 4px 8px rgba(var(--se-accent-rgb), 0.45));
@@ -404,15 +709,11 @@ export default {
   stroke-linecap: round;
 }
 
-.spark {
-  transform-box: view-box;
-}
-
 .spark-disc,
 .spark-plus {
   transform-box: fill-box;
   transform-origin: center;
-  animation: se-pop 3.2s var(--se-ease) infinite;
+  animation: se-heartbeat 3.2s var(--se-ease) infinite;
 }
 
 .spark-star {
@@ -421,19 +722,14 @@ export default {
   transform-origin: center;
 }
 
-.spark-star--a {
-  animation: se-twinkle 2.6s ease-in-out infinite;
-}
+.spark-star--a { animation: se-twinkle 2.6s ease-in-out infinite; }
+.spark-star--b { animation: se-twinkle 2.6s ease-in-out -1.3s infinite; }
 
-.spark-star--b {
-  animation: se-twinkle 2.6s ease-in-out -1.3s infinite;
-}
-
-/* ---------- Copy ---------- */
+/* ======================= Copy + actions ======================= */
 
 .study-empty-title {
   max-width: 34rem;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 650;
   letter-spacing: -0.015em;
   line-height: 1.35;
@@ -504,17 +800,62 @@ export default {
   filter: brightness(1.06);
 }
 
-/* ---------- Motion ---------- */
+/* ======================= Keyframes ======================= */
 
 @keyframes se-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-pop {
+  from { opacity: 0; transform: scale(0.6) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes se-fade {
+  to { opacity: 1; }
+}
+
+@keyframes se-caret {
+  0% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes se-chip-in {
+  0% { opacity: 0; transform: translateY(-7px) scale(0.55) rotate(-4deg); }
+  60% { opacity: 1; }
+  100% { opacity: 1; transform: none; }
+}
+
+@keyframes se-shine {
+  to { transform: translateX(120%); }
+}
+
+/* Typing dots: appear, keep typing, then make room for the answer. */
+@keyframes se-typing-life {
+  0% { opacity: 0; transform: scale(0.7); }
+  15% { opacity: 1; transform: none; }
+  85% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: scale(0.85); visibility: hidden; }
+}
+
+@keyframes se-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+@keyframes se-wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-3deg); }
+  50% { transform: rotate(2.5deg); }
+  75% { transform: rotate(-1.5deg); }
+}
+
+@keyframes se-shrug {
+  0%, 70%, 100% { transform: translateY(0) rotate(0deg); }
+  78% { transform: translateY(-3px) rotate(-8deg); }
+  86% { transform: translateY(-3px) rotate(8deg); }
+  94% { transform: translateY(0) rotate(0deg); }
 }
 
 @keyframes se-float {
@@ -522,20 +863,7 @@ export default {
   50% { transform: translateY(-5px); }
 }
 
-@keyframes se-search {
-  0% { transform: translate(78px, 66px) rotate(0deg); }
-  25% { transform: translate(140px, 56px) rotate(8deg); }
-  50% { transform: translate(150px, 82px) rotate(-4deg); }
-  75% { transform: translate(92px, 88px) rotate(6deg); }
-  100% { transform: translate(78px, 66px) rotate(0deg); }
-}
-
-@keyframes se-blink {
-  0%, 40%, 60%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
-}
-
-@keyframes se-pop {
+@keyframes se-heartbeat {
   0%, 100% { transform: scale(1); }
   12% { transform: scale(1.12); }
   24% { transform: scale(0.98); }
@@ -547,19 +875,30 @@ export default {
   50% { opacity: 1; transform: scale(1.1) rotate(45deg); }
 }
 
+/* Reduced motion: skip the play-through and show the finished conversation. */
 @media (prefers-reduced-motion: reduce) {
   .study-empty,
   .ghost,
-  .lens,
-  .lens-mark,
   .spark-disc,
   .spark-plus,
-  .spark-star {
+  .spark-star,
+  .se-dot,
+  .se-shrug,
+  .se-filter::after {
     animation: none !important;
   }
 
-  .lens {
-    transform: translate(140px, 66px);
+  .se-bubble--user,
+  .se-filter,
+  .se-sent,
+  .se-avatar,
+  .se-bubble--bot {
+    animation: none !important;
+    opacity: 1;
+  }
+
+  .se-bubble--typing {
+    display: none;
   }
 }
 </style>

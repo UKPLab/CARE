@@ -287,7 +287,13 @@
       "filterTitle": "Keine Studie passt zu diesen Filtern",
       "searchHint": "Unsere Lupe kam mit leeren Händen zurück. Versuchen Sie ein kürzeres Wort, prüfen Sie die Schreibweise oder entfernen Sie einen Filter.",
       "clearSearch": "Suche zurücksetzen",
-      "create": "Studie erstellen"
+      "create": "Studie erstellen",
+      "chatAskPrefix": "Hey CARE, kannst du",
+      "chatAskSuffix": " finden?",
+      "chatStudies": "Studien",
+      "chatWithFilters": "mit diesen Filtern:",
+      "chatReplyPrefix": "I don't",
+      "chatReplyAria": "I don't CARE"
     },
     "emptyTitle": "Noch keine Studien",
     "emptyHint": "Erstellen Sie Ihre erste Studie mit \"Hinzufügen\" oder passen Sie die Suche an."

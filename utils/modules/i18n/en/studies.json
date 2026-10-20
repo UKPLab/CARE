@@ -287,7 +287,13 @@
       "filterTitle": "No studies match these filters",
       "searchHint": "Our magnifying glass came back empty-handed. Try a shorter word, check the spelling, or remove a filter.",
       "clearSearch": "Clear search",
-      "create": "Create a study"
+      "create": "Create a study",
+      "chatAskPrefix": "Hey CARE, can you find",
+      "chatAskSuffix": "?",
+      "chatStudies": "studies",
+      "chatWithFilters": "with these filters:",
+      "chatReplyPrefix": "I don't",
+      "chatReplyAria": "I don't CARE"
     },
     "emptyTitle": "No studies here yet",
     "emptyHint": "Create your first study with \"Add\", or change the search to see more."

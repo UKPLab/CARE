@@ -36,6 +36,7 @@
       :on-action="actionEmitter"
       :searching="hasActiveSearch"
       :search-text="search.trim()"
+      :filter-labels="activeFilterLabels"
       :clear-search="clearSearch"
     />
   </div>
@@ -138,6 +139,7 @@
               name="empty"
               :searching="hasActiveSearch"
               :search-text="search.trim()"
+              :filter-labels="activeFilterLabels"
               :loading="queryLoading"
               :clear-search="clearSearch"
             >
@@ -317,7 +319,7 @@ import Pagination from "./table/Pagination.vue";
 import TableSearch from "./table/Search.vue";
 import Loader from "./Loading.vue";
 import deepEqual from "deep-equal";
-import { matchesTokenList } from "./table/searchTokens.js";
+import { defaultOperator, matchesTokenList, tokenLabel } from "./table/searchTokens.js";
 import { resolveApiMessage } from "@/assets/utils";
 import {
   normalizeCssSize,
@@ -557,6 +559,17 @@ export default {
     /** Free text or a filter chip narrows the query (empty states word it differently). */
     hasActiveSearch() {
       return this.search.trim() !== "" || Object.keys(this.activeColumnFilters).length > 0;
+    },
+    /** Active filters worded exactly like their chips in the search bar. */
+    activeFilterLabels() {
+      const schema = this.queryFilterSchema || {};
+      return Object.entries(this.activeColumnFilters)
+        .filter(([key, filter]) => schema[key] && filter)
+        .map(([key, filter]) => tokenLabel(schema, {
+          key,
+          operator: filter.operator || defaultOperator(schema, key),
+          value: filter.value,
+        }, this.$t.bind(this)));
     },
     pendingBannerVisible() {
       // Infinite scroll absorbs inserts with the spacers, so it never needs the banner.

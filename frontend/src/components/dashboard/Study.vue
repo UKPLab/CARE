@@ -140,6 +140,7 @@
                 :show-owner="canReadPrivateInformation"
                 :searching="cards.searching"
                 :search-text="cards.searchText"
+                :filter-labels="cards.filterLabels"
                 :clear-search="cards.clearSearch"
                 :on-create="add"
             />
@@ -152,6 +153,7 @@
               <StudyEmptyState
                   :searching="empty.searching"
                   :search-text="empty.searchText"
+                  :filter-labels="empty.filterLabels"
                   :can-create="true"
                   compact
                   @clear="empty.clearSearch()"

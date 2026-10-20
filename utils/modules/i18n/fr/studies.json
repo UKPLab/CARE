@@ -284,7 +284,13 @@
             "filterTitle": "Aucune étude ne correspond à ces filtres",
             "searchHint": "Notre loupe est revenue bredouille. Essayez un mot plus court, vérifiez l'orthographe ou retirez un filtre.",
             "clearSearch": "Effacer la recherche",
-            "create": "Créer une étude"
+            "create": "Créer une étude",
+            "chatAskPrefix": "Hé CARE, tu peux trouver",
+            "chatAskSuffix": " ?",
+            "chatStudies": "des études",
+            "chatWithFilters": "avec ces filtres :",
+            "chatReplyPrefix": "I don't",
+            "chatReplyAria": "I don't CARE"
         },
         "emptyTitle": "Aucune étude pour l'instant",
         "emptyHint": "Créez votre première étude avec « Ajouter », ou modifiez la recherche."
