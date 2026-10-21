@@ -54,11 +54,11 @@
           active-side-bar="instructions"
       >
         <template #instructions>
-          <SidebarTemplate icon="info-circle" title="Instructions">
+          <SidebarTemplate icon="info-circle" :title="$t('ai.dialogue.instructions')">
             <template #content>
               <div class="dialogue-instructions p-3">
                 <section v-if="studyDescription" class="instruction-section">
-                  <h6 class="instruction-heading">General instructions</h6>
+                  <h6 class="instruction-heading">{{ $t('ai.dialogue.generalInstructions') }}</h6>
                   <BasicEditor
                       :model-value="studyDescription"
                       :read-only="true"
@@ -66,7 +66,7 @@
                   />
                 </section>
                 <section v-if="questionHelp" class="instruction-section">
-                  <h6 class="instruction-heading">Current question help</h6>
+                  <h6 class="instruction-heading">{{ $t('ai.dialogue.questionHelp') }}</h6>
                   <p class="instruction-text mb-0">{{ questionHelp }}</p>
                 </section>
               </div>
@@ -165,12 +165,12 @@ export default {
       pendingSkipped: false,
       shownQuestionKeys: new Set(),
       plan: {},
-      requestFailedText: "Dialogue request failed",
-      abortFailedText: "Failed to stop Dialogue request",
     };
   },
   computed: {
-    title() { return this.plan?.title || "Dialogue"; },
+    requestFailedText() { return this.$t("ai.dialogue.errors.requestFailed"); },
+    abortFailedText() { return this.$t("ai.dialogue.errors.abortFailed"); },
+    title() { return this.plan?.title || this.$t("workflow.stepTypes.dialogue"); },
     questionHelp() { return this.complete ? "" : this.currentQuestion?.help || ""; },
     progressTotal() { return Number(this.plan?.totalQuestions) || 0; },
     progressCurrent() {
@@ -182,8 +182,8 @@ export default {
       return Math.min(100, Math.round((this.progressCurrent / this.progressTotal) * 100));
     },
     progressLabel() {
-      if (this.complete) return "Complete";
-      return `Question ${this.progressCurrent} of ${this.progressTotal}`;
+      if (this.complete) return this.$t("ai.dialogue.complete");
+      return this.$t("ai.dialogue.progress", {current: this.progressCurrent, total: this.progressTotal});
     },
     visibleMessages() {
       const base = this.messages.length || !this.currentQuestion
@@ -323,7 +323,7 @@ export default {
         return true;
       } catch (error) {
         if (!this.isCurrentSnapshotLoad(context)) return false;
-        this.errorMessage = error.key || error.message ? resolveApiMessage(error) : "Failed to load Dialogue";
+        this.errorMessage = resolveApiMessage(error, "ai.dialogue.errors.loadFailed");
         return false;
       } finally {
         if (context.loadId === this.snapshotLoadId) this.loading = false;
@@ -345,7 +345,7 @@ export default {
         requestId,
         questionId: this.currentQuestion.id,
       });
-      this.pendingAnswer = skipped ? "Skipped" : answer.answerText;
+      this.pendingAnswer = skipped ? this.$t("ai.dialogue.skipped") : answer.answerText;
       this.pendingSkipped = skipped;
       this.startRequest({
         type: "send",

@@ -252,14 +252,16 @@ export default {
         if (result?.aborted || this.reconcileRequest(activeRequest)) {
           this.clearActiveRequest();
         } else {
-          this.errorMessage = "Stop was not confirmed. Waiting for the request outcome.";
+          this.errorMessage = this.$t("ai.assistant.errors.stopUnconfirmed");
         }
       } catch (error) {
         if (this.activeRequest !== activeRequest) return;
         await this.reloadConversation({silent: true});
         if (this.activeRequest !== activeRequest) return;
         if (this.reconcileRequest(activeRequest)) this.clearActiveRequest();
-        else this.errorMessage = `${error.key || error.message ? resolveApiMessage(error) : this.abortFailedText}. Stop was not confirmed; waiting for the request outcome.`;
+        else this.errorMessage = this.$t("ai.assistant.errors.stopUnconfirmedWithError", {
+          error: error.key || error.message ? resolveApiMessage(error) : this.abortFailedText,
+        });
       } finally {
         if (this.activeRequest === activeRequest) this.aborting = false;
       }

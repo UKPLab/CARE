@@ -264,6 +264,76 @@
     "hookCreated": "KI-Hook erstellt",
     "sharingUpdated": "Freigabe für {resource} aktualisiert"
   },
+  "assistant": {
+    "thinking": "Denkt nach",
+    "retry": "Erneut versuchen",
+    "stop": "Stoppen",
+    "responseFailed": "Antwort fehlgeschlagen.",
+    "responseStopped": "Antwort gestoppt.",
+    "errors": {
+      "loadDocument": "Dokument konnte nicht geladen werden",
+      "stopUnconfirmed": "Das Stoppen wurde nicht bestätigt. Es wird auf das Ergebnis der Anfrage gewartet.",
+      "stopUnconfirmedWithError": "{error}. Das Stoppen wurde nicht bestätigt; es wird auf das Ergebnis der Anfrage gewartet."
+    }
+  },
+  "chat": {
+    "title": "Studienchat",
+    "sidebarTitle": "KI-Chat",
+    "withContext": "Mit Studienkontext",
+    "freshConversation": "Unterhaltung ohne Studienkontext",
+    "newConversation": "Neue Unterhaltung",
+    "contextDescription": "Enthält die für die Studie konfigurierten Materialien.",
+    "freshDescription": "Es wird kein Studienkontext automatisch hinzugefügt.",
+    "history": "Verlauf",
+    "recentChats": "Letzte Chats",
+    "fresh": "Ohne Kontext",
+    "noChats": "Noch keine Chats",
+    "newChat": "Neuer Chat",
+    "removeQuote": "Zitat entfernen",
+    "placeholder": "Stellen Sie eine Frage zu dieser Studie...",
+    "switchModel": "Modell wechseln",
+    "noModels": "Keine Modelle verfügbar",
+    "contextNearLimit": "Diese Unterhaltung wird lang. Eine neue Unterhaltung liefert in der Regel klarere Antworten.",
+    "loading": "Chat wird geladen...",
+    "startStudyChat": "Studienchat starten",
+    "startFreshConversation": "Unterhaltung ohne Studienkontext starten",
+    "studyChatDescription": "Ein neuer Chat verwendet den für diesen Schritt konfigurierten Kontext.",
+    "freshChatDescription": "Besprechen Sie ein beliebiges Thema. Es wird kein Studienkontext automatisch hinzugefügt.",
+    "askAi": "KI fragen",
+    "quoteSelection": "Auswahl im KI-Chat zitieren",
+    "quotedTitle": "Im KI-Chat zitiert",
+    "quotedMessage": "Öffnen Sie das Chatfenster, um Ihre Frage hinzuzufügen.",
+    "errors": {
+      "requestFailed": "KI-Chatanfrage fehlgeschlagen",
+      "abortFailed": "KI-Chatanfrage konnte nicht abgebrochen werden",
+      "loadFailed": "KI-Chat konnte nicht geladen werden"
+    }
+  },
+  "dialogue": {
+    "instructions": "Anweisungen",
+    "generalInstructions": "Allgemeine Anweisungen",
+    "questionHelp": "Hilfe zur aktuellen Frage",
+    "complete": "Abgeschlossen",
+    "progress": "Frage {current} von {total}",
+    "loading": "Dialog wird geladen...",
+    "noQuestion": "Keine Dialogfrage verfügbar",
+    "progressLabel": "Dialogfortschritt",
+    "answerPlaceholder": "Schreiben Sie Ihre Antwort...",
+    "answer": "Dialogantwort",
+    "skipQuestion": "Frage überspringen",
+    "skip": "Überspringen",
+    "submitAnswer": "Antwort absenden",
+    "yourAnswer": "Ihre Antwort",
+    "skipped": "Übersprungen",
+    "followUpQuestion": "Nachfrage",
+    "questionNumber": "F{number}",
+    "question": "Frage",
+    "errors": {
+      "requestFailed": "Dialoganfrage fehlgeschlagen",
+      "abortFailed": "Dialoganfrage konnte nicht gestoppt werden",
+      "loadFailed": "Dialog konnte nicht geladen werden"
+    }
+  },
   "errors": {
     "updateCredential": "Zugangsdaten konnten nicht aktualisiert werden",
     "deleteCredential": "Zugangsdaten konnten nicht gelöscht werden",

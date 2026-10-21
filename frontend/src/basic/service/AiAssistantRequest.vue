@@ -5,7 +5,7 @@
 <script>
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
-import {extractTextFromPDF} from "@/assets/utils";
+import {extractTextFromPDF, resolveApiMessage} from "@/assets/utils";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -254,7 +254,7 @@ export default {
               studyStepId: this.studyStepId,
             }, (res) => {
               if (res && res.success) resolve(res.data.file);
-              else reject(new Error(res?.message || "Failed to load document"));
+              else reject(new Error(resolveApiMessage(res, "ai.assistant.errors.loadDocument")));
             });
           });
           if (this.abortRequested || this.disposed) return "";

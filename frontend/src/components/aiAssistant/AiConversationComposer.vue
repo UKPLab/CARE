@@ -11,7 +11,7 @@
         <BasicButton
             class="btn btn-sm composer-quote-close"
             icon="x-lg"
-            tooltip="Remove quote"
+            :tooltip="$t('ai.chat.removeQuote')"
             @click="$emit('clear-quote')"
         />
       </div>
@@ -21,7 +21,7 @@
           :value="modelValue"
           class="form-control composer-textarea border-0 shadow-none bg-transparent"
           rows="1"
-          placeholder="Ask about this study..."
+          :placeholder="$t('ai.chat.placeholder')"
           :disabled="disabled"
           @input="onInput"
           @paste="onPaste"
@@ -41,7 +41,7 @@
             <BasicIcon icon-name="chevron-down" :size="14" />
           </BasicButton>
           <ul class="dropdown-menu composer-model-menu">
-            <li><h6 class="dropdown-header">Switch model</h6></li>
+            <li><h6 class="dropdown-header">{{ $t('ai.chat.switchModel') }}</h6></li>
             <li v-for="model in models" :key="model.id">
               <BasicButton
                   class="dropdown-item d-flex align-items-center gap-2"
@@ -58,7 +58,7 @@
               </BasicButton>
             </li>
             <li v-if="models.length === 0">
-              <span class="dropdown-item disabled text-muted">No models available</span>
+              <span class="dropdown-item disabled text-muted">{{ $t('ai.chat.noModels') }}</span>
             </li>
           </ul>
         </div>
@@ -67,7 +67,7 @@
             v-if="pending"
             class="btn btn-outline-danger btn-sm rounded-circle composer-button"
             icon="stop-circle"
-            tooltip="Abort"
+            :tooltip="$t('common.abort')"
             :disabled="aborting"
             @click="$emit('abort')"
         />
@@ -75,7 +75,7 @@
             v-else
             class="btn btn-primary btn-sm rounded-circle composer-button"
             icon="send"
-            tooltip="Send"
+            :tooltip="$t('common.send')"
             :disabled="!canSend"
             :loading="sending"
             @click="$emit('send')"
@@ -162,7 +162,7 @@ export default {
     },
     selectedModelName() {
       const model = this.models.find((item) => Number(item.id) === this.selectedModelId);
-      return model ? model.name : "Select model";
+      return model ? model.name : this.$t("ai.models.selectModel");
     },
   },
   watch: {

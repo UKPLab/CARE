@@ -1,8 +1,8 @@
 <template>
   <div class="conversation-header d-flex align-items-center justify-content-between border-bottom bg-body px-3 py-2">
     <div class="d-flex flex-column">
-      <span class="fw-semibold small text-body">Study chat</span>
-      <span class="small text-muted">{{ includeContext ? "With study context" : "Fresh conversation" }}</span>
+      <span class="fw-semibold small text-body">{{ $t('ai.chat.title') }}</span>
+      <span class="small text-muted">{{ includeContext ? $t('ai.chat.withContext') : $t('ai.chat.freshConversation') }}</span>
     </div>
 
     <div class="d-flex align-items-center gap-1">
@@ -10,22 +10,22 @@
         <BasicButton
             class="btn btn-sm header-button"
             icon="plus-lg"
-            tooltip="New conversation"
-            aria-label="New conversation"
+            :tooltip="$t('ai.chat.newConversation')"
+            :aria-label="$t('ai.chat.newConversation')"
             data-bs-toggle="dropdown"
             aria-expanded="false"
             :disabled="isBusy || readOnly"
         />
         <ul class="dropdown-menu dropdown-menu-end conversation-menu">
-          <li><h6 class="dropdown-header">New conversation</h6></li>
+          <li><h6 class="dropdown-header">{{ $t('ai.chat.newConversation') }}</h6></li>
           <li>
             <BasicButton
                 class="dropdown-item text-wrap"
                 :disabled="isBusy || readOnly"
                 @click="$emit('new', true)"
             >
-              <span class="d-block fw-semibold">With study context</span>
-              <span class="d-block small text-muted">Includes the study's configured materials.</span>
+              <span class="d-block fw-semibold">{{ $t('ai.chat.withContext') }}</span>
+              <span class="d-block small text-muted">{{ $t('ai.chat.contextDescription') }}</span>
             </BasicButton>
           </li>
           <li>
@@ -34,8 +34,8 @@
                 :disabled="isBusy || readOnly"
                 @click="$emit('new', false)"
             >
-              <span class="d-block fw-semibold">Fresh conversation</span>
-              <span class="d-block small text-muted">No study context is added automatically.</span>
+              <span class="d-block fw-semibold">{{ $t('ai.chat.freshConversation') }}</span>
+              <span class="d-block small text-muted">{{ $t('ai.chat.freshDescription') }}</span>
             </BasicButton>
           </li>
         </ul>
@@ -45,13 +45,13 @@
         <BasicButton
             class="btn btn-sm header-button"
             icon="clock-history"
-            tooltip="History"
+            :tooltip="$t('ai.chat.history')"
             data-bs-toggle="dropdown"
             aria-expanded="false"
             :disabled="isBusy"
         />
         <ul class="dropdown-menu dropdown-menu-end conversation-menu">
-          <li><h6 class="dropdown-header">Recent chats</h6></li>
+          <li><h6 class="dropdown-header">{{ $t('ai.chat.recentChats') }}</h6></li>
           <li v-for="conversation in conversations" :key="conversation.id">
             <BasicButton
                 class="dropdown-item d-flex align-items-center gap-2"
@@ -62,7 +62,7 @@
               <span class="history-text flex-grow-1">
                 <span class="history-title text-truncate">{{ title(conversation) }}</span>
                 <span class="history-date text-truncate small text-muted">
-                  <template v-if="conversation.includeContext === false">Fresh · </template>{{ dateLabel(conversation) }}
+                  <template v-if="conversation.includeContext === false">{{ $t('ai.chat.fresh') }} · </template>{{ dateLabel(conversation) }}
                 </span>
               </span>
               <BasicIcon
@@ -73,7 +73,7 @@
             </BasicButton>
           </li>
           <li v-if="conversations.length === 0">
-            <span class="dropdown-item disabled text-muted">No chats yet</span>
+            <span class="dropdown-item disabled text-muted">{{ $t('ai.chat.noChats') }}</span>
           </li>
         </ul>
       </div>
@@ -84,6 +84,7 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
+import {formatLocalizedDateTime} from "@/assets/utils";
 
 /**
  * AI conversation header: start a new chat and switch between past ones.
@@ -129,7 +130,7 @@ export default {
      * @returns {string} Title text.
      */
     title(conversation) {
-      return conversation.title || "New chat";
+      return conversation.title || this.$t("ai.chat.newChat");
     },
     /**
      * Subtitle line: the conversation's last-updated date and time.
@@ -138,8 +139,7 @@ export default {
      * @returns {string} Localised date-time, or empty when unavailable.
      */
     dateLabel(conversation) {
-      const date = new Date(conversation.updatedAt || conversation.createdAt);
-      return Number.isNaN(date.getTime()) ? "" : date.toLocaleString();
+      return formatLocalizedDateTime(conversation.updatedAt || conversation.createdAt);
     },
   },
 };

@@ -8,7 +8,7 @@
           <div
               class="progress dialogue-progress"
               role="progressbar"
-              aria-label="Dialogue progress"
+              :aria-label="$t('ai.dialogue.progressLabel')"
               :aria-valuenow="progressPercent"
               aria-valuemin="0"
               aria-valuemax="100"
@@ -17,7 +17,7 @@
           </div>
         </div>
       </div>
-      <span v-if="complete" class="badge text-bg-success">Complete</span>
+      <span v-if="complete" class="badge text-bg-success">{{ $t('ai.dialogue.complete') }}</span>
     </div>
   </div>
 </template>

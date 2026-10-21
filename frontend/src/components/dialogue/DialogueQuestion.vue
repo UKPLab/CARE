@@ -28,7 +28,7 @@
         </div>
 
         <div v-if="turn.answer" class="dialogue-answer border-start ps-3 mt-3">
-          <div class="small text-muted mb-1">Your answer</div>
+          <div class="small text-muted mb-1">{{ $t('ai.dialogue.yourAnswer') }}</div>
           <div class="answer-content">{{ answerText(turn.answer) }}</div>
         </div>
 
@@ -70,7 +70,7 @@
           </div>
 
           <div v-if="followUp.answer" class="dialogue-answer border-start ps-3 mt-3">
-            <div class="small text-muted mb-1">Your answer</div>
+            <div class="small text-muted mb-1">{{ $t('ai.dialogue.yourAnswer') }}</div>
             <div class="answer-content">{{ answerText(followUp.answer) }}</div>
           </div>
 
@@ -197,7 +197,7 @@ export default {
     },
     /** Returns the visible value for a stored answer. */
     answerText(message) {
-      return message?.metadata?.dialogue?.skipped ? "Skipped" : message?.content || "";
+      return message?.metadata?.dialogue?.skipped ? this.$t("ai.dialogue.skipped") : message?.content || "";
     },
     /**
      * Returns the visible marker for one question message.
@@ -207,10 +207,10 @@ export default {
      */
     marker(message) {
       const dialogueMetadata = message.metadata?.dialogue || {};
-      if (dialogueMetadata.kind === "follow_up") return "Follow-up question";
+      if (dialogueMetadata.kind === "follow_up") return this.$t("ai.dialogue.followUpQuestion");
       return dialogueMetadata.questionNumber
-          ? `Q${dialogueMetadata.questionNumber}`
-          : "Question";
+          ? this.$t("ai.dialogue.questionNumber", {number: dialogueMetadata.questionNumber})
+          : this.$t("ai.dialogue.question");
     },
     /**
      * Returns the visible marker style for one question message.

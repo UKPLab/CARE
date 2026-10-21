@@ -46,8 +46,8 @@
           v-model="answerDraft"
           class="form-control dialogue-textarea"
           rows="3"
-          placeholder="Write your answer..."
-          :aria-label="question.text || 'Dialogue answer'"
+          :placeholder="$t('ai.dialogue.answerPlaceholder')"
+          :aria-label="question.text || $t('ai.dialogue.answer')"
           @input="onInput"
           @paste="onPaste"
       />
@@ -57,32 +57,32 @@
       <BasicButton
           v-if="!activeRequest && allowSkip"
           class="btn btn-outline-secondary"
-          title="Skip question"
+          :title="$t('ai.dialogue.skipQuestion')"
           :disabled="isBusy || readOnly"
           @click="skip"
       >
-        Skip
+        {{ $t('ai.dialogue.skip') }}
       </BasicButton>
       <BasicButton
           v-if="activeRequest"
           class="btn btn-outline-danger"
           icon="stop-circle"
-          title="Stop"
+          :title="$t('ai.assistant.stop')"
           :loading="aborting"
           @click="$emit('abort')"
       >
-        Stop
+        {{ $t('ai.assistant.stop') }}
       </BasicButton>
       <BasicButton
           v-else
           class="btn btn-primary"
           icon="send"
-          title="Submit answer"
+          :title="$t('ai.dialogue.submitAnswer')"
           :disabled="!canSend"
           :loading="sending"
           @click="submit"
       >
-        Submit
+        {{ $t('common.submitText') }}
       </BasicButton>
     </div>
   </form>

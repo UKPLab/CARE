@@ -264,6 +264,76 @@
     "hookCreated": "AI hook created",
     "sharingUpdated": "{resource} sharing updated"
   },
+  "assistant": {
+    "thinking": "Thinking",
+    "retry": "Retry",
+    "stop": "Stop",
+    "responseFailed": "Response failed.",
+    "responseStopped": "Response stopped.",
+    "errors": {
+      "loadDocument": "Failed to load document",
+      "stopUnconfirmed": "Stop was not confirmed. Waiting for the request outcome.",
+      "stopUnconfirmedWithError": "{error}. Stop was not confirmed; waiting for the request outcome."
+    }
+  },
+  "chat": {
+    "title": "Study chat",
+    "sidebarTitle": "AI Chat",
+    "withContext": "With study context",
+    "freshConversation": "Fresh conversation",
+    "newConversation": "New conversation",
+    "contextDescription": "Includes the study's configured materials.",
+    "freshDescription": "No study context is added automatically.",
+    "history": "History",
+    "recentChats": "Recent chats",
+    "fresh": "Fresh",
+    "noChats": "No chats yet",
+    "newChat": "New chat",
+    "removeQuote": "Remove quote",
+    "placeholder": "Ask about this study...",
+    "switchModel": "Switch model",
+    "noModels": "No models available",
+    "contextNearLimit": "This conversation is getting long. Starting a new conversation usually gives clearer answers.",
+    "loading": "Loading chat...",
+    "startStudyChat": "Start a study chat",
+    "startFreshConversation": "Start a fresh conversation",
+    "studyChatDescription": "A new chat uses the context configured for this step.",
+    "freshChatDescription": "Discuss any topic. No study context is added automatically.",
+    "askAi": "Ask AI",
+    "quoteSelection": "Quote selection to AI chat",
+    "quotedTitle": "Quoted to AI chat",
+    "quotedMessage": "Open the Chat window to add your question.",
+    "errors": {
+      "requestFailed": "AI chat request failed",
+      "abortFailed": "Failed to abort AI chat request",
+      "loadFailed": "Failed to load AI chat"
+    }
+  },
+  "dialogue": {
+    "instructions": "Instructions",
+    "generalInstructions": "General instructions",
+    "questionHelp": "Current question help",
+    "complete": "Complete",
+    "progress": "Question {current} of {total}",
+    "loading": "Loading Dialogue...",
+    "noQuestion": "No Dialogue question available",
+    "progressLabel": "Dialogue progress",
+    "answerPlaceholder": "Write your answer...",
+    "answer": "Dialogue answer",
+    "skipQuestion": "Skip question",
+    "skip": "Skip",
+    "submitAnswer": "Submit answer",
+    "yourAnswer": "Your answer",
+    "skipped": "Skipped",
+    "followUpQuestion": "Follow-up question",
+    "questionNumber": "Q{number}",
+    "question": "Question",
+    "errors": {
+      "requestFailed": "Dialogue request failed",
+      "abortFailed": "Failed to stop Dialogue request",
+      "loadFailed": "Failed to load Dialogue"
+    }
+  },
   "errors": {
     "updateCredential": "Failed to update credential",
     "deleteCredential": "Failed to delete credential",

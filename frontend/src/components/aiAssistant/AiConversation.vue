@@ -15,14 +15,14 @@
         class="alert alert-warning m-2 py-2 px-3 small d-flex align-items-center justify-content-between"
         role="alert"
     >
-      <span>This conversation is getting long. Starting a new conversation usually gives clearer answers.</span>
+      <span>{{ $t('ai.chat.contextNearLimit') }}</span>
       <button
           type="button"
           class="btn btn-sm btn-outline-secondary ms-2"
           :disabled="isBusy"
           @click="startNewConversation"
       >
-        New conversation
+        {{ $t('ai.chat.newConversation') }}
       </button>
     </div>
 
@@ -30,11 +30,11 @@
         ref="body"
         :loading="loading"
         :empty="visibleMessages.length === 0"
-        loading-text="Loading chat..."
-        :empty-title="conversationSnapshot.includeContext ? 'Start a study chat' : 'Start a fresh conversation'"
+        :loading-text="$t('ai.chat.loading')"
+        :empty-title="conversationSnapshot.includeContext ? $t('ai.chat.startStudyChat') : $t('ai.chat.startFreshConversation')"
         :empty-subtitle="conversationSnapshot.includeContext
-            ? 'A new chat uses the context configured for this step.'
-            : 'Discuss any topic. No study context is added automatically.'"
+            ? $t('ai.chat.studyChatDescription')
+            : $t('ai.chat.freshChatDescription')"
     >
       <AiConversationMessage
           v-for="message in visibleMessages"
@@ -168,11 +168,15 @@ export default {
       draft: "",
       quote: null,
       pendingContent: "",
-      requestFailedText: "AI chat request failed",
-      abortFailedText: "Failed to abort AI chat request",
     };
   },
   computed: {
+    requestFailedText() {
+      return this.$t("ai.chat.errors.requestFailed");
+    },
+    abortFailedText() {
+      return this.$t("ai.chat.errors.abortFailed");
+    },
     conversations() {
       return this.conversationSnapshot.conversations || [];
     },
@@ -383,7 +387,7 @@ export default {
         return true;
       } catch (error) {
         if (!this.isCurrentSnapshotLoad(context)) return false;
-        this.errorMessage = error.key || error.message ? resolveApiMessage(error) : "Failed to load AI chat";
+        this.errorMessage = resolveApiMessage(error, "ai.chat.errors.loadFailed");
         return false;
       } finally {
         if (context.loadId === this.snapshotLoadId) this.loading = false;

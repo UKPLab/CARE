@@ -5,9 +5,9 @@
         class="conversation-state text-center text-muted"
     >
       <div class="spinner-border spinner-border-sm mb-2" role="status">
-        <span class="visually-hidden">{{ loadingText }}</span>
+        <span class="visually-hidden">{{ loadingText || $t('common.loading') }}</span>
       </div>
-      <div>{{ loadingText }}</div>
+      <div>{{ loadingText || $t('common.loading') }}</div>
     </div>
 
     <div
@@ -55,7 +55,7 @@ export default {
     loadingText: {
       type: String,
       required: false,
-      default: "Loading...",
+      default: "",
     },
     emptyTitle: {
       type: String,

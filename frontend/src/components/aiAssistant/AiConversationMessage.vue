@@ -7,7 +7,7 @@
 
     <!-- Assistant is responding: a light animated indicator, no bubble. -->
     <div v-else-if="isPending && !displayContent" class="assistant-thinking">
-      <span>Thinking</span>
+      <span>{{ $t('ai.assistant.thinking') }}</span>
       <span class="thinking-dots"><span /><span /><span /></span>
     </div>
 
@@ -23,7 +23,7 @@
           v-if="retryable"
           class="btn btn-sm btn-outline-secondary ms-1"
           icon="arrow-clockwise"
-          title="Retry"
+          :title="$t('ai.assistant.retry')"
           :loading="isBusy"
           :disabled="isBusy"
           @click="$emit('retry', message)"
@@ -93,8 +93,8 @@ export default {
       return [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED].includes(this.status);
     },
     displayContent() {
-      if (this.status === AI_MESSAGE_STATUSES.FAILED) return "Response failed.";
-      if (this.status === AI_MESSAGE_STATUSES.ABORTED) return "Response stopped.";
+      if (this.status === AI_MESSAGE_STATUSES.FAILED) return this.$t("ai.assistant.responseFailed");
+      if (this.status === AI_MESSAGE_STATUSES.ABORTED) return this.$t("ai.assistant.responseStopped");
       return this.message.content || "";
     },
   },

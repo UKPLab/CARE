@@ -9,8 +9,8 @@
       v-if="hasAiChat"
       class="adder-ask-ai btn btn-sm btn-outline-primary w-100"
       icon="chat-quote"
-      text="Ask AI"
-      tooltip="Quote selection to AI chat"
+      :text="$t('ai.chat.askAi')"
+      :tooltip="$t('ai.chat.quoteSelection')"
       @click="askAi"
     />
     <div
@@ -383,8 +383,8 @@ export default {
       };
       this.eventBus.emit("aiChatQuote", quote);
       this.eventBus.emit("toast", {
-        title: "Quoted to AI chat",
-        message: "Open the Chat window to add your question.",
+        title: this.$t("ai.chat.quotedTitle"),
+        message: this.$t("ai.chat.quotedMessage"),
         variant: "success",
       });
       this._onClearSelection();

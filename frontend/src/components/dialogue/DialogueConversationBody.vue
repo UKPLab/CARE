@@ -3,8 +3,8 @@
       ref="shell"
       :loading="loading"
       :empty="messages.length === 0"
-      loading-text="Loading Dialogue..."
-      empty-title="No Dialogue question available"
+      :loading-text="$t('ai.dialogue.loading')"
+      :empty-title="$t('ai.dialogue.noQuestion')"
   >
     <template v-for="item in dialogueTurns" :key="item.id">
       <DialogueQuestion

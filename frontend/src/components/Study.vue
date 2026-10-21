@@ -158,7 +158,7 @@
                 </SidebarTemplate>
               </template>
               <template v-if="hasAiChat(step)" #aiConversation>
-                <SidebarTemplate icon="chat-dots" title="AI Chat">
+                <SidebarTemplate icon="chat-dots" :title="$t('ai.chat.sidebarTitle')">
                   <template #content>
                     <AiConversation
                         :study-session-id="studySessionId"
@@ -197,7 +197,7 @@
                 </SidebarTemplate>
               </template>
               <template v-if="hasAiChat(step)" #aiConversation>
-                <SidebarTemplate icon="chat-dots" title="AI Chat">
+                <SidebarTemplate icon="chat-dots" :title="$t('ai.chat.sidebarTitle')">
                   <template #content>
                     <AiConversation
                         :study-session-id="studySessionId"
