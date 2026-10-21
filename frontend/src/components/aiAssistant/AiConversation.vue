@@ -4,6 +4,8 @@
         :conversations="conversations"
         :active-conversation-id="activeConversationId"
         :include-context="conversationSnapshot.includeContext"
+        :context-description="orderedStudySteps.find(step => step.id === studyStepId)?.stepType === 2
+            ? $t('ai.chat.contextUpdateHint') : ''"
         :is-busy="isBusy"
         :read-only="readOnly"
         @new="startNewConversation"
@@ -259,6 +261,7 @@ export default {
       const assistantMessageId = this.streamTarget?.assistantMessageId || request.assistantMessageId;
       if ((conversationId && Number(data.conversationId) !== Number(conversationId))
           || (assistantMessageId && Number(data.assistantMessageId) !== Number(assistantMessageId))) return;
+      this.acceptPendingInput(request);
       this.streamTarget = {conversationId: data.conversationId, assistantMessageId: data.assistantMessageId};
       this.streamBuffer += data.text;
       if (this.streamFrame !== null) return;

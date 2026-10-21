@@ -298,6 +298,7 @@
     "startStudyChat": "Studienchat starten",
     "startFreshConversation": "Unterhaltung ohne Studienkontext starten",
     "studyChatDescription": "Ein neuer Chat verwendet den für diesen Schritt konfigurierten Kontext.",
+    "contextUpdateHint": "Enthält Ihre aktuellen Markierungen und Kommentare.",
     "freshChatDescription": "Besprechen Sie ein beliebiges Thema. Es wird kein Studienkontext automatisch hinzugefügt.",
     "askAi": "KI fragen",
     "quoteSelection": "Auswahl im KI-Chat zitieren",

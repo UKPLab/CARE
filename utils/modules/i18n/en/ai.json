@@ -298,6 +298,7 @@
     "startStudyChat": "Start a study chat",
     "startFreshConversation": "Start a fresh conversation",
     "studyChatDescription": "A new chat uses the context configured for this step.",
+    "contextUpdateHint": "Includes your current highlights and comments.",
     "freshChatDescription": "Discuss any topic. No study context is added automatically.",
     "askAi": "Ask AI",
     "quoteSelection": "Quote selection to AI chat",

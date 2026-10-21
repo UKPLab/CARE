@@ -25,7 +25,7 @@
                 @click="$emit('new', true)"
             >
               <span class="d-block fw-semibold">{{ $t('ai.chat.withContext') }}</span>
-              <span class="d-block small text-muted">{{ $t('ai.chat.contextDescription') }}</span>
+              <span class="d-block small text-muted">{{ contextDescription || $t('ai.chat.contextDescription') }}</span>
             </BasicButton>
           </li>
           <li>
@@ -95,6 +95,11 @@ export default {
   name: "AiConversationHeader",
   components: {BasicButton, BasicIcon},
   props: {
+    contextDescription: {
+      type: String,
+      required: false,
+      default: "",
+    },
     includeContext: {
       type: Boolean,
       required: false,

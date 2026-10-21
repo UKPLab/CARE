@@ -167,7 +167,7 @@
                         :service="getAiChatService(step)"
                         :study-data="studyData"
                         :ordered-study-steps="orderedStudySteps"
-                        :read-only="readOnlyComputed"
+                        :read-only="readOnlyComputed || !!studySession?.end"
                     />
                   </template>
                 </SidebarTemplate>
@@ -206,7 +206,7 @@
                         :service="getAiChatService(step)"
                         :study-data="studyData"
                         :ordered-study-steps="orderedStudySteps"
-                        :read-only="readOnlyComputed"
+                        :read-only="readOnlyComputed || !!studySession?.end"
                     />
                   </template>
                 </SidebarTemplate>
