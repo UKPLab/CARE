@@ -7,6 +7,7 @@
           <span
               v-if="configuration && configuration.rubrics && configuration.rubrics.length"
               class="badge"
+              :class="(computedReadOnly || areAllCriteriaSaved) ? 'bg-success' : 'bg-secondary'"
           >
             {{ $t('assessment.totalPoints', { points: totalPoints, maxPoints: totalMaxPoints }) }}
           </span>
