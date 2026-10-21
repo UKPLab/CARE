@@ -1,0 +1,12 @@
+{
+    "entryUpdated": "L'entrée a été mise à jour !",
+    "entryAdded": "L'entrée a été ajoutée !",
+    "errors": {
+        "noFieldsDefined": "La table {table} n'a aucun champ défini !",
+        "saveFailed": "Impossible d'enregistrer",
+        "incompleteConfig": "Configuration incomplète",
+        "incompleteConfigDetail": "Votre configuration est incomplète : {steps}",
+        "stepSingle": "étape {n}",
+        "stepMultiple": "étapes {list} et {last}"
+    }
+}

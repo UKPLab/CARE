@@ -10,7 +10,7 @@
           id="backButton"
           class="btn"
           :title="$t('navigation.topbar.goBack')"
-          @click="toHome()"
+          @click="goBack()"
         >
           <LoadIcon
             :size="16"
@@ -162,7 +162,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
-import { applyTheme, resolveTheme } from "@/assets/utils";
+import { applyTheme, resolveTheme, returnToDashboard } from "@/assets/utils";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -194,6 +194,10 @@ export default {
     },
     isInDashboard() {
       return this.$route.path.startsWith('/dashboard');
+    },
+    // Dashboard route the logo and the back button lead to when there is no history entry to return to.
+    homeRoute() {
+      return this.$route.path.startsWith('/template/') ? '/dashboard/templates' : '/dashboard';
     },
     currentProject() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
@@ -313,12 +317,11 @@ export default {
       await axios.get(getServerURL() + '/auth/logout', {withCredentials: true})
       await this.$router.push("/login");
     },
+    async goBack() {
+      await returnToDashboard(this.$router, this.homeRoute);
+    },
     async toHome() {
-      if (this.$route.path.startsWith('/template/')) {
-        await this.$router.push('/dashboard/templates');
-      } else {
-        await this.$router.push('/dashboard');
-      }
+      await this.$router.push(this.homeRoute);
     },
     onRecordingIconClick() {
       // Admins jump to the Socket Profiler dashboard. Non-admin participants

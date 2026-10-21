@@ -13,8 +13,9 @@
 
 const en = require('./en');
 const de = require('./de');
+const fr = require('./fr');
 
-const messages = { en, de };
+const messages = { en, de, fr };
 
 // ── helpers (used by backend; frontend uses vue-i18n instead) ──
 
