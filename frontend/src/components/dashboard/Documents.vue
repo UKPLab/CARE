@@ -31,7 +31,6 @@
     </template>
   </DashboardListPage>
   <PublishModal ref="publishModal"/>
-  <StudyModal ref="studyCoordinator"/>
   <ConfirmModal ref="deleteConf"/>
   <UploadModal ref="uploadModal"/>
   <CreateModal ref="createModal"/>
@@ -41,7 +40,6 @@
 
 <script>
 import PublishModal from "./documents/PublishModal.vue";
-import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./documents/UploadModal.vue";
@@ -51,7 +49,7 @@ import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
-import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Document list component
@@ -66,7 +64,6 @@ export default {
   name: "DashboardDocument",
   subscribeTable: ["document", "study", "template"],
   components: {
-    StudyModal,
     UploadModal,
     DashboardListPage,
     BasicButton,
@@ -169,21 +166,6 @@ export default {
           }
         }),
       ];
-      if (this.studiesEnabled) {
-        buttons.push(dashboardRowButton("person-workspace", {
-          title: this.$t('documents.openStudyCoordinator'),
-          action: "openStudyCoordinator",
-          filter: [
-            {
-              key: "type",
-              value: 0,
-            },
-          ],
-          stats: {
-            documentId: "id",
-          }
-        }));
-      }
       if (this.showDeltaDownloadButton) {
         buttons.push(dashboardRowAction("exportDelta", {
           title: this.$t('documents.exportDelta'),
@@ -241,11 +223,6 @@ export default {
             return newD;
           });
     },
-    studiesEnabled() {
-      return (
-          this.$store.getters["settings/getValue"]("app.study.enabled") === "true"
-      );
-    },
     showCreateButton() {
       return this.$store.getters["settings/getValue"]('editor.document.showButtonCreate') === 'true';
     },
@@ -273,9 +250,6 @@ export default {
           break;
         case "renameDoc":
           this.renameDoc(data.params);
-          break;
-        case "openStudyCoordinator":
-          this.openStudyCoordinator(data.params);
           break;
         case "exportDeltaDoc":
           this.$refs.editorDownload.exportDeltaDoc(data.params);
@@ -326,9 +300,6 @@ export default {
     },
     publishDoc(row) {
       this.$refs.publishModal.open(row.id);
-    },
-    openStudyCoordinator(row) {
-      this.$refs.studyCoordinator.open(0, row.id);
     },
   },
 };

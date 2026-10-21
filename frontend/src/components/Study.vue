@@ -69,6 +69,7 @@
           v-if="
           !readOnlyComputed &&
           studySession &&
+          !studySessionFinished &&
           lastStep &&
           currentStudyStep &&
           currentStudyStep.stepType !== 3 &&
@@ -76,17 +77,16 @@
         "
           ref="finishButton"
           class="btn btn-outline-secondary mx-3"
-          :disabled="!isCurrentStepReady"
-          :title="studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy')"
-          @click="finish()"
+          :title="$t('studies.finishStudy')"
+          @click="finishClicked()"
       >
-        {{ studySession.end ? $t('studies.finishStudyAgain') : $t('studies.finishStudy') }}
+        {{ $t('studies.finishStudy') }}
       </TopBarButton>
 
       <TopBarButton
           v-if="currentStudyStep && lastStep && currentStudyStep.id !== lastStep.id"
           ref="nextButton"
-          :disabled="!isCurrentStepReady || (readOnlyComputed && !studyTrajectory.includes(nextStudyStep.id))"
+          :disabled="readOnlyComputed && nextStudyStep && !studyTrajectory.includes(nextStudyStep.id)"
           class="btn btn-outline-primary ms-3"
           :title="$t('common.next')"
           @click="next()"
@@ -122,6 +122,7 @@
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal
+                v-if="step.stepType !== 4"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
                 :config="step.configuration"
@@ -149,9 +150,24 @@
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
-                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                         @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <SidebarTemplate icon="chat-dots" :title="$t('ai.chat.sidebarTitle')">
+                  <template #content>
+                    <AiConversation
+                        :study-session-id="studySessionId"
+                        :study-step-id="step.id"
+                        :document-id="step.documentId"
+                        :service="getAiChatService(step)"
+                        :study-data="studyData"
+                        :ordered-study-steps="orderedStudySteps"
+                        :read-only="readOnlyComputed || !!studySession?.end"
                     />
                   </template>
                 </SidebarTemplate>
@@ -173,9 +189,24 @@
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
-                        @assessment-ready-changed="stepsReady[step.id] = $event"
+                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                         @assessment-advance-past-end="focusForwardControl"
                         @update:data="updateStudyData(step.id, 'assessment', $event)"
+                    />
+                  </template>
+                </SidebarTemplate>
+              </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <SidebarTemplate icon="chat-dots" :title="$t('ai.chat.sidebarTitle')">
+                  <template #content>
+                    <AiConversation
+                        :study-session-id="studySessionId"
+                        :study-step-id="step.id"
+                        :document-id="step.documentId"
+                        :service="getAiChatService(step)"
+                        :study-data="studyData"
+                        :ordered-study-steps="orderedStudySteps"
+                        :read-only="readOnlyComputed || !!studySession?.end"
                     />
                   </template>
                 </SidebarTemplate>
@@ -188,6 +219,21 @@
                 :is-last-step="step.id === lastStep.id"
                 @close="handleModalClose"
                 @update:data="updateStudyData(step.id, 'modal', $event)"
+            />
+
+            <Dialogue
+                v-if="step.stepType === 4"
+                :is-shown="currentStudyStepId === step.id"
+                :study-description="study?.description || ''"
+                :study-session-id="studySessionId"
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :study-data="studyData"
+                :ordered-study-steps="orderedStudySteps"
+                :read-only="readOnlyComputed"
+                @update:ready="stepsReady[step.id] = $event"
+                @update:data="updateStudyData(step.id, 'dialogue', $event)"
             />
 
           </div>
@@ -217,11 +263,15 @@ import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
+import AiConversation from "@/components/aiAssistant/AiConversation.vue";
+import Dialogue from "@/components/dialogue/Dialogue.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
+    AiConversation,
+    Dialogue,
     SidebarTemplate,
     Assessment,
     LoadIcon,
@@ -237,6 +287,7 @@ export default {
     return {
       studySessionId: computed(() => this.studySessionId),
       readOnly: computed(() => this.readOnlyComputed),
+      studySessionFinished: computed(() => this.studySessionFinished),
       studyData: computed(() => this.studyData),
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
@@ -270,6 +321,7 @@ export default {
       localStudyStepId: 0,
       studyData: {},
       stepsReady: {},
+      stepsMissing: {},
       loadingReady: {},
       pendingFinishAfterNlp: false,
       nlpModalStepId: null,
@@ -313,11 +365,12 @@ export default {
         const prev = steps[i - 1];
         const prevLoaded = this.isStepLoaded(prev.id);
         const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
+        const prevRequiresReady = prevHasAssessment || Number(prev.stepType) === 4;
 
         const readyMap = this.stepsReady || {};
         const hasEntry = Object.hasOwn(readyMap, prev.id);
 
-        const prevReady = prevHasAssessment
+        const prevReady = prevRequiresReady
             ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
             : true;                                  // no assessment → always ready
 
@@ -404,6 +457,12 @@ export default {
         return this.studySession.studyStepId;
       }
       return null;
+    },
+    studySessionFinished() {
+      if (this.studySession && this.studySession.end) {
+        return true;
+      }
+      return false;
     },
     studyClosed() {
       if (this.study) {
@@ -530,12 +589,24 @@ export default {
     handleLoadingError(errorData) {
       this.setStudyError(errorData.message, errorData.code);
     },
+    getAiChatService(step) {
+      const services = step.configuration?.services || [];
+      return services.find(service => service.type === "aiChat") || null;
+    },
+    hasAiChat(step) {
+      return !!this.getAiChatService(step);
+    },
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
+      if (this.warnIfAssessmentIncomplete("next")) return;
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
+      const step = this.studySteps.find((entry) => Number(entry.id) === Number(stepId));
+      if (Number(step?.stepType) === 4) {
+        return true;
+      }
       if (stepId in this.loadingReady) {
         return this.loadingReady[stepId];
       }
@@ -589,7 +660,7 @@ export default {
         const timeSinceStart = (Date.now() - new Date(this.studySession.start)) / 1000;
         this.timeLeft = this.study.timeLimit * 60 - timeSinceStart;
 
-        if (this.timeLeft < 0 && !this.studySession.end) {
+        if (this.timeLeft < 0 && !this.studySessionFinished) {
           this.finish();
         }
       }
@@ -618,7 +689,29 @@ export default {
       );
       this.$refs.studyFinishModal.close();
     },
+    onAssessmentReady(stepId, payload) {
+      this.stepsReady[stepId] = payload.ready;
+      this.stepsMissing[stepId] = payload.missing;
+    },
+    warnIfAssessmentIncomplete(action) {
+      if (this.isCurrentStepReady) return false;
+      const missing = this.stepsMissing[this.currentStudyStepId] || [];
+      const isNext = action === "next";
+      const title = this.$t(isNext ? "studies.messages.cannotGoNext" : "studies.messages.cannotFinishSession");
+      const message = missing.length
+          ? this.$t(isNext ? "studies.messages.assessmentIncompleteNext" : "studies.messages.assessmentIncomplete", { criteria: missing.join(", ") })
+          : this.$t(isNext ? "studies.messages.assessmentIncompleteNextGeneric" : "studies.messages.assessmentIncompleteGeneric");
+      this.eventBus.emit("toast", {
+        title,
+        message,
+        variant: "warning",
+      });
+      return true;
+    },
     finish() {
+      if (this.studySessionFinished) {
+        return;
+      }
       // Prevent finishing if study is closed
       if (this.studyClosed) {
         this.eventBus.emit("toast", {
@@ -630,9 +723,13 @@ export default {
       }
       this.$refs.studyFinishModal.open();
     },
+    finishClicked() {
+      if (this.warnIfAssessmentIncomplete("finish")) return;
+      this.finish();
+    },
     handleModalClose(event) {
       if (event.endStudy) {
-        this.finish(); // End the study
+        this.finishClicked(); // End the study
       } else if (event.nextStep) {
         const nextStep = this.nextStudyStep;
         if (nextStep) {

@@ -113,6 +113,7 @@ import AssignmentUploadModal from "@/components/dashboard/assignments/Assignment
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { getTimeDiffString } from "@/assets/utils";
+import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 export default {
   name: "DashboardSubmission",
@@ -153,13 +154,12 @@ export default {
 
       const now = new Date();
       const start = assignment.start ? new Date(assignment.start) : null;
-      const end = assignment.end ? new Date(assignment.end) : null;
 
       if (start && now < start) {
         return "notStarted";
       }
 
-      if (end && now > end) {
+      if (isAssignmentPastDeadline(assignment)) {
         return "closed";
       }
 
@@ -234,7 +234,7 @@ export default {
         : "bg-light text-dark border";
     },
     isAssignmentOverdue(assignment) {
-      return !!assignment.end && new Date(assignment.end) < new Date();
+      return isAssignmentPastDeadline(assignment);
     },
     isAssignmentClosingSoon(assignment) {
       if (!assignment.end) return false;

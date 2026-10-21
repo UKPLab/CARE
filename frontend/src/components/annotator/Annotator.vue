@@ -25,6 +25,7 @@
             v-if="!sidebarDisabled"
             ref="basicSidebar"
             :is-shown="isShown"  
+            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -197,6 +198,8 @@ export default {
             action: "annotatorScrollActivity",
             data: {
               documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               scrollTop: this.$refs.viewer.scrollTop,
               scrollHeight: this.$refs.viewer.scrollHeight
             }

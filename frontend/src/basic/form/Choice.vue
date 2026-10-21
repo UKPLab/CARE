@@ -128,7 +128,7 @@ export default {
         const validChoices = filteredChoices.filter((item) => {
           if (choicesConfig.disabled) {
             // If this step provides its own configuration, keep it visible/selectable
-            if (item && item.configuration && Object.keys(item.configuration || {}).length > 0) {
+            if (this.hasConfigurableOptions(item)) {
               return true;
             }
             return choicesConfig.disabled.every((rule) => {
@@ -154,7 +154,7 @@ export default {
             return {
               ...item,
               stepNumber, 
-              hasConfiguration: !!item.configuration && Object.keys(item.configuration).length > 0,
+              hasConfiguration: this.hasConfigurableOptions(item),
             };
           });
       }
@@ -219,6 +219,19 @@ export default {
     },
   },
   methods: {
+    /**
+     * Checks whether a workflow step exposes configuration controls.
+     *
+     * @param {Object} item - Workflow step.
+     * @returns {boolean} Whether the configuration modal has content.
+     */
+    hasConfigurableOptions(item) {
+      const configuration = item?.configuration;
+      if (!configuration || Object.keys(configuration).length === 0) return false;
+      return (configuration.settings?.fields || []).length > 0
+        || (configuration.services || []).length > 0
+        || configuration.placeholders !== false;
+    },
     getEffectiveDocumentId(workflowStepId) {
       const step = this.workflowSteps.find((s) => s.id === workflowStepId);
       if (step && step.workflowStepDocument) {
@@ -271,7 +284,7 @@ export default {
             if (value === null) {
               const workflowStepId = this.currentData[index]?.id;
               const workflowStep = this.workflowSteps.find((s) => s.id === workflowStepId);
-              if (workflowStep && workflowStep.stepType === 2) {
+              if (workflowStep && [2, 4].includes(Number(workflowStep.stepType))) {
                 return true;
               }
               return false;

@@ -4,8 +4,52 @@
  * Stateless helpers shared by AI handlers.
  *
  * @module utils/helper/ai/helpers
- * @author Akash Gundapuneni
+ * @author Akash Gundapuneni, Mohammed Rawhani
  */
+
+const TranslatableError = require("../../TranslatableError");
+
+/**
+ * Requires a user id on the authenticated RPC client.
+ *
+ * @param {{ userId?: number }} client Incoming RPC invocation context.
+ * @returns {number} Authenticated user id.
+ * @throws {Error} If the client has no user id.
+ */
+function requireClientUserId(client) {
+    if (!client || !client.userId) {
+        throw new TranslatableError("errors.ai.assistant.userRequired");
+    }
+    return client.userId;
+}
+
+/**
+ * Returns a required identifier or throws a request error.
+ *
+ * @param {unknown} value - Candidate identifier.
+ * @param {string} name - Field name used in the error.
+ * @returns {unknown} Valid identifier.
+ */
+function requireId(value, name) {
+    if (!value) {
+        throw new TranslatableError("errors.ai.assistant.invalidId", {name});
+    }
+    return value;
+}
+
+/**
+ * Returns a non-empty request identifier.
+ *
+ * @param {unknown} value - Candidate request identifier.
+ * @returns {string} Normalized request identifier.
+ */
+function requireRequestId(value) {
+    const requestId = typeof value === "string" ? value.trim() : "";
+    if (!requestId) {
+        throw new TranslatableError("errors.ai.assistant.requestIdRequired");
+    }
+    return requestId;
+}
 
 /**
  * Flattens OpenAI-compatible messages into text while retaining role labels.
@@ -54,6 +98,39 @@ function extractInputText(messages) {
 }
 
 /**
+ * Serializes the exact OpenAI-compatible messages sent to the model.
+ *
+ * @param {unknown} messages - Serialized chat history.
+ * @returns {string|null} Serialized messages.
+ */
+function serializeMessages(messages) {
+    return Array.isArray(messages) && messages.length ? JSON.stringify(messages) : null;
+}
+
+/**
+ * Approximates the token count of a text (~4 characters per token).
+ * Used only for the chat context-size guard, where a rough measure is enough.
+ *
+ * @param {unknown} text - Message content.
+ * @returns {number} Estimated tokens.
+ */
+function estimateTokens(text) {
+    return typeof text === "string" ? Math.ceil(text.length / 4) : 0;
+}
+
+/**
+ * Sums the estimated tokens of a list of messages.
+ *
+ * @param {Array<{content: unknown}>} messages - Messages to measure.
+ * @returns {number} Estimated tokens.
+ */
+function sumMessageTokens(messages) {
+    return Array.isArray(messages)
+        ? messages.reduce((sum, message) => sum + estimateTokens(message?.content), 0)
+        : 0;
+}
+
+/**
  * Builds parameters for a LiteLLM completion call.
  *
  * @param {Object} credential Credential row supplying provider authentication.
@@ -81,6 +158,12 @@ function buildLiteLLMParams(credential, modelName) {
 }
 
 module.exports = {
-    extractInputText,
     buildLiteLLMParams,
+    estimateTokens,
+    sumMessageTokens,
+    extractInputText,
+    requireClientUserId,
+    requireId,
+    requireRequestId,
+    serializeMessages,
 };
