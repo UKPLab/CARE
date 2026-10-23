@@ -236,3 +236,17 @@ html[data-bs-theme="dark"] {
   --bs-dropdown-link-active-bg: var(--care-accent);
   --bs-dropdown-link-active-color: var(--care-on-accent);
 }
+
+/* --- Keyboard focus ring ---
+   Plain .btn (no colour variant) and custom focusable elements get no visible
+   focus indicator from Bootstrap; add the care-focus-ring class to opt in.
+   The html prefix outranks Bootstrap's .btn:focus-visible { outline: 0 },
+   which loads after this file. */
+html .care-focus-ring:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+[data-bs-theme="dark"] .care-focus-ring:focus-visible {
+  outline-color: var(--care-accent);
+}
