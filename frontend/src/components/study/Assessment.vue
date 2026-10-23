@@ -708,16 +708,6 @@ export default {
   border-color: #1e7e34;
 }
 
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
-}
-
 .assessment-actions .btn-secondary {
   background-color: #6c757d;
   border-color: #6c757d;

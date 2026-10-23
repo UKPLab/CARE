@@ -609,7 +609,7 @@ export default {
   padding: 1.5rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid var(--care-primary);
 }
 
 .mode-selection-container h5 {
@@ -632,7 +632,7 @@ export default {
   padding: 0.75rem 0.875rem;
   border-bottom: 1px solid var(--bs-border-color, #f0f0f0);
   font-size: 0.95rem;
-  border-left: 3px solid #0d6efd;
+  border-left: 3px solid var(--care-primary);
   margin-bottom: 0.5rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.25rem;

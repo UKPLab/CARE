@@ -394,7 +394,7 @@ export default {
 
 <style scoped>
 .criterion-icon {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   transition: transform 0.2s ease;
 }
 
@@ -413,7 +413,7 @@ export default {
   background-color: var(--bs-body-bg, #fff);
   padding: 12px;
   border-radius: 6px;
-  border-left: 3px solid #007bff;
+  border-left: 3px solid var(--care-primary);
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -448,13 +448,13 @@ export default {
 }
 
 .assessment-textarea:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
   outline: 0;
 }
 
 .assessment-textarea::placeholder {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   font-style: italic;
 }
 
@@ -486,16 +486,6 @@ export default {
   border-color: #1e7e34;
 }
 
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
-}
-
 .assessment-actions .btn-secondary {
   background-color: #6c757d;
   border-color: #6c757d;
@@ -519,18 +509,18 @@ export default {
 }
 
 .score-dropdown:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
   outline: 0;
 }
 
 /* Info icon */
 .info-icon {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   transition: color 0.2s ease;
 }
 
 .info-icon:hover {
-  color: #007bff;
+  color: var(--care-primary);
 }
 </style>

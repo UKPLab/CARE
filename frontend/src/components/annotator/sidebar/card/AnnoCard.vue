@@ -539,7 +539,7 @@ export default {
 }
 
 .check-icon:hover {
-  color: var(--bs-primary, #007bff) !important;
+  color: var(--care-primary) !important;
 }
 
 .header-hoverable {
