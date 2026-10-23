@@ -195,6 +195,8 @@
     "studyRestartFailed": "Neustart der Studie fehlgeschlagen",
     "templateSaveFailed": "Speichern der Vorlage fehlgeschlagen",
     "templateCreationFailed": "Erstellung der Vorlage fehlgeschlagen",
+    "formLoadFailed": "Studiendaten konnten nicht geladen werden",
+    "formLoadTimeout": "Zeitüberschreitung beim Laden der Formulardaten",
     "sessionNotFinished": "Sitzung nicht beendet",
     "stepUpdateFailed": "Aktualisierung des Schritts fehlgeschlagen",
     "studyClosed": "Diese Studie ist geschlossen",
@@ -401,6 +403,14 @@
   },
   "database": {
     "failedToUpdateData": "Aktualisierung der Daten fehlgeschlagen"
+  },
+  "queryTable": {
+    "columnRequired": "Spaltenname ist erforderlich",
+    "columnNotDistinct": "Spalte {column} ist für Distinct-Werte nicht verfügbar",
+    "selectionTooLarge": "Zu viele Zeilen ausgewählt (mehr als {limit}). Bitte den Filter eingrenzen.",
+    "idListTooLarge": "Zu viele IDs ausgewählt. Das Limit beträgt {limit}; die Anfrage wurde abgelehnt.",
+    "scopeInvalid": "Diese Auswahl ist nicht mehr gültig. Gehen Sie zurück und wählen Sie die Workflow-Schritte erneut aus.",
+    "inspectStudyRequired": "Zum Laden dieser Sitzungen ist eine Studie erforderlich."
   },
   "backgroundTask": {
     "noDocumentSocketForClient": "Kein DocumentSocket für den Client gefunden",
