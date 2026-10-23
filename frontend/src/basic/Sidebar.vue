@@ -225,7 +225,9 @@ export default {
       isFixed: false,
       isDragging: false,
       sidebarContainerDom: undefined,
-      originalWidth: undefined
+      originalWidth: undefined,
+      isNarrow: false,
+      visibleBeforeNarrow: false
     };
   },
   computed: {
@@ -334,7 +336,9 @@ export default {
     this.originalWidth = this.width;
     this.internalActiveSlot = this.activeSideBar || null;
 
-    if (window.innerWidth <= 900) {
+    this.isNarrow = window.innerWidth <= 900;
+    if (this.isNarrow) {
+      this.visibleBeforeNarrow = this.isSidebarVisible;
       this.isSidebarVisible = false;
     }
 
@@ -483,15 +487,21 @@ export default {
       this.$emit('copy', event);
     },
     onResize() {
-      if (window.innerWidth <= 900) {
-        this.isSidebarVisible = false;
-        this.sidebarIconHighlight = true;
-        setTimeout(() => {
-          this.sidebarIconHighlight = false;
-        }, 1000);
+      // Only act when the width crosses 900px, so a sidebar the user opened or closed keeps its state
+      const isNarrow = window.innerWidth <= 900;
+      if (isNarrow !== this.isNarrow) {
+        this.isNarrow = isNarrow;
+        if (isNarrow) {
+          this.visibleBeforeNarrow = this.isSidebarVisible;
+          this.isSidebarVisible = false;
+          this.sidebarIconHighlight = true;
+          setTimeout(() => {
+            this.sidebarIconHighlight = false;
+          }, 1000);
+        } else {
+          this.isSidebarVisible = this.isSidebarVisible || this.visibleBeforeNarrow;
+        }
         this.visibilityChange();
-      } else if (window.innerWidth > 900) {
-        this.isSidebarVisible = true;
       }
 
       // Log resize event with debouncing
