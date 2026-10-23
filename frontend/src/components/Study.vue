@@ -22,6 +22,26 @@
       @finish="finalFinish"
       @start="start"
   />
+  <StudyModal
+      v-if="studySession && studySession.start"
+      ref="studyInfoModal"
+      info-only
+      :study-id="studyId"
+      :study-closed="studyClosed"
+      :study-session-id="studySessionId"
+  />
+  <Teleport to="#topBarNavItems">
+    <li v-if="hasInstructions" class="nav-item">
+      <TopBarButton
+          class="btn rounded-circle"
+          :title="$t('components.studyRoute.instructions')"
+          :props="{ key: 'studyInstructions.open' }"
+          @click="$refs.studyInfoModal.open()"
+      >
+        <LoadIcon icon-name="info-circle" :size="18"/>
+      </TopBarButton>
+    </li>
+  </Teleport>
   <FinishModal
       v-if="!studyError"
       ref="studyFinishModal"
@@ -59,10 +79,11 @@
           currentStudyStep.studyStepPrevious !== null
         "
           class="btn btn-outline-primary me-3"
-          :title="$t('common.previous')"
+          :title="previousLabel"
+          :props="{ key: 'studyNav.previous' }"
           @click="updateStep(currentStudyStep.studyStepPrevious)"
       >
-        {{ $t('common.previous') }}
+        {{ previousLabel }}
       </TopBarButton>
 
       <TopBarButton
@@ -88,10 +109,11 @@
           ref="nextButton"
           :disabled="readOnlyComputed && nextStudyStep && !studyTrajectory.includes(nextStudyStep.id)"
           class="btn btn-outline-primary ms-3"
-          :title="$t('common.next')"
+          :title="nextLabel"
+          :props="{ key: 'studyNav.next' }"
           @click="next()"
       >
-        {{ $t('common.next') }}
+        {{ nextLabel }}
       </TopBarButton>
 
       <TopBarButton
@@ -115,9 +137,20 @@
   <div
       v-if="studySessionId !== 0 && !studyError"
       class="study-container"
+      :class="{ 'pane-open': shownStepId !== null }"
+      :data-split="lookBack.dataSplit"
   >
-    <div v-for="step in orderedStudySteps" :key="'step_' + step.id">
-      <div v-show="currentStudyStepId === step.id">
+    <PaneStrip
+        v-if="currentStudyStep"
+        v-model="shownStepId"
+        v-model:layout="splitLayout"
+        :steps="orderedStudySteps"
+        :current-step="currentStudyStep"
+        :earlier-steps="lookBack.earlierSteps"
+        :labels="stepLabels"
+    />
+    <div v-for="step in orderedStudySteps" :key="'step_' + step.id" :class="{ 'study-pane': lookBack.isVisible(step.id) }">
+      <div v-show="lookBack.isVisible(step.id)">
         <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
           <div v-if="!(studySession && studySession.start === null)">
@@ -137,7 +170,7 @@
 
             <Annotator
                 v-if="step.stepType === 1"
-                :is-shown="currentStudyStepId === step.id"
+                v-bind="lookBack.paneProps[step.id]"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
                 @error="error"
@@ -156,13 +189,20 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
+                <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
+                  <template #content>
+                    <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
+                  </template>
+                </SidebarTemplate>
+              </template>
             </Annotator>
 
             <Editor
                 v-if="step.stepType === 2"
                 ref="editor"
+                v-bind="lookBack.paneProps[step.id]"
                 :document-id="step.documentId"
-                :is-shown="currentStudyStepId === step.id"
                 :study-step-id="step.id"
                 :without-history="true"
                 @update:data="updateStudyData(step.id, 'editor', $event)"
@@ -180,6 +220,13 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
+                <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
+                  <template #content>
+                    <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
+                  </template>
+                </SidebarTemplate>
+              </template>
             </Editor>
 
             <StepModal
@@ -192,6 +239,12 @@
 
           </div>
         </div>
+      </div>
+      <div v-if="shownStepId !== null && lookBack.isVisible(step.id)" class="pane-label-holder">
+        <span class="badge d-inline-flex align-items-center gap-1">
+          <LoadIcon v-if="step.id !== currentStudyStepId" icon-name="lock-fill" :size="10"/>
+          {{ stepLabels[step.id] }}
+        </span>
       </div>
     </div>
   </div>
@@ -212,6 +265,9 @@ import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
+import PaneStrip from "@/components/study/PaneStrip.vue";
+import LookBackPanel from "@/components/study/LookBackPanel.vue";
+import {buildLookBack, buildStepLabels} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
@@ -230,6 +286,8 @@ export default {
     Annotator,
     Editor,
     TopBarButton,
+    PaneStrip,
+    LookBackPanel,
     StepModal,
     LoadingModal
   },
@@ -242,10 +300,11 @@ export default {
       currentStudyStep: computed(() => this.currentStep),
       orderedStudySteps: computed(() => this.orderedStudySteps),
       pendingNlpInsertion: computed(() => this.pendingNlpInsertion),
+      hiddenStudyStepId: computed(() => this.lookBack.hiddenStepId),
     };
   },
   // TODO: Only subscribe relevant entries (like current study session and steps)
-  subscribeTable: ["study_step", "study_session", "workflow", "annotation"],
+  subscribeTable: ["study_step", "study_session", "workflow", "workflow_step", "annotation"],
   props: {
     studyHash: {
       type: String,
@@ -277,9 +336,31 @@ export default {
       nlpModalStepId: null,
       pendingNlpInsertion: null,
       studyError: null,
+      shownStepId: null,
+      splitLayout: null,
     };
   },
   computed: {
+    stepLabels() {
+      return buildStepLabels(this.orderedStudySteps, this.$store.getters["table/workflow_step/get"],
+          (number) => this.$t('components.studyRoute.panes.stepFallback', {number}));
+    },
+    previousLabel() {
+      return this.$t('components.studyRoute.previousStep', {step: this.stepLabels[this.currentStudyStep?.studyStepPrevious]});
+    },
+    nextLabel() {
+      return this.$t('components.studyRoute.nextStep', {step: this.stepLabels[this.nextStudyStep?.id]});
+    },
+    hasInstructions() {
+      return !!this.study?.description && !!this.studySession?.start;
+    },
+    lookBack() {
+      return buildLookBack({
+        steps: this.orderedStudySteps, currentStep: this.currentStudyStep, shownStepId: this.shownStepId,
+        splitLayout: this.splitLayout, labels: this.stepLabels, getStep: this.$store.getters["table/study_step/get"],
+        isLoaded: this.isStepLoaded, $t: this.$t,
+      });
+    },
     currentStep() {
       return this.studySteps.find((step) => step.id === this.currentStudyStepId) || {};
     },
@@ -457,6 +538,14 @@ export default {
     },
   },
   watch: {
+    currentStudyStepId: {
+      handler(newId, oldId) {
+        // Every step starts on itself with the bar shown, unless the bar was hidden on the step before
+        this.shownStepId = oldId && this.shownStepId === null ? null : (newId ?? null);
+        this.splitLayout = null;
+      },
+      immediate: true,
+    },
     studySession() {
       if (this.study && this.study.timeLimit > 0 && this.studySession) {
         //studySession required, otherwise not all data may be there yet

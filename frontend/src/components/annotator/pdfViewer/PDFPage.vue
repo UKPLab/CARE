@@ -130,10 +130,8 @@ export default {
       isRendered: false,
       scale: null,
       currentWidth: 0,
-      originalWidth: 0,
       anchor: null,
-      devicePixelRatio: window.devicePixelRatio || 1,
-      isZooming: false
+      devicePixelRatio: window.devicePixelRatio || 1
     };
   },
   computed: {
@@ -171,22 +169,10 @@ export default {
   },
   watch: {
     zoomValue: {
-      handler(newValue, oldValue) {
+      handler() {
         if (this.isRendered) {
-          this.isZooming = true;
-          const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-          
-          // Calculate new width based on current width and zoom change
-          const currentWidth = wrapper.getBoundingClientRect().width;
-          const newWidth = (currentWidth / oldValue) * newValue;
-          wrapper.style.width = newWidth + 'px';
-          wrapper.style.height = (newWidth * 1.4142) + 'px';
-          
-          this.currentWidth = newWidth;
-          
           // Force re-anchoring by nullifying existing anchors
           this.remove_anchors();
-          
           this.destroyPage();
           this.init();
         }
@@ -231,20 +217,17 @@ export default {
       const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber + '-' + this.documentId);
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
       const width = wrapper.getBoundingClientRect().width;
-      this.originalWidth = width; 
       const height = width * 1.4142;
       canvas.height = height;
       canvas.width = width;
       this.currentWidth = width;
     },
     applyZoomToWrapper() {
-      if (this.originalWidth > 0) {
-        const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
-        const width = this.originalWidth * this.zoomValue;
-        wrapper.style.width = width + 'px';
-        wrapper.style.height = (width * 1.4142) + 'px';
-        this.currentWidth = width;
-      }
+      // The page is as wide as its container times the zoom level, so it follows its container
+      // (for example a split pane or an opened sidebar), and resizeHandler redraws it sharp
+      const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
+      wrapper.style.width = (this.zoomValue * 100) + '%';
+      wrapper.style.aspectRatio = '1 / 1.4142';
     },
     init() {
       if (this.render && !this.isRendered) {
@@ -253,8 +236,9 @@ export default {
           const wrapper = document.getElementById('canvas-wrapper-' + page.pageNumber + '-' + this.documentId);
           const canvas = document.getElementById('pdf-canvas-' + page.pageNumber + '-' + this.documentId);
 
-          // Calculate scale based on wrapper width
-          this.scale = wrapper.getBoundingClientRect().width / page.getViewport({scale: 1.0}).width;
+          // Calculate scale based on wrapper width; remembering the width keeps resizeHandler from drawing it twice
+          this.currentWidth = wrapper.getBoundingClientRect().width;
+          this.scale = this.currentWidth / page.getViewport({scale: 1.0}).width;
 
           const viewport = page.getViewport({scale: this.scale});
           canvas.height = viewport.height;
@@ -268,8 +252,6 @@ export default {
       }
     },
     resizeHandler(_event) {
-      if (this.isZooming) return;
-      
       const wrapper = document.getElementById('canvas-wrapper-' + this.pageNumber + '-' + this.documentId);
       const width = wrapper.getBoundingClientRect().width;
       

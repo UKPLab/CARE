@@ -31,7 +31,8 @@
           :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
-          :active-side-bar="defaultActiveSidebar"
+          :active-side-bar="activeSidebar || defaultActiveSidebar"
+          :is-tab-shown="isSidebarTabShown"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
@@ -153,6 +154,22 @@ export default {
       required: false,
       default: null,
     },
+    forceReadOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    activeSidebar: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    // Decides for each sidebar tab whether it is shown (see basic/Sidebar.vue)
+    isSidebarTabShown: {
+      type: Function,
+      required: false,
+      default: null,
+    },
     withoutHistory: {
       type: Boolean,
       required: false,
@@ -235,6 +252,9 @@ export default {
       return emailTemplateTypes.includes(this.template.type) || this.template.type === 8;
     },
     readOnlyOverwrite() {
+      if (this.forceReadOnly) {
+        return true;
+      }
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }

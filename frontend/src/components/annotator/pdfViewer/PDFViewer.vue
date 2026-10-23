@@ -90,6 +90,11 @@ export default {
     acceptStats: {
       default: () => false
     },
+    hiddenStudyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
   },
   provide() {
     return {
@@ -104,6 +109,7 @@ export default {
       observer: undefined,
       pdfContainer: null,
       visiblePages: [1],
+      lastVisibility: {},
       scale: 1.0,
       originalScale: null,
       DEFAULT_SCALE: 1.0,
@@ -128,6 +134,9 @@ export default {
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+    isHidden() {
+      return this.studyStepId !== null && this.studyStepId === this.hiddenStudyStepId;
     },
     componentReadOnly() {
       if(!this.readOnly) {
@@ -154,6 +163,14 @@ export default {
         }
       },
       deep: true,
+    },
+    isHidden(hidden) {
+      // Hidden pages are not on screen, even though the browser still counts them as visible
+      this.visiblePages.forEach((pageNumber) => {
+        if (this.lastVisibility[pageNumber]) {
+          this.sendVisibility({...this.lastVisibility[pageNumber], isVisible: !hidden});
+        }
+      });
     },
     scale(newScale) {
       // Keep form data in sync with scale
@@ -229,18 +246,25 @@ export default {
           stateChanged = true;
         }
       }
-      if (stateChanged && this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfPageVisibilityChange",
-          data: {
-            documentId: this.documentId,
-            readOnly: this.readOnly,
-            visibility: page,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-          }
-        })
+      this.lastVisibility[page.pageNumber] = page;
+      if (stateChanged && !this.isHidden) {
+        this.sendVisibility(page);
       }
+    },
+    sendVisibility(page) {
+      if (!this.acceptStats) {
+        return;
+      }
+      this.$socket.emit("stats", {
+        action: "pdfPageVisibilityChange",
+        data: {
+          documentId: this.documentId,
+          readOnly: this.readOnly,
+          visibility: page,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+        }
+      })
     },
     onCopy(event) {
       this.$emit('copy', event);

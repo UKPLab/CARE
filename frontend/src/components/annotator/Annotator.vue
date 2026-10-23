@@ -24,8 +24,9 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
+            :active-side-bar="activeSidebar || ($slots.additionalSidebars ? 'additionalSidebars' : 'annotations')"
+            :is-tab-shown="isSidebarTabShown"
             :is-shown="isShown"  
-            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -122,6 +123,7 @@ export default {
   provide() {
     return {
       documentId: computed(() => this.documentId),
+      readOnly: computed(() => this.readOnly || this.forceReadOnly),
       studyStepId: computed(() => this.studyStepId),
       showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
@@ -174,6 +176,22 @@ export default {
       required: false,
       default: false,
     },
+    forceReadOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    activeSidebar: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    // Decides for each sidebar tab whether it is shown (see basic/Sidebar.vue)
+    isSidebarTabShown: {
+      type: Function,
+      required: false,
+      default: null,
+    },
     documentId: {
       type: Number,
       required: false,
@@ -190,8 +208,8 @@ export default {
     return {
       downloading: false,
       assessmentViewActive: true,
-      maxSidebarWidth: 400,
-      minSidebarWidth: 0,
+      maxSidebarWidth: 600,
+      minSidebarWidth: 250,
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
