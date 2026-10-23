@@ -817,6 +817,81 @@ A permission check is performed to ensure the user has access to the document co
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="n"><span class="pre">AppSocket</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket" title="Link to this definition"></a></dt>
 <dd><p>Send data for building the frontend app</p>
 <dl class="js function">
+<dt class="sig sig-object js" id="AppSocket.acquireQueryTable">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AppSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">acquireQueryTable</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket.acquireQueryTable" title="Link to this definition"></a></dt>
+<dd><p>One mounted BackendTable holds query mode for its table.
+broadcastTable then emits Delta/Stale in addition to Refresh for Vuex subscribers.</p>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AppSocket.queryTable">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AppSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">queryTable</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket.queryTable" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>queryTable</cite></p>
+<p>Request-response page query for an autoTable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>)</p></li>
+<li><p><strong>data.table</strong> (<strong>string</strong>) – autoTable name</p></li>
+<li><p><strong>data.filter</strong> (<strong>Array</strong>) – same shape as subscribeAppData filter items</p></li>
+<li><p><strong>data.query</strong> (<strong>Object</strong>)</p></li>
+<li><p><strong>data.query.limit</strong> (<strong>number</strong>)</p></li>
+<li><p><strong>data.query.sort</strong> (<strong>Object</strong>) – { column, direction }</p></li>
+<li><p><strong>data.query.search</strong> (<strong>string</strong>) – case-insensitive substring across visible + injected columns</p></li>
+<li><p><strong>data.query.columnFilters</strong> (<strong>Object</strong>) – search-bar filter tokens: { key: {operator, value} }</p></li>
+<li><p><strong>data.query.searchColumns</strong> (<strong>Array.&lt;string&gt;</strong>) – narrow free text to the columns this table shows (intersected with the model whitelist — a client cannot widen it)</p></li>
+<li><p><strong>data.scope</strong> (<strong>Object</strong>) – consumer scope resolved by the model (getQueryTableScopeFilter), for rows a filter item cannot name (e.g. Publish Assessment’s workflow-step selection)</p></li>
+<li><p><strong>data.query.after</strong> (<strong>string</strong>) – endCursor of previous result → next page</p></li>
+<li><p><strong>data.query.before</strong> (<strong>string</strong>) – startCursor of previous result → previous page</p></li>
+<li><p><strong>data.query.fromEnd</strong> (<strong>boolean</strong>) – fetch the last page (no cursor needed)</p></li>
+<li><p><strong>data.query.offset</strong> (<strong>number</strong>) – row index to start at; used by the infinite-scroll window (scrollbar jump / window refetch) and to reload page N after pending changes. Ignored when a cursor is given.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;{items: Array, meta: Object}&gt;</strong> – meta has total, pageSize, startCursor, endCursor, hasNext, hasPrev, offset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AppSocket.queryTableDistinct">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AppSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">queryTableDistinct</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket.queryTableDistinct" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>queryTableDistinct</cite></p>
+<p>Distinct values of one column within the same row scope as queryTable.</p>
+<p>Feeds dropdowns that used to read unique values from a full Vuex table dump (e.g. the
+Manage Studies workflow filter). The column has to be offered by the model
+(<cite>getQueryTableDistinctColumns</cite>) and readable by the viewer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>)</p></li>
+<li><p><strong>data.table</strong> (<strong>string</strong>) – autoTable name</p></li>
+<li><p><strong>data.column</strong> (<strong>string</strong>) – column to read distinct values from</p></li>
+<li><p><strong>data.filter</strong> (<strong>Array</strong>) – same filter items as queryTable</p></li>
+<li><p><strong>data.query</strong> (<strong>Object</strong>) – { search, columnFilters, searchColumns }</p></li>
+<li><p><strong>data.scope</strong> (<strong>Object</strong>) – same consumer scope as queryTable</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;{values: Array}&gt;</strong> – at most MAX_DISTINCT_VALUES values, nulls dropped</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AppSocket.releaseQueryTable">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AppSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">releaseQueryTable</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket.releaseQueryTable" title="Link to this definition"></a></dt>
+<dd><p>Drop one BackendTable hold. The table leaves query mode when the last hold is gone.</p>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AppSocket.resolveUpdateResult">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AppSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">resolveUpdateResult</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transaction</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writeContext</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newEntry</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket.resolveUpdateResult" title="Link to this definition"></a></dt>
+<dd><p>Default appDataUpdate result is the row id. A model may override via
+<cite>resolveAppDataResult</cite></p>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="AppSocket.sendData">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">AppSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendData</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AppSocket.sendData" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>appData</cite></p>
@@ -1277,6 +1352,30 @@ it adds <cite>documentId</cite>. The original template object properties are pre
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="AssignmentSocket.resolveBulkAssignmentSelections">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">resolveBulkAssignmentSelections</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.resolveBulkAssignmentSelections" title="Link to this definition"></a></dt>
+<dd><p>Resolve query-scoped session / submission / reviewer selections into the row arrays</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>)</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;{selectedAssignments: Array, selectedReviewer: Array}&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AssignmentSocket.resolveBulkSelectionForClient">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">resolveBulkSelectionForClient</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.resolveBulkSelectionForClient" title="Link to this definition"></a></dt>
+<dd><p><strong>Socket Event</strong>: <cite>assignmentBulkResolveSelection</cite></p>
+<p>Load resolved assignment + reviewer rows for Distribution</p>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="AssignmentSocket.sendAssignmentEmail">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">sendAssignmentEmail</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">studySession</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">assignmentContext</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.sendAssignmentEmail" title="Link to this definition"></a></dt>
 <dd><p>Send assignment notification email using configured template</p>
@@ -1291,6 +1390,26 @@ it adds <cite>documentId</cite>. The original template object properties are pre
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AssignmentSocket.submissionStepDocuments">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AssignmentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">submissionStepDocuments</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">submissionId</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">workflowSteps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AssignmentSocket.submissionStepDocuments" title="Link to this definition"></a></dt>
+<dd><p>Document override for one submission assignment.
+Puts the viewer’s visible PDF of that submission (type 0, not deleted, lowest id)
+on the first workflow step. An empty result leaves the template document in place.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>submissionId</strong> (<strong>number</strong>)</p></li>
+<li><p><strong>workflowSteps</strong> (<strong>Array.&lt;Object&gt;</strong>) – workflow steps; the override uses the first element</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Array.&lt;{workflowStepId: number, documentId: number}&gt;&gt;</strong> – empty when no PDF is found</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2864,7 +2983,7 @@ This stops the client from receiving real-time events for that study.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<strong>object</strong>)</p></li>
 <li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – IDs of the studies to close</p></li>
-<li><p><strong>data.projectId</strong> (<strong>number</strong>) – optional project scope for validation</p></li>
+<li><p><strong>data.selection</strong> (<strong>object</strong>) – query-scoped selection (see resolveBulkStudyIds)</p></li>
 <li><p><strong>data.notifySessions</strong> (<strong>boolean</strong>) – if true, send emails to participants with open sessions</p></li>
 <li><p><strong>data.progressId</strong> (<strong>string</strong>) – optional id for progressUpdate events</p></li>
 </ul>
@@ -2907,7 +3026,7 @@ Sends study closed emails after the transaction commits (optional, based on noti
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<strong>object</strong>)</p></li>
 <li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – IDs of the studies to delete</p></li>
-<li><p><strong>data.projectId</strong> (<strong>number</strong>) – optional project scope for validation</p></li>
+<li><p><strong>data.selection</strong> (<strong>object</strong>) – query-scoped selection (see resolveBulkStudyIds)</p></li>
 <li><p><strong>data.progressId</strong> (<strong>string</strong>) – optional id for progressUpdate events</p></li>
 </ul>
 </dd>
@@ -2927,11 +3046,39 @@ Sends study closed emails after the transaction commits (optional, based on noti
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<strong>object</strong>)</p></li>
 <li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – IDs of the studies to reopen</p></li>
+<li><p><strong>data.selection</strong> (<strong>object</strong>) – query-scoped selection (see resolveBulkStudyIds)</p></li>
 <li><p><strong>data.progressId</strong> (<strong>string</strong>) – optional id for progressUpdate events</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Promise.&lt;{openedCount: number}&gt;</strong></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="StudySocket.resolveBulkStudyIds">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">StudySocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">resolveBulkStudyIds</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#StudySocket.resolveBulkStudyIds" title="Link to this definition"></a></dt>
+<dd><p>Studies a bulk action may touch.</p>
+<p>Two client shapes: explicit ids (rows ticked in the table) or a query-scoped selection
+(“select all matching” — the same filter / search the list used, minus rows unticked
+afterwards). Both are resolved against the viewer’s row scope and then the write filter,
+so <cite>canManageStudies</cite> alone never decides which rows are written: an id the user may not
+list, or may list but not write (e.g. only joined via a session), is dropped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>)</p></li>
+<li><p><strong>data.studyIds</strong> (<strong>Array.&lt;number&gt;</strong>) – explicitly selected rows</p></li>
+<li><p><strong>data.selection</strong> (<strong>Object</strong>) – query-scoped selection</p></li>
+<li><p><strong>data.selection.allMatching</strong> (<strong>boolean</strong>) – must be true to use the query path</p></li>
+<li><p><strong>data.selection.filter</strong> (<strong>Array</strong>) – queryTable filter items</p></li>
+<li><p><strong>data.selection.query</strong> (<strong>Object</strong>) – { search, columnFilters, searchColumns }</p></li>
+<li><p><strong>data.selection.excludeIds</strong> (<strong>Array.&lt;number&gt;</strong>) – rows unticked after select-all</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Array.&lt;number&gt;&gt;</strong></p>
 </dd>
 </dl>
 </dd></dl>
