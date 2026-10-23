@@ -48,6 +48,11 @@ export default {
       default: false,
       description: "If true, shows all sessions",
     },
+    showCopy: {
+      type: Boolean,
+      default: true,
+      description: "If true, show this button",
+    },
   },
   emits: ["update", "session-deleted", "session-opened"],
   data() {
@@ -163,6 +168,16 @@ export default {
           options: sm,
           title: this.$t('dashboard.study.copySessionLink'),
           action: "copyStudySessionLink",
+          stats: {
+            studySessionId: "id",
+          },
+        }));
+      }
+      if (this.showCopy) {
+        buttons.push(dashboardRowAction("copy", {
+          options: sm,
+          title: this.$t('dashboard.study.copySession'),
+          action: "copySession",
           stats: {
             studySessionId: "id",
           },
@@ -302,6 +317,9 @@ export default {
         case "deleteStudySession":
           this.confirmDelete(data.params);
           break;
+        case "copySession":
+          this.copySession(data.params);
+          break;
       }
     },
     confirmDelete(params) {
@@ -332,6 +350,9 @@ export default {
       } catch (_error) {
         this.showErrorToast(this.$t('errors.clipboard.linkNotCopied'), this.$t('errors.clipboard.couldNotCopyStudySession'));
       }
+    },
+    async copySession(params) {
+      this.$refs.assignUserModal.open(params);
     },
     showSuccessToast(title, message) {
       this.eventBus.emit("toast", {
