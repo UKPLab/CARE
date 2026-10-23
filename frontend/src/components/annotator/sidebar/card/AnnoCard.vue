@@ -99,7 +99,7 @@
               v-else
               class="row"
           >
-            <div class="col">
+            <div class="col text-end">
               <SidebarButton
                   v-if="settingResponse && !readOnly"
                   :loading="false"
