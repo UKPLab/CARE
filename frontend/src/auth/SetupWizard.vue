@@ -675,9 +675,9 @@ export default {
 }
 
 .stepper > div.active::before {
-  color: white;
-  background-color: var(--bs-primary, #0d6efd);
-  border-color: var(--bs-primary, #0d6efd);
+  color: var(--care-on-primary);
+  background-color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .feedback-invalid {

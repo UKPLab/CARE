@@ -31,7 +31,7 @@
         "selectSessionsDescriptionPrefix": "Wählen Sie aus, welche Study Sessions in den Assessment-Export aufgenommen werden sollen. Bitte beachten Sie, dass hier nur",
         "closedStudySessions": "geschlossene Study Sessions",
         "selectSessionsDescriptionSuffix": "angezeigt werden.",
-        "noSessionsFound": "Keine Sessions gefunden, die zu den ausgewählten Workflows und der Konfiguration passen.",
+        "allMatchingSelected": "Alle {count} Sessions, die dem aktuellen Session-Filter entsprechen, sind ausgewählt. Ihre Hashes sind Teil des Exports.",
         "hashCollection": "Hash-Sammlung:",
         "hashCollectionStudies": "basierend auf Studies (Session-Hashes für jede Study)",
         "hashCollectionSessions": "basierend auf Sessions (Hashes für eigene Sessions)",
@@ -91,6 +91,16 @@
             "csvExport": {
                 "title": "CSV-Export",
                 "message": "Assessment-Daten wurden erfolgreich als CSV generiert und exportiert"
+            },
+            "workflowsFailed": {
+                "title": "Workflow-Schritte konnten nicht geladen werden"
+            },
+            "assessmentDataFailed": {
+                "title": "Assessment-Daten konnten nicht geladen werden"
+            },
+            "noSessionsSelected": {
+                "title": "Keine Sessions ausgewählt",
+                "message": "Wählen Sie mindestens eine Session zum Veröffentlichen aus."
             }
         }
     },

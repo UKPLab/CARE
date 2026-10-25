@@ -640,15 +640,9 @@ export default {
 /* Layout */
 .assessment-section {
   padding: 1rem;
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .assessment-content-container {
-  flex: 1;
-  overflow-y: auto;
   padding-right: 5px;
 }
 
@@ -713,16 +707,6 @@ export default {
 .assessment-actions .btn-success:hover {
   background-color: #218838;
   border-color: #1e7e34;
-}
-
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
 }
 
 .assessment-actions .btn-secondary {

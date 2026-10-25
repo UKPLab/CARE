@@ -8,6 +8,7 @@
       id="linkCollection"
       :value="linkCollection"
       class="form-select"
+      :disabled="allMatching"
       @change="$emit('update:linkCollection', $event.target.value)"
     >
       <option value="studies">{{ $t("submission.publishAssessment.hashCollectionStudies") }}</option>
@@ -16,7 +17,14 @@
   </div>
   <div class="mb-3">
     <p><b>{{ $t("submission.publishAssessment.hashes") }}</b></p>
-    <ul v-if="linkCollection === 'studies'">
+    <!-- Select-all is the query, not a row list: 10k+ hashes cannot be rendered -->
+    <p
+      v-if="allMatching"
+      class="text-muted"
+    >
+      {{ $t("submission.publishAssessment.allMatchingSelected", { count: selectedCount }) }}
+    </p>
+    <ul v-else-if="linkCollection === 'studies'">
       <li
         v-for="study in formattedStudies"
         :key="study.study.id"
@@ -25,10 +33,10 @@
         <ul>
           <li
             v-for="session in study.sessions"
-            :key="session.sessionId"
+            :key="session.id"
           >
             {{ session.firstName }} {{ session.lastName }} (<a
-              :href="session.link"
+              :href="sessionReviewLink(session.hash)"
               target="_blank"
             >{{ session.hash }}</a>)
           </li>
@@ -37,17 +45,17 @@
     </ul>
     <ul v-else-if="linkCollection === 'sessions'">
       <li
-        v-for="(sessions, odx) in formattedSessions"
-        :key="odx"
+        v-for="reviewer in formattedSessions"
+        :key="reviewer.userId"
       >
-        <b>{{ sessions[0].firstName }} {{ sessions[0].lastName }}</b>
+        <b>{{ reviewer.firstName }} {{ reviewer.lastName }}</b>
         <ul>
           <li
-            v-for="s in sessions"
-            :key="s.sessionId"
+            v-for="s in reviewer.sessions"
+            :key="s.id"
           >
             {{ s.studyName }} (<a
-              :href="s.link"
+              :href="sessionReviewLink(s.hash)"
               target="_blank"
             >{{ s.hash }}</a>)
           </li>
@@ -58,18 +66,23 @@
 </template>
 
 <script>
+import { sessionReviewLink } from "./helpers/publishAssessmentTables.js";
+
 /**
  * Confirmation step (step 4) of the assessment publishing wizard.
  *
- * Displays study/session hash links for the selected sessions.
- * The parent owns linkCollection and passes it via v-model so
- * the user's selection persists when navigating between steps.
+ * Displays study/session hash links for the ticked sessions (study_session rows
+ * from the session BackendTable). When the whole session query is selected
+ * ("all matching"), only the count is shown: the rows are resolved server-side
+ * on submit. The parent owns linkCollection and passes it via v-model so the
+ * user's selection persists when navigating between steps.
  *
  * @author CARE Team
  */
 export default {
   name: "PublishAssessmentConfirmationStep",
   props: {
+    /** Ticked study_session rows (empty in "all matching" mode). */
     selectedSessions: {
       type: Array,
       required: true,
@@ -77,6 +90,16 @@ export default {
     linkCollection: {
       type: String,
       required: true,
+    },
+    /** Every row of the session query is selected, minus the unticked ones. */
+    allMatching: {
+      type: Boolean,
+      default: false,
+    },
+    /** Number of selected sessions, also in "all matching" mode. */
+    selectedCount: {
+      type: Number,
+      default: 0,
     },
   },
   emits: ["update:linkCollection"],
@@ -90,7 +113,7 @@ export default {
           studyMap[studyId] = {
             study: {
               id: studyId,
-              name: session.studyName,
+              name: session.studyName || this.$t("common.unknown"),
               ownerFirstName: session.ownerFirstName || "-",
               ownerLastName: session.ownerLastName || "-",
             },
@@ -105,14 +128,21 @@ export default {
       // Group selected sessions by reviewer (userId)
       const userMap = {};
       this.selectedSessions.forEach((session) => {
-        const key = session.userId;
-        if (!userMap[key]) {
-          userMap[key] = [];
+        if (!userMap[session.userId]) {
+          userMap[session.userId] = {
+            userId: session.userId,
+            firstName: session.firstName || this.$t("common.unknown"),
+            lastName: session.lastName || "",
+            sessions: [],
+          };
         }
-        userMap[key].push(session);
+        userMap[session.userId].sessions.push(session);
       });
-      return userMap;
+      return Object.values(userMap);
     },
+  },
+  methods: {
+    sessionReviewLink,
   },
 };
 </script>
