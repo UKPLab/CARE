@@ -46,7 +46,10 @@
     :class="{ 'table-infinite-shell': isInfiniteMode }"
     :style="infiniteShellStyle"
   >
-  <div :class="{ 'table-infinite-main': isInfiniteMode }">
+  <div
+    class="table-scroll-frame"
+    :class="{ 'table-infinite-main': isInfiniteMode }"
+  >
   <div
     ref="tableWrapper"
     class="table-wrapper"
@@ -109,6 +112,7 @@
               <TButtonGroup
                 :buttons="buttons"
                 :params="manageSizerParams"
+                :layout="options && options.rowActions"
               />
             </div>
           </th>
@@ -233,6 +237,7 @@
               v-if="!r.__skeleton && rowButtons(r).length > 0"
               :buttons="rowButtons(r)"
               :params="r"
+              :layout="options && options.rowActions"
               @action="actionEmitter"
             />
           </td>
@@ -271,6 +276,12 @@
       :text="$t('common.loading')"
     />
   </div>
+  <ScrollHints
+    :left="scrollHintLeft"
+    :right="scrollHintRight"
+    :frame="scrollHintFrame"
+    @scroll="scrollTableBy"
+  />
   </div>
   <div
     v-if="isInfiniteMode && total > 0"
@@ -343,6 +354,13 @@ import {
   tableRowInteractionsMethods,
 } from "@/basic/table/helpers/tableRowInteractions.js";
 import { filterRowButtons } from "@/basic/table/helpers/tableCellHelpers.js";
+import {
+  tableScrollHintsData,
+  tableScrollHintsMethods,
+  tableScrollHintsWatch,
+} from "@/basic/table/helpers/tableScrollHints.js";
+import ScrollHints from "./table/ScrollHints.vue";
+import { rowActionSlots } from "@/basic/table/helpers/rowActionsLayout.js";
 
 /** Pause before the infinite window loads again by itself after a failed request. */
 const WINDOW_RETRY_MS = 5000;
@@ -366,6 +384,7 @@ export default {
     HeaderCell,
     TButtonGroup,
     Loader,
+    ScrollHints,
   },
   inject: {
     acceptStats: {
@@ -473,6 +492,8 @@ export default {
       ...tableLayoutData(this.options),
       // tableFixedColumns.js
       ...tableFixedColumnsData(),
+      // tableScrollHints.js
+      ...tableScrollHintsData(),
       // tableRowInteractions.js
       ...tableRowInteractionsData(),
       ...initialSort(this.options),
@@ -683,7 +704,8 @@ export default {
      * The header sizer then stretches to the real group if icons are wider.
      */
     manageColumnMinWidth() {
-      const n = this.buttons.length;
+      // Only the icons ButtonGroup actually shows (inline + "more"), not every action
+      const n = rowActionSlots(this.buttons.length, this.options?.rowActions);
       if (!n) return null;
       return `calc(${n} * 2.05rem + 1rem)`;
     },
@@ -820,6 +842,8 @@ export default {
     },
   },
   watch: {
+    // tableScrollHints.js
+    ...tableScrollHintsWatch,
     currentData: {
       handler() {
         if (this._unmounting) return;
@@ -965,12 +989,14 @@ export default {
     if (this.hasFixedColumns || this.hasManageButtons) {
       this.setupFixedColumns();
     }
+    this.setupScrollHints();
   },
   created() {
     this.initFixedColumns();
   },
   beforeUnmount() {
     this._unmounting = true;
+    this.cleanupScrollHints();
     this.teardownQueryMode();
     clearTimeout(this.searchDebounceTimer);
     clearTimeout(this.queryLoadingTimer);
@@ -991,9 +1017,12 @@ export default {
     },
     // tableFixedColumns.js
     ...tableFixedColumnsMethods,
+    // tableScrollHints.js
+    ...tableScrollHintsMethods,
     // Header not rendered yet: estimate the icon-only button group.
     getManageColumnFallbackWidth() {
-      return Math.round((this.buttons.length || 1) * 32.8 + 16);
+      const count = rowActionSlots(this.buttons.length, this.options?.rowActions);
+      return Math.round((count || 1) * 32.8 + 16);
     },
     // tableRowInteractions.js: actionEmitter, deepEqual; selection methods are overridden below
     ...tableRowInteractionsMethods,

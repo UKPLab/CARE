@@ -19,6 +19,7 @@
     />
     <slot name="additional-buttons"/>
   </div>
+  <div class="table-scroll-frame">
   <div
     ref="tableWrapper"
     class="table-wrapper"
@@ -139,6 +140,7 @@
             <TButtonGroup
               :buttons="getFilteredButtons(r)"
               :params="r"
+              :layout="options && options.rowActions"
               @action="actionEmitter"
             />
           </td>
@@ -153,6 +155,13 @@
         </tr>
       </tbody>
     </table>
+  </div>
+  <ScrollHints
+    :left="scrollHintLeft"
+    :right="scrollHintRight"
+    :frame="scrollHintFrame"
+    @scroll="scrollTableBy"
+  />
   </div>
   <div
     v-if="selectableRows && !(options && options.singleSelect)"
@@ -180,6 +189,7 @@ import TButtonGroup from "./table/ButtonGroup.vue";
 import TCell from "./table/Cell.vue";
 import Pagination from "./table/Pagination.vue";
 import HeaderCell from "./table/HeaderCell.vue";
+import ScrollHints from "./table/ScrollHints.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import deepEqual from "deep-equal";
 import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
@@ -188,6 +198,7 @@ import { tableDataPipelineData, tableDataPipelineComputed, tableDataPipelineMeth
 import { tableRowInteractionsData, tableRowInteractionsComputed, tableRowInteractionsMethods } from "@/basic/table/helpers/tableRowInteractions.js";
 import { tableProgressiveRenderingData, tableProgressiveRenderingMethods } from "@/basic/table/helpers/tableProgressiveRendering.js";
 import { tableCellHelpersMethods } from "@/basic/table/helpers/tableCellHelpers.js";
+import { tableScrollHintsData, tableScrollHintsMethods, tableScrollHintsWatch } from "@/basic/table/helpers/tableScrollHints.js";
 
 /**
  * generic table with feature-rich API
@@ -225,6 +236,7 @@ export default {
     TCell,
     TButtonGroup,
     HeaderCell,
+    ScrollHints,
   },
   inject: {
     acceptStats: {
@@ -284,6 +296,8 @@ export default {
       ...tableRowInteractionsData(),
       // tableProgressiveRendering.js
       ...tableProgressiveRenderingData(),
+      // tableScrollHints.js
+      ...tableScrollHintsData(),
     };
   },
   computed: {
@@ -300,6 +314,8 @@ export default {
     ...tableRowInteractionsComputed,
   },
   watch: {
+    // tableScrollHints.js
+    ...tableScrollHintsWatch,
     currentData: {
       handler() {
         // The parent's v-model target may already be gone while the table unmounts
@@ -378,6 +394,7 @@ export default {
     if (this.hasFixedColumns || this.hasManageButtons) {
       this.setupFixedColumns();
     }
+    this.setupScrollHints();
   },
   created() {
     this.initFixedColumns();
@@ -386,6 +403,7 @@ export default {
     this._unmounting = true;
     this.cleanupFixedColumns();
     this.cleanupAllObserver();
+    this.cleanupScrollHints();
   },
   methods: {
     // tableLayout.js
@@ -400,6 +418,8 @@ export default {
     ...tableProgressiveRenderingMethods,
     // tableCellHelpers.js
     ...tableCellHelpersMethods,
+    // tableScrollHints.js
+    ...tableScrollHintsMethods,
   },
 };
 </script>

@@ -255,6 +255,12 @@ export default {
         },
         search: true,
         sort: {column: "createdAt", order: "DESC"},
+        // Manage column: main actions as icons, the rest (and destructive ones, last) behind "more"
+        rowActions: {
+          maxInline: 3,
+          inline: ["openStudy", "copyStudyLink", "inspectStudySessions"],
+          menuOnly: ["editStudy", "restartStudy"],
+        },
       },
     }
   },
@@ -1120,11 +1126,6 @@ export default {
 /* Global table hover paints a blue wash on the cell; in dark mode use the accent. */
 [data-bs-theme="dark"] .study-dashboard :deep(.table-wrapper tbody tr:hover > td) {
   --bs-table-bg-state: color-mix(in srgb, var(--care-accent) 10%, transparent);
-}
-
-[data-bs-theme="dark"] .study-dashboard :deep(thead svg.bg-success) {
-  color: var(--care-accent);
-  background-color: color-mix(in srgb, var(--care-accent) 28%, transparent) !important;
 }
 
 .study-dashboard :deep(.table-wrapper .table thead th) {
