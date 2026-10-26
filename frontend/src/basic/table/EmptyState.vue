@@ -224,7 +224,7 @@
     </div>
 
     <p class="te-hint">
-      {{ narrowed ? t.searchHint : t.noDataHint }}
+      {{ hint }}
     </p>
 
     <div
@@ -281,6 +281,7 @@ const TEXT_KEYS = [
   "searchHint",
   "noDataTitle",
   "noDataHint",
+  "noDataHintCreate",
   "chatAskPrefix",
   "chatAskSuffix",
   "chatItems",
@@ -395,6 +396,11 @@ export default {
     },
     narrowed() {
       return this.searching || this.filtered;
+    },
+    /** Search advice while narrowed; otherwise nudge towards the create action if there is one. */
+    hint() {
+      if (this.narrowed) return this.t.searchHint;
+      return this.actionLabel ? this.t.noDataHintCreate : this.t.noDataHint;
     },
     askSignature() {
       return JSON.stringify([this.searchText, this.filterLabels]);

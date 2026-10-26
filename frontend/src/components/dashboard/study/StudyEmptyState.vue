@@ -62,7 +62,7 @@ export default {
         filterTitle: this.$t("studies.cards.empty.filterTitle"),
         searchHint: this.$t("studies.cards.empty.searchHint"),
         noDataTitle: this.$t("studies.cards.emptyTitle"),
-        noDataHint: this.$t("studies.cards.emptyHint"),
+        noDataHintCreate: this.$t("studies.cards.emptyHint"),
         chatItems: this.$t("studies.cards.empty.chatStudies"),
       };
     },
