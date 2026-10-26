@@ -566,7 +566,7 @@ export default {
                     this.studySessionId === 0 ||
                     (this.studySession && this.studySession.start === null)
                 ) {
-                  this.$refs.studyModal.open();
+                  this.openStudyModal();
                 }
               }
             }
@@ -583,15 +583,25 @@ export default {
             this.studySessionId === 0 ||
             (this.studySession && this.studySession.start === null)
         ) {
-          this.$refs.studyModal.open();
+          this.openStudyModal();
         }
       }
     },
     start(data) {
       this.studySessionId = data.studySessionId;
     },
+    /**
+     * The start modal is rendered only for a session that has not started, and the
+     * socket reply can arrive in the same turn that makes that true. Wait for the
+     * render; skip the call if the view is already gone.
+     */
+    openStudyModal() {
+      this.$nextTick(() => {
+        this.$refs.studyModal?.open();
+      });
+    },
     error() {
-      this.$refs.studyModal.close();
+      this.$refs.studyModal?.close();
     },
     calcTimeLeft() {
       if (this.studySession.start) {
