@@ -1040,12 +1040,14 @@ export default {
   transition: border-color 0.2s ease, box-shadow 0.25s ease;
 }
 
-.table-search:focus-within {
+/* Highlight only while the text field / chips have focus, not when an extra button in the bar
+   (copy, clear, view switch) is clicked. */
+.table-search:has(.token-field:focus-within) {
   border-color: color-mix(in srgb, var(--care-primary) 45%, transparent);
   box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 12%, transparent);
 }
 
-[data-bs-theme="dark"] .table-search:focus-within {
+[data-bs-theme="dark"] .table-search:has(.token-field:focus-within) {
   border-color: color-mix(in srgb, var(--care-primary) 28%, transparent);
   box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 10%, transparent);
 }
