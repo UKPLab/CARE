@@ -29,24 +29,12 @@
 
     <template #step-2>
       <div class="filters-container mb-3">
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-          <label for="workflowSelect" class="mb-0 fw-bold">{{ $t('dashboard.study.filterWorkflows') }}</label>
-          <select
-            id="workflowSelect"
-            v-model="workflowFilter"
-            class="form-select form-select-sm"
-            style="width: auto;"
-          >
-            <option value="all">{{ $t('dashboard.sessionOverview.allWorkflows') }}</option>
-            <option
-              v-for="workflow in workflowOptions"
-              :key="workflow.value"
-              :value="workflow.value.toString()"
-            >
-              {{ workflow.name }}
-            </option>
-          </select>
-        </div>
+        <BasicFilterDropdown
+          v-model="workflowFilter"
+          :label="$t('dashboard.study.filterWorkflows')"
+          icon="diagram-3"
+          :options="workflowFilterOptions"
+        />
       </div>
       <BackendTable
         ref="studyTable"
@@ -131,6 +119,7 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import BasicForm from "@/basic/Form.vue";
+import BasicFilterDropdown from "@/basic/FilterDropdown.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
 import {
@@ -197,6 +186,7 @@ export default {
     StepperModal,
     BackendTable,
     BasicForm,
+    BasicFilterDropdown,
     ConfirmModal,
   },
   emits: ["hide"],
@@ -233,6 +223,7 @@ export default {
           key: "mode",
           type: "checkbox",
           selectionMode: "single",
+          class: "form-check-pill",
           options: [
             { value: "bulkClose", label: this.$t("dashboard.study.closeStudies") },
             { value: "bulkOpen", label: this.$t("dashboard.study.openStudies") },
@@ -331,6 +322,13 @@ export default {
           };
         })
         .sort((a, b) => a.name.localeCompare(b.name));
+    },
+    /** Options for the workflow filter dropdown; values stay strings like the old <select>. */
+    workflowFilterOptions() {
+      return [
+        { value: "all", label: this.$t("dashboard.sessionOverview.allWorkflows") },
+        ...this.workflowOptions.map((wf) => ({ value: wf.value.toString(), label: wf.name })),
+      ];
     },
     columns() {
       return [
@@ -566,10 +564,14 @@ export default {
 }
 
 .filters-container {
-  padding: 1rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem 1.5rem;
+  padding: .625rem .875rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-radius: 0.25rem;
-  border-left: 3px solid var(--bs-secondary-color, #6c757d);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--bs-border-radius-lg, .75rem);
 }
 
 .confirmation-container {

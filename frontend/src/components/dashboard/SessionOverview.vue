@@ -15,24 +15,12 @@
             role="switch"
           >
         </div>
-        <div class="d-flex align-items-center gap-2">
-          <label for="workflowSelect" class="mb-0">{{ $t('dashboard.sessionOverview.filterWorkflowType') }}</label>
-          <select
-            id="workflowSelect"
-            v-model="filters.workflowType"
-            class="form-select form-select-sm"
-            style="width: auto;"
-          >
-            <option value="all">{{ $t('dashboard.sessionOverview.allWorkflows') }}</option>
-            <option
-              v-for="workflow in workflowTypes"
-              :key="workflow.id"
-              :value="workflow.id.toString()"
-            >
-              {{ workflow.name }}
-            </option>
-          </select>
-        </div>
+        <BasicFilterDropdown
+          v-model="filters.workflowType"
+          :label="$t('dashboard.sessionOverview.filterWorkflowType')"
+          icon="diagram-3"
+          :options="workflowFilterOptions"
+        />
       </div>
     </div>
     <BasicTable
@@ -47,6 +35,7 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
+import BasicFilterDropdown from "@/basic/FilterDropdown.vue";
 import { translateMaybeKey } from "@/assets/utils";
 
 /**
@@ -56,7 +45,7 @@ import { translateMaybeKey } from "@/assets/utils";
  */
 export default {
   name: "SessionOverview",
-  components: { BasicTable },
+  components: { BasicTable, BasicFilterDropdown },
   subscribeTable: ["study_session", "study", "workflow", "user", "study_step"],
   data() {
     return {
@@ -109,6 +98,12 @@ export default {
         ...workflow,
         name: translateMaybeKey(workflow.name),
       }));
+    },
+    workflowFilterOptions() {
+      return [
+        { value: "all", label: this.$t('dashboard.sessionOverview.allWorkflows') },
+        ...this.workflowTypes.map((wf) => ({ value: wf.id.toString(), label: wf.name })),
+      ];
     },
     studySessions() {
       const sessions = this.$store.getters["table/study_session/getAll"] || [];
@@ -193,8 +188,20 @@ export default {
 
 <style scoped>
 .filters-container {
-  padding: 1rem;
+  padding: .625rem .875rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-radius: 0.25rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--bs-border-radius-lg, .75rem);
+}
+
+.filters-container > div {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem 1.5rem;
+}
+
+.filters-container .form-check {
+  margin-bottom: 0;
 }
 </style>
