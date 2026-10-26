@@ -40,19 +40,19 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="!$slots['error']" class="btn-group">
+      <template v-if="!$slots['error']">
+        <BasicButton
+          v-if="currentStep === 0 && showClose"
+          :title="$t('common.close')"
+          class="btn btn-link me-auto"
+          @click="close"
+        />
         <slot name="buttons"/>
         <BasicButton
           v-if="currentStep !== 0"
           :title="$t('common.previous')"
-          class="btn btn-secondary"
+          class="btn btn-outline-secondary"
           @click="currentStep--"
-        />
-        <BasicButton
-          v-if="currentStep === 0 && showClose"
-          :title="$t('common.close')"
-          class="btn btn-secondary"
-          @click="close"
         />
         <BasicButton
           v-if="currentStep < steps.length - 1"
@@ -68,14 +68,13 @@
           :disabled="disabled(currentStep)"
           @click="submit"
         />
-      </div>
-      <div v-else>
-        <BasicButton
-          :title="$t('common.close')"
-          class="btn btn-primary"
-          @click="close"
-        />
-      </div>
+      </template>
+      <BasicButton
+        v-else
+        :title="$t('common.close')"
+        class="btn btn-primary"
+        @click="close"
+      />
     </template>
   </BasicModal>
 </template>
@@ -199,68 +198,10 @@ export default {
 
 
 <style scoped>
-/* Stepper */
-.stepper {
-  --stepper-pad-top: 1.25rem;
-  --stepper-circle: 30px;
-  flex-shrink: 0;
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-  background-color: var(--bs-body-bg, #fff);
-  padding-top: var(--stepper-pad-top);
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-
-  &:after {
-    content: "";
-    position: absolute;
-    top: calc(var(--stepper-pad-top) + (var(--stepper-circle) / 2) - 1px);
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: var(--bs-secondary-bg, #ccc);
-  }
+.stepper + .content-container {
+  padding-top: 1rem;
+  border-top: 1px solid var(--bs-border-color-translucent);
 }
-
-.stepper div {
-  z-index: 1;
-  background-color: var(--bs-body-bg, white);
-  padding: 0 5px;
-
-  &:before {
-    content: attr(data-index);
-    margin-right: 6px;
-    display: inline-flex;
-    width: var(--stepper-circle);
-    height: var(--stepper-circle);
-    border-radius: 50%;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--bs-border-color, #6c6b6b);
-  }
-
-  &:first-child {
-    padding-left: 0;
-  }
-
-  &:last-child {
-    padding-right: 0;
-  }
-}
-
-.stepper div.active {
-  --btn-color: var(--care-primary);
-  border-color: var(--btn-color);
-
-  &:before {
-    color: var(--care-on-primary);
-    background-color: var(--btn-color);
-    border-color: var(--btn-color);
-  }
-}
-
 
 .content-container {
   flex: 1 1 auto;

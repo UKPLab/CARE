@@ -13,12 +13,13 @@
       </slot>
     </template>
     <template #body>
-      <span v-if="success">
+      <div v-if="success" class="text-center py-4">
+        <LoadIcon icon-name="check-circle" :size="40" class="text-success d-block mx-auto mb-2"/>
         <slot name="success">
           <span v-if="data.id"> {{$t('coordinator.entryUpdated')}}</span>
           <span v-else>{{$t('coordinator.entryAdded')}}</span>
         </slot>
-      </span>
+      </div>
       <span v-else>
         <BasicForm
           ref="form"
@@ -36,7 +37,7 @@
         <slot name="success-footer">
           <slot name="buttons" />
           <BasicButton
-            class="btn btn-secondary"
+            class="btn btn-primary"
             :title="$t('common.close')"
             @click="$refs.coordinatorModal.close()"
           />
@@ -47,12 +48,12 @@
           <span class="btn-group">
             <slot name="buttons" />
             <BasicButton
-              class="btn btn-secondary"
+              class="btn btn-outline-secondary"
               :title="textCancel || $t('common.cancel')"
               @click="$refs.coordinatorModal.close()"
             />
             <BasicButton
-              class="btn btn-primary me-2"
+              class="btn btn-primary"
               :title="data.id ? (textUpdate || $t('common.update')) : (textAdd || $t('common.add'))"
               @click="submit"
             />
@@ -67,6 +68,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import { resolveApiMessage, sorter } from "@/assets/utils.js";
 
 /**
@@ -89,7 +91,7 @@ import { resolveApiMessage, sorter } from "@/assets/utils.js";
  */
 export default {
   name: "BasicCoordinator",
-  components: { BasicModal, BasicForm, BasicButton },
+  components: { BasicModal, BasicForm, BasicButton, LoadIcon },
   props: {
     title: {
       type: String,

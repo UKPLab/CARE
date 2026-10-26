@@ -502,14 +502,6 @@ export default {
   padding: 1rem;
 }
 
-.section-title {
-  color: var(--bs-body-color, #495057);
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-
 .short-preview {
   background: var(--bs-tertiary-bg, #f8f9fa);
   border: 1px solid var(--bs-border-color, #ddd);
