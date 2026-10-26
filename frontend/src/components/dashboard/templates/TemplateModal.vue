@@ -8,11 +8,24 @@
       :custom-submit="true"
       :fields-override="coordinatorFields"
       @submit="update"
+      @hide="onCoordinatorHide"
     />
+    <Teleport to="body">
+      <div
+        v-if="entering"
+        class="template-enter-loader"
+      >
+        <Loader
+          :loading="true"
+          class="pageLoader"
+        />
+      </div>
+    </Teleport>
   </template>
   
   <script>
   import BasicCoordinator from "@/basic/dashboard/Coordinator.vue";
+  import Loader from "@/basic/Loading.vue";
   import { otherTemplateTypes } from "@/assets/templateTypes";
   import { resolveApiMessage } from "@/assets/utils";
 
@@ -34,11 +47,15 @@
 
   export default {
     name: "TemplateModal",
-    components: { BasicCoordinator },
+    components: { BasicCoordinator, Loader },
     data() {
       return {
         isEdit: false,
         languagesWithContent: [],
+        /** New template id waiting for the modal to finish closing before we enter it. */
+        pendingTemplateId: null,
+        /** Page loader shown once the create modal has closed, until the editor route is in. */
+        entering: false,
       };
     },
     computed: {
@@ -162,11 +179,11 @@
             message: "",
             variant: "success",
           });
-          this.$refs.coordinator.close();
-          // Route to editor after creation (templateAdd returns row; appDataUpdate returns numeric id on edit only)
+          // Enter the editor only after the modal has closed, with the page loader up.
           if (!isEdit && result.data && result.data.id) {
-            this.$router.push(`/template/${result.data.id}`);
+            this.pendingTemplateId = result.data.id;
           }
+          this.$refs.coordinator.close();
         } else {
           this.$refs.coordinator.waiting = false;
           this.eventBus.emit("toast", {
@@ -176,6 +193,27 @@
           });
         }
       },
+      /** Modal is gone. Show the loader, let it paint, then open the new template. */
+      onCoordinatorHide() {
+        const id = this.pendingTemplateId;
+        if (!id) return;
+        this.pendingTemplateId = null;
+        this.entering = true;
+        this.$nextTick(() => {
+          requestAnimationFrame(() => {
+            this.$router.push(`/template/${id}`);
+          });
+        });
+      },
     },
   };
   </script>
+
+  <style scoped>
+  .template-enter-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: var(--bs-body-bg);
+  }
+  </style>
