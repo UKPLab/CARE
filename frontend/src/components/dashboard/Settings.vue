@@ -1,6 +1,12 @@
 <template>
   <div>
-    <Card class="settings-card" :title="$t('settings.title')">
+    <!-- Leaves the viewport once the page scrolls, which marks the sticky header as "stuck" -->
+    <div ref="stickySentinel" class="settings-sticky-sentinel" aria-hidden="true"></div>
+    <Card
+      class="settings-card"
+      :class="{ 'is-header-stuck': isHeaderStuck }"
+      :title="$t('settings.title')"
+    >
       <template #headerElements>
         <div class="btn-group gap-2">
 
@@ -228,6 +234,7 @@ export default {
       mailTestSending: false,
       mailTestMessage: "",
       mailTestError: false,
+      isHeaderStuck: false,
     };
   },
   computed: {
@@ -294,6 +301,14 @@ export default {
     this.settings = null;
     this.load(false);
 
+    // Highlight the sticky header only while content scrolls underneath it
+    if (typeof IntersectionObserver !== "undefined" && this.$refs.stickySentinel) {
+      this.stickyObserver = new IntersectionObserver(([entry]) => {
+        this.isHeaderStuck = !entry.isIntersecting;
+      });
+      this.stickyObserver.observe(this.$refs.stickySentinel);
+    }
+
     onBeforeRouteUpdate((to, from, next) => {
       if (this.hasUnsavedChanges) {
         const answer = window.confirm(this.$t('settings.messages.unsavedChangesWarning'));
@@ -303,6 +318,9 @@ export default {
       }
       return next();
     });
+  },
+  beforeUnmount() {
+    this.stickyObserver?.disconnect();
   },
   methods: {
     /**
@@ -508,11 +526,32 @@ export default {
 </script>
 
 <style scoped>
+.settings-sticky-sentinel {
+  height: 1px;
+  margin-bottom: -1px;
+  pointer-events: none;
+}
+
 .settings-card > :deep(.card-header) {
   position: sticky;
   top: 0;
   z-index: 2;
   background: var(--bs-body-bg);
   border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
+  transition: box-shadow 160ms var(--care-ease, ease),
+              border-color 160ms var(--care-ease, ease);
+}
+
+/* While stuck: only an accent line at the bottom edge
+   (--care-primary is the yellow accent in dark mode, Bootstrap blue in light mode) */
+.settings-card.is-header-stuck > :deep(.card-header) {
+  border-bottom-color: var(--care-primary, var(--bs-primary));
+  box-shadow: inset 0 -1px 0 var(--care-primary, var(--bs-primary));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-card > :deep(.card-header) {
+    transition: none;
+  }
 }
 </style>
