@@ -2,11 +2,11 @@
   <fieldset :disabled="options.readOnly !== undefined ? options.readOnly : false" :class="{ 'shake': shake }">
     <div v-if="dataTable">
       <slot :id="options.key" :blur="validate" name="element"/>
-      <div v-if="invalidField" class="feedback-invalid">
+      <div v-if="invalidField" class="feedback-invalid invalid">
         <span v-if="options.invalidText"> {{ translateMaybeKey(options.invalidText) }}</span>
         <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
-      <div v-else-if="options.required && emptyField" class="feedback-invalid">
+      <div v-else-if="options.required && emptyField" class="feedback-invalid invalid">
         {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
@@ -50,11 +50,11 @@
         <slot :id="options.key" :blur="validate" name="element"/>
 
       </div>
-      <div v-if="invalidField" class="feedback-invalid">
+      <div v-if="invalidField" class="feedback-invalid invalid">
         <span v-if="options.invalidText"> {{ translateMaybeKey(options.invalidText) }}</span>
         <span v-else>{{$t('errors.element.invalidInput')}}</span>
       </div>
-      <div v-else-if="options.required && emptyField" class="feedback-invalid">
+      <div v-else-if="options.required && emptyField" class="feedback-invalid invalid">
         {{$t('errors.element.fieldRequired')}}
       </div>
     </div>
@@ -181,13 +181,6 @@ export default {
 </script>
 
 <style scoped>
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  padding-top: 4px;
-  padding-left: 5px;
-}
-
 @keyframes shake-animation {
   0% { transform: translateX(0); }
   25% { transform: translateX(-5px); }

@@ -1,23 +1,30 @@
 <template>
-  <div class="card my-3">
-    <div class="card-header collapsible-header" style="cursor: pointer" @click="toggleCollapse">
-      <LoadIcon :icon-name="isCollapsed ? 'arrow-right-short' : 'arrow-down-short'" class="me-1"></LoadIcon>
+  <section class="collapsible">
+    <button
+      type="button"
+      class="collapsible-header"
+      :aria-expanded="!isCollapsed"
+      @click="toggleCollapse"
+    >
+      <LoadIcon
+        icon-name="chevron-right"
+        class="collapsible-chevron"
+        :class="{ open: !isCollapsed }"
+      />
       <span class="collapsible-title">{{ title || $t("basic.form.advancedSettings") }}</span>
-      <span v-if="description" class="text-secondary ms-2 collapsible-description">
-        <small>{{ description }}</small>
-      </span>
-    </div>
-    <div v-if="!isCollapsed" class="card-body">
+      <small v-if="description" class="text-secondary">{{ description }}</small>
+    </button>
+    <div v-if="!isCollapsed" class="collapsible-body">
       <slot></slot>
     </div>
-  </div>
+  </section>
 </template>
 
 <script>
 import LoadIcon from "@/basic/Icon.vue";
 
 /**
- * Collapsible - Card-based collapsible section for forms.
+ * Collapsible - Collapsible section for forms and settings.
  * Used to group optional/advanced fields (e.g. Mail step SMTP/sendmail config) to reduce clutter.
  *
  * @param {string} [title] - Section title (default: "Advanced Settings")
@@ -64,22 +71,42 @@ export default {
 </script>
 
 <style scoped>
-.card-header {
-  user-select: none;
+.collapsible {
+  border-bottom: 1px solid var(--bs-border-color-translucent);
 }
 
 .collapsible-header {
-  font-size: 1.1rem;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 8px;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+  color: var(--bs-body-color);
+  text-align: left;
+  user-select: none;
+}
+
+.collapsible-header:hover {
+  background: var(--bs-tertiary-bg);
 }
 
 .collapsible-title {
-  font-size: 1.1rem;
   font-weight: 600;
 }
 
-.collapsible-description {
-  font-size: 0.9rem;
-  font-weight: 400;
+.collapsible-chevron {
+  color: var(--bs-secondary-color);
+  transition: transform var(--care-dur-fast) var(--care-ease);
+}
+
+.collapsible-chevron.open {
+  transform: rotate(90deg);
+}
+
+.collapsible-body {
+  padding: 4px 8px 16px 32px;
 }
 </style>
