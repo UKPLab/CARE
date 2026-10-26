@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
     :title="$t('dashboard.projects.title')"
+    :empty-action="emptyAction"
     :columns="columns"
     :data="projects"
     :buttons="buttons"
@@ -69,6 +70,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('common.create'),
+        icon: "plus-lg",
+        handler: () => this.$refs.projectModal.open(0),
+      };
+    },
     columns() {
       return [
         {name: "", key: "select", type: "icon-selector"},

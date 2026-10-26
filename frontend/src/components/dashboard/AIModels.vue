@@ -12,6 +12,7 @@
       </template>
       <template #body>
         <BasicTable
+          :empty-action="emptyCredentialAction"
           :columns="credentialColumns"
           :data="credentialRows"
           :options="tableOptions"
@@ -33,6 +34,7 @@
       </template>
       <template #body>
         <BasicTable
+          :empty-action="emptyModelAction"
           :columns="modelColumns"
           :data="modelRows"
           :options="tableOptions"
@@ -103,6 +105,22 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyCredentialAction() {
+      return {
+        label: this.$t('ai.models.addCredential'),
+        icon: "plus-lg",
+        handler: () => this.openCredentialModal(),
+      };
+    },
+    /** Same as the header create button; offered while the table is empty. */
+    emptyModelAction() {
+      return {
+        label: this.$t('ai.models.addModel'),
+        icon: "plus-lg",
+        handler: () => this.openModelModal(),
+      };
+    },
     credentialColumns() {
       return [
         { name: this.$t("ai.common.name"), key: "name", sortable: true },

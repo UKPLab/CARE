@@ -91,8 +91,11 @@
               <TableEmptyState
                 :filtered="!!data && data.length > 0"
                 :search-text="search.trim()"
+                :action-label="!data || data.length === 0 ? emptyAction?.label : ''"
+                :action-icon="emptyAction?.icon"
                 compact
                 @clear="clearTableSearch"
+                @action="emptyAction?.handler()"
               />
             </div>
           </td>
@@ -287,6 +290,15 @@ export default {
     },
     maxTableHeight: {
       type: [Number, String],
+      required: false,
+      default: null,
+    },
+    /**
+     * Offered in the empty state when there are no rows at all, e.g. the page's "Add" button:
+     * { label: String, icon?: String, handler: Function }. Pass it only if the user may create.
+     */
+    emptyAction: {
+      type: Object,
       required: false,
       default: null,
     },

@@ -11,6 +11,7 @@
     </template>
     <template #body>
       <BasicTable
+        :empty-action="emptyAction"
         :columns="columns"
         :data="hookRows"
         :options="tableOptions"
@@ -83,6 +84,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('ai.hooks.add'),
+        icon: "plus-lg",
+        handler: () => this.openHookModal(),
+      };
+    },
     outputModes() {
       return [
         { value: 0, label: this.$t("ai.output.text"), class: "bg-secondary" },

@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
     :title="$t('tags.title')"
+    :empty-action="emptyAction"
     :columns="columns"
     :data="tagSets"
     :buttons="buttons"
@@ -77,6 +78,14 @@ export default {
     }
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('tags.addNewTagSet'),
+        icon: "plus-lg",
+        handler: () => this.$refs.tagSetModal.open(0),
+      };
+    },
     ...mapGetters({
       userId: 'auth/getUserId',
       isAdmin: 'auth/isAdmin',

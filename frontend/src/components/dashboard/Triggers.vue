@@ -11,6 +11,7 @@
     </template>
     <template #body>
       <BasicTable
+        :empty-action="emptyAction"
         :columns="columns"
         :data="triggers"
         :options="tableOptions"
@@ -53,6 +54,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('triggers.dashboard.create'),
+        icon: "plus-lg",
+        handler: () => this.openCreate(),
+      };
+    },
     columns() {
       return [
         { name: this.$t("triggers.common.name"), key: "name" },

@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
       :title="$t('basic.configuration.filesTitle')"
+      :empty-action="emptyAction"
       :columns="columns"
       :data="configurationsTable"
       :buttons="buttons"
@@ -122,6 +123,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('basic.configuration.uploadButton'),
+        icon: "upload",
+        handler: () => this.$refs.importFormatModal.open('configuration', null, { socket: { name: 'configurationAdd' } }),
+      };
+    },
     columns() {
       return [
         {name: this.$t('common.name'), key: "name", sortable: true},

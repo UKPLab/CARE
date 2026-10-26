@@ -1,6 +1,7 @@
 <template>
     <DashboardListPage
       :title="$t('templates.dashboard.title')"
+      :empty-action="emptyAction"
       :columns="columns"
       :data="templates"
       :buttons="buttons"
@@ -98,6 +99,14 @@
       };
     },
     computed: {
+      /** Same as the header create button; offered while the table is empty. */
+      emptyAction() {
+        return {
+          label: this.$t('templates.dashboard.addTemplate'),
+          icon: "plus-lg",
+          handler: () => this.$refs.templateModal.open(0),
+        };
+      },
       columns() {
         return [
           { name: this.$t("common.id"), key: "id" },

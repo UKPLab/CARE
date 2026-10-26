@@ -13,6 +13,7 @@
         :options="resolvedTableOptions"
         :buttons="buttons"
         :max-table-height="maxTableHeight"
+        :empty-action="emptyAction"
         @action="$emit('action', $event)"
       >
         <template
@@ -45,6 +46,7 @@ import {
  * @param {Array} buttons - BasicTable row-action buttons
  * @param {Object} tableOptions - Extra BasicTable options merged onto defaults
  * @param {String|Number} maxTableHeight - Max table height (defaults to DASHBOARD_TABLE_HEIGHT)
+ * @param {Object} emptyAction - { label, icon?, handler } offered when the table has no rows
  *
  * @author Mohammad Elwan
  */
@@ -78,6 +80,12 @@ export default {
       type: [String, Number],
       required: false,
       default: DASHBOARD_TABLE_HEIGHT,
+    },
+    /** Create action for the empty table, usually the same as the header "Add" button. */
+    emptyAction: {
+      type: Object,
+      required: false,
+      default: null,
     },
   },
   emits: ["action"],

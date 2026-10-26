@@ -154,8 +154,11 @@
                   :searching="hasActiveSearch"
                   :search-text="search.trim()"
                   :filter-labels="activeFilterLabels"
+                  :action-label="hasActiveSearch ? '' : emptyAction?.label"
+                  :action-icon="emptyAction?.icon"
                   compact
                   @clear="clearSearch"
+                  @action="emptyAction?.handler()"
                 />
               </slot>
             </div>
@@ -423,6 +426,15 @@ export default {
       type: Array,
       required: false,
       default: () => [],
+    },
+    /**
+     * Offered in the default empty state when nothing exists yet (no search), e.g. the page's
+     * "Add" button: { label: String, icon?: String, handler: Function }. Same as BasicTable.
+     */
+    emptyAction: {
+      type: Object,
+      required: false,
+      default: null,
     },
     maxTableHeight: {
       type: [Number, String],

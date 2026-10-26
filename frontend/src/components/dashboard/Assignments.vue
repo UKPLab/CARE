@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
     :title="$t('sidebar.nav.assignments')"
+    :empty-action="emptyAction"
     :columns="tableColumns"
     :data="assignmentTable"
     :buttons="tableButtons"
@@ -57,6 +58,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('assignments.dashboard.buttons.addAssignment'),
+        icon: "plus-lg",
+        handler: () => this.addAssignment(),
+      };
+    },
     tableColumns() {
       return [
         { name: this.$t("submission.dashboard.columns.id"), key: "id" },

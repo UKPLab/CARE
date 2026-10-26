@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
     :title="$t('workflow.dashboard.title')"
+    :empty-action="emptyAction"
     :columns="columns"
     :data="workflows"
     :buttons="buttons"
@@ -102,6 +103,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('workflow.dashboard.addWorkflow'),
+        icon: "plus-lg",
+        handler: () => this.$refs.workflowCreateModal.open(),
+      };
+    },
     columns() {
       return [
         { name: this.$t("common.id"), key: "id", sortable: true },

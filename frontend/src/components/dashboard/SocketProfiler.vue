@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
     :title="$t('socketProfiler.title')"
+    :empty-action="emptyAction"
     :columns="columns"
     :data="recordings"
     :buttons="buttons"
@@ -75,6 +76,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('socketProfiler.actions.startRecording'),
+        icon: "record-circle",
+        handler: () => this.openStartModal(),
+      };
+    },
     /**
      * Table column definitions. Computed rather than data so the header labels
      * re-evaluate when the UI locale changes.

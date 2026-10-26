@@ -1,6 +1,7 @@
 <template>
   <DashboardListPage
     :title="$t('documents.title')"
+    :empty-action="emptyAction"
     :columns="columns"
     :data="docs"
     :buttons="buttons"
@@ -79,6 +80,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('documents.uploadDocument'),
+        icon: "upload",
+        handler: () => this.$refs.uploadModal.open(),
+      };
+    },
     columns() {
       return [
         {name: this.$t('common.id'), key: "id"},

@@ -2,6 +2,7 @@
   <div>
   <DashboardListPage
       :title="$t('users.title')"
+      :empty-action="emptyAction"
       :columns="columns"
       :data="users"
       :buttons="buttons"
@@ -176,6 +177,14 @@ export default {
     };
   },
   computed: {
+    /** Same as the header create button; offered while the table is empty. */
+    emptyAction() {
+      return {
+        label: this.$t('users.addUser'),
+        icon: "person-plus",
+        handler: () => this.openUserAddModal(),
+      };
+    },
     columns() {
       return [
         {
