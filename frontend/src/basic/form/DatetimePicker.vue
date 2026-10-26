@@ -10,18 +10,19 @@
         @blur="validate"
       >
       <input
-          v-if="!dateOnly"
-          v-model="time"
-          class="form-control"
-          type="time"
-          :lang="localeCode"
-          @blur="blur(currentDate)"
+        v-if="!dateOnly"
+        v-model="time"
+        class="form-control"
+        type="time"
+        :lang="localeCode"
+        :min="options.disablePast && date === today ? currentTime : undefined"
+        @blur="validate"
       >
       <button
-          v-if="!dateOnly"
-          class="btn btn-outline-secondary"
-          type="button"
-          @click="date = null"
+        v-if="!dateOnly"
+        class="btn btn-outline-secondary"
+        type="button"
+        @click="date = null"
       >
         {{ $t('common.reset') }}
       </button>
@@ -137,6 +138,7 @@ export default {
   },
 
   methods: {
+    // format a date as YYYY-MM-DD using the user's local time.
     formatLocalDate(value) {
       const year = value.getFullYear();
       const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -144,6 +146,7 @@ export default {
       return `${year}-${month}-${day}`;
     },
 
+    // format a time as HH:mm using the user's local time (24-hour clock).
     formatLocalTime(value) {
       const hours = String(value.getHours()).padStart(2, "0");
       const minutes = String(value.getMinutes()).padStart(2, "0");
@@ -152,15 +155,11 @@ export default {
 
     parse() {
       if (this.currentDate !== null) {
-        const day = ("0" + this.currentDate.getDate()).slice(-2);
-        const month = ("0" + (this.currentDate.getMonth() + 1)).slice(-2);
-        this.date = this.currentDate.getFullYear() + "-" + (month) + "-" + (day);
+        this.date = this.formatLocalDate(this.currentDate);
         if (this.dateOnly) {
           this.time = "00:00";
         } else {
-          const hours = ("0" + this.currentDate.getHours()).slice(-2);
-          const minutes = ("0" + this.currentDate.getMinutes()).slice(-2);
-          this.time = hours + ":" + minutes;
+          this.time = this.formatLocalTime(this.currentDate);
         }
       } else {
         this.date = null
