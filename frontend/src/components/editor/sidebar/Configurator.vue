@@ -1,7 +1,7 @@
 <template>
-  <div class="card shadow mb-4 configurator">
+  <div class="card mb-4 configurator">
     <div class="card-header bg-body">
-      <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
+      <h3 class="card-title mb-0">{{ $t("sidebar.placeholders") }}</h3>
     </div>
     <div class="card-body p-0">
       <ul class="list-group list-group-flush">
@@ -12,7 +12,7 @@
         >
           <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-              <div class="icon-container rounded p-2 text-primary">
+              <div class="icon-container">
                 <i :class="placeholder.icon"></i>
               </div>
               <div class="d-flex flex-column">
@@ -26,9 +26,9 @@
               </div>
             </div>
             <div class="d-flex align-items-center">
-              <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] }}</span>
+              <span class="badge rounded-pill me-2">{{ placeholderCounts[placeholder.id] }}</span>
               <BasicButton
-                class="btn btn-primary btn-sm d-flex align-items-center"
+                class="btn btn-outline-primary btn-sm d-flex align-items-center"
                 icon="plus-lg"
                 :text="$t('common.add')"
                 @click="handlePlaceholderClick(placeholder)"
@@ -142,32 +142,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.configurator {
-  --bg-color: var(--bs-secondary-bg, rgb(219, 234, 254));
-  --icon-container-size: 36px;
-}
-
-.list-group-item {
-  padding: 0.825rem;
-}
-
-.icon-container {
-  width: var(--icon-container-size);
-  height: var(--icon-container-size);
-  display: flex;
-  margin-right: 0.625rem;
-  align-items: center;
-  justify-content: center;
-  color: var(--bs-body-color);
-  background-color: var(--bg-color);
-}
-
-.list-group-item:hover {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-}
-
-.badge {
-  background-color: var(--bg-color);
-}
-</style>
