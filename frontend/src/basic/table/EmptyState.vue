@@ -5,9 +5,10 @@
     role="status"
     aria-live="polite"
   >
-    <!-- Interactive search with no hits: a tiny chat. The user asks, CARE types… and does not care. -->
+    <!-- A search with no hits: a tiny chat. The user asks, CARE types… and does not care.
+         Interactive search shows its filter chips in the question; a plain search only the text. -->
     <div
-      v-if="searching"
+      v-if="narrowed"
       :key="chatKey"
       class="te-chat"
       :class="{ 'te-chat--sent': sent }"
@@ -75,7 +76,7 @@
       </div>
     </div>
 
-    <!-- Fallback (no data, no search, or a plain search): a lens wandering over ghost rows -->
+    <!-- Nothing here and nobody searched: a tumbleweed rolls through an empty desert. -->
     <svg
       v-else
       class="te-art"
@@ -86,7 +87,7 @@
         <radialGradient
           :id="uid + '-glow'"
           cx="50%"
-          cy="55%"
+          cy="60%"
           r="55%"
         >
           <stop
@@ -101,109 +102,120 @@
       </defs>
       <ellipse
         cx="110"
-        cy="80"
-        rx="100"
-        ry="64"
+        cy="88"
+        rx="104"
+        ry="58"
         :fill="'url(#' + uid + '-glow)'"
       />
-      <g class="te-ghost te-ghost--back">
+
+      <!-- Sun, cactus and the ground line -->
+      <circle
+        cx="176"
+        cy="40"
+        r="11"
+        class="te-sun"
+      />
+      <g class="te-cactus">
         <rect
-          x="34"
-          y="40"
-          width="78"
-          height="58"
-          rx="9"
-          class="te-ghost-card"
+          x="150"
+          y="76"
+          width="11"
+          height="42"
+          rx="5.5"
         />
-        <rect
-          x="44"
-          y="52"
-          width="26"
-          height="7"
-          rx="3.5"
-          class="te-ghost-pill"
-        />
-        <rect
-          x="44"
-          y="66"
-          width="54"
-          height="6"
-          rx="3"
-          class="te-ghost-line"
-        />
-        <rect
-          x="44"
-          y="78"
-          width="38"
-          height="5"
-          rx="2.5"
-          class="te-ghost-line te-ghost-line--soft"
-        />
+        <path d="M 150 96 h -6 a 4 4 0 0 1 -4 -4 v -9 a 3.5 3.5 0 0 1 7 0 v 6 h 3 z" />
+        <path d="M 161 90 h 5 a 4 4 0 0 0 4 -4 v -8 a 3.5 3.5 0 0 0 -7 0 v 5 h -2 z" />
       </g>
-      <g class="te-ghost te-ghost--front">
-        <rect
-          x="104"
-          y="30"
-          width="84"
-          height="62"
-          rx="10"
-          class="te-ghost-card"
-        />
-        <rect
-          x="115"
-          y="43"
-          width="28"
-          height="7"
-          rx="3.5"
-          class="te-ghost-pill te-ghost-pill--accent"
-        />
-        <rect
-          x="115"
-          y="57"
-          width="60"
-          height="6"
-          rx="3"
-          class="te-ghost-line"
-        />
-        <rect
-          x="115"
-          y="69"
-          width="44"
-          height="5"
-          rx="2.5"
-          class="te-ghost-line te-ghost-line--soft"
-        />
-      </g>
-      <g class="te-lens">
-        <circle
+      <path
+        d="M 14 118 H 206"
+        class="te-ground"
+      />
+      <path
+        d="M 30 124 h 14 M 70 125 h 8 M 120 124 h 18 M 176 125 h 10"
+        class="te-ground te-ground--soft"
+      />
+
+      <!-- Gusts of wind -->
+      <path
+        d="M 26 70 h 30"
+        class="te-wind te-wind--a"
+      />
+      <path
+        d="M 60 88 h 22"
+        class="te-wind te-wind--b"
+      />
+      <path
+        d="M 18 100 h 18"
+        class="te-wind te-wind--c"
+      />
+
+      <!-- Track (moves across) > hop (bounces) > weed (spins); shadow and dust only move.
+           The weed is a loose tangle of crossing twigs with spikes poking out, no closed
+           outline, so it reads as dry brush rather than a wheel. -->
+      <g class="te-tumble-track">
+        <ellipse
           cx="0"
-          cy="0"
-          r="22"
-          class="te-lens-glass"
+          cy="119"
+          rx="14"
+          ry="2.4"
+          class="te-tumble-shadow"
         />
-        <circle
-          cx="0"
-          cy="0"
-          r="22"
-          class="te-lens-ring"
-        />
-        <path
-          d="M -8 -10 A 12 12 0 0 1 6 -14"
-          class="te-lens-shine"
-        />
-        <line
-          x1="16"
-          y1="16"
-          x2="32"
-          y2="32"
-          class="te-lens-handle"
-        />
-        <text
-          x="0"
-          y="7"
-          text-anchor="middle"
-          class="te-lens-mark"
-        >?</text>
+        <g class="te-dust">
+          <circle
+            cx="-11"
+            cy="117"
+            r="2.2"
+          />
+          <circle
+            cx="-16"
+            cy="115"
+            r="1.4"
+          />
+          <circle
+            cx="9"
+            cy="117.5"
+            r="1.6"
+          />
+        </g>
+        <g class="te-tumble-hop">
+          <g class="te-tumble">
+            <!-- Outer tangle: long crossing twigs -->
+            <path
+              class="te-weed"
+              d="M -13 101 Q -3 89 10 95
+                 M -11 111 Q 1 97 13 106
+                 M -7 92 Q 7 102 -2 117
+                 M 5 90 Q -9 104 7 117
+                 M -14 106 Q -4 116 11 112
+                 M -10 94 Q 3 109 14 100
+                 M 12 94 Q -1 100 -8 116
+                 M -3 91 Q 13 104 1 118
+                 M -13 103 C -6 95 7 113 13 102
+                 M -9 113 C -14 100 5 88 9 93"
+            />
+            <!-- Spikes and forks poking out of the silhouette -->
+            <path
+              class="te-weed te-weed--twig"
+              d="M -13 101 l -5 -2 m 2 1 l -1 -3
+                 M 10 95 l 4 -5 m -2 3 l 3 0
+                 M 13 106 l 5 1 m -2 0 l 1 3
+                 M -2 117 l -2 5
+                 M 7 117 l 3 4 m -1 -1 l 3 -1
+                 M -14 106 l -5 2
+                 M 5 90 l 1 -5 m 0 2 l 3 -2
+                 M -10 94 l -3 -4
+                 M 14 100 l 4 -2
+                 M -8 116 l -4 3"
+            />
+            <!-- Denser, darker core -->
+            <path
+              class="te-weed te-weed--core"
+              d="M -5 101 q 4 -4 8 0 t -2 7 q -5 2 -6 -3
+                 M -2 98 q 6 3 3 9
+                 M 3 99 q -6 2 -4 8"
+            />
+          </g>
+        </g>
       </g>
     </svg>
 
@@ -304,10 +316,10 @@ let instance = 0;
 /**
  * Empty state for tables and their card views.
  *
- * - `searching`: the interactive search (Search.vue tokens / text) found nothing.
- *   Plays the chat scene and words the result as "nothing matches".
- * - otherwise the fallback: a lens over ghost rows. `filtered` (a plain search or column
- *   filters narrowed the rows) words it as "nothing matches"; without it, as "no data yet".
+ * - `searching` (interactive search: text + filter chips) or `filtered` (plain search text or
+ *   column filters) found nothing: the chat scene, worded as "nothing matches". Chips only
+ *   appear in the question when `filterLabels` are given.
+ * - nothing to show and nobody searched: a tumbleweed rolling through, "no data yet".
  *
  * Wording defaults to common.emptyState.*; pass `texts` to make it page-specific
  * (e.g. "No studies match"). An optional primary action (e.g. "Create a study") emits `action`.
@@ -322,7 +334,7 @@ export default {
       required: false,
       default: false,
     },
-    /** A plain search or column filter narrowed the rows (lens, "nothing matches" wording). */
+    /** A plain search or column filter narrowed the rows (chat without chips). */
     filtered: {
       type: Boolean,
       required: false,
@@ -444,7 +456,7 @@ export default {
     },
   },
   watch: {
-    searching(on) {
+    narrowed(on) {
       if (!on) return;
       this.chatQuery = this.searchText;
       this.chatFilters = [...this.filterLabels];
@@ -465,7 +477,7 @@ export default {
     },
   },
   mounted() {
-    if (this.searching) this.startTyping();
+    if (this.narrowed) this.startTyping();
   },
   beforeUnmount() {
     clearTimeout(this._chatTimer);
@@ -733,87 +745,112 @@ export default {
   animation: te-shrug 1.8s ease-in-out 2.55s infinite;
 }
 
-/* ======================= Fallback: lens over ghost rows ======================= */
+/* ======================= No data: tumbleweed ======================= */
 
 .te-art {
+  --te-weed: #b08d57;
   width: 200px;
   height: auto;
   margin-bottom: 0.5rem;
   overflow: visible;
 }
 
+[data-bs-theme="dark"] .te-art {
+  --te-weed: #d9c79a;
+}
+
 .table-empty--compact .te-art {
   width: 170px;
 }
 
-.te-glow-a { stop-color: rgb(var(--care-violet-rgb)); stop-opacity: 0.16; }
+.te-glow-a { stop-color: rgb(var(--care-violet-rgb)); stop-opacity: 0.12; }
 .te-glow-b { stop-color: rgb(var(--care-violet-rgb)); stop-opacity: 0; }
 
-.te-ghost-card {
-  fill: var(--bs-body-bg);
-  stroke: rgba(var(--bs-secondary-rgb), 0.25);
-  stroke-width: 1.2;
+.te-sun {
+  fill: color-mix(in srgb, var(--te-weed) 35%, transparent);
 }
 
-[data-bs-theme="dark"] .te-ghost-card {
-  fill: color-mix(in srgb, var(--bs-body-bg) 88%, #ffffff 12%);
-  stroke: rgba(255, 255, 255, 0.12);
+.te-cactus {
+  fill: rgba(var(--bs-secondary-rgb), 0.2);
 }
 
-.te-ghost-pill { fill: rgba(var(--bs-secondary-rgb), 0.22); }
-.te-ghost-pill--accent { fill: rgba(var(--care-violet-rgb), 0.35); }
-.te-ghost-line { fill: rgba(var(--bs-secondary-rgb), 0.2); }
-.te-ghost-line--soft { fill: rgba(var(--bs-secondary-rgb), 0.12); }
+.te-ground {
+  fill: none;
+  stroke: rgba(var(--bs-secondary-rgb), 0.35);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
 
-.te-ghost {
+.te-ground--soft {
+  stroke: rgba(var(--bs-secondary-rgb), 0.2);
+}
+
+.te-wind {
+  fill: none;
+  stroke: rgba(var(--bs-secondary-rgb), 0.4);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: te-gust 3.2s ease-in-out infinite;
+}
+
+.te-wind--b { animation-delay: 1.1s; }
+.te-wind--c { animation-delay: 2.1s; }
+
+/* Across the scene in one go, fading in and out at the edges. */
+.te-tumble-track {
+  animation: te-roll 7s linear infinite;
+}
+
+.te-tumble-shadow {
+  fill: rgba(var(--bs-secondary-rgb), 0.22);
   transform-box: fill-box;
   transform-origin: center;
+  animation: te-shadow 1.15s ease-in-out infinite;
 }
 
-.te-ghost--back {
-  opacity: 0.75;
-  animation: te-float 6s ease-in-out infinite;
+.te-tumble-hop {
+  animation: te-hop 1.15s infinite;
 }
 
-.te-ghost--front {
-  animation: te-float 6s ease-in-out -3s infinite;
+.te-tumble {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: te-spin 1.15s linear infinite;
 }
 
-/* The lens wanders over the rows, as if still looking. */
-.te-lens {
-  animation: te-search 5.5s ease-in-out infinite;
-}
-
-.te-lens-glass {
-  fill: rgba(var(--te-accent-rgb), 0.08);
-}
-
-.te-lens-ring {
+.te-weed {
   fill: none;
-  stroke: rgb(var(--te-accent-rgb));
-  stroke-width: 4;
-}
-
-.te-lens-shine {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.75);
-  stroke-width: 2.5;
+  stroke: var(--te-weed);
+  stroke-width: 1.25;
   stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.te-lens-handle {
-  stroke: rgb(var(--te-accent-rgb));
-  stroke-width: 6;
-  stroke-linecap: round;
+.te-weed--twig {
+  stroke-width: 1.05;
+  opacity: 0.85;
 }
 
-.te-lens-mark {
-  font-family: inherit;
-  font-size: 20px;
-  font-weight: 700;
-  fill: rgb(var(--te-accent-rgb));
-  animation: te-blink 5.5s ease-in-out infinite;
+.te-weed--core {
+  stroke: color-mix(in srgb, var(--te-weed) 70%, #000000 30%);
+  stroke-width: 1.6;
 }
+
+[data-bs-theme="dark"] .te-weed--core {
+  stroke: color-mix(in srgb, var(--te-weed) 75%, #ffffff 25%);
+}
+
+/* Little puffs kicked up each time the weed lands. */
+.te-dust circle {
+  fill: rgba(var(--bs-secondary-rgb), 0.3);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: te-dust 1.15s ease-out infinite;
+}
+
+.te-dust circle:nth-child(2) { animation-delay: 0.05s; }
+.te-dust circle:nth-child(3) { animation-delay: 0.08s; }
 
 /* ======================= Copy + actions ======================= */
 
@@ -950,38 +987,63 @@ export default {
   94% { transform: translateY(0) rotate(0deg); }
 }
 
-@keyframes te-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+@keyframes te-roll {
+  0% { transform: translateX(-24px); opacity: 0; }
+  8% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { transform: translateX(244px); opacity: 0; }
 }
 
-@keyframes te-search {
-  0% { transform: translate(78px, 66px) rotate(0deg); }
-  25% { transform: translate(140px, 56px) rotate(8deg); }
-  50% { transform: translate(150px, 82px) rotate(-4deg); }
-  75% { transform: translate(92px, 88px) rotate(6deg); }
-  100% { transform: translate(78px, 66px) rotate(0deg); }
+/* Up fast, a little float at the top, then drop onto the ground. */
+@keyframes te-hop {
+  0% { transform: translateY(0); animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1); }
+  45% { transform: translateY(-15px); animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.3); }
+  100% { transform: translateY(0); }
 }
 
-@keyframes te-blink {
-  0%, 40%, 60%, 100% { opacity: 1; }
-  50% { opacity: 0.25; }
+@keyframes te-shadow {
+  0%, 100% { transform: scaleX(1); opacity: 1; }
+  45% { transform: scaleX(0.6); opacity: 0.5; }
 }
 
-/* Reduced motion: no play-through; the finished conversation and a resting lens. */
+@keyframes te-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Puff right at the landing (start of each hop), then drift up and fade. */
+@keyframes te-dust {
+  0% { transform: scale(0.4); opacity: 0.9; }
+  35% { transform: translate(-3px, -3px) scale(1.4); opacity: 0; }
+  100% { transform: scale(0.4); opacity: 0; }
+}
+
+@keyframes te-gust {
+  0% { transform: translateX(0); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateX(34px); opacity: 0; }
+}
+
+/* Reduced motion: no play-through; the finished conversation and a resting tumbleweed. */
 @media (prefers-reduced-motion: reduce) {
   .table-empty,
-  .te-ghost,
-  .te-lens,
-  .te-lens-mark,
+  .te-wind,
+  .te-tumble-track,
+  .te-tumble-hop,
+  .te-tumble,
+  .te-tumble-shadow,
+  .te-dust circle,
   .te-dot,
   .te-shrug,
   .te-filter::after {
     animation: none !important;
   }
 
-  .te-lens {
-    transform: translate(140px, 66px);
+  .te-tumble-track {
+    transform: translateX(84px);
+  }
+
+  .te-dust {
+    display: none;
   }
 
   .te-bubble--user,
