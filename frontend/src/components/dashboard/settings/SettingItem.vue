@@ -1,7 +1,7 @@
 <template>
   <template v-if="setting">
     <label
-      class="col-md-4 col-form-label text-md-right"
+      class="col-md-4 col-form-label text-md-end"
       :for="'set-' + setting.key"
       @click="(setting.type === 'boolean' || setting.type === 'bool') && $event.preventDefault()"
     >
