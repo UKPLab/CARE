@@ -1171,9 +1171,137 @@ export default {
   outline: none;
 }
 
-@@SUGG@@
+/* Suggestions (filter key → operator → value), opened under the bar */
+.token-suggestions {
+  --bs-dropdown-padding-y: 0;
+  --bs-dropdown-padding-x: 0;
+  --_menu-bg: var(--bs-body-bg);
+  --bs-dropdown-bg: var(--_menu-bg);
+  --bs-dropdown-border-color: var(--table-border-color, var(--bs-border-color-translucent));
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: var(--token-menu-left, 0px);
+  z-index: 1000;
+  min-width: 15rem;
+  max-height: 18rem;
+  margin: 0.3rem 0 0;
+  padding: 0.35rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  list-style: none;
+  background: var(--_menu-bg);
+  border: 1px solid var(--bs-dropdown-border-color);
+  border-radius: 12px;
+  box-shadow: var(--care-shadow-2);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-rgb), 0.35) transparent;
+  scrollbar-gutter: stable;
+  transform-origin: top left;
+  animation: token-menu-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+[data-bs-theme="dark"] .token-suggestions {
+  --_menu-bg: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
+}
+
+.token-suggestions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.token-suggestions::-webkit-scrollbar-thumb {
+  background: rgba(var(--bs-secondary-rgb), 0.3);
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+.token-suggestions > li {
+  margin: 0;
+  padding: 0;
+}
+
+.token-suggestions .dropdown-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0.42rem 0.65rem;
+  font-weight: 500;
+  color: var(--bs-body-color);
+  background-color: transparent;
+  border-radius: 8px;
+  box-shadow: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+/* Mouse and keyboard share one look: a soft violet tint; keyboard adds an accent bar. */
+.token-suggestions .dropdown-item:hover,
+.token-suggestions .dropdown-item.hovered,
+.token-suggestions .dropdown-item.keyboard-focus,
+.token-suggestions .dropdown-item.keyboard-focus:focus {
+  color: var(--bs-emphasis-color);
+  background-color: rgba(var(--care-violet-rgb), 0.12);
+  box-shadow: none;
+}
+
+.token-suggestions .dropdown-item.keyboard-focus::before {
+  content: "";
+  position: absolute;
+  left: 0.2rem;
+  top: 25%;
+  bottom: 25%;
+  width: 3px;
+  border-radius: 3px;
+  background: rgb(var(--care-violet-rgb));
+}
+
+.token-suggestion-symbol {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.9rem;
+  padding: 0.05rem 0.35rem;
+  font-family: "JetBrains Mono Variable", var(--bs-font-monospace, monospace);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: rgb(var(--care-violet-rgb));
+  background: rgba(var(--care-violet-rgb), 0.1);
+  border-radius: 6px;
+}
+
+.token-suggestion-hint {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 400;
+  color: var(--bs-secondary-color, #6c757d);
+}
+
 .token-suggestions-form-date {
-  padding: 0.5rem 0.65rem;
+  padding: 0.6rem 0.7rem;
   min-width: 18rem;
+}
+
+@keyframes token-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-search,
+  .token-suggestions .dropdown-item {
+    transition: none;
+  }
+
+  .token-suggestions {
+    animation: none;
+  }
 }
 </style>
