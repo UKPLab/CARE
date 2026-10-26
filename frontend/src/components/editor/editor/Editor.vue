@@ -41,7 +41,6 @@
  * @autor Juliane Bechert, Dennis Zyska, Manu Sundar Raj Nandyal, Zheyu Zhang, Alexander Bürkle
  */
 import Quill from "quill";
-import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";

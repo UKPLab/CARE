@@ -85,7 +85,6 @@
    *
    * @author Mohammad Elwan
    */
-  import "quill/dist/quill.snow.css";
   import debounce from "lodash.debounce";
   import {Editor} from "@/components/editor/editorStore.js";
   import Loader from "@/basic/Loading.vue";
