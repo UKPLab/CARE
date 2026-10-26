@@ -112,7 +112,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import { getTimeDiffString } from "@/assets/utils";
+import { getTimeDiffString, isListedAssignment } from "@/assets/utils";
 import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 export default {
@@ -128,7 +128,7 @@ export default {
     },
     assignments() {
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || !assignment.disable
+        (assignment) => isListedAssignment(assignment, this.userId)
       ) || [];
     },
     assignmentTimes() {
@@ -231,7 +231,7 @@ export default {
     submissionsBadgeClass(assignment) {
       return this.remainingSubmissionsCount(assignment) === 0
         ? "bg-success text-white"
-        : "bg-light text-dark border";
+        : "bg-body-tertiary text-body border";
     },
     isAssignmentOverdue(assignment) {
       return isAssignmentPastDeadline(assignment);
@@ -244,7 +244,7 @@ export default {
     timeBadgeClass(assignment) {
       if (this.isAssignmentOverdue(assignment)) return "bg-danger text-white";
       if (this.isAssignmentClosingSoon(assignment)) return "bg-warning text-dark";
-      return "bg-light text-dark border";
+      return "bg-body-tertiary text-body border";
     },
     timeBadgeText(assignment) {
       if (!assignment.end) {

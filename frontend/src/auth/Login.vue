@@ -1,166 +1,150 @@
 <template>
-  <form
-      class="row g-3 needs-validation"
-      novalidate
-      @submit.prevent="checkForm"
-  >
-    <div class="col-md-8 mx-auto my-4">
-      <div class="col-md-8 mx-auto">
-        <div
-            class="text-center"
-            style="margin-bottom: 20px"
-        >
-          <LogoSvg
-              :height="200"
-          />
-        </div>
-
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            {{ $t('auth.login') }}
-            <a
-              v-if="showRegisterButton"
-              class="btn btn-sm btn-primary"
-              @click="toRegister"
-            >{{ $t('auth.register') }}</a>
+  <AuthLayout :title="$t('auth.login')">
+    <template #header-action>
+      <a
+        v-if="showRegisterButton"
+        class="btn btn-link btn-sm"
+        @click="toRegister"
+      >{{ $t('auth.register') }}</a>
+    </template>
+    <form
+        class="needs-validation"
+        novalidate
+        @submit.prevent="checkForm"
+    >
+      <p
+          v-if="showError"
+          class="text-danger text-center"
+      >
+        {{ errorMessage }}
+      </p>
+      <div class="row">
+        <label
+            class="col-md-4 col-form-label"
+            for="username"
+        >{{ $t('auth.username') }}</label>
+        <div class="col-md-6">
+          <input
+              id="username"
+              v-model="formData.username"
+              autocomplete="username"
+              autofocus
+              class="form-control"
+              :placeholder="$t('auth.usernameOrEmail')"
+              required
+              type="text"
+              @blur="checkVal('username')"
+          >
+          <div class="feedback-invalid" :class="{invalid: validity['username'] && !validUsername}">
+            {{ $t('errors.validation.auth.provideUsername') }}
           </div>
-
-          <div class="card-body mx-4 my-4">
-            <p
-                v-if="showError"
-                class="text-danger text-center"
-            >
-              {{ errorMessage }}
-            </p>
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="username"
-              >{{ $t('auth.username') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="username"
-                    v-model="formData.username"
-                    autocomplete="username"
-                    autofocus
-                    class="form-control"
-                    :placeholder="$t('auth.usernameOrEmail')"
-                    required
-                    type="text"
-                    @blur="checkVal('username')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['username'] && !validUsername}">
-                  {{ $t('errors.validation.auth.provideUsername') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="password"
-              >{{ $t('auth.password') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="password"
-                    v-model="formData.password"
-                    autocomplete="current-password"
-                    class="form-control"
-                    name="password"
-                    :placeholder="$t('auth.password')"
-                    required
-                    type="password"
-                    @blur="checkVal('password')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  {{ $t('errors.validation.auth.providePassword') }}
-                </div>
-              </div>
-            </div>
-
-            <div class="col-md-6 offset-md-4 my-4">
-              <BasicButton
-                  class="btn btn-primary btn-block"
-                  type="submit"
-                  :loading="isSubmitting"
-                  :text="isSubmitting ? $t('auth.signingIn') : $t('auth.login')"
-              />
-              <a
-                  v-if="showGuestLogin"
-                  class="btn btn-link"
-                  @click="login_guest()"
-              >{{ $t('auth.loginAsGuest') }}</a>
-              <a
-                v-if="showForgotPassword"
-                class="btn btn-link"
-                @click="$refs.forgotPasswordModal.open()"
-              >{{ $t('auth.forgotPassword') }}</a>
-            </div>
-
-            <hr v-if="showExternalLoginOptions">
-
-            <div v-if="showExternalLoginOptions" class="col-md-8 offset-md-2 mt-3">
-              <p class="text-center text-muted small mb-2">
-                {{ $t('auth.orSignInWith') }}
-              </p>
-              <div class="d-grid gap-2">
-                <BasicButton
-                  v-if="showOrcidLogin"
-                  class="btn btn-outline-success btn-block"
-                  text="ORCID"
-                  @click="loginWithOrcid"
-                />
-                <BasicButton
-                  v-if="showLdapLogin"
-                  class="btn btn-outline-secondary btn-block"
-                  text="LDAP"
-                  @click="toLdapLogin"
-                />
-                <BasicButton
-                  v-if="showSamlLogin"
-                  class="btn btn-outline-dark btn-block"
-                  text="SSO"
-                  @click="loginWithSaml"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        <div
-            v-if="showDocs || showFeedback || showProject"
-            class="text-center"
-        >
-          <span v-if="showDocs"><a
-              :href="linkDocs"
-              target="_blank"
-          >{{ $t('navigation.documentation') }}</a></span>
-          <span
-              v-if="showFeedback && showDocs"
-              class="mx-1"
-          >&#x2022;</span>
-          <span v-if="showFeedback"><a
-              :href="linkFeedback"
-              target="_blank"
-          >{{ $t('navigation.feedback') }}</a></span>
-          <span
-              v-if="showProject && (showDocs || showFeedback)"
-              class="mx-1"
-          >&#x2022;</span>
-          <span v-if="showProject"><a
-              :href="linkProject"
-              target="_blank"
-          >{{ $t('navigation.projectPage') }}</a></span>
-        </div>
-        <div class="text-center text-secondary">
-          {{ copyright }}
-        </div>
-        <div v-if="showVersion" class="text-center text-secondary">
-          {{ $t('common.appVersion') }}: {{ version }}
         </div>
       </div>
-    </div>
-  </form>
+
+
+      <div class="row">
+        <label
+            class="col-md-4 col-form-label"
+            for="password"
+        >{{ $t('auth.password') }}</label>
+        <div class="col-md-6">
+          <input
+              id="password"
+              v-model="formData.password"
+              autocomplete="current-password"
+              class="form-control"
+              name="password"
+              :placeholder="$t('auth.password')"
+              required
+              type="password"
+              @blur="checkVal('password')"
+          >
+          <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
+            {{ $t('errors.validation.auth.providePassword') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <BasicButton
+            class="btn btn-primary w-100"
+            type="submit"
+            :loading="isSubmitting"
+            :text="isSubmitting ? $t('auth.signingIn') : $t('auth.login')"
+        />
+        <div class="d-flex justify-content-between mt-2">
+          <a
+              v-if="showGuestLogin"
+              class="btn btn-link btn-sm px-0"
+              @click="login_guest()"
+          >{{ $t('auth.loginAsGuest') }}</a>
+          <a
+            v-if="showForgotPassword"
+            class="btn btn-link btn-sm px-0 ms-auto"
+            @click="$refs.forgotPasswordModal.open()"
+          >{{ $t('auth.forgotPassword') }}</a>
+        </div>
+      </div>
+
+      <div v-if="showExternalLoginOptions" class="mt-3">
+        <p class="auth-divider">
+          {{ $t('auth.orSignInWith') }}
+        </p>
+        <div class="d-grid gap-2">
+          <BasicButton
+            v-if="showOrcidLogin"
+            class="btn btn-outline-secondary"
+            text="ORCID"
+            @click="loginWithOrcid"
+          />
+          <BasicButton
+            v-if="showLdapLogin"
+            class="btn btn-outline-secondary"
+            text="LDAP"
+            @click="toLdapLogin"
+          />
+          <BasicButton
+            v-if="showSamlLogin"
+            class="btn btn-outline-secondary"
+            text="SSO"
+            @click="loginWithSaml"
+          />
+        </div>
+      </div>
+    </form>
+    <template #footer>
+      <div
+          v-if="showDocs || showFeedback || showProject"
+      >
+        <span v-if="showDocs"><a
+            :href="linkDocs"
+            target="_blank"
+        >{{ $t('navigation.documentation') }}</a></span>
+        <span
+            v-if="showFeedback && showDocs"
+            class="mx-1"
+        >&#x2022;</span>
+        <span v-if="showFeedback"><a
+            :href="linkFeedback"
+            target="_blank"
+        >{{ $t('navigation.feedback') }}</a></span>
+        <span
+            v-if="showProject && (showDocs || showFeedback)"
+            class="mx-1"
+        >&#x2022;</span>
+        <span v-if="showProject"><a
+            :href="linkProject"
+            target="_blank"
+        >{{ $t('navigation.projectPage') }}</a></span>
+      </div>
+      <div>
+        {{ copyright }}
+      </div>
+      <div v-if="showVersion">
+        {{ $t('common.appVersion') }}: {{ version }}
+      </div>
+    </template>
+  </AuthLayout>
 
   <!-- Forgot Password Modal Component -->
   <ForgotPasswordModal ref="forgotPasswordModal" />
@@ -177,7 +161,7 @@
  *
  * @author: Dennis Zyska, Nils Dycke, Carly Gettinger
  */
-import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
 import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
@@ -187,7 +171,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthLogin",
-  components: {LogoSvg, BasicButton, ForgotPasswordModal, EmailVerificationModal},
+  components: {AuthLayout, BasicButton, ForgotPasswordModal, EmailVerificationModal},
   data() {
     return {
       showError: false,
@@ -479,33 +463,18 @@ export default {
 </script>
 
 <style scoped>
-form {
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  font-size: .8rem;
+  color: var(--bs-secondary-color);
 }
 
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--bs-border-color);
 }
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-
-input.custom-invalid {
-  border: transparent;
-  outline: 1px solid firebrick;
-  border-radius: 1px;
-}
-
-input:focus.custom-invalid {
-  outline: none;
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 0.25rem;
-}
-
 </style>

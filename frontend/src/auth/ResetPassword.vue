@@ -1,66 +1,45 @@
 <template>
-  <div class="row g-3">
-    <div class="col-md-8 mx-auto my-4">
-      <div class="col-md-8 mx-auto">
-        <div
-            class="text-center"
-            style="margin-bottom: 20px"
-        >
-          <LogoSvg
-              :height="200"
-          />
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            {{ $t('auth.resetPassword') }}
-          </div>
-
-          <div class="card-body mx-4 my-4">
-            <!-- Loading State -->
-            <div v-if="validatingToken" class="text-center">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">{{ $t('common.loading') }}</span>
-              </div>
-              <p class="mt-3">{{ $t('auth.messages.validatingResetToken') }}</p>
-            </div>
-
-            <!-- Error State -->
-            <p
-                v-if="showError"
-                :class="isSuccess ? 'text-success' : 'text-danger'"
-                class="text-center"
-            >
-              {{ errorMessage }}
-            </p>
-            
-            <!-- Form - only show when token is validated and not successful yet -->
-            <div v-if="!isSuccess && tokenValidated && !validatingToken">
-              <BasicForm
-                ref="resetForm"
-                v-model="formData"
-                :fields="fields"
-              />
-            </div>
-
-              <BasicButton
-                  v-if="!isSuccess && tokenValidated && !validatingToken"
-                  class="btn btn-primary w-full max-w-xs mt-4 "
-                  :text="$t('auth.resetPassword')"
-                  @click="checkForm"
-              />
-
-              <BasicButton
-                  v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
-                  :class="isSuccess ? 'btn btn-success w-full max-w-xs' : 'btn btn-secondary w-full max-w-xs'"
-                  :text="isSuccess ? $t('auth.returnToLogin') : $t('auth.backToLogin')"
-                  @click="toLogin"
-              />
-          </div>
-        </div>
+  <AuthLayout :title="$t('auth.resetPassword')">
+    <!-- Loading State -->
+    <div v-if="validatingToken" class="text-center">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">{{ $t('common.loading') }}</span>
       </div>
+      <p class="mt-3">{{ $t('auth.messages.validatingResetToken') }}</p>
     </div>
-  </div>
+
+    <!-- Error State -->
+    <p
+        v-if="showError"
+        :class="isSuccess ? 'text-success' : 'text-danger'"
+        class="text-center"
+    >
+      {{ errorMessage }}
+    </p>
+    
+    <!-- Form - only show when token is validated and not successful yet -->
+    <div v-if="!isSuccess && tokenValidated && !validatingToken">
+      <BasicForm
+        ref="resetForm"
+        v-model="formData"
+        :fields="fields"
+      />
+    </div>
+
+    <BasicButton
+        v-if="!isSuccess && tokenValidated && !validatingToken"
+        class="btn btn-primary w-100 mt-4"
+        :text="$t('auth.resetPassword')"
+        @click="checkForm"
+    />
+
+    <BasicButton
+        v-if="isSuccess || (showError && !tokenValidated && !validatingToken)"
+        :class="isSuccess ? 'btn btn-primary w-100' : 'btn btn-outline-secondary w-100'"
+        :text="isSuccess ? $t('auth.returnToLogin') : $t('auth.backToLogin')"
+        @click="toLogin"
+    />
+  </AuthLayout>
 </template>
 
 <script>
@@ -71,7 +50,7 @@
  *
  * @author: Karim Ouf
  */
-import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
@@ -80,7 +59,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthResetPassword",
-  components: {LogoSvg, BasicForm, BasicButton},
+  components: {AuthLayout, BasicForm, BasicButton},
   data() {
     return {
       showError: false,
@@ -237,10 +216,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-/* BasicForm handles most styling, only custom styles needed here */
-.text-center {
-  text-align: center;
-}
-</style>

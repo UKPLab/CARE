@@ -161,17 +161,6 @@ export default {
 </script>
 
 <style scoped>
-.section-title {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: var(--bs-secondary-color, #6c757d);
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  padding-bottom: 0.25rem;
-  margin-bottom: 0.5rem;
-}
-
 .info-grid {
   display: grid;
   grid-template-columns: 10rem 1fr;

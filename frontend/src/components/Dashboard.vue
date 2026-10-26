@@ -3,15 +3,9 @@
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-        <div 
-          id="sidebarContainer"
-          class="col border mh-100 col-sm-auto g-0"
-        >
-          <Sidebar />
-        </div>
         <div
           id="viewerContainer"
-          class="col border mh-100 justify-content-center p-3"
+          class="col mh-100 justify-content-center p-3"
           style="overflow-y: scroll"
         >
          
@@ -34,7 +28,6 @@
  *
  * @author: Dennis Zyska, Nils Dycke
  */
-import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
@@ -45,7 +38,7 @@ const dashboardModules = import.meta.glob("./dashboard/*.vue");
 export default {
   name: "DashboardRoute",
   subscribeTable: ["nav_element"],
-  components: { Loading, Sidebar, NotFoundPage },
+  components: { Loading, NotFoundPage },
   props: {
     catchAll: {
       type: String,

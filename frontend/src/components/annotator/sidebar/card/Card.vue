@@ -2,7 +2,7 @@
   <div
       ref="top"
       :class="{ shake: shake }"
-      class="card p-2"
+      class="card"
   >
     <div
         v-if="!loading"
@@ -169,17 +169,22 @@ export default {
 }
 
 .card {
-  padding: 0;
+  padding: 12px 14px 10px;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgb(16 24 40 / .06), 0 1px 3px rgb(16 24 40 / .08);
 }
 
 .card-body {
-  font-size: smaller;
-  color: var(--bs-secondary-color, #929292);
+  font-size: 0.875rem;
+  color: var(--bs-body-color);
 }
 
 .card-header {
-  font-size: smaller;
-  color: var(--bs-secondary-color, #929292);
+  font-size: 0.8125rem;
+  color: var(--bs-body-color);
+  background: transparent;
+  border-bottom: 0;
 }
 
 .card-footer {

@@ -10,8 +10,7 @@
         <div
             :id="'viewerContainer-' + documentId"
             ref="viewer"
-            class="flex-grow-1 border mh-100 justify-content-center p-3"
-            style="overflow-y: scroll;"
+            class="annotator-viewer flex-grow-1 border mh-100 justify-content-center p-3"
         >
           <PDFViewer
               ref="pdfViewer"
@@ -703,11 +702,15 @@ export default {
 
 <style scoped>
 
+.annotator-viewer {
+  /* auto would freeze this column at the widened page width. */
+  min-width: 0;
+  overflow-y: scroll;
+}
+
 .sidebar-highlight {
-  border: 2px solid #ff9800 !important;
-  box-shadow: 0 0 8px #ff9800;
-  border-radius: 4px;
-  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: var(--care-focus-ring, 0 0 0 3px color-mix(in srgb, var(--bs-primary) 35%, transparent));
+  border-radius: 12px;
 }
 
 </style>

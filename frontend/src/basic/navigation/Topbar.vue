@@ -4,7 +4,7 @@
     ref="topbar"
     class="nav-container"
   >
-    <nav class="navbar fixed-top navbar-expand-lg bg-body-tertiary border-bottom">
+    <nav class="navbar fixed-top navbar-expand-lg bg-body border-bottom">
       <div class="container-fluid">
         <button
           id="backButton"
@@ -26,6 +26,7 @@
             :height="30"
           />
         </a>
+        <DashboardNav v-if="isInDashboard" />
 
         <div id="topbarCustomPlaceholder"/>
         <div id="topbarCenterPlaceholder"/>
@@ -93,8 +94,7 @@
                 id="dropdownMenuButton"
                 aria-expanded="false"
                 aria-haspopup="true"
-                class="btn btn-secondary dropdown-toggle"
-                data-toggle="dropdown"
+                class="btn dropdown-toggle"
                 type="button"
               >
                 {{ firstLetterUsername }}
@@ -169,10 +169,11 @@ import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import PreferencesModal from "@/basic/modal/PreferencesModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
+import DashboardNav from "@/components/dashboard/navigation/Sidebar.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal},
+  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal, DashboardNav},
   data() {
     return {
       showProjectDropdown: false,
@@ -355,22 +356,23 @@ export default {
 
 <style>
 
+#wrapper > .navbar > .container-fluid {
+  flex-wrap: nowrap;
+}
+
 #dropdownMenuButton::after {
   display: none;
 }
 
 #dropdownMenuButton {
-  width: 35px;
-  height: 35px;
-  display: table-cell;
-  text-align: center;
-  vertical-align: middle;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border-radius: 50%;
-  font-size: 1em;
-  color: #fff;
-  background: darkblue;
-  position: relative;
   border: none;
+  font-weight: 600;
+  color: var(--care-on-primary);
+  background: var(--care-primary);
 }
 
 #dropdown-show {
@@ -398,14 +400,18 @@ body.sidebar-exists #backButton {
 .project-box {
   display: flex;
   align-items: center;
-  padding: 2px 10px;
-  background: var(--bs-tertiary-bg, #f5f5f5);
-  border: 1px solid darkblue;
-  color: darkblue;
-  border-radius: 4px;
-  vertical-align: middle;
-  max-width: 180px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--care-primary) 45%, transparent);
+  color: var(--care-primary);
+  border-radius: 999px;
+  font-size: .875rem;
+  font-weight: 500;
+  max-width: 200px;
+  min-width: 0;
+  flex-shrink: 1;
   cursor: pointer;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
 }
 
 .project-text {
@@ -417,23 +423,8 @@ body.sidebar-exists #backButton {
 }
 
 .project-box:hover {
-  background-color: darkblue;
-  color: white;
-}
-
-[data-bs-theme="dark"] #dropdownMenuButton {
-  background: var(--care-accent);
-  color: var(--care-on-accent);
-}
-
-[data-bs-theme="dark"] .project-box {
-  background: var(--care-accent);
-  border-color: var(--care-accent);
-  color: var(--care-on-accent);
-}
-
-[data-bs-theme="dark"] .project-box:hover {
-  background: var(--care-accent-hover);
+  background-color: var(--care-primary);
+  color: var(--care-on-primary);
 }
 
 .recording-icon {

@@ -32,7 +32,6 @@
           <label class="consent-label">
             <input
               v-model="acceptDataSharing"
-              class="consent-input"
               type="checkbox"
             />
             {{ $t("auth.acceptDataSharing") }}
@@ -45,7 +44,6 @@
           <label class="consent-label">
             <input
               v-model="acceptStats"
-              class="consent-input"
               type="checkbox"
             />
             {{ $t("auth.acceptStatsBehavior") }}
@@ -223,30 +221,7 @@ export default {
 </script>
 
 <style scoped>
-.section-title {
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-}
-
 .preferences-language-switcher {
   margin-right: 0;
-}
-
-.consent-item {
-  margin-bottom: 10px;
-}
-
-.consent-item:last-child {
-  margin-bottom: 0;
-}
-
-.consent-label {
-  display: inline-flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.consent-input {
-  margin-right: 0.5rem;
 }
 </style>

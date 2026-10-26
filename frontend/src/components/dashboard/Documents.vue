@@ -8,7 +8,14 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="btn-group gap-2">
+      <BasicButton
+          v-if="showCreateButton"
+          class="btn-outline-secondary btn-sm"
+          :title="$t('documents.createDocument')"
+          :text="$t('documents.createDocument')"
+          icon="file-earmark-plus"
+          @click="$refs.createModal.open()"
+      />
       <BasicButton
           class="btn-primary btn-sm"
           :title="$t('documents.addDocument')"
@@ -16,15 +23,6 @@
           icon="upload"
           @click="$refs.uploadModal.open()"
       />
-      <BasicButton
-          v-if="showCreateButton"
-          class="btn-primary btn-sm"
-          :title="$t('documents.createDocument')"
-          :text="$t('documents.createDocument')"
-          icon="file-earmark-plus"
-          @click="$refs.createModal.open()"
-      />
-      </div>
     </template>
     <template #afterTable>
       <EditorDownload ref="editorDownload"/>
@@ -50,6 +48,7 @@ import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { isOwnListedDocument } from "@/assets/utils";
 
 /**
  * Document list component
@@ -89,7 +88,7 @@ export default {
           multiline: true,
           width: 5,
         },
-        {name: this.$t('common.createdAt'), key: "createdAt"},
+        {name: this.$t('common.createdAt'), key: "createdAt", type: "datetime"},
         {name: this.$t('common.type'), key: "typeName"},
         {
           name: this.$t('common.public'),
@@ -97,11 +96,6 @@ export default {
           type: "badge",
         },
       ];
-    },
-    documents() {
-      return this.$store.getters["table/document/getFiltered"](
-          (doc) => doc.projectId === this.projectId && doc.type !== 4
-      );
     },
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
@@ -209,8 +203,9 @@ export default {
       return buttons;
     },
     docs() {
-      return this.documents
-          .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false && doc.type !== 3)
+      return this.$store.getters["table/document/getFiltered"](
+          (doc) => isOwnListedDocument(doc, this.userId, this.projectId)
+      )
           .map((d) => {
             let newD = {...d};
             const uploadedByOwner = d.uploadedByUserId === this.userId || d.uploadedByUserId === null;

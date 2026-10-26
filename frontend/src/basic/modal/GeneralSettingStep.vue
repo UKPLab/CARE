@@ -101,14 +101,6 @@ export default {
   padding: 1rem;
 }
 
-.section-title {
-  color: var(--bs-body-color, #495057);
-  font-weight: 600;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-
 .config-fields {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
@@ -141,8 +133,8 @@ export default {
 }
 
 .form-control:focus {
-  border-color: var(--bs-primary, #0d6efd);
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-primary) 25%, transparent);
 }
 
 .form-check {
@@ -150,8 +142,8 @@ export default {
 }
 
 .form-check-input:checked {
-  background-color: var(--bs-primary, #0d6efd);
-  border-color: var(--bs-primary, #0d6efd);
+  background-color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .form-text {

@@ -9,8 +9,8 @@
       </p>
       <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
       <form @submit.prevent="$emit('submit-admin')">
-        <div class="form-group row my-2">
-          <label class="col-md-4 col-form-label text-md-right" for="setup-username">Username</label>
+        <div class="row my-2">
+          <label class="col-md-4 col-form-label text-md-end" for="setup-username">Username</label>
           <div class="col-md-6">
             <input
               id="setup-username"
@@ -27,8 +27,8 @@
             </div>
           </div>
         </div>
-        <div class="form-group row my-2">
-          <label class="col-md-4 col-form-label text-md-right" for="setup-email">Email</label>
+        <div class="row my-2">
+          <label class="col-md-4 col-form-label text-md-end" for="setup-email">Email</label>
           <div class="col-md-6">
             <input
               id="setup-email"
@@ -45,8 +45,8 @@
             </div>
           </div>
         </div>
-        <div class="form-group row my-2">
-          <label class="col-md-4 col-form-label text-md-right" for="setup-password">Password</label>
+        <div class="row my-2">
+          <label class="col-md-4 col-form-label text-md-end" for="setup-password">Password</label>
           <div class="col-md-6">
             <input
               id="setup-password"
@@ -114,21 +114,3 @@ export default {
   emits: ["check-val", "submit-admin", "update-admin-field"],
 };
 </script>
-
-<style scoped>
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
-}
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-
-.step-card-header {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-</style>

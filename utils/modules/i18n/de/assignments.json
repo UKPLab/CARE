@@ -182,7 +182,7 @@
     "submissionsTable": {
       "columns": {
         "name": "Submission-Name",
-        "studyUsageCount": "Verwendet in Studien"
+        "updatedAt": "Aktualisiert am"
       },
       "actions": {
         "replace": "Submission ersetzen",

@@ -35,7 +35,6 @@
                     v-if="config.icon"
                     :icon-name="config.icon"
                     :size="20"
-                    :color="isSingleConfig ? '#495057' : (resolvedActiveSlot === slotName ? '#0d6efd' : '#495057')"
                     :cursor="isSingleConfig ? 'default' : 'pointer'"
                 />
               </TopBarButton>
@@ -88,7 +87,7 @@
                           v-if="button.icon"
                           :icon-name="button.icon"
                           :size="16"
-                          :color="button.disabled ? '#6c757d' : (button.color || '#495057')"
+                          :color="button.disabled ? null : button.color"
                           class="me-2"
                       />
                       {{ button.title }}
@@ -576,7 +575,7 @@ export default {
 }
 
 #sidepane {
-  background-color: var(--bs-secondary-bg, #e6e6e6);
+  background-color: var(--bs-tertiary-bg, #f6f7f9);
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -601,25 +600,34 @@ export default {
 .sidebar-header .nav-tabs {
   border-bottom: none;
   margin-bottom: 0;
+  background: var(--bs-tertiary-bg, #f2f2f2);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
 }
 
 .sidebar-header .nav-tabs .nav-link {
-  border: 1px solid transparent;
-  border-radius: 0.375rem 0.375rem 0 0;
-  padding: 8px 8px;
+  border: 0;
+  border-radius: 6px;
+  padding: 6px 10px;
   color: var(--bs-body-color, #495057);
-  transition: all 0.2s ease-in-out;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .sidebar-header .nav-tabs .nav-link:hover {
-  border-color: var(--bs-border-color, #dee2e6);
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  border-color: transparent;
+  background-color: var(--bs-secondary-bg, #e9ecef);
 }
 
 .sidebar-header .nav-tabs .nav-link.active {
   color: var(--bs-primary, #0d6efd);
   background-color: var(--bs-body-bg, #fff);
-  border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) var(--bs-body-bg, #fff);
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgb(16 24 40 / .08);
+}
+
+[data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
+  color: var(--care-accent);
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {
@@ -642,20 +650,17 @@ export default {
 /* ===== BUTTON STYLES ===== */
 .sidebar-action-button {
   position: relative;
-  border-radius: 6px !important;
-  transition: all 0.2s ease-in-out;
+  border-radius: 8px !important;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
 .sidebar-action-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
   background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
   border-color: var(--bs-border-color, #dee2e6) !important;
 }
 
 .sidebar-action-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  transform: scale(0.97);
 }
 
 .sidebar-action-button.disabled {
@@ -682,8 +687,6 @@ export default {
 
 .dropdown-item:hover {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
 }
 
 .dropdown-toggle::after {

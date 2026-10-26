@@ -51,6 +51,21 @@ html[data-bs-theme="dark"] {
   --care-nlp-idle: #9aa3b0;
 }
 
+/* CARE's primary colour: Bootstrap blue in light mode, the accent in dark mode.
+   Use it for custom borders and focus glows instead of a hard-coded blue. */
+:root {
+  --care-primary: var(--bs-primary);
+  --care-on-primary: #fff;
+}
+
+html[data-bs-theme="dark"] {
+  --care-primary: var(--care-accent);
+  --care-on-primary: var(--care-on-accent);
+  /* Bootstrap's link colour drives nav tabs, pagination and btn-link */
+  --bs-link-color: var(--care-accent);
+  --bs-link-hover-color: var(--care-accent-hover);
+}
+
 /* Tell the browser which theme is showing. Bootstrap declares
    color-scheme: light dark, which lets the browser pick scrollbar and native
    control colours from the operating system rather than from CARE. The html
@@ -65,13 +80,20 @@ html[data-bs-theme="dark"] {
 
 /* --- Bootstrap classes with a fixed colour --- */
 
-[data-bs-theme="dark"] .btn-outline-secondary,
+/* Neutral outline for secondary actions in both themes. Cancel and Close in
+   dialog footers use it too, so the confirm button is the one filled action. */
+html .btn-outline-secondary,
+html .modal-footer .btn-secondary,
 [data-bs-theme="dark"] .btn-outline-dark {
+  --bs-btn-bg: transparent;
   --bs-btn-color: var(--bs-body-color);
   --bs-btn-border-color: var(--bs-border-color);
   --bs-btn-hover-bg: var(--bs-secondary-bg);
   --bs-btn-hover-color: var(--bs-body-color);
   --bs-btn-hover-border-color: var(--bs-border-color);
+  --bs-btn-active-bg: var(--bs-tertiary-bg);
+  --bs-btn-active-color: var(--bs-body-color);
+  --bs-btn-active-border-color: var(--bs-border-color);
 }
 
 [data-bs-theme="dark"] .btn-light {
@@ -91,6 +113,12 @@ html[data-bs-theme="dark"] {
 
 [data-bs-theme="dark"] .text-dark {
   color: var(--bs-body-color) !important;
+}
+
+/* Except on backgrounds Bootstrap keeps light in dark mode (badges), where
+   light text would be unreadable. */
+[data-bs-theme="dark"] :is(.bg-light, .bg-white, .bg-warning).text-dark {
+  color: #212529 !important;
 }
 
 /* Disabled controls lose more contrast against dark than against white. */
@@ -116,11 +144,47 @@ html[data-bs-theme="dark"] {
   --bs-btn-disabled-color: var(--care-on-accent);
 }
 
+[data-bs-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: var(--care-accent);
+  --bs-btn-border-color: var(--care-accent);
+  --bs-btn-hover-bg: var(--care-accent);
+  --bs-btn-hover-border-color: var(--care-accent);
+  --bs-btn-hover-color: var(--care-on-accent);
+  --bs-btn-active-bg: var(--care-accent-active);
+  --bs-btn-active-border-color: var(--care-accent-active);
+  --bs-btn-active-color: var(--care-on-accent);
+  --bs-btn-disabled-color: var(--care-accent);
+  --bs-btn-disabled-border-color: var(--care-accent);
+}
+
 
 [data-bs-theme="dark"] .page-item.active .page-link {
   background-color: var(--care-accent);
   border-color: var(--care-accent);
   color: var(--care-on-accent);
+}
+
+[data-bs-theme="dark"] .text-primary {
+  color: var(--care-accent) !important;
+}
+
+[data-bs-theme="dark"] :is(.bg-primary, .text-bg-primary) {
+  background-color: var(--care-accent) !important;
+  color: var(--care-on-accent) !important;
+}
+
+[data-bs-theme="dark"] .pagination {
+  --bs-pagination-color: var(--care-accent);
+  --bs-pagination-hover-color: var(--care-accent);
+  --bs-pagination-focus-color: var(--care-accent);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-accent) 25%, transparent);
+}
+
+/* In a button group each button overlaps the previous one by 1px, so a grey
+   neighbour hides the right edge of a coloured outline button. Keep the
+   coloured border on top. */
+.btn-group > :is(.btn-outline-danger, .btn-outline-warning) {
+  z-index: 1;
 }
 
 [data-bs-theme="dark"] .form-check-input:checked {
@@ -145,43 +209,71 @@ html[data-bs-theme="dark"] {
   --bs-form-switch-bg: var(--care-switch-knob-on);
 }
 
-/* --- Quill editor --- */
+/* --- Quill toolbar ---
+   quill.snow.css is imported in main.js before this file, so these rules
+   replace Quill's #06c hover and active colour in both themes. */
 
-[data-bs-theme="dark"] .ql-toolbar.ql-snow,
-[data-bs-theme="dark"] .ql-container.ql-snow {
+html .ql-toolbar.ql-snow {
   border-color: var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+  border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
+  padding: 6px 8px;
 }
 
-[data-bs-theme="dark"] .ql-toolbar.ql-snow {
-  background-color: var(--bs-tertiary-bg);
-}
-
-[data-bs-theme="dark"] .ql-container.ql-snow,
-[data-bs-theme="dark"] .ql-editor {
-  background-color: var(--bs-body-bg);
+html .ql-container.ql-snow {
+  border-color: var(--bs-border-color);
+  border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
+  background: var(--bs-body-bg);
   color: var(--bs-body-color);
 }
 
-[data-bs-theme="dark"] .ql-editor.ql-blank::before {
+html .ql-editor.ql-blank::before {
   color: var(--bs-secondary-color);
 }
 
-/* Quill draws its toolbar icons as SVG, so they need stroke and fill. */
-[data-bs-theme="dark"] .ql-snow .ql-stroke {
+html .ql-snow .ql-stroke {
   stroke: var(--bs-body-color);
 }
 
-[data-bs-theme="dark"] .ql-snow .ql-fill {
+html .ql-snow .ql-fill {
   fill: var(--bs-body-color);
 }
 
-[data-bs-theme="dark"] .ql-snow .ql-picker {
+html .ql-snow .ql-picker {
   color: var(--bs-body-color);
 }
 
-[data-bs-theme="dark"] .ql-snow .ql-picker-options {
-  background-color: var(--bs-body-bg);
+html .ql-snow.ql-toolbar button {
+  border-radius: var(--bs-border-radius-sm);
+}
+
+html .ql-snow.ql-toolbar button:hover {
+  background: var(--bs-secondary-bg);
+}
+
+html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) {
+  color: var(--care-primary);
+}
+
+html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) .ql-stroke {
+  stroke: var(--care-primary);
+}
+
+html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) .ql-fill {
+  fill: var(--care-primary);
+}
+
+html .ql-snow .ql-picker-options,
+html .ql-snow .ql-tooltip {
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
   border-color: var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  box-shadow: var(--care-shadow-3);
+}
+
+html .ql-snow a {
+  color: var(--bs-link-color);
 }
 
 /* --- Toasts --- */
@@ -235,4 +327,472 @@ html[data-bs-theme="dark"] {
 [data-bs-theme="dark"] .dropdown-menu {
   --bs-dropdown-link-active-bg: var(--care-accent);
   --bs-dropdown-link-active-color: var(--care-on-accent);
+}
+
+/* --- Keyboard focus ring ---
+   Plain .btn (no colour variant) and custom focusable elements get no visible
+   focus indicator from Bootstrap; add the care-focus-ring class to opt in.
+   The html prefix outranks Bootstrap's .btn:focus-visible { outline: 0 },
+   which loads after this file. */
+html .care-focus-ring:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+[data-bs-theme="dark"] .care-focus-ring:focus-visible {
+  outline-color: var(--care-accent);
+}
+
+/* Loaded after Bootstrap, so these variables replace Bootstrap's :root values. */
+:root {
+  --bs-border-radius: .5rem;
+  --bs-border-radius-sm: .375rem;
+  --bs-border-radius-lg: .75rem;
+  --bs-border-radius-xl: .875rem;
+  --bs-border-radius-pill: 999px;
+  --care-shadow-1: 0 1px 2px rgb(16 24 40 / .06), 0 1px 3px rgb(16 24 40 / .08);
+  --care-shadow-2: 0 4px 8px -2px rgb(16 24 40 / .10), 0 2px 4px -2px rgb(16 24 40 / .06);
+  --care-shadow-3: 0 12px 24px -6px rgb(16 24 40 / .16), 0 4px 8px -4px rgb(16 24 40 / .08);
+  --care-ease: cubic-bezier(.2, .8, .2, 1);
+  --care-dur-fast: 120ms;
+  --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--bs-primary) 35%, transparent);
+}
+
+html[data-bs-theme="dark"] {
+  --care-shadow-1: 0 1px 2px rgb(0 0 0 / .4);
+  --care-shadow-2: 0 4px 10px -2px rgb(0 0 0 / .5);
+  --care-shadow-3: 0 14px 28px -6px rgb(0 0 0 / .6);
+  --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--care-accent) 35%, transparent);
+}
+
+html .btn {
+  --bs-btn-font-weight: 500;
+  --bs-btn-focus-box-shadow: var(--care-focus-ring);
+  transition: color var(--care-dur-fast) var(--care-ease),
+              background-color var(--care-dur-fast) var(--care-ease),
+              border-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) var(--care-ease),
+              transform 80ms var(--care-ease);
+}
+
+html .btn:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+html .btn:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+html .btn:disabled,
+html .btn.disabled {
+  --bs-btn-disabled-opacity: .45;
+}
+
+html .form-control:focus,
+html .form-select:focus {
+  border-color: var(--bs-primary);
+  box-shadow: var(--care-focus-ring);
+}
+
+html .card {
+  --bs-card-border-color: var(--bs-border-color-translucent);
+  --bs-card-cap-bg: transparent;
+  border-radius: var(--bs-border-radius-lg);
+  box-shadow: var(--care-shadow-1);
+}
+
+html .card > .card-header {
+  background: transparent;
+  border-bottom: 0;
+  padding: 12px 16px;
+}
+
+html .card > .card-header .card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+html .card-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+html .card-header-actions .btn-group {
+  gap: 6px;
+}
+
+html .card-header-actions .btn-group > .btn {
+  border-radius: var(--bs-border-radius) !important;
+}
+
+html .card-header-actions .btn-secondary {
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-color: var(--bs-body-color);
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-active-bg: var(--bs-tertiary-bg);
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-active-color: var(--bs-body-color);
+}
+
+html .dashboard-wrapper {
+  background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
+}
+
+html .table-wrapper .table {
+  --bs-table-striped-bg: transparent;
+  font-size: .875rem;
+}
+
+html .table-wrapper thead th {
+  font-size: .72rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  padding: .55rem .75rem;
+}
+
+html .table-wrapper tbody td {
+  padding: .7rem .75rem;
+  vertical-align: middle;
+}
+
+html .table-wrapper tbody tr:hover > td {
+  --bs-table-bg-state: color-mix(in srgb, var(--bs-primary) 5%, transparent);
+}
+
+html .table-wrapper td .btn-group {
+  gap: 2px;
+}
+
+html .table-wrapper td .btn-group > .btn {
+  --bs-btn-border-color: transparent;
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-hover-bg: var(--bs-secondary-bg);
+  --bs-btn-hover-color: var(--bs-body-color);
+  --bs-btn-hover-border-color: transparent;
+  border-radius: var(--bs-border-radius) !important;
+  min-width: 30px;
+  min-height: 30px;
+}
+
+html .table-wrapper td .btn-group > .btn-outline-danger:hover {
+  --bs-btn-hover-bg: var(--bs-danger-bg-subtle);
+  --bs-btn-hover-color: var(--bs-danger);
+}
+
+html .badge {
+  border-radius: var(--bs-border-radius-pill);
+  font-weight: 500;
+  padding: .35em .7em;
+}
+
+html .badge.bg-success {
+  background: var(--bs-success-bg-subtle) !important;
+  color: var(--bs-success-text-emphasis);
+}
+
+html .badge.bg-danger {
+  background: var(--bs-danger-bg-subtle) !important;
+  color: var(--bs-danger-text-emphasis);
+}
+
+html .badge.bg-warning {
+  background: var(--bs-warning-bg-subtle) !important;
+  color: var(--bs-warning-text-emphasis);
+}
+
+html .badge.bg-primary,
+html .badge.bg-secondary {
+  background: var(--bs-secondary-bg) !important;
+  color: var(--bs-body-color);
+}
+
+html .modal-content {
+  border: 0;
+  border-radius: var(--bs-border-radius-xl);
+  box-shadow: var(--care-shadow-3);
+}
+
+html .modal-header,
+html .modal-footer {
+  border: 0;
+}
+
+html .modal-footer {
+  gap: .5rem;
+}
+
+html .btn-link {
+  text-decoration: none;
+}
+
+html .btn-link:hover {
+  text-decoration: underline;
+}
+
+html .modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+/* Footers wrap Cancel and Confirm in a btn-group; keep the buttons apart. */
+html .modal-footer .btn-group {
+  gap: .5rem;
+}
+
+html .modal-footer .btn-group > .btn {
+  border-radius: var(--bs-border-radius) !important;
+  margin: 0;
+}
+
+/* A card inside a card (settings sections, wizard summary) stays flat. */
+html .card .card {
+  box-shadow: none;
+}
+
+html .b-toast .toast {
+  border: 0;
+  border-radius: var(--bs-border-radius-lg);
+  box-shadow: var(--care-shadow-3);
+}
+
+html .dropdown-menu {
+  --bs-dropdown-padding-x: .25rem;
+  --bs-dropdown-item-border-radius: var(--bs-border-radius-sm);
+  box-shadow: var(--care-shadow-3);
+}
+
+/* ===== Shared CARE classes ===== */
+
+/* Validation message under a field; add .invalid to show it. */
+.feedback-invalid {
+  display: flex;
+  gap: .3rem;
+  align-items: center;
+  font-size: .8rem;
+  color: var(--bs-form-invalid-color);
+  padding-top: .25rem;
+  visibility: hidden;
+}
+
+.feedback-invalid.invalid {
+  visibility: visible;
+}
+
+.feedback-invalid::before {
+  font-family: "bootstrap-icons";
+  content: "\f333";
+}
+
+:is(.form-control, .form-select):has(+ .feedback-invalid.invalid) {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+/* Headings in the setup wizard and settings */
+.step-card-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.step-group-heading,
+.section-title {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  border-bottom: 1px solid var(--bs-border-color);
+  padding-bottom: .35rem;
+  margin-bottom: .75rem;
+}
+
+/* Step indicator in StepperModal and the setup wizard. Steps before the
+   active one show as done through :has(), so no extra class is needed. */
+.stepper {
+  --stepper-circle: 28px;
+  display: flex;
+  flex-shrink: 0;
+  padding: .25rem 0 1rem;
+}
+
+.stepper > div {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: .4rem;
+  position: relative;
+  font-size: .85rem;
+  color: var(--bs-secondary-color);
+  text-align: center;
+}
+
+.stepper > div::before {
+  content: attr(data-index);
+  width: var(--stepper-circle);
+  height: var(--stepper-circle);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 600;
+  font-size: .8rem;
+  background: var(--bs-body-bg);
+  border: 1.5px solid var(--bs-border-color);
+  position: relative;
+  z-index: 1;
+  transition: background-color var(--care-dur-fast) var(--care-ease), box-shadow var(--care-dur-fast) var(--care-ease);
+}
+
+.stepper > div:not(:first-child)::after {
+  content: "";
+  position: absolute;
+  top: calc(var(--stepper-circle) / 2 - 1px);
+  left: calc(-50% + var(--stepper-circle) / 2 + 4px);
+  right: calc(50% + var(--stepper-circle) / 2 + 4px);
+  height: 2px;
+  border-radius: 2px;
+  background: var(--bs-border-color);
+}
+
+.stepper > div.active {
+  color: var(--bs-body-color);
+  font-weight: 600;
+}
+
+.stepper > div.active::before {
+  background: var(--care-primary);
+  border-color: var(--care-primary);
+  color: var(--care-on-primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--care-primary) 20%, transparent);
+}
+
+.stepper > div:has(~ div.active) {
+  color: var(--bs-body-color);
+}
+
+.stepper > div:has(~ div.active)::before {
+  content: "\2713";
+  border-color: transparent;
+  background: color-mix(in srgb, var(--care-primary) 14%, var(--bs-body-bg));
+  color: var(--care-primary);
+}
+
+.stepper > div:has(~ div.active)::after,
+.stepper > div.active::after {
+  background: var(--care-primary);
+}
+
+/* Label and control on one row in upload and import dialogs */
+.form-field {
+  display: flex;
+  align-items: center;
+  margin: 1.25rem 0;
+}
+
+.form-field .form-label {
+  flex-shrink: 0;
+  margin: 0 .5rem 0 0;
+}
+
+/* Consent checkboxes in ConsentModal and PreferencesModal */
+.consent-item {
+  margin-bottom: 10px;
+}
+
+.consent-item:last-child {
+  margin-bottom: 0;
+}
+
+.consent-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+}
+
+/* Home overview tiles (Home.vue and HomeSubmissionsTile.vue) */
+.home-tile {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 14px 16px;
+  gap: 2px;
+  color: inherit;
+  text-decoration: none;
+  transition: box-shadow var(--care-dur-fast) var(--care-ease);
+}
+
+.home-tile:hover {
+  box-shadow: var(--care-shadow-2);
+}
+
+.home-tile b {
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+.home-tile span {
+  color: var(--bs-secondary-color);
+  font-size: .875rem;
+}
+
+/* Editor placeholder sidebar (Configurator, TemplateConfigurator) */
+html .configurator {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.configurator .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.configurator .list-group-item {
+  padding: .875rem 1rem;
+  transition: background-color var(--care-dur-fast) var(--care-ease);
+}
+
+.configurator .list-group-item:hover {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.configurator .list-group-item h5 {
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.configurator .icon-container,
+.configurator .badge {
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+}
+
+.configurator .icon-container {
+  display: flex;
+  flex: 0 0 36px;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  margin-right: .75rem;
+  border-radius: var(--bs-border-radius);
+}
+
+.configurator .badge {
+  min-width: 1.75rem;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html .btn {
+    transition: none;
+  }
 }

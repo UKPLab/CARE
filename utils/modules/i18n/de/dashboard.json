@@ -578,5 +578,19 @@
   },
   "ai": {
     "loadModels": "Modelle laden"
+  },
+  "home": {
+    "openSessions": "{count} offene Sitzungen",
+    "addedThisWeek": "{count} diese Woche hinzugefügt",
+    "closingSoon": "{count} enden innerhalb von 7 Tagen",
+    "oldestStarted": "Älteste begonnen vor {when}",
+    "continue": "Zuletzt offen",
+    "studiesInProgress": "Laufende Studien",
+    "sessionCount": "{done} / {total} Sitzungen",
+    "closes": "Endet {date}",
+    "started": "Begonnen vor {when}",
+    "noOpenSessions": "Keine offene Sitzung",
+    "nothingToResume": "Noch nichts zum Fortsetzen",
+    "noStudies": "Keine laufenden Studien"
   }
 }

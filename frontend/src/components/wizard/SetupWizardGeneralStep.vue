@@ -40,9 +40,9 @@
           <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
             {{ group.title }}
           </h6>
-          <div v-for="s in group.settings" :key="s.key" class="form-group row my-2">
+          <div v-for="s in group.settings" :key="s.key" class="row my-2">
             <label
-              class="col-md-4 col-form-label text-md-right"
+              class="col-md-4 col-form-label text-md-end"
               :for="'set-' + s.key"
               @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
             >
@@ -117,9 +117,9 @@
           <p class="small text-muted mb-3">
             Configure Moodle if you use it for enrollments or submissions. You can change these later under Settings -> Moodle.
           </p>
-          <div v-for="s in moodleSettingsFlat" :key="s.key" class="form-group row my-2">
+          <div v-for="s in moodleSettingsFlat" :key="s.key" class="row my-2">
             <label
-              class="col-md-4 col-form-label text-md-right"
+              class="col-md-4 col-form-label text-md-end"
               :for="'set-' + s.key"
               @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
             >
@@ -164,7 +164,7 @@
       <div class="d-flex justify-content-between mt-4">
         <BasicButton
           v-if="currentStep > 0"
-          class="btn btn-secondary"
+          class="btn btn-outline-secondary"
           title="Previous"
           @click="$emit('previous')"
         />
@@ -310,26 +310,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
-}
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-
-.step-group-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.step-card-header {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-</style>

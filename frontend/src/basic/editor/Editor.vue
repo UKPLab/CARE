@@ -5,8 +5,7 @@
 </template>
 
 <script>
-import { Editor } from "@/components/editor/editorStore"; 
-import "quill/dist/quill.snow.css";
+import { Editor } from "@/components/editor/editorStore";
 
 /**
  * Editor.vue - default component for rich text editing using Quill

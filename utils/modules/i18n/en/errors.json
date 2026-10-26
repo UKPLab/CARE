@@ -365,7 +365,8 @@
     },
     "page": {
         "notFoundTitle": "404 not found",
-        "notFoundMessage": "The page you are looking for does not exist."
+        "notFoundMessage": "The page you are looking for does not exist.",
+        "goToDashboard": "Go to dashboard"
     },
     "download": {
         "abortedTitle": "Download aborted",

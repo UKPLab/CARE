@@ -39,9 +39,9 @@
           <h6 v-if="group.title" class="step-group-heading text-muted border-bottom pb-1 mb-3">
             {{ group.title }}
           </h6>
-          <div v-for="s in group.settings" :key="s.key" class="form-group row my-2">
+          <div v-for="s in group.settings" :key="s.key" class="row my-2">
             <label
-              class="col-md-4 col-form-label text-md-right"
+              class="col-md-4 col-form-label text-md-end"
               :for="'set-' + s.key"
               @click="(s.type === 'boolean' || s.type === 'bool') && $event.preventDefault()"
             >
@@ -88,8 +88,8 @@
           <p class="small text-muted mb-2">
             Sends a short fixed message so you can verify delivery before finishing setup.
           </p>
-          <div class="form-group row my-2">
-            <label class="col-md-4 col-form-label text-md-right" for="setup-test-mail-to">Recipient</label>
+          <div class="row my-2">
+            <label class="col-md-4 col-form-label text-md-end" for="setup-test-mail-to">Recipient</label>
             <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
               <input
                 id="setup-test-mail-to"
@@ -115,7 +115,7 @@
       </template>
 
       <div class="d-flex justify-content-between mt-4">
-        <BasicButton class="btn btn-secondary" title="Previous" @click="$emit('previous')" />
+        <BasicButton class="btn btn-outline-secondary" title="Previous" @click="$emit('previous')" />
         <BasicButton class="btn btn-primary ms-auto" title="Next" @click="$emit('next')" />
       </div>
     </div>
@@ -278,15 +278,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.step-group-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.step-card-header {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-</style>

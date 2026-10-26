@@ -1,48 +1,28 @@
 <template>
-  <div class="card my-3">
-    <div class="card-header step-card-header section-header" style="cursor: pointer" @click="toggleCollapse">
-      <LoadIcon :icon-name="isCollapsed ? 'arrow-right-short' : 'arrow-down-short'" class="me-1" />
-      {{ translateMaybeKey(title) }}
-    </div>
-    <div v-if="!isCollapsed" class="card-body mx-4 my-4">
-      <template v-for="(subsection, idx) in visibleSubsections" :key="subsection.title || idx">
-        <FormCollapsible
-          v-if="subsection.title"
-          :title="translateMaybeKey(subsection.title)"
-          :collapsed="false"
-          class="mb-3"
-        >
-          <div
-            v-for="key in subsection.keys"
-            :key="key"
-            class="form-group row my-2"
-          >
-            <SettingItem
-              :setting="getSetting(key)"
-              @update:value="(v) => setSettingValue(key, v)"
-            />
-          </div>
-        </FormCollapsible>
-        <div v-else class="mb-4">
-          <div
-            v-for="key in subsection.keys"
-            :key="key"
-            class="form-group row my-2"
-          >
-            <SettingItem
-              :setting="getSetting(key)"
-              @update:value="(v) => setSettingValue(key, v)"
-            />
-          </div>
-        </div>
-      </template>
-      <slot name="footer" />
-    </div>
-  </div>
+  <FormCollapsible
+    :title="translateMaybeKey(title)"
+    :collapsed="collapsed"
+  >
+    <template v-for="(subsection, idx) in subsections" :key="subsection.title || idx">
+      <h6 v-if="subsection.title" class="step-group-heading mt-3">
+        {{ translateMaybeKey(subsection.title) }}
+      </h6>
+      <div
+        v-for="key in subsection.keys"
+        :key="key"
+        class="row my-2"
+      >
+        <SettingItem
+          :setting="getSetting(key)"
+          @update:value="(v) => setSettingValue(key, v)"
+        />
+      </div>
+    </template>
+    <slot name="footer" />
+  </FormCollapsible>
 </template>
 
 <script>
-import LoadIcon from "@/basic/Icon.vue";
 import FormCollapsible from "@/basic/form/Collapsible.vue";
 import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
 import { translateMaybeKey } from "@/assets/utils";
@@ -56,36 +36,15 @@ import { translateMaybeKey } from "@/assets/utils";
  */
 export default {
   name: "SettingsSection",
-  components: { LoadIcon, FormCollapsible, SettingItem },
+  components: { FormCollapsible, SettingItem },
   props: {
     title: { type: String, required: true },
     subsections: { type: Array, required: true },
     settings: { type: Array, default: () => [] },
     collapsed: { type: Boolean, default: true },
   },
-  data() {
-    return {
-      isCollapsed: true,
-    };
-  },
-  computed: {
-    visibleSubsections() {
-      return this.subsections;
-    },
-  },
-  watch: {
-    collapsed: {
-      immediate: true,
-      handler(val) {
-        this.isCollapsed = val;
-      },
-    },
-  },
   methods: {
     translateMaybeKey,
-    toggleCollapse() {
-      this.isCollapsed = !this.isCollapsed;
-    },
     getSetting(key) {
       return this.settings.find((s) => s.key === key) || null;
     },
@@ -96,14 +55,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.step-card-header {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-
-.section-header {
-  user-select: none;
-}
-</style>

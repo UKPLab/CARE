@@ -2,7 +2,7 @@
   <div class="setup-wizard">
     <div class="col-md-10 mx-auto my-4">
       <div class="text-center mb-4">
-        <IconAsset :height="160" name="logo" />
+        <LogoSvg :height="56" />
       </div>
 
       <!-- Stepper -->
@@ -122,20 +122,18 @@
           <p v-if="importError" class="text-danger small mt-2 mb-0">{{ importError }}</p>
         </template>
         <template #footer>
-          <span class="btn-group">
-            <BasicButton
-              class="btn btn-secondary"
-              title="Close"
-              :disabled="importing"
-              @click="$refs.importModal.close()"
-            />
-            <BasicButton
-              class="btn btn-primary"
-              :title="importing ? 'Importing…' : 'Import'"
-              :disabled="!importFile || importing"
-              @click="confirmImport"
-            />
-          </span>
+          <BasicButton
+            class="btn btn-outline-secondary"
+            title="Close"
+            :disabled="importing"
+            @click="$refs.importModal.close()"
+          />
+          <BasicButton
+            class="btn btn-primary"
+            :title="importing ? 'Importing…' : 'Import'"
+            :disabled="!importFile || importing"
+            @click="confirmImport"
+          />
         </template>
       </Modal>
     </div>
@@ -149,7 +147,7 @@
  *
  * @author Mohammad Elwan
  */
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import BasicButton from "@/basic/Button.vue";
 import Modal from "@/basic/Modal.vue";
 import SetupWizardAdminStep from "@/components/wizard/SetupWizardAdminStep.vue";
@@ -164,7 +162,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 export default {
   name: "SetupWizard",
   components: {
-    IconAsset,
+    LogoSvg,
     BasicButton,
     Modal,
     SetupWizardAdminStep,
@@ -519,11 +517,6 @@ export default {
         } catch (e) {
           const msg = e?.message || String(e);
           this.importError = msg.startsWith("The JSON") ? msg : "Invalid JSON: " + msg;
-          this.eventBus.emit("toast", {
-            title: "Import failed",
-            message: this.importError,
-            variant: "danger",
-          });
         } finally {
           this.importing = false;
         }
@@ -624,80 +617,12 @@ export default {
 }
 
 .stepper {
-  --stepper-pad-top: 1.25rem;
-  --stepper-circle: 30px;
-  display: flex;
-  justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 2;
   margin-bottom: 1.5rem;
-  background-color: var(--bs-body-bg, #fff);
-  padding-top: var(--stepper-pad-top);
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-}
-
-.stepper::after {
-  content: "";
-  position: absolute;
-  top: calc(var(--stepper-pad-top) + (var(--stepper-circle) / 2) - 1px);
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: var(--bs-secondary-bg, #ccc);
-}
-
-.stepper > div {
-  z-index: 1;
-  background-color: var(--bs-body-bg, white);
-  padding: 0 5px;
-}
-
-.stepper > div:first-child {
-  padding-left: 0;
-}
-
-.stepper > div:last-child {
-  padding-right: 0;
-}
-
-.stepper > div::before {
-  content: attr(data-index);
-  margin-right: 6px;
-  display: inline-flex;
-  width: var(--stepper-circle);
-  height: var(--stepper-circle);
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--bs-border-color, #6c6b6b);
-}
-
-.stepper > div.active::before {
-  color: white;
-  background-color: var(--bs-primary, #0d6efd);
-  border-color: var(--bs-primary, #0d6efd);
-}
-
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
-}
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-
-.step-group-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.step-card-header {
-  font-size: 1.2rem;
-  font-weight: 600;
+  padding-top: 1rem;
+  background: var(--bs-body-bg);
+  border-bottom: 1px solid var(--bs-border-color-translucent);
 }
 </style>

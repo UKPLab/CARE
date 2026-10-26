@@ -6,14 +6,19 @@
           {{ $t('dashboard.adminTools.description') }}
         </p>
 
-        <div class="d-flex flex-column gap-2 align-items-start">
+        <div class="admin-tools">
           <BasicButton
-              class="btn btn-outline-secondary"
-              :text="$t('dashboard.adminTools.replaceDocumentFile.button')"
-              :title="$t('dashboard.adminTools.replaceDocumentFile.buttonTitle')"
-              icon="arrow-repeat"
-              @click="openReplaceDocumentFileModal"
-          />
+            v-for="tool in tools"
+            :key="tool.title"
+            class="card admin-tool"
+            @click="tool.open"
+          >
+            <span class="admin-tool-icon">
+              <LoadIcon :icon-name="tool.icon" />
+            </span>
+            <b>{{ tool.title }}</b>
+            <span class="text-secondary small">{{ tool.description }}</span>
+          </BasicButton>
         </div>
       </template>
     </Card>
@@ -29,6 +34,7 @@
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import ReplaceDocumentFileModal from "@/components/dashboard/admin_tools/ReplaceDocumentFileModal.vue";
 
 /**
@@ -44,6 +50,7 @@ export default {
   components: {
     Card,
     BasicButton,
+    LoadIcon,
     ReplaceDocumentFileModal,
   },
   data() {
@@ -52,6 +59,16 @@ export default {
         replaceDocumentFile: false,
       },
     };
+  },
+  computed: {
+    tools() {
+      return [{
+        icon: "arrow-repeat",
+        title: this.$t("dashboard.adminTools.replaceDocumentFile.button"),
+        description: this.$t("dashboard.adminTools.replaceDocumentFile.buttonTitle"),
+        open: () => this.openReplaceDocumentFileModal(),
+      }];
+    },
   },
   methods: {
     /**
@@ -66,4 +83,41 @@ export default {
 </script>
 
 <style scoped>
+.admin-tools {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.admin-tool.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  height: auto;
+  padding: 16px;
+  text-align: left;
+  white-space: normal;
+  color: inherit;
+  background: var(--bs-body-bg);
+  --bs-btn-hover-bg: var(--bs-body-bg);
+  --bs-btn-hover-color: inherit;
+  transition: box-shadow var(--care-dur-fast) var(--care-ease), border-color var(--care-dur-fast) var(--care-ease);
+}
+
+.admin-tool.btn:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--care-primary) 40%, transparent);
+  box-shadow: var(--care-shadow-2);
+}
+
+.admin-tool-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 6px;
+  border-radius: var(--bs-border-radius);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+  color: var(--care-primary);
+}
 </style>

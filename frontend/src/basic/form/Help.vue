@@ -42,17 +42,12 @@ import { tooltip } from "@/assets/tooltip.js";
     },
     iconName: {
       type: String,
-      default: "question-square-fill",
+      default: "question-circle",
     },
     buttonClass: {
       type: [String, Object, Array],
-      default: null,
+      default: "text-secondary",
     },
   },
 };
 </script>
-
-
-<style scoped>
-
-</style>

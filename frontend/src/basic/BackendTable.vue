@@ -344,6 +344,9 @@ import {
 } from "@/basic/table/helpers/tableRowInteractions.js";
 import { filterRowButtons } from "@/basic/table/helpers/tableCellHelpers.js";
 
+/** Pause before the infinite window loads again by itself after a failed request. */
+const WINDOW_RETRY_MS = 5000;
+
 /**
  * Server-paginated table (queryTable + Delta). Same column, button, and selection API as
  * BasicTable; rows come from the socket instead of a Vuex dump. Search tokens filter the
@@ -547,6 +550,8 @@ export default {
       _windowRefetchTimer: null,
       _windowRefetchHighlight: [],
       _emptyBlockKey: null,
+      _windowRetryAt: 0,
+      _windowErrorShown: false,
       _infiniteResizeObserver: null,
     };
   },
@@ -1418,6 +1423,7 @@ export default {
         this.windowStartCursorValid = true;
         this.windowEndCursorValid = true;
         this._emptyBlockKey = null;
+        this.clearWindowLoadError();
         this.virtualStart = 0;
         this.virtualEnd = items.length;
         this.syncWindowQuery();
@@ -1890,13 +1896,35 @@ export default {
         this.$socket.emit("queryTable", payload, (response) => {
           clearTimeout(t);
           if (!response?.success) {
-            reject(new Error(response?.message || "queryTable failed"));
+            const error = new Error(response?.message || "queryTable failed");
+            // Keep the reply: its key gives the localized toast text
+            error.response = response;
+            reject(error);
             return;
           }
           const items = (response.data?.items || []).map((row) => this.applyEnrich(row));
           resolve({items, meta: response.data?.meta || null});
         });
       });
+    },
+    /**
+     * An infinite-window load (block, seek or refetch) failed. Toast once per failure streak
+     * and pause the automatic loads in maintainInfiniteWindow.
+     * @param {Error} err rejection of requestQueryItems (`err.response` is the server reply, if any)
+     */
+    handleWindowLoadError(err) {
+      this._windowRetryAt = Date.now() + WINDOW_RETRY_MS;
+      if (this._windowErrorShown) return;
+      this._windowErrorShown = true;
+      this.eventBus.emit("toast", {
+        message: resolveApiMessage(err?.response),
+        variant: "danger",
+      });
+    },
+    /** A window load worked again: allow the next failure to toast and load without pause. */
+    clearWindowLoadError() {
+      this._windowRetryAt = 0;
+      this._windowErrorShown = false;
     },
     replaceRow(updatedRow) {
       const enriched = this.applyEnrich(updatedRow);
@@ -2384,6 +2412,9 @@ export default {
     /** Pull the next block in, or jump the window when the viewport left it entirely. */
     maintainInfiniteWindow() {
       if (!this.isInfiniteMode || this.queryLoading || this._windowFetchBusy) return;
+      // A load just failed: without this pause the same rows are requested again on the next
+      // frame. The next scroll after the pause tries again.
+      if (Date.now() < this._windowRetryAt) return;
       // Thumb jump owns the viewport until its rows are on screen. A resize in that
       // gap used to queue a second and third load.
       if (this._pinnedRow != null || this._windowHold || this._seekTimer) return;
@@ -2492,9 +2523,10 @@ export default {
           ? this.appendWindowBlock(items, meta)
           : this.prependWindowBlock(items, meta);
         this._emptyBlockKey = added > 0 ? null : navKey;
+        this.clearWindowLoadError();
       } catch (err) {
         if (token === this._seekToken) {
-          console.warn("BackendTable fetchWindowBlock failed", err);
+          this.handleWindowLoadError(err);
         }
       } finally {
         if (token === this._seekToken) {
@@ -2572,6 +2604,7 @@ export default {
       this.windowStartCursorValid = true;
       this.windowEndCursorValid = true;
       this._emptyBlockKey = null;
+      this.clearWindowLoadError();
       this.applyWindowMeta(meta, {start: true, end: true});
       this.deletingIds = new Set();
       this.placeholderIds = new Set();
@@ -2626,7 +2659,7 @@ export default {
         });
       } catch (err) {
         if (token === this._seekToken) {
-          console.warn("BackendTable seekWindow failed", err);
+          this.handleWindowLoadError(err);
           this._windowHold = false;
           this._pinnedRow = null;
         }
@@ -2694,7 +2727,7 @@ export default {
         });
       } catch (err) {
         if (token === this._seekToken) {
-          console.warn("BackendTable refetchWindow failed", err);
+          this.handleWindowLoadError(err);
         }
       } finally {
         if (token === this._seekToken) {

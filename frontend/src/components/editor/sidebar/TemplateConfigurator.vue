@@ -28,9 +28,9 @@
         {{ $t("templates.placeholders.options.notIncludedHelp") }}
       </div>
   
-      <div class="card shadow mb-4 configurator">
+      <div class="card mb-4 configurator">
         <div class="card-header bg-body">
-          <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
+          <h3 class="card-title mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
@@ -41,7 +41,7 @@
             >
               <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex align-items-center flex-grow-1">
-                  <div class="icon-container p-2 text-primary me-2">
+                  <div class="icon-container">
                     <i :class="placeholder.icon"></i>
                   </div>
                   <div class="d-flex flex-column flex-grow-1">
@@ -54,7 +54,7 @@
                     </div>
                     <p
                       v-if="placeholder.description"
-                      class="mb-0 text-muted"
+                      class="mb-0 text-muted small"
                     >
                       {{ translateMaybeKey(placeholder.description) }}
                     </p>
@@ -123,9 +123,9 @@
                   </div>
                 </div>
                 <div class="d-flex align-items-center ms-2">
-                  <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] || 0 }}</span>
+                  <span class="badge rounded-pill me-2">{{ placeholderCounts[placeholder.id] || 0 }}</span>
                   <BasicButton
-                    class="btn btn-primary btn-sm d-flex align-items-center"
+                    class="btn btn-outline-primary btn-sm d-flex align-items-center"
                     icon="plus-lg"
                     :text="$t('common.add')"
                     @click="handlePlaceholderClick(placeholder)"
@@ -607,38 +607,6 @@
   </script>
   
   <style scoped>
-  .configurator {
-    --bg-color: var(--bs-secondary-bg, rgb(219, 234, 254));
-    --icon-container-size: 36px;
-  }
-  
-  .list-group-item {
-    padding: 0.825rem;
-  }
-
-  .list-group-item:last-child {
-    padding-bottom: 1.5rem;
-  }
-  
-  .icon-container {
-    width: var(--icon-container-size);
-    height: var(--icon-container-size);
-    display: flex;
-    margin-right: 0.625rem;
-    align-items: center;
-    justify-content: center;
-    color: var(--bs-body-color);
-    background-color: var(--bg-color);
-  }
-  
-  .list-group-item:hover {
-    background-color: var(--bs-tertiary-bg, #f8f9fa);
-  }
-  
-  .badge {
-    background-color: var(--bg-color);
-  }
-
   .option-select {
     max-width: 11rem;
   }

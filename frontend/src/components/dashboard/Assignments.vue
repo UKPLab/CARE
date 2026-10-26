@@ -36,7 +36,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
-import { resolveApiMessage } from "@/assets/utils";
+import { isListedAssignment, resolveApiMessage } from "@/assets/utils";
 import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 export default {
@@ -254,7 +254,7 @@ export default {
       }
 
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || !assignment.disable
+        (assignment) => isListedAssignment(assignment, this.userId)
       ) || [];
     },
     assignmentTable() {

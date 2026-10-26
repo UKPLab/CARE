@@ -386,6 +386,33 @@ export function getTimeDiffString(start, end) {
 }
 
 /**
+ * Whether a document belongs in the user's own document list on the dashboard.
+ * @param doc document row from the store
+ * @param userId current user
+ * @param projectId current project
+ * @returns {boolean}
+ */
+export function isOwnListedDocument(doc, userId, projectId) {
+    return doc.projectId === projectId
+        && doc.userId === userId
+        && doc.parentDocumentId === null
+        && doc.hideInFrontend === false
+        && doc.type !== 3
+        && doc.type !== 4;
+}
+
+/**
+ * Assignments shown on the dashboard lists (Submissions, Assignments for
+ * users who cannot view all, and the Home submissions tile).
+ * @param assignment assignment row from the store
+ * @param userId current user
+ * @returns {boolean}
+ */
+export function isListedAssignment(assignment, userId) {
+    return assignment.userId === userId || !assignment.disable;
+}
+
+/**
  * Downloads a document as a file.
  * @param content the written content inside of the document
  * @param fileName the name of the file
@@ -595,4 +622,26 @@ export function resolveTheme(saved) {
     const cached = localStorage.getItem("care.theme");
     const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     return saved || cached || (osPrefersDark ? "dark" : "light");
+}
+
+/**
+ * Moves keyboard focus to the header of the next annotation card in the sidebar feed,
+ * or the previous one when there is no next card. Used before a card or reply is deleted,
+ * so focus is not lost when the focused button disappears.
+ * @param {HTMLElement} fromEl - an element inside the annotation card being left
+ * @returns {void}
+ */
+export function focusNextAnnotationCard(fromEl) {
+    const card = fromEl && fromEl.closest('li[role="article"]');
+    if (!card) return;
+    const isCard = (el) => el && el.getAttribute('role') === 'article';
+    let target = card.nextElementSibling;
+    while (target && !isCard(target)) target = target.nextElementSibling;
+    if (!target) {
+        target = card.previousElementSibling;
+        while (target && !isCard(target)) target = target.previousElementSibling;
+    }
+    // The chevron is hidden while a card is being edited, so fall back to its first control
+    const header = target && (target.querySelector('.card-focusable') || target.querySelector('textarea, button'));
+    if (header) header.focus();
 }

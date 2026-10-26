@@ -408,18 +408,7 @@ export default {
 </script>
 
 <style scoped>
-.form-field {
-  display: flex;
-  align-items: center;
-  margin: 15px 0;
-}
-
 .form-field .form-label {
-  flex-shrink: 0;
-  margin-bottom: 0;
-  margin-right: 0.5rem;
   min-width: 160px;
 }
 </style>
-
-

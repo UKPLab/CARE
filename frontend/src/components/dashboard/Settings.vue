@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Card :title="$t('settings.title')">
+    <Card class="settings-card" :title="$t('settings.title')">
       <template #headerElements>
         <div class="btn-group gap-2">
 
@@ -53,6 +53,7 @@
 
       <template #body>
         <div
+            v-if="hasUnsavedChanges"
             class="alert alert-warning d-flex align-items-center mt-1"
             role="alert"
         >
@@ -71,7 +72,7 @@
 
         <Loading v-if="settings === null"/>
 
-        <div v-else class="mt-3">
+        <div v-else>
           <SettingsSection
               v-for="section in sectionLayout"
               :key="section.title"
@@ -80,13 +81,13 @@
               :settings="displaySettings"
           >
             <template v-if="section.title === 'Mail'" #footer>
-              <div class="border-top pt-3 mt-2">
-                <h6 class="step-group-heading text-muted border-bottom pb-1 mb-2">Send test email</h6>
+              <div class="mt-3">
+                <h6 class="step-group-heading">Send test email</h6>
                 <p class="small text-muted mb-2">
                   Sends a short fixed message using the currently saved mail configuration.
                 </p>
-                <div class="form-group row my-2">
-                  <label class="col-md-4 col-form-label text-md-right" for="settings-test-mail-to">Recipient</label>
+                <div class="row my-2">
+                  <label class="col-md-4 col-form-label text-md-end" for="settings-test-mail-to">Recipient</label>
                   <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
                     <input
                         id="settings-test-mail-to"
@@ -505,3 +506,13 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.settings-card > :deep(.card-header) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--bs-body-bg);
+  border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
+}
+</style>

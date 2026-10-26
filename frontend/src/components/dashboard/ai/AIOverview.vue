@@ -7,7 +7,7 @@
       <BasicDetails v-if="meta && row" :items="detailRows">
         <pre
           v-if="meta.isOwner && additionalParametersJson"
-          class="bg-light border rounded p-2 small text-break mb-3"
+          class="bg-body-tertiary border rounded p-2 small text-break mb-3"
         >{{ additionalParametersJson }}</pre>
 
         <div v-if="meta.viewerShare" class="alert alert-info py-2 small mb-3">

@@ -215,17 +215,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.form-field {
-  display: flex;
-  align-items: center;
-  margin: 25px 0;
-
-  .form-label {
-    flex-shrink: 0;
-    margin-bottom: 0;
-    margin-right: 0.5rem;
-  }
-}
-</style>

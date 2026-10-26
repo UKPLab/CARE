@@ -122,7 +122,7 @@ export default {
   margin-top: 1.25rem;
   margin-bottom: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--bs-border-color);
   text-align: left;
 }
 
@@ -134,13 +134,13 @@ export default {
 
 .moodle-publish-intro p {
   margin-bottom: 0;
-  color: #555;
+  color: var(--bs-secondary-color);
   font-size: 0.925rem;
 }
 
 .error-container {
   margin: 0.25rem auto 0.5rem;
-  color: firebrick;
+  color: var(--bs-form-invalid-color);
 
   ul {
     margin-bottom: 0.25rem;
