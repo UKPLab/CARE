@@ -73,39 +73,45 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-if="serverSidePagination && total > 0 && data.length === 0">
-          <td
-            :colspan="columns.length"
-            class="text-center"
+        <template v-if="serverSidePagination && total > 0 && data.length === 0">
+          <tr>
+            <td
+              :colspan="columns.length"
+              class="text-center"
+            >
+              {{ $t('common.loadingFromServer') }}
+            </td>
+          </tr>
+        </template>
+        <!-- No rows at all, or the plain search / column filters hid every row: fallback lens.
+             The branch stays on <template>, not on the v-for: Vue drops nextSibling when a
+             v-else and a v-for share one <tr> and the empty row is replaced by real rows. -->
+        <template v-else-if="!data || data.length === 0 || tableData.length === 0">
+          <tr>
+            <td
+              :colspan="emptyColspan"
+              class="text-center"
+            >
+              <div class="table-empty-cell">
+                <TableEmptyState
+                  :filtered="!!data && data.length > 0"
+                  :search-text="search.trim()"
+                  :action-label="!data || data.length === 0 ? emptyAction?.label : ''"
+                  :action-icon="emptyAction?.icon"
+                  compact
+                  @clear="clearTableSearch"
+                  @action="emptyAction?.handler()"
+                />
+              </div>
+            </td>
+          </tr>
+        </template>
+        <template v-else>
+          <tr
+            v-for="r in tableData"
+            :key="r.id"
+            @click="selectRow(r)"
           >
-            {{ $t('common.loadingFromServer') }}
-          </td>
-        </tr>
-        <!-- No rows at all, or the plain search / column filters hid every row: fallback lens. -->
-        <tr v-else-if="!data || data.length === 0 || tableData.length === 0">
-          <td
-            :colspan="emptyColspan"
-            class="text-center"
-          >
-            <div class="table-empty-cell">
-              <TableEmptyState
-                :filtered="!!data && data.length > 0"
-                :search-text="search.trim()"
-                :action-label="!data || data.length === 0 ? emptyAction?.label : ''"
-                :action-icon="emptyAction?.icon"
-                compact
-                @clear="clearTableSearch"
-                @action="emptyAction?.handler()"
-              />
-            </div>
-          </td>
-        </tr>
-        <tr
-          v-for="r in tableData"
-          v-else
-          :key="r.id"
-          @click="selectRow(r)"
-        >
           <td v-if="selectableRows">
             <div
               class="form-check"
@@ -155,7 +161,8 @@
               @action="actionEmitter"
             />
           </td>
-        </tr>
+          </tr>
+        </template>
         <tr v-if="isAllMode && allRenderLimit < total" ref="loadMoreSentinel">
           <td 
             :colspan="emptyColspan" 

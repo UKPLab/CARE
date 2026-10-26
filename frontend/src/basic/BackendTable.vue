@@ -126,48 +126,53 @@
             :style="{ height: topSpacerHeight + 'px' }"
           ></td>
         </tr>
-        <tr v-if="!showPlaceholderRows && total > 0 && queryItems.length === 0">
-          <td
-            :colspan="emptyColspan"
-            class="text-center"
-          >
-            {{ $t('common.loadingFromServer') }}
-          </td>
-        </tr>
-        <tr v-else-if="!showPlaceholderRows && queryItems.length === 0">
-          <td
-            :colspan="emptyColspan"
-            class="text-center"
-          >
-            <div class="table-empty-cell">
-              <slot
-                name="empty"
-                :searching="hasActiveSearch"
-                :search-text="search.trim()"
-                :filter-labels="activeFilterLabels"
-                :loading="resultsLoading"
-                :clear-search="clearSearch"
-              >
-                <!-- Hold the chat until the search results are in, so it does not flash. -->
-                <TableEmptyState
-                  v-if="!resultsLoading || hasActiveSearch"
+        <template v-if="!showPlaceholderRows && total > 0 && queryItems.length === 0">
+          <tr>
+            <td
+              :colspan="emptyColspan"
+              class="text-center"
+            >
+              {{ $t('common.loadingFromServer') }}
+            </td>
+          </tr>
+        </template>
+        <template v-else-if="!showPlaceholderRows && queryItems.length === 0">
+          <tr>
+            <td
+              :colspan="emptyColspan"
+              class="text-center"
+            >
+              <div class="table-empty-cell">
+                <slot
+                  name="empty"
                   :searching="hasActiveSearch"
                   :search-text="search.trim()"
                   :filter-labels="activeFilterLabels"
-                  :action-label="hasActiveSearch ? '' : emptyAction?.label"
-                  :action-icon="emptyAction?.icon"
-                  compact
-                  @clear="clearSearch"
-                  @action="emptyAction?.handler()"
-                />
-              </slot>
-            </div>
-          </td>
-        </tr>
-        <tr
-          v-for="(r, rowIndex) in tableData"
-          v-else
-          :key="r.__sid || r.id"
+                  :loading="resultsLoading"
+                  :clear-search="clearSearch"
+                >
+                  <!-- Hold the chat until the search results are in, so it does not flash. -->
+                  <TableEmptyState
+                    v-if="!resultsLoading || hasActiveSearch"
+                    :searching="hasActiveSearch"
+                    :search-text="search.trim()"
+                    :filter-labels="activeFilterLabels"
+                    :action-label="hasActiveSearch ? '' : emptyAction?.label"
+                    :action-icon="emptyAction?.icon"
+                    compact
+                    @clear="clearSearch"
+                    @action="emptyAction?.handler()"
+                  />
+                </slot>
+              </div>
+            </td>
+          </tr>
+        </template>
+        <!-- v-else stays off the v-for. Sharing them made the first real row throw nextSibling. -->
+        <template v-else>
+          <tr
+            v-for="(r, rowIndex) in tableData"
+            :key="r.__sid || r.id"
           data-row="1"
           :class="{
             'row-stripe-odd': isInfiniteMode && (infiniteSliceStart + rowIndex) % 2 === 1,
@@ -254,7 +259,8 @@
               @action="actionEmitter"
             />
           </td>
-        </tr>
+          </tr>
+        </template>
         <tr v-if="isInfiniteMode && bottomSpacerHeight > 0">
           <td
             :colspan="emptyColspan"
