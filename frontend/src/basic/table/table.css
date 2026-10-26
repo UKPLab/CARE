@@ -7,6 +7,52 @@
   overflow-x: auto;
   min-height: 80px;
   margin-bottom: 1rem;
+  /* Visible scrollbar: users missed the default thin overlay one. Tinted from the
+     text colour so it adapts to light and dark themes. */
+  --table-scrollbar-thumb: color-mix(in srgb, var(--bs-body-color) 32%, transparent);
+  --table-scrollbar-thumb-hover: color-mix(in srgb, var(--bs-body-color) 50%, transparent);
+  --table-scrollbar-track: color-mix(in srgb, var(--bs-body-color) 7%, transparent);
+}
+
+/* Firefox only: Chromium 121+ also understands scrollbar-color, but setting it there
+   disables the ::-webkit-scrollbar rules below, which give a sturdier bar. */
+@supports (-moz-appearance: none) {
+  .table-wrapper {
+    scrollbar-color: var(--table-scrollbar-thumb) var(--table-scrollbar-track);
+  }
+}
+
+/* Frame around the wrapper; positions the scroll hint overlay (ScrollHints.vue). */
+.table-scroll-frame {
+  position: relative;
+}
+
+/* Chromium/Safari: a visible track and a chunkier thumb instead of the thin
+   overlay scrollbar. */
+.table-wrapper::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: var(--table-scrollbar-track);
+  border-radius: 5px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--table-scrollbar-thumb);
+  border: 2px solid transparent;
+  border-radius: 5px;
+  background-clip: padding-box;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--table-scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+.table-wrapper::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 .table {

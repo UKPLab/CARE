@@ -10,11 +10,10 @@
         :class="{
           'bg-success': sortColumn === column.key,
           'bg-opacity-50': sortColumn === column.key,
-          'bg-opacity-10': sortColumn !== column.key,
-          'bg-black': sortColumn !== column.key,
+          'table-sort-icon--idle': sortColumn !== column.key,
         }"
         :icon-name="sortColumn === column.key ? sortIcon : 'sort-down'"
-        class="me-1"
+        class="table-sort-icon me-1"
         style="cursor: pointer"
         @click="$emit('sort', 'sortKey' in column ? column.sortKey : column.key)"
       />
