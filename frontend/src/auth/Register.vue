@@ -1,206 +1,184 @@
 <template>
-  <form
-      ref="registerForm"
-      class="row g-3 needs-validation"
-      novalidate
-      @submit.prevent="checkForm"
-  >
-    <div class="col-md-8 mx-auto my-4">
-      <div class="col-md-8 mx-auto">
-        <div
-            class="text-center"
-            style="margin-bottom: 20px"
-        >
-          <LogoSvg
-              :height="200"
-          />
-        </div>
-
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            {{ $t('auth.register') }}
-            <a
-                class="btn btn-sm btn-primary"
-                href="#"
-                @click="toLogin"
-            >{{ $t('auth.login') }}</a>
-          </div>
-
-          <div class="card-body mx-4 my-4">
-            <div
-                v-if="config['requestName']"
-                class="form-group row my-2"
-            >
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="firstName"
-              >{{ $t('auth.firstName') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="firstName"
-                    v-model="formData['firstName']"
-                    autofocus
-                    class="form-control"
-                    name="firstName"
-                    required
-                    type="text"
-                >
-                <div class="feedback-invalid">
-                  {{ $t('errors.validation.auth.provideFirstName') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div
-                v-if="config['requestName']"
-                class="form-group row my-2"
-            >
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="lastName"
-              >{{ $t('auth.lastName') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="lastName"
-                    v-model="formData['lastName']"
-                    class="form-control"
-                    name="lastName"
-                    required
-                    type="text"
-                >
-                <div class="feedback-invalid">
-                  {{ $t('errors.validation.auth.provideLastName') }}
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="userName"
-              >{{ $t('auth.username') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="userName"
-                    v-model="formData['userName']"
-                    class="form-control"
-                    name="userName"
-                    pattern="^[a-zA-Z0-9]+$"
-                    required
-                    type="text"
-                    @blur="checkVal('userName')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
-                  {{ $t('errors.validation.auth.usernameNoSpecialChars') }}
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="email"
-              >{{ $t('auth.email') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="email"
-                    v-model="formData['email']"
-                    class="form-control"
-                    name="email"
-                    required
-                    type="email"
-                    @blur="checkVal('email')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
-                  {{ $t('errors.validation.auth.provideEmail') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="password"
-              >{{ $t('auth.password') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="password"
-                    v-model="formData['password']"
-                    class="form-control"
-                    name="password"
-                    pattern=".{8,}"
-                    required
-                    type="password"
-                    @blur="checkVal('password')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  {{ $t('errors.validation.auth.passwordRequirements') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div class="form-group row my-2">
-              <div class="col-md-6 offset-md-4">
-                <label>
-                  <input
-                      v-model="formData['acceptTerms']"
-                      name="acceptTerms"
-                      type="checkbox"
-                      @blur="checkVal('acceptTerms')"
-                  > {{ $t('auth.acceptTermsPrefix') }} <a
-                    href="#"
-                    @click="$refs.terms.open()"
-                  >{{ $t('auth.termsOfService') }}</a>
-                  <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}"
-                    >{{ $t('errors.validation.auth.acceptTermsRequired') }}
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div
-                v-if="config['requestStats']"
-                class="form-group row my-2"
-            >
-              <div class="col-md-6 offset-md-4">
-                <label>
-                  <input
-                      v-model="formData['acceptStats']"
-                      name="acceptStats"
-                      type="checkbox"
-                  > {{ $t('auth.acceptStats') }}
-                </label>
-              </div>
-            </div>
-            <div
-                v-if="config['requestData']"
-                class="form-group row my-2"
-            >
-              <div class="col-md-6 offset-md-4">
-                <label>
-                  <input
-                      v-model="formData['acceptDataSharing']"
-                      name="acceptDataSharing"
-                      type="checkbox"
-                  > {{ $t('auth.acceptDataSharing') }}
-                </label>
-              </div>
-            </div>
-            <div class="col-md-6 offset-md-4">
-              <BasicButton
-                class="btn btn-primary"
-                type="submit"
-                :disabled="!config['isRegistrationEnabled']"
-                :title="$t('auth.register')"
-              />
-            </div>
+  <AuthLayout :title="$t('auth.register')">
+    <template #header-action>
+      <a
+          class="btn btn-link btn-sm"
+          href="#"
+          @click="toLogin"
+      >{{ $t('auth.login') }}</a>
+    </template>
+    <form
+        ref="registerForm"
+        class="needs-validation"
+        novalidate
+        @submit.prevent="checkForm"
+    >
+      <div
+          v-if="config['requestName']"
+          class="row"
+      >
+        <label
+            class="col-md-4 col-form-label"
+            for="firstName"
+        >{{ $t('auth.firstName') }}</label>
+        <div class="col-md-6">
+          <input
+              id="firstName"
+              v-model="formData['firstName']"
+              autofocus
+              class="form-control"
+              name="firstName"
+              required
+              type="text"
+          >
+          <div class="feedback-invalid">
+            {{ $t('errors.validation.auth.provideFirstName') }}
           </div>
         </div>
       </div>
-    </div>
-  </form>
+
+
+      <div
+          v-if="config['requestName']"
+          class="row"
+      >
+        <label
+            class="col-md-4 col-form-label"
+            for="lastName"
+        >{{ $t('auth.lastName') }}</label>
+        <div class="col-md-6">
+          <input
+              id="lastName"
+              v-model="formData['lastName']"
+              class="form-control"
+              name="lastName"
+              required
+              type="text"
+          >
+          <div class="feedback-invalid">
+            {{ $t('errors.validation.auth.provideLastName') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <label
+            class="col-md-4 col-form-label"
+            for="userName"
+        >{{ $t('auth.username') }}</label>
+        <div class="col-md-6">
+          <input
+              id="userName"
+              v-model="formData['userName']"
+              class="form-control"
+              name="userName"
+              pattern="^[a-zA-Z0-9]+$"
+              required
+              type="text"
+              @blur="checkVal('userName')"
+          >
+          <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
+            {{ $t('errors.validation.auth.usernameNoSpecialChars') }}
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <label
+            class="col-md-4 col-form-label"
+            for="email"
+        >{{ $t('auth.email') }}</label>
+        <div class="col-md-6">
+          <input
+              id="email"
+              v-model="formData['email']"
+              class="form-control"
+              name="email"
+              required
+              type="email"
+              @blur="checkVal('email')"
+          >
+          <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
+            {{ $t('errors.validation.auth.provideEmail') }}
+          </div>
+        </div>
+      </div>
+
+
+      <div class="row">
+        <label
+            class="col-md-4 col-form-label"
+            for="password"
+        >{{ $t('auth.password') }}</label>
+        <div class="col-md-6">
+          <input
+              id="password"
+              v-model="formData['password']"
+              class="form-control"
+              name="password"
+              pattern=".{8,}"
+              required
+              type="password"
+              @blur="checkVal('password')"
+          >
+          <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
+            {{ $t('errors.validation.auth.passwordRequirements') }}
+          </div>
+        </div>
+      </div>
+
+
+      <div class="d-grid gap-2 mt-3">
+        <div class="form-check">
+          <input
+              id="acceptTerms"
+              v-model="formData['acceptTerms']"
+              class="form-check-input"
+              name="acceptTerms"
+              type="checkbox"
+              @blur="checkVal('acceptTerms')"
+          >
+          <label class="form-check-label" for="acceptTerms">
+            {{ $t('auth.acceptTermsPrefix') }} <a
+              href="#"
+              @click.prevent="$refs.terms.open()"
+            >{{ $t('auth.termsOfService') }}</a>
+          </label>
+          <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">
+            {{ $t('errors.validation.auth.acceptTermsRequired') }}
+          </div>
+        </div>
+        <div v-if="config['requestStats']" class="form-check">
+          <input
+              id="acceptStats"
+              v-model="formData['acceptStats']"
+              class="form-check-input"
+              name="acceptStats"
+              type="checkbox"
+          >
+          <label class="form-check-label" for="acceptStats">{{ $t('auth.acceptStats') }}</label>
+        </div>
+        <div v-if="config['requestData']" class="form-check">
+          <input
+              id="acceptDataSharing"
+              v-model="formData['acceptDataSharing']"
+              class="form-check-input"
+              name="acceptDataSharing"
+              type="checkbox"
+          >
+          <label class="form-check-label" for="acceptDataSharing">{{ $t('auth.acceptDataSharing') }}</label>
+        </div>
+      </div>
+      <div class="mt-4">
+        <BasicButton
+          class="btn btn-primary w-100"
+          type="submit"
+          :disabled="!config['isRegistrationEnabled']"
+          :title="$t('auth.register')"
+        />
+      </div>
+    </form>
+  </AuthLayout>
   <TermsModal ref="terms"/>
 </template>
 
@@ -214,7 +192,7 @@
  *  @Author: Dennis Zyska, Carly Gettinger, Linyin Huang
  */
 import TermsModal from "./TermsModal.vue";
-import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -222,7 +200,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthRegister",
-  components: {TermsModal, LogoSvg, BasicButton},
+  components: {AuthLayout, TermsModal, BasicButton},
   data() {
     return {
       formData: {
@@ -345,29 +323,12 @@ export default {
 </script>
 
 <style scoped>
-form {
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
-}
-
-.feedback-invalid.invalid {
+input[type='password'] + .feedback-invalid:not(.invalid) {
   visibility: visible;
+  color: var(--bs-secondary-color);
 }
 
-input:focus[type='password'] + .feedback-invalid {
-  visibility: visible;
+input[type='password'] + .feedback-invalid:not(.invalid)::before {
+  content: none;
 }
-
-input:focus[type='password']:not(.custom-invalid) + .feedback-invalid {
-  color: var(--bs-body-color);
-}
-
 </style>

@@ -1,89 +1,77 @@
 <template>
-  <form class="row g-3" novalidate @submit.prevent="checkForm">
-    <div class="col-md-8 mx-auto my-4">
-      <div class="col-md-8 mx-auto">
-        <div class="text-center" style="margin-bottom: 20px">
-          <IconAsset :height="200" name="logo" />
-        </div>
+  <AuthLayout :title="$t('auth.twoFactor.verifyEmail.title')">
+    <form novalidate @submit.prevent="checkForm">
+      <p v-if="showError" class="text-danger text-center">
+        {{ errorMessage }}
+      </p>
 
-        <div class="card">
-          <div class="card-header">{{ $t("auth.twoFactor.verifyEmail.title") }}</div>
+      <p v-if="showSuccess" class="text-success text-center">
+        {{ successMessage }}
+      </p>
+      <div class="text-center mb-4">
+        <p class="text-muted">
+          {{ $t("auth.twoFactor.verifyEmail.descriptionLine1") }}
+          <br />
+          {{ $t("auth.twoFactor.verifyEmail.descriptionLine2") }}
+        </p>
+      </div>
 
-          <div class="card-body mx-4 my-4">
-            <p v-if="showError" class="text-danger text-center">
-              {{ errorMessage }}
-            </p>
-
-            <p v-if="showSuccess" class="text-success text-center">
-              {{ successMessage }}
-            </p>
-            <div class="text-center mb-4">
-              <p class="text-muted">
-                {{ $t("auth.twoFactor.verifyEmail.descriptionLine1") }}
-                <br />
-                {{ $t("auth.twoFactor.verifyEmail.descriptionLine2") }}
-              </p>
-            </div>
-
-            <div class="form-group row my-2">
-              <label class="col-md-4 col-form-label text-md-right" for="otp"
-                >{{ $t("auth.twoFactor.verifyEmail.verificationCode") }}</label
-              >
-              <div class="col-md-6">
-                <input
-                  id="otp"
-                  v-model="formData.otp"
-                  autocomplete="one-time-code"
-                  autofocus
-                  class="form-control text-center otp-input"
-                  :placeholder="$t('auth.twoFactor.verifyEmail.codePlaceholder')"
-                  required
-                  type="text"
-                  maxlength="6"
-                  pattern="[0-9]{6}"
-                  @blur="checkVal('otp')"
-                  @input="formatOTP"
-                />
-                <div
-                  class="feedback-invalid"
-                  :class="{ invalid: validity['otp'] && !validOTP }"
-                >
-                  {{ $t("auth.twoFactor.verifyEmail.invalidCode") }}
-                </div>
-              </div>
-            </div>
-
-            <div class="col-md-6 offset-md-4 my-4">
-              <BasicButton
-                class="btn btn-primary btn-block"
-                type="submit"
-                :loading="isSubmitting"
-                :text="isSubmitting ? $t('auth.twoFactor.verifyEmail.verifying') : $t('auth.twoFactor.verifyEmail.verify')"
-              />
-              <BasicButton
-                class="btn btn-link"
-                :disabled="isResending || resendCooldown > 0"
-                :text="resendButtonText"
-                @click="resendCode"
-              />
-              <BasicButton
-                class="btn btn-link"
-                :title="$t('common.cancel')"
-                @click="cancelVerification"
-              />
-            </div>
-
-            <div class="text-center text-muted small">
-              <p>{{ $t("auth.twoFactor.verifyEmail.expirationHint") }}</p>
-              <p>
-                {{ $t("auth.twoFactor.verifyEmail.resendHint") }}
-              </p>
-            </div>
+      <div class="row">
+        <label class="col-md-4 col-form-label" for="otp"
+          >{{ $t("auth.twoFactor.verifyEmail.verificationCode") }}</label
+        >
+        <div class="col-md-6">
+          <input
+            id="otp"
+            v-model="formData.otp"
+            autocomplete="one-time-code"
+            autofocus
+            class="form-control text-center otp-input"
+            :placeholder="$t('auth.twoFactor.verifyEmail.codePlaceholder')"
+            required
+            type="text"
+            maxlength="6"
+            pattern="[0-9]{6}"
+            @blur="checkVal('otp')"
+            @input="formatOTP"
+          />
+          <div
+            class="feedback-invalid"
+            :class="{ invalid: validity['otp'] && !validOTP }"
+          >
+            {{ $t("auth.twoFactor.verifyEmail.invalidCode") }}
           </div>
         </div>
       </div>
-    </div>
-  </form>
+
+      <div class="my-4 text-center">
+        <BasicButton
+          class="btn btn-primary w-100"
+          type="submit"
+          :loading="isSubmitting"
+          :text="isSubmitting ? $t('auth.twoFactor.verifyEmail.verifying') : $t('auth.twoFactor.verifyEmail.verify')"
+        />
+        <BasicButton
+          class="btn btn-link"
+          :disabled="isResending || resendCooldown > 0"
+          :text="resendButtonText"
+          @click="resendCode"
+        />
+        <BasicButton
+          class="btn btn-link"
+          :title="$t('common.cancel')"
+          @click="cancelVerification"
+        />
+      </div>
+
+      <div class="text-center text-muted small">
+        <p>{{ $t("auth.twoFactor.verifyEmail.expirationHint") }}</p>
+        <p>
+          {{ $t("auth.twoFactor.verifyEmail.resendHint") }}
+        </p>
+      </div>
+    </form>
+  </AuthLayout>
 </template>
 
 <script>
@@ -94,7 +82,7 @@
  *
  * @author: Linyin Huang
  */
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -102,7 +90,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "TwoFactorVerifyEmail",
-  components: { IconAsset, BasicButton },
+  components: { AuthLayout, BasicButton },
   data() {
     return {
       showError: false,
@@ -306,34 +294,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-form {
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
-}
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-
-input.custom-invalid {
-  border: transparent;
-  outline: 1px solid firebrick;
-  border-radius: 1px;
-}
-
-input:focus.custom-invalid {
-  outline: none;
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 0.25rem;
-}
-</style>

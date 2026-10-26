@@ -114,7 +114,7 @@
               <div v-if="totpSecret" class="alert alert-light small">
                 <strong>{{ $t("auth.twoFactor.settings.totp.manualEntry") }}</strong> {{ totpSecret }}
               </div>
-              <div class="form-group mt-3">
+              <div class="mt-3">
                 <label class="form-label">{{ $t("auth.twoFactor.settings.totp.enterVerificationCode") }}</label>
                 <input
                   v-model="totpVerificationCode"

@@ -1,100 +1,87 @@
 <template>
-  <form class="row g-3 needs-validation" novalidate @submit.prevent="checkForm">
-    <div class="col-md-8 mx-auto my-4">
-      <div class="col-md-8 mx-auto">
-        <div class="text-center" style="margin-bottom: 20px">
-          <IconAsset :height="200" name="logo" />
-        </div>
-        <div class="card">
+  <AuthLayout :title="$t('auth.ldap.institutionalLogin')">
+    <template #header-action>
+      <BasicButton
+        class="btn btn-link btn-sm"
+        :title="$t('common.back')"
+        @click="backToPasswordLogin"
+      />
+    </template>
+    <form class="needs-validation" novalidate @submit.prevent="checkForm">
+      <p v-if="showError" class="text-danger text-center">
+        {{ errorMessage }}
+      </p>
+
+      <div class="row">
+        <label
+          class="col-md-4 col-form-label"
+          for="ldapUsername"
+        >
+          {{ $t('auth.ldap.institutionalUsername') }}
+        </label>
+        <div class="col-md-6">
+          <input
+            id="ldapUsername"
+            v-model="formData.username"
+            autocomplete="username"
+            autofocus
+            class="form-control"
+            :placeholder="$t('auth.ldap.institutionalUsernamePlaceholder')"
+            required
+            type="text"
+            @blur="checkVal('username')"
+          />
           <div
-            class="card-header d-flex justify-content-between align-items-center"
+            class="feedback-invalid"
+            :class="{ invalid: validity['username'] && !validUsername }"
           >
-            {{ $t('auth.ldap.institutionalLogin') }}
-            <BasicButton
-              class="btn btn-sm btn-outline-secondary"
-              :title="$t('common.back')"
-              @click="backToPasswordLogin"
-            />
-          </div>
-
-          <div class="card-body mx-4 my-4">
-            <p v-if="showError" class="text-danger text-center">
-              {{ errorMessage }}
-            </p>
-
-            <div class="form-group row my-2">
-              <label
-                class="col-md-4 col-form-label text-md-right"
-                for="ldapUsername"
-              >
-                {{ $t('auth.ldap.institutionalUsername') }}
-              </label>
-              <div class="col-md-6">
-                <input
-                  id="ldapUsername"
-                  v-model="formData.username"
-                  autocomplete="username"
-                  autofocus
-                  class="form-control"
-                  :placeholder="$t('auth.ldap.institutionalUsernamePlaceholder')"
-                  required
-                  type="text"
-                  @blur="checkVal('username')"
-                />
-                <div
-                  class="feedback-invalid"
-                  :class="{ invalid: validity['username'] && !validUsername }"
-                >
-                  {{ $t('errors.validation.auth.provideInstitutionalUsername') }}
-                </div>
-              </div>
-            </div>
-            <div class="form-group row my-2">
-              <label
-                class="col-md-4 col-form-label text-md-right"
-                for="ldapPassword"
-              >
-                {{ $t('auth.ldap.institutionalPassword') }}
-              </label>
-              <div class="col-md-6">
-                <input
-                  id="ldapPassword"
-                  v-model="formData.password"
-                  autocomplete="current-password"
-                  class="form-control"
-                  :placeholder="$t('auth.ldap.institutionalPasswordPlaceholder')"
-                  required
-                  type="password"
-                  @blur="checkVal('password')"
-                />
-                <div
-                  class="feedback-invalid"
-                  :class="{ invalid: validity['password'] && !validPassword }"
-                >
-                  {{ $t('errors.validation.auth.provideInstitutionalPassword') }}
-                </div>
-              </div>
-            </div>
-            <div class="col-md-6 offset-md-4 my-4">
-              <BasicButton
-                class="btn btn-primary btn-block"
-                type="submit"
-                :loading="isSubmitting"
-                :text="isSubmitting ? $t('auth.signingIn') : $t('auth.ldap.loginWithLdap')"
-              />
-            </div>
-            <div class="text-center text-muted small">
-              <p class="mb-0">
-                <i class="bi bi-shield-lock"></i>
-                {{ $t('auth.ldap.passwordNotStoredLine1') }} <br />
-                {{ $t('auth.ldap.passwordNotStoredLine2') }}
-              </p>
-            </div>
+            {{ $t('errors.validation.auth.provideInstitutionalUsername') }}
           </div>
         </div>
       </div>
-    </div>
-  </form>
+      <div class="row">
+        <label
+          class="col-md-4 col-form-label"
+          for="ldapPassword"
+        >
+          {{ $t('auth.ldap.institutionalPassword') }}
+        </label>
+        <div class="col-md-6">
+          <input
+            id="ldapPassword"
+            v-model="formData.password"
+            autocomplete="current-password"
+            class="form-control"
+            :placeholder="$t('auth.ldap.institutionalPasswordPlaceholder')"
+            required
+            type="password"
+            @blur="checkVal('password')"
+          />
+          <div
+            class="feedback-invalid"
+            :class="{ invalid: validity['password'] && !validPassword }"
+          >
+            {{ $t('errors.validation.auth.provideInstitutionalPassword') }}
+          </div>
+        </div>
+      </div>
+      <div class="my-4">
+        <BasicButton
+          class="btn btn-primary w-100"
+          type="submit"
+          :loading="isSubmitting"
+          :text="isSubmitting ? $t('auth.signingIn') : $t('auth.ldap.loginWithLdap')"
+        />
+      </div>
+      <div class="text-center text-muted small">
+        <p class="mb-0">
+          <LoadIcon icon-name="shield-lock" :size="14"/>
+          {{ $t('auth.ldap.passwordNotStoredLine1') }} <br />
+          {{ $t('auth.ldap.passwordNotStoredLine2') }}
+        </p>
+      </div>
+    </form>
+  </AuthLayout>
 </template>
 
 <script>
@@ -102,15 +89,16 @@
  *
  * @author: Linyin Huang
  */
-import IconAsset from "@/basic/icon/IconAsset.vue";
+import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthLoginLdap",
-  components: { IconAsset, BasicButton },
+  components: { AuthLayout, BasicButton, LoadIcon },
   data() {
     return {
       showError: false,
@@ -263,22 +251,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-form {
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.feedback-invalid {
-  font-size: 0.75em;
-  color: firebrick;
-  visibility: hidden;
-  padding-top: 4px;
-}
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-</style>
