@@ -57,7 +57,7 @@
       </div>
 
       <div class="d-flex justify-content-between mt-4">
-        <BasicButton v-if="currentStep > 0" class="btn btn-secondary" title="Previous" @click="$emit('previous')" />
+        <BasicButton v-if="currentStep > 0" class="btn btn-outline-secondary" title="Previous" @click="$emit('previous')" />
         <BasicButton
           class="btn btn-primary"
           :class="{ 'ms-auto': currentStep === 0 }"
@@ -139,15 +139,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.step-group-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.step-card-header {
-  font-size: 1.2rem;
-  font-weight: 600;
-}
-</style>
