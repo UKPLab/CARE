@@ -132,6 +132,7 @@
           :model-value="formDateValue"
           :options="formDatePickerOptions"
           date-only
+          inline
           @update:model-value="onFormDatePicked"
         />
       </div>
@@ -1278,9 +1279,14 @@ export default {
   color: var(--bs-secondary-color, #6c757d);
 }
 
+/* The calendar must be fully visible: no inner scrollbar, unlike the suggestion lists */
 .token-suggestions-form-date {
-  padding: 0.6rem 0.7rem;
-  min-width: 18rem;
+  padding: 0.75rem;
+  width: 19rem;
+  max-width: calc(100vw - 1.5rem);
+  max-height: none;
+  overflow: visible;
+  scrollbar-gutter: auto;
 }
 
 @keyframes token-menu-in {

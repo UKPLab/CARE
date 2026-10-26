@@ -101,6 +101,21 @@
     "project": "Projet",
     "language": "Langue",
     "reset": "Réinitialiser",
+    "datePicker": {
+        "placeholder": "Choisir une date",
+        "today": "Aujourd'hui",
+        "done": "Terminé",
+        "clear": "Effacer",
+        "previousMonth": "Mois précédent",
+        "nextMonth": "Mois suivant",
+        "previousYear": "Année précédente",
+        "nextYear": "Année suivante",
+        "selectMonth": "Choisir le mois",
+        "selectYear": "Choisir l'année",
+        "hour": "Heure",
+        "minute": "Minute",
+        "time": "Heure"
+    },
     "na": "N/D",
     "time": {
         "seconds": "{sec} s",
