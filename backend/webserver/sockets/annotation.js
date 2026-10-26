@@ -308,11 +308,19 @@ class AnnotationSocket extends Socket {
      * @returns {Promise<Object>} The response from the PDFRPC embedAnnotations call.
      */
     async embedAnnotationsForDocument(data, options) {
-        if (!data.documentId) {
-            throw new TranslatableError("errors.documents.idRequired");
+        const documentSocket = this.getSocket("DocumentSocket");
+        
+        if (!documentSocket) {
+            throw new TranslatableError("errors.documents.noAccess");
         }
 
-        const document = await this.getSocket("DocumentSocket").validateDocument(data.documentId, 'id', true);
+        // Sequelize reads an array where-value as IN.
+        if (!Number.isInteger(data.documentId) || data.documentId <= 0) {
+            throw new TranslatableError("errors.documents.idRequired");
+        }
+        
+        const document = await documentSocket.validateDocument(data.documentId, "id", true);
+
         // Load comments once so complete reply trees can be selected without per-thread queries.
         const [annotations, comments] = await Promise.all([
             this.getDownloadableAnnotations(data.documentId),
@@ -335,7 +343,7 @@ class AnnotationSocket extends Socket {
         });
 
         return {
-            documentId: data.documentId,
+            documentId: document.id,
             file: response,
             hash: document.hash,
         };

@@ -365,7 +365,7 @@ export default {
 
 .btn-close.pinned {
   opacity: 1;
-  color: var(--bs-primary, #0d6efd);
+  color: var(--care-primary);
 }
 
 .info-panel-content {
