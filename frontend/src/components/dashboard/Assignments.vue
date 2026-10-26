@@ -37,6 +37,7 @@ import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
+import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 export default {
   name: "DashboardAssignments",
@@ -278,7 +279,7 @@ export default {
           canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
           submissionStatus: this.getSubmissionStatus(assignment),
           assignedRoles,
-          maxRevisions: assignment.maxRevisions === -1 ? "∞" : (assignment.maxRevisions ?? 1),
+          maxRevisions: assignment.maxRevisions === -1 ? "∞" : (assignment.maxRevisions ?? 0),
           disable: assignment.disable,
           start: assignment.start ? new Date(assignment.start).toLocaleString() : "-",
           end: assignment.end ? new Date(assignment.end).toLocaleString() : "-",
@@ -298,13 +299,12 @@ export default {
 
       const now = new Date();
       const start = assignment.start ? new Date(assignment.start) : null;
-      const end = assignment.end ? new Date(assignment.end) : null;
 
       if (start && now < start) {
         return "notStarted";
       }
 
-      if (end && now > end) {
+      if (isAssignmentPastDeadline(assignment)) {
         return "closed";
       }
 

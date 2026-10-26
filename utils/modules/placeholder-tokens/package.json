@@ -1,0 +1,15 @@
+{
+  "name": "placeholder-tokens",
+  "version": "1.0.0",
+  "description": "Parse, format, and replace bracket-indexed template placeholder tokens",
+  "main": "index.js",
+  "scripts": {
+    "test:module": "cross-env NODE_ENV=test jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage --detectOpenHandles tests/placeholder-tokens.test.js"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^30.3.0"
+  }
+}

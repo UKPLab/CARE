@@ -183,6 +183,9 @@ export default {
       if (this.showTemplateConfigurator) {
         return 'templateConfigurator';
       }
+      if (this.$slots.additionalSidebars) {
+        return 'additionalSidebars';
+      }
       return null;
     },
     showTemplateConfigurator() {

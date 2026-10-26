@@ -14,11 +14,13 @@
       >
         <Card
           :title="s.title"
-          collapsable collapsed @collapse="collapse(s.id, $event)"
+          collapsable
+          collapsed
         >
           <template #body>
             <StudySessionTable 
               :study-id="s.id"
+              :study="s"
               :current-user-only="true"
             />
           </template>
@@ -50,11 +52,13 @@
       >
         <Card
           :title="s.title"
-          collapsable collapsed @collapse="collapse(s.id, $event)"
+          collapsable
+          collapsed
         >
           <template #body>
             <StudySessionTable 
               :study-id="s.id"
+              :study="s"
               :current-user-only="true"
               :show-closed="true"
             />
@@ -130,13 +134,6 @@ export default {
     }
   },
   methods: {
-    collapse(studyId, collapsed) {
-      if (collapsed) {
-        this.$socket.emit("studySessionUnsubscribe", {studyId: studyId});
-      } else {
-        this.$socket.emit("studySessionSubscribe", {studyId: studyId});
-      }
-    },
     isStudyAvailable(study) {
       if (!study) {
         return false;

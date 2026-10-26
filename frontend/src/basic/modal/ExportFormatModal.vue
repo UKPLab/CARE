@@ -143,14 +143,16 @@ export default {
         });
       }
       result = result.map(item => Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'id')));
-
-      const filename = this.filterId
-        ? `${tableName}_${this.filterId}_${Date.now()}`
+      this.downloadItems(result, format, this.filterId, tableName);
+    },
+    downloadItems(items, format, id, tableName) {
+      const filename = id
+        ? `${tableName}_${id}_${Date.now()}`
         : `${tableName}s_${Date.now()}`;
-      downloadObjectsAs(result, filename, format);
+      downloadObjectsAs(items, filename, format);
 
       const displayTable = this.humanizeTableName(tableName);
-      const successKey = this.filterId
+      const successKey = id
         ? 'modals.importExport.export.success.single'
         : 'modals.importExport.export.success.multiple';
       this.eventBus.emit("toast", {

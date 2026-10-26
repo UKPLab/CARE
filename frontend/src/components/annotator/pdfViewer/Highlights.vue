@@ -320,7 +320,7 @@ export default {
         // likelihood of highlights being hidden by page styling.
 
         const highlightEl = document.createElement('highlight');
-        highlightEl.className = "highlight";
+        highlightEl.className = "care-highlight";
 
         highlightEl.addEventListener('click', () => {
           this.eventBus.emit('sidebarScroll', annotation.id);
@@ -545,15 +545,15 @@ export default {
   opacity: 1 !important;
 }
 
-.highlight {
+.care-highlight {
   cursor: pointer;
 }
 
-.highlight.is-transparent {
+.care-highlight.is-transparent {
   background-color: transparent;
 }
 
-.highlight::before {
+.care-highlight::before {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -563,7 +563,7 @@ export default {
   content: ' annotation start ';
 }
 
-.highlight::after {
+.care-highlight::after {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -573,23 +573,23 @@ export default {
   content: ' annotation end ';
 }
 
-.highlight.highlight {
+.care-highlight.care-highlight {
   background-color: rgba(51, 54, 75, 0.4);
 }
 
-.highlight.highlight.is-transparent {
+.care-highlight.care-highlight.is-transparent {
   background-color: transparent;
 }
 
-.highlight.highlight.highlight {
+.care-highlight.care-highlight.care-highlight {
   background-color: transparent;
 }
 
-.highlight.highlight.highlight-focus {
+.care-highlight.care-highlight.highlight-focus {
   background-color: rgba(156, 230, 255, 0.5) !important;
 }
 
-.highlight.highlight.highlight-focus.highlight {
+.care-highlight.care-highlight.highlight-focus.care-highlight {
   background-color: transparent !important;
 }
 </style>

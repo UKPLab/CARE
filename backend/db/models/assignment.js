@@ -1,6 +1,7 @@
 'use strict';
 const MetaModel = require("../MetaModel.js");
 const { Op } = require("sequelize");
+const TranslatableError = require("../../utils/TranslatableError");
 const { assertStartBeforeEnd } = require("../../utils/helper/assertStartBeforeEnd.js");
 
 module.exports = (sequelize, DataTypes) => {
@@ -41,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
 				unlimitedLabel: "assignments.fields.maxRevisions.unlimitedLabel",
 				unlimitedStoredValue: -1,
 				required: true,
-				default: 1,
+				default: 0,
 				help: "assignments.fields.maxRevisions.help",
 			},
 			{
@@ -110,7 +111,7 @@ module.exports = (sequelize, DataTypes) => {
 		 * assignment's assignment_share entry has their userId or one of their roleIds.
 		 *
 		 * @param {number} userId - The ID of the user to build the filter for.
-		 * @returns {object} Sequelize where-clause filter object.
+		 * @returns {Promise<{owned: object, shared: object|null}>} Shared rows are read-only.
 		 */
 		static async getUserFilter(userId) {
 			const roleIds = await sequelize.models.user_role_matching.getUserRolesById(userId);
@@ -131,12 +132,31 @@ module.exports = (sequelize, DataTypes) => {
 			});
 			const assignedIds = [...new Set(matchingEntries.map(e => e.assignmentId))];
 
-			// Step 3: filter assignments by ownership or assignment_share membership
-			const filter = { [Op.or]: [{ userId }] };
-			if (assignedIds.length > 0) {
-				filter[Op.or].push({ id: { [Op.in]: assignedIds } });
+			// Step 3: owned = the user's own assignments; shared = assignments shared with them
+			return {
+				owned: { userId },
+				shared: assignedIds.length > 0 ? { id: { [Op.in]: assignedIds } } : null,
+			};
+		}
+
+		/**
+		 * Refuse replace and delete once the assignment is closed or its end time has passed.
+		 * Same comparison the submissions dashboard uses for a closed assignment: a set `closed`
+		 * timestamp, or `end` strictly before now. A missing assignment is ignored.
+		 *
+		 * @param {object|null} assignment - Assignment row already loaded by the caller.
+		 * @param {string} errorKey - Caller-specific i18n key, the same one used for an explicit close.
+		 * @returns {void}
+		 * @throws {TranslatableError} When the assignment is closed or past `end`.
+		 */
+		static assertSubmissionChangesAllowed(assignment, errorKey) {
+			if (!assignment) {
+				return;
 			}
-			return filter;
+			const pastDeadline = assignment.end && new Date() > new Date(assignment.end);
+			if (assignment.closed || pastDeadline) {
+				throw new TranslatableError(errorKey);
+			}
 		}
 
 		static associate(models) {

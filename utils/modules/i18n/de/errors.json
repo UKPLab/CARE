@@ -139,6 +139,7 @@
     "fileMissingFromServer": "Die Dokumentdatei {filename} fehlt auf dem Server.",
     "noUploadAccess": "Benutzer hat keinen Zugriff zum Hochladen von Dokumenten",
     "updateNotAllowed": "Sie dürfen dieses Dokument nicht aktualisieren",
+    "submissionFileNotDeletable": "Dieses Dokument gehört zu einer Einreichung und kann unter Dokumente nicht gelöscht werden.",
     "nonHtmlModalUnsupported": "Nicht-HTML/Modal-Dokumente werden für diese Operation nicht unterstützt",
     "nonHtmlModalUnsupportedUppercase": "Nicht-HTML/MODAL-Dokumente werden für diese Operation nicht unterstützt",
     "idRequired": "Dokument-ID ist erforderlich.",
@@ -194,6 +195,8 @@
     "studyRestartFailed": "Neustart der Studie fehlgeschlagen",
     "templateSaveFailed": "Speichern der Vorlage fehlgeschlagen",
     "templateCreationFailed": "Erstellung der Vorlage fehlgeschlagen",
+    "formLoadFailed": "Studiendaten konnten nicht geladen werden",
+    "formLoadTimeout": "Zeitüberschreitung beim Laden der Formulardaten",
     "sessionNotFinished": "Sitzung nicht beendet",
     "stepUpdateFailed": "Aktualisierung des Schritts fehlgeschlagen",
     "studyClosed": "Diese Studie ist geschlossen",
@@ -274,7 +277,10 @@
     "resolveContextStepDocumentMismatch": "Der Studienschritt stimmt nicht mit dem ausgewählten Dokument überein.",
     "resolveContextStudySessionNotFound": "Die Studiensitzung wurde nicht gefunden.",
     "resolveContextSessionStepMismatch": "Die Studiensitzung stimmt nicht mit dem Studienschritt überein.",
-    "duplicateBracketPlaceholders": "Diese Vorlage enthält doppelte Platzhalter-IDs in eckigen Klammern: {ids}. Jeder ~key[N]~-Token darf höchstens einmal vorkommen."
+    "duplicateBracketPlaceholders": "Diese Vorlage enthält doppelte Platzhalter-IDs in eckigen Klammern: {ids}. Jeder ~key[N]~-Token darf höchstens einmal vorkommen.",
+    "duplicateImportLanguage": "Diese Datei wiederholt die Sprache {language}.",
+    "importDefaultLanguageMissing": "Die Standardsprache {language} hat in dieser Datei keinen Inhalt.",
+    "duplicatePlaceholderOptions": "Diese Vorlage enthält doppelte Optionen an einem Platzhalter: {tokens}. Jeder Optionsname (z. B. wordRange) darf pro Platzhalter höchstens einmal vorkommen."
   },
   "settings": {
     "errorLoading": "Fehler beim Laden der Einstellungen",
@@ -397,6 +403,14 @@
   },
   "database": {
     "failedToUpdateData": "Aktualisierung der Daten fehlgeschlagen"
+  },
+  "queryTable": {
+    "columnRequired": "Spaltenname ist erforderlich",
+    "columnNotDistinct": "Spalte {column} ist für Distinct-Werte nicht verfügbar",
+    "selectionTooLarge": "Zu viele Zeilen ausgewählt (mehr als {limit}). Bitte den Filter eingrenzen.",
+    "idListTooLarge": "Zu viele IDs ausgewählt. Das Limit beträgt {limit}; die Anfrage wurde abgelehnt.",
+    "scopeInvalid": "Diese Auswahl ist nicht mehr gültig. Gehen Sie zurück und wählen Sie die Workflow-Schritte erneut aus.",
+    "inspectStudyRequired": "Zum Laden dieser Sitzungen ist eine Studie erforderlich."
   },
   "backgroundTask": {
     "noDocumentSocketForClient": "Kein DocumentSocket für den Client gefunden",

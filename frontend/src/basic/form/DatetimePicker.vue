@@ -10,17 +10,18 @@
         @blur="validate"
       >
       <input
-        v-model="time"
-        class="form-control"
-        type="time"
-        :lang="localeCode"
-        :min="options.disablePast && date === today ? currentTime : undefined"
-        @blur="validate"
+          v-if="!dateOnly"
+          v-model="time"
+          class="form-control"
+          type="time"
+          :lang="localeCode"
+          @blur="blur(currentDate)"
       >
       <button
-        class="btn btn-outline-secondary"
-        type="button"
-        @click="date = null"
+          v-if="!dateOnly"
+          class="btn btn-outline-secondary"
+          type="button"
+          @click="date = null"
       >
         {{ $t('common.reset') }}
       </button>
@@ -47,7 +48,12 @@ export default {
     modelValue: {
       type: [String, null],
       required: true
-    }
+    },
+    dateOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["update:modelValue"],
   data() {
@@ -146,8 +152,16 @@ export default {
 
     parse() {
       if (this.currentDate !== null) {
-        this.date = this.formatLocalDate(this.currentDate);
-        this.time = this.formatLocalTime(this.currentDate);
+        const day = ("0" + this.currentDate.getDate()).slice(-2);
+        const month = ("0" + (this.currentDate.getMonth() + 1)).slice(-2);
+        this.date = this.currentDate.getFullYear() + "-" + (month) + "-" + (day);
+        if (this.dateOnly) {
+          this.time = "00:00";
+        } else {
+          const hours = ("0" + this.currentDate.getHours()).slice(-2);
+          const minutes = ("0" + this.currentDate.getMinutes()).slice(-2);
+          this.time = hours + ":" + minutes;
+        }
       } else {
         this.date = null
         this.time = null

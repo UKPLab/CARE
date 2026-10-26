@@ -1,9 +1,16 @@
 <template>
   <div>
     <div
+        ref="criterionHeader"
         class="d-flex justify-content-between align-items-center py-2"
         style="cursor: pointer"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isExpanded"
+        :aria-controls="panelId"
         @click="$emit('toggle')"
+        @keydown.enter.exact.prevent="$emit('toggle')"
+        @keydown.space.exact.prevent="$emit('toggle')"
     >
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
@@ -42,6 +49,7 @@
 
     <div
         v-if="isExpanded"
+        :id="panelId"
         class="criterion-assessment mt-2 px-3 pb-2"
     >
       <div class="assessment-text">
@@ -65,7 +73,13 @@
                 :rows="getTextareaRows(localAssessment)"
                 :disabled="readOnly"
                 @input="autoResizeTextarea"
+                @keydown.ctrl.enter.exact.prevent="saveEdit"
+                @keydown.meta.enter.exact.prevent="saveEdit"
+                @keydown.esc.exact.prevent="cancelEdit"
             ></textarea>
+            <small class="text-muted assessment-hint">
+              {{ $t('assessment.criteria.keyboardHint', { mod: modifierKey }) }}
+            </small>
           </div>
         </div>
       </div>
@@ -80,6 +94,7 @@
           <div>
             <BasicButton
                 v-if="!readOnly"
+                ref="editButton"
                 class="btn-outline-primary btn-sm"
                 :title="$t('assessment.criteria.edit')"
                 text=""
@@ -91,31 +106,18 @@
 
           <div v-if="!readOnly" class="d-flex align-items-center gap-2">
             <select
+                ref="scoreSelect"
                 v-model.number="scoreProxy"
                 class="form-select form-select-sm score-dropdown"
                 :title="$t('assessment.criteria.changeScore')"
             >
-              <!-- Use scoring list if present -->
-              <template v-if="hasScoringList">
-                <option
-                    v-for="option in criterion.scoring"
-                    :key="option.points"
-                    :value="option.points"
-                >
-                  {{ option.points }} P
-                </option>
-              </template>
-
-              <!-- Fallback to numeric range -->
-              <template v-else>
-                <option
-                    v-for="point in availablePoints"
-                    :key="point"
-                    :value="point"
-                >
-                  {{ point }} P
-                </option>
-              </template>
+              <option
+                  v-for="point in pointsDescending"
+                  :key="point"
+                  :value="point"
+              >
+                {{ point }} P
+              </option>
             </select>
 
             <BasicButton
@@ -163,6 +165,7 @@
  */
 import LoadIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
+import {useId} from "vue";
 
 export default {
   name: "AssessmentCriteria",
@@ -194,6 +197,14 @@ export default {
     "toggle",
     "saved-and-next",
   ],
+  /**
+   * Generate a per-instance id for the panel's aria-controls link.
+   *
+   * @returns {{uid: string}} unique id from Vue's useId()
+   */
+  setup() {
+    return {uid: useId()};
+  },
   data() {
     return {
       localAssessment: "",
@@ -214,6 +225,28 @@ export default {
     },
     isSaved() {
       return !!this.state.isSaved;
+    },
+    /**
+     * Label for the save modifier key in the shortcut hint.
+     * macOS users press Cmd, everyone else presses Ctrl. Both are bound.
+     *
+     * @returns {string} translated modifier label
+     */
+    modifierKey() {
+      const platform = navigator.userAgentData?.platform || navigator.platform || "";
+      return /mac/i.test(platform)
+          ? this.$t("assessment.criteria.modCmd")
+          : this.$t("assessment.criteria.modCtrl");
+    },
+    /**
+     * Unique DOM id for this criterion's panel, used by aria-controls.
+     * Uses Vue's useId(), so it stays unique across every mounted
+     * assessment, regardless of how the configuration names its criteria.
+     *
+     * @returns {string} unique panel id
+     */
+    panelId() {
+      return `criterion-panel-${this.uid}`;
     },
     isEditing() {
       return !!this.state.isEditing;
@@ -243,6 +276,10 @@ export default {
       const values = [];
       for (let i = min; i <= max; i++) values.push(i);
       return values;
+    },
+    // Highest first, so the native ArrowUp moves to a higher score
+    pointsDescending() {
+      return [...this.availablePoints].sort((a, b) => b - a);
     },
     scoreProxy: {
       get() {
@@ -289,6 +326,7 @@ export default {
       };
       this.$nextTick(() => {
         this.autoResizeTextarea();
+        this.$refs.assessmentTextarea?.focus();
       });
     },
     saveEdit() {
@@ -299,6 +337,7 @@ export default {
         isEditing: false,
         isSaved: false,
       };
+      this.$nextTick(() => this.focusEl("scoreSelect"));
     },
     cancelEdit() {
       if (this.readOnly) return;
@@ -307,6 +346,27 @@ export default {
         isEditing: false,
       };
       this.localAssessment = this.state.assessment || "";
+      this.$nextTick(() => this.focusEl("editButton"));
+    },
+    /**
+     * Move keyboard focus to this criterion's header.
+     * Called by the parent rubric after an advance, never on a plain expand.
+     */
+    focusHeader() {
+      this.$refs.criterionHeader?.focus();
+    },
+    /**
+     * Focus the native element behind a BasicButton ref.
+     * BasicButton has a single root <button>, so $el is that button.
+     *
+     * @param {string} refName - name of the ref to focus
+     */
+    focusEl(refName) {
+      const target = this.$refs[refName];
+      const el = target && target.$el ? target.$el : target;
+      if (el && typeof el.focus === "function") {
+        el.focus();
+      }
     },
     saveAssessment() {
       if (this.readOnly) return;
@@ -334,7 +394,7 @@ export default {
 
 <style scoped>
 .criterion-icon {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   transition: transform 0.2s ease;
 }
 
@@ -353,7 +413,7 @@ export default {
   background-color: var(--bs-body-bg, #fff);
   padding: 12px;
   border-radius: 6px;
-  border-left: 3px solid #007bff;
+  border-left: 3px solid var(--care-primary);
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -372,6 +432,12 @@ export default {
   margin-top: 12px;
 }
 
+.assessment-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+}
+
 .assessment-textarea {
   border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 6px;
@@ -382,13 +448,13 @@ export default {
 }
 
 .assessment-textarea:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
   outline: 0;
 }
 
 .assessment-textarea::placeholder {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   font-style: italic;
 }
 
@@ -420,16 +486,6 @@ export default {
   border-color: #1e7e34;
 }
 
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
-}
-
 .assessment-actions .btn-secondary {
   background-color: #6c757d;
   border-color: #6c757d;
@@ -453,18 +509,18 @@ export default {
 }
 
 .score-dropdown:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
   outline: 0;
 }
 
 /* Info icon */
 .info-icon {
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   transition: color 0.2s ease;
 }
 
 .info-icon:hover {
-  color: #007bff;
+  color: var(--care-primary);
 }
 </style>
