@@ -1054,12 +1054,14 @@ button.study-card-title:focus-visible {
   padding: 0.38rem 0.85rem;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #fff;
-  background: var(--bs-primary);
+  color: var(--care-on-primary);
+  background: var(--care-primary);
   border: 0;
   border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 4px 12px -4px rgba(var(--bs-primary-rgb), 0.5);
-  transition: transform 0.2s var(--sc-ease), box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-primary) 30%, transparent),
+    0 4px 12px -4px color-mix(in srgb, var(--care-primary) 50%, transparent);
+  transition: transform 0.2s var(--sc-ease), box-shadow 0.2s ease, filter 0.2s ease, background-color 0.2s ease;
 }
 
 .study-card-open :deep(svg) {
@@ -1068,7 +1070,14 @@ button.study-card-title:focus-visible {
 
 .study-card-open:hover {
   filter: brightness(1.08);
-  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 8px 18px -6px rgba(var(--bs-primary-rgb), 0.6);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-primary) 30%, transparent),
+    0 8px 18px -6px color-mix(in srgb, var(--care-primary) 60%, transparent);
+}
+
+[data-bs-theme="dark"] .study-card-open:hover {
+  filter: none;
+  background: var(--care-accent-hover);
 }
 
 .study-card-open:hover :deep(svg) {

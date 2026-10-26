@@ -805,7 +805,7 @@ export default {
   --sd-menu-bg: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
   --sd-menu-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.3);
   --sd-bg:
-    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.12), transparent 62%),
+    radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
     radial-gradient(900px 420px at 100% -16%, rgba(var(--sd-violet-rgb), 0.09), transparent 60%),
     color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
 }
@@ -886,7 +886,11 @@ export default {
 }
 
 .study-header-actions :deep(.btn-secondary:hover svg) {
-  color: rgb(var(--sd-violet-rgb));
+  color: var(--bs-primary);
+}
+
+[data-bs-theme="dark"] .study-header-actions :deep(.btn-secondary:hover svg) {
+  color: var(--care-accent);
 }
 
 .study-header-actions :deep(.btn-primary) {
@@ -898,6 +902,18 @@ export default {
 .study-header-actions :deep(.btn-primary:hover) {
   filter: brightness(1.06);
   box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 10px 22px -8px rgba(var(--bs-primary-rgb), 0.65);
+}
+
+[data-bs-theme="dark"] .study-header-actions :deep(.btn-primary) {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
+    0 6px 16px -6px color-mix(in srgb, var(--care-accent) 55%, transparent);
+}
+
+[data-bs-theme="dark"] .study-header-actions :deep(.btn-primary:hover) {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
+    0 10px 22px -8px color-mix(in srgb, var(--care-accent) 65%, transparent);
 }
 
 .study-header-sep {
@@ -923,6 +939,11 @@ export default {
 .study-dashboard :deep(.table-search:focus-within) {
   border-color: rgba(var(--bs-primary-rgb), 0.45);
   box-shadow: var(--sd-panel-shadow), 0 0 0 4px rgba(var(--bs-primary-rgb), 0.12);
+}
+
+[data-bs-theme="dark"] .study-dashboard :deep(.table-search:focus-within) {
+  border-color: color-mix(in srgb, var(--care-accent) 28%, transparent);
+  box-shadow: var(--sd-panel-shadow), 0 0 0 4px color-mix(in srgb, var(--care-accent) 10%, transparent);
 }
 
 .study-dashboard :deep(.table-search > .input-group-text),
@@ -1092,6 +1113,20 @@ export default {
   font-size: 0.875rem;
 }
 
+[data-bs-theme="dark"] .study-dashboard :deep(.table-wrapper .table) {
+  --bs-table-hover-bg: color-mix(in srgb, var(--care-accent) 10%, transparent);
+}
+
+/* Global table hover paints a blue wash on the cell; in dark mode use the accent. */
+[data-bs-theme="dark"] .study-dashboard :deep(.table-wrapper tbody tr:hover > td) {
+  --bs-table-bg-state: color-mix(in srgb, var(--care-accent) 10%, transparent);
+}
+
+[data-bs-theme="dark"] .study-dashboard :deep(thead svg.bg-success) {
+  color: var(--care-accent);
+  background-color: color-mix(in srgb, var(--care-accent) 28%, transparent) !important;
+}
+
 .study-dashboard :deep(.table-wrapper .table thead th) {
   padding: 0.6rem 0.8rem;
   font-size: 0.7rem;
@@ -1250,6 +1285,19 @@ export default {
   border-color: rgba(var(--bs-primary-rgb), 0.35);
 }
 
+[data-bs-theme="dark"] .study-dashboard :deep(.pagination .page-link:hover:not(:disabled)),
+[data-bs-theme="dark"] .study-dashboard :deep(.pagination .page-link:focus:not(:disabled)) {
+  color: var(--care-accent);
+  border-color: color-mix(in srgb, var(--care-accent) 55%, transparent);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-accent) 28%, transparent);
+}
+
+[data-bs-theme="dark"] .study-dashboard :deep(.pagination .page-item.active .page-link) {
+  color: var(--care-on-accent);
+  background: var(--care-accent);
+  border-color: var(--care-accent);
+}
+
 .study-dashboard :deep(.pagination .page-link:active:not(:disabled)) {
   transform: scale(0.96);
 }
@@ -1357,10 +1405,18 @@ export default {
   color: var(--bs-primary);
 }
 
+[data-bs-theme="dark"] .study-view-toggle-btn.active {
+  color: var(--care-accent);
+}
+
 .study-view-toggle-btn:focus-visible {
   outline: 2px solid rgba(var(--bs-primary-rgb), 0.5);
   outline-offset: 1px;
   border-radius: 6px;
+}
+
+[data-bs-theme="dark"] .study-view-toggle-btn:focus-visible {
+  outline-color: var(--care-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
