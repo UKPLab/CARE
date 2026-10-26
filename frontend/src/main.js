@@ -89,4 +89,9 @@ import ai from "@/plugins/ai";
 
 app.use(ai);
 
+// Styled popup for every native <select> (the browser popup cannot be styled)
+import selectEnhancer from "@/plugins/selectEnhancer";
+
+app.use(selectEnhancer);
+
 router.isReady().then(() => app.mount('#app'));
