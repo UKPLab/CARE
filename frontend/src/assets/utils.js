@@ -1,7 +1,7 @@
 import "file-saver"; // DO NOT delete this import, required for window.saveAs to work
 import Papa from "papaparse";
 import yaml from "js-yaml";
-import { i18n } from '../main.js';
+import { i18n } from '@/i18n.js';
 
 // Detects key-like messages such as "errors.server.notFound".
 // This prevents missing translation keys from being shown as raw text,

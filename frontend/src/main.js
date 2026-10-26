@@ -14,20 +14,10 @@ const app = Vue.createApp({
 });
 
 
-import { createI18n } from 'vue-i18n'
-import i18nBundles from '@i18n/i18n-bundles.js'
-import { DEFAULT_LOCALE, getInitialLocale } from '@/assets/locale.js'
+// i18n instance lives in its own module to avoid circular imports (utils.js / App.vue → main.js)
+import { i18n } from '@/i18n.js'
 
-export const i18n = createI18n({
-  legacy: true,
-  globalInjection: true,
-  locale: getInitialLocale(),
-  fallbackLocale: DEFAULT_LOCALE,
-  messages: i18nBundles,
-  pluralizationRules: {
-    fr: (choice, choicesLength) => (choicesLength === 2 && Math.abs(choice) > 1 ? 1 : 0),
-  },
-});
+export { i18n };
 
 app.use(i18n);
 

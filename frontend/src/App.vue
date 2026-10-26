@@ -50,7 +50,7 @@ import ConsentModal from "@/auth/ConsentModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
-import { i18n } from "@/main.js";
+import { i18n } from "@/i18n.js";
 import {
   applyLocale,
   clearCachedLocale,
