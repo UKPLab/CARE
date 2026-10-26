@@ -104,14 +104,17 @@
                 aria-labelledby="dropdownMenuButton"
                 class="dropdown-menu dropdown-menu-right"
               >
-                <a class="dropdown-item display-username">
-                  {{ $t('navigation.topbar.signedInAs', { username }) }}
-                </a>
+                <div class="profile-menu-header display-username">
+                  <span class="profile-menu-avatar" aria-hidden="true">{{ firstLetterUsername }}</span>
+                  <span class="profile-menu-name">{{ $t('navigation.topbar.signedInAs', { username }) }}</span>
+                </div>
+                <div class="dropdown-divider" />
                 <a
                   class="dropdown-item"
                   href="#"
                   @click="$refs.preferencesModal.open()"
                 >
+                  <i class="bi bi-sliders" aria-hidden="true" />
                   {{ $t('auth.preferences.title') }}
                 </a>
                 <a
@@ -119,6 +122,7 @@
                   href="#"
                   @click="$refs.twoFactorSettingsModal.open()"
                 >
+                  <i class="bi bi-shield-lock" aria-hidden="true" />
                   {{ $t('auth.twoFactor.configure') }}
                 </a>
                 <a
@@ -126,18 +130,26 @@
                   href="#"
                   @click="$refs.passwordModal.open(userId)"
                 >
+                  <i class="bi bi-key" aria-hidden="true" />
                   {{ $t('auth.changePassword') }}
                 </a>
                 <a
                   class="dropdown-item"
                   href="#"
                   @click.prevent="toggleTheme()"
-                >{{ isDarkMode ? $t('navigation.topbar.lightMode') : $t('navigation.topbar.darkMode') }}</a>
+                >
+                  <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon-stars'" aria-hidden="true" />
+                  {{ isDarkMode ? $t('navigation.topbar.lightMode') : $t('navigation.topbar.darkMode') }}
+                </a>
+                <div class="dropdown-divider" />
                 <a
-                  class="dropdown-item"
+                  class="dropdown-item profile-menu-logout"
                   href="#"
                   @click="logout()"
-                >{{ $t('auth.logout') }}</a>
+                >
+                  <i class="bi bi-box-arrow-right" aria-hidden="true" />
+                  {{ $t('auth.logout') }}
+                </a>
               </div>
             </div>
           </li>
@@ -376,14 +388,110 @@ export default {
 }
 
 #dropdown-show {
-  margin-top: 8px;
+  display: block;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-6px) scale(.98);
+  transform-origin: top right;
+  pointer-events: none;
+  margin-top: 10px;
   right: 0;
   position: absolute;
+  min-width: 240px;
+  padding: .375rem;
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--bs-border-radius-lg, .75rem);
+  transition: opacity 140ms var(--care-ease, ease),
+              transform 140ms var(--care-ease, ease),
+              visibility 0s linear 140ms;
 }
 
+#dropdown-show.show {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+#dropdown-show .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .5rem .65rem;
+  font-size: .9rem;
+  border-radius: var(--bs-border-radius-sm, .375rem);
+}
+
+#dropdown-show .dropdown-item i {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
+}
+
+/* Icons follow the item colour on hover / active (accent background) */
+#dropdown-show .dropdown-item:hover i,
+#dropdown-show .dropdown-item:focus-visible i,
+#dropdown-show .dropdown-item:active i {
+  color: inherit;
+}
+
+#dropdown-show .dropdown-divider {
+  margin: .375rem .25rem;
+}
+
+/* Header: avatar + "Signed in as" text, not clickable */
 .display-username {
-  font-style: italic;
   pointer-events: none;
+}
+
+.profile-menu-header {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .5rem .65rem;
+}
+
+.profile-menu-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  font-size: .85rem;
+  font-weight: 600;
+  border-radius: 50%;
+  color: var(--care-on-primary);
+  background: var(--care-primary);
+}
+
+.profile-menu-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: .85rem;
+  color: var(--bs-secondary-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Logout is the destructive-ish action: red on hover instead of the accent */
+#dropdown-show .profile-menu-logout:hover,
+#dropdown-show .profile-menu-logout:focus-visible {
+  color: var(--bs-danger-text-emphasis, #dc3545);
+  background: color-mix(in srgb, var(--bs-danger) 12%, transparent);
+}
+
+#dropdown-show .profile-menu-logout:hover i,
+#dropdown-show .profile-menu-logout:focus-visible i {
+  color: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #dropdown-show {
+    transition: none;
+  }
 }
 
 body.sidebar-exists #backButton {
