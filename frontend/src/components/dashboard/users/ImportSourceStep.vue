@@ -257,7 +257,7 @@ export default {
 
 .file-info-container button {
   background-color: transparent;
-  color: firebrick;
+  color: var(--bs-form-invalid-color);
   border: none;
   padding: 5px 10px;
   cursor: pointer;

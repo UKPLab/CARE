@@ -140,7 +140,7 @@ export default {
 
 .error-container {
   margin: 0.25rem auto 0.5rem;
-  color: firebrick;
+  color: var(--bs-form-invalid-color);
 
   ul {
     margin-bottom: 0.25rem;
