@@ -709,10 +709,8 @@ export default {
 }
 
 .sidebar-highlight {
-  border: 2px solid #ff9800 !important;
-  box-shadow: 0 0 8px #ff9800;
-  border-radius: 4px;
-  transition: border 0.2s, box-shadow 0.2s;
+  box-shadow: var(--care-focus-ring, 0 0 0 3px color-mix(in srgb, var(--bs-primary) 35%, transparent));
+  border-radius: 12px;
 }
 
 </style>

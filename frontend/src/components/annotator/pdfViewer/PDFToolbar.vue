@@ -135,34 +135,34 @@ export default {
 <style scoped>
 .pdf-toolbar {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 200;
-  background: var(--bs-tertiary-bg, #f8f9fa);
-  border-bottom: 1px solid var(--bs-border-color, #ddd);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: 16px;
+  background: var(--bs-body-bg, #fff);
+  border: 1px solid var(--bs-border-color, #ddd);
+  border-radius: 999px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  min-height: 48px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  justify-content: flex-end;
+  gap: 4px;
+  padding: 4px 8px;
+  min-height: 40px;
+  box-shadow: 0 4px 8px -2px rgb(16 24 40 / .10), 0 2px 4px -2px rgb(16 24 40 / .06);
 }
 
 .pdf-toolbar.collapsed {
-  width: 64px;
-  padding: 8px;
-  justify-content: center;
+  width: fit-content;
+  padding: 4px;
   margin-left: auto;
 }
 
 .pdf-toolbar :deep(.btn) {
-  transition: all 0.2s ease;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
 .pdf-toolbar :deep(.btn:hover) {
   background-color: var(--bs-secondary-bg, #e9ecef);
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .toolbar-toggle-btn {
@@ -182,7 +182,6 @@ export default {
 
 .toolbar-toggle-btn:hover {
   background: var(--bs-secondary-bg, #e9ecef);
-  transform: scale(1.1);
 }
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn {

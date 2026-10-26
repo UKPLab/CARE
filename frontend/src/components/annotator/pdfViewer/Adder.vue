@@ -28,7 +28,8 @@
         <BasicButton
           v-for="t in filteredTags"
           :key="t.name"
-          :class="`btn-${t.colorCode} text-truncate`"
+          class="adder-tag text-truncate"
+          :style="{ '--tag-color': `var(--bs-${t.colorCode})` }"
           :title="t.description"
           :text="t.name"
           data-placement="top"
@@ -561,16 +562,16 @@ export default {
 
 <style scoped>
 #adder {
-  border-radius: 5px;
-  box-shadow: 2px 3px #CCCCCC;
+  border-radius: 12px;
+  box-shadow: 0 12px 24px -6px rgb(16 24 40 / .16), 0 4px 8px -4px rgb(16 24 40 / .08);
   position: absolute;
   top: 0;
   left: 0;
-  padding: 2px;
-  background-color: white;
+  padding: 6px;
+  background-color: var(--bs-body-bg, white);
   white-space: nowrap;
   width: fit-content;
-  max-width: 150px;
+  max-width: 180px;
 }
 #adder.is-extended {
   max-width: 250px;
@@ -578,17 +579,40 @@ export default {
 .btn-group-vertical {
   width: 100%;
   max-width: inherit;
+  gap: 4px;
 }
-.btn {
-  text-align: center;
+#adder .btn {
   max-width: inherit;
+  border-radius: 8px;
+  box-shadow: none;
+}
+.adder-tag {
+  padding: 6px 10px;
+  border: 0;
+  text-align: left;
+  font-weight: 500;
+  color: var(--bs-body-color);
+  background: color-mix(in srgb, var(--tag-color) 14%, transparent);
+}
+.adder-tag:hover {
+  color: var(--bs-body-color);
+  background: color-mix(in srgb, var(--tag-color) 26%, transparent);
+}
+.adder-tag::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--tag-color);
 }
 .scrollable-menu-wrapper {
   max-height: 150px;
   overflow-x: hidden;
   overflow-y: auto;
   max-width: inherit;
-  border-radius: 5px;
+  border-radius: 8px;
 }
 .scrollable-menu-wrapper.is-extended {
   max-height: 250px;
@@ -596,9 +620,9 @@ export default {
 }
 .expand-btn {
   width: 100%;
-  background-color: var(--bs-secondary-bg, lightgrey);
-  border-radius: 5px;
-  padding: 5px;
+  margin-top: 4px;
+  padding: 4px;
+  background-color: var(--bs-secondary-bg);
 }
 .menu-search-bar {
   width: 100%;
