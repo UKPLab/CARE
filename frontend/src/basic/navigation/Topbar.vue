@@ -103,10 +103,13 @@
                 id="dropdown-show"
                 aria-labelledby="dropdownMenuButton"
                 class="dropdown-menu dropdown-menu-right"
+                @mousedown="onProfileMenuMousedown"
               >
                 <div class="profile-menu-header display-username">
                   <span class="profile-menu-avatar" aria-hidden="true">{{ firstLetterUsername }}</span>
-                  <span class="profile-menu-name">{{ $t('navigation.topbar.signedInAs', { username }) }}</span>
+                  <span class="profile-menu-text">
+                    <span class="profile-menu-name">{{ $t('navigation.topbar.signedInAs', { username }) }}</span>
+                  </span>
                 </div>
                 <div class="dropdown-divider" />
                 <a
@@ -150,6 +153,9 @@
                   <i class="bi bi-box-arrow-right" aria-hidden="true" />
                   {{ $t('auth.logout') }}
                 </a>
+                <div v-if="isAdmin" class="profile-menu-version" tabindex="-1">
+                  {{ $t('common.appVersion') }}: {{ version }}
+                </div>
               </div>
             </div>
           </li>
@@ -188,6 +194,7 @@ export default {
   components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal, DashboardNav},
   data() {
     return {
+      version: APP_VERSION,
       showProjectDropdown: false,
       now: Date.now(),
       tickHandle: null,
@@ -343,11 +350,24 @@ export default {
         this.$router.push('/dashboard/socket_profiler');
       }
     },
+    /** Pressing the header or a divider must not pull focus off the menu, or focusout would close it. */
+    onProfileMenuMousedown(event) {
+      // The version line stays selectable (copyable): it takes focus itself, see toggleProfileDropdown
+      if (!event.target.closest('.dropdown-item, .profile-menu-version')) {
+        event.preventDefault();
+      }
+    },
     toggleProfileDropdown() {
       const dropdown = document.getElementById('dropdown-show');
+      // Clicks inside the menu that are not on an item (header, dividers, padding) keep it open
+      if (event.type === 'click' && event.target.closest('#dropdown-show')
+          && !event.target.closest('.dropdown-item')) {
+        return;
+      }
       var close = false;
       if (event.type === 'focusout') {
-        if (event.relatedTarget != null && event.relatedTarget.classList.contains("dropdown-item")) {
+        // Focus staying inside the menu (an item or the version line) keeps it open
+        if (event.relatedTarget != null && event.relatedTarget.closest('#dropdown-show')) {
           return;
         }
         close = true;
@@ -441,9 +461,10 @@ export default {
   margin: .375rem .25rem;
 }
 
-/* Header: avatar + "Signed in as" text, not clickable */
+/* Header: avatar + "Signed in as" text. Not an action, but it can be clicked and selected
+   without closing the menu (see onProfileMenuMousedown / toggleProfileDropdown). */
 .display-username {
-  pointer-events: none;
+  cursor: default;
 }
 
 .profile-menu-header {
@@ -467,6 +488,12 @@ export default {
   background: var(--care-primary);
 }
 
+.profile-menu-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .profile-menu-name {
   min-width: 0;
   overflow: hidden;
@@ -474,6 +501,23 @@ export default {
   color: var(--bs-secondary-color);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Footer line below Logout. Wraps instead of being cut off, so the whole version is readable. */
+.profile-menu-version {
+  margin: .25rem .25rem 0;
+  padding: .4rem .5rem;
+  font-size: .72rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--bs-secondary-color);
+  overflow-wrap: anywhere;
+  user-select: text;
+  cursor: text;
+  outline: none;
+  /* Does not count towards the menu width: it fills the width the other items already set */
+  width: 0;
+  min-width: 100%;
 }
 
 /* Logout is the destructive-ish action: red on hover instead of the accent */
