@@ -81,12 +81,20 @@
             {{ $t('common.loadingFromServer') }}
           </td>
         </tr>
-        <tr v-else-if="!data || data.length === 0">
+        <!-- No rows at all, or the plain search / column filters hid every row: fallback lens. -->
+        <tr v-else-if="!data || data.length === 0 || tableData.length === 0">
           <td
             :colspan="emptyColspan"
             class="text-center"
           >
-            {{ $t('common.noData') }}
+            <div class="table-empty-cell">
+              <TableEmptyState
+                :filtered="!!data && data.length > 0"
+                :search-text="search.trim()"
+                compact
+                @clear="clearTableSearch"
+              />
+            </div>
           </td>
         </tr>
         <tr
@@ -190,6 +198,7 @@ import TCell from "./table/Cell.vue";
 import Pagination from "./table/Pagination.vue";
 import HeaderCell from "./table/HeaderCell.vue";
 import ScrollHints from "./table/ScrollHints.vue";
+import TableEmptyState from "./table/EmptyState.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import deepEqual from "deep-equal";
 import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
@@ -237,6 +246,7 @@ export default {
     TButtonGroup,
     HeaderCell,
     ScrollHints,
+    TableEmptyState,
   },
   inject: {
     acceptStats: {
@@ -420,6 +430,18 @@ export default {
     ...tableCellHelpersMethods,
     // tableScrollHints.js
     ...tableScrollHintsMethods,
+    /** "Clear search" in the empty state: drop the text and every column filter. */
+    clearTableSearch() {
+      this.search = "";
+      if (!this.filter) return;
+      Object.values(this.filter).forEach((column) => {
+        if ("operator" in column) {
+          column.value = "";
+        } else {
+          Object.keys(column).forEach((key) => { column[key] = false; });
+        }
+      });
+    },
   },
 };
 </script>

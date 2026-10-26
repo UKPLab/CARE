@@ -139,16 +139,26 @@
             :colspan="emptyColspan"
             class="text-center"
           >
-            <slot
-              name="empty"
-              :searching="hasActiveSearch"
-              :search-text="search.trim()"
-              :filter-labels="activeFilterLabels"
-              :loading="resultsLoading"
-              :clear-search="clearSearch"
-            >
-              {{ $t('common.noData') }}
-            </slot>
+            <div class="table-empty-cell">
+              <slot
+                name="empty"
+                :searching="hasActiveSearch"
+                :search-text="search.trim()"
+                :filter-labels="activeFilterLabels"
+                :loading="resultsLoading"
+                :clear-search="clearSearch"
+              >
+                <!-- Hold the chat until the search results are in, so it does not flash. -->
+                <TableEmptyState
+                  v-if="!resultsLoading || hasActiveSearch"
+                  :searching="hasActiveSearch"
+                  :search-text="search.trim()"
+                  :filter-labels="activeFilterLabels"
+                  compact
+                  @clear="clearSearch"
+                />
+              </slot>
+            </div>
           </td>
         </tr>
         <tr
@@ -360,6 +370,7 @@ import {
   tableScrollHintsWatch,
 } from "@/basic/table/helpers/tableScrollHints.js";
 import ScrollHints from "./table/ScrollHints.vue";
+import TableEmptyState from "./table/EmptyState.vue";
 import { rowActionSlots } from "@/basic/table/helpers/rowActionsLayout.js";
 
 /** Pause before the infinite window loads again by itself after a failed request. */
@@ -385,6 +396,7 @@ export default {
     TButtonGroup,
     Loader,
     ScrollHints,
+    TableEmptyState,
   },
   inject: {
     acceptStats: {

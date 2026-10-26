@@ -156,6 +156,26 @@
   background: var(--_table-bg);
 }
 
+/*
+ * Empty state row (EmptyState.vue). It spans every column, which can be wider than the
+ * visible area; pin its content to the wrapper's visible width (container query units)
+ * so it stays centred on screen. The wrapper only becomes a container while empty.
+ */
+.table-wrapper:has(.table-empty-cell) {
+  container-type: inline-size;
+}
+
+.table-empty-cell {
+  position: sticky;
+  left: 0;
+  /* Minus the cell's horizontal padding, or the row itself would cause a horizontal scroll. */
+  width: calc(100cqw - 1.6rem);
+}
+
+.table-wrapper tbody tr:hover > td:has(.table-empty-cell) {
+  --bs-table-bg-state: transparent;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .table-wrapper tbody td {
     transition: none;

@@ -134,20 +134,16 @@
             />
           </template>
           <template #empty="empty">
-            <div
+            <StudyEmptyState
                 v-if="!empty.loading || empty.searching"
-                class="study-table-empty"
-            >
-              <StudyEmptyState
-                  :searching="empty.searching"
-                  :search-text="empty.searchText"
-                  :filter-labels="empty.filterLabels"
-                  :can-create="true"
-                  compact
-                  @clear="empty.clearSearch()"
-                  @create="add"
-              />
-            </div>
+                :searching="empty.searching"
+                :search-text="empty.searchText"
+                :filter-labels="empty.filterLabels"
+                :can-create="true"
+                compact
+                @clear="empty.clearSearch()"
+                @create="add"
+            />
           </template>
         </BackendTable>
       </template>
@@ -941,29 +937,10 @@ export default {
   overflow: hidden;
 }
 
-/*
- * The shell is the frame now, so the wrapper and table drop their own bottom spacing.
- * The empty row spans every column, which can be wider than the panel. Pin its content to the
- * visible width (container query units of the scroll wrapper) so it stays centred on screen.
- */
-.study-dashboard :deep(.table-scroll-shell .table-wrapper) {
-  margin-bottom: 0;
-  container-type: inline-size;
-}
-
+/* The shell is the frame now, so the wrapper and table drop their own bottom spacing. */
+.study-dashboard :deep(.table-scroll-shell .table-wrapper),
 .study-dashboard :deep(.table-scroll-shell .table) {
   margin-bottom: 0;
-}
-
-.study-table-empty {
-  position: sticky;
-  left: 0;
-  /* Minus the cell's horizontal padding, or the row itself would cause a horizontal scroll. */
-  width: calc(100cqw - 1.6rem);
-}
-
-.study-dashboard :deep(.table-wrapper tbody tr:hover > td:has(.study-table-empty)) {
-  --bs-table-bg-state: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
