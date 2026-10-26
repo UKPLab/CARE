@@ -432,7 +432,7 @@ export default {
             },
             classMapping: {
               "not started": "bg-warning",
-              "closed": "study-badge-closed",
+              "closed": "badge-violet",
               "running": "bg-success",
               "ended": "bg-danger",
             }
@@ -766,25 +766,21 @@ export default {
 
 <style scoped>
 /* ======================================================================
-   Study dashboard shell. Scoped to this page: other dashboard pages keep
-   the stock Card / BackendTable look.
+   Study dashboard shell: page background, header and view toggle. Table,
+   search and pagination look comes from the shared basic/table components.
    ====================================================================== */
 
 .study-dashboard {
   --sd-radius: 16px;
   --sd-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --sd-violet-rgb: 111, 92, 230;
   --sd-border: rgba(15, 23, 42, 0.08);
-  --sd-border-soft: rgba(15, 23, 42, 0.06);
   --sd-panel: var(--bs-body-bg);
   --sd-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
   --sd-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
   --sd-ghost-hover: rgba(255, 255, 255, 0.85);
-  --sd-menu-bg: var(--bs-body-bg);
-  --sd-menu-shadow: 0 12px 32px -8px rgba(15, 23, 42, 0.22), 0 2px 6px rgba(15, 23, 42, 0.08);
   --sd-bg:
     radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.075), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--sd-violet-rgb), 0.075), transparent 60%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.075), transparent 60%),
     linear-gradient(180deg, #f7f8fc 0%, #f2f4f9 100%);
 
   font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
@@ -801,18 +797,14 @@ export default {
 }
 
 [data-bs-theme="dark"] .study-dashboard {
-  --sd-violet-rgb: 167, 151, 255;
   --sd-border: rgba(255, 255, 255, 0.08);
-  --sd-border-soft: rgba(255, 255, 255, 0.06);
   --sd-panel: color-mix(in srgb, var(--bs-body-bg) 95%, #ffffff 5%);
   --sd-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
   --sd-panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
   --sd-ghost-hover: rgba(255, 255, 255, 0.07);
-  --sd-menu-bg: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
-  --sd-menu-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.3);
   --sd-bg:
     radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--sd-violet-rgb), 0.09), transparent 60%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.09), transparent 60%),
     color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
 }
 
@@ -929,172 +921,15 @@ export default {
   background: var(--sd-border);
 }
 
-/* ---------- Search bar ---------- */
+/* ---------- Table view: panel on the tinted page ----------
+   Table, search bar, pagination, badges and row actions are styled by the shared
+   basic/table components. This page only feeds them its surface colours and puts
+   the table into a panel. */
 
-.study-dashboard :deep(.table-search) {
-  align-items: center;
-  padding: 3px 4px 3px 2px;
-  font-size: 0.875rem;
-  background: var(--sd-panel);
-  border: 1px solid var(--sd-border);
-  border-radius: 12px;
-  box-shadow: var(--sd-panel-shadow);
-  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+.study-dashboard {
+  --table-bg: var(--sd-panel);
+  --table-border-color: var(--sd-border);
 }
-
-.study-dashboard :deep(.table-search:focus-within) {
-  border-color: rgba(var(--bs-primary-rgb), 0.45);
-  box-shadow: var(--sd-panel-shadow), 0 0 0 4px rgba(var(--bs-primary-rgb), 0.12);
-}
-
-[data-bs-theme="dark"] .study-dashboard :deep(.table-search:focus-within) {
-  border-color: color-mix(in srgb, var(--care-accent) 28%, transparent);
-  box-shadow: var(--sd-panel-shadow), 0 0 0 4px color-mix(in srgb, var(--care-accent) 10%, transparent);
-}
-
-.study-dashboard :deep(.table-search > .input-group-text),
-.study-dashboard :deep(.table-search > .form-control),
-.study-dashboard :deep(.table-search > .search-bar-btn) {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
-.study-dashboard :deep(.table-search > .input-group-text) {
-  padding-inline: 0.7rem 0.4rem;
-  color: var(--bs-secondary-color);
-}
-
-.study-dashboard :deep(.table-search > .form-control) {
-  min-height: 2rem;
-  font-size: 0.875rem;
-}
-
-.study-dashboard :deep(.table-search .token-input::placeholder) {
-  color: var(--bs-secondary-color);
-  opacity: 0.8;
-}
-
-.study-dashboard :deep(.table-search .token-chip) {
-  font-weight: 500;
-  color: rgb(var(--sd-violet-rgb));
-  background: rgba(var(--sd-violet-rgb), 0.1);
-  border-color: rgba(var(--sd-violet-rgb), 0.22);
-}
-
-.study-dashboard :deep(.table-search > .search-bar-btn) {
-  border-radius: 8px !important;
-  color: var(--bs-secondary-color);
-}
-
-.study-dashboard :deep(.table-search > .search-bar-btn:hover) {
-  color: var(--bs-emphasis-color);
-  background: rgba(var(--bs-secondary-rgb), 0.12);
-}
-
-/* ---------- Search suggestions (filter key → operator → value) ---------- */
-
-.study-dashboard :deep(.table-search .token-suggestions) {
-  --bs-dropdown-bg: var(--sd-menu-bg);
-  --bs-dropdown-border-color: var(--sd-border);
-  min-width: 15rem;
-  max-height: 18rem;
-  margin-top: 0.3rem;
-  padding: 0.35rem;
-  font-size: 0.85rem;
-  background: var(--sd-menu-bg);
-  border: 1px solid var(--sd-border);
-  border-radius: 12px;
-  box-shadow: var(--sd-menu-shadow);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(var(--bs-secondary-rgb), 0.35) transparent;
-  transform-origin: top left;
-  animation: sd-menu-in 0.18s var(--sd-ease) both;
-}
-
-.study-dashboard :deep(.table-search .token-suggestions::-webkit-scrollbar) {
-  width: 8px;
-}
-
-.study-dashboard :deep(.table-search .token-suggestions::-webkit-scrollbar-thumb) {
-  background: rgba(var(--bs-secondary-rgb), 0.3);
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background-clip: padding-box;
-}
-
-.study-dashboard :deep(.table-search .token-suggestions > li) {
-  padding: 0;
-}
-
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item) {
-  position: relative;
-  padding: 0.42rem 0.65rem;
-  font-weight: 500;
-  color: var(--bs-body-color);
-  border-radius: 8px;
-  transition: background-color 0.12s ease, color 0.12s ease;
-}
-
-/* Mouse and keyboard share one look: a soft violet tint, keyboard adds an accent bar. */
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item:hover),
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item.hovered),
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item.keyboard-focus),
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item.keyboard-focus:focus),
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item.keyboard-focus:hover),
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item.keyboard-focus.hovered) {
-  color: var(--bs-emphasis-color);
-  background-color: rgba(var(--sd-violet-rgb), 0.12);
-  box-shadow: none;
-  border-radius: 8px;
-}
-
-.study-dashboard :deep(.table-search .token-suggestions .dropdown-item.keyboard-focus::before) {
-  content: "";
-  position: absolute;
-  left: 0.2rem;
-  top: 25%;
-  bottom: 25%;
-  width: 3px;
-  border-radius: 3px;
-  background: rgb(var(--sd-violet-rgb));
-}
-
-.study-dashboard :deep(.table-search .token-suggestion-symbol) {
-  display: inline-grid;
-  place-items: center;
-  min-width: 1.9rem;
-  padding: 0.05rem 0.35rem;
-  font-family: "JetBrains Mono Variable", var(--bs-font-monospace);
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: rgb(var(--sd-violet-rgb));
-  background: rgba(var(--sd-violet-rgb), 0.1);
-  border-radius: 6px;
-}
-
-.study-dashboard :deep(.table-search .token-suggestion-hint) {
-  font-size: 0.78rem;
-  font-weight: 400;
-  color: var(--bs-secondary-color);
-}
-
-.study-dashboard :deep(.table-search .token-suggestions-form-date) {
-  padding: 0.6rem 0.7rem;
-}
-
-@keyframes sd-menu-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-/* ---------- Table view: white panel on the tinted page ---------- */
 
 .study-dashboard :deep(.table-scroll-shell) {
   margin-top: 1rem;
@@ -1106,62 +941,18 @@ export default {
   overflow: hidden;
 }
 
-.study-dashboard :deep(.table-scroll-shell .table-wrapper) {
-  margin-bottom: 0;
-}
-
-.study-dashboard :deep(.table-wrapper .table) {
-  --bs-table-bg: var(--sd-panel);
-  --bs-table-striped-bg: transparent;
-  --bs-table-hover-bg: rgba(var(--bs-primary-rgb), 0.045);
-  --bs-table-border-color: var(--sd-border-soft);
-  margin-bottom: 0;
-  font-size: 0.875rem;
-}
-
-[data-bs-theme="dark"] .study-dashboard :deep(.table-wrapper .table) {
-  --bs-table-hover-bg: color-mix(in srgb, var(--care-accent) 10%, transparent);
-}
-
-/* Global table hover paints a blue wash on the cell; in dark mode use the accent. */
-[data-bs-theme="dark"] .study-dashboard :deep(.table-wrapper tbody tr:hover > td) {
-  --bs-table-bg-state: color-mix(in srgb, var(--care-accent) 10%, transparent);
-}
-
-.study-dashboard :deep(.table-wrapper .table thead th) {
-  padding: 0.6rem 0.8rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--bs-secondary-color);
-  background: color-mix(in srgb, var(--sd-panel) 94%, rgb(var(--sd-violet-rgb)) 6%);
-  border-bottom: 1px solid var(--sd-border);
-}
-
-.study-dashboard :deep(.table-wrapper .table tbody td) {
-  padding: 0.7rem 0.8rem;
-  vertical-align: middle;
-  transition: background-color 0.15s ease;
-}
-
-.study-dashboard :deep(.table-wrapper .table tbody td.table-fixed),
-.study-dashboard :deep(.table-wrapper .table tbody td.table-fixed-left),
-.study-dashboard :deep(.table-wrapper .table tbody td.table-fixed-right) {
-  background: var(--sd-panel);
-}
-
-.study-dashboard :deep(.table-wrapper .table tbody tr:last-child > td) {
-  border-bottom: 0;
-}
-
 /*
+ * The shell is the frame now, so the wrapper and table drop their own bottom spacing.
  * The empty row spans every column, which can be wider than the panel. Pin its content to the
  * visible width (container query units of the scroll wrapper) so it stays centred on screen.
  */
 .study-dashboard :deep(.table-scroll-shell .table-wrapper) {
+  margin-bottom: 0;
   container-type: inline-size;
+}
+
+.study-dashboard :deep(.table-scroll-shell .table) {
+  margin-bottom: 0;
 }
 
 .study-table-empty {
@@ -1171,182 +962,13 @@ export default {
   width: calc(100cqw - 1.6rem);
 }
 
-.study-dashboard :deep(.table-wrapper .table tbody tr:hover > td:has(.study-table-empty)) {
+.study-dashboard :deep(.table-wrapper tbody tr:hover > td:has(.study-table-empty)) {
   --bs-table-bg-state: transparent;
 }
 
-/* Row actions: separate ghost icons; destructive ones turn red only on hover. */
-.study-dashboard :deep(.table-wrapper td .btn-group) {
-  gap: 2px;
-}
-
-.study-dashboard :deep(.table-wrapper td .btn-group > .btn) {
-  --bs-btn-color: var(--bs-secondary-color);
-  --bs-btn-bg: transparent;
-  --bs-btn-border-color: transparent;
-  --bs-btn-hover-color: var(--bs-emphasis-color);
-  --bs-btn-hover-bg: rgba(var(--bs-secondary-rgb), 0.12);
-  --bs-btn-hover-border-color: transparent;
-  --bs-btn-active-bg: rgba(var(--bs-secondary-rgb), 0.18);
-  --bs-btn-active-border-color: transparent;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border-radius: 8px !important;
-  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s var(--sd-ease);
-}
-
-.study-dashboard :deep(.table-wrapper td .btn-group > .btn:active) {
-  transform: scale(0.92);
-}
-
-.study-dashboard :deep(.table-wrapper td .btn-group > .btn-outline-danger) {
-  --bs-btn-hover-color: var(--bs-danger);
-  --bs-btn-hover-bg: rgba(var(--bs-danger-rgb), 0.1);
-  --bs-btn-active-color: var(--bs-danger);
-  --bs-btn-active-bg: rgba(var(--bs-danger-rgb), 0.16);
-}
-
-/* ---------- Soft status pills ---------- */
-
-.study-dashboard :deep(.table-wrapper .badge) {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.3em 0.65em 0.3em 0.55em;
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  border-radius: 999px;
-  border: 1px solid transparent;
-}
-
-.study-dashboard :deep(.table-wrapper .badge::before) {
-  content: "";
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0.85;
-}
-
-.study-dashboard :deep(.table-wrapper .badge.bg-success) {
-  color: var(--bs-success-text-emphasis);
-  background-color: var(--bs-success-bg-subtle) !important;
-  border-color: var(--bs-success-border-subtle);
-}
-
-.study-dashboard :deep(.table-wrapper .badge.bg-warning) {
-  color: var(--bs-warning-text-emphasis);
-  background-color: var(--bs-warning-bg-subtle) !important;
-  border-color: var(--bs-warning-border-subtle);
-}
-
-.study-dashboard :deep(.table-wrapper .badge.bg-danger) {
-  color: var(--bs-danger-text-emphasis);
-  background-color: var(--bs-danger-bg-subtle) !important;
-  border-color: var(--bs-danger-border-subtle);
-}
-
-.study-dashboard :deep(.table-wrapper .badge.bg-secondary) {
-  color: var(--bs-secondary-color);
-  background-color: var(--bs-secondary-bg) !important;
-  border-color: var(--sd-border);
-}
-
-.study-dashboard :deep(.table-wrapper .badge.study-badge-closed) {
-  color: rgb(var(--sd-violet-rgb));
-  background-color: rgba(var(--sd-violet-rgb), 0.12);
-  border-color: rgba(var(--sd-violet-rgb), 0.25);
-}
-
-/* ---------- Pagination ---------- */
-
-.study-dashboard :deep(.pagination) {
-  gap: 0.25rem;
-}
-
-.study-dashboard :deep(.pagination .page-link) {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--bs-body-color);
-  background: var(--sd-panel);
-  border: 1px solid var(--sd-border);
-  border-radius: 8px !important;
-  box-shadow: var(--sd-panel-shadow);
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s var(--sd-ease);
-}
-
-.study-dashboard :deep(.pagination .page-link:hover:not(:disabled)) {
-  color: var(--bs-primary);
-  border-color: rgba(var(--bs-primary-rgb), 0.35);
-}
-
-[data-bs-theme="dark"] .study-dashboard :deep(.pagination .page-link:hover:not(:disabled)),
-[data-bs-theme="dark"] .study-dashboard :deep(.pagination .page-link:focus:not(:disabled)) {
-  color: var(--care-accent);
-  border-color: color-mix(in srgb, var(--care-accent) 55%, transparent);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-accent) 28%, transparent);
-}
-
-[data-bs-theme="dark"] .study-dashboard :deep(.pagination .page-item.active .page-link) {
-  color: var(--care-on-accent);
-  background: var(--care-accent);
-  border-color: var(--care-accent);
-}
-
-.study-dashboard :deep(.pagination .page-link:active:not(:disabled)) {
-  transform: scale(0.96);
-}
-
-.study-dashboard :deep(.pagination .page-item.disabled .page-link) {
-  color: var(--bs-secondary-color);
-  background: transparent;
-  box-shadow: none;
-  opacity: 0.6;
-}
-
-.study-dashboard :deep(.pagination .page-item.active .page-link) {
-  color: #fff;
-  background: var(--bs-primary);
-  border-color: var(--bs-primary);
-}
-
-.study-dashboard :deep(.form-select),
-.study-dashboard :deep(.form-select + .input-group-text),
-.study-dashboard :deep(.input-group > .input-group-text:has(+ .form-select)) {
-  font-size: 0.82rem;
-  background-color: var(--sd-panel);
-  border-color: var(--sd-border);
-}
-
-.study-dashboard :deep(.input-group > .input-group-text:has(+ .form-select)) {
-  border-radius: 8px 0 0 8px;
-  color: var(--bs-secondary-color);
-}
-
-.study-dashboard :deep(.input-group > .form-select) {
-  border-radius: 0 8px 8px 0;
-}
-
-.study-dashboard :deep(.text-muted) {
-  font-size: 0.82rem;
-  font-variant-numeric: tabular-nums;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .study-header-actions :deep(.btn),
-  .study-dashboard :deep(.table-search),
-  .study-dashboard :deep(.pagination .page-link) {
+  .study-header-actions :deep(.btn) {
     transition: none;
-  }
-
-  .study-dashboard :deep(.table-search .token-suggestions) {
-    animation: none;
   }
 }
 

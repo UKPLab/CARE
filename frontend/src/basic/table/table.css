@@ -1,8 +1,23 @@
 /*
- * Layout shared by BasicTable (Table.vue) and BackendTable.vue: scroll wrapper, sticky header,
- * fixed columns
+ * Layout and look shared by BasicTable (Table.vue) and BackendTable.vue: scroll wrapper,
+ * sticky header, fixed columns, header/row styling.
+ *
+ * Theming: a page can set these on any ancestor (e.g. a tinted dashboard panel); every
+ * table, its search bar (Search.vue) and pagination (Pagination.vue) follow:
+ *   --table-bg            surface of the table, sticky cells and controls (default: body bg)
+ *   --table-head-bg       header row (default: --table-bg with a faint violet wash)
+ *   --table-border-color  row and control borders (default: translucent border colour)
+ * The --_table-* variables are resolved values for internal use only.
  */
 .table-wrapper {
+  --_table-bg: var(--table-bg, var(--bs-body-bg));
+  --_table-head-bg: var(
+    --table-head-bg,
+    color-mix(in srgb, var(--_table-bg) 94%, rgb(var(--care-violet-rgb)) 6%)
+  );
+  --_table-border: var(--table-border-color, var(--bs-border-color-translucent));
+  --_table-row-hover: color-mix(in srgb, var(--care-primary) 5%, transparent);
+
   position: relative;
   overflow-x: auto;
   min-height: 80px;
@@ -55,16 +70,26 @@
   background: transparent;
 }
 
+/* Accent hover reads better on dark surfaces than the 5% wash. */
+[data-bs-theme="dark"] .table-wrapper {
+  --_table-row-hover: color-mix(in srgb, var(--care-accent) 10%, transparent);
+}
+
 .table {
+  --bs-table-bg: var(--_table-bg);
+  --bs-table-striped-bg: transparent;
+  --bs-table-hover-bg: var(--_table-row-hover);
+  --bs-table-border-color: var(--_table-border);
   width: max-content;
   min-width: 100%;
   border-spacing: 0;
   border-collapse: separate;
+  font-size: 0.875rem;
 }
 
 .table-fixed {
   position: sticky;
-  background: var(--bs-body-bg, #fff);
+  background: var(--_table-bg);
 }
 
 .table-fixed-left.table-fixed-shadow {
@@ -87,25 +112,59 @@
   position: sticky;
   top: 0;
   z-index: 4;
-  background: var(--bs-body-bg, #fff);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--bs-secondary-color);
+  background: var(--_table-head-bg);
+  border-bottom: 1px solid var(--_table-border);
 }
 
 .table-wrapper thead th.table-fixed,
 .table-wrapper thead th.table-fixed-left,
 .table-wrapper thead th.table-fixed-right {
   z-index: 6 !important;
-  background: var(--bs-body-bg, #fff);
+  background: var(--_table-head-bg);
 }
 
 .table-wrapper thead th.table-fixed-right {
   z-index: 7 !important;
 }
 
+.table-wrapper tbody td {
+  padding: 0.7rem 0.8rem;
+  vertical-align: middle;
+  transition: background-color 0.15s ease;
+}
+
+/* Every table hovers rows, with or without the bootstrap `hover` option. */
+.table-wrapper tbody tr:hover > td {
+  --bs-table-bg-state: var(--_table-row-hover);
+}
+
+.table-wrapper tbody tr:last-child > td {
+  border-bottom: 0;
+}
+
 .table-wrapper tbody td.table-fixed,
 .table-wrapper tbody td.table-fixed-left,
 .table-wrapper tbody td.table-fixed-right {
   z-index: 2 !important;
-  background: var(--bs-body-bg, #fff);
+  background: var(--_table-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-wrapper tbody td {
+    transition: none;
+  }
+}
+
+/* BasicTable's search bar: same gap before the table as Search.vue (BackendTable). */
+.table-search-simple {
+  margin-bottom: var(--table-search-gap, 0.75rem);
 }
 
 .input-group.input-group-sm,

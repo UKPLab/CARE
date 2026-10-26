@@ -162,6 +162,45 @@ export default {
 </script>
 
 <style scoped>
+/* Sort control. Idle: a soft chip tinted from the text colour, readable in both
+   themes without competing with the sorted column. Hovering the header hints that
+   it is clickable; hovering the icon brightens it fully. The icon is a child
+   component, hence :deep() from the <th> root. */
+th :deep(.table-sort-icon) {
+  border-radius: 3px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+th :deep(.table-sort-icon--idle) {
+  color: var(--bs-secondary-color);
+  background-color: color-mix(in srgb, var(--bs-body-color) 8%, transparent);
+}
+
+[data-bs-theme="dark"] th :deep(.table-sort-icon--idle) {
+  background-color: color-mix(in srgb, var(--bs-body-color) 10%, transparent);
+}
+
+th:hover :deep(.table-sort-icon--idle) {
+  color: var(--bs-emphasis-color);
+  background-color: color-mix(in srgb, var(--bs-body-color) 14%, transparent);
+}
+
+th :deep(.table-sort-icon--idle:hover) {
+  background-color: color-mix(in srgb, var(--bs-body-color) 20%, transparent);
+}
+
+/* Sorted column in dark mode: accent instead of Bootstrap green (its bg utility is !important). */
+[data-bs-theme="dark"] th :deep(.table-sort-icon.bg-success) {
+  color: var(--care-accent);
+  background-color: color-mix(in srgb, var(--care-accent) 28%, transparent) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  th :deep(.table-sort-icon) {
+    transition: none;
+  }
+}
+
 .table-wrapper thead th:has(.dropdown-menu.show) {
   z-index: 5 !important;
   background: var(--bs-body-bg, #fff);

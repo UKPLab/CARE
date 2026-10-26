@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="options && options['search']"
-    class="input-group input-group-sm"
+    class="input-group input-group-sm table-search-simple"
   >
     <span
       id="search-addon1"

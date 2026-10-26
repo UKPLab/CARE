@@ -145,10 +145,10 @@ export const tableFixedColumnsMethods = {
     }
 
     const styles = {};
+    // Background comes from table.css (--table-bg / --table-head-bg) so pages can theme it.
     const baseStyle = {
       position: "sticky",
       zIndex: 2,
-      background: "var(--bs-body-bg, #fff)",
     };
 
     // Compute left-fixed columns

@@ -56,11 +56,14 @@ html[data-bs-theme="dark"] {
 :root {
   --care-primary: var(--bs-primary);
   --care-on-primary: #fff;
+  /* Secondary tint for data UI: table header wash, search chips, "closed" badges. RGB triplet. */
+  --care-violet-rgb: 111, 92, 230;
 }
 
 html[data-bs-theme="dark"] {
   --care-primary: var(--care-accent);
   --care-on-primary: var(--care-on-accent);
+  --care-violet-rgb: 167, 151, 255;
   /* Bootstrap's link colour drives nav tabs, pagination and btn-link */
   --bs-link-color: var(--care-accent);
   --bs-link-hover-color: var(--care-accent-hover);
@@ -442,85 +445,6 @@ html .card-header-actions .btn-secondary {
 
 html .dashboard-wrapper {
   background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
-}
-
-html .table-wrapper .table {
-  --bs-table-striped-bg: transparent;
-  font-size: .875rem;
-}
-
-html .table-wrapper thead th {
-  font-size: .72rem;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-  background: var(--bs-tertiary-bg);
-  padding: .55rem .75rem;
-}
-
-/* Sort control in table headers (HeaderCell.vue). The idle state is a soft
-   chip tinted from the text colour, so it reads as a control in both themes
-   without competing with the active (sorted) column. Hovering the header
-   hints that it is clickable; hovering the icon itself brightens it fully. */
-html .table-wrapper thead th .table-sort-icon {
-  border-radius: 3px;
-  transition: color .15s ease, background-color .15s ease;
-}
-
-html .table-wrapper thead th .table-sort-icon--idle {
-  color: var(--bs-secondary-color);
-  background-color: color-mix(in srgb, var(--bs-body-color) 8%, transparent);
-}
-
-html[data-bs-theme="dark"] .table-wrapper thead th .table-sort-icon--idle {
-  background-color: color-mix(in srgb, var(--bs-body-color) 10%, transparent);
-}
-
-html .table-wrapper thead th:hover .table-sort-icon--idle {
-  color: var(--bs-emphasis-color);
-  background-color: color-mix(in srgb, var(--bs-body-color) 14%, transparent);
-}
-
-html .table-wrapper thead th .table-sort-icon--idle:hover {
-  background-color: color-mix(in srgb, var(--bs-body-color) 20%, transparent);
-}
-
-/* Active (sorted) column in dark mode: accent instead of Bootstrap green, for every
-   table (dashboards and modals alike). Bootstrap's bg utility is !important. */
-html[data-bs-theme="dark"] thead th .table-sort-icon.bg-success {
-  color: var(--care-accent);
-  background-color: color-mix(in srgb, var(--care-accent) 28%, transparent) !important;
-}
-
-html .table-wrapper tbody td {
-  padding: .7rem .75rem;
-  vertical-align: middle;
-}
-
-html .table-wrapper tbody tr:hover > td {
-  --bs-table-bg-state: color-mix(in srgb, var(--bs-primary) 5%, transparent);
-}
-
-html .table-wrapper td .btn-group {
-  gap: 2px;
-}
-
-html .table-wrapper td .btn-group > .btn {
-  --bs-btn-border-color: transparent;
-  --bs-btn-color: var(--bs-secondary-color);
-  --bs-btn-bg: transparent;
-  --bs-btn-hover-bg: var(--bs-secondary-bg);
-  --bs-btn-hover-color: var(--bs-body-color);
-  --bs-btn-hover-border-color: transparent;
-  border-radius: var(--bs-border-radius) !important;
-  min-width: 30px;
-  min-height: 30px;
-}
-
-html .table-wrapper td .btn-group > .btn-outline-danger:hover {
-  --bs-btn-hover-bg: var(--bs-danger-bg-subtle);
-  --bs-btn-hover-color: var(--bs-danger);
 }
 
 html .badge {

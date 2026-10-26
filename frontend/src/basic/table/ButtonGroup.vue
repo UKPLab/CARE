@@ -227,11 +227,46 @@ export default {
 <style scoped>
 .row-actions {
   flex-wrap: nowrap;
+  gap: 2px;
+}
+
+/* Separate ghost icons (TableButton roots and the "more" trigger); destructive
+   ones turn red only on hover. !important beats btn-group's joined corners. */
+.row-actions > .btn {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--bs-emphasis-color);
+  --bs-btn-hover-bg: rgba(var(--bs-secondary-rgb), 0.12);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--bs-emphasis-color);
+  --bs-btn-active-bg: rgba(var(--bs-secondary-rgb), 0.18);
+  --bs-btn-active-border-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-width: 30px;
+  height: 30px;
+  padding: 0 0.4rem;
+  border-radius: 8px !important;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.row-actions > .btn:active {
+  transform: scale(0.92);
+}
+
+.row-actions > .btn-outline-danger {
+  --bs-btn-hover-color: var(--bs-danger);
+  --bs-btn-hover-bg: rgba(var(--bs-danger-rgb), 0.1);
+  --bs-btn-active-color: var(--bs-danger);
+  --bs-btn-active-bg: rgba(var(--bs-danger-rgb), 0.16);
 }
 
 .row-actions-more.is-open {
   color: var(--bs-emphasis-color);
-  background-color: var(--bs-secondary-bg);
+  background-color: rgba(var(--bs-secondary-rgb), 0.12);
 }
 
 .row-actions-menu {
@@ -330,8 +365,13 @@ export default {
   .row-actions-menu-enter-active,
   .row-actions-menu-leave-active,
   .row-actions-menu-item,
-  .row-actions-menu-item :deep(svg) {
+  .row-actions-menu-item :deep(svg),
+  .row-actions > .btn {
     transition: none;
+  }
+
+  .row-actions > .btn:active {
+    transform: none;
   }
 }
 </style>

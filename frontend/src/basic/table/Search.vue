@@ -1023,12 +1023,64 @@ export default {
 </script>
 
 <style scoped>
+/* One rounded bar on the table surface: icon, token field and buttons sit inside it
+   borderless. Surface and border follow the table theming variables (table.css). */
 .table-search {
   position: relative;
+  align-items: center;
+  /* Breathing room before the table; same value as BasicTable's search (table.css). */
+  margin-bottom: var(--table-search-gap, 0.75rem);
+  padding: 3px 4px 3px 2px;
+  font-size: 0.875rem;
+  background: var(--table-bg, var(--bs-body-bg));
+  border: 1px solid var(--table-border-color, var(--bs-border-color-translucent));
+  border-radius: 12px;
+  box-shadow: var(--care-shadow-1);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.table-search:focus-within {
+  border-color: color-mix(in srgb, var(--care-primary) 45%, transparent);
+  box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 12%, transparent);
+}
+
+[data-bs-theme="dark"] .table-search:focus-within {
+  border-color: color-mix(in srgb, var(--care-primary) 28%, transparent);
+  box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 10%, transparent);
+}
+
+.table-search > .input-group-text,
+.table-search > .form-control,
+.table-search > .search-bar-btn {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.table-search > .input-group-text {
+  padding-inline: 0.7rem 0.4rem;
+  color: var(--bs-secondary-color);
+}
+
+.table-search > .form-control {
+  min-height: 2rem;
+  font-size: 0.875rem;
 }
 
 .table-search > .search-bar-btn {
   flex-shrink: 0;
+  color: var(--bs-secondary-color);
+  border-radius: 8px !important;
+}
+
+.table-search > .search-bar-btn:hover {
+  color: var(--bs-emphasis-color);
+  background: rgba(var(--bs-secondary-rgb), 0.12);
+}
+
+.token-input::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: 0.8;
 }
 
 .token-field {
@@ -1050,10 +1102,10 @@ export default {
 }
 
 .token-chip {
-  background-color: var(--bs-secondary-bg, #e9ecef);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  color: var(--bs-body-color, #212529);
-  font-weight: 400;
+  font-weight: 500;
+  color: rgb(var(--care-violet-rgb));
+  background-color: rgba(var(--care-violet-rgb), 0.1);
+  border: 1px solid rgba(var(--care-violet-rgb), 0.22);
   cursor: pointer;
 }
 
@@ -1119,73 +1171,7 @@ export default {
   outline: none;
 }
 
-.token-suggestions {
-  --bs-dropdown-padding-y: 0;
-  --bs-dropdown-padding-x: 0;
-  position: absolute;
-  top: calc(100% + 0.25rem);
-  left: var(--token-menu-left, 0px);
-  z-index: 1000;
-  max-height: 16rem;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  list-style: none;
-  scrollbar-width: thin;
-  scrollbar-gutter: stable;
-}
-
-.token-suggestions > li {
-  margin: 0;
-  padding: 0 10px 0 0;
-}
-
-.token-suggestions .dropdown-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 0;
-  color: inherit;
-  background-color: transparent;
-  box-shadow: none;
-}
-
-.token-suggestion-symbol {
-  font-family: var(--bs-font-monospace, monospace);
-}
-
-.token-suggestion-hint {
-  margin-left: auto;
-  color: var(--bs-secondary-color, #6c757d);
-}
-
-/* Cursor: outline. Arrows: sidebar fill. Same item with both: combine. */
-.token-suggestions .dropdown-item:hover,
-.token-suggestions .dropdown-item.hovered {
-  color: inherit;
-  background-color: transparent;
-  box-shadow: inset 0 0 0 2px #222;
-  border-radius: 0.25rem;
-}
-
-.token-suggestions .dropdown-item.keyboard-focus,
-.token-suggestions .dropdown-item.keyboard-focus:focus {
-  color: inherit;
-  background-color: #e0e0e0;
-  box-shadow: inset 2px 0 0 #222;
-  border-radius: 0;
-}
-
-.token-suggestions .dropdown-item.keyboard-focus:hover,
-.token-suggestions .dropdown-item.keyboard-focus.hovered {
-  color: inherit;
-  background-color: #e0e0e0;
-  box-shadow: inset 2px 0 0 #222, inset 0 0 0 2px #222;
-  border-radius: 0.25rem;
-}
-
+@@SUGG@@
 .token-suggestions-form-date {
   padding: 0.5rem 0.65rem;
   min-width: 18rem;

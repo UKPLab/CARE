@@ -261,5 +261,82 @@ export default {
 </script>
 
 <style scoped>
+/* Separate rounded page buttons on the table surface. Surface and border follow the
+   table theming variables (see table.css), so a themed page needs no overrides here. */
+.pagination {
+  gap: 0.25rem;
+}
 
+.page-link {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--bs-body-color);
+  background: var(--table-bg, var(--bs-body-bg));
+  border: 1px solid var(--table-border-color, var(--bs-border-color-translucent));
+  border-radius: 8px !important;
+  box-shadow: var(--care-shadow-1);
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+}
+
+.page-link:hover:not(:disabled) {
+  color: var(--care-primary);
+  border-color: color-mix(in srgb, var(--care-primary) 35%, transparent);
+}
+
+.page-link:focus-visible:not(:disabled) {
+  color: var(--care-primary);
+  border-color: color-mix(in srgb, var(--care-primary) 55%, transparent);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 28%, transparent);
+}
+
+.page-link:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.page-item.disabled .page-link {
+  color: var(--bs-secondary-color);
+  background: transparent;
+  box-shadow: none;
+  opacity: 0.6;
+}
+
+.page-item.active .page-link {
+  color: var(--care-on-primary);
+  background: var(--care-primary);
+  border-color: var(--care-primary);
+}
+
+/* Page size picker */
+.input-group > .input-group-text,
+.input-group > .form-select {
+  font-size: 0.82rem;
+  background-color: var(--table-bg, var(--bs-body-bg));
+  border-color: var(--table-border-color, var(--bs-border-color-translucent));
+}
+
+.input-group > .input-group-text {
+  color: var(--bs-secondary-color);
+  border-radius: 8px 0 0 8px;
+}
+
+.input-group > .form-select {
+  border-radius: 0 8px 8px 0;
+}
+
+/* "Showing 1–10 of 80" */
+.text-muted {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-link {
+    transition: none;
+  }
+
+  .page-link:active:not(:disabled) {
+    transform: none;
+  }
+}
 </style>
