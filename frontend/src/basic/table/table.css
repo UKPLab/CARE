@@ -108,6 +108,57 @@
   cursor: pointer;
 }
 
+/* ---------- Row / select-all checkboxes ----------
+   Bigger box, a border that stays visible on the dark header, accent on hover/checked,
+   and a proper focus ring instead of the browser's thin inner outline. */
+.table-wrapper .form-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.table-wrapper .form-check-input {
+  float: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  cursor: pointer;
+  background-color: var(--bs-body-bg);
+  border: 1.5px solid color-mix(in srgb, var(--bs-body-color) 40%, transparent);
+  border-radius: .35rem;
+  transition: border-color var(--care-dur-fast, 120ms) ease,
+              background-color var(--care-dur-fast, 120ms) ease,
+              box-shadow var(--care-dur-fast, 120ms) ease;
+}
+
+.table-wrapper .form-check-input:hover:not(:disabled) {
+  border-color: var(--care-primary, var(--bs-primary));
+}
+
+.table-wrapper .form-check-input:checked,
+.table-wrapper .form-check-input:indeterminate {
+  background-color: var(--care-primary, var(--bs-primary));
+  border-color: var(--care-primary, var(--bs-primary));
+}
+
+.table-wrapper .form-check-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.table-wrapper .form-check-input:focus-visible {
+  border-color: var(--care-primary, var(--bs-primary));
+  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+}
+
+/* Header box sits on the tinted head row: keep it on the body surface so it reads as a control */
+.table-wrapper thead .form-check-input:not(:checked):not(:indeterminate) {
+  background-color: var(--_table-bg, var(--bs-body-bg));
+}
+
 .table-wrapper thead th {
   position: sticky;
   top: 0;
