@@ -365,7 +365,8 @@
   },
   "page": {
     "notFoundTitle": "404 - Nicht gefunden",
-    "notFoundMessage": "Die Seite, die Sie suchen, existiert nicht."
+    "notFoundMessage": "Die Seite, die Sie suchen, existiert nicht.",
+    "goToDashboard": "Zum Dashboard"
   },
   "download": {
     "abortedTitle": "Download abgebrochen",
