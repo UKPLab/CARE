@@ -5,19 +5,7 @@
         :title="$t('studies.title')"
     >
       <template #title>
-        <span class="study-dashboard-title">
-          {{ $t('studies.title') }}
-          <Transition
-              name="study-count"
-              mode="out-in"
-          >
-            <span
-                v-if="studyTotal > 0"
-                :key="studyTotal"
-                class="study-dashboard-count"
-            >{{ studyTotal.toLocaleString() }}</span>
-          </Transition>
-        </span>
+        <span class="study-dashboard-title">{{ $t('studies.title') }}</span>
       </template>
       <template #headerElements>
         <div class="study-header-actions">
@@ -322,10 +310,6 @@ export default {
      */
     studyQueryScope() {
       return {dashboard: true};
-    },
-    /** Matching studies for the title count; BackendTable keeps options.pagination.total current. */
-    studyTotal() {
-      return Number(this.options.pagination.total) || 0;
     },
     canViewAllStudies() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.fullAccess");
@@ -855,33 +839,6 @@ export default {
   color: var(--bs-emphasis-color);
 }
 
-.study-dashboard-count {
-  padding: 0.1rem 0.55rem;
-  font-family: "JetBrains Mono Variable", var(--bs-font-monospace);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  color: rgb(var(--sd-violet-rgb));
-  background: rgba(var(--sd-violet-rgb), 0.1);
-  border: 1px solid rgba(var(--sd-violet-rgb), 0.2);
-  border-radius: 999px;
-}
-
-.study-count-enter-active,
-.study-count-leave-active {
-  transition: opacity 0.2s ease, transform 0.25s var(--sd-ease);
-}
-
-.study-count-enter-from {
-  opacity: 0;
-  transform: translateY(4px);
-}
-
-.study-count-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
 .study-header-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1333,8 +1290,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .study-count-enter-active,
-  .study-count-leave-active,
   .study-header-actions :deep(.btn),
   .study-dashboard :deep(.table-search),
   .study-dashboard :deep(.pagination .page-link) {
