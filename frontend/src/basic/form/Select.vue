@@ -62,37 +62,86 @@
           </div>
         </div>
       </div>
-      <select
-        v-else-if="Array.isArray(options.options)"
-        v-model="currentData"
-        :class="selectClass"
-        class="form-select"
-        @blur="blur(currentData !== -1)"
-      >
-        <option
-          v-for="option in selectOptions"
-          :key="option.value"
-          :class="option.class"
-          :value="option.value"
-          :disabled="option.disabled"
-        >
-          {{ translateMaybeKey(option.name) }}
-        </option>
-      </select>
-      <select
+      <!-- Custom listbox instead of a native <select>: the browser popup (Firefox) cannot be
+           styled and highlights only part of the row. -->
+      <div
         v-else
-        v-model="currentData"
-        class="form-select"
-        @blur="blur(currentData > 0)"
+        ref="listTrigger"
+        class="care-select w-100"
+        :class="{ 'is-open': listOpen }"
       >
-        <option
-          v-for="option in selectOptions"
-          :key="option.id"
-          :value="option[options.options.value]"
+        <button
+          :id="options.key"
+          ref="listButton"
+          type="button"
+          class="form-select care-select__toggle"
+          :class="selectClass"
+          :disabled="isDisabled"
+          aria-haspopup="listbox"
+          :aria-expanded="listOpen ? 'true' : 'false'"
+          :aria-controls="listId"
+          @click="toggleList"
+          @keydown="onListButtonKeydown"
+          @blur="onListBlur(blur)"
         >
-          {{ translateMaybeKey(option[options.options.name]) }}
-        </option>
-      </select>
+          <span
+            class="care-select__label"
+            :class="{ 'text-muted': !hasListSelection }"
+          >{{ listSelectedLabel }}</span>
+        </button>
+
+        <!-- Inside a modal the menu goes into the .modal element, otherwise Bootstrap's focus
+             trap pulls focus back to the modal's close button -->
+        <Teleport :to="teleportTarget">
+          <Transition name="care-select-menu">
+            <ul
+              v-if="listOpen"
+              :id="listId"
+              ref="listMenu"
+              class="care-select__menu"
+              role="listbox"
+              tabindex="-1"
+              :aria-labelledby="options.key"
+              :aria-activedescendant="activeIndex >= 0 ? optionDomId(activeIndex) : undefined"
+              :style="menuStyle"
+              @keydown="onListMenuKeydown"
+              @focusout="onMenuFocusout(blur, $event)"
+            >
+              <li
+                v-for="(item, index) in listItems"
+                :id="optionDomId(index)"
+                :key="String(item.value) + '_' + index"
+                role="option"
+                class="care-select__option"
+                :class="[item.class, {
+                  'is-selected': item.value === currentData,
+                  'is-active': index === activeIndex,
+                  'is-disabled': item.disabled,
+                }]"
+                :aria-selected="item.value === currentData ? 'true' : 'false'"
+                :aria-disabled="item.disabled ? 'true' : undefined"
+                @mousedown.prevent
+                @click="pickListItem(item, blur)"
+                @mousemove="activeIndex = index"
+              >
+                <span class="care-select__option-label">{{ item.label }}</span>
+                <i
+                  v-if="item.value === currentData"
+                  class="bi bi-check2 care-select__check"
+                  aria-hidden="true"
+                ></i>
+              </li>
+              <li
+                v-if="listItems.length === 0"
+                class="care-select__option is-disabled"
+                aria-disabled="true"
+              >
+                {{ $t('common.noMatches') }}
+              </li>
+            </ul>
+          </Transition>
+        </Teleport>
+      </div>
     </template>
   </FormElement>
 </template>
@@ -142,6 +191,12 @@ export default {
       currentData: null,
       isOpen: false,
       searchQuery: "",
+      // Custom listbox (non-search mode)
+      listOpen: false,
+      activeIndex: -1,
+      menuStyle: {},
+      teleportTarget: "body",
+      typeahead: "",
     };
   },
   computed: {
@@ -284,6 +339,34 @@ export default {
       const selected = this.selectOptions.find((option) => option.value === this.currentData);
       return selected?.name || this.options.placeholder || this.$t("common.selectPlaceholder");
     },
+    /**
+     * Options for the custom listbox in one shape. Array options use value/name; table options
+     * use the configured keys (options.options.value / options.options.name).
+     */
+    listItems() {
+      const fromTable = !Array.isArray(this.options.options);
+      const valueKey = fromTable ? this.options.options.value : "value";
+      const nameKey = fromTable ? this.options.options.name : "name";
+      return (this.selectOptions || []).map((option) => ({
+        value: option[valueKey],
+        label: translateMaybeKey(option[nameKey]),
+        class: option.class,
+        disabled: !!option.disabled,
+      }));
+    },
+    listSelectedIndex() {
+      return this.listItems.findIndex((item) => item.value === this.currentData);
+    },
+    hasListSelection() {
+      return this.listSelectedIndex >= 0;
+    },
+    listSelectedLabel() {
+      const item = this.listItems[this.listSelectedIndex];
+      return item ? item.label : (this.options.placeholder || this.$t("common.selectPlaceholder"));
+    },
+    listId() {
+      return `care-select-list-${this.$.uid}`;
+    },
   },
   watch: {
     currentData(newVal, oldVal) {
@@ -306,10 +389,13 @@ export default {
   },
   mounted() {
     this.updateData();
+    this.teleportTarget = this.$el?.closest?.(".modal") || "body";
     document.addEventListener("mousedown", this.onDocumentClick);
   },
   beforeUnmount() {
     document.removeEventListener("mousedown", this.onDocumentClick);
+    this.removeListListeners();
+    clearTimeout(this.typeaheadTimer);
   },
   methods: {
     // Native <select> must bind primitives. valueAsObject only affects the emitted/model shape.
@@ -361,6 +447,176 @@ export default {
     },
     validate() {
       return this.$refs.formElement.validate(this.currentData);
+    },
+
+    // ---------- Custom listbox ----------
+    /** Same validity rule the native selects used: arrays accept anything but -1, tables need an id > 0. */
+    listBlurValue() {
+      return Array.isArray(this.options.options) ? this.currentData !== -1 : this.currentData > 0;
+    },
+    optionDomId(index) {
+      return `care-select-opt-${this.$.uid}-${index}`;
+    },
+    toggleList() {
+      this.listOpen ? this.closeList() : this.openList();
+    },
+    openList() {
+      if (this.listOpen || this.isDisabled) return;
+      const enabled = this.listItems.findIndex((item) => !item.disabled);
+      this.activeIndex = this.listSelectedIndex >= 0 ? this.listSelectedIndex : enabled;
+      this.listOpen = true;
+      this.updateMenuPosition();
+      document.addEventListener("pointerdown", this.onListOutsidePointer, true);
+      window.addEventListener("resize", this.updateMenuPosition);
+      window.addEventListener("scroll", this.updateMenuPosition, true);
+      this.$nextTick(() => {
+        this.updateMenuPosition();
+        this.$refs.listMenu?.focus({preventScroll: true});
+        this.scrollActiveIntoView();
+      });
+    },
+    closeList(focusButton = true) {
+      if (!this.listOpen) return;
+      this.listOpen = false;
+      this.removeListListeners();
+      if (focusButton) this.$refs.listButton?.focus({preventScroll: true});
+    },
+    removeListListeners() {
+      document.removeEventListener("pointerdown", this.onListOutsidePointer, true);
+      window.removeEventListener("resize", this.updateMenuPosition);
+      window.removeEventListener("scroll", this.updateMenuPosition, true);
+    },
+    pickListItem(item, blur) {
+      if (item.disabled) return;
+      this.currentData = item.value;
+      this.closeList();
+      blur(this.listBlurValue());
+    },
+    onListBlur(blur) {
+      // Focus moving into our own menu is not a blur of the field
+      if (this.listOpen) return;
+      blur(this.listBlurValue());
+    },
+    onMenuFocusout(blur, event) {
+      const next = event.relatedTarget;
+      if (next && (this.$refs.listTrigger?.contains(next) || this.$refs.listMenu?.contains(next))) return;
+      this.closeList(false);
+      blur(this.listBlurValue());
+    },
+    onListOutsidePointer(event) {
+      const inTrigger = this.$refs.listTrigger?.contains(event.target);
+      const inMenu = this.$refs.listMenu?.contains(event.target);
+      if (!inTrigger && !inMenu) this.closeList(false);
+    },
+    updateMenuPosition() {
+      const button = this.$refs.listButton;
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const spaceAbove = rect.top - 12;
+      const openUp = spaceBelow < 200 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(140, Math.min(320, openUp ? spaceAbove : spaceBelow));
+      this.menuStyle = {
+        left: `${Math.round(rect.left)}px`,
+        width: `${Math.round(rect.width)}px`,
+        maxHeight: `${Math.round(maxHeight)}px`,
+        ...(openUp
+          ? {bottom: `${Math.round(window.innerHeight - rect.top + 4)}px`}
+          : {top: `${Math.round(rect.bottom + 4)}px`}),
+      };
+    },
+    moveActive(delta) {
+      const count = this.listItems.length;
+      if (!count) return;
+      let index = this.activeIndex;
+      for (let step = 0; step < count; step++) {
+        index = (index + delta + count) % count;
+        if (!this.listItems[index].disabled) break;
+      }
+      this.activeIndex = index;
+      this.scrollActiveIntoView();
+    },
+    jumpTo(edge) {
+      const indices = this.listItems.map((item, i) => (item.disabled ? -1 : i)).filter((i) => i >= 0);
+      if (!indices.length) return;
+      this.activeIndex = edge === "start" ? indices[0] : indices[indices.length - 1];
+      this.scrollActiveIntoView();
+    },
+    scrollActiveIntoView() {
+      this.$nextTick(() => {
+        this.$refs.listMenu?.querySelector(".care-select__option.is-active")?.scrollIntoView({block: "nearest"});
+      });
+    },
+    /** Typing letters jumps to the next option starting with them, like a native select. */
+    typeToFind(char) {
+      clearTimeout(this.typeaheadTimer);
+      this.typeahead += char.toLowerCase();
+      this.typeaheadTimer = setTimeout(() => { this.typeahead = ""; }, 600);
+      const count = this.listItems.length;
+      const start = this.typeahead.length === 1 ? this.activeIndex + 1 : this.activeIndex;
+      for (let step = 0; step < count; step++) {
+        const index = (Math.max(start, 0) + step) % count;
+        const item = this.listItems[index];
+        if (!item.disabled && String(item.label).toLowerCase().startsWith(this.typeahead)) {
+          this.activeIndex = index;
+          this.scrollActiveIntoView();
+          return index;
+        }
+      }
+      return -1;
+    },
+    onListButtonKeydown(event) {
+      // Enter/Space already fire the button's click (toggleList)
+      if (["ArrowDown", "ArrowUp"].includes(event.key)) {
+        event.preventDefault();
+        this.openList();
+      } else if (event.key.length === 1 && event.key !== " " && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        // Closed + typing: change the value directly, like a native select
+        const index = this.typeToFind(event.key);
+        if (index >= 0) this.currentData = this.listItems[index].value;
+      }
+    },
+    onListMenuKeydown(event) {
+      switch (event.key) {
+        case "ArrowDown":
+          event.preventDefault();
+          this.moveActive(1);
+          break;
+        case "ArrowUp":
+          event.preventDefault();
+          this.moveActive(-1);
+          break;
+        case "Home":
+          event.preventDefault();
+          this.jumpTo("start");
+          break;
+        case "End":
+          event.preventDefault();
+          this.jumpTo("end");
+          break;
+        case "Enter":
+        case " ": {
+          event.preventDefault();
+          const item = this.listItems[this.activeIndex];
+          if (item && !item.disabled) {
+            this.currentData = item.value;
+            this.closeList();
+          }
+          break;
+        }
+        case "Escape":
+          event.preventDefault();
+          event.stopPropagation(); // do not close a surrounding modal
+          this.closeList();
+          break;
+        case "Tab":
+          this.closeList(false);
+          break;
+        default:
+          if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            this.typeToFind(event.key);
+          }
+      }
     },
   },
 };
@@ -414,5 +670,129 @@ input.searchable-select-toggle {
 .searchable-select-options {
   overflow-y: auto;
   max-height: 16rem;
+}
+
+/* Searchable variant: same row look as the listbox below */
+.searchable-select-menu {
+  padding: .25rem;
+  border-radius: var(--bs-border-radius-lg, .75rem);
+}
+
+.searchable-select-options .dropdown-item {
+  border-radius: var(--bs-border-radius-sm, .375rem);
+}
+
+/* ---------- Custom listbox ---------- */
+.care-select {
+  position: relative;
+}
+
+.care-select__toggle {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  overflow: hidden;
+  text-align: left;
+  background-color: var(--bs-body-bg, #fff);
+  cursor: pointer;
+}
+
+.care-select.is-open .care-select__toggle {
+  border-color: var(--care-primary, var(--bs-primary));
+  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+}
+
+.care-select__toggle:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
+
+.care-select__label {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Teleported to body / .modal, so it is positioned against the viewport */
+.care-select__menu {
+  position: fixed;
+  z-index: 1080; /* above Bootstrap modals (1055) */
+  margin: 0;
+  padding: .25rem;
+  overflow-y: auto;
+  list-style: none;
+  font-size: var(--bs-body-font-size, 1rem);
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--bs-border-radius-lg, .75rem);
+  box-shadow: var(--care-shadow-3, 0 12px 24px -6px rgb(0 0 0 / .2));
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-rgb), .35) transparent;
+}
+
+[data-bs-theme="dark"] .care-select__menu {
+  background: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
+}
+
+/* Full-width rows: the highlight always spans the whole menu */
+.care-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  width: 100%;
+  padding: .45rem .65rem;
+  border-radius: var(--bs-border-radius-sm, .375rem);
+  cursor: pointer;
+  user-select: none;
+}
+
+.care-select__option.is-active:not(.is-disabled) {
+  background: rgba(var(--care-violet-rgb, 111, 92, 230), .12);
+  color: var(--bs-emphasis-color);
+}
+
+.care-select__option.is-selected {
+  font-weight: 500;
+  color: var(--care-primary, var(--bs-primary));
+}
+
+.care-select__option.is-disabled {
+  color: var(--bs-secondary-color);
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.care-select__option-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.care-select__check {
+  flex: 0 0 auto;
+}
+
+.care-select-menu-enter-active,
+.care-select-menu-leave-active {
+  transition: opacity 110ms ease, transform 130ms var(--care-ease, ease);
+}
+
+.care-select-menu-enter-from,
+.care-select-menu-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .care-select-menu-enter-active,
+  .care-select-menu-leave-active {
+    transition: none;
+  }
 }
 </style>
