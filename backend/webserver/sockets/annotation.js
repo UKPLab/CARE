@@ -16,12 +16,10 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
 class AnnotationSocket extends Socket {
 
     /**
-     * Get the annotations that the current user may include in a downloaded PDF.
-     *
-     * Users with full study access keep the researcher export behavior and receive every
-     * annotation for the document. Participants receive their own annotations plus annotations
-     * from studies they joined when the study is closed or collaborative. A study owner receives
-     * all annotations from their study after it is closed.
+     * Get the annotations permitted in a PDF download after document access is validated.
+     * Users with full study access receive all annotations. Other users receive their own annotations,
+     * plus all annotations from a study when they participate in a collaborative study or when the
+     * study is closed and they are either a participant or its owner.
      *
      * @param {number} documentId The document whose annotations should be exported.
      * @returns {Promise<Array<Object>>} The annotations visible to the current user.
@@ -83,16 +81,22 @@ class AnnotationSocket extends Socket {
      */
     getDownloadableCommentsByAnnotation(comments, annotations) {
         const childrenByParentId = new Map();
+        const rootCommentsByAnnotationId = new Map();
 
         for (const comment of comments) {
-            if (comment.parentCommentId == null) {
-                continue;
+            if (comment.annotationId != null) {
+                const annotationId = Number(comment.annotationId);
+                const rootComments = rootCommentsByAnnotationId.get(annotationId) || [];
+                rootComments.push(comment);
+                rootCommentsByAnnotationId.set(annotationId, rootComments);
             }
 
-            const parentId = Number(comment.parentCommentId);
-            const children = childrenByParentId.get(parentId) || [];
-            children.push(comment);
-            childrenByParentId.set(parentId, children);
+            if (comment.parentCommentId != null) {
+                const parentId = Number(comment.parentCommentId);
+                const children = childrenByParentId.get(parentId) || [];
+                children.push(comment);
+                childrenByParentId.set(parentId, children);
+            }
         }
 
         const collectThread = (rootComment) => {
@@ -118,12 +122,71 @@ class AnnotationSocket extends Socket {
 
         return new Map(annotations.map(annotation => {
             const annotationId = Number(annotation.id);
-            const rootComments = comments.filter(comment =>
-                comment.annotationId != null && Number(comment.annotationId) === annotationId
-            );
+            const rootComments = rootCommentsByAnnotationId.get(annotationId) || [];
 
             return [annotationId, rootComments.flatMap(collectThread)];
         }));
+    }
+
+    /**
+     * Add tag names, author names, and permitted comment threads to downloadable annotations.
+     * Tag and user records are loaded in batches so the query count does not grow per annotation.
+     *
+     * @param {Array<Object>} annotations The annotations permitted in the downloaded PDF.
+     * @param {Map<number, Array<Object>>} commentsByAnnotation Permitted comments grouped by annotation ID.
+     * @returns {Promise<Array<Object>>} Annotations enriched for the PDF service.
+     */
+    async addAnnotationMetadata(annotations, commentsByAnnotation) {
+        const downloadableComments = annotations.flatMap(annotation =>
+            commentsByAnnotation.get(Number(annotation.id)) || []
+        );
+        const tagIds = [...new Set(
+            annotations.map(annotation => annotation.tagId).filter(id => id != null)
+        )];
+        const userIds = [...new Set(
+            [...annotations, ...downloadableComments]
+                .filter(item => !item.anonymous && item.userId != null)
+                .map(item => item.userId)
+        )];
+
+        // Resolve metadata in two batch queries instead of querying once per annotation or comment.
+        const [tags, users] = await Promise.all([
+            tagIds.length > 0 ? this.models['tag'].getAllByKeyValues('id', tagIds) : [],
+            userIds.length > 0 ? this.models['user'].getAllByKeyValues('id', userIds) : [],
+        ]);
+        const tagsById = new Map(tags.map(tag => [Number(tag.id), tag]));
+        const usersById = new Map(users.map(user => [Number(user.id), user]));
+
+        const getDisplayName = (item, itemType) => {
+            if (item.anonymous) {
+                return "Anonymous";
+            }
+
+            const user = usersById.get(Number(item.userId));
+            if (!user) {
+                console.warn(`User with ID ${item.userId} not found for ${itemType} ${item.id}`);
+            }
+            return user.userName;
+        };
+
+        return annotations.map(annotation => {
+            const tag = annotation.tagId != null ? tagsById.get(Number(annotation.tagId)) : null;
+            if (annotation.tagId != null && !tag) {
+                console.warn(`Tag with ID ${annotation.tagId} not found for annotation ${annotation.id}`);
+            }
+
+            const comments = (commentsByAnnotation.get(Number(annotation.id)) || []).map(comment => ({
+                ...comment,
+                username: getDisplayName(comment, "comment"),
+            }));
+
+            return {
+                ...annotation,
+                tag: tag ? tag.name : null,
+                username: getDisplayName(annotation, "annotation"),
+                comments,
+            };
+        });
     }
 
     /**
@@ -250,31 +313,13 @@ class AnnotationSocket extends Socket {
         }
 
         const document = await this.getSocket("DocumentSocket").validateDocument(data.documentId, 'id', true);
-        const annotations = await this.getDownloadableAnnotations(data.documentId);
-        const comments = await this.models['comment'].getAllByKey("documentId", data.documentId);
+        // Load comments once so complete reply trees can be selected without per-thread queries.
+        const [annotations, comments] = await Promise.all([
+            this.getDownloadableAnnotations(data.documentId),
+            this.models['comment'].getAllByKey("documentId", data.documentId),
+        ]);
         const commentsByAnnotation = this.getDownloadableCommentsByAnnotation(comments, annotations);
-
-        // For each annotation, get the corresponding tag and comments
-        const annotationsWithTagsAndComments = await Promise.all(
-            annotations.map(async (annotation) => {
-                const tag = annotation.tagId ? await this.models['tag'].getById(annotation.tagId) : null;
-                if (!tag) {
-                    console.warn(`Tag with ID ${annotation.tagId} not found for annotation ${annotation.id}`);
-                }
-
-                const user = await this.models['user'].getById(annotation.userId);
-                if (!user) {
-                    console.warn(`User with ID ${annotation.userId} not found for annotation ${annotation.id}`);
-                }
-
-                return {
-                    ...annotation,
-                    tag: tag ? tag.name : null,
-                    username: annotation.anonymous ? "Anonymous" : user.userName,
-                    comments: commentsByAnnotation.get(Number(annotation.id)) || []
-                };
-            })
-        );
+        const annotationsWithMetadata = await this.addAnnotationMetadata(annotations, commentsByAnnotation);
         const filePath = path.join(UPLOAD_PATH, `${document.hash}.pdf`);
 
         if (!fs.existsSync(filePath)) {
@@ -285,7 +330,7 @@ class AnnotationSocket extends Socket {
         // Call PDFRPC to embed the annotations
         const response = await this.server.rpcs["PDFRPC"].embeddAnnotations({
             file,
-            annotations: annotationsWithTagsAndComments,
+            annotations: annotationsWithMetadata,
             document: document,
         });
 
