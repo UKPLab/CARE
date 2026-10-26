@@ -386,6 +386,33 @@ export function getTimeDiffString(start, end) {
 }
 
 /**
+ * Whether a document belongs in the user's own document list on the dashboard.
+ * @param doc document row from the store
+ * @param userId current user
+ * @param projectId current project
+ * @returns {boolean}
+ */
+export function isOwnListedDocument(doc, userId, projectId) {
+    return doc.projectId === projectId
+        && doc.userId === userId
+        && doc.parentDocumentId === null
+        && doc.hideInFrontend === false
+        && doc.type !== 3
+        && doc.type !== 4;
+}
+
+/**
+ * Assignments shown on the dashboard lists (Submissions, Assignments for
+ * users who cannot view all, and the Home submissions tile).
+ * @param assignment assignment row from the store
+ * @param userId current user
+ * @returns {boolean}
+ */
+export function isListedAssignment(assignment, userId) {
+    return assignment.userId === userId || !assignment.disable;
+}
+
+/**
  * Downloads a document as a file.
  * @param content the written content inside of the document
  * @param fileName the name of the file

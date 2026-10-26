@@ -112,7 +112,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import { getTimeDiffString } from "@/assets/utils";
+import { getTimeDiffString, isListedAssignment } from "@/assets/utils";
 import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 export default {
@@ -128,7 +128,7 @@ export default {
     },
     assignments() {
       return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => assignment.userId === this.userId || !assignment.disable
+        (assignment) => isListedAssignment(assignment, this.userId)
       ) || [];
     },
     assignmentTimes() {
