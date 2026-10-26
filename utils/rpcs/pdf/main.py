@@ -432,11 +432,14 @@ def create_app():
         for comment in comments:
             if "text" in comment:
                 if comment["text"] is not None:
+                    # Prefer the comment author's display name; keep the annotation author as a
+                    # fallback for callers that do not provide per-comment author metadata.
+                    comment_name = comment.get("username", name)
                     annot_text_obj = doc_page.add_text_annot(
                         position, textType + ": " + comment["text"],
                         icon="Comment"  # Use a comment icon for text annotations
                     )
-                    annot_text_obj.set_info(build_comment_annotation_info(comment, name, subject))
+                    annot_text_obj.set_info(build_comment_annotation_info(comment, comment_name, subject))
                     annot_text_obj.set_colors(stroke=color)  # Set the color of the text annotation
                     annot_text_obj.update()  # Apply the color change
 
