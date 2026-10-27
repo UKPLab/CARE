@@ -91,6 +91,11 @@ module.exports = {
                 name: 'ai_message_conversationId_id_index',
                 transaction,
             });
+
+            await queryInterface.addIndex('ai_message', ['requestId'], {
+                name: 'ai_message_requestId_index',
+                transaction,
+            });
         });
     },
 

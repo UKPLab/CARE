@@ -65,6 +65,11 @@ module.exports = {
                 name: 'chk_ai_conversation_type',
                 transaction,
             });
+
+            await queryInterface.addIndex('ai_conversation', ['userId', 'studySessionId', 'type'], {
+                name: 'ai_conversation_userId_studySessionId_type_index',
+                transaction,
+            });
         });
     },
 
