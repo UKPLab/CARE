@@ -1,13 +1,27 @@
 <template>
   <div class="scroll-markers-anchor">
-    <div class="scroll-markers">
+    <div ref="track" class="scroll-markers">
       <div
         v-for="marker in markers"
         :key="marker.id"
         class="scroll-marker"
-        :style="{top: marker.top + '%', '--marker-color': marker.color}"
+        :style="{top: marker.top + 'px', '--marker-color': marker.color}"
         @click="jumpTo(marker.id)"
+        @mouseenter="hoveredId = marker.id"
+        @mouseleave="hoveredId = null"
       />
+      <div
+        v-if="preview"
+        class="scroll-marker-preview card shadow-sm small"
+        :style="preview.style"
+      >
+        <div class="card-body p-2">
+          <b v-if="preview.tagName">{{ preview.tagName }}:</b> {{ preview.text }}
+          <div v-if="preview.commentText" class="text-body-secondary mt-1">
+            {{ preview.commentCreator }}: {{ preview.commentText }}
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -15,7 +29,18 @@
 <script>
 import debounce from "lodash.debounce";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
-import {getCollapsedAnnotationIds, getSessionScope, getTagColor, isInSessionScope} from "@/assets/annotations";
+import {
+  getAnnotationPreview,
+  getCollapsedAnnotationIds,
+  getSessionScope,
+  getTagColor,
+  isInSessionScope,
+  spreadPositions,
+} from "@/assets/annotations";
+
+// Height of the visible marker line and the smallest distance between two markers, in px
+const MARKER_HEIGHT = 3;
+const MARKER_GAP = MARKER_HEIGHT + 2;
 
 /**
  * Annotation markers on the viewer scrollbar
@@ -60,6 +85,8 @@ export default {
   data() {
     return {
       markers: [],
+      hoveredId: null,
+      trackHeight: 0,
     };
   },
   computed: {
@@ -72,6 +99,18 @@ export default {
       const collapsedIds = getCollapsedAnnotationIds(this.$store, this.documentId);
       return this.$store.getters["table/annotation/getByKey"]("documentId", this.documentId)
         .filter(anno => isInSessionScope(anno, scope) && !collapsedIds.includes(anno.id));
+    },
+    /** Texts and position of the hover preview, opening downwards in the upper half of the track, upwards otherwise */
+    preview() {
+      const marker = this.markers.find(marker => marker.id === this.hoveredId);
+      const annotation = marker && this.annotations.find(anno => anno.id === marker.id);
+      if (!annotation) {
+        return null;
+      }
+      const style = marker.top < this.trackHeight / 2
+        ? {top: marker.top + "px"}
+        : {bottom: (this.trackHeight - marker.top - MARKER_HEIGHT) + "px"};
+      return {...getAnnotationPreview(this.$store, annotation), style};
     },
   },
   watch: {
@@ -126,7 +165,9 @@ export default {
       const pages = container.querySelectorAll(".scrolling-page");
       const contentTop = container.getBoundingClientRect().top - container.scrollTop;
 
-      this.markers = this.annotations.map(anno => {
+      const trackHeight = this.$refs.track.clientHeight;
+      this.trackHeight = trackHeight;
+      const markers = this.annotations.map(anno => {
         const top = this.getPosition(anno, pages);
         if (top === null) {
           return null;
@@ -134,10 +175,13 @@ export default {
         const color = getTagColor(this.$store, anno.tagId);
         return {
           id: anno.id,
-          top: (top - contentTop) / container.scrollHeight * 100,
+          top: (top - contentTop) / container.scrollHeight * trackHeight,
           color: color ? "#" + color : null,
         };
-      }).filter(marker => marker !== null);
+      }).filter(marker => marker !== null).sort((a, b) => a.top - b.top);
+
+      const tops = spreadPositions(markers.map(marker => marker.top), MARKER_GAP, trackHeight - MARKER_HEIGHT);
+      this.markers = markers.map((marker, i) => ({...marker, top: tops[i]}));
     },
     /**
      * Estimates the position of annotations from the PDF text layout, for pages that are not rendered yet.
@@ -219,5 +263,14 @@ export default {
 
 .scroll-marker:hover::before {
   opacity: 1;
+}
+
+/* Opens to the left of the marker column, over the viewer */
+.scroll-marker-preview {
+  position: absolute;
+  right: calc(100% + 4px);
+  width: 280px;
+  z-index: 1050;
+  pointer-events: none;
 }
 </style>

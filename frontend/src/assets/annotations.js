@@ -104,3 +104,47 @@ export function getCollapsedAnnotationIds(store, documentId) {
         comment => collapsedCommentIds.includes(comment.id)
     ).map(comment => comment.annotationId);
 }
+
+/**
+ * Moves sorted marker positions apart so none are closer than minGap pixels, keeping their order.
+ * Markers pushed past max are moved back up. Used by the scrollbar markers.
+ *
+ * @param {number[]} positions positions in px, sorted ascending
+ * @param {number} minGap smallest allowed distance between two positions
+ * @param {number} max largest allowed position
+ * @returns {number[]}
+ */
+export function spreadPositions(positions, minGap, max) {
+    const result = [...positions];
+    for (let i = 1; i < result.length; i++) {
+        result[i] = Math.max(result[i], result[i - 1] + minGap);
+    }
+    for (let i = result.length - 1; i >= 0; i--) {
+        const limit = i === result.length - 1 ? max : result[i + 1] - minGap;
+        result[i] = Math.max(Math.min(result[i], limit), 0);
+    }
+    return result;
+}
+
+/**
+ * Returns the short texts shown when hovering an annotation's scrollbar marker:
+ * tag name, highlighted text and the start of its comment, each cut to maxLength characters.
+ *
+ * @param store the Vuex store
+ * @param {Object} annotation
+ * @param {number} maxLength
+ * @returns {{tagName: string|null, text: string|null, commentCreator: string|null, commentText: string|null}}
+ */
+export function getAnnotationPreview(store, annotation, maxLength = 100) {
+    const truncate = text => text && text.length > maxLength ? text.slice(0, maxLength).trimEnd() + "…" : text || null;
+    const tag = annotation.tagId ? store.getters['table/tag/get'](annotation.tagId) : null;
+    const comment = store.getters['table/comment/getFiltered'](
+        comment => comment.annotationId === annotation.id && comment.parentCommentId === null
+    )[0];
+    return {
+        tagName: tag?.name ?? null,
+        text: truncate(annotation.text),
+        commentCreator: comment?.text ? comment.creator_name : null,
+        commentText: truncate(comment?.text),
+    };
+}
