@@ -3,14 +3,14 @@
 const placeholders = [
     {
         placeholderKey: "dialogueDecision",
-        placeholderLabel: "Dialogue decision input",
-        placeholderDescription: "The current Dialogue question and the latest answer, filled by CARE.",
+        placeholderLabel: "templates.placeholders.labels.prompt.dialogueDecision",
+        placeholderDescription: "templates.placeholders.descriptions.prompt.dialogueDecision",
         placeholderExample: '{"currentQuestion":{"text":"What led you to this comment?","help":"","evidenceGoal":"","completeWhen":"","followUpDirection":""},"latestAnswer":{"content":"The method was unclear."}}',
     },
     {
         placeholderKey: "dialogueAnchors",
-        placeholderLabel: "Dialogue anchor candidates",
-        placeholderDescription: "The anchored Dialogue questions with review excerpts from their source, filled by CARE.",
+        placeholderLabel: "templates.placeholders.labels.prompt.dialogueAnchors",
+        placeholderDescription: "templates.placeholders.descriptions.prompt.dialogueAnchors",
         placeholderExample: '[{"id":"evidence_1","source":"pr1","questionText":"What led you to this comment?","evidenceGoal":"","candidates":[{"index":0,"text":"The method needs more detail."}]}]',
     },
 ];
