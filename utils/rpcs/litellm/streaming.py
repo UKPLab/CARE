@@ -10,7 +10,9 @@ from litellm import Router
 class StreamingRouter(Router):
     """Keep Router fallbacks until the first visible answer text is sent."""
 
-    text_started = False
+    def __init__(self, *args, **kwargs):
+        self.text_started = False
+        super().__init__(*args, **kwargs)
 
     async def async_function_with_fallbacks_common_utils(self, e, *args, **kwargs):
         """LiteLLM 1.82.6 otherwise attempts continuation after stream failures."""
