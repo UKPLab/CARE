@@ -5,6 +5,7 @@
     :steps="steps"
     :validation="stepValid"
     @submit="handleSubmit"
+    @step-change="onStepChange"
   >
     <template #title>
       <h5 class="modal-title">{{ $t("submission.publishAssessment.title") }}</h5>
@@ -34,7 +35,9 @@
         <p class="small text-muted mb-3">
           {{ $t("submission.publishAssessment.selectWorkflowsDescription") }}
         </p>
+        <Loader v-if="workflowsLoading" :loading="true"/>
         <BasicTable
+          v-else
           v-model="selectedWorkflows"
           :data="workflowsTable"
           :columns="workflowTableColumns"
@@ -53,16 +56,16 @@
           <strong>{{ $t("submission.publishAssessment.closedStudySessions") }}</strong>
           {{ $t("submission.publishAssessment.selectSessionsDescriptionSuffix") }}
         </p>
-        <div v-if="sessionsTable.length === 0" class="alert alert-warning">
-          {{ $t("submission.publishAssessment.noSessionsFound") }}
-        </div>
-        <BasicTable
-          v-else
-          v-model="selectedSessions"
-          :data="sessionsTable"
+        <BackendTable
+          ref="sessionTable"
+          table="study_session"
           :columns="sessionTableColumns"
-          :options="multiSelectTableOptions"
-          :max-table-height="350"
+          :query-scope="sessionQueryScope"
+          :query-filter-schema="sessionFilterSchema"
+          :query-search-columns="sessionSearchColumns"
+          :options="sessionTableOptions"
+          :max-table-height="'50vh'"
+          @selection-change="onSessionSelectionChange"
         />
       </div>
     </template>
@@ -71,7 +74,9 @@
     <template #step-4>
       <PublishAssessmentConfirmationStep
         v-model:link-collection="linkCollection"
-        :selected-sessions="selectedSessions"
+        :selected-sessions="sessionSelection.rows"
+        :all-matching="sessionSelection.allMatching"
+        :selected-count="selectedSessionCount"
       />
     </template>
 
@@ -81,7 +86,7 @@
         v-model:publish-method="publishMethod"
         v-model:is-review-url-included="isReviewUrlIncluded"
         v-model:moodle-options="moodleOptions"
-        :selected-sessions="selectedSessions"
+        :selected-session-count="selectedSessionCount"
         :selected-configuration-content="selectedConfigurationContent"
         :grade-information="gradeInformation"
         @select-assignment="selectAssignment"
@@ -92,38 +97,44 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
+import BackendTable from "@/basic/BackendTable.vue";
+import Loader from "@/basic/Loading.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import PublishAssessmentConfirmationStep from "./PublishAssessmentConfirmationStep.vue";
 import PublishAssessmentPublishingStep from "./PublishAssessmentPublishingStep.vue";
+import { calculateAssessmentScore } from "assessment-score";
 import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
+import { NUMERIC_OPERATORS } from "@/basic/table/searchTokens.js";
 import {
-  isStudyClosed,
-  getConfigurationIdFromConfig,
+  applySavedSelection,
+  cloneSelection,
+  emptySelection,
+  selectionRestoreInfo,
+} from "@/basic/table/emptySelection.js";
+import {
   getAssessmentDataForSession,
   convertAssessmentScore,
   getConversionFactorFromAssessment,
 } from "./helpers/publishAssessmentScoring.js";
-import { buildOrderedWorkflowStepsByWorkflow, buildWorkflowsTable, buildSessionsTable } from "./helpers/publishAssessmentTables.js";
+import { buildWorkflowsTable, sessionReviewLink } from "./helpers/publishAssessmentTables.js";
 import { buildCsvRows } from "./helpers/publishAssessmentCsvRows.js";
 
 /**
  * Modal for publishing assessment data with CSV export
+ *
+ * Workflow steps and their session counts (publishAssessmentWorkflows), the session list
+ * (BackendTable on study_session with an assessment query scope) and the exported scores
+ * (publishAssessmentData) are all resolved server-side.
+ *
  * @author: CARE Team
  */
 export default {
   name: "PublishAssessmentModal",
-  components: { BasicTable, StepperModal, PublishAssessmentConfirmationStep, PublishAssessmentPublishingStep },
+  components: { BasicTable, BackendTable, Loader, StepperModal, PublishAssessmentConfirmationStep, PublishAssessmentPublishingStep },
   subscribeTable: [
     { table: "workflow" },
     { table: "workflow_step" },
     { table: "configuration", filter: [{ key: "type", value: 0 }] },
-    { table: "study" },
-    { table: "study_step" },
-    { table: "study_session" },
-    { table: "submission" },
-    { table: "document" },
-    { table: "document_data" },
-    { table: "user" },
     { table: "user_role" },
     { table: "user_role_matching" },
   ],
@@ -131,12 +142,16 @@ export default {
     return {
       selectedWorkflows: [],
       selectedConfigurations: [],
-      selectedSessions: [],
+      // Workflow × step rows with their session counts (publishAssessmentWorkflows).
+      workflowRows: [],
+      workflowsLoading: false,
+      sessionSelection: emptySelection(),
+      moodleOptions: {},
       publishMethod: "csv",
       linkCollection: "studies",
       selectedAssignmentMaxGrade: 0, // Store max grade for selected assignment
       isReviewUrlIncluded: false, // Option to include review URL in Moodle feedback
-      moodleOptions: {},
+      sessionStepLive: false,
     };
   },
   computed: {
@@ -153,7 +168,7 @@ export default {
       return [
         this.selectedConfigurations.length > 0,
         this.selectedWorkflows.length > 0,
-        this.selectedSessions.length > 0,
+        this.selectedSessionCount > 0,
         true,
         true,
       ];
@@ -183,44 +198,37 @@ export default {
         search: true,
       };
     },
+    sessionTableOptions() {
+      return {
+        striped: true,
+        hover: true,
+        bordered: false,
+        borderless: false,
+        small: false,
+        selectableRows: true,
+        pagination: {
+          serverSide: true,
+          itemsPerPage: 10,
+          total: 0,
+        },
+        search: true,
+        sort: {column: "id", order: "ASC"},
+      };
+    },
     // Data sources
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
+    canReadPrivateInformation() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
+    },
     workflows() {
       return this.$store.getters["table/workflow/getAll"] || [];
-    },
-    workflowSteps() {
-      return this.$store.getters["table/workflow_step/getAll"] || [];
     },
     configurations() {
       return this.$store.getters["table/configuration/getFiltered"](
         (c) => c.type === 0 && !c.deleted
       ) || [];
-    },
-    studies() {
-      return this.$store.getters["table/study/getFiltered"](
-        (s) => !s.template && s.projectId === this.projectId
-      ) || [];
-    },
-    studySteps() {
-      return this.$store.getters["table/study_step/getAll"] || [];
-    },
-    studySessions() {
-      return this.$store.getters["table/study_session/getAll"] || [];
-    },
-    submissions() {
-      return this.$store.getters["table/submission/getFiltered"](
-        (s) => s.projectId === this.projectId
-      ) || [];
-    },
-    documents() {
-      return this.$store.getters["table/document/getFiltered"](
-        (d) => d.projectId === this.projectId
-      ) || [];
-    },
-    users() {
-      return this.$store.getters["table/user/getAll"] || [];
     },
     userRoles() {
       return this.$store.getters["table/user_role/getAll"] || [];
@@ -228,21 +236,12 @@ export default {
     userRoleMatchings() {
       return this.$store.getters["table/user_role_matching/getAll"] || [];
     },
-    orderedWorkflowStepsByWorkflow() {
-      return buildOrderedWorkflowStepsByWorkflow(this.workflowSteps);
-    },
 
     // Table data
     workflowsTable() {
       return buildWorkflowsTable({
-        selectedConfigurationId: this.selectedConfigurationId,
-        studies: this.studies,
+        workflowRows: this.workflowRows,
         workflows: this.workflows,
-        studySteps: this.studySteps,
-        orderedWorkflowStepsByWorkflow: this.orderedWorkflowStepsByWorkflow,
-        studySessions: this.studySessions,
-        getConfigurationIdFromConfig,
-        isStudyClosed,
         t: this.$t,
       });
     },
@@ -272,20 +271,6 @@ export default {
         { name: this.$t("submission.publishAssessment.columns.created"), key: "createdAt" },
       ];
     },
-    
-    selectedWorkflowIds() {
-      return this.selectedWorkflows.map(w => w.workflowId);
-    },
-    selectedStepNumbers() {
-      return this.selectedWorkflows.map(w => w.stepNumber);
-    },
-    // Keep for backward compatibility
-    selectedWorkflowId() {
-      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].workflowId : null;
-    },
-    selectedStepNumber() {
-      return this.selectedWorkflows.length > 0 ? this.selectedWorkflows[0].stepNumber : null;
-    },
     selectedConfigurationId() {
       return this.selectedConfigurations.length > 0 ? this.selectedConfigurations[0].id : null;
     },
@@ -314,105 +299,156 @@ export default {
     },
     // Grade overview shown in the publishing step for Moodle
     gradeInformation() {
-      const numberOfGrades = this.selectedSessions.length || 0;
-
-      if (!this.selectedConfigurationContent || numberOfGrades === 0) {
-        return {
-          numberOfGrades,
-          totalMaxPoints: 0,
-          totalMinPoints: 0,
-          maxGradeFromMoodle: this.selectedAssignmentMaxGrade || 0,
-          conversionFactor: 0,
-        };
-      }
-
-      // Use assessment definition from the first selected session (same config for all)
-      const { assessment } = this.getAssessmentDataForSession(this.selectedSessions[0]);
-
-      const totalMaxPoints = assessment.total_max_points ?? 0;
-      const totalMinPoints = assessment.total_min_points ?? 0;
+      const numberOfGrades = this.selectedSessionCount;
+      // The point range only depends on the rubric (same config for all sessions), not on scores.
+      const assessment = this.selectedConfigurationContent
+        ? calculateAssessmentScore(this.selectedConfigurationContent, {})
+        : {};
       const assignmentMaxGrade = this.selectedAssignmentMaxGrade || 0;
-      const conversionFactor = getConversionFactorFromAssessment(assessment, assignmentMaxGrade);
 
       return {
         numberOfGrades,
-        totalMaxPoints,
-        totalMinPoints,
+        totalMaxPoints: assessment.total_max_points ?? 0,
+        totalMinPoints: assessment.total_min_points ?? 0,
         maxGradeFromMoodle: assignmentMaxGrade,
-        conversionFactor,
+        conversionFactor: getConversionFactorFromAssessment(assessment, assignmentMaxGrade),
       };
     },
 
-    // Sessions filtered by workflow and configuration
-    sessionsTable() {
-      return buildSessionsTable({
-        selectedWorkflows: this.selectedWorkflows,
-        selectedConfigurationId: this.selectedConfigurationId,
-        studySessions: this.studySessions,
-        studies: this.studies,
-        studySteps: this.studySteps,
-        documents: this.documents,
-        submissions: this.submissions,
-        users: this.users,
-        isStudyClosed,
-        t: this.$t,
-      });
+    /**
+     * Which sessions the session table lists: the picked configuration in the picked workflow steps,
+     * closed studies only. The server turns this into the WHERE (study_session model), so neither
+     * study nor study_step ids travel to the browser.
+     */
+    sessionQueryScope() {
+      if (!this.selectedConfigurationId || this.selectedWorkflows.length === 0) {
+        return null;
+      }
+      return {
+        assessment: {
+          configurationId: this.selectedConfigurationId,
+          projectId: this.projectId,
+          steps: this.selectedWorkflows.map((row) => ({
+            workflowId: row.workflowId,
+            stepNumber: row.stepNumber,
+          })),
+        },
+      };
     },
     sessionTableColumns() {
-      return [
+      const columns = [
         { name: this.$t("submission.publishAssessment.columns.study"), key: "studyName" },
-        { name: this.$t("submission.publishAssessment.columns.reviewerFirstName"), key: "firstName" },
-        { name: this.$t("submission.publishAssessment.columns.reviewerLastName"), key: "lastName" },
-        { name: this.$t("submission.publishAssessment.columns.ownerFirstName"), key: "ownerFirstName" },
-        { name: this.$t("submission.publishAssessment.columns.ownerLastName"), key: "ownerLastName" },
-        { name: this.$t("submission.publishAssessment.columns.submissionExtId"), key: "submissionExtId" },
       ];
+      if (this.canReadPrivateInformation) {
+        columns.push(
+          { name: this.$t("submission.publishAssessment.columns.reviewerFirstName"), key: "firstName" },
+          { name: this.$t("submission.publishAssessment.columns.reviewerLastName"), key: "lastName" },
+          { name: this.$t("submission.publishAssessment.columns.ownerFirstName"), key: "ownerFirstName" },
+          { name: this.$t("submission.publishAssessment.columns.ownerLastName"), key: "ownerLastName" },
+        );
+      }
+      columns.push(
+        { name: this.$t("submission.publishAssessment.columns.submissionExtId"), key: "submissionExtId" },
+      );
+      return columns;
+    },
+    sessionFilterSchema() {
+      const schema = {
+        submissionExtId: {
+          label: this.$t("submission.publishAssessment.columns.submissionExtId"),
+          type: "numeric",
+          operators: NUMERIC_OPERATORS,
+        },
+      };
+      if (this.canReadPrivateInformation) {
+        schema.firstName = {label: this.$t("submission.publishAssessment.columns.reviewerFirstName"), type: "text"};
+        schema.lastName = {label: this.$t("submission.publishAssessment.columns.reviewerLastName"), type: "text"};
+        schema.ownerFirstName = {label: this.$t("submission.publishAssessment.columns.ownerFirstName"), type: "text"};
+        schema.ownerLastName = {label: this.$t("submission.publishAssessment.columns.ownerLastName"), type: "text"};
+      }
+      return schema;
+    },
+    sessionSearchColumns() {
+      const columns = ["studyName"];
+      if (this.canReadPrivateInformation) {
+        columns.push("firstName", "lastName", "ownerFirstName", "ownerLastName");
+      }
+      return columns;
+    },
+    selectedSessionCount() {
+      return this.sessionSelection.count;
     },
   },
   watch: {
     selectedConfigurations() {
       // Reset downstream selections when configuration changes
       this.selectedWorkflows = [];
-      this.selectedSessions = [];
+      this.sessionSelection = emptySelection();
+      this.loadWorkflows();
     },
-    selectedWorkflows() {
-      // Reset sessions when workflow changes
-      this.selectedSessions = [];
+    selectedWorkflows(next, prev) {
+      const ids = (rows) => (rows || []).map((row) => row.id).join(",");
+      if (ids(next) === ids(prev)) return;
+      // Reset sessions when the picked workflow steps change (the query behind them changed)
+      this.sessionSelection = emptySelection();
     },
   },
   methods: {
     /**
-     * @deprecated Since the user can select a specific step directly,
-     * this method is no longer in use and can be removed
-     * after the testing of the assessment publishing feature.
-     *
-     * Find the study step for a study that matches the selected configuration.
-     * Prefers the earliest occurrence in the workflow order.
+     * Workflow steps that run the picked configuration, with their session counts.
      */
-    getMatchingStudyStepForStudy(studyId) {
-      if (!this.selectedConfigurationId) return null;
+    loadWorkflows() {
+      this.workflowRows = [];
+      if (!this.selectedConfigurationId) {
+        this.workflowsLoading = false;
+        return;
+      }
 
-      const stepsForStudy = this.studySteps.filter(
-        (step) =>
-          step &&
-          !step.deleted &&
-          step.studyId === studyId &&
-          getConfigurationIdFromConfig(step.configuration) === this.selectedConfigurationId
-      );
-      if (stepsForStudy.length === 0) return null;
-
-      const study = this.studies.find((s) => s.id === studyId);
-      const workflowId = study?.workflowId;
-      const orderedWorkflowSteps = workflowId
-        ? this.orderedWorkflowStepsByWorkflow[workflowId] || []
-        : [];
-
-      const orderedMatch =
-        orderedWorkflowSteps
-          .map((ws) => stepsForStudy.find((step) => step.workflowStepId === ws.id))
-          .find((step) => !!step) || null;
-
-      return orderedMatch || stepsForStudy[0];
+      const requestedConfigurationId = this.selectedConfigurationId;
+      this.workflowsLoading = true;
+      this.$socket.emit("publishAssessmentWorkflows", {
+        configurationId: requestedConfigurationId,
+        projectId: this.projectId,
+      }, (res) => {
+        // Stale reply: the selection changed (or was cleared) while waiting.
+        // A newer request owns the loading state, so leave it untouched.
+        if (requestedConfigurationId !== this.selectedConfigurationId) {
+          return;
+        }
+        this.workflowsLoading = false;
+        if (!res?.success) {
+          this.eventBus.emit("toast", {
+            title: this.$t("submission.publishAssessment.toasts.workflowsFailed.title"),
+            message: resolveApiMessage(res),
+            variant: "danger",
+          });
+          return;
+        }
+        this.workflowRows = res.data?.workflows || [];
+      });
+    },
+    onStepChange(step) {
+      if (this.sessionStepLive) {
+        const live = this.$refs.sessionTable?.getSelection?.();
+        if (live) this.sessionSelection = {...live};
+      }
+      this.sessionStepLive = false;
+      if (step !== 2) return;
+      this.$nextTick(() => {
+        this.restoreSessionSelection();
+        this.sessionStepLive = true;
+      });
+    },
+    restoreSessionSelection() {
+      const saved = this.sessionSelection;
+      const restore = selectionRestoreInfo(saved);
+      if (!restore) return;
+      applySavedSelection(this.$refs.sessionTable, saved, restore);
+    },
+    onSessionSelectionChange() {
+      if (!this.sessionStepLive) return;
+      // Snapshot while the table exists: the stepper unmounts it before the confirmation step.
+      this.sessionSelection = cloneSelection(this.$refs.sessionTable?.getSelection());
     },
     getUserRoles(userId) {
       const roleMatchings = this.userRoleMatchings.filter(
@@ -432,7 +468,10 @@ export default {
     reset() {
       this.selectedWorkflows = [];
       this.selectedConfigurations = [];
-      this.selectedSessions = [];
+      this.workflowRows = [];
+      this.workflowsLoading = false;
+      this.sessionSelection = emptySelection();
+      this.sessionStepLive = false;
       this.publishMethod = "csv";
       this.linkCollection = "studies";
       this.selectedAssignmentMaxGrade = 0;
@@ -443,14 +482,52 @@ export default {
       this.selectedAssignmentMaxGrade = maxGrade ?? 0;
     },
     handleSubmit() {
-      if (this.publishMethod === "csv") {
-        this.downloadCSV();
+      if (!this.validateConfiguration()) return;
+      if (this.selectedSessionCount <= 0) {
+        this.eventBus.emit("toast", {
+          title: this.$t("submission.publishAssessment.toasts.noSessionsSelected.title"),
+          message: this.$t("submission.publishAssessment.toasts.noSessionsSelected.message"),
+          variant: "warning",
+        });
         return;
       }
-      if (this.publishMethod === "moodle") {
-        this.uploadGrades();
-        return;
-      }
+      this.fetchAssessmentData((sessions) => {
+        if (this.publishMethod === "moodle") {
+          this.uploadGrades(sessions);
+          return;
+        }
+        this.$refs.assessmentStepper.setWaiting(false);
+        this.downloadCSV(sessions);
+      });
+    },
+    /**
+     * Scores and identity for the selected sessions. Either the ticked ids or the session query
+     * itself (select-all) — the server resolves the rows again from the same filter and scope.
+     * @param {function(Array<Object>): void} onLoaded
+     */
+    fetchAssessmentData(onLoaded) {
+      this.$refs.assessmentStepper.setWaiting(true);
+      this.$socket.emit("publishAssessmentData", {
+        selection: {
+          allMatching: this.sessionSelection.allMatching,
+          excludeIds: this.sessionSelection.excludeIds,
+          ids: this.sessionSelection.ids,
+          filter: this.sessionSelection.filter,
+          query: this.sessionSelection.query,
+          scope: this.sessionSelection.scope || this.sessionQueryScope,
+        },
+      }, (res) => {
+        if (!res?.success) {
+          this.$refs.assessmentStepper.setWaiting(false);
+          this.eventBus.emit("toast", {
+            title: this.$t("submission.publishAssessment.toasts.assessmentDataFailed.title"),
+            message: resolveApiMessage(res),
+            variant: "danger",
+          });
+          return;
+        }
+        onLoaded(res.data?.sessions || []);
+      });
     },
     /**
      * Validates that configuration content is available.
@@ -468,59 +545,35 @@ export default {
       return true;
     },
     /**
-     * Retrieves assessment data for a given session.
-     * Returns an object with scores and assessment calculation.
+     * Scores and total for one exported session. The server picks the scores (saved row,
+     * hook/NLP rows, document-level fallback); the client only applies the rubric.
+     * @param {Object} session row from publishAssessmentData
+     * @returns {{scores: Object, assessment: Object}}
      */
     getAssessmentDataForSession(session) {
-      return getAssessmentDataForSession(
-        session,
-        this.selectedWorkflows,
-        {
-          getBySession: (studySessionId) => this.$store.getters["table/document_data/getByKey"]("studySessionId", studySessionId),
-          getAll: () => this.$store.getters["table/document_data/getAll"],
-        },
-        this.selectedConfigurationContent
-      );
-    },
-    /**
-     * Gets the owner user for a given session.
-     * Returns the user object or null if not found.
-     */
-    getOwnerUserForSession(session) {
-      const study = session.studyId ? this.studies.find((s) => s.id === session.studyId) : null;
-      return study ? this.users.find((u) => u.id === study.userId) : null;
-    },
-    /**
-     * Gets the reviewer user for a given session.
-     * Returns the user object or null if not found.
-     */
-    getReviewerUserForSession(session) {
-      return this.users.find((u) => u.id === session.userId) || null;
+      return getAssessmentDataForSession(session, this.selectedConfigurationContent);
     },
     /**
      * Uploads the selected sessions' grades to a specific assignment in Moodle.
+     * @param {Array<Object>} sessions rows from publishAssessmentData
      */
-    uploadGrades() {
-      if (!this.validateConfiguration()) return;
-
-      const grades = this.selectedSessions.map((session) => {
+    uploadGrades(sessions) {
+      const grades = sessions.map((session) => {
         const { assessment } = this.getAssessmentDataForSession(session);
-        const ownerUser = this.getOwnerUserForSession(session);
 
         const gradeEntry = {
-          extId: ownerUser?.extId || session.ownerExtId || "",
+          extId: session.ownerExtId || "",
           grade: convertAssessmentScore(assessment, this.selectedAssignmentMaxGrade),
         };
 
         // Optionally include review URL as feedback text
-        if (this.isReviewUrlIncluded && session.link) {
-          gradeEntry.text = session.link;
+        if (this.isReviewUrlIncluded && session.hash) {
+          gradeEntry.text = sessionReviewLink(session.hash);
         }
 
         return gradeEntry;
       });
 
-      this.$refs.assessmentStepper.setWaiting(true);
       this.$socket.emit("submissionPublishGrades", {
           options: this.moodleOptions,
           grades: grades,
@@ -544,19 +597,15 @@ export default {
       );
     },
     /**
-     * Build CSV rows for selected sessions using assessmentScore utilities.
+     * Build CSV rows for the exported sessions and download them.
      * Each session becomes one row; criteria columns are derived from configuration.
+     * @param {Array<Object>} sessions rows from publishAssessmentData
      */
-    downloadCSV() {
-      if (!this.validateConfiguration()) return;
-
+    downloadCSV(sessions) {
       const rows = buildCsvRows({
-        selectedSessions: this.selectedSessions,
+        sessions,
         criteriaList: this.criteriaNames,
-        submissions: this.submissions,
         getAssessmentDataForSession: (session) => this.getAssessmentDataForSession(session),
-        getReviewerUserForSession: (session) => this.getReviewerUserForSession(session),
-        getOwnerUserForSession: (session) => this.getOwnerUserForSession(session),
         getUserRoles: (userId) => this.getUserRoles(userId),
       });
 
@@ -580,4 +629,3 @@ export default {
   padding: 0.5rem 1rem;
 }
 </style>
-
