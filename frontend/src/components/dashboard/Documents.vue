@@ -10,6 +10,7 @@
     <template #headerActions>
       <div class="btn-group gap-2">
       <BasicButton
+          v-if="canUploadDocument"
           class="btn-primary btn-sm"
           :title="$t('documents.addDocument')"
           :text="$t('documents.uploadDocument')"
@@ -32,7 +33,7 @@
   </DashboardListPage>
   <PublishModal ref="publishModal"/>
   <ConfirmModal ref="deleteConf"/>
-  <UploadModal ref="uploadModal"/>
+  <UploadModal v-if="canUploadDocument" ref="uploadModal"/>
   <CreateModal ref="createModal"/>
   <EditModal ref="editModal"/>
   <DownloadPDFModal ref="pdfDownloadModal"/>
@@ -80,6 +81,9 @@ export default {
     };
   },
   computed: {
+    canUploadDocument() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.documents.upload");
+    },
     columns() {
       return [
         {name: this.$t('common.id'), key: "id"},
