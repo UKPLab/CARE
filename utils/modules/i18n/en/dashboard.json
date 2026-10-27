@@ -580,6 +580,7 @@
         "loadModels": "Load Models"
     },
     "home": {
+        "openStudies": "Open studies",
         "openSessions": "{count} open sessions",
         "addedThisWeek": "{count} added this week",
         "closingSoon": "{count} close within 7 days",

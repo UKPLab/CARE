@@ -580,6 +580,7 @@
         "loadModels": "Charger les modèles"
     },
     "home": {
+        "openStudies": "Études ouvertes",
         "openSessions": "{count} sessions ouvertes",
         "addedThisWeek": "{count} ajoutés cette semaine",
         "closingSoon": "{count} se terminent sous 7 jours",

@@ -10,7 +10,7 @@
       </div>
       <div v-if="canSeeStudies" class="col-sm-6 col-xl-3">
         <router-link class="card home-tile" to="/dashboard/studies">
-          <span>{{ $t('sidebar.nav.studies') }}</span>
+          <span>{{ $t('dashboard.home.openStudies') }}</span>
           <b>{{ openStudies.length }}</b>
           <span>{{ $t('dashboard.home.closingSoon', { count: studiesClosingSoon }) }}</span>
         </router-link>
