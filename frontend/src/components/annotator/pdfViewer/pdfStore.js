@@ -94,13 +94,23 @@ export class PDF {
             this.pageLayoutCache.set(pageIndex, {items, width: x1 - x0});
         }
         const {items, width} = this.pageLayoutCache.get(pageIndex);
-
-        let pageStart = 0;
-        for (let i = 0; i < pageIndex; i++) {
-            pageStart += (await this.getPageTextContent(i))?.length ?? 0;
-        }
+        const pageStart = await this.getPageOffset(pageIndex);
         const item = items.findLast(item => item.start <= offset - pageStart);
         return item ? item.top / width : null;
+    }
+
+    /**
+     * Returns the document-wide text offset at which a page starts (the length of all text before it).
+     *
+     * @param {number} pageIndex 0-based page index
+     * @returns {Promise<number>}
+     */
+    async getPageOffset(pageIndex) {
+        let offset = 0;
+        for (let i = 0; i < pageIndex; i++) {
+            offset += (await this.getPageTextContent(i))?.length ?? 0;
+        }
+        return offset;
     }
 
 }

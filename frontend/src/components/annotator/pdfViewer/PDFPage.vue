@@ -59,6 +59,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
+import {getCollapsedAnnotationIds} from "@/assets/annotations";
 import Loader from "@/basic/Loading.vue";
 import {toRaw} from 'vue';
 
@@ -137,18 +138,8 @@ export default {
         && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageNumber)
       return allAnnotations.filter(anno => !this.collapsedAnnotationIds.includes(anno.id));
     },
-    collapsedCommentIds() {
-      const commentIds = this.$store.getters['table/comment_state/getFiltered'](
-        state => state.state === 1 &&
-          state.documentId === this.documentId
-      ).map(state => state.commentId);
-      return commentIds;
-    },
     collapsedAnnotationIds() {
-      const annotationIds = this.$store.getters['table/comment/getFiltered'](
-        comment => this.collapsedCommentIds.includes(comment.id)
-      ).map(comment => comment.annotationId);
-      return annotationIds;
+      return getCollapsedAnnotationIds(this.$store, this.documentId);
     },
     anchors() {
       return [].concat(
