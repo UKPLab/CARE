@@ -22,7 +22,6 @@
   <div
     class="table-scroll-shell"
     :class="{ 'table-infinite-shell': isInfiniteMode }"
-    :style="infiniteShellStyle"
   >
   <div :class="{ 'table-infinite-main': isInfiniteMode }">
   <div
@@ -647,13 +646,6 @@ export default {
         top: `${Math.max(0, Math.min(maxTop, fraction * maxTop))}px`,
       };
     },
-    infiniteShellStyle() {
-      if (!this.isInfiniteMode) return null;
-      const height = this.maxTableHeight
-        ? normalizeCssSize(this.maxTableHeight)
-        : "65vh";
-      return height ? {height} : {height: "65vh"};
-    },
     windowFirstVisible() {
       if (!this.isInfiniteMode || this.total === 0) return 0;
       return Math.min(this.visibleFirstRow + 1, this.total);
@@ -678,9 +670,9 @@ export default {
     },
     tableWrapperStyle() {
       if (this.isInfiniteMode) {
-        // Fixed height lives on the shell so the custom scrollbar can match it.
+        // Cap the scroll area while allowing short result sets to keep the paginator close.
         return {
-          height: "100%",
+          maxHeight: normalizeCssSize(this.maxTableHeight) || "65vh",
           overflowY: "auto",
           overflowX: "auto",
           overflowAnchor: "none",
@@ -2129,7 +2121,7 @@ export default {
       };
       (this._scrollTarget || window).addEventListener("scroll", this._scrollHandler, {passive: true});
       window.addEventListener("resize", this._scrollHandler, {passive: true});
-      // First layout often has clientHeight 0 / a few rows; wait for the 65vh box to settle.
+      // First layout often has clientHeight 0 / a few rows; wait for the scroll area to settle.
       if (typeof ResizeObserver !== "undefined" && this.$refs.tableWrapper) {
         this._infiniteResizeObserver = new ResizeObserver(() => this.scheduleVirtualUpdate());
         this._infiniteResizeObserver.observe(this.$refs.tableWrapper);
@@ -2858,11 +2850,9 @@ export default {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  height: 100%;
 }
 
 .table-wrapper.table-infinite {
-  height: 100%;
   margin-bottom: 0;
   overflow-x: auto;
   overflow-y: auto;
