@@ -13,7 +13,8 @@
         "uploadTooltip": "Upload new configuration file",
         "types": {
             "assessment": "Assessment",
-            "validation": "Validation"
+            "validation": "Validation",
+            "dialoguePlan": "Dialogue Plan"
         },
         "fields": {
             "name": {

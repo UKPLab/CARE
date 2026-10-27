@@ -151,9 +151,12 @@ export default {
       ];
     },
     configurationsTable() {
+      const fields = this.$store.getters["table/configuration/getFields"] || [];
+      const typeOptions = fields.find(field => field.key === "type")?.options || [];
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.typeName = cfg.type === 0 ? this.$t('basic.configuration.types.assessment') : this.$t('basic.configuration.types.validation');
+        const typeName = typeOptions.find(option => Number(option.value) === Number(cfg.type))?.name;
+        newC.typeName = typeName ? this.$t(typeName) : "";
         return newC;
       });
     },

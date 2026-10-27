@@ -161,6 +161,16 @@ export default {
           help: this.$t("ai.models.descriptionHelp"),
         },
         {
+          key: "contextWindowTokens",
+          label: this.$t("ai.models.contextWindowTokens"),
+          type: "number",
+          default: "",
+          min: 0,
+          step: 1000,
+          placeholder: this.$t("ai.common.noLimit"),
+          help: this.$t("ai.models.contextWindowHelp"),
+        },
+        {
           key: "additionalParameters",
           label: this.$t("ai.models.additionalParameters"),
           type: "json",
@@ -225,6 +235,7 @@ export default {
           description: row.description || "",
           enabled: !!row.enabled,
           additionalParameters: row.additionalParameters || {},
+          contextWindowTokens: row.contextWindowTokens ?? "",
           freeModel: !!row.freeModel,
           costLimit: this.findExistingCap(row.id)?.toString() || "",
         };
@@ -313,6 +324,9 @@ export default {
         aiCredentialId: this.modelForm.aiCredentialId,
         description: this.modelForm.description?.trim() || null,
         additionalParameters: this.modelForm.additionalParameters || {},
+        contextWindowTokens: this.modelForm.contextWindowTokens === "" || this.modelForm.contextWindowTokens == null
+          ? null
+          : Number(this.modelForm.contextWindowTokens),
         enabled: !!this.modelForm.enabled,
         freeModel: !!this.modelForm.freeModel,
       };

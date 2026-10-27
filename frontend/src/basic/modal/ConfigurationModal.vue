@@ -177,8 +177,14 @@ export default {
         return true;
       });
     },
+    workflowStep() {
+      return this.workflowSteps.find(s => s.id === this.studyStepId);
+    },
     generalFields() {
-      return this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings?.fields || [];
+      return this.workflowStep?.configuration?.settings?.fields || [];
+    },
+    isDialogueStep() {
+      return this.workflowStep?.stepType === 4;
     },
   },
   mounted() {
@@ -188,7 +194,7 @@ export default {
     openModal(evt) {
       evt.preventDefault();
       const isTemplateMode = this.formData?.isTemplateMode || false;
-      if (!this.documentId && !isTemplateMode) {
+      if (!this.documentId && !isTemplateMode && !this.isDialogueStep) {
         this.eventBus.emit("toast", {
           title: this.$t('errors.documents.documentError'),
           message: this.$t('errors.documents.noDocumentSelected'),
