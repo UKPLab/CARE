@@ -67,7 +67,11 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#role-definitions-and-rights">Role Definitions and Rights</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#current-rights">Current Rights</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#current-rights">Current Rights</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#document-uploads">Document uploads</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#rights-by-role">Rights by role</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="rpc.html">RPC Service</a></li>
@@ -242,6 +246,21 @@ variable stores the rights held by each role as follows:</p></li>
 </section>
 <section id="current-rights">
 <h2>Current Rights<a class="headerlink" href="#current-rights" title="Link to this heading"></a></h2>
+<section id="document-uploads">
+<h3>Document uploads<a class="headerlink" href="#document-uploads" title="Link to this heading"></a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">frontend.dashboard.documents.upload</span></code> controls the Upload document button
+in both the Documents page and the Home dashboard. The <code class="docutils literal notranslate"><span class="pre">documentAdd</span></code> socket
+event enforces the same right. Assignment submissions and Moodle uploads use
+their existing access checks.</p>
+<p>The migration grants this right to all existing, active roles, including custom
+roles, to preserve upload access. Administrators can remove it in Users &gt; Rights
+Management. Rights are combined across assigned roles: to restrict a user,
+remove the right from every role assigned to that user, including the base
+<code class="docutils literal notranslate"><span class="pre">user</span></code> role. Admins retain full access. New roles must be granted the right
+explicitly.</p>
+</section>
+<section id="rights-by-role">
+<h3>Rights by role<a class="headerlink" href="#rights-by-role" title="Link to this heading"></a></h3>
 <p>This table shows which rights are assigned to which roles.
 Admins can do everything, so they are not listed separately in each row.</p>
 <table class="docutils align-default">
@@ -319,6 +338,7 @@ Admins can do everything, so they are not listed separately in each row.</p>
 </tr>
 </tbody>
 </table>
+</section>
 </section>
 </section>
 

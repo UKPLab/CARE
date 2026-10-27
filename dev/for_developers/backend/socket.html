@@ -2262,6 +2262,27 @@ or a “toast” error message to the client.</p>
 </dd></dl>
 
 <dl class="js function">
+<dt class="sig sig-object js" id="DocumentSocket.uploadDocument">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">uploadDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.uploadDocument" title="Link to this definition"></a></dt>
+<dd><p>Upload a document from the dashboard. Keep this permission check separate
+from addDocument, which is also used by assignment and Moodle uploads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<strong>Object</strong>) – The document upload data (see addDocument for fields).</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – The options object containing the transaction.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Throws<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TranslatableError</strong> – If the user lacks frontend.dashboard.documents.upload access.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Promise.&lt;Object&gt;</strong> – The result of addDocument.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.uploadSingleSubmission">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">uploadSingleSubmission</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.uploadSingleSubmission" title="Link to this definition"></a></dt>
 <dd><p>Upload a single submission to the DB.</p>
