@@ -259,6 +259,7 @@
         "sendEmailNotificationToReviewer": "Send email notification to reviewer",
         "targetWorkflowSelection": "Target Workflow Selection",
         "selectTargetWorkflow": "Select Target Workflow:",
+        "assignmentOption": "{name} (#{id})",
         "workflowStepMapping": "Workflow Step Mapping",
         "mapWorkflowStepToTarget": "Map each source workflow step (from template) to a target workflow step:",
         "sourceStepTargetStep": "Source Step {index} ({stepType}) → Target Step:",

@@ -143,7 +143,7 @@ export default {
     assignmentOptions() {
       return this.$store.getters["table/assignment/getAll"].map((assignment) => ({
         value: assignment.id,
-        label: `${assignment.name} (#${assignment.id})`,
+        label: this.$t("dashboard.study.assignmentOption", {name: assignment.name, id: assignment.id}),
       }));
     },
     documentsTable() {
