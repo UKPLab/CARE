@@ -165,6 +165,7 @@ export default {
 }
 
 .dashboard-topnav-group-btn {
+  position: relative;
   height: 32px;
   border: 0;
   background: transparent;
@@ -181,6 +182,67 @@ export default {
 .dashboard-topnav-group-btn.open {
   background: var(--bs-secondary-bg);
   color: var(--bs-body-color);
+}
+
+/* Accent line (yellow in dark mode, blue in light mode) that grows from the centre to both
+   edges of the category on hover / keyboard focus and stays while its menu is open, so the
+   chosen category is easy to see. */
+.dashboard-topnav-group-btn::after,
+.dashboard-topnav-group-btn::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: center;
+  opacity: 0;
+  transition: transform .5s var(--care-ease), opacity .3s ease;
+}
+
+/* The line: bright core that fades out towards both ends */
+.dashboard-topnav-group-btn::after {
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--care-primary) 60%, transparent) 14%,
+    var(--care-primary) 50%,
+    color-mix(in srgb, var(--care-primary) 60%, transparent) 86%,
+    transparent 100%
+  );
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--care-primary) 75%, transparent));
+}
+
+/* A soft glow rising from the line into the button */
+.dashboard-topnav-group-btn::before {
+  bottom: 0;
+  height: 14px;
+  background: radial-gradient(
+    ellipse 55% 100% at 50% 100%,
+    color-mix(in srgb, var(--care-primary) 26%, transparent),
+    transparent 75%
+  );
+  transition-duration: .6s, .4s;
+}
+
+.dashboard-topnav-group-btn:hover::after,
+.dashboard-topnav-group-btn:focus-visible::after,
+.dashboard-topnav-group-btn.open::after,
+.dashboard-topnav-group-btn:hover::before,
+.dashboard-topnav-group-btn:focus-visible::before,
+.dashboard-topnav-group-btn.open::before {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-topnav-group-btn::after,
+  .dashboard-topnav-group-btn::before {
+    transition: none;
+  }
 }
 
 .dashboard-topnav-group-btn.active,
