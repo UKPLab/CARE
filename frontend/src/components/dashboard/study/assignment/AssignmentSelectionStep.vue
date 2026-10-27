@@ -140,6 +140,12 @@ export default {
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
     },
+    assignmentOptions() {
+      return this.$store.getters["table/assignment/getAll"].map((assignment) => ({
+        value: assignment.id,
+        label: this.$t("dashboard.study.assignmentOption", {name: assignment.name, id: assignment.id}),
+      }));
+    },
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
         const newD = {...d};
@@ -184,6 +190,12 @@ export default {
     submissionFilterSchema() {
       const schema = {
         id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
+        assignmentId: {
+          label: this.$t("common.assignment"),
+          type: "enum",
+          operators: ["%"],
+          options: this.assignmentOptions,
+        },
       };
       if (this.canReadPublicInformation) {
         schema.userName = {label: this.$t("common.userName"), type: "text"};

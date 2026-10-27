@@ -271,6 +271,7 @@ module.exports = (sequelize, DataTypes) => {
         static async getQueryTableFilterColumns(ctx = {}) {
             const spec = {
                 id: {type: "numeric", operators: NUMERIC_OPERATORS},
+                assignmentId: {type: "numeric", operators: ["%"]},
                 createdAt: {type: "date"},
             };
             const names = await Submission.assignmentNameFields(ctx);
