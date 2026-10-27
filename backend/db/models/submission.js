@@ -298,6 +298,7 @@ module.exports = (sequelize, DataTypes) => {
         static async getQueryTableFilterColumns(ctx = {}) {
             const spec = {
                 id: {type: "numeric", operators: NUMERIC_OPERATORS},
+                assignmentId: {type: "numeric", operators: ["%"]},
                 createdAt: {type: "date"},
                 rolesNames: {type: "text", operators: ["%"], sql: Submission.assignmentRoleNamesSql()},
             };

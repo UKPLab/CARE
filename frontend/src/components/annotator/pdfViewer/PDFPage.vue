@@ -184,6 +184,8 @@ export default {
     },
   },
   mounted() {
+    // Annotations being positioned right now, so add_anchors never positions one twice
+    this.pendingAnchors = new WeakSet();
     this.$nextTick(() => {
       this.anchor = new Anchoring(this.pdf, this.pageNumber, this.documentId);
       this.resizeHandler();
@@ -364,14 +366,26 @@ export default {
       this.remove_anchors();
     },
     add_anchors() {
-      this.annotations.filter(anno => anno.anchors == null).forEach(async anno => {
-        // Pass the current scale to ensure correct positioning
-        anno.anchors = await Promise.all(anno.selectors.target.map((data) => {
-          return this.anchor.locateAnchor(data, this.scale);
-        }));
+      const pending = this.pendingAnchors;
+      this.annotations.filter(anno => anno.anchors == null && !pending.has(anno)).forEach(async anno => {
+        pending.add(anno);
+        try {
+          // Pass the current scale to ensure correct positioning
+          const anchors = await Promise.all(anno.selectors.target.map((data) => {
+            return this.anchor.locateAnchor(data, this.scale);
+          }));
+          // Drop a result from before the page was re-rendered; the new render positions it again
+          if (pending === this.pendingAnchors && anno.anchors == null) {
+            anno.anchors = anchors;
+          }
+        } finally {
+          pending.delete(anno);
+        }
       });
     },
     remove_anchors() {
+      // A new tracker marks results still in progress as outdated
+      this.pendingAnchors = new WeakSet();
       this.annotations.forEach(anno => anno.anchors = null);
     },
     update_highlights(anchors) {

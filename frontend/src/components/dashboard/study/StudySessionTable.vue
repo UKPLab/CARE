@@ -57,6 +57,11 @@ export default {
       default: false,
       description: "If true, shows all sessions",
     },
+    showCopy: {
+      type: Boolean,
+      default: true,
+      description: "If true, show this button",
+    },
   },
   emits: ["update", "session-deleted", "session-opened"],
   data() {
@@ -184,15 +189,17 @@ export default {
           },
         }));
       }
-      buttons.push(
-        dashboardRowAction("copy", {
+      if (this.showCopy) {
+        buttons.push(dashboardRowAction("copy", {
           options: sm,
           title: this.$t('dashboard.study.copySession'),
           action: "copySession",
           stats: {
             studySessionId: "id",
           },
-        }),
+        }));
+      }
+      buttons.push(
         dashboardRowAction("delete", {
           options: sm,
           filter: [

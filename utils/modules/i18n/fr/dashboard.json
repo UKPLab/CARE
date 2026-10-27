@@ -259,6 +259,7 @@
         "sendEmailNotificationToReviewer": "Envoyer une notification par e-mail à l'évaluateur",
         "targetWorkflowSelection": "Sélection du processus cible",
         "selectTargetWorkflow": "Sélectionnez le processus cible :",
+        "assignmentOption": "{name} (#{id})",
         "workflowStepMapping": "Correspondance des étapes du processus",
         "mapWorkflowStepToTarget": "Associez chaque étape de processus source (issue du modèle) à une étape du processus cible :",
         "sourceStepTargetStep": "Étape source {index} ({stepType}) → étape cible :",
