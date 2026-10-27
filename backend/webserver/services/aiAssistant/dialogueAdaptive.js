@@ -9,7 +9,7 @@
 
 const anchors = require("./dialogueAnchors.js");
 const dialoguePlan = require("./dialoguePlan.js");
-const turns = require("./turns.js");
+const completion = require("./completion.js");
 
 /**
  * Prepares an adaptive follow-up or the next configured question.
@@ -22,7 +22,7 @@ const turns = require("./turns.js");
  * @param {string} requestId - Request identifier.
  * @returns {Promise<Object>} Final assistant content, metadata, and model id.
  */
-async function prepareResponse(service, client, context, turn, requestId) {
+async function prepareAdaptiveResponse(service, client, context, turn, requestId) {
     const {question} = turn;
     const skipped = turn.userMessage.metadata?.dialogue?.skipped === true;
     const followUpsUsed = dialoguePlan.countFollowUps(turn.previousMessages, question.id);
@@ -31,23 +31,18 @@ async function prepareResponse(service, client, context, turn, requestId) {
         context.plan,
         [...turn.previousMessages, turn.userMessage],
     );
-    const anchorState = !nextQuestion
-    ? {}
-    : skipped
-        ? await anchors.loadAnchorState(
-            service,
-            turn.conversation.id,
-            context.studyStep.id,
-        )
-        : await anchors.prepareDialogueAnchors(
-            service, client, context, turn, requestId,
-        );
+    let anchorState = {};
+    if (nextQuestion && skipped) {
+        anchorState = await anchors.loadAnchorState(service, turn.conversation.id, context.studyStep.id);
+    } else if (nextQuestion) {
+        anchorState = await anchors.prepareDialogueAnchors(service, client, context, turn, requestId);
+    }
     if (!canFollowUp) {
         const payload = dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion, anchorState);
         payload.metadata.dialogue.decision = {requested: false};
         return {...payload, aiModelId: anchorState.aiModelId || null};
     }
-    const {output, aiModelId} = await turns.requestHookCompletion(
+    const {output, aiModelId} = await completion.requestHookCompletion(
         service,
         client,
         context,
@@ -76,4 +71,4 @@ async function prepareResponse(service, client, context, turn, requestId) {
     return {...payload, aiModelId};
 }
 
-module.exports = {prepareResponse};
+module.exports = {prepareAdaptiveResponse};

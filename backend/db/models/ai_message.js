@@ -76,11 +76,27 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
-         * Loads the system context for one study step.
+         * Counts the characters of the model history without loading its text.
+         * @param {number} conversationId - Conversation id.
+         * @param {Object} [options] - Database options.
+         * @returns {Promise<number>} Characters in completed messages.
+         */
+        static async getModelContentLength(conversationId, options = {}) {
+            const result = await this.findOne({
+                where: {conversationId, status: AI_MESSAGE_STATUSES.COMPLETED, deleted: false},
+                attributes: [[sequelize.fn("SUM", sequelize.fn("LENGTH", sequelize.col("content"))), "total"]],
+                raw: true,
+                transaction: options.transaction,
+            });
+            return Number(result?.total || 0);
+        }
+
+        /**
+         * Loads the system context metadata for one study step.
          * @param {number} conversationId - Conversation id.
          * @param {number} studyStepId - Study step id.
          * @param {Object} [options] - Database options.
-         * @returns {Promise<Object|null>} Stored context and metadata.
+         * @returns {Promise<Object|null>} Stored context id and metadata.
          */
         static async getSystemMessage(conversationId, studyStepId, options = {}) {
             return this.findOne({
@@ -88,6 +104,7 @@ module.exports = (sequelize, DataTypes) => {
                     conversationId, studyStepId, role: AI_MESSAGE_ROLES.SYSTEM,
                     status: AI_MESSAGE_STATUSES.COMPLETED, deleted: false,
                 },
+                attributes: ["id", "metadata"],
                 order: [["id", "DESC"]],
                 raw: true,
                 transaction: options.transaction,

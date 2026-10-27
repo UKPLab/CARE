@@ -3,7 +3,6 @@
 const Service = require("../../Service.js");
 const chat = require("./chat");
 const hook = require("./hook");
-const request = require("./request");
 
 /**
  * AIService — AI / LLM RPC handlers.
@@ -92,9 +91,9 @@ module.exports = class AIService extends Service {
         const actions = {
             chatCompletion: () => chat.chatCompletion(this, client, data, options.log, options.onDelta),
             abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
-            cancelRequest: () => request.cancelRequest(this, data?.logId, options),
             loadHook: () => hook.loadEnabledHook(this, data?.hookId),
             resolveHookModel: () => hook.resolveSelectedHookModel(this, data?.hookId, data?.aiModelId),
+            listHookModels: () => hook.listHookModels(this, data?.hookId),
             resolveHookPrompt: () => hook.resolveHookPrompt(this, data?.hookId, data?.values),
         };
         if (!actions[action]) {

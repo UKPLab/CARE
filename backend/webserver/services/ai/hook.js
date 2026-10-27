@@ -111,6 +111,44 @@ async function resolveSelectedHookModel(service, hookId, aiModelId = null) {
 }
 
 /**
+ * Lists a hook's usable models for a model picker, logging the ones that cannot be used.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {number} hookId - Target `ai_hook` primary key.
+ * @returns {Promise<Object[]>} `{id, name, priority, contextWindowTokens}` per usable model, priority 1 first.
+ */
+async function listHookModels(service, hookId) {
+    let hookModels;
+    try {
+        hookModels = await loadHookModels(service, hookId);
+    } catch (_error) {
+        // A hook without models offers an empty picker instead of failing the whole chat.
+        return [];
+    }
+    const usable = await Promise.all(hookModels.map(async (hookModel) => {
+        try {
+            const {aiModelId, contextWindowTokens} = await resolveHookModelParams(service, hookModel);
+            return {id: aiModelId, priority: hookModel.priority, contextWindowTokens};
+        } catch (error) {
+            service.logger.warn(
+                `listHookModels skipped hookId=${hookId} aiModelId=${hookModel.aiModelId}: ${error.message || error}`
+            );
+            return null;
+        }
+    }));
+    const options = usable.filter(Boolean);
+    const names = await service.server.db.models["ai_model"].findAll({
+        where: {id: options.map((option) => option.id)},
+        attributes: ["id", "name", "model"],
+        raw: true,
+    });
+    return options.map((option) => {
+        const model = names.find((row) => row.id === option.id);
+        return {...option, name: model?.name || model?.model};
+    });
+}
+
+/**
  * Picks which id on a hook submission input identifies the submission.
  *
  * @param {Object} input - Submission input. `submissionId` wins, otherwise `pdfDocumentId`, then `documentId`.
@@ -392,5 +430,6 @@ module.exports = {
     runHook,
     loadEnabledHook,
     resolveSelectedHookModel,
+    listHookModels,
     resolveHookPrompt,
 };

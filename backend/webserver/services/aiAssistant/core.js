@@ -2,6 +2,7 @@
 
 /**
  * Validated study context and prompt inputs shared by AI assistant workflows.
+ *
  * @module webserver/services/aiAssistant/core
  * @author Mohammed Rawhani
  */
@@ -22,9 +23,16 @@ const helpers = require("../../../utils/helper/ai/helpers.js");
  * @param {number} studyStepId - Study step identifier.
  * @param {Object} [options] - Validation options.
  * @param {boolean} [options.requireOpen=false] - Reject finished sessions and closed or expired studies.
+ * @param {string|null} [options.currentStepKey=null] - When set, require the session's current step; the key is the error otherwise.
  * @returns {Promise<Object>} Validated user, models, session, and step.
  */
-async function loadStudyStepContext(service, client, studySessionId, studyStepId, {requireOpen = false} = {}) {
+async function loadStudyStepContext(
+    service,
+    client,
+    studySessionId,
+    studyStepId,
+    {requireOpen = false, currentStepKey = null} = {},
+) {
     const userId = helpers.requireClientUserId(client);
     const models = service.server.db.models;
     const sessionId = helpers.requireId(studySessionId, "studySessionId");
@@ -43,7 +51,20 @@ async function loadStudyStepContext(service, client, studySessionId, studyStepId
         }
         await models["study"].checkStudyOpen(studySession.studyId);
     }
+    if (currentStepKey && Number(studySession.studyStepId) !== Number(studyStep.id)) {
+        throw new TranslatableError(currentStepKey);
+    }
     return {userId, models, studySession, studyStep};
+}
+
+/**
+ * Returns the AI service declarations configured on a study step.
+ *
+ * @param {Object} studyStep - Study step row.
+ * @returns {Object[]} Service declarations, or an empty list.
+ */
+function getStepServices(studyStep) {
+    return Array.isArray(studyStep.configuration?.services) ? studyStep.configuration.services : [];
 }
 
 /**
@@ -125,9 +146,27 @@ function buildPromptValues(inputMappings, suppliedValues) {
     return values;
 }
 
+/**
+ * Fills a hook's prompt with the step's mapped study data for a new conversation.
+ *
+ * @param {Object} service - AIAssistantService runtime.
+ * @param {Object} client - Authenticated service client.
+ * @param {number} hookId - Hook providing the prompt template.
+ * @param {Object} inputMappings - Stored input mappings of the step service.
+ * @param {Object} suppliedValues - Values resolved by the frontend.
+ * @returns {Promise<{promptText: string, promptValues: Object}>} Filled prompt and the values used.
+ */
+async function resolveContextPrompt(service, client, hookId, inputMappings, suppliedValues) {
+    const promptValues = buildPromptValues(inputMappings, suppliedValues);
+    const {promptText} = await getAIService(service).call("resolveHookPrompt", client, {hookId, values: promptValues});
+    return {promptText, promptValues};
+}
+
 module.exports = {
     loadStudyStepContext,
     loadOwnedConversation,
     getAIService,
+    getStepServices,
     buildPromptValues,
+    resolveContextPrompt,
 };

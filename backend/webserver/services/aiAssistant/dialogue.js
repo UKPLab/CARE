@@ -22,7 +22,6 @@ const dialogueAdaptive = require("./dialogueAdaptive.js");
 const dialoguePlan = require("./dialoguePlan.js");
 const turns = require("./turns.js");
 const {
-    DIALOGUE_SOURCES,
     DIALOGUE_MESSAGE_KINDS,
     buildAnswerMetadata,
     buildQuestionMetadata,
@@ -37,6 +36,7 @@ const {
 const DIALOGUE = {
     conversationType: AI_CONVERSATION_TYPES.DIALOGUE,
     notFoundKey: "errors.ai.dialogue.notFound",
+    currentStepKey: "errors.ai.dialogue.currentStepOnly",
 };
 
 const DIALOGUE_SERVICES = {
@@ -117,18 +117,13 @@ async function loadDialogueContext(
         client,
         studySessionId,
         studyStepId,
-        {requireOpen},
+        {requireOpen, currentStepKey: requireCurrentStep ? DIALOGUE.currentStepKey : null},
     );
     if (Number(studyStep.stepType) !== models["study_step"].stepTypes.STEP_TYPE_DIALOGUE) {
         throw new TranslatableError("errors.ai.dialogue.wrongStepType");
     }
-    if (requireCurrentStep && Number(studySession.studyStepId) !== Number(studyStep.id)) {
-        throw new TranslatableError("errors.ai.dialogue.currentStepOnly");
-    }
 
-    const services = Array.isArray(studyStep.configuration?.services)
-        ? studyStep.configuration.services
-        : [];
+    const services = core.getStepServices(studyStep);
     const contextService = findDialogueService(services, DIALOGUE_SERVICES.context);
     const decisionService = findDialogueService(services, DIALOGUE_SERVICES.decision);
     const anchorService = findDialogueService(services, DIALOGUE_SERVICES.anchor);
@@ -205,97 +200,33 @@ async function getDialogueConversation(service, client, data) {
 }
 
 /**
- * Resolves the initial system context prompt before opening the DB transaction.
+ * Builds the system context message for a new Dialogue conversation.
  *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} context - Dialogue context.
  * @param {Object} values - Hook input values resolved by the frontend.
- * @returns {Promise<Object>} Resolved prompt and anchor-source snapshot.
+ * @returns {Promise<Object|null>} System message fields, or null without a context hook.
  */
-async function resolveDialogueSystemPrompt(service, client, context, values) {
-    if (!context.contextHookId) return {systemPrompt: null, anchorSources: {[DIALOGUE_SOURCES.REVIEW]: []}};
-    const promptValues = core.buildPromptValues(context.contextService?.inputs, values);
-    const systemPrompt = (await core.getAIService(service).call(
-        "resolveHookPrompt",
-        client,
-        {hookId: context.contextHookId, values: promptValues},
-    )).promptText;
-    return {
-        systemPrompt,
-        anchorSources: buildAnchorSources(context.contextService?.inputs, promptValues),
-    };
-}
-
-/**
- * Adds the initial system context message when configured.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {Object} context - Dialogue context.
- * @param {Object} conversation - Conversation row.
- * @param {Object} resolvedContext - Prepared initial context.
- * @param {string|null} resolvedContext.systemPrompt - Resolved system prompt.
- * @param {Object} resolvedContext.anchorSources - Review source snapshot.
- * @param {Object} options - Sequelize options.
- * @returns {Promise<void>}
- */
-async function addSystemContextIfNeeded(
-    service,
-    context,
-    conversation,
-    resolvedContext,
-    options,
-) {
-    const {systemPrompt, anchorSources} = resolvedContext;
-    if (!context.contextHookId) return;
-    if (systemPrompt === null) {
+async function buildDialogueSystemMessage(service, client, context, values) {
+    if (!context.contextHookId) return null;
+    const {promptText, promptValues} = await core.resolveContextPrompt(
+        service, client, context.contextHookId, context.contextService?.inputs, values,
+    );
+    if (!promptText) {
         throw new TranslatableError("errors.ai.dialogue.contextMissing");
     }
-    await service.server.db.models["ai_message"].add({
-        conversationId: conversation.id,
+    return {
         studyStepId: context.studyStep.id,
-        role: AI_MESSAGE_ROLES.SYSTEM,
-        content: systemPrompt,
+        content: promptText,
         metadata: {
             dialogue: {
                 kind: DIALOGUE_MESSAGE_KINDS.CONTEXT,
                 planVersion: context.plan.version,
-                anchorSources,
+                anchorSources: buildAnchorSources(context.contextService?.inputs, promptValues),
             },
         },
-        status: AI_MESSAGE_STATUSES.COMPLETED,
-    }, options);
-}
-
-/**
- * Creates the conversation if this is the first Dialogue answer.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {Object} context - Dialogue context.
- * @param {Object|null} existingConversation - Existing conversation.
- * @param {Object} resolvedContext - Prepared initial context.
- * @param {string|null} resolvedContext.systemPrompt - Resolved system prompt.
- * @param {Object} resolvedContext.anchorSources - Review source snapshot.
- * @param {Object} options - Sequelize options.
- * @returns {Promise<Object>} Conversation record.
- */
-async function ensureConversation(
-    service,
-    context,
-    existingConversation,
-    resolvedContext,
-    options,
-) {
-    const conversation = existingConversation || await service.server.db.models["ai_conversation"].add({
-        userId: context.userId,
-        studySessionId: context.studySession.id,
-        type: AI_CONVERSATION_TYPES.DIALOGUE,
-        title: context.plan.title,
-    }, options);
-    if (!existingConversation) {
-        await addSystemContextIfNeeded(service, context, conversation, resolvedContext, options);
-    }
-    return conversation;
+    };
 }
 
 /**
@@ -333,21 +264,18 @@ async function addQuestionIfMissing(service, conversation, context, question, ex
  * @param {Object} context - Dialogue context.
  * @param {Object|null} existingConversation - Existing conversation.
  * @param {Object} data - Prepared turn data.
- * @param {Object} data.question - Current question.
+ * @param {string|null} data.questionId - Question the client answered.
  * @param {Object} data.answer - Validated answer data.
  * @param {string} data.answer.answerText - Answer text.
  * @param {*} data.answer.answerValue - Raw answer value.
  * @param {boolean} data.answer.skipped - Whether the question was skipped.
- * @param {Object} data.resolvedContext - Prepared initial context.
- * @param {string|null} data.resolvedContext.systemPrompt - Resolved system prompt.
- * @param {Object} data.resolvedContext.anchorSources - Review source snapshot.
+ * @param {Object|null} data.systemMessage - System message fields for a new conversation, or null.
  * @param {string} data.requestId - Request that owns the assistant placeholder.
  * @returns {Promise<Object>} Conversation, user message, assistant placeholder, and previous messages.
  */
 async function createDialogueTurn(service, context, existingConversation, data) {
-    const {question, answer, resolvedContext, requestId} = data;
+    const {questionId, answer, systemMessage, requestId} = data;
     const {answerText, answerValue, skipped} = answer;
-    const models = service.server.db.models;
     return service.server.db.sequelize.transaction(async (transaction) => {
         await turns.requireNoPendingMessage(
             service,
@@ -355,15 +283,17 @@ async function createDialogueTurn(service, context, existingConversation, data) 
             context.studySession.id,
             {transaction},
         );
-        const conversation = await ensureConversation(
-            service,
-            context,
-            existingConversation,
-            resolvedContext,
-            {transaction},
-        );
-        const previousMessages = await models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id, {transaction});
-        const currentQuestion = requireCurrentQuestion(context.plan, previousMessages, question.id);
+        const conversation = await turns.ensureConversation(service, existingConversation, {
+            conversation: {
+                userId: context.userId,
+                studySessionId: context.studySession.id,
+                type: AI_CONVERSATION_TYPES.DIALOGUE,
+                title: context.plan.title,
+            },
+            systemMessage,
+        }, {transaction});
+        const previousMessages = await service.server.db.models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id, {transaction});
+        const currentQuestion = requireCurrentQuestion(context.plan, previousMessages, questionId);
         await addQuestionIfMissing(service, conversation, context, currentQuestion, previousMessages, {transaction});
         const turn = await turns.createTurnMessages(service, context, conversation, {
             requestId,
@@ -372,6 +302,62 @@ async function createDialogueTurn(service, context, existingConversation, data) 
         }, {transaction});
         return {...turn, previousMessages, question: currentQuestion};
     });
+}
+
+/**
+ * Selects fixed or adaptive response preparation without writing a partial result.
+ *
+ * @param {Object} service - Assistant service.
+ * @param {Object} client - Authenticated client.
+ * @param {Object} context - Validated dialogue context.
+ * @param {Object} turn - Persisted turn and prior history.
+ * @param {Object} turn.question - Validated answered question.
+ * @param {string} requestId - Request identifier.
+ * @returns {Promise<Object>} Final response fields.
+ */
+async function prepareDialogueResponse(service, client, context, turn, requestId) {
+    if (context.plan.adaptive) {
+        return dialogueAdaptive.prepareAdaptiveResponse(service, client, context, turn, requestId);
+    }
+    const nextQuestion = selectNextPlanQuestion(context.plan, [...turn.previousMessages, turn.userMessage]);
+    return dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion);
+}
+
+/**
+ * Completes a newly stored dialogue turn with shared failure cleanup.
+ *
+ * @param {Object} service - Assistant service.
+ * @param {Object} client - Authenticated client.
+ * @param {Object} context - Validated dialogue context.
+ * @param {Object} turn - Persisted turn and prior history.
+ * @param {Object} turn.question - Validated answered question.
+ * @param {string} requestId - Request identifier.
+ * @returns {Promise<Object>} Completed dialogue result.
+ */
+async function completeDialogueTurn(service, client, context, turn, requestId) {
+    const assistantMessage = await turns.completeTurn(service, turn, requestId, () =>
+        prepareDialogueResponse(service, client, context, turn, requestId),
+    );
+    return buildDialogueResult(service, context, turn, assistantMessage);
+}
+
+/**
+ * Builds the visible state after a completed dialogue turn.
+ *
+ * @param {Object} service - Assistant service.
+ * @param {Object} context - Validated dialogue context.
+ * @param {Object} turn - Persisted turn.
+ * @param {Object} assistantMessage - Completed assistant row.
+ * @returns {Promise<Object>} Shared turn fields and dialogue progress.
+ */
+async function buildDialogueResult(service, context, turn, assistantMessage) {
+    const result = await turns.buildTurnResult(service, turn, assistantMessage);
+    const messages = await service.server.db.models["ai_message"].getVisibleMessages(turn.conversation.id, context.studyStep.id);
+    return {
+        ...result, messages,
+        currentQuestion: getCurrentQuestion(context.plan, messages),
+        complete: assistantMessage.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.COMPLETION,
+    };
 }
 
 /**
@@ -408,19 +394,15 @@ async function sendDialogueAnswer(service, client, data) {
             DIALOGUE,
         )
         : await findDialogueConversation(service, context.userId, context.studySession.id);
-    const messages = conversation ? await service.server.db.models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id) : [];
-    const question = requireCurrentQuestion(context.plan, messages, data?.questionId);
-    const resolvedContext = conversation
-        ? {systemPrompt: null, anchorSources: {[DIALOGUE_SOURCES.REVIEW]: []}}
-        : await resolveDialogueSystemPrompt(service, client, context, data?.values || {});
+    const systemMessage = conversation ? null : await buildDialogueSystemMessage(service, client, context, data?.values || {});
     const turn = await createDialogueTurn(
         service,
         context,
         conversation,
         {
-            question,
+            questionId: data?.questionId,
             answer: {answerText, answerValue: skipped ? null : data?.answerValue ?? answerText, skipped},
-            resolvedContext,
+            systemMessage,
             requestId,
         },
     );
@@ -461,9 +443,7 @@ async function retryDialogueMessage(service, client, data) {
         requestId,
     );
     const completed = await turns.completeTurn(service, {assistantMessage}, requestId, async () => {
-        const previousMessages = (await service.server.db.models["ai_message"].getVisibleMessages(
-            conversation.id, context.studyStep.id,
-        )).filter((message) => Number(message.id) < Number(previousUser.id));
+        const previousMessages = (await service.server.db.models["ai_message"].getVisibleMessages(conversation.id, context.studyStep.id)).filter((message) => Number(message.id) < Number(previousUser.id));
         const currentQuestion = requireCurrentQuestion(context.plan, previousMessages, question.id);
         const turn = {
             conversation, userMessage: previousUser, assistantMessage,
@@ -474,61 +454,6 @@ async function retryDialogueMessage(service, client, data) {
     return buildDialogueResult(
         service, context, {conversation, userMessage: null}, completed,
     );
-}
-
-/**
- * Selects fixed or adaptive response preparation without writing a partial result.
- * @param {Object} service - Assistant service.
- * @param {Object} client - Authenticated client.
- * @param {Object} context - Validated dialogue context.
- * @param {Object} turn - Persisted turn and prior history.
- * @param {Object} turn.question - Validated answered question.
- * @param {string} requestId - Request identifier.
- * @returns {Promise<Object>} Final response fields.
- */
-async function prepareDialogueResponse(service, client, context, turn, requestId) {
-    if (context.plan.adaptive) {
-        return dialogueAdaptive.prepareResponse(service, client, context, turn, requestId);
-    }
-    const nextQuestion = selectNextPlanQuestion(context.plan, [...turn.previousMessages, turn.userMessage]);
-    return dialoguePlan.buildNextQuestionResponse(context.plan, nextQuestion);
-}
-
-/**
- * Completes a newly stored dialogue turn with shared failure cleanup.
- * @param {Object} service - Assistant service.
- * @param {Object} client - Authenticated client.
- * @param {Object} context - Validated dialogue context.
- * @param {Object} turn - Persisted turn and prior history.
- * @param {Object} turn.question - Validated answered question.
- * @param {string} requestId - Request identifier.
- * @returns {Promise<Object>} Completed dialogue result.
- */
-async function completeDialogueTurn(service, client, context, turn, requestId) {
-    const assistantMessage = await turns.completeTurn(service, turn, requestId, () =>
-        prepareDialogueResponse(service, client, context, turn, requestId),
-    );
-    return buildDialogueResult(service, context, turn, assistantMessage);
-}
-
-/**
- * Builds the visible state after a completed dialogue turn.
- * @param {Object} service - Assistant service.
- * @param {Object} context - Validated dialogue context.
- * @param {Object} turn - Persisted turn.
- * @param {Object} assistantMessage - Completed assistant row.
- * @returns {Promise<Object>} Shared turn fields and dialogue progress.
- */
-async function buildDialogueResult(service, context, turn, assistantMessage) {
-    const result = await turns.buildTurnResult(service, turn, assistantMessage);
-    const messages = await service.server.db.models["ai_message"].getVisibleMessages(
-        turn.conversation.id, context.studyStep.id,
-    );
-    return {
-        ...result, messages,
-        currentQuestion: getCurrentQuestion(context.plan, messages),
-        complete: assistantMessage.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.COMPLETION,
-    };
 }
 
 /**

@@ -10,7 +10,7 @@
  * @author Mohammed Rawhani
  */
 
-const turns = require("./turns.js");
+const completion = require("./completion.js");
 const {DIALOGUE_MODEL_PARAMETERS, DIALOGUE_SOURCES, parseAnchorSelections} = require("./dialoguePlan.js");
 
 /**
@@ -47,7 +47,7 @@ async function loadAnchorState(service, conversationId, studyStepId) {
         message,
         anchorSources: dialogue.anchorSources || {[DIALOGUE_SOURCES.REVIEW]: []},
         anchorSelections: dialogue.anchorSelections || {},
-        prepared: Object.hasOwn(dialogue, "anchorSelections"),
+        prepared: Object.prototype.hasOwnProperty.call(dialogue, "anchorSelections"),
     };
 }
 
@@ -72,7 +72,7 @@ async function prepareDialogueAnchors(service, client, context, turn, requestId)
     let anchorsValid = null; // null when no question needed an anchor call
     let aiModelId = null;
     if (request.questions.length) {
-        const completion = await turns.requestHookCompletion(
+        const result = await completion.requestHookCompletion(
             service, client, context, {
                 hookId: context.anchorHookId,
                 values: request.values,
@@ -81,11 +81,11 @@ async function prepareDialogueAnchors(service, client, context, turn, requestId)
                 parameters: DIALOGUE_MODEL_PARAMETERS,
             },
         );
-        const parsed = parseAnchorSelections(completion.output, context.plan.questions, state.anchorSources);
-        anchorsValid = request.questions.every((question) => Object.hasOwn(parsed, question.id));
+        const parsed = parseAnchorSelections(result.output, context.plan.questions, state.anchorSources);
+        anchorsValid = request.questions.every((question) => Object.prototype.hasOwnProperty.call(parsed, question.id));
         anchorSelections = Object.fromEntries(request.questions.map((question) =>
             [question.id, parsed[question.id] ?? null]));
-        aiModelId = completion.aiModelId;
+        aiModelId = result.aiModelId;
     }
 
     if (state.message) {

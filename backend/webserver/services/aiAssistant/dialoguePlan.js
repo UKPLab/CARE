@@ -79,7 +79,7 @@ function normalizeDialoguePlan(rawPlan = {}) {
  */
 function selectNextPlanQuestion(plan, messages = []) {
     const answered = new Set(messages
-        .filter((message) => message?.metadata?.dialogue?.kind === "answer")
+        .filter((message) => message?.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.ANSWER)
         .map((message) => String(message.metadata.dialogue.questionId))
         .filter(Boolean));
     return plan.questions.find((question) => !answered.has(String(question.id))) || null;
@@ -240,7 +240,7 @@ function parseAnchorSelections(output, questions = [], anchorSources = {}) {
     const requested = parsed?.selections;
     if (!requested || typeof requested !== "object" || Array.isArray(requested)) return {};
     return questions.reduce((selections, question) => {
-        if (!question.anchoredText || !Object.hasOwn(requested, question.id)) return selections;
+        if (!question.anchoredText || !Object.prototype.hasOwnProperty.call(requested, question.id)) return selections;
         const anchorIndex = requested[question.id];
         if (anchorIndex === null || resolveAnchorCandidate(anchorIndex, question.source, anchorSources)) {
             selections[question.id] = anchorIndex;
@@ -410,6 +410,7 @@ function buildDecisionValues(question, answerText) {
 
 /**
  * Renders the next configured question or the dialogue completion.
+ *
  * @param {Object} plan - Normalized dialogue plan.
  * @param {Object|null} question - Next configured question.
  * @param {Object} [anchorState] - Stored verified anchors.

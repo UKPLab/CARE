@@ -111,11 +111,12 @@ function serializeMessages(messages) {
  * Approximates the token count of a text (~4 characters per token).
  * Used only for the chat context-size guard, where a rough measure is enough.
  *
- * @param {unknown} text - Message content.
+ * @param {unknown} text - Message content, or its character count.
  * @returns {number} Estimated tokens.
  */
 function estimateTokens(text) {
-    return typeof text === "string" ? Math.ceil(text.length / 4) : 0;
+    const length = typeof text === "number" ? text : (typeof text === "string" ? text.length : 0);
+    return Math.ceil(length / 4);
 }
 
 /**

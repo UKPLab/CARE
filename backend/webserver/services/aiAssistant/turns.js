@@ -2,6 +2,7 @@
 
 /**
  * AI assistant turn persistence and completion lifecycle.
+ *
  * @module webserver/services/aiAssistant/turns
  * @author Mohammed Rawhani
  */
@@ -28,79 +29,6 @@ async function requireNoPendingMessage(service, userId, studySessionId, options 
     if (pending) {
         throw new TranslatableError("errors.ai.requestAlreadyPending");
     }
-}
-
-/**
- * Calls LiteLLM with CARE study and audit metadata.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {Object} client - Authenticated service client.
- * @param {Object} context - Validated assistant context.
- * @param {Object} data - Prepared completion request.
- * @param {Object} data.modelParams - Resolved model parameters.
- * @param {string} data.requestId - Logging and abort identifier.
- * @param {Object[]} data.messages - Complete model messages.
- * @param {number|null} [data.aiMessageId=null] - Message linked to the AI log.
- * @param {{onDelta?: function(string): void}} [options] - Internal streaming callback.
- * @returns {Promise<string>} Model response content.
- */
-async function requestAssistantCompletion(service, client, context, data, options = {}) {
-    const {modelParams, requestId, messages, aiMessageId = null} = data;
-    // contextWindowTokens is pulled out so it is not forwarded to the provider.
-    const {additionalParameters, hookModelId, contextWindowTokens, ...credentialParams} = modelParams;
-    const result = await core.getAIService(service).call("chatCompletion", client, {
-        ...additionalParameters,
-        ...credentialParams,
-        aiHookId: context.hookId,
-        studyId: context.studySession.studyId,
-        studySessionId: context.studySession.id,
-        studyStepId: context.studyStep.id,
-        documentId: context.studyStep.documentId,
-        __requestId: requestId,
-        messages,
-    }, {
-        onDelta: options.onDelta,
-        log: {
-            aiMessageId,
-            hookModelId,
-            input: helpers.serializeMessages(messages),
-        },
-    });
-    const content = result.choices?.[0]?.message?.content;
-    return typeof content === "string" ? content : "";
-}
-
-/**
- * Resolves a hook's prompt and model, then sends the prompt as one user message.
- *
- * @param {Object} service - AIAssistantService runtime.
- * @param {Object} client - Authenticated service client.
- * @param {Object} context - Validated assistant context.
- * @param {Object} data - Prepared hook request.
- * @param {number} data.hookId - Hook providing the prompt and model.
- * @param {Object} data.values - Prompt placeholder values.
- * @param {string} data.requestId - Logging and abort identifier.
- * @param {number} data.aiMessageId - Message linked to the AI log.
- * @param {Object} [data.parameters] - Model parameter overrides.
- * @returns {Promise<{output: string, aiModelId: number}>} Model response and used model.
- */
-async function requestHookCompletion(service, client, context, data) {
-    const {hookId, values, requestId, aiMessageId, parameters = {}} = data;
-    const aiService = core.getAIService(service);
-    const {promptText} = await aiService.call("resolveHookPrompt", client, {hookId, values});
-    const modelParams = await aiService.call("resolveHookModel", client, {hookId});
-    const output = await requestAssistantCompletion(
-        service,
-        client,
-        {...context, hookId},
-        {
-            modelParams: {...modelParams, additionalParameters: {...modelParams.additionalParameters, ...parameters}},
-            requestId,
-            messages: [{role: "user", content: promptText}],
-            aiMessageId,
-        },
-    );
-    return {output, aiModelId: modelParams.aiModelId};
 }
 
 /**
@@ -170,6 +98,8 @@ async function resetMessageForRetry(service, userId, studySessionId, conversatio
 /**
  * Aborts the authenticated user's pending assistant response for one conversation type.
  *
+ * The shared `abortChatCompletion` stops the provider and closes its AI log.
+ *
  * @param {Object} service - AIAssistantService runtime.
  * @param {Object} client - Authenticated service client.
  * @param {Object} data - Request identifier.
@@ -182,7 +112,7 @@ async function abortPendingMessage(service, client, data, descriptor) {
     const models = service.server.db.models;
     const assistantMessage = await models["ai_message"].getPendingMessageByRequestId(requestId);
     if (!assistantMessage) {
-        return {aborted: false, message: "No pending AI response found"};
+        return {aborted: false, key: "errors.ai.requestNotAbortable"};
     }
     const conversation = await models["ai_conversation"].getById(assistantMessage.conversationId);
     if (!conversation) {
@@ -190,38 +120,52 @@ async function abortPendingMessage(service, client, data, descriptor) {
     }
     await core.loadOwnedConversation(service, conversation.id, userId, conversation.studySessionId, descriptor);
 
-    // Stop the provider first; it only finds logs that are still in progress.
+    // Stop the provider first; the shared abort only finds requests that are still in progress.
     const providerResult = await core.getAIService(service).call(
         "abortChatCompletion",
         client,
         {requestId, reason: "request aborted"},
     );
-    const aborted = await service.server.db.sequelize.transaction(async (transaction) => {
-        const updatedCount = await models["ai_message"].updateMessageIfStatus(
-            assistantMessage.id, {status: AI_MESSAGE_STATUSES.ABORTED, content: ""},
-            [AI_MESSAGE_STATUSES.PENDING], requestId, {transaction},
-        );
-        if (updatedCount === 0) return false;
-        const log = await models["ai_log"].findOne({
-            where: {requestId, userId, status: "in_progress", deleted: false},
-            attributes: ["id"],
-            raw: true,
-            transaction,
-        });
-        if (log) {
-            await core.getAIService(service).call("cancelRequest", client, {logId: log.id}, {transaction});
-        }
-        return true;
-    });
+    const updatedCount = await models["ai_message"].updateMessageIfStatus(
+        assistantMessage.id, {status: AI_MESSAGE_STATUSES.ABORTED, content: ""},
+        [AI_MESSAGE_STATUSES.PENDING], requestId,
+    );
     // The stopped request may already have marked the message failed.
-    if (!aborted && providerResult?.aborted !== true) {
-        return {aborted: false, message: "AI request is no longer pending"};
+    if (updatedCount === 0 && providerResult?.aborted !== true) {
+        return {aborted: false, key: "errors.ai.requestNotAbortable"};
     }
     return {aborted: true};
 }
 
 /**
+ * Creates the conversation and its first system message when a turn starts a new conversation.
+ *
+ * @param {Object} service - Assistant service.
+ * @param {Object|null} existingConversation - Existing conversation, or null for a new one.
+ * @param {Object} data - Fields prepared by the conversation type.
+ * @param {Object} data.conversation - Fields of a new conversation.
+ * @param {Object|null} data.systemMessage - Fields of its system message, or null for none.
+ * @param {Object} options - Database transaction options.
+ * @returns {Promise<Object>} Existing or new conversation.
+ */
+async function ensureConversation(service, existingConversation, data, options) {
+    if (existingConversation) return existingConversation;
+    const models = service.server.db.models;
+    const conversation = await models["ai_conversation"].add(data.conversation, options);
+    if (data.systemMessage) {
+        await models["ai_message"].add({
+            ...data.systemMessage,
+            conversationId: conversation.id,
+            role: AI_MESSAGE_ROLES.SYSTEM,
+            status: AI_MESSAGE_STATUSES.COMPLETED,
+        }, options);
+    }
+    return conversation;
+}
+
+/**
  * Stores the user message and pending assistant within the caller's transaction.
+ *
  * @param {Object} service - Assistant service.
  * @param {Object} context - Validated study context.
  * @param {Object} conversation - Owned conversation.
@@ -248,6 +192,7 @@ async function createTurnMessages(service, context, conversation, data, options)
 
 /**
  * Releases an assistant placeholder if it is still pending.
+ *
  * @param {Object} service - Assistant service.
  * @param {number} assistantMessageId - Assistant id.
  * @param {string} requestId - Request that must still own the assistant.
@@ -284,7 +229,7 @@ async function completeTurn(service, turn, requestId, prepareResponse) {
         try {
             await failAssistantMessage(service, turn.assistantMessage.id, requestId);
         } catch (cleanupError) {
-            service.server.logger.error("Failed to release pending AI response", cleanupError);
+            service.logger.error("Failed to release pending AI response", cleanupError);
         }
         throw error;
     }
@@ -293,18 +238,19 @@ async function completeTurn(service, turn, requestId, prepareResponse) {
 
 /**
  * Returns the persisted turn with safe conversation and context state.
+ *
  * @param {Object} service - Assistant service.
  * @param {Object} turn - Persisted turn.
  * @param {Object} assistantMessage - Final assistant row.
  * @returns {Promise<Object>} Shared send/retry result.
  */
 async function buildTurnResult(service, turn, assistantMessage) {
-    const models = service.server.db.models;
-    const {id, studySessionId, type, title, includeContext, createdAt, updatedAt} =
-        await models["ai_conversation"].getById(turn.conversation.id);
+    const conversation = await service.server.db.models["ai_conversation"].getById(turn.conversation.id, {
+        attributes: ["id", "studySessionId", "type", "title", "includeContext", "createdAt", "updatedAt"],
+    });
     return {
-        conversationId: id,
-        conversation: {id, studySessionId, type, title, includeContext, createdAt, updatedAt},
+        conversationId: conversation.id,
+        conversation,
         userMessage: turn.userMessage,
         assistantMessage,
     };
@@ -312,11 +258,10 @@ async function buildTurnResult(service, turn, assistantMessage) {
 
 module.exports = {
     requireNoPendingMessage,
-    requestAssistantCompletion,
-    requestHookCompletion,
     loadRetryableAssistantMessage,
     resetMessageForRetry,
     abortPendingMessage,
+    ensureConversation,
     createTurnMessages,
     completeTurn,
     buildTurnResult,
