@@ -8,44 +8,36 @@
  */
 
 /**
- * Build CSV rows for selected sessions using assessmentScore utilities.
+ * Build CSV rows for the exported sessions using assessmentScore utilities.
  * Each session becomes one row; criteria columns are derived from configuration.
+ * Headers stay English so an export does not change with the UI language.
  *
  * @param {Object} params
- * @param {Array} params.selectedSessions
- * @param {Array} params.criteriaList
- * @param {Array} params.submissions
+ * @param {Array<Object>} params.sessions rows from publishAssessmentData (identity and scores resolved server-side)
+ * @param {Array<string>} params.criteriaList
  * @param {Function} params.getAssessmentDataForSession - (session) => { scores, assessment }
- * @param {Function} params.getReviewerUserForSession - (session) => user|null
- * @param {Function} params.getOwnerUserForSession - (session) => user|null
  * @param {Function} params.getUserRoles - (userId) => string
  */
 export function buildCsvRows({
-  selectedSessions,
+  sessions,
   criteriaList,
-  submissions,
   getAssessmentDataForSession,
-  getReviewerUserForSession,
-  getOwnerUserForSession,
   getUserRoles,
 }) {
-  return selectedSessions.map((session) => {
+  return sessions.map((session) => {
     const { scores, assessment } = getAssessmentDataForSession(session);
-    const reviewer = getReviewerUserForSession(session);
-    const ownerUser = getOwnerUserForSession(session);
-    const submission = session.submissionId ? submissions.find((s) => s.id === session.submissionId) : null;
 
     const row = {
-      "User ExtId": ownerUser?.extId || session.ownerExtId || "",
-      "User First Name": ownerUser?.firstName || session.ownerFirstName || "",
-      "User Last Name": ownerUser?.lastName || session.ownerLastName || "",
-      "User Name": ownerUser?.userName || session.ownerUserName || "",
+      "User ExtId": session.ownerExtId || "",
+      "User First Name": session.ownerFirstName || "",
+      "User Last Name": session.ownerLastName || "",
+      "User Name": session.ownerUserName || "",
       "Submission ID": session.submissionId || "",
-      "Submission ExtId": submission?.extId || "",
-      "Reviewer First Name": reviewer?.firstName || "",
-      "Reviewer Last Name": reviewer?.lastName || "",
-      "Reviewer User Name": reviewer?.userName || "",
-      "Reviewer Roles": reviewer ? getUserRoles(reviewer.id) : "",
+      "Submission ExtId": session.submissionExtId || "",
+      "Reviewer First Name": session.firstName || "",
+      "Reviewer Last Name": session.lastName || "",
+      "Reviewer User Name": session.userName || "",
+      "Reviewer Roles": getUserRoles(session.userId),
       "Hash": session.hash || "",
       "Total Points": assessment.achieved_points ?? 0,
     };

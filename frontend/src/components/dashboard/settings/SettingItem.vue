@@ -66,6 +66,16 @@
             :height="40"
             :re-bg-color="setting.value"
           />
+          <div
+            v-if="showsAccentPreview"
+            class="d-flex align-items-center gap-2 rounded bg-dark px-2 py-1 pe-none"
+            aria-hidden="true"
+          >
+            <span
+              class="badge"
+              :style="{ backgroundColor: setting.value, color: accentTextColor }"
+            >{{ $t('common.example') }}</span>
+          </div>
           <BasicButton
             v-if="hasResetValue"
             class="btn btn-outline-secondary btn-sm"
@@ -121,13 +131,16 @@
 </template>
 
 <script>
-import { translateMaybeKey } from "@/assets/utils";
+import { getContrastColor, translateMaybeKey } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import FormHelp from "@/basic/form/Help.vue";
 import LogoSvg, { DEFAULT_RE_BG } from "@/basic/icon/LogoSvg.vue";
 import { emailTemplateTypes } from "@/assets/templateTypes";
 import { DEFAULT_LOCALE, LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/locale.js";
+
+// Default dark mode accent; matches --care-accent in global.css and the theme.dark.accentColor migration.
+const DARK_MODE_ACCENT_DEFAULT = "#e3d5a8";
 
 /**
  * Renders one setting row: label (displayName, optional description tooltip) and input for setting.type.
@@ -187,8 +200,15 @@ export default {
     showsLogoPreview() {
       return this.setting?.key === "logo.reBgColor";
     },
+    showsAccentPreview() {
+      return this.setting?.key === "theme.dark.accentColor";
+    },
+    accentTextColor() {
+      return getContrastColor(this.setting?.value);
+    },
     resetValue() {
       if (this.setting?.key === "logo.reBgColor") return DEFAULT_RE_BG;
+      if (this.setting?.key === "theme.dark.accentColor") return DARK_MODE_ACCENT_DEFAULT;
       return null;
     },
     hasResetValue() {

@@ -28,7 +28,7 @@
               </div>
             <div
               v-show="previewMode && templateSupportsPlaceholderPreview"
-              class="template-example-preview-panel border rounded bg-light"
+              class="template-example-preview-panel border rounded bg-body-tertiary"
             >
               <div class="alert alert-info mb-0 rounded-0 py-2 small template-preview-banner">
                 {{ $t("templates.editor.viewMode.previewHelp") }}
@@ -457,7 +457,7 @@
 
   .ql-toolbar .ql-templateViewMode {
     min-width: 90px;
-    background-color: #f5f5f5;
+    background-color: var(--bs-tertiary-bg);
     margin-left: 6px;
   }
   .ql-toolbar .ql-templateViewMode .ql-picker-label {

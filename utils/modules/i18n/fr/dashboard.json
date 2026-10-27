@@ -313,7 +313,6 @@
         "aboutToDelete": "Vous êtes sur le point de supprimer définitivement {count} étude(s) :",
         "studyListItem": "{name} ({workflow}) - Propriétaire : {owner}",
         "notifyOpenSessionsAlert": "Des notifications par e-mail seront envoyées aux participants ayant des sessions ouvertes.",
-        "notifyActiveSessionsAlert": "Des notifications par e-mail seront envoyées aux participants ayant des sessions actives.",
         "nothingToClose": "Rien à clôturer",
         "nothingToOpen": "Rien à ouvrir",
         "nothingToDelete": "Rien à supprimer",
@@ -346,7 +345,15 @@
         "groupId": "ID de groupe",
         "na": "N/D",
         "typePdf": "PDF",
-        "typeHtml": "HTML"
+        "typeHtml": "HTML",
+        "matchingFilter": "Correspondant au filtre actuel : {parts}.",
+        "allOpenStudies": "toutes les études ouvertes",
+        "allClosedStudies": "toutes les études clôturées",
+        "allStudies": "toutes les études",
+        "workflowNamed": "processus « {name} »",
+        "allWorkflowsInFilter": "tous les processus",
+        "searchQuoted": "recherche « {search} »",
+        "unselectedCount": "{count} études que vous avez désélectionnées"
     },
     "users": {
         "userWithQuotes": "« utilisateur »",
