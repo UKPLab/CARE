@@ -182,11 +182,6 @@ export default {
         table: "user",
         by: "userId",
         fields: ["firstName", "lastName", "userName"],
-      }, {
-        type: "parent",
-        table: "submission",
-        by: "submissionId",
-        fields: ["assignmentId"],
       }],
     },
     { table: "assignment" },
