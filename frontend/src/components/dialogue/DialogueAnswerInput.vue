@@ -67,23 +67,21 @@
           v-if="activeRequest"
           class="btn btn-outline-danger"
           icon="stop-circle"
+          :text="$t('ai.assistant.stop')"
           :title="$t('ai.assistant.stop')"
           :loading="aborting"
           @click="$emit('abort')"
-      >
-        {{ $t('ai.assistant.stop') }}
-      </BasicButton>
+      />
       <BasicButton
           v-else
           class="btn btn-primary"
           icon="send"
+          :text="$t('common.submitText')"
           :title="$t('ai.dialogue.submitAnswer')"
           :disabled="!canSend"
           :loading="sending"
           @click="submit"
-      >
-        {{ $t('common.submitText') }}
-      </BasicButton>
+      />
     </div>
   </form>
 </template>
