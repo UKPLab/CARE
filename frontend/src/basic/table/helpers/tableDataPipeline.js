@@ -12,12 +12,38 @@
  * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
 
+/**
+ * Initial sort from `options.sort` ({column, order}). Shared with BackendTable.vue.
+ * @returns {{sortColumn: string|null, sortDirection: string}}
+ */
+export function initialSort(options) {
+  return {
+    sortColumn: options && options.sort && options.sort.column ? options.sort.column : null,
+    sortDirection: options && options.sort && options.sort.order ? options.sort.order : "ASC",
+  };
+}
+
+/**
+ * Page size from `options.pagination` (a number, or an object with `itemsPerPage`).
+ * Shared with BackendTable.vue.
+ * @param {Object} options
+ * @param {number} fallback used when pagination is off
+ */
+export function pageSizeFromOptions(options, fallback) {
+  if (options && options.pagination) {
+    if (typeof options.pagination === "object") {
+      return options.pagination.itemsPerPage;
+    }
+    return options.pagination;
+  }
+  return fallback;
+}
+
 // Fresh data factory so pipeline/pagination state is never shared across table instances.
 // `options` is passed in explicitly since this runs inside Table.vue's own data() function.
 export function tableDataPipelineData(options) {
   return {
-    sortColumn: options && options.sort && options.sort.column ? options.sort.column : null,
-    sortDirection: options && options.sort && options.sort.order ? options.sort.order : "ASC",
+    ...initialSort(options),
     currentPage: 1,
     itemsPerPage: null,
     itemsPerPageList: [10, 25, 50, 100],
@@ -58,16 +84,8 @@ export const tableDataPipelineComputed = {
       }
       return this.itemsPerPage;
     }
-    // if pagination is enabled, use that
-    if (this.options && this.options.pagination) {
-      if (typeof this.options.pagination === "object") {
-        return this.options.pagination.itemsPerPage;
-      } else {
-        return this.options.pagination;
-      }
-    }
-    // otherwise, use all elements
-    return this.total;
+    // pagination from options, otherwise all elements
+    return pageSizeFromOptions(this.options, this.total);
   },
   pages() {
     if (this.isAllMode) {

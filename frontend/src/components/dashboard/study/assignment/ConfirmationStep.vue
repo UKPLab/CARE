@@ -84,11 +84,11 @@
         </div>
         <div class="row mb-2">
           <div class="col-2"><strong>{{ $t('dashboard.study.documents') }}</strong></div>
-          <div class="col-8">{{ selectedAssignments.length }}</div>
+          <div class="col-8">{{ assignmentCount || selectedAssignments.length }}</div>
         </div>
         <div class="row mb-2">
           <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
-          <div class="col-8">{{ selectedReviewer.length }}</div>
+          <div class="col-8">{{ reviewerCount || selectedReviewer.length }}</div>
         </div>
         <div class="row mb-2">
           <div class="col-2"><strong>{{ $t('dashboard.study.reviewsToCreate') }}</strong></div>
@@ -139,6 +139,8 @@ export default {
     targetWorkflowId: { type: Number, required: false, default: null },
     selectedAssignments: { type: Array, required: false, default: () => [] },
     selectedReviewer: { type: Array, required: false, default: () => [] },
+    assignmentCount: { type: Number, required: false, default: 0 },
+    reviewerCount: { type: Number, required: false, default: 0 },
     reviewerSelectionMode: { type: Object, required: false, default: () => ({}) },
     workflowStepsAssignments: { type: Array, required: false, default: () => [] },
     numberOfReviews: { type: Number, required: false, default: 0 },
@@ -182,10 +184,9 @@ export default {
         return [];
       }
       const selectedSessionUserIds = new Set(
-          this.selectedAssignments.map(session => {
-            const studySession = this.$store.getters["table/study_session/get"](session.id);
-            return studySession ? studySession.userId : null;
-          }).filter(userId => userId !== null)
+          this.selectedAssignments.map(session =>
+            session.sessionUserId ?? session.userId
+          ).filter(userId => userId !== null && userId !== undefined)
       );
       return this.selectedReviewer.filter(rev => !selectedSessionUserIds.has(rev.id));
     },
@@ -195,9 +196,10 @@ export default {
       return this.documents.find(doc => doc.id === documentId);
     },
     getDocReviewerName(stepAssignment) {
+      // Document owner name comes from the fields injected onto the document row
       const doc = this.getDoc(stepAssignment.documentId);
-      const user = doc ? this.reviewer.find(u => u.id === doc.userId) : null;
-      return user ? `${user.firstName} ${user.lastName}` : '';
+      if (!doc) return '';
+      return `${doc.firstName || ''} ${doc.lastName || ''}`.trim();
     },
   },
 };
