@@ -31,7 +31,7 @@
         "selectSessionsDescriptionPrefix": "Sélectionnez les sessions d'étude à inclure dans l'export de l'évaluation. Notez que seules les",
         "closedStudySessions": "sessions d'étude fermées",
         "selectSessionsDescriptionSuffix": "sont affichées ici.",
-        "noSessionsFound": "Aucune session ne correspond aux processus et à la configuration sélectionnés.",
+        "allMatchingSelected": "Les {count} sessions correspondant au filtre actuel sont toutes sélectionnées. Leurs identifiants uniques font partie de l'export.",
         "hashCollection": "Regrouper les sessions :",
         "hashCollectionStudies": "par étude (sessions de chaque étude)",
         "hashCollectionSessions": "par session (vos propres sessions)",
@@ -91,6 +91,16 @@
             "csvExport": {
                 "title": "Export CSV",
                 "message": "Le fichier CSV des données d'évaluation a été généré et exporté"
+            },
+            "workflowsFailed": {
+                "title": "Impossible de charger les étapes du processus"
+            },
+            "assessmentDataFailed": {
+                "title": "Impossible de charger les données d'évaluation"
+            },
+            "noSessionsSelected": {
+                "title": "Aucune session sélectionnée",
+                "message": "Sélectionnez au moins une session à publier."
             }
         }
     },

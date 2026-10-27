@@ -28,7 +28,12 @@
             >
               {{ item }}
             </option>
-            <option :value="0">{{ $t('common.all') }}</option>
+            <option
+              v-if="allowAll"
+              :value="0"
+            >
+              {{ $t('common.all') }}
+            </option>
           </select>
         </div>
       </div>
@@ -61,36 +66,38 @@
                 :disabled="currentPage === 1"
                 @click="changePage(currentPage - 1)"
               >
-                <span aria-hidden="true">&laquo;</span>
+                {{ $t('common.paginationPrevious') }}
               </button>
             </li>
-            <!-- Pagination Elements -->
-            <li
-              v-for="p in pages"
-              :key="p"
-              :class="{'active': p === currentPage, 'disabled': (p === currentPage - showPages || p === currentPage + showPages)}"
-              class="page-item"
-            >
-              <button
-                v-if="p === currentPage - showPages"
-                class="page-link"
+            <!-- Page numbers -->
+            <template v-if="showPageNumbers">
+              <li
+                v-for="p in pages"
+                :key="p"
+                :class="{'active': p === currentPage, 'disabled': (p === currentPage - showPages || p === currentPage + showPages)}"
+                class="page-item"
               >
-                ...
-              </button>
-              <button
-                v-if="p < currentPage + showPages && p > currentPage - showPages"
-                class="page-link"
-                @click="changePage(p)"
-              >
-                {{ p }}
-              </button>
-              <button
-                v-if="p === currentPage + showPages"
-                class="page-link"
-              >
-                ...
-              </button>
-            </li>
+                <button
+                  v-if="p === currentPage - showPages"
+                  class="page-link"
+                >
+                  ...
+                </button>
+                <button
+                  v-if="p < currentPage + showPages && p > currentPage - showPages"
+                  class="page-link"
+                  @click="changePage(p)"
+                >
+                  {{ p }}
+                </button>
+                <button
+                  v-if="p === currentPage + showPages"
+                  class="page-link"
+                >
+                  ...
+                </button>
+              </li>
+            </template>
             <!-- Next Page Link -->
             <li
               :class="{ disabled: currentPage === pages }"
@@ -101,7 +108,7 @@
                 :disabled="currentPage === pages"
                 @click="changePage(currentPage + 1)"
               >
-                <span aria-hidden="true">&raquo;</span>
+                {{ $t('common.next') }}
               </button>
             </li>
             <!-- Last Page Link -->
@@ -120,15 +127,6 @@
           </ul>
         </nav>
       </div>
-
-      <!--<div class="col-md-1">
-        <div class="input-group">
-          <span class="input-group-text" title="Jump to page" >
-            <LoadIcon icon-name="arrow-right" />
-          </span>
-          <input type="text" class="form-control">
-        </div>
-      </div>-->
     </div>
   </div>
 </template>
@@ -151,14 +149,21 @@ export default {
       type: Number,
       required: true
     },
-    currentPage: {
-      type: Number,
-      required: true
-    },
+    /** How many page numbers to show on each side of the current page. */
     showPages: {
       type: Number,
       required: false,
       default: 3
+    },
+    /** Numbered page buttons between Previous and Next */
+    showPageNumbers: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
+    currentPage: {
+      type: Number,
+      required: true
     },
     itemsPerPageList: {
       type: Array,
@@ -171,6 +176,24 @@ export default {
       default: 10
     },
     totalItems: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    /** Offer the "All" page size. Off unless the parent opts in. */
+    allowAll: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    /** 1-based first row currently on screen in "All" mode (0 = unknown). */
+    windowFirst: {
+      type: Number,
+      required: false,
+      default: 0,
+    },
+    /** 1-based last row currently on screen in "All" mode (0 = unknown). */
+    windowLast: {
       type: Number,
       required: false,
       default: 0,
@@ -190,11 +213,11 @@ export default {
         return "";
       }
 
-      // Handle "All" items case
       if (this.itemsPerPageSelect === 0) {
+        const hasWindow = this.windowFirst > 0 && this.windowLast >= this.windowFirst;
         return this.$t('common.paginationRange', {
-          start: 1,
-          end: this.totalItems,
+          start: hasWindow ? this.windowFirst : 1,
+          end: hasWindow ? Math.min(this.windowLast, this.totalItems) : this.totalItems,
           total: this.totalItems,
         });
       }
@@ -208,8 +231,9 @@ export default {
         total: this.totalItems,
       });
     },
+    /** No page buttons in "All" mode (rows stream on scroll) or when everything fits on one page. */
     showNavigation() {
-      return this.pages > 1;
+      return this.itemsPerPageSelect !== 0 && this.pages > 1;
     },
   },
   watch: {
@@ -221,7 +245,8 @@ export default {
     this.itemsPerPageSelect = this.itemsPerPage;
     if (this.itemsPerPageList.length > 0) {
       this.itemsPerPageListSelect = this.itemsPerPageList;
-      if (this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {
+      // 0 means "All" and has its own option; it must not land in the numeric list.
+      if (this.itemsPerPage > 0 && this.itemsPerPageListSelect.indexOf(this.itemsPerPage) === -1) {
         this.itemsPerPageListSelect.push(this.itemsPerPage);
       }
       this.itemsPerPageListSelect.sort((a, b) => a - b);
