@@ -157,6 +157,11 @@ class DocumentSocket extends Socket {
     /**
      * Upload a document from the dashboard. Keep this permission check separate
      * from addDocument, which is also used by assignment and Moodle uploads.
+     *
+     * @param {Object} data - The document upload data (see addDocument for fields).
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<Object>} The result of addDocument.
+     * @throws {TranslatableError} If the user lacks frontend.dashboard.documents.upload access.
      */
     async uploadDocument(data, options) {
         if (!(await this.hasAccess("frontend.dashboard.documents.upload"))) {
