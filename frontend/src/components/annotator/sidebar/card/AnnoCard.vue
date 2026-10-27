@@ -11,12 +11,20 @@
         :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
         @click="handleHeaderClick"
       >
+        <!-- Mouse-only shortcut to open the card; the chevron below is the single keyboard and
+             screen-reader control, so buttons are never nested inside each other -->
         <div class="col" style="display: flex; align-items: center;">
           <div 
             v-if="!editedByMyself"
             :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
+            class="card-focusable care-focus-ring"
             style="display: inline-flex; margin-right: 8px;"
+            role="button"
+            tabindex="0"
+            :aria-expanded="!collapsed"
             @click.stop="handleCheckIconClick"
+            @keydown.enter.exact.prevent="handleCheckIconClick"
+            @keydown.space.exact.prevent="handleCheckIconClick"
           >
             <LoadIcon
               :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
@@ -60,6 +68,7 @@
             :edit="editedByMyself"
             :level="0"
             @save-card="save()"
+            @cancel-card="cancel"
         />
       </template>
 
@@ -90,22 +99,7 @@
               v-else
               class="row"
           >
-            <div class="col">
-              <BasicButton
-                  v-if="numberReplies > 0"
-                  class="btn btn-light btn-sm"
-                  data-placement="top"
-                  data-toggle="tooltip"
-                  :title="$t('common.reply')"
-                  :text="showReplies
-                    ? $t('common.hideRepliesCount', { count: numberReplies })
-                    : $t('common.showReplies', { count: numberReplies })"
-                  @click="showReplies = !showReplies; maxComments = defaultNumComments"
-              />
-            </div>
-            <div
-                class="col text-end"
-            >
+            <div class="col text-end">
               <SidebarButton
                   v-if="settingResponse && !readOnly"
                   :loading="false"
@@ -122,6 +116,7 @@
               <VoteButtons :comment="comment"/>
               <SidebarButton
                   v-if="comment.userId === userId && !readOnly"
+                  ref="editButton"
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
@@ -142,7 +137,23 @@
                   :props="$props"
                   icon="trash3"
                   :title="$t('common.delete')"
-                  @click="remove"
+                  @click="moveFocusToNextCard(); remove()"
+              />
+            </div>
+            <!-- Last in the footer, so keyboard users reach it after the actions and can skip the thread -->
+            <div class="col-auto text-end">
+              <BasicButton
+                  v-if="numberReplies > 0"
+                  ref="repliesToggle"
+                  class="btn btn-light btn-sm"
+                  :aria-expanded="showReplies ? 'true' : 'false'"
+                  data-placement="top"
+                  data-toggle="tooltip"
+                  :title="$t('common.reply')"
+                  :text="showReplies
+                    ? $t('common.hideRepliesCount', { count: numberReplies })
+                    : $t('common.showReplies', { count: numberReplies })"
+                  @click="showReplies = !showReplies; maxComments = defaultNumComments"
               />
             </div>
           </div>
@@ -169,7 +180,7 @@ import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import AnnotationTag from "./AnnotationTag.vue";
 import AnnotationSummarize from "./AnnotationSummarize.vue";
@@ -265,6 +276,27 @@ export default {
     },
   },
   watch: {
+    editedByMyself(newVal) {
+      if (newVal) return;
+      // Runs before the editor closes: if the keyboard was in this card, land on the Edit button again
+      if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
+        this.$nextTick(() => {
+          if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+        });
+      }
+    },
+    showReplies(newVal) {
+      if (newVal) return;
+      // Runs before the thread is removed: if the keyboard was in it, move focus to the toggle
+      const thread = this.$refs.replies && this.$refs.replies.$el;
+      const hadFocus = thread && thread.contains && thread.contains(document.activeElement);
+      if (hadFocus) {
+        this.$nextTick(() => {
+          const toggle = this.$refs.repliesToggle && this.$refs.repliesToggle.$el;
+          if (toggle) toggle.focus();
+        });
+      }
+    },
     commentState: {
     immediate: true,
     handler(newVal) {
@@ -426,6 +458,15 @@ export default {
     edit() {
       this.$refs.collab.startCollab();
     },
+    /**
+     * Before the card is deleted, moves keyboard focus to the next annotation card.
+     * @returns {void}
+     */
+    moveFocusToNextCard() {
+      if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
+        focusNextAnnotationCard(this.$el);
+      }
+    },
     toEditMode(status) {
       this.edit_mode = status;
     },
@@ -498,7 +539,7 @@ export default {
 }
 
 .check-icon:hover {
-  color: var(--bs-primary, #007bff) !important;
+  color: var(--care-primary) !important;
 }
 
 .header-hoverable {
@@ -514,5 +555,11 @@ export default {
   font-size: smaller;
   color: var(--bs-secondary-color, #929292);
   transition: background-color 0.2s ease;
+}
+</style>
+
+<style scoped>
+.card-focusable:focus-visible {
+  border-radius: 4px;
 }
 </style>

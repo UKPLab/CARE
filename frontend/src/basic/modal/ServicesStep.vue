@@ -457,7 +457,7 @@ export default {
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color) !important;
   font-weight: 600;
 }
 
@@ -466,8 +466,8 @@ export default {
 }
 
 .form-control:focus {
-  border-color: var(--bs-primary, #0d6efd);
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-primary) 25%, transparent);
 }
 
 .no-content {

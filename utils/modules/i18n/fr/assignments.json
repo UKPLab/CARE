@@ -182,7 +182,7 @@
         "submissionsTable": {
             "columns": {
                 "name": "Nom du travail",
-                "studyUsageCount": "Utilisée dans des études"
+                "updatedAt": "Mis à jour le"
             },
             "actions": {
                 "replace": "Remplacer le travail",

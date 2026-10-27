@@ -36,7 +36,7 @@
         :title="$t('common.readOnly')"
     >
       <span
-          :style="{ color: '#800000', fontWeight: 'bold' }"
+          :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }"
       >
         {{ $t('common.readOnly') }}
       </span>

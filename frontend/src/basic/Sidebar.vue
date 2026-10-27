@@ -35,7 +35,6 @@
                     v-if="config.icon"
                     :icon-name="config.icon"
                     :size="20"
-                    :color="isSingleConfig ? '#495057' : (resolvedActiveSlot === slotName ? '#0d6efd' : '#495057')"
                     :cursor="isSingleConfig ? 'default' : 'pointer'"
                 />
               </TopBarButton>
@@ -88,7 +87,7 @@
                           v-if="button.icon"
                           :icon-name="button.icon"
                           :size="16"
-                          :color="button.disabled ? '#6c757d' : (button.color || '#495057')"
+                          :color="button.disabled ? null : button.color"
                           class="me-2"
                       />
                       {{ button.title }}
@@ -662,6 +661,10 @@ export default {
   color: var(--bs-primary, #0d6efd);
   background-color: var(--bs-body-bg, #fff);
   border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) var(--bs-body-bg, #fff);
+}
+
+[data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
+  color: var(--care-accent);
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {

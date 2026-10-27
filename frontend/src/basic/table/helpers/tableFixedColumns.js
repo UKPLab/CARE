@@ -1,5 +1,5 @@
 /**
- * Manages sticky/fixed-column positioning for Table.vue (BasicTable).
+ * Manages sticky/fixed-column positioning for Table.vue (BasicTable) and BackendTable.vue.
  *
  * Measures rendered column widths, computes left/right offsets for
  * columns flagged `fixed: "left" | "right"` and the sticky manage
@@ -7,11 +7,38 @@
  * window-resize fallback), recomputing on demand through a debounced
  * handler.
  *
+ * Both tables use the same template refs: `tableWrapper`, `tableElement`,
+ * `manageHeader` and `header-<column.key>`, and provide `visibleColumns`
+ * and `hasManageButtons`.
+ *
  * Exports data, computed properties, and methods for spread
- * composition into Table.vue.
+ * composition into Table.vue and BackendTable.vue.
  *
  * @author Dennis Zyska, Nils Dycke, Linyin Huang
  */
+
+import debounce from "lodash.debounce";
+
+/** Default width when a column has neither an explicit width nor a rendered header. */
+const DEFAULT_COLUMN_WIDTH = 150;
+
+/**
+ * Call `onResize` when the table changes size. Uses ResizeObserver on the given elements
+ * (the first one is required), falling back to the window resize event.
+ * @param {Array<Element|undefined>} elements
+ * @param {function} onResize
+ * @returns {function} stop observing
+ */
+function observeResize(elements, onResize) {
+  const [primary] = elements;
+  if (window.ResizeObserver && primary) {
+    const observer = new ResizeObserver(onResize);
+    elements.filter(Boolean).forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }
+  window.addEventListener("resize", onResize);
+  return () => window.removeEventListener("resize", onResize);
+}
 
 // Fresh data factory so fixed-column measurement state is never shared across table instances
 export function tableFixedColumnsData() {
@@ -20,7 +47,6 @@ export function tableFixedColumnsData() {
     manageColumnStyle: {},
     debouncedComputeFixedColumns: null,
     hasHorizontalOverflow: false,
-    resizeObserver: null,
   };
 }
 
@@ -45,27 +71,28 @@ export const tableFixedColumnsComputed = {
 };
 
 export const tableFixedColumnsMethods = {
+  /** Call from `created()`: the debounced recompute used by resize observation. */
+  initFixedColumns() {
+    this.debouncedComputeFixedColumns = debounce(() => {
+      this.computeFixedColumnStyles();
+    }, 150);
+  },
   setupFixedColumns() {
     this.$nextTick(() => {
       this.computeFixedColumnStyles();
-      // Use ResizeObserver for better performance if available
-      if (window.ResizeObserver && this.$refs.tableWrapper) {
-        this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
-        this.resizeObserver.observe(this.$refs.tableWrapper);
-      } else {
-        // Fallback to window resize
-        window.addEventListener("resize", this.debouncedComputeFixedColumns);
-      }
+      // Re-setup must not stack observers
+      this._stopFixedColumnsResize?.();
+      // The table element can grow without the wrapper changing size (e.g. rows arriving)
+      this._stopFixedColumnsResize = observeResize(
+        [this.$refs.tableWrapper, this.$refs.tableElement],
+        this.debouncedComputeFixedColumns
+      );
     });
   },
   cleanupFixedColumns() {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-    if (this.debouncedComputeFixedColumns) {
-      window.removeEventListener("resize", this.debouncedComputeFixedColumns);
-    }
+    this._stopFixedColumnsResize?.();
+    this._stopFixedColumnsResize = null;
+    this.debouncedComputeFixedColumns?.cancel();
   },
   getManageColumnClass() {
     if (!this.shouldFixManageColumn) return null;
@@ -97,7 +124,11 @@ export const tableFixedColumnsMethods = {
   getManageColumnWidth() {
     const ref = this.$refs.manageHeader;
     const el = Array.isArray(ref) ? ref[0] : ref;
-    return el?.offsetWidth || 100; // Default 100px
+    return el?.offsetWidth || this.getManageColumnFallbackWidth();
+  },
+  /** Manage column width while its header is not rendered yet. Override per table. */
+  getManageColumnFallbackWidth() {
+    return 100; // Default 100px
   },
   computeFixedColumnStyles() {
     // Check for horizontal overflow
@@ -178,7 +209,7 @@ export const tableFixedColumnsMethods = {
     if (el?.offsetWidth) return el.offsetWidth;
 
     // Default fallback
-    return 150;
+    return DEFAULT_COLUMN_WIDTH;
   },
   detectHorizontalOverflow() {
     const wrapper = this.$refs.tableWrapper;
@@ -187,14 +218,5 @@ export const tableFixedColumnsMethods = {
     if (!wrapper || !table) return false;
 
     return table.scrollWidth > wrapper.clientWidth;
-  },
-  debounce(func, wait = 100) {
-    let timeout;
-    return (...args) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        func.apply(this, args);
-      }, wait);
-    };
   },
 };
