@@ -1,10 +1,11 @@
-﻿<template>
+<template>
   <StepperModal
       ref="assignmentStepper"
       :steps="steps"
       :validation="stepValid"
       size="xl"
-      @submit="bulk ? createBulkAssignments() : createSingleAssignment()">
+      @submit="bulk ? createBulkAssignments() : createSingleAssignment()"
+      @step-change="onStepChange">
     <template #title>
       <h5 class="modal-title">
         {{ bulk ? $t('dashboard.study.createBulkAssignment') : $t('dashboard.study.createSingleAssignmentTitle') }}
@@ -50,8 +51,10 @@
           :key="`assignment-step2-${stepResetKey}`"
           ref="assignmentSelectionStep2"
           :modalValue="assignmentModalValue"
+          :initial-selection="assignmentSelection"
           @update:modalValue="assignmentModalValue = $event"
           @update:selectedAssignmentUserIds="selectedAssignmentUserIds = $event"
+          @update:selection="onAssignmentSelection"
           @update:isValid="assignmentSelectionValid = $event"
       />
     </template>
@@ -63,8 +66,9 @@
           :key="`assignment-step3-${stepResetKey}`"
           ref="assignmentSelectionStep3"
           :modalValue="assignmentModalValue"
+          :initial-selection="assignmentSelection"
           @update:modalValue="assignmentModalValue = $event"
-          @update:selectedAssignmentUserIds="selectedAssignmentUserIds = $event"
+          @update:selection="onAssignmentSelection"
           @update:isValid="assignmentSelectionValid = $event"
       />
       <ReviewerSelectionStep
@@ -72,10 +76,10 @@
           :key="`reviewer-step3-${stepResetKey}`"
           ref="reviewerSelectionStep3"
           :selected-assignment-user-ids="selectedAssignmentUserIds"
+          :assignment-selection="assignmentSelection"
+          :initial-selection="reviewerQuerySelection"
           :bulk="bulk"
-          :modalValue="selectedReviewer"
-          @update:selectedReviewer="selectedReviewer = $event"
-          @update:selectedReviewerRoles="selectedReviewerRoles = $event"
+          @update:selection="onReviewerSelection"
           @update:isValid="reviewerSelectionValid = $event"
       />
     </template>
@@ -87,10 +91,10 @@
           :key="`reviewer-step4-${stepResetKey}`"
           ref="reviewerSelectionStep4"
           :selected-assignment-user-ids="selectedAssignmentUserIds"
+          :assignment-selection="assignmentSelection"
+          :initial-selection="reviewerQuerySelection"
           :bulk="bulk"
-          :modalValue="selectedReviewer"
-          @update:selectedReviewer="selectedReviewer = $event"
-          @update:selectedReviewerRoles="selectedReviewerRoles = $event"
+          @update:selection="onReviewerSelection"
           @update:isValid="reviewerSelectionValid = $event"
       />
       <DistributionStep
@@ -152,10 +156,11 @@ import AssignmentSelectionStep from "./assignment/AssignmentSelectionStep.vue";
 import ReviewerSelectionStep from "./assignment/ReviewerSelectionStep.vue";
 import DistributionStep from "./assignment/DistributionStep.vue";
 import ConfirmationStep from "./assignment/ConfirmationStep.vue";
+import {cloneSelection, emptySelection} from "@/basic/table/emptySelection.js";
 
 /**
  * Modal for bulk creating assignments
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Andrii Nikitin
  */
 export default {
   name: "ImportModal",
@@ -169,10 +174,17 @@ export default {
     ConfirmationStep,
   },
   subscribeTable: [
-    { table: "document", filter: [{ key: "readyForReview", value: true }] },
-    { table: "user" },
+    {
+      table: "document",
+      filter: [{ key: "readyForReview", value: true }],
+      inject: [{
+        type: "parent",
+        table: "user",
+        by: "userId",
+        fields: ["firstName", "lastName", "userName"],
+      }],
+    },
     { table: "study", filter: [{ key: "template", value: true }] },
-    "submission",
     { table: "template" },
   ],
   provide() {
@@ -189,11 +201,13 @@ export default {
       workflowStepsAssignments: computed(() => this.workflowStepsAssignments),
       numberOfReviews: computed(() => this.numberOfReviews),
       reviewerSelectionModeFields: computed(() => this.reviewerSelectionModeFields),
-      reviewer: computed(() => this.reviewer),
+      reviewer: computed(() => this.selectedReviewer),
       documents: computed(() => this.documents),
       roles: computed(() => this.roles),
       roleSelection: computed(() => this.roleSelection),
       reviewerSelection: computed(() => this.reviewerSelection),
+      assignmentCount: computed(() => this.assignmentCount),
+      reviewerCount: computed(() => this.reviewerCount),
     };
   },
   data() {
@@ -222,10 +236,11 @@ export default {
       // Step 2/3: AssignmentSelectionStep
       assignmentModalValue: [],
       selectedAssignmentUserIds: [],
+      assignmentSelection: emptySelection(),
+      reviewerQuerySelection: emptySelection(),
 
       // Step 3/4: ReviewerSelectionStep
       selectedReviewer: [],
-      selectedReviewerRoles: [],
 
       // Step 4/5: DistributionStep
       reviewerSelectionMode: {},
@@ -240,6 +255,9 @@ export default {
       assignmentSelectionValid: false,
       reviewerSelectionValid: false,
       distributionValid: false,
+
+      resolveLoading: false,
+      activeStep: 0,
     };
   },
   computed: {
@@ -247,14 +265,20 @@ export default {
     templates() {
       return this.$store.getters["table/study/getFiltered"](item => item.template === true);
     },
-    reviewer() {
-      return this.$store.getters["table/user/getAll"];
-    },
     documents() {
       return this.$store.getters["table/document/getFiltered"](d => d.readyForReview);
     },
     roles() {
       return this.$store.getters["admin/getSystemRoles"] || [];
+    },
+    assignmentCount() {
+      if (this.assignmentType === 'study_session' || this.assignmentType === 'submission') {
+        return this.assignmentSelection.count || this.assignmentModalValue.length;
+      }
+      return this.assignmentModalValue.length;
+    },
+    reviewerCount() {
+      return this.reviewerQuerySelection.count || this.selectedReviewer.length;
     },
     reviewerSelectionModeFields() {
       const baseOptions = [
@@ -320,7 +344,7 @@ export default {
           { title: this.$t("common.confirmation") },
         ];
       }
-      const selectionTitle = this.assignmentType === 'submission'
+      const selectionTitle = this.assignmentType === "submission"
         ? this.$t("dashboard.study.submissionSelection")
         : this.$t("dashboard.study.documentSelection");
       return [
@@ -338,19 +362,10 @@ export default {
         reviewerSelection: this.reviewerSelection,
       };
     },
+    // Document path only. Submissions get their step document on the server (createAssignment).
     workflowStepsAssignments() {
-      if (this.assignmentType === 'submission') {
-        return this.assignmentModalValue.map(submission => {
-          return this.workflowSteps.map((c, index) => {
-            if (index === 0) {
-              const primaryDocId = this.getPrimaryDocumentId(submission.id);
-              return { documentId: primaryDocId, workflowStepId: c.id };
-            }
-            return { documentId: null, workflowStepId: c.id };
-          });
-        });
-      }
-      return this.assignmentModalValue.map(document => {
+      if (this.assignmentType !== "document") return [];
+      return this.assignmentModalValue.map((document) => {
         return this.workflowSteps.map((c, index) => ({
           documentId: index === 0 ? document.id : null,
           workflowStepId: c.id,
@@ -358,29 +373,26 @@ export default {
       });
     },
   },
-  methods: {
-    getPrimaryDocumentId(submissionId) {
-      const submission = this.$store.getters["table/submission/get"](submissionId);
-      const configuration = this.$store.getters["table/configuration/get"](submission.validationConfigurationId);
-      const docs = this.$store.getters["table/document/getFiltered"](
-          d => d.submissionId === submissionId && !d.deleted && d.type === 0
-      );
-      if (!docs || docs.length === 0) return null;
-      if (configuration && configuration.primaryDocument) {
-        const primaryDoc = docs.find(d => d.id === configuration.primaryDocument);
-        if (primaryDoc) return primaryDoc.id;
-      }
-      return docs[0].id;
+  watch: {
+    assignmentType(next, prev) {
+      if (!prev || next === prev) return;
+      this.resetDownstreamSelection();
     },
+  },
+  methods: {
     open(bulk = true) {
       this.bulk = bulk;
       this.reset();
       this.$refs.assignmentStepper.open();
     },
     reset() {
+      // Stepper goes back to step 0 on open; the old step is still mounted when that
+      // step-change fires, so it must not be captured into the fresh wizard.
+      this.activeStep = 0;
+      this.resolveLoading = false;
+      this.$refs.assignmentStepper?.setWaiting?.(false);
       this.stepResetKey++;
-
-      this.assignmentType = 'document';
+      this.assignmentType = "document";
       this.workflowSteps = [];
       this.workflowStepsAssignment = [];
       this.template = null;
@@ -388,20 +400,113 @@ export default {
       this.templateStepModalValue = {};
       this.workflowMappingStepModalValue = {};
       this.isWorkflowMappingComplete = false;
+      this.templateValid = false;
+      this.workflowMappingValid = false;
+      this.resetDownstreamSelection();
+    },
+    /**
+     * Clears everything picked after the assignment type: assignments, reviewers, distribution.
+     * Shared by reset() and the assignmentType watcher, since a new type invalidates all of it.
+     */
+    resetDownstreamSelection() {
       this.assignmentModalValue = [];
       this.selectedAssignmentUserIds = [];
+      this.assignmentSelection = emptySelection();
+      this.reviewerQuerySelection = emptySelection();
       this.selectedReviewer = [];
-      this.selectedReviewerRoles = [];
       this.reviewerSelectionMode = {};
       this.roleSelection = {};
       this.reviewerSelection = {};
       this.selectionValid = false;
       this.numberOfReviews = 0;
-      this.templateValid = false;
-      this.workflowMappingValid = false;
       this.assignmentSelectionValid = false;
       this.reviewerSelectionValid = false;
       this.distributionValid = false;
+    },
+    onAssignmentSelection(selection) {
+      const panel = this.stepContent[this.activeStep];
+      if (panel === "assignment-selection" && this.assignmentType !== "submission") return;
+      if (panel !== "session-selection" && panel !== "assignment-selection") return;
+      this.assignmentSelection = cloneSelection(selection);
+    },
+    onReviewerSelection(selection) {
+      if (this.stepContent[this.activeStep] !== "reviewer-selection") return;
+      this.reviewerQuerySelection = cloneSelection(selection);
+    },
+    /**
+     * Before Distribution / Confirm: turn queryTable selection (including select-all)
+     * into row arrays. Distribution still builds sliders from selectedReviewer objects.
+     */
+    onStepChange(stepIndex) {
+      if (stepIndex === this.activeStep) return;
+      const forward = stepIndex > this.activeStep;
+      this.captureLiveSelections();
+      this.activeStep = stepIndex;
+      if (!forward) {
+        this.resolveLoading = false;
+        this.$refs.assignmentStepper?.setWaiting?.(false);
+      }
+      const panel = this.stepContent[stepIndex];
+      if (forward && (panel === "distribution" || panel === "confirmation")) {
+        this.resolveSelectionsForDownstream();
+      }
+    },
+    captureLiveSelections() {
+      if (this.assignmentType === "submission") {
+        const submissions = this.$refs.assignmentSelectionStep2?.getSelection?.();
+        if (submissions) this.assignmentSelection = {...submissions};
+      } else if (this.assignmentType === "study_session") {
+        const sessions = this.$refs.assignmentSelectionStep3?.getSelection?.();
+        if (sessions) this.assignmentSelection = {...sessions};
+      }
+      const reviewer = this.$refs.reviewerSelectionStep3?.getSelection?.()
+        || this.$refs.reviewerSelectionStep4?.getSelection?.();
+      if (reviewer) this.reviewerQuerySelection = {...reviewer};
+    },
+    resolvePayload() {
+      const payload = {
+        assignmentType: this.assignmentType,
+        newStudyOwner: this.workflowMappingStepModalValue?.newStudyOwner ?? "session_owner",
+        selectedAssignments: this.assignmentModalValue,
+        selectedReviewer: this.selectedReviewer,
+        reviewerQuerySelection: this.snapshotReviewerSelection(),
+      };
+      if (this.assignmentType === "study_session" || this.assignmentType === "submission") {
+        payload.assignmentSelection = this.snapshotAssignmentSelection();
+      }
+      return payload;
+    },
+    snapshotAssignmentSelection() {
+      const live = this.assignmentType === "submission"
+        ? this.$refs.assignmentSelectionStep2?.getSelection?.()
+        : this.$refs.assignmentSelectionStep3?.getSelection?.();
+      return live ? {...live} : {...this.assignmentSelection};
+    },
+    snapshotReviewerSelection() {
+      const ref = this.$refs.reviewerSelectionStep3 || this.$refs.reviewerSelectionStep4;
+      const live = ref?.getSelection?.();
+      return live ? {...live} : {...this.reviewerQuerySelection};
+    },
+    resolveSelectionsForDownstream() {
+      if (this.resolveLoading) {
+        return;
+      }
+      this.resolveLoading = true;
+      this.$refs.assignmentStepper?.setWaiting?.(true);
+      this.$socket.emit("assignmentBulkResolveSelection", this.resolvePayload(), (res) => {
+        this.resolveLoading = false;
+        this.$refs.assignmentStepper?.setWaiting?.(false);
+        if (!res?.success) {
+          this.eventBus.emit("toast", {
+            title: this.$t("dashboard.study.failedToCreateAssignment"),
+            message: resolveApiMessage(res),
+            variant: "danger",
+          });
+          return;
+        }
+        this.assignmentModalValue = res.data?.selectedAssignments || [];
+        this.selectedReviewer = res.data?.selectedReviewer || [];
+      });
     },
     onSuccess() {
       this.$refs.assignmentStepper.close();
@@ -422,27 +527,41 @@ export default {
     createSingleAssignment() {
       this.$refs.assignmentStepper.startProgress();
 
-      const socketData = {
-        template: this.template,
-        selectedAssignments: this.assignmentModalValue,
-        reviewer: this.selectedReviewer,
-        assignmentType: this.assignmentType,
-        enableEmailNotification: this.templateStepModalValue?.enableEmailNotification ?? false,
-      };
-
-      if (this.assignmentType === 'study_session') {
-        socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
-      } else {
-        socketData.documents = this.workflowStepsAssignments[0];
-      }
-
-      this.$socket.emit("assignmentCreateSingle", socketData, (res) => {
-        this.$refs.assignmentStepper.stopProgress();
-        if (res.success) {
-          this.onSuccess();
-        } else {
-          this.onError(res);
+      this.$socket.emit("assignmentBulkResolveSelection", this.resolvePayload(), (resolveRes) => {
+        if (!resolveRes?.success) {
+          this.onError(resolveRes);
+          return;
         }
+        const assignments = resolveRes.data?.selectedAssignments?.length
+          ? resolveRes.data.selectedAssignments
+          : this.assignmentModalValue;
+        const reviewers = resolveRes.data?.selectedReviewer?.length
+          ? resolveRes.data.selectedReviewer
+          : this.selectedReviewer;
+
+        const socketData = {
+          template: this.template,
+          selectedAssignments: assignments,
+          reviewer: reviewers,
+          assignmentType: this.assignmentType,
+          enableEmailNotification: this.templateStepModalValue?.enableEmailNotification ?? false,
+          newStudyOwner: this.workflowMappingStepModalValue?.newStudyOwner ?? "session_owner",
+        };
+
+        if (this.assignmentType === "study_session") {
+          socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
+        } else if (this.assignmentType === "document") {
+          socketData.documents = this.workflowStepsAssignments[0];
+        }
+
+        this.$socket.emit("assignmentCreateSingle", socketData, (res) => {
+          this.$refs.assignmentStepper.stopProgress();
+          if (res.success) {
+            this.onSuccess();
+          } else {
+            this.onError(res);
+          }
+        });
       });
     },
     createBulkAssignments() {
@@ -459,11 +578,17 @@ export default {
         assignmentType: this.assignmentType,
         enableEmailNotification: this.templateStepModalValue?.enableEmailNotification ?? false,
         progressId: progressId,
+        newStudyOwner: this.workflowMappingStepModalValue?.newStudyOwner ?? "session_owner",
+        reviewerQuerySelection: this.snapshotReviewerSelection(),
       };
 
-      if (this.assignmentType === 'study_session') {
+      if (this.assignmentType === "study_session") {
         socketData.targetWorkflowId = this.workflowMappingStepModalValue?.targetWorkflowId;
         socketData.workflowMapping = this.workflowMappingStepModalValue?.workflowMapping;
+        socketData.assignmentSelection = this.snapshotAssignmentSelection();
+      } else if (this.assignmentType === "submission") {
+        // Server resolves the submissions and picks each one's PDF itself.
+        socketData.assignmentSelection = this.snapshotAssignmentSelection();
       } else {
         socketData.documents = this.workflowStepsAssignments;
       }
@@ -471,27 +596,8 @@ export default {
       this.$socket.emit("assignmentCreateBulk", socketData, (res) => {
         this.$refs.assignmentStepper.stopProgress();
         if (res.success) {
-          if (this.reviewerSelectionMode.mode === 'role') {
-            const filename = "assignments";
-            const returnData = Object.keys(res.data).map(assignmentId => {
-              const assignmentUser = this.assignmentModalValue.find(u => u.id === Number(assignmentId));
-              if (!assignmentUser) {
-                console.error(`Assignment with ID ${assignmentId} not found.`);
-                return null;
-              }
-              const csv = {
-                assignedToName: `${assignmentUser.firstName} ${assignmentUser.lastName}`,
-                assignedToFirstName: assignmentUser.firstName,
-                assignedToLastName: assignmentUser.lastName,
-              };
-              res.data[assignmentId].forEach((reviewerId, index) => {
-                const reviewerUser = this.selectedReviewer.find(u => u.id === Number(reviewerId));
-                csv[`reviewer_${index + 1}`] = reviewerUser
-                  ? `${reviewerUser.firstName} ${reviewerUser.lastName}` : '';
-              });
-              return csv;
-            });
-            downloadObjectsAs(returnData, filename, "csv");
+          if (this.reviewerSelectionMode.mode === "role" && Array.isArray(res.data?.csvRows)) {
+            downloadObjectsAs(res.data.csvRows, "assignments", "csv");
           }
           this.onSuccess();
         } else {

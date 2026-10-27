@@ -428,6 +428,26 @@ export function downloadDocument(content, fileName, fileType = "") {
 
 
 /**
+ * Navigates back to the dashboard the user came from.
+ *
+ * If the previous history entry is a dashboard route, the browser goes back to it so that
+ * the dashboard keeps its state (tab, scroll position, filters). Otherwise, e.g. when the
+ * page was opened directly via a link, the fallback route is pushed instead.
+ *
+ * @param {Object} router Vue router instance, e.g. this.$router.
+ * @param {string} [fallback="/dashboard"] Route to push when there is no dashboard entry to go back to.
+ * @returns {Promise<void>}
+ */
+export async function returnToDashboard(router, fallback = "/dashboard") {
+    const back = window.history.state?.back;
+    if (typeof back === "string" && back.startsWith("/dashboard")) {
+        router.back();
+        return;
+    }
+    await router.push(fallback);
+}
+
+/**
  * Sort the data in a graph according to a previous key
  * @param key Key to sort the data
  * @returns {[]}
@@ -575,4 +595,26 @@ export function resolveTheme(saved) {
     const cached = localStorage.getItem("care.theme");
     const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     return saved || cached || (osPrefersDark ? "dark" : "light");
+}
+
+/**
+ * Moves keyboard focus to the header of the next annotation card in the sidebar feed,
+ * or the previous one when there is no next card. Used before a card or reply is deleted,
+ * so focus is not lost when the focused button disappears.
+ * @param {HTMLElement} fromEl - an element inside the annotation card being left
+ * @returns {void}
+ */
+export function focusNextAnnotationCard(fromEl) {
+    const card = fromEl && fromEl.closest('li[role="article"]');
+    if (!card) return;
+    const isCard = (el) => el && el.getAttribute('role') === 'article';
+    let target = card.nextElementSibling;
+    while (target && !isCard(target)) target = target.nextElementSibling;
+    if (!target) {
+        target = card.previousElementSibling;
+        while (target && !isCard(target)) target = target.previousElementSibling;
+    }
+    // The chevron is hidden while a card is being edited, so fall back to its first control
+    const header = target && (target.querySelector('.card-focusable') || target.querySelector('textarea, button'));
+    if (header) header.focus();
 }

@@ -5,6 +5,7 @@
   <div
     v-if="pdf"
     :id="'pdfContainer-' + documentId"
+    ref="pdfContainerEl"
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
@@ -13,7 +14,6 @@
       :id="'pdfToolbar-' + documentId"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
-      :is-zooming="isZooming"
       :pdf-dark-mode="pdfDarkMode"
       @toggle-pdf-theme="togglePdfTheme"
       @update:zoom-form-data="zoomFormData = $event"
@@ -28,6 +28,7 @@
       :page-number="page"
       :render="renderCheck[page - 1]"
       :class="['scrolling-page', { 'pdf-dark': pdfDarkMode }]"
+      :container-width="containerWidth"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
@@ -48,6 +49,7 @@ import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import { resolveApiMessage } from "@/assets/utils";
+import debounce from "lodash.debounce";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -104,6 +106,8 @@ export default {
       pdf: null,
       observer: undefined,
       pdfContainer: null,
+      containerWidth: 0,
+      resizeDebounced: undefined,
       visiblePages: [1],
       scale: 1.0,
       originalScale: null,
@@ -111,7 +115,6 @@ export default {
       MIN_SCALE: 0.25,
       MAX_SCALE: 10.0,
       DEFAULT_SCALE_DELTA: 1.1,
-      isZooming: false,
       toolbarVisible: false,
       zoomFormData: {
         zoom: 1.0,
@@ -151,12 +154,8 @@ export default {
     },
     zoomFormData: {
       handler(newZoom) {
-        if (!this.isZooming) {
-          this.isZooming = true;
+        if (this.scale !== newZoom.zoom) {
           this.scale = newZoom.zoom;
-          setTimeout(() => {
-            this.isZooming = false;
-          }, 1000);
         }
       },
       deep: true,
@@ -166,6 +165,17 @@ export default {
       if (this.zoomFormData.zoom !== newScale) {
         this.zoomFormData.zoom = newScale;
       }
+    },
+    pdf: {
+      handler(value) {
+        if (!value) {
+          this.disconnectContainerObserver();
+          this.containerWidth = 0;
+          return;
+        }
+        this.watchContainer();
+      },
+      flush: "post",
     },
   },
   mounted() {
@@ -205,38 +215,75 @@ export default {
     );
   },
   unmounted() {
+    this.disconnectContainerObserver();
     this.pdf = null;
   },
   methods: {
+    /**
+     * Watch the PDF column and publish its width.
+     * Returns immediately when the column element is not in the page.
+     * A later size change under 2 pixels, or a width of 0, is ignored.
+     *
+     * @returns {void}
+     */
+    watchContainer() {
+      const el = this.$refs.pdfContainerEl;
+      if (!el) {
+        return;
+      }
+      this.disconnectContainerObserver();
+      this.containerWidth = el.clientWidth;
+      // One watch for the column. Pages read the width instead of searching for this div's id.
+      this.resizeDebounced = debounce(() => {
+        const node = this.$refs.pdfContainerEl;
+        if (!node) {
+          return;
+        }
+        const next = node.clientWidth;
+        if (next <= 0 || Math.abs(next - this.containerWidth) < 2) {
+          return;
+        }
+        this.containerWidth = next;
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "pdfPageResizeChange",
+            data: {documentId: this.documentId, width: next}
+          });
+        }
+      }, 200);
+      this.observer = new ResizeObserver(this.resizeDebounced);
+      this.observer.observe(el);
+    },
+    /**
+     * Stop watching the PDF column and cancel a pending width update.
+     * Does nothing when no watch is running.
+     *
+     * @returns {void}
+     */
+    disconnectContainerObserver() {
+      if (this.observer) {
+        this.observer.disconnect();
+        this.observer = undefined;
+      }
+      if (this.resizeDebounced) {
+        this.resizeDebounced.cancel();
+        this.resizeDebounced = undefined;
+      }
+    },
     togglePdfTheme() {
       this.pdfDarkMode = !this.pdfDarkMode;
       localStorage.setItem("care.pdfDark", this.pdfDarkMode);
     },
     zoomIn() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale * this.DEFAULT_SCALE_DELTA;
       this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // Match the debounce timeout
     },
     zoomOut() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale / this.DEFAULT_SCALE_DELTA;
       this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // Match the debounce timeout
     },
     resetZoom() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       this.scale = this.originalScale || this.DEFAULT_SCALE;
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000);
     },
     updateVisibility(page) {
       let stateChanged = false;

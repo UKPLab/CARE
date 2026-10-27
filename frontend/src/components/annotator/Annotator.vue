@@ -10,8 +10,7 @@
         <div
             :id="'viewerContainer-' + documentId"
             ref="viewer"
-            class="flex-grow-1 border mh-100 justify-content-center p-3"
-            style="overflow-y: scroll;"
+            class="annotator-viewer flex-grow-1 border mh-100 justify-content-center p-3"
         >
           <PDFViewer
               ref="pdfViewer"
@@ -27,6 +26,7 @@
             v-if="!sidebarDisabled"
             ref="basicSidebar"
             :is-shown="isShown"  
+            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -706,6 +706,12 @@ export default {
 </script>
 
 <style scoped>
+
+.annotator-viewer {
+  /* auto would freeze this column at the widened page width. */
+  min-width: 0;
+  overflow-y: scroll;
+}
 
 .sidebar-highlight {
   border: 2px solid #ff9800 !important;

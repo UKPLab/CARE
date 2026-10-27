@@ -19,6 +19,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import { resolveApiMessage } from "@/assets/utils";
+import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 
@@ -26,7 +27,7 @@ import FileSaver from "file-saver";
  * Table displaying submissions for a specific assignment.
  *
  * Can be used standalone via the assignmentId prop or with pre-fetched rows.
- * Shows submission metadata (name, user, creation date, study usage) and
+ * Shows submission metadata (name, creation date, last update) and
  * provides actions to download, replace, or delete individual submissions.
  * Supports bulk download as a ZIP archive.
  *
@@ -58,9 +59,8 @@ export default {
       return [
         { name: this.$t("submission.dashboard.columns.id"), key: "id" },
         { name: this.$t("assignments.dashboard.submissionsTable.columns.name"), key: "name" },
-        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName" },
-        { name: this.$t("assignments.dashboard.submissionsTable.columns.studyUsageCount"), key: "studyUsageCount" },
-        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt" },
+        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt", type: "datetime" },
+        { name: this.$t("assignments.dashboard.submissionsTable.columns.updatedAt"), key: "updatedAt", type: "datetime" },
       ];
     },
     hasAdminRights() {
@@ -107,14 +107,15 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null,
+            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null && !isAssignmentPastDeadline(this.assignment),
             isStudyLocked,
             studyUsageCount,
             name: submission.name || "-",
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
             description: submission.description || "",
-            createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
           };
         });
     },
