@@ -1,7 +1,8 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
-const {Op} = require("sequelize");
+const {Op, literal} = require("sequelize");
 const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
+const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
 const fs = require("fs");
 const path = require("path");
 const TranslatableError = require("../../utils/TranslatableError");
@@ -238,15 +239,41 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async getQueryTableInjects(ctx = {}) {
             const fields = await Submission.assignmentNameFields(ctx);
-            if (fields.length === 0) {
-                return [];
-            }
-            return [{
+            const injects = [{
+                type: "sql",
+                table: "submission",
+                on: "id",
+                fields: {rolesNames: Submission.assignmentRoleNamesSql()},
+            }];
+            if (fields.length > 0) injects.push({
                 type: "parent",
                 table: "user",
                 by: "userId",
                 fields,
-            }];
+            });
+            return injects;
+        }
+
+        /**
+         * Submitter roles using the same active-role aggregation as the reviewer picker.
+         * @returns {string} SQL expression correlated with the submission row
+         */
+        static assignmentRoleNamesSql() {
+            const roles = sequelize.models.user.assignmentReviewerColumnSql().rolesNames;
+            return `COALESCE((SELECT ${roles} FROM "user"`
+                + ' WHERE "user"."id" = "submission"."userId" AND "user"."deleted" = false), \'\')';
+        }
+
+        /**
+         * Search the submitter roles when requested by the submission picker.
+         * @param {string} needle Normalized search text
+         * @param {Object} ctx Query search context
+         * @returns {Object[]} Sequelize search conditions
+         */
+        static getQueryTableSearchConditions(needle, ctx = {}) {
+            return ctx.canSearch?.("rolesNames")
+                ? [includesCondition(literal(Submission.assignmentRoleNamesSql()), needle)]
+                : [];
         }
 
         /**
@@ -256,7 +283,7 @@ module.exports = (sequelize, DataTypes) => {
          * @returns {Promise<string[]>}
          */
         static async getQueryTableSearchColumns(ctx = {}) {
-            const columns = ["id"];
+            const columns = ["id", "rolesNames"];
             columns.push(...await Submission.assignmentNameFields(ctx));
             return columns;
         }
@@ -273,6 +300,7 @@ module.exports = (sequelize, DataTypes) => {
                 id: {type: "numeric", operators: NUMERIC_OPERATORS},
                 assignmentId: {type: "numeric", operators: ["%"]},
                 createdAt: {type: "date"},
+                rolesNames: {type: "text", operators: ["%"], sql: Submission.assignmentRoleNamesSql()},
             };
             const names = await Submission.assignmentNameFields(ctx);
             const userColumn = (column) =>
