@@ -241,7 +241,7 @@
   </div>
   </div>
   <div
-    v-if="isInfiniteMode && total > 0"
+    v-if="isInfiniteMode && total > 0 && infiniteScrollbarVisible"
     ref="infiniteScrollbar"
     class="infinite-scrollbar"
     role="scrollbar"
@@ -494,6 +494,7 @@ export default {
       viewportHeight: 0,
       scrollTop: 0,
       scrollHeight: 0,
+      infiniteScrollbarVisible: false,
       infiniteBlockSize: 50, // rows per fetch while scrolling
       infiniteMaxRows: 150, // loaded window cap; the far edge is dropped past this
       infiniteOverscan: 8, // rendered rows above/below the viewport
@@ -792,6 +793,11 @@ export default {
       }
     },
     loadedCount() {
+      if (this.isInfiniteMode) {
+        this.scheduleVirtualUpdate();
+      }
+    },
+    total() {
       if (this.isInfiniteMode) {
         this.scheduleVirtualUpdate();
       }
@@ -2068,6 +2074,7 @@ export default {
     // height of the rows that moved in or out.
 
     enterInfiniteMode() {
+      this.infiniteScrollbarVisible = false;
       this.rowsBefore = 0;
       this.virtualStart = 0;
       this.virtualEnd = this.queryItems.length;
@@ -2090,6 +2097,7 @@ export default {
     },
     exitInfiniteMode() {
       this.detachInfiniteScroll();
+      this.infiniteScrollbarVisible = false;
       clearTimeout(this._seekTimer);
       clearTimeout(this._windowRefetchTimer);
       this._seekTimer = null;
@@ -2274,6 +2282,11 @@ export default {
       this.scrollHeight = target.scrollHeight;
       if (this.viewportHeight !== target.clientHeight) {
         this.viewportHeight = target.clientHeight;
+      }
+      // During a thumb jump the virtual spacers collapse briefly. Keep the track
+      // visible until the destination rows restore the table's full scroll height.
+      if (!this.thumbAwaitingRows) {
+        this.infiniteScrollbarVisible = this.scrollHeight > this.viewportHeight + 1;
       }
       if (this.rowHeight <= 0) this.measureRowHeight();
       const rowHeight = this.effectiveRowHeight;
