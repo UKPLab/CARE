@@ -36,7 +36,7 @@
         :title="$t('common.readOnly')"
     >
       <span
-          :style="{ color: '#800000', fontWeight: 'bold' }"
+          :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }"
       >
         {{ $t('common.readOnly') }}
       </span>
@@ -307,8 +307,9 @@ export default {
     },
     canLoadStepById() {
       return this.orderedStudySteps.reduce((acc, step, i, steps) => {
-        if (i === 0) {
-          acc[step.id] = true; // first step can always load
+        // always load the active step, including when resuming a session.
+        if (step.id === this.currentStudyStepId || i === 0) {
+          acc[step.id] = true;
           return acc;
         }
 

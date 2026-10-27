@@ -1,6 +1,7 @@
 <template>
   <div v-if="editingTag && annotationId" class="d-flex align-items-center">
     <select
+        ref="tagSelect"
         v-model="selectedTag"
         class="form-select form-select-md"
         :style="{
@@ -80,6 +81,11 @@ export default {
     },
   },
   emits: ['update:editingTag', 'update:selectedTagId'],
+  data() {
+    return {
+      returnFocusEl: null,
+    };
+  },
   computed: {
     selectedTag: {
       get() {
@@ -125,6 +131,20 @@ export default {
           return tag.name;
       }
       return null;
+    },
+  },
+  watch: {
+    editingTag(newVal) {
+      if (newVal) return;
+      // Runs before the select is removed, so we can tell if the keyboard was in it
+      const hadFocus = this.$el && this.$el.contains && this.$el.contains(document.activeElement);
+      const opener = this.returnFocusEl;
+      this.returnFocusEl = null;
+      if (hadFocus && opener) {
+        this.$nextTick(() => {
+          if (opener.isConnected) opener.focus();
+        });
+      }
     },
   },
   methods: {
@@ -175,14 +195,16 @@ export default {
       const editingTag = !this.editingTag;
       this.$emit('update:editingTag', editingTag);
       if (editingTag) {
+        // Remember the Tag button so focus can return to it when editing closes
+        const opener = document.activeElement;
+        this.returnFocusEl = opener && opener !== document.body ? opener : null;
         this.$emit('update:selectedTagId', this.annotation.tagId);
       } else {
         this.$emit('update:selectedTagId', null);
       }
       this.$nextTick(() => {
         // Focus the select for better UX
-        const select = this.$el.querySelector('select[autofocus]');
-        if (select) select.focus();
+        if (this.$refs.tagSelect) this.$refs.tagSelect.focus();
       });
     },
     saveTagChange(tagId) {

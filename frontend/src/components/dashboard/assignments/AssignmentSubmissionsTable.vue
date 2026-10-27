@@ -27,7 +27,7 @@ import FileSaver from "file-saver";
  * Table displaying submissions for a specific assignment.
  *
  * Can be used standalone via the assignmentId prop or with pre-fetched rows.
- * Shows submission metadata (name, user, creation date, study usage) and
+ * Shows submission metadata (name, creation date, last update) and
  * provides actions to download, replace, or delete individual submissions.
  * Supports bulk download as a ZIP archive.
  *
@@ -59,9 +59,8 @@ export default {
       return [
         { name: this.$t("submission.dashboard.columns.id"), key: "id" },
         { name: this.$t("assignments.dashboard.submissionsTable.columns.name"), key: "name" },
-        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName" },
-        { name: this.$t("assignments.dashboard.submissionsTable.columns.studyUsageCount"), key: "studyUsageCount" },
-        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt" },
+        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt", type: "datetime" },
+        { name: this.$t("assignments.dashboard.submissionsTable.columns.updatedAt"), key: "updatedAt", type: "datetime" },
       ];
     },
     hasAdminRights() {
@@ -115,7 +114,8 @@ export default {
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
             description: submission.description || "",
-            createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
           };
         });
     },
