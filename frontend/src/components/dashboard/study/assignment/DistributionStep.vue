@@ -41,6 +41,7 @@ export default {
   inject: {
     selectedReviewer: { type: Array, required: false, default: () => [] },
     selectedAssignments: { type: Array, required: false, default: () => [] },
+    assignmentCount: { type: Number, required: false, default: 0 },
     assignmentType: { type: String, required: false, default: 'document' },
     roles: { type: Array, required: false, default: () => [] },
     reviewerSelectionModeFields: { type: Array, required: false, default: () => [] },
@@ -77,7 +78,8 @@ export default {
           .reduce((a, b) => a + b, 0);
     },
     remainingAssignments() {
-      return this.selectedAssignments.length - this.reviewerNumberOfAssignments;
+      const total = this.assignmentCount || this.selectedAssignments.length;
+      return total - this.reviewerNumberOfAssignments;
     },
     reviewerSelectionFields() {
       return this.selectedReviewer.map(user => ({
@@ -111,9 +113,10 @@ export default {
     },
     numberOfReviews() {
       if (this.reviewerSelectionMode.mode === 'role') {
+        const total = this.assignmentCount || this.selectedAssignments.length;
         return Object.values(this.roleSelection)
             .map(value => parseInt(value, 0))
-            .reduce((a, b) => a + b, 0) * this.selectedAssignments.length;
+            .reduce((a, b) => a + b, 0) * total;
       } else {
         return Object.values(this.reviewerSelection)
             .map(value => parseInt(value, 0))

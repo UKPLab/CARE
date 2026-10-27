@@ -48,7 +48,7 @@
         <!-- Rubric score badge -->
         <span
             class="badge"
-            :class="isGroupSaved ? 'bg-success' : 'bg-secondary'"
+            :class="readOnly || isGroupSaved ? 'bg-success' : 'bg-secondary'"
             :title="$t('assessment.rubric.scoreTitle', { score: groupScore, max: groupMax })"
         >
           {{ $t("assessment.rubric.scoreBadge", { score: groupScore }) }}
