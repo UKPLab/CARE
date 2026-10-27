@@ -122,67 +122,11 @@
             :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
-              <TIcon
-                v-if="c.type === 'icon'"
-                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
-                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
-                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
-                :size="c.typeOptions?.size ?? 16"
-              />
-              <TBadge
-                v-else-if="c.type === 'badge'"
-                :options="c.typeOptions ? c.typeOptions : null"
-                :value="r[c.key]"
-              />
-              <TButton
-                v-else-if="c.type === 'button'"
-                :action="r[c.key].action"
-                :stats="r[c.key].stats"
-                :icon="r[c.key].icon"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
+              <TCell
+                :column="c"
+                :row="r"
                 @action="actionEmitter"
               />
-              <TToggle
-                v-else-if="c.type === 'toggle'"
-                :action="r[c.key].action"
-                :value="r[c.key].value"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
-                @action="actionEmitter"
-              />
-              <span v-else-if="c.type === 'datetime'">
-                {{ formatLocalizedDateTime(r[c.key]) }}
-              </span>
-
-              <span v-else-if="c.type === 'icon-selector'">
-                <LoadIcon
-                  v-if="r[c.key].selected"
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  style="color: yellowgreen"
-                />
-                <LoadIcon
-                  v-else
-                  v-tooltip
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  :title="r[c.key].title"
-                  role="button"
-                  @click="actionEmitter({ action: r[c.key].action, params: r })"
-                />
-              </span>
-              <span
-                v-else
-                :class="{
-                  multiline: c.multiline,
-                }"
-                :style="getMultilineStyles(c)"
-              >
-                {{ r[c.key] }}
-              </span>
             </span>
             <span v-else> - </span>
           </td>
@@ -222,6 +166,7 @@
     :current-page="currentPage"
     :items-per-page="limit"
     :items-per-page-list="itemsPerPageList"
+    :allow-all="true"
     :pages="pages"
     :show-pages="paginationShowPages"
     :total-items="total"
@@ -231,18 +176,13 @@
 </template>
 
 <script>
-import TButton from "./table/Button.vue";
 import TButtonGroup from "./table/ButtonGroup.vue";
-import TToggle from "./table/Toggle.vue";
-import TBadge from "./table/Badge.vue";
-import TIcon from "./table/Icon.vue";
+import TCell from "./table/Cell.vue";
 import Pagination from "./table/Pagination.vue";
 import HeaderCell from "./table/HeaderCell.vue";
-import LoadIcon from "@/basic/Icon.vue";
 import BasicIcon from "@/basic/Icon.vue";
-import { tooltip } from "@/assets/tooltip.js";
-import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
+import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
 import { tableFixedColumnsData, tableFixedColumnsComputed, tableFixedColumnsMethods } from "@/basic/table/helpers/tableFixedColumns.js";
 import { tableDataPipelineData, tableDataPipelineComputed, tableDataPipelineMethods } from "@/basic/table/helpers/tableDataPipeline.js";
 import { tableRowInteractionsData, tableRowInteractionsComputed, tableRowInteractionsMethods } from "@/basic/table/helpers/tableRowInteractions.js";
@@ -282,15 +222,10 @@ export default {
   components: {
     BasicIcon,
     Pagination,
-    TIcon,
-    TBadge,
+    TCell,
     TButtonGroup,
-    TButton,
-    TToggle,
-    LoadIcon,
     HeaderCell,
   },
-  directives: { tooltip },
   inject: {
     acceptStats: {
       default: () => false,
@@ -337,15 +272,10 @@ export default {
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
     return {
-      tableClass: {
-        "table-striped": this.options && this.options.striped,
-        "table-hover": this.options && this.options.hover,
-        "table-bordered": this.options && this.options.bordered,
-        "table-borderless": this.options && this.options.borderless,
-        "table-sm": this.options && this.options.small,
-      },
       selectableRows: this.options && this.options.selectableRows,
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
+      // tableLayout.js
+      ...tableLayoutData(this.options),
       // tableFixedColumns.js
       ...tableFixedColumnsData(),
       // tableDataPipeline.js
@@ -357,31 +287,11 @@ export default {
     };
   },
   computed: {
-    tableWrapperStyle() {
-      if (!this.maxTableHeight) return null;
-      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
-      if (!maxHeight) return null;
-      return {
-        maxHeight,
-        overflowY: "auto",
-      };
-    },
-    emptyColspan() {
-      let colspan = this.visibleColumns.length;
-      if (this.selectableRows) {
-        colspan += 1;
-      }
-      if (this.buttons.length > 0) {
-        colspan += 1;
-      }
-      return colspan;
-    },
-    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
-    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
     visibleColumns() {
-      if (!this.data || this.data.length === 0) return this.columns;
-      return this.columns.filter((c) => this.data.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
+      return visibleColumnsForRows(this.columns, this.data);
     },
+    // tableLayout.js
+    ...tableLayoutComputed,
     // tableFixedColumns.js
     ...tableFixedColumnsComputed,
     // tableDataPipeline.js
@@ -392,6 +302,8 @@ export default {
   watch: {
     currentData: {
       handler() {
+        // The parent's v-model target may already be gone while the table unmounts
+        if (this._unmounting) return;
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -399,8 +311,10 @@ export default {
       deep: true,
     },
     modelValue: {
-      handler() {
-        this.currentData = this.updateValues(this.modelValue);
+      handler(value) {
+        // Our own emit echoing back: keep the selection array (and its reactivity) as is
+        if (deepEqual(this.currentData, value)) return;
+        this.currentData = this.updateValues(value);
       },
       deep: true,
     },
@@ -466,31 +380,16 @@ export default {
     }
   },
   created() {
-    this.debouncedComputeFixedColumns = this.debounce(() => {
-      this.computeFixedColumnStyles();
-    }, 150);
+    this.initFixedColumns();
   },
   beforeUnmount() {
+    this._unmounting = true;
     this.cleanupFixedColumns();
     this.cleanupAllObserver();
   },
   methods: {
-    formatLocalizedDateTime,
-    normalizeCssSize(value) {
-      if (!value) return null;
-      if (typeof value === "number" && !Number.isNaN(value)) {
-        return `${value}px`;
-      }
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (!trimmed) return null;
-        if (/^\d+$/.test(trimmed)) {
-          return `${trimmed}px`;
-        }
-        return trimmed;
-      }
-      return null;
-    },
+    // tableLayout.js
+    ...tableLayoutMethods,
     // tableFixedColumns.js
     ...tableFixedColumnsMethods,
     // tableDataPipeline.js
@@ -505,38 +404,9 @@ export default {
 };
 </script>
 
+<style scoped src="./table/table.css"></style>
+
 <style scoped>
-.table-wrapper {
-  position: relative;
-  overflow-x: auto;
-  min-height: 80px;
-  margin-bottom: 1rem;
-}
-
-.table {
-  width: max-content;
-  min-width: 100%;
-  border-spacing: 0;
-  border-collapse: separate;
-}
-
-.table-fixed {
-  position: sticky;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-fixed-left.table-fixed-shadow {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table-fixed-right.table-fixed-shadow {
-  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table thead .table-fixed {
-  z-index: 3;
-}
-
 .form-check-input:disabled {
   cursor: not-allowed;
   pointer-events: initial;
@@ -544,52 +414,4 @@ export default {
   background-color: var(--bs-secondary-bg, #d8d8d8);
   border: 1px solid var(--bs-border-color, gray);
 }
-
-.pointer {
-  cursor: pointer;
-}
-
-.multiline {
-  display: -webkit-box;
-  -webkit-line-clamp: var(--line-clamp, 2);
-  line-clamp: var(--line-clamp, 2);
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.table-wrapper thead th {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed,
-.table-wrapper thead th.table-fixed-left,
-.table-wrapper thead th.table-fixed-right {
-  z-index: 6 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed-right {
-  z-index: 7 !important;
-}
-
-.table-wrapper tbody td.table-fixed,
-.table-wrapper tbody td.table-fixed-left,
-.table-wrapper tbody td.table-fixed-right {
-  z-index: 2 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.input-group.input-group-sm,
-.input-group.input-group-sm .input-group-text,
-.input-group.input-group-sm .form-control {
-  position: relative;
-  z-index: 20;
-}
-
 </style>
