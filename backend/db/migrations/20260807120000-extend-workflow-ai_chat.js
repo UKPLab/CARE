@@ -77,8 +77,9 @@ async function cloneWorkflow(queryInterface, Sequelize, variant, transaction) {
             transaction,
         },
     );
+    // Installs without the source workflow get no AI Chat variant.
     if (!sourceWorkflow) {
-        throw new Error(`Workflow not found: ${variant.sourceName}`);
+        return;
     }
 
     const sourceSteps = await queryInterface.sequelize.query(
@@ -94,7 +95,7 @@ async function cloneWorkflow(queryInterface, Sequelize, variant, transaction) {
         },
     );
     if (!sourceSteps.length) {
-        throw new Error(`Workflow has no steps: ${variant.sourceName}`);
+        return;
     }
 
     const now = new Date();
