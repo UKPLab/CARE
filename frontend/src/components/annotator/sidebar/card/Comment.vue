@@ -407,7 +407,7 @@ export default {
               variant: "danger",
             });
           } else {
-            this.trackCommentUpdate(previousText, updatedText);
+            this.logCommentUpdate(previousText, updatedText);
             this.commentTextBeforeEdit = updatedText;
           }
         });
@@ -528,7 +528,7 @@ export default {
      * @param {string} updatedText - Saved text.
      * @returns {void}
      */
-    trackCommentUpdate(previousText, updatedText) {
+    logCommentUpdate(previousText, updatedText) {
       if (!this.acceptStats || previousText === updatedText) return;
       this.$socket.emit("stats", {
         action: "commentUpdated",

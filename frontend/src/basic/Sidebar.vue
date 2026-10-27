@@ -349,13 +349,13 @@ export default {
 
   },
   beforeUnmount() {
-    this.trackSidebarSlotDuration();
+    this.logSidebarSlotDuration();
     window.removeEventListener('resize', this.onResize);
   },
   methods: {
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
-      this.trackSidebarSlotDuration();
+      this.logSidebarSlotDuration();
       const newSlot = slotName;
       this.internalActiveSlot = newSlot;
 
@@ -505,7 +505,7 @@ export default {
       if (this.isSidebarVisible) {
         this.startSidebarSlotTimer();
       } else {
-        this.trackSidebarSlotDuration();
+        this.logSidebarSlotDuration();
       }
       this.$emit('sidebar-visibility-change', this.isSidebarVisible);
       if (this.acceptStats) {
@@ -535,7 +535,7 @@ export default {
      *
      * @returns {void}
      */
-    trackSidebarSlotDuration() {
+    logSidebarSlotDuration() {
       if (!this.acceptStats || !this.activeSlotStartedAt || !this.resolvedActiveSlot) return;
       const durationMs = Date.now() - this.activeSlotStartedAt;
       this.activeSlotStartedAt = null;

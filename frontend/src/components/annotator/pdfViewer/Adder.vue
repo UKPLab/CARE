@@ -198,8 +198,7 @@ export default {
       return this.study.anonymize;
     },
     hasAiChat() {
-      const step = this.currentStudyStep?.value || this.currentStudyStep;
-      const services = step?.configuration?.services || [];
+      const services = this.currentStudyStep?.configuration?.services || [];
       return services.some((service) => service.type === "aiChat");
     }
 

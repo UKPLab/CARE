@@ -284,7 +284,7 @@ export default {
             if (value === null) {
               const workflowStepId = this.currentData[index]?.id;
               const workflowStep = this.workflowSteps.find((s) => s.id === workflowStepId);
-              if (workflowStep && [2, 4].includes(Number(workflowStep.stepType))) {
+              if (workflowStep && [2, 4].includes(workflowStep.stepType)) {
                 return true;
               }
               return false;

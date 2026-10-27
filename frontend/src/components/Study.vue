@@ -365,14 +365,14 @@ export default {
         const prev = steps[i - 1];
         const prevLoaded = this.isStepLoaded(prev.id);
         const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
-        const prevRequiresReady = prevHasAssessment || Number(prev.stepType) === 4;
+        const prevRequiresReady = prevHasAssessment || prev.stepType === 4;
 
         const readyMap = this.stepsReady || {};
         const hasEntry = Object.hasOwn(readyMap, prev.id);
 
         const prevReady = prevRequiresReady
             ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
-            : true;                                  // no assessment → always ready
+            : true;                                  // nothing to wait for → always ready
 
         acc[step.id] = prevLoaded && prevReady;
         return acc;
@@ -604,7 +604,7 @@ export default {
     },
     isStepLoaded(stepId) {
       const step = this.studySteps.find((entry) => Number(entry.id) === Number(stepId));
-      if (Number(step?.stepType) === 4) {
+      if (step?.stepType === 4) {
         return true;
       }
       if (stepId in this.loadingReady) {

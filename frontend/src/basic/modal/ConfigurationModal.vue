@@ -177,12 +177,14 @@ export default {
         return true;
       });
     },
+    workflowStep() {
+      return this.workflowSteps.find(s => s.id === this.studyStepId);
+    },
     generalFields() {
-      return this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings?.fields || [];
+      return this.workflowStep?.configuration?.settings?.fields || [];
     },
     isDialogueStep() {
-      const step = this.workflowSteps.find(s => s.id === this.studyStepId);
-      return Number(step?.stepType) === 4;
+      return this.workflowStep?.stepType === 4;
     },
   },
   mounted() {
