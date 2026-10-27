@@ -178,7 +178,10 @@ export default {
           {name: this.$t("common.lastName"), key: "lastName"},
         );
       }
-      columns.push({name: this.$t("common.createdAt"), key: "createdAt", sortable: true});
+      columns.push(
+        {name: this.$t("dashboard.study.roles"), key: "rolesNames"},
+        {name: this.$t("common.createdAt"), key: "createdAt", sortable: true},
+      );
       return columns;
     },
     submissionFilterSchema() {
@@ -193,6 +196,13 @@ export default {
         schema.lastName = {label: this.$t("common.lastName"), type: "text"};
       }
       schema.createdAt = {label: this.$t("common.createdAt"), type: "date"};
+      schema.rolesNames = {
+        label: this.$t("dashboard.study.roles"),
+        type: "enum",
+        operators: ["%"],
+        options: [...new Set((this.$store.getters["admin/getSystemRoles"] || []).map((role) => role.name))]
+            .map((name) => ({value: name, label: name})),
+      };
       return schema;
     },
     submissionSearchColumns() {
