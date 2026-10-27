@@ -51,6 +51,7 @@
             "annotationsOfStep": "{step}: Anmerkungen",
             "assessmentOfStep": "{step}: Bewertung",
             "flip": "Seiten tauschen",
+            "currentStep": "Aktueller Schritt",
             "split": {
                 "row": "Nebeneinander teilen",
                 "column": "Übereinander teilen"

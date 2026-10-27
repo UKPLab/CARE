@@ -34,8 +34,13 @@
             @sidebar-action="handleButtonAction"
         >
           <template #annotations>
-            <SidebarTemplate icon="pencil-square" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
+            <SidebarTemplate icon="pencil-square" :number="stepNumber" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
               <template #content>
+                <!-- In a study step that can look back, the step's own tab says so -->
+                <div v-if="stepNumber" class="small text-secondary d-flex align-items-center gap-1 px-2 pt-2">
+                  <LoadIcon icon-name="pencil-fill" :size="12"/>
+                  {{ $t('components.studyRoute.panes.currentStep') }}
+                </div>
                 <AnnotationSidebar
                   ref="sidebar"
                   @new-anno-card="changeSideBarView"
@@ -107,12 +112,14 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
     SidebarTemplate,
+    LoadIcon,
     PDFViewer,
     AnnotationSidebar,
     Loader,
@@ -182,6 +189,12 @@ export default {
     },
     activeSidebar: {
       type: String,
+      required: false,
+      default: null,
+    },
+    // In a study step that can look back: the step's number, shown on its own sidebar tab like on the earlier ones
+    stepNumber: {
+      type: Number,
       required: false,
       default: null,
     },

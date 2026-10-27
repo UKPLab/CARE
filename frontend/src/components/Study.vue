@@ -171,14 +171,19 @@
             <Annotator
                 v-if="step.stepType === 1"
                 v-bind="lookBack.paneProps[step.id]"
+                :step-number="ownTabNumber(step)"
                 :document-id="step.documentId"
                 :study-step-id="step.id"
                 @error="error"
                 @update:data="updateStudyData(step.id, 'annotator', $event)"
             >
               <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" :title="$t('assessment.title')">
+                <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
                   <template #content>
+                    <div v-if="ownTabNumber(step)" class="small text-secondary d-flex align-items-center gap-1 px-2 pt-2">
+                      <LoadIcon icon-name="pencil-fill" :size="12"/>
+                      {{ $t('components.studyRoute.panes.currentStep') }}
+                    </div>
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
@@ -208,8 +213,12 @@
                 @update:data="updateStudyData(step.id, 'editor', $event)"
             >
               <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" :title="$t('assessment.title')">
+                <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
                   <template #content>
+                    <div v-if="ownTabNumber(step)" class="small text-secondary d-flex align-items-center gap-1 px-2 pt-2">
+                      <LoadIcon icon-name="pencil-fill" :size="12"/>
+                      {{ $t('components.studyRoute.panes.currentStep') }}
+                    </div>
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
@@ -571,6 +580,10 @@ export default {
     }
   },
   methods: {
+    // A step that can look back numbers its own sidebar tabs too, so they read like the workflow bar
+    ownTabNumber(step) {
+      return this.lookBack.tabsByStep[step.id]?.length ? this.orderedStudySteps.indexOf(step) + 1 : null;
+    },
     /**
      * Move keyboard focus to the forward control after the final assessment
      * criterion is marked done. Under forcedAssessment the button is enabled

@@ -4,10 +4,6 @@
     <!-- Which earlier step this tab shows, in the style of the label on that step's document -->
     <div class="look-back-header d-flex align-items-center gap-2 px-2 pt-2">
       <span class="badge">{{ label }}</span>
-      <span class="small text-secondary d-flex align-items-center gap-1">
-        <LoadIcon icon-name="lock-fill" :size="12"/>
-        {{ $t('common.readOnly') }}
-      </span>
     </div>
     <AnnotationSidebar v-if="type === 'annotations'"/>
     <Assessment
@@ -26,13 +22,12 @@
  */
 import AnnotationSidebar from "@/components/annotator/sidebar/Sidebar.vue";
 import Assessment from "@/components/study/Assessment.vue";
-import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
 import {ObserveVisibility} from "vue3-observe-visibility";
 
 export default {
   name: "LookBackPanel",
-  components: {AnnotationSidebar, Assessment, LoadIcon},
+  components: {AnnotationSidebar, Assessment},
   directives: {ObserveVisibility},
   provide() {
     // The content takes its document and step from here, so it shows the earlier step and cannot be edited
