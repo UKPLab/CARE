@@ -140,9 +140,31 @@ export default {
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
     },
+    assignmentOptions() {
+      return this.$store.getters["table/assignment/getAll"].map((assignment) => ({
+        value: assignment.id,
+        label: `${assignment.name} (#${assignment.id})`,
+      }));
+    },
+    assignmentColumn() {
+      return {
+        name: this.$t("common.assignment"),
+        key: "assignmentId",
+        type: "badge",
+        typeOptions: {
+          keyMapping: {
+            ...Object.fromEntries(this.assignmentOptions.map(({value, label}) => [value, label])),
+            null: this.$t("common.none"),
+            default: this.$t("common.unknown"),
+          },
+          classMapping: {default: "bg-secondary"},
+        },
+      };
+    },
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
         const newD = {...d};
+        newD.assignmentId = d.assignmentId ?? null;
         newD.type = d.type === 0
           ? this.$t("dashboard.study.typePdf")
           : this.$t("dashboard.study.typeHtml");
@@ -155,6 +177,10 @@ export default {
       return [
         {name: this.$t("common.id"), key: "id"},
         {name: this.$t("dashboard.study.typeDocument"), key: "name"},
+        {
+          ...this.assignmentColumn,
+          filter: this.assignmentOptions.map(({value, label}) => ({key: value, name: label})),
+        },
         {name: this.$t("common.firstName"), key: "firstName"},
         {name: this.$t("common.lastName"), key: "lastName"},
       ];
@@ -178,12 +204,21 @@ export default {
           {name: this.$t("common.lastName"), key: "lastName"},
         );
       }
-      columns.push({name: this.$t("common.createdAt"), key: "createdAt", sortable: true});
+      columns.push(
+        this.assignmentColumn,
+        {name: this.$t("common.createdAt"), key: "createdAt", sortable: true},
+      );
       return columns;
     },
     submissionFilterSchema() {
       const schema = {
         id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
+        assignmentId: {
+          label: this.$t("common.assignment"),
+          type: "enum",
+          operators: ["%"],
+          options: this.assignmentOptions,
+        },
       };
       if (this.canReadPublicInformation) {
         schema.userName = {label: this.$t("common.userName"), type: "text"};
