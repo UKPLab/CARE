@@ -141,7 +141,20 @@
         "studyTitle": "Étude : {name}",
         "studyTitleWithAuthor": "Étude : {name} (de {author})",
         "noName": "<sans nom>",
-        "noDueDate": "pas de date limite"
+        "noDueDate": "pas de date limite",
+        "title": "Mes sessions",
+        "showSessions": "Afficher les sessions",
+        "hideSessions": "Masquer les sessions",
+        "inProgress": "En cours",
+        "finished": "Terminée",
+        "notStartedYet": "Pas encore commencée",
+        "startedOn": "Commencée {date}",
+        "noSessionsInStudy": "Vous n'avez aucune session dans cette étude.",
+        "finishedCount": "{count} terminée(s)",
+        "copiedFrom": "Copie de la session #{id}",
+        "resumable": "Reprenable",
+        "dueIn": "{time} restant",
+        "closedOn": "Clôturée {date}"
     },
     "modalTitle": {
         "createTemplate": "Créer un modèle",

@@ -144,7 +144,20 @@
     "studyTitle": "Study: {name}",
     "studyTitleWithAuthor": "Study: {name} (from {author})",
     "noName": "<no name>",
-    "noDueDate": "no due date"
+    "noDueDate": "no due date",
+    "title": "My Sessions",
+    "showSessions": "Show sessions",
+    "hideSessions": "Hide sessions",
+    "inProgress": "In progress",
+    "finished": "Finished",
+    "notStartedYet": "Not started yet",
+    "startedOn": "Started {date}",
+    "noSessionsInStudy": "You have no sessions in this study.",
+    "finishedCount": "{count} finished",
+    "copiedFrom": "Copied from session #{id}",
+    "resumable": "Resumable",
+    "dueIn": "{time} left",
+    "closedOn": "Closed {date}"
   },
   "modalTitle": {
     "createTemplate": "Create Template",

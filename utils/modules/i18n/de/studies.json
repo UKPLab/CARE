@@ -144,7 +144,20 @@
     "studyTitle": "Studie: {name}",
     "studyTitleWithAuthor": "Studie: {name} (von {author})",
     "noName": "<kein Name>",
-    "noDueDate": "keine Frist"
+    "noDueDate": "keine Frist",
+    "title": "Meine Sitzungen",
+    "showSessions": "Sitzungen anzeigen",
+    "hideSessions": "Sitzungen ausblenden",
+    "inProgress": "In Bearbeitung",
+    "finished": "Abgeschlossen",
+    "notStartedYet": "Noch nicht gestartet",
+    "startedOn": "Gestartet {date}",
+    "noSessionsInStudy": "Sie haben keine Sitzungen in dieser Studie.",
+    "finishedCount": "{count} abgeschlossen",
+    "copiedFrom": "Kopie von Sitzung #{id}",
+    "resumable": "Fortsetzbar",
+    "dueIn": "noch {time}",
+    "closedOn": "Geschlossen {date}"
   },
   "modalTitle": {
     "createTemplate": "Vorlage erstellen",
