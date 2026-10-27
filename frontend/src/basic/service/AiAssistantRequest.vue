@@ -93,7 +93,7 @@ export default {
         if (!this.abortRequested && !this.disposed) this.$emit("complete", result);
       } catch (error) {
         if (!this.abortRequested && !this.disposed) {
-          this.$emit("failed", error);
+          this.$emit("failed", error, this.dispatched);
         }
       } finally {
         this.settled = true;

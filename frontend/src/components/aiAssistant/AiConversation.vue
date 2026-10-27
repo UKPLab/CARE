@@ -213,26 +213,30 @@ export default {
     },
   },
   watch: {
-    aborting: {
-      flush: "sync",
-      handler(aborting) {
-        if (aborting) this.clearStream();
-      },
+    aborting(aborting) {
+      if (aborting) this.clearStream();
     },
-    activeRequest: {
-      flush: "sync",
-      handler(request) {
-        this.clearStream();
-        this.streamRequestId = request?.requestId || null;
-      },
+    activeRequest(request) {
+      this.clearStream();
+      this.streamRequestId = request?.requestId || null;
     },
-    studySessionId() { this.changeContext(); },
-    studyStepId() { this.changeContext(); },
+    studySessionId() {
+      this.changeContext();
+    },
+    studyStepId() {
+      this.changeContext();
+    },
   },
   sockets: {
-    connect() { this.loadConversation({silent: true}); },
-    disconnect() { this.clearStream(); },
-    serviceRefresh(data) { this.handleConversationDelta(data); },
+    connect() {
+      this.loadConversation({silent: true});
+    },
+    disconnect() {
+      this.clearStream();
+    },
+    serviceRefresh(data) {
+      this.handleConversationDelta(data);
+    },
   },
   created() {
     // Reading selections are broadcast globally; keep only this step's quotes.
@@ -299,11 +303,12 @@ export default {
     /**
      * Discards the preview before recovering the persisted failure state.
      * @param {Error} error - Request failure.
+     * @param {boolean} dispatched - Whether the request reached the server.
      * @returns {Promise<void>}
      */
-    async handleChatRequestFailed(error) {
+    async handleChatRequestFailed(error, dispatched) {
       this.clearStream();
-      await this.handleRequestFailed(error);
+      await this.handleRequestFailed(error, dispatched);
       this.focusComposer();
     },
     /** Aborts the active request and restores the Chat input when available. */
@@ -483,9 +488,9 @@ export default {
     /**
      * Sends the current draft as one conversation turn.
      *
-     * @returns {Promise<void>}
+     * @returns {void}
      */
-    async sendMessage() {
+    sendMessage() {
       if (!this.canSend) return;
       const question = this.draft.trim();
       const quote = this.quote;
@@ -509,9 +514,9 @@ export default {
      * Retries the selected assistant message.
      *
      * @param {Object} message - Assistant message.
-     * @returns {Promise<void>}
+     * @returns {void}
      */
-    async retryMessage(message) {
+    retryMessage(message) {
       if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) return;
       this.errorMessage = "";
       const requestId = this.$aiAssistant.createRequestId();

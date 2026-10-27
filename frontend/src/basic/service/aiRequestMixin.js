@@ -215,12 +215,12 @@ export default {
      * Handles one failed assistant request by re-syncing server state.
      *
      * @param {Error} error - Request error.
+     * @param {boolean} dispatched - Whether the request reached the server.
      * @returns {Promise<void>}
      */
-    async handleRequestFailed(error) {
+    async handleRequestFailed(error, dispatched) {
       const request = this.activeRequest;
       if (!request) return;
-      const dispatched = this.$refs.aiAssistantRequest?.dispatched;
       this.errorMessage = error.key || error.message ? resolveApiMessage(error) : this.requestFailedText;
       if (dispatched) {
         this.recoverableRequest = request;

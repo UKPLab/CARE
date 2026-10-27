@@ -168,11 +168,21 @@ export default {
     };
   },
   computed: {
-    requestFailedText() { return this.$t("ai.dialogue.errors.requestFailed"); },
-    abortFailedText() { return this.$t("ai.dialogue.errors.abortFailed"); },
-    title() { return this.plan?.title || this.$t("workflow.stepTypes.dialogue"); },
-    questionHelp() { return this.complete ? "" : this.currentQuestion?.help || ""; },
-    progressTotal() { return Number(this.plan?.totalQuestions) || 0; },
+    requestFailedText() {
+      return this.$t("ai.dialogue.errors.requestFailed");
+    },
+    abortFailedText() {
+      return this.$t("ai.dialogue.errors.abortFailed");
+    },
+    title() {
+      return this.plan?.title || this.$t("workflow.stepTypes.dialogue");
+    },
+    questionHelp() {
+      return this.complete ? "" : this.currentQuestion?.help || "";
+    },
+    progressTotal() {
+      return Number(this.plan?.totalQuestions) || 0;
+    },
     progressCurrent() {
       if (this.complete) return this.progressTotal;
       return Number(this.currentQuestion?.number) || 1;
@@ -213,8 +223,12 @@ export default {
     },
   },
   watch: {
-    studySessionId() { this.changeContext(); },
-    studyStepId() { this.changeContext(); },
+    studySessionId() {
+      this.changeContext();
+    },
+    studyStepId() {
+      this.changeContext();
+    },
     activeQuestionMessageId: {
       handler(messageId) {
         if (messageId) this.$nextTick(() => this.logQuestionShown(messageId));
@@ -229,7 +243,9 @@ export default {
     },
   },
   sockets: {
-    connect() { this.loadDialogue({silent: true}); },
+    connect() {
+      this.loadDialogue({silent: true});
+    },
   },
   mounted() {
     this.loadDialogue();
@@ -279,7 +295,7 @@ export default {
       const key = [dialogue.kind, dialogue.questionId, dialogue.followUpIndex || 0].join(":");
       if (this.shownQuestionKeys.has(key)) return;
       this.shownQuestionKeys.add(key);
-      this.logDialogueEvent("dialogueQuestionShown", {
+      this.logDialogueEvent("dialogueQuestionShow", {
         questionId: dialogue.questionId,
         followUpIndex: dialogue.followUpIndex || 0,
       });
@@ -341,7 +357,7 @@ export default {
       if (this.readOnly || this.isBusy || !this.currentQuestion || (this.retryableMessageId && !skipped)) return;
       if (skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) return;
       const requestId = this.$aiAssistant.createRequestId();
-      this.logDialogueEvent("dialogueAnswerSubmitted", {
+      this.logDialogueEvent("dialogueAnswerSubmit", {
         requestId,
         questionId: this.currentQuestion.id,
       });

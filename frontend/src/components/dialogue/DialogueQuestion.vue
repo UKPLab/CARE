@@ -27,66 +27,38 @@
           <AiMessageMarkdown v-else :text="turn.question.content || ''" />
         </div>
 
-        <div v-if="turn.answer" class="dialogue-answer border-start ps-3 mt-3">
-          <div class="small text-muted mb-1">{{ $t('ai.dialogue.yourAnswer') }}</div>
-          <div class="answer-content">{{ answerText(turn.answer) }}</div>
-        </div>
-
-        <AiConversationMessage
-            v-if="turn.response"
-            class="mt-3"
-            :message="turn.response"
-            :retryable="isRetryable(turn.response)"
-            :is-busy="isBusy"
-            @retry="$emit('retry', $event)"
-        />
-
-        <DialogueAnswerInput
-            v-if="isActiveQuestion(turn.question)"
-            class="mt-3"
-            :question="questionFromMessage(turn.question)"
-            :read-only="readOnly"
-            :is-busy="isBusy"
-            :active-request="activeRequest"
-            :sending="sending"
-            :aborting="aborting"
-            :allow-skip="allowSkip"
-            @send="$emit('send', $event)"
-            @abort="$emit('abort')"
-            @typing-started="$emit('typing-started', $event)"
-            @paste="$emit('paste', $event)"
-        />
-
         <div
-            v-for="followUp in turn.followUps"
-            :key="followUp.id"
-            class="dialogue-follow-up border-start ps-3 mt-3"
+            v-for="(entry, index) in entries"
+            :key="entry.id"
+            :class="{'dialogue-follow-up border-start ps-3 mt-3': index > 0}"
         >
-          <div :class="markerClass(followUp.question)" class="mb-2">
-            {{ marker(followUp.question) }}
-          </div>
-          <div class="assistant-message">
-            <AiMessageMarkdown :text="followUp.question.content || ''" />
-          </div>
+          <template v-if="index > 0">
+            <div :class="markerClass(entry.question)" class="mb-2">
+              {{ marker(entry.question) }}
+            </div>
+            <div class="assistant-message">
+              <AiMessageMarkdown :text="entry.question.content || ''" />
+            </div>
+          </template>
 
-          <div v-if="followUp.answer" class="dialogue-answer border-start ps-3 mt-3">
+          <div v-if="entry.answer" class="dialogue-answer border-start ps-3 mt-3">
             <div class="small text-muted mb-1">{{ $t('ai.dialogue.yourAnswer') }}</div>
-            <div class="answer-content">{{ answerText(followUp.answer) }}</div>
+            <div class="answer-content">{{ answerText(entry.answer) }}</div>
           </div>
 
           <AiConversationMessage
-              v-if="followUp.response"
+              v-if="entry.response"
               class="mt-3"
-              :message="followUp.response"
-              :retryable="isRetryable(followUp.response)"
+              :message="entry.response"
+              :retryable="isRetryable(entry.response)"
               :is-busy="isBusy"
               @retry="$emit('retry', $event)"
           />
 
           <DialogueAnswerInput
-              v-if="isActiveQuestion(followUp.question)"
+              v-if="isActiveQuestion(entry.question)"
               class="mt-3"
-              :question="questionFromMessage(followUp.question)"
+              :question="questionFromMessage(entry.question)"
               :read-only="readOnly"
               :is-busy="isBusy"
               :active-request="activeRequest"
@@ -173,9 +145,11 @@ export default {
     anchoredQuestionParts() {
       return splitDialogueQuestionText(this.turn.question);
     },
+    entries() {
+      return [this.turn, ...(this.turn.followUps || [])];
+    },
     hasActiveQuestion() {
-      return this.isActiveQuestion(this.turn.question)
-          || (this.turn.followUps || []).some((followUp) => this.isActiveQuestion(followUp.question));
+      return this.entries.some((entry) => this.isActiveQuestion(entry.question));
     },
   },
   methods: {
