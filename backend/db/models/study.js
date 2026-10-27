@@ -675,6 +675,9 @@ module.exports = (sequelize, DataTypes) => {
          * @throws {TranslatableError} when a known scope key is present but unusable
          */
         static async getQueryTableScopeFilter(scope, ctx = {}) {
+            if (scope?.mySessions) {
+                return Study.mySessionsScopeFilter(scope.mySessions, ctx);
+            }
             if (!scope?.dashboard) {
                 return null;
             }
@@ -697,6 +700,57 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * `scope.mySessions`: the "My Sessions" dashboard. Studies in which the viewer has a
+         * (not deleted) study session — for every viewer, fullAccess included, since the page is
+         * about the viewer's own participation. Narrows the ACL, which already admits these
+         * studies through the study_session access rule.
+         *
+         * - `{state: "active"}`: still open: not closed, and either no end, an end in the future,
+         *   or multiple submissions allowed (same rule as StudySession.vue `isStudyAvailable`).
+         * - `{state: "closed"}`: the rest.
+         *
+         * @param {{state: "active"|"closed"}} params
+         * @param {Object} ctx
+         * @param {number} ctx.userId
+         * @returns {Object} WHERE fragment
+         * @throws {TranslatableError} on an unknown state or a missing viewer
+         */
+        static mySessionsScopeFilter(params, ctx = {}) {
+            const userId = positiveInt(ctx.userId);
+            const state = params?.state;
+            if (!userId || (state !== "active" && state !== "closed")) {
+                throw new TranslatableError("errors.queryTable.scopeInvalid");
+            }
+            const participated = {
+                id: {
+                    [Op.in]: sequelize.literal(
+                        '(SELECT "study_session"."studyId" FROM "study_session"'
+                        + ' WHERE "study_session"."deleted" = false'
+                        + ` AND "study_session"."userId" = ${userId})`
+                    ),
+                },
+            };
+            const active = {
+                [Op.and]: [
+                    {closed: null},
+                    {
+                        [Op.or]: [
+                            {end: null},
+                            {end: {[Op.gte]: new Date()}},
+                            {multipleSubmit: true},
+                        ],
+                    },
+                ],
+            };
+            return {
+                [Op.and]: [
+                    participated,
+                    state === "active" ? active : {[Op.not]: active},
+                ],
+            };
+        }
+
+        /**
          * Related fields to attach in queryTable / query-mode deltas.
          * @param {Object} ctx
          * @param {function(string): Promise<boolean>} ctx.hasAccess
@@ -706,6 +760,21 @@ module.exports = (sequelize, DataTypes) => {
             const injects = [
                 {type: "count", table: "study_session", by: "studyId", as: "sessions"},
             ];
+            // The viewer's own sessions ("My Sessions" cards). `where` replaces the default
+            // deleted filter of a count inject, so it is repeated here.
+            const viewerId = positiveInt(ctx.userId);
+            if (viewerId) {
+                injects.push(
+                    {
+                        type: "count", table: "study_session", by: "studyId", as: "mySessions",
+                        where: {deleted: false, userId: viewerId},
+                    },
+                    {
+                        type: "count", table: "study_session", by: "studyId", as: "mySessionsFinished",
+                        where: {deleted: false, userId: viewerId, end: {[Op.ne]: null}},
+                    },
+                );
+            }
             if (await ctx.hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
                 injects.push({
                     type: "parent",
