@@ -184,22 +184,30 @@ export default {
       return Number(this.plan?.totalQuestions) || 0;
     },
     progressCurrent() {
-      if (this.complete) return this.progressTotal;
+      if (this.complete) {
+        return this.progressTotal;
+      }
       return Number(this.currentQuestion?.number) || 1;
     },
     progressPercent() {
-      if (!this.progressTotal) return 0;
+      if (!this.progressTotal) {
+        return 0;
+      }
       return Math.min(100, Math.round((this.progressCurrent / this.progressTotal) * 100));
     },
     progressLabel() {
-      if (this.complete) return this.$t("ai.dialogue.complete");
+      if (this.complete) {
+        return this.$t("ai.dialogue.complete");
+      }
       return this.$t("ai.dialogue.progress", {current: this.progressCurrent, total: this.progressTotal});
     },
     visibleMessages() {
       const base = this.messages.length || !this.currentQuestion
           ? this.messages
           : [buildDialogueQuestionMessage(this.currentQuestion)];
-      if (!this.pendingAnswer) return base;
+      if (!this.pendingAnswer) {
+        return base;
+      }
       return [
         ...base,
         buildDialogueAnswerMessage(this.currentQuestion, this.pendingAnswer, this.pendingSkipped),
@@ -208,7 +216,9 @@ export default {
     },
     activeQuestionMessageId() {
       const questionId = this.activeRequest?.questionId || (!this.complete && this.currentQuestion?.id);
-      if (!questionId) return null;
+      if (!questionId) {
+        return null;
+      }
       const latestQuestion = [...this.visibleMessages].reverse()
           .find((message) =>
             isDialogueQuestion(message)
@@ -231,7 +241,9 @@ export default {
     },
     activeQuestionMessageId: {
       handler(messageId) {
-        if (messageId) this.$nextTick(() => this.logQuestionShown(messageId));
+        if (messageId) {
+          this.$nextTick(() => this.logQuestionShown(messageId));
+        }
       },
       immediate: true,
     },
@@ -271,7 +283,9 @@ export default {
      * @returns {void}
      */
     logDialogueEvent(action, data = {}) {
-      if (!this.acceptStats) return;
+      if (!this.acceptStats) {
+        return;
+      }
       this.$socket.emit("stats", {
         action,
         data: {
@@ -290,10 +304,14 @@ export default {
      */
     logQuestionShown(messageId) {
       const message = this.visibleMessages.find((entry) => String(entry.id) === String(messageId));
-      if (!message) return;
+      if (!message) {
+        return;
+      }
       const dialogue = message.metadata?.dialogue || {};
       const key = [dialogue.kind, dialogue.questionId, dialogue.followUpIndex || 0].join(":");
-      if (this.shownQuestionKeys.has(key)) return;
+      if (this.shownQuestionKeys.has(key)) {
+        return;
+      }
       this.shownQuestionKeys.add(key);
       this.logDialogueEvent("dialogueQuestionShow", {
         questionId: dialogue.questionId,
@@ -320,7 +338,9 @@ export default {
           studyStepId: context.studyStepId,
           conversationId: context.conversationId,
         });
-        if (!this.isCurrentSnapshotLoad(context)) return false;
+        if (!this.isCurrentSnapshotLoad(context)) {
+          return false;
+        }
         this.conversationSnapshot = {
           activeConversationId: result.activeConversationId,
           messages: result.messages || [],
@@ -335,14 +355,20 @@ export default {
           conversationId: result.activeConversationId,
           complete: this.complete,
         });
-        if (settled) this.clearActiveRequest();
+        if (settled) {
+          this.clearActiveRequest();
+        }
         return true;
       } catch (error) {
-        if (!this.isCurrentSnapshotLoad(context)) return false;
+        if (!this.isCurrentSnapshotLoad(context)) {
+          return false;
+        }
         this.errorMessage = resolveApiMessage(error, "ai.dialogue.errors.loadFailed");
         return false;
       } finally {
-        if (context.loadId === this.snapshotLoadId) this.loading = false;
+        if (context.loadId === this.snapshotLoadId) {
+          this.loading = false;
+        }
         this.scrollToBottom();
       }
     },
@@ -354,8 +380,12 @@ export default {
      */
     sendAnswer(answer) {
       const skipped = answer.skipped === true;
-      if (this.readOnly || this.isBusy || !this.currentQuestion || (this.retryableMessageId && !skipped)) return;
-      if (skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) return;
+      if (this.readOnly || this.isBusy || !this.currentQuestion || (this.retryableMessageId && !skipped)) {
+        return;
+      }
+      if (skipped ? !this.plan.allowSkip : !answer.answerText?.trim()) {
+        return;
+      }
       const requestId = this.$aiAssistant.createRequestId();
       this.logDialogueEvent("dialogueAnswerSubmit", {
         requestId,
@@ -383,7 +413,9 @@ export default {
      * @returns {void}
      */
     retryMessage(message) {
-      if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) return;
+      if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) {
+        return;
+      }
       this.errorMessage = "";
       this.startRequest({
         type: "retry",
@@ -402,7 +434,6 @@ export default {
       this.applyConversationResult(result);
       this.currentQuestion = result.currentQuestion || null;
       this.complete = !!result.complete;
-      if (result.plan) this.plan = result.plan;
       this.$emit("update:data", {
         conversationId: result.conversationId,
         complete: this.complete,

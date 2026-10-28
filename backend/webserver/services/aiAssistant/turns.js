@@ -120,17 +120,16 @@ async function abortPendingMessage(service, client, data, descriptor) {
     }
     await core.loadOwnedConversation(service, conversation.id, userId, conversation.studySessionId, descriptor);
 
-    // Stop the provider first; the shared abort only finds requests that are still in progress.
+    // Mark aborted before stopping the provider, so the stopped request cannot mark it failed.
+    const updatedCount = await models["ai_message"].updateMessageIfStatus(
+        assistantMessage.id, {status: AI_MESSAGE_STATUSES.ABORTED, content: ""},
+        [AI_MESSAGE_STATUSES.PENDING], requestId,
+    );
     const providerResult = await core.getAIService(service).call(
         "abortChatCompletion",
         client,
         {requestId, reason: "request aborted"},
     );
-    const updatedCount = await models["ai_message"].updateMessageIfStatus(
-        assistantMessage.id, {status: AI_MESSAGE_STATUSES.ABORTED, content: ""},
-        [AI_MESSAGE_STATUSES.PENDING], requestId,
-    );
-    // The stopped request may already have marked the message failed.
     if (updatedCount === 0 && providerResult?.aborted !== true) {
         return {aborted: false, key: "errors.ai.requestNotAbortable"};
     }
@@ -149,7 +148,9 @@ async function abortPendingMessage(service, client, data, descriptor) {
  * @returns {Promise<Object>} Existing or new conversation.
  */
 async function ensureConversation(service, existingConversation, data, options) {
-    if (existingConversation) return existingConversation;
+    if (existingConversation) {
+        return existingConversation;
+    }
     const models = service.server.db.models;
     const conversation = await models["ai_conversation"].add(data.conversation, options);
     if (data.systemMessage) {
@@ -224,7 +225,9 @@ async function completeTurn(service, turn, requestId, prepareResponse) {
             turn.assistantMessage.id, {...payload, status: AI_MESSAGE_STATUSES.COMPLETED},
             [AI_MESSAGE_STATUSES.PENDING], requestId,
         );
-        if (!changed) throw new TranslatableError("errors.ai.assistant.requestAborted");
+        if (!changed) {
+            throw new TranslatableError("errors.ai.assistant.requestAborted");
+        }
     } catch (error) {
         try {
             await failAssistantMessage(service, turn.assistantMessage.id, requestId);

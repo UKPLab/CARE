@@ -186,7 +186,9 @@ export default {
       return this.conversationSnapshot.models || [];
     },
     visibleMessages() {
-      if (!this.pendingContent) return this.withStreamingMessage(this.messages);
+      if (!this.pendingContent) {
+        return this.withStreamingMessage(this.messages);
+      }
       return this.withStreamingMessage([
         ...this.messages,
         {
@@ -214,7 +216,9 @@ export default {
   },
   watch: {
     aborting(aborting) {
-      if (aborting) this.clearStream();
+      if (aborting) {
+        this.clearStream();
+      }
     },
     activeRequest(request) {
       this.clearStream();
@@ -256,19 +260,27 @@ export default {
      * @returns {void}
      */
     handleConversationDelta({service, type, data} = {}) {
-      if (service !== "AIAssistantService" || type !== "conversationDelta") return;
+      if (service !== "AIAssistantService" || type !== "conversationDelta") {
+        return;
+      }
       const request = this.activeRequest;
       if (!request || !this.streamRequestId || data?.requestId !== this.streamRequestId
           || Number(data.studySessionId) !== this.studySessionId || Number(data.studyStepId) !== this.studyStepId
-          || typeof data.text !== "string" || !data.text) return;
+          || typeof data.text !== "string" || !data.text) {
+        return;
+      }
       const conversationId = this.streamTarget?.conversationId || request.conversationId || this.activeConversationId;
       const assistantMessageId = this.streamTarget?.assistantMessageId || request.assistantMessageId;
       if ((conversationId && Number(data.conversationId) !== Number(conversationId))
-          || (assistantMessageId && Number(data.assistantMessageId) !== Number(assistantMessageId))) return;
+          || (assistantMessageId && Number(data.assistantMessageId) !== Number(assistantMessageId))) {
+        return;
+      }
       this.acceptPendingInput(request);
       this.streamTarget = {conversationId: data.conversationId, assistantMessageId: data.assistantMessageId};
       this.streamBuffer += data.text;
-      if (this.streamFrame !== null) return;
+      if (this.streamFrame !== null) {
+        return;
+      }
       this.streamFrame = requestAnimationFrame(() => {
         this.streamText += this.streamBuffer;
         this.streamBuffer = "";
@@ -282,18 +294,24 @@ export default {
      * @returns {Object[]} Visible messages.
      */
     withStreamingMessage(messages) {
-      if (!this.activeRequest) return messages;
+      if (!this.activeRequest) {
+        return messages;
+      }
       const assistantId = this.streamTarget?.assistantMessageId || this.activeRequest.assistantMessageId;
       return messages.map((message) => {
         const matches = message.id === "pending-assistant" || (assistantId && Number(message.id) === Number(assistantId));
         if (!matches || Number(message.role) !== AI_MESSAGE_ROLES.ASSISTANT
-            || Number(message.status) === AI_MESSAGE_STATUSES.COMPLETED) return message;
+            || Number(message.status) === AI_MESSAGE_STATUSES.COMPLETED) {
+          return message;
+        }
         return {...message, status: AI_MESSAGE_STATUSES.PENDING, content: this.streamText};
       });
     },
     /** Discards partial text; a new request is needed to accept more deltas. */
     clearStream() {
-      if (this.streamFrame !== null) cancelAnimationFrame(this.streamFrame);
+      if (this.streamFrame !== null) {
+        cancelAnimationFrame(this.streamFrame);
+      }
       this.streamFrame = null;
       this.streamRequestId = null;
       this.streamTarget = null;
@@ -346,7 +364,9 @@ export default {
      * @returns {void}
      */
     logChatEvent(action, data = {}) {
-      if (!this.acceptStats) return;
+      if (!this.acceptStats) {
+        return;
+      }
       this.$socket.emit("stats", {
         action,
         data: {
@@ -364,7 +384,9 @@ export default {
      * @returns {Promise<void>}
      */
     async loadConversation({silent = false, conversationId = this.activeConversationId} = {}) {
-      if (silent && this.newConversationSelected && !this.activeRequest && !this.recoverableRequest) return false;
+      if (silent && this.newConversationSelected && !this.activeRequest && !this.recoverableRequest) {
+        return false;
+      }
       const context = this.beginSnapshotLoad();
       if (!silent) {
         this.loading = true;
@@ -376,10 +398,14 @@ export default {
           studyStepId: context.studyStepId,
           conversationId,
         });
-        if (!this.isCurrentSnapshotLoad(context)) return false;
+        if (!this.isCurrentSnapshotLoad(context)) {
+          return false;
+        }
         // Keep an unsaved choice until recovery finds the new conversation.
         if (silent && this.newConversationSelected && (!result.activeConversationId
-            || this.conversations.some((conversation) => Number(conversation.id) === Number(result.activeConversationId)))) return false;
+            || this.conversations.some((conversation) => Number(conversation.id) === Number(result.activeConversationId)))) {
+          return false;
+        }
         this.setConversationSnapshot({
           activeConversationId: result.activeConversationId,
           includeContext: result.includeContext !== false,
@@ -390,15 +416,23 @@ export default {
           contextNearLimit: result.contextNearLimit === true,
         });
         this.selectedModelId = this.resolveSelectedModel(result.defaultModelId);
-        if (result.activeConversationId) this.newConversationSelected = false;
-        if (this.reconcileRequest()) this.clearActiveRequest();
+        if (result.activeConversationId) {
+          this.newConversationSelected = false;
+        }
+        if (this.reconcileRequest()) {
+          this.clearActiveRequest();
+        }
         return true;
       } catch (error) {
-        if (!this.isCurrentSnapshotLoad(context)) return false;
+        if (!this.isCurrentSnapshotLoad(context)) {
+          return false;
+        }
         this.errorMessage = resolveApiMessage(error, "ai.chat.errors.loadFailed");
         return false;
       } finally {
-        if (context.loadId === this.snapshotLoadId) this.loading = false;
+        if (context.loadId === this.snapshotLoadId) {
+          this.loading = false;
+        }
         // Scroll after loading clears so the messages are rendered, not the spinner.
         this.scrollToBottom();
       }
@@ -410,7 +444,9 @@ export default {
      * @returns {void}
      */
     startNewConversation(includeContext = true) {
-      if (this.isBusy || this.readOnly) return;
+      if (this.isBusy || this.readOnly) {
+        return;
+      }
       this.stopRecovery();
       this.snapshotLoadId += 1;
       this.newConversationSelected = true;
@@ -432,7 +468,9 @@ export default {
      * @returns {void}
      */
     selectConversation(conversationId) {
-      if (this.isBusy || conversationId === this.activeConversationId) return;
+      if (this.isBusy || conversationId === this.activeConversationId) {
+        return;
+      }
       this.stopRecovery();
       this.logChatEvent("aiChatConversationSwitch", {
         fromConversationId: this.activeConversationId,
@@ -464,7 +502,9 @@ export default {
      * @returns {void}
      */
     onQuote({text, studyStepId, documentId, selectors}) {
-      if (Number(studyStepId) !== Number(this.studyStepId)) return;
+      if (Number(studyStepId) !== Number(this.studyStepId)) {
+        return;
+      }
       const quoteText = (text || "").trim();
       this.quote = quoteText ? {text: quoteText, studyStepId, documentId, selectors} : null;
       if (this.quote) {
@@ -491,7 +531,9 @@ export default {
      * @returns {void}
      */
     sendMessage() {
-      if (!this.canSend) return;
+      if (!this.canSend) {
+        return;
+      }
       const question = this.draft.trim();
       const quote = this.quote;
       const content = quote ? `${this.formatQuote(quote.text)}\n\n${question}` : question;
@@ -517,7 +559,9 @@ export default {
      * @returns {void}
      */
     retryMessage(message) {
-      if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) return;
+      if (this.readOnly || this.isBusy || Number(message?.id) !== this.retryableMessageId) {
+        return;
+      }
       this.errorMessage = "";
       const requestId = this.$aiAssistant.createRequestId();
       this.logChatEvent("aiChatRetryClick", {
@@ -548,7 +592,6 @@ export default {
     handleRequestComplete(result) {
       this.applyConversationResult(result);
       this.newConversationSelected = false;
-      if (result.selectedModelId) this.selectedModelId = result.selectedModelId;
       this.acceptPendingInput(this.activeRequest);
       this.clearActiveRequest();
       this.errorMessage = "";
@@ -565,9 +608,15 @@ export default {
      * @returns {void}
      */
     acceptPendingInput(request) {
-      if (request?.type !== "send") return;
-      if (this.draft === request.draft) this.draft = "";
-      if (this.quote === request.quote) this.quote = null;
+      if (request?.type !== "send") {
+        return;
+      }
+      if (this.draft === request.draft) {
+        this.draft = "";
+      }
+      if (this.quote === request.quote) {
+        this.quote = null;
+      }
     },
     /**
      * Re-fetches the conversation snapshot (aiRequestMixin contract).

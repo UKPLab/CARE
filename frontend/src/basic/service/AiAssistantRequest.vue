@@ -5,7 +5,7 @@
 <script>
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
-import {extractTextFromPDF, resolveApiMessage} from "@/assets/utils";
+import {extractPdfPages, resolveApiMessage} from "@/assets/utils";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -77,7 +77,9 @@ export default {
   },
   beforeUnmount() {
     this.disposed = true;
-    if (!this.settled) this.abortRequest().catch(() => {});
+    if (!this.settled) {
+      this.abortRequest().catch(() => {});
+    }
   },
   methods: {
     /**
@@ -90,7 +92,9 @@ export default {
         const result = this.request.type === "retry"
             ? await this.retryRequest()
             : await this.sendRequest();
-        if (!this.abortRequested && !this.disposed) this.$emit("complete", result);
+        if (!this.abortRequested && !this.disposed) {
+          this.$emit("complete", result);
+        }
       } catch (error) {
         if (!this.abortRequested && !this.disposed) {
           this.$emit("failed", error, this.dispatched);
@@ -106,7 +110,9 @@ export default {
      */
     async sendRequest() {
       const values = await this.buildContextValues();
-      if (this.abortRequested || this.disposed) return;
+      if (this.abortRequested || this.disposed) {
+        return;
+      }
       this.dispatched = true;
       if (this.requestMode === "dialogue") {
         return this.$aiAssistant.sendDialogueAnswer({
@@ -139,7 +145,9 @@ export default {
      * @returns {Promise<Object>} Backend response.
      */
     retryRequest() {
-      if (this.abortRequested || this.disposed) return;
+      if (this.abortRequested || this.disposed) {
+        return;
+      }
       this.dispatched = true;
       if (this.requestMode === "dialogue") {
         return this.$aiAssistant.retryDialogueMessage({
@@ -162,15 +170,23 @@ export default {
         this.abortRequested = true;
         return {aborted: true, local: true};
       }
-      if (this.settled) return {aborted: false};
+      if (this.settled) {
+        return {aborted: false};
+      }
       const abortMethod = this.requestMode === "dialogue"
           ? "abortDialogueMessage"
           : "abortConversationMessage";
-      const result = await this.$aiAssistant[abortMethod]({
-        requestId: this.request.requestId,
-      });
-      this.abortRequested = result?.aborted === true;
-      return result;
+      // Set before waiting, so the stopped request's error is not shown meanwhile.
+      this.abortRequested = true;
+      let result = null;
+      try {
+        result = await this.$aiAssistant[abortMethod]({
+          requestId: this.request.requestId,
+        });
+        return result;
+      } finally {
+        this.abortRequested = result?.aborted === true;
+      }
     },
     /**
      * Resolves mapped context when starting a conversation.
@@ -178,13 +194,19 @@ export default {
      * @returns {Promise<Object|null>} Hook values or null.
      */
     async buildContextValues() {
-      if (!this.needsStepContext) return null;
+      if (!this.needsStepContext) {
+        return null;
+      }
       const documentTexts = new Map();
       const values = {};
       for (const placeholder in this.service.inputs || {}) {
-        if (this.abortRequested || this.disposed) return null;
+        if (this.abortRequested || this.disposed) {
+          return null;
+        }
         values[placeholder] = await this.resolveHookInput(this.service.inputs[placeholder], documentTexts);
-        if (this.abortRequested || this.disposed) return null;
+        if (this.abortRequested || this.disposed) {
+          return null;
+        }
       }
       return values;
     },
@@ -196,7 +218,9 @@ export default {
      * @returns {Promise<*>} Prompt value.
      */
     async resolveHookInput(spec, documentTexts) {
-      if (!spec || typeof spec !== "object") return null;
+      if (!spec || typeof spec !== "object") {
+        return null;
+      }
       switch (spec.type) {
         case "document": {
           const documentId = spec.documentId || this.documentId;
@@ -227,9 +251,13 @@ export default {
      */
     buildPayloadFromStudyData(inputSpec) {
       const studyStepFromIndex = this.orderedStudySteps[inputSpec.stepIndex];
-      if (!studyStepFromIndex) return null;
+      if (!studyStepFromIndex) {
+        return null;
+      }
       const studyStepData = this.studyData[studyStepFromIndex.id];
-      if (studyStepData?.[inputSpec.type] == null) return null;
+      if (studyStepData?.[inputSpec.type] == null) {
+        return null;
+      }
       if (inputSpec.key) {
         return studyStepData[inputSpec.type][inputSpec.key];
       }
@@ -240,10 +268,12 @@ export default {
      *
      * @param {number} documentId - Document id.
      * @param {Map} documentTexts - PDF extraction promises for this preparation.
-     * @returns {Promise<string>} Extracted text.
+     * @returns {Promise<Object|string>} `{pages, pageCount}` so page ranges work, or "" without a document.
      */
     async extractDocumentText(documentId, documentTexts) {
-      if (!documentId) return "";
+      if (!documentId) {
+        return "";
+      }
       const id = Number(documentId);
       if (!documentTexts.has(id)) {
         documentTexts.set(id, (async () => {
@@ -253,16 +283,25 @@ export default {
               studySessionId: this.studySessionId,
               studyStepId: this.studyStepId,
             }, (res) => {
-              if (res && res.success) resolve(res.data.file);
-              else reject(new Error(resolveApiMessage(res, "ai.assistant.errors.loadDocument")));
+              if (res && res.success) {
+                resolve(res.data.file);
+              } else {
+                reject(new Error(resolveApiMessage(res, "ai.assistant.errors.loadDocument")));
+              }
             });
           });
-          if (this.abortRequested || this.disposed) return "";
+          if (this.abortRequested || this.disposed) {
+            return "";
+          }
           const pdf = await pdfjsLib.getDocument(file).promise;
-          if (this.abortRequested || this.disposed) return "";
-          const text = await extractTextFromPDF(pdf);
-          if (this.abortRequested || this.disposed) return "";
-          return text;
+          if (this.abortRequested || this.disposed) {
+            return "";
+          }
+          const pages = await extractPdfPages(pdf);
+          if (this.abortRequested || this.disposed) {
+            return "";
+          }
+          return pages;
         })());
       }
       return documentTexts.get(id);
