@@ -183,8 +183,9 @@ export default {
     generalFields() {
       return this.workflowStep?.configuration?.settings?.fields || [];
     },
-    isDialogueStep() {
-      return this.workflowStep?.stepType === 4;
+    // Editor steps may start from a new empty document; Dialogue steps have none.
+    allowsNoDocument() {
+      return [2, 4].includes(this.workflowStep?.stepType);
     },
   },
   mounted() {
@@ -194,7 +195,7 @@ export default {
     openModal(evt) {
       evt.preventDefault();
       const isTemplateMode = this.formData?.isTemplateMode || false;
-      if (!this.documentId && !isTemplateMode && !this.isDialogueStep) {
+      if (!this.documentId && !isTemplateMode && !this.allowsNoDocument) {
         this.eventBus.emit("toast", {
           title: this.$t('errors.documents.documentError'),
           message: this.$t('errors.documents.noDocumentSelected'),
