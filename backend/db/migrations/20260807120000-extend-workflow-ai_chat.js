@@ -40,6 +40,10 @@ function addAIChatService(sourceConfiguration) {
     const configuration = JSON.parse(JSON.stringify(sourceConfiguration || {}));
     const services = Array.isArray(configuration.services) ? configuration.services : [];
     configuration.services = [...services, AI_CHAT_SERVICE];
+    // Steps with services need a placeholders entry, or the study form reports them incomplete.
+    if (!("placeholders" in configuration)) {
+        configuration.placeholders = false;
+    }
     return configuration;
 }
 
