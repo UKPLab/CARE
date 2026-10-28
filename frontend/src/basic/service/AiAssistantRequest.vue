@@ -293,7 +293,7 @@ export default {
           if (this.abortRequested || this.disposed) {
             return "";
           }
-          const pdf = await pdfjsLib.getDocument(file).promise;
+          const pdf = await pdfjsLib.getDocument({data: file}).promise;
           if (this.abortRequested || this.disposed) {
             return "";
           }
