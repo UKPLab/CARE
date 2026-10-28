@@ -49,7 +49,9 @@ async function estimateConversationTokens(service, conversationId) {
  * @returns {Promise<boolean>} Whether the conversation nears the limit.
  */
 async function isContextNearLimit(service, conversationId, contextWindowTokens) {
-    if (!contextWindowTokens) return false;
+    if (!contextWindowTokens) {
+        return false;
+    }
     const tokens = await estimateConversationTokens(service, conversationId);
     return tokens > contextWindowTokens * CONTEXT_SOFT_RATIO;
 }
@@ -63,7 +65,9 @@ async function isContextNearLimit(service, conversationId, contextWindowTokens) 
  */
 function buildQuoteMetadata(context, quote) {
     const text = typeof quote?.text === "string" ? quote.text.trim() : "";
-    if (!text) return null;
+    if (!text) {
+        return null;
+    }
     return {
         quote: {
             text,
@@ -83,7 +87,9 @@ function buildQuoteMetadata(context, quote) {
  */
 function buildUserContent(content, metadata) {
     const quote = metadata?.quote?.text;
-    if (!quote) return content;
+    if (!quote) {
+        return content;
+    }
     const blockquote = quote.split("\n").map((line) => `> ${line}`).join("\n");
     return `${blockquote}\n\n${content}`;
 }

@@ -168,12 +168,18 @@ export default {
             .filter(Boolean)
             .join(", ");
       }
-      if (this.usesRadios) return this.optionLabelByValue(this.selectedOption);
+      if (this.usesRadios) {
+        return this.optionLabelByValue(this.selectedOption);
+      }
       return this.answerDraft.trim();
     },
     answerValue() {
-      if (this.usesCheckboxes) return this.selectedOptions;
-      if (this.usesRadios) return this.selectedOption;
+      if (this.usesCheckboxes) {
+        return this.selectedOptions;
+      }
+      if (this.usesRadios) {
+        return this.selectedOption;
+      }
       return this.answerDraft.trim();
     },
     canSend() {
@@ -193,7 +199,9 @@ export default {
      * @returns {void}
      */
     onInput(event) {
-      if (this.typingStarted || event.inputType === "insertFromPaste") return;
+      if (this.typingStarted || event.inputType === "insertFromPaste") {
+        return;
+      }
       this.typingStarted = true;
       this.$emit("typing-started", {
         questionId: this.question.id,
@@ -208,7 +216,9 @@ export default {
      */
     onPaste(event) {
       const pastedText = (event.clipboardData || window.clipboardData).getData("text");
-      if (!pastedText) return;
+      if (!pastedText) {
+        return;
+      }
       this.$emit("paste", {
         questionId: this.question.id,
         followUpIndex: this.question.followUpIndex || 0,
@@ -231,7 +241,9 @@ export default {
      * @returns {string} Option value.
      */
     optionValue(option) {
-      if (option && typeof option === "object") return String(option.value ?? option.label ?? option.name);
+      if (option && typeof option === "object") {
+        return String(option.value ?? option.label ?? option.name);
+      }
       return String(option);
     },
     /**
@@ -241,7 +253,9 @@ export default {
      * @returns {string} Option label.
      */
     optionLabel(option) {
-      if (option && typeof option === "object") return String(option.label ?? option.name ?? option.value);
+      if (option && typeof option === "object") {
+        return String(option.label ?? option.name ?? option.value);
+      }
       return String(option);
     },
     /**
@@ -260,7 +274,9 @@ export default {
      * @returns {void}
      */
     submit() {
-      if (!this.canSend) return;
+      if (!this.canSend) {
+        return;
+      }
       this.$emit("send", {
         answerText: this.answerText,
         answerValue: this.answerValue,
@@ -268,7 +284,9 @@ export default {
     },
     /** Records an explicit skipped answer. */
     skip() {
-      if (!this.allowSkip || this.isBusy || this.readOnly) return;
+      if (!this.allowSkip || this.isBusy || this.readOnly) {
+        return;
+      }
       this.$emit("send", {answerText: "", answerValue: null, skipped: true});
     },
   },

@@ -151,7 +151,9 @@ module.exports = {
 
                 for (let index = 0; index < workflow.steps.length; index++) {
                     const documentStep = workflow.steps[index].workflowStepDocument;
-                    if (documentStep === null) continue;
+                    if (documentStep === null) {
+                        continue;
+                    }
                     await queryInterface.bulkUpdate("workflow_step", {
                         workflowStepDocument: stepIds[documentStep - 1],
                     }, {id: stepIds[index]}, {transaction});
@@ -173,7 +175,9 @@ module.exports = {
             );
             const workflowIds = workflowRecords.map((workflow) => workflow.id);
 
-            if (workflowIds.length === 0) return;
+            if (workflowIds.length === 0) {
+                return;
+            }
 
             await queryInterface.bulkDelete("workflow_step", {
                 workflowId: {[Sequelize.Op.in]: workflowIds},

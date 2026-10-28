@@ -60,7 +60,9 @@ module.exports = (sequelize, DataTypes) => {
                 where: {id, deleted: false},
                 transaction: options.transaction,
             });
-            if (!conversation) return 0;
+            if (!conversation) {
+                return 0;
+            }
             conversation.changed("updatedAt", true);
             await conversation.save({fields: ["updatedAt"], transaction: options.transaction});
             return 1;

@@ -93,8 +93,12 @@ export default {
       return [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED].includes(this.status);
     },
     displayContent() {
-      if (this.status === AI_MESSAGE_STATUSES.FAILED) return this.$t("ai.assistant.responseFailed");
-      if (this.status === AI_MESSAGE_STATUSES.ABORTED) return this.$t("ai.assistant.responseStopped");
+      if (this.status === AI_MESSAGE_STATUSES.FAILED) {
+        return this.$t("ai.assistant.responseFailed");
+      }
+      if (this.status === AI_MESSAGE_STATUSES.ABORTED) {
+        return this.$t("ai.assistant.responseStopped");
+      }
       return this.message.content || "";
     },
   },
@@ -106,7 +110,9 @@ export default {
      */
     onCopy() {
       const text = window.getSelection ? window.getSelection().toString() : "";
-      if (!text) return;
+      if (!text) {
+        return;
+      }
       this.$emit("copy", {
         messageId: this.message.id,
         copiedText: text,

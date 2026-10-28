@@ -43,11 +43,15 @@ export default {
       return assistants.length ? Number(assistants[assistants.length - 1].id) : null;
     },
     retryableMessageId() {
-      if (this.readOnly) return null;
+      if (this.readOnly) {
+        return null;
+      }
       const latest = this.messages.find(
           (message) => Number(message.id) === this.latestAssistantId
       );
-      if (!latest) return null;
+      if (!latest) {
+        return null;
+      }
       return [AI_MESSAGE_STATUSES.FAILED, AI_MESSAGE_STATUSES.ABORTED].includes(Number(latest.status))
           ? Number(latest.id)
           : null;
@@ -100,7 +104,9 @@ export default {
       const existing = Number(conversationId) === Number(this.activeConversationId) ? this.messages : [];
       const conversations = new Map((this.conversationSnapshot.conversations || [])
           .map((conversation) => [Number(conversation.id), conversation]));
-      if (result.conversation) conversations.set(Number(result.conversation.id), result.conversation);
+      if (result.conversation) {
+        conversations.set(Number(result.conversation.id), result.conversation);
+      }
       this.snapshotLoadId += 1;
       this.loading = false;
       this.conversationSnapshot = {
@@ -157,7 +163,9 @@ export default {
       const settled = !!assistant && (request.type !== "retry" || assistant.updatedAt !== request.previousAssistantUpdatedAt)
           && Number(assistant.status) !== AI_MESSAGE_STATUSES.PENDING;
       if (settled && this.recoverableRequest === request) {
-        if (!this.activeRequest) this.errorMessage = "";
+        if (!this.activeRequest) {
+          this.errorMessage = "";
+        }
         this.stopRecovery();
       } else {
         this.scheduleRecovery();
@@ -166,7 +174,9 @@ export default {
     },
     /** Clears scheduled recovery when leaving a request or study context. */
     stopRecovery() {
-      if (this.recoveryTimer !== null) clearTimeout(this.recoveryTimer);
+      if (this.recoveryTimer !== null) {
+        clearTimeout(this.recoveryTimer);
+      }
       this.recoveryTimer = null;
       this.recoverableRequest = null;
     },
@@ -175,9 +185,13 @@ export default {
      * Ends on its own: the backend fails pending rows on timeout or restart.
      */
     scheduleRecovery() {
-      if (this.activeRequest || this.recoveryTimer !== null || this.recovering) return;
+      if (this.activeRequest || this.recoveryTimer !== null || this.recovering) {
+        return;
+      }
       if (!this.messages.some((message) => Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
-          && Number(message.status) === AI_MESSAGE_STATUSES.PENDING)) return;
+          && Number(message.status) === AI_MESSAGE_STATUSES.PENDING)) {
+        return;
+      }
       this.recoveryTimer = setTimeout(async () => {
         this.recoveryTimer = null;
         this.recovering = true;
@@ -220,14 +234,20 @@ export default {
      */
     async handleRequestFailed(error, dispatched) {
       const request = this.activeRequest;
-      if (!request) return;
+      if (!request) {
+        return;
+      }
       this.errorMessage = error.key || error.message ? resolveApiMessage(error) : this.requestFailedText;
       if (dispatched) {
         this.recoverableRequest = request;
         await this.reloadConversation({silent: true});
       }
-      if (this.activeRequest !== request) return;
-      if (dispatched) this.reconcileRequest(request);
+      if (this.activeRequest !== request) {
+        return;
+      }
+      if (dispatched) {
+        this.reconcileRequest(request);
+      }
       this.clearActiveRequest();
     },
     /**
@@ -236,34 +256,49 @@ export default {
      * @returns {Promise<void>}
      */
     async abortActiveRequest() {
-      if (!this.activeRequest || this.aborting) return;
+      if (!this.activeRequest || this.aborting) {
+        return;
+      }
       const activeRequest = this.activeRequest;
       this.aborting = true;
       try {
         this.onBeforeAbort?.();
         const request = this.$refs.aiAssistantRequest;
         const result = request ? await request.abortRequest() : {aborted: true, local: true};
-        if (this.activeRequest !== activeRequest) return;
+        if (this.activeRequest !== activeRequest) {
+          return;
+        }
         if (!result?.local) {
           this.recoverableRequest = activeRequest;
           await this.reloadConversation({silent: true});
         }
-        if (this.activeRequest !== activeRequest) return;
+        if (this.activeRequest !== activeRequest) {
+          return;
+        }
         if (result?.aborted || this.reconcileRequest(activeRequest)) {
           this.clearActiveRequest();
         } else {
           this.errorMessage = this.$t("ai.assistant.errors.stopUnconfirmed");
         }
       } catch (error) {
-        if (this.activeRequest !== activeRequest) return;
+        if (this.activeRequest !== activeRequest) {
+          return;
+        }
         await this.reloadConversation({silent: true});
-        if (this.activeRequest !== activeRequest) return;
-        if (this.reconcileRequest(activeRequest)) this.clearActiveRequest();
-        else this.errorMessage = this.$t("ai.assistant.errors.stopUnconfirmedWithError", {
-          error: error.key || error.message ? resolveApiMessage(error) : this.abortFailedText,
-        });
+        if (this.activeRequest !== activeRequest) {
+          return;
+        }
+        if (this.reconcileRequest(activeRequest)) {
+          this.clearActiveRequest();
+        } else {
+          this.errorMessage = this.$t("ai.assistant.errors.stopUnconfirmedWithError", {
+            error: error.key || error.message ? resolveApiMessage(error) : this.abortFailedText,
+          });
+        }
       } finally {
-        if (this.activeRequest === activeRequest) this.aborting = false;
+        if (this.activeRequest === activeRequest) {
+          this.aborting = false;
+        }
       }
     },
   },

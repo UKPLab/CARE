@@ -181,7 +181,9 @@ export default {
      */
     marker(message) {
       const dialogueMetadata = message.metadata?.dialogue || {};
-      if (dialogueMetadata.kind === "follow_up") return this.$t("ai.dialogue.followUpQuestion");
+      if (dialogueMetadata.kind === "follow_up") {
+        return this.$t("ai.dialogue.followUpQuestion");
+      }
       return dialogueMetadata.questionNumber
           ? this.$t("ai.dialogue.questionNumber", {number: dialogueMetadata.questionNumber})
           : this.$t("ai.dialogue.question");

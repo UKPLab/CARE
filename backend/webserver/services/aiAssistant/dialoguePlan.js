@@ -96,8 +96,12 @@ function selectNextPlanQuestion(plan, messages = []) {
 function parseDialogueDecision(output) {
     const parsed = parseJsonObject(output);
     const content = typeof parsed?.content === "string" ? parsed.content.trim() : "";
-    if (parsed?.action === "next") return {action: "next", content: "", valid: true};
-    if (parsed?.action === "follow_up" && content) return {action: "follow_up", content, valid: true};
+    if (parsed?.action === "next") {
+        return {action: "next", content: "", valid: true};
+    }
+    if (parsed?.action === "follow_up" && content) {
+        return {action: "follow_up", content, valid: true};
+    }
     return {action: "next", content: "", valid: false};
 }
 
@@ -108,12 +112,16 @@ function parseDialogueDecision(output) {
  * @returns {Object|null} Parsed JSON object, or null.
  */
 function parseJsonObject(output) {
-    if (typeof output !== "string") return null;
+    if (typeof output !== "string") {
+        return null;
+    }
     const trimmed = output.trim();
     const jsonText = trimmed.startsWith("{")
         ? trimmed
         : trimmed.match(/\{[\s\S]*\}/)?.[0];
-    if (!jsonText) return null;
+    if (!jsonText) {
+        return null;
+    }
     try {
         const parsed = JSON.parse(jsonText);
         return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
@@ -129,7 +137,9 @@ function parseJsonObject(output) {
  * @returns {string} Plain text.
  */
 function toPlainText(value) {
-    if (typeof value !== "string") return "";
+    if (typeof value !== "string") {
+        return "";
+    }
     return value
         .replace(/<br\s*\/?>/gi, "\n")
         .replace(/<\/p>/gi, "\n")
@@ -151,7 +161,9 @@ function toPlainText(value) {
  * @returns {string[]} Plain-text candidates.
  */
 function segmentAnchorText(value) {
-    if (typeof value !== "string") return [];
+    if (typeof value !== "string") {
+        return [];
+    }
     const blocks = value
         .replace(/<h[1-6]\b[^>]*>[\s\S]*?<\/h[1-6]>/gi, "\n")
         .replace(/<br\s*\/?>/gi, "\n")
@@ -175,10 +187,14 @@ function segmentAnchorText(value) {
  * @returns {string} Readable source excerpt.
  */
 function shortenAnchorQuote(value) {
-    if (value.length <= MAX_ANCHOR_LENGTH) return value;
+    if (value.length <= MAX_ANCHOR_LENGTH) {
+        return value;
+    }
     const prefix = value.slice(0, MAX_ANCHOR_LENGTH);
     const sentenceEnd = prefix.search(/[.!?](?=\s|$)/);
-    if (sentenceEnd !== -1) return prefix.slice(0, sentenceEnd + 1);
+    if (sentenceEnd !== -1) {
+        return prefix.slice(0, sentenceEnd + 1);
+    }
     const wordEnd = prefix.lastIndexOf(" ");
     return prefix.slice(0, wordEnd > 0 ? wordEnd : MAX_ANCHOR_LENGTH).trim();
 }
@@ -192,8 +208,12 @@ function shortenAnchorQuote(value) {
  */
 function extractSourceCandidates(inputMappings, values) {
     const candidates = Object.entries(inputMappings || {}).flatMap(([key, mapping]) => {
-        if (mapping?.type === "editor") return segmentAnchorText(values?.[key]);
-        if (mapping?.type !== "annotator" || mapping.key !== "comments") return [];
+        if (mapping?.type === "editor") {
+            return segmentAnchorText(values?.[key]);
+        }
+        if (mapping?.type !== "annotator" || mapping.key !== "comments") {
+            return [];
+        }
         const comments = values?.[key];
         const rows = Array.isArray(comments) ? comments : comments?.comments;
         return Array.isArray(rows)
@@ -223,7 +243,9 @@ function buildAnchorSources(inputMappings = {}, values = {}) {
  * @returns {string|null} Exact source candidate, or null.
  */
 function resolveAnchorCandidate(anchorIndex, source, anchorSources = {}) {
-    if (!Number.isInteger(anchorIndex) || anchorIndex < 0) return null;
+    if (!Number.isInteger(anchorIndex) || anchorIndex < 0) {
+        return null;
+    }
     return anchorSources[source]?.[anchorIndex] || null;
 }
 
@@ -238,9 +260,13 @@ function resolveAnchorCandidate(anchorIndex, source, anchorSources = {}) {
 function parseAnchorSelections(output, questions = [], anchorSources = {}) {
     const parsed = parseJsonObject(output);
     const requested = parsed?.selections;
-    if (!requested || typeof requested !== "object" || Array.isArray(requested)) return {};
+    if (!requested || typeof requested !== "object" || Array.isArray(requested)) {
+        return {};
+    }
     return questions.reduce((selections, question) => {
-        if (!question.anchoredText || !Object.prototype.hasOwnProperty.call(requested, question.id)) return selections;
+        if (!question.anchoredText || !Object.prototype.hasOwnProperty.call(requested, question.id)) {
+            return selections;
+        }
         const anchorIndex = requested[question.id];
         if (anchorIndex === null || resolveAnchorCandidate(anchorIndex, question.source, anchorSources)) {
             selections[question.id] = anchorIndex;
@@ -331,7 +357,9 @@ function getCurrentQuestion(plan, messages = []) {
             return Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
                 && [DIALOGUE_MESSAGE_KINDS.MAIN_QUESTION, DIALOGUE_MESSAGE_KINDS.FOLLOW_UP, DIALOGUE_MESSAGE_KINDS.COMPLETION].includes(kind);
         });
-    if (latest?.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.COMPLETION) return null;
+    if (latest?.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.COMPLETION) {
+        return null;
+    }
     const latestQuestionId = latest?.metadata?.dialogue?.questionId;
     if (latestQuestionId) {
         const configuredQuestion = plan.questions.find(

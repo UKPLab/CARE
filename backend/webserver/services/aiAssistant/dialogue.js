@@ -209,7 +209,9 @@ async function getDialogueConversation(service, client, data) {
  * @returns {Promise<Object|null>} System message fields, or null without a context hook.
  */
 async function buildDialogueSystemMessage(service, client, context, values) {
-    if (!context.contextHookId) return null;
+    if (!context.contextHookId) {
+        return null;
+    }
     const {promptText, promptValues} = await core.resolveContextPrompt(
         service, client, context.contextHookId, context.contextService?.inputs, values,
     );
@@ -245,7 +247,9 @@ async function addQuestionIfMissing(service, conversation, context, question, ex
         message?.metadata?.dialogue?.kind === DIALOGUE_MESSAGE_KINDS.MAIN_QUESTION
         && String(message.metadata.dialogue.questionId) === String(question.id)
     );
-    if (existing) return;
+    if (existing) {
+        return;
+    }
     const rendered = renderQuestion(question, "", {});
     await service.server.db.models["ai_message"].add({
         conversationId: conversation.id,

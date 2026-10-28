@@ -77,7 +77,9 @@ export default {
     scrollToBottom() {
       this.$nextTick(() => {
         const list = this.$refs.messageList;
-        if (list) list.scrollTop = list.scrollHeight;
+        if (list) {
+          list.scrollTop = list.scrollHeight;
+        }
       });
     },
   },

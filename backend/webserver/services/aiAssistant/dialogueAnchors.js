@@ -65,7 +65,9 @@ async function loadAnchorState(service, conversationId, studyStepId) {
  */
 async function prepareDialogueAnchors(service, client, context, turn, requestId) {
     const state = await loadAnchorState(service, turn.conversation.id, context.studyStep.id);
-    if (state.prepared) return state;
+    if (state.prepared) {
+        return state;
+    }
 
     const request = buildAnchorPreparationRequest(context.plan, state.anchorSources);
     let anchorSelections = {};

@@ -178,7 +178,9 @@ export default {
     /** Focuses the message textarea when the composer is available. */
     focus() {
       this.$nextTick(() => {
-        if (!this.disabled) this.$refs.textarea?.focus();
+        if (!this.disabled) {
+          this.$refs.textarea?.focus();
+        }
       });
     },
     /**
@@ -199,7 +201,9 @@ export default {
      */
     onPaste(event) {
       const text = event.clipboardData?.getData("text") || "";
-      if (text) this.$emit("paste", {pastedText: text});
+      if (text) {
+        this.$emit("paste", {pastedText: text});
+      }
     },
     /**
      * Grows the textarea with its content up to a fixed maximum height.
@@ -208,7 +212,9 @@ export default {
      */
     autoGrow() {
       const el = this.$refs.textarea;
-      if (!el) return;
+      if (!el) {
+        return;
+      }
       el.style.height = "auto";
       el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
     },

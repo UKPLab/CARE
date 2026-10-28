@@ -99,12 +99,16 @@ function findParentQuestionTurn(turns, message) {
 function findNearestQuestionTurn(turns, message, requireOpen = true) {
   const questionId = String(message?.metadata?.dialogue?.questionId || "");
   for (const turn of [...turns].reverse()) {
-    if (turn.type !== "question") continue;
+    if (turn.type !== "question") {
+      continue;
+    }
     const followUp = [...turn.followUps].reverse().find((item) =>
       (!requireOpen || !item.answer)
         && String(item.question?.metadata?.dialogue?.questionId || "") === questionId
     );
-    if (followUp) return followUp;
+    if (followUp) {
+      return followUp;
+    }
     if (
       (!requireOpen || !turn.answer)
         && String(turn.question?.metadata?.dialogue?.questionId || "") === questionId
@@ -235,12 +239,18 @@ export function splitDialogueQuestionText(message) {
   const dialogue = message?.metadata?.dialogue || {};
   const anchor = dialogue.anchorVerified === true ? dialogue.anchorText : null;
   const content = message?.content || "";
-  if (!anchor) return null;
+  if (!anchor) {
+    return null;
+  }
   const index = content.indexOf(anchor);
-  if (index === -1) return null;
+  if (index === -1) {
+    return null;
+  }
   const before = content.slice(0, index).replace(/[“"'‘’]\s*$/, "").trim();
   let after = content.slice(index + anchor.length).replace(/^\s*[”"'‘’]/, "").trim();
-  if (/^[.!?]$/.test(after)) after = "";
+  if (/^[.!?]$/.test(after)) {
+    after = "";
+  }
   return {before, anchor, after};
 }
 
