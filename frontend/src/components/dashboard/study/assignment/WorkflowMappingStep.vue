@@ -48,6 +48,9 @@ import FormSelect from "@/basic/form/Select.vue";
  * user vs. study owner) when creating bulk assignments.
  * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
+const DOC_TYPE_PDF = 0;
+const DOC_TYPE_ZIP = 4;
+
 export default {
   name: "WorkflowMappingStep",
   components: { FormSelect },
@@ -96,13 +99,13 @@ export default {
       return assignments.filter(assignment => !assignment.deleted).flatMap(assignment => {
         const types = typesByAssignment.get(assignment.id);
         const options = [];
-        if (types?.has(4)) {
+        if (types?.has(DOC_TYPE_ZIP)) {
           options.push({
             name: `<${this.$t('dashboard.study.typeSubmission')}> ${assignment.name}`,
             value: `submission:assignment:${assignment.id}`,
           });
         }
-        if (types?.has(0)) {
+        if (types?.has(DOC_TYPE_PDF)) {
           options.push({
             name: `<${this.$t('dashboard.study.typeDocument')}> ${assignment.name}`,
             value: `document:assignment:${assignment.id}`,
