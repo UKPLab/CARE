@@ -46,7 +46,7 @@
       @select-assignment="$emit('select-assignment', $event)"
     />
     <div
-      v-if="selectedSessions.length > 0 && selectedConfigurationContent"
+      v-if="selectedSessionCount > 0 && selectedConfigurationContent"
       class="mt-4"
     >
       <label class="form-label"><b>{{ $t("submission.publishAssessment.moodleGradePublishingOverview") }}</b></label>
@@ -125,7 +125,7 @@ import MoodleOptions from "@/basic/form/MoodleOptions.vue";
  * remounting step content on every step navigation.
  *
  * gradeInformation is a read-only prop computed by the parent from the selected
- * sessions, workflows, configuration and assignment max grade; the parent updates
+ * session count, configuration and assignment max grade; the parent updates
  * the max grade via its selectAssignment handler when this component re-emits
  * MoodleOptions' select-assignment event.
  *
@@ -148,8 +148,9 @@ export default {
       type: Object,
       default: () => ({}),
     },
-    selectedSessions: {
-      type: Array,
+    /** Number of selected sessions; in "all matching" mode there is no row list to count. */
+    selectedSessionCount: {
+      type: Number,
       required: true,
     },
     selectedConfigurationContent: {

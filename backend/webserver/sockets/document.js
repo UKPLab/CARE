@@ -155,6 +155,22 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Upload a document from the dashboard. Keep this permission check separate
+     * from addDocument, which is also used by assignment and Moodle uploads.
+     *
+     * @param {Object} data - The document upload data (see addDocument for fields).
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<Object>} The result of addDocument.
+     * @throws {TranslatableError} If the user lacks frontend.dashboard.documents.upload access.
+     */
+    async uploadDocument(data, options) {
+        if (!(await this.hasAccess("frontend.dashboard.documents.upload"))) {
+            throw new TranslatableError("errors.documents.noUploadAccess");
+        }
+        return this.addDocument(data, options);
+    }
+
+    /**
      * Uploads the given data object as a document.
      *
      * Stores the given pdf file in the files path and creates an entry in the database.
@@ -1953,7 +1969,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
-        this.createSocket("documentAdd", this.addDocument, {}, true);
+        this.createSocket("documentAdd", this.uploadDocument, {}, true);
         this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);

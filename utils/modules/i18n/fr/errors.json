@@ -195,6 +195,8 @@
         "studyRestartFailed": "Échec du redémarrage de l'étude",
         "templateSaveFailed": "Échec de l'enregistrement du modèle",
         "templateCreationFailed": "Échec de la création du modèle",
+        "formLoadFailed": "Impossible de charger le formulaire de l'étude",
+        "formLoadTimeout": "Délai dépassé lors du chargement des données du formulaire",
         "sessionNotFinished": "Session non terminée",
         "stepUpdateFailed": "Échec de la mise à jour de l'étape",
         "studyClosed": "Cette étude est clôturée",
@@ -401,6 +403,14 @@
     },
     "database": {
         "failedToUpdateData": "Impossible de mettre à jour les données"
+    },
+    "queryTable": {
+        "columnRequired": "Le nom de la colonne est obligatoire",
+        "columnNotDistinct": "La colonne {column} n'est pas disponible pour les valeurs distinctes",
+        "selectionTooLarge": "Trop de lignes sélectionnées (plus de {limit}). Restreignez d'abord le filtre.",
+        "idListTooLarge": "Trop d'identifiants sélectionnés. La limite est {limit} ; la requête a été rejetée.",
+        "scopeInvalid": "Cette sélection n'est plus valide. Revenez en arrière et choisissez à nouveau les étapes du processus.",
+        "inspectStudyRequired": "Une étude est requise pour charger ces sessions."
     },
     "backgroundTask": {
         "noDocumentSocketForClient": "Aucun DocumentSocket trouvé pour le client",

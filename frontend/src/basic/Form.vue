@@ -1,5 +1,5 @@
 <template>
-  <form v-if="currentData">
+  <form v-if="currentData" @submit.prevent>
     <div
       v-if="currentData !== null"
       class="row g-3"
