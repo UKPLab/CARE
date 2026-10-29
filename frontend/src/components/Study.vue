@@ -195,11 +195,7 @@
                 </SidebarTemplate>
               </template>
               <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
-                <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
-                  <template #content>
-                    <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
-                  </template>
-                </SidebarTemplate>
+                <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
               </template>
             </Annotator>
 
@@ -230,11 +226,7 @@
                 </SidebarTemplate>
               </template>
               <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
-                <SidebarTemplate :icon="tab.icon" :number="tab.number" :title="tab.title">
-                  <template #content>
-                    <LookBackPanel :step="tab.step" :type="tab.type" :label="stepLabels[tab.step.id]"/>
-                  </template>
-                </SidebarTemplate>
+                <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
               </template>
             </Editor>
 
@@ -275,7 +267,7 @@ import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
-import LookBackPanel from "@/components/study/LookBackPanel.vue";
+import LookBackTab from "@/components/study/LookBackTab.vue";
 import {buildLookBack, buildStepLabels} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
@@ -296,7 +288,7 @@ export default {
     Editor,
     TopBarButton,
     PaneStrip,
-    LookBackPanel,
+    LookBackTab,
     StepModal,
     LoadingModal
   },
