@@ -259,6 +259,7 @@
     "sendEmailNotificationToReviewer": "E-Mail-Benachrichtigung an Gutachter senden",
     "targetWorkflowSelection": "Ziel-Workflow-Auswahl",
     "selectTargetWorkflow": "Ziel-Workflow auswählen:",
+    "assignmentOption": "{name} (#{id})",
     "workflowStepMapping": "Workflow-Schritt-Zuordnung",
     "mapWorkflowStepToTarget": "Ordnen Sie jeden Quell-Workflow-Schritt (aus der Vorlage) einem Ziel-Workflow-Schritt zu:",
     "sourceStepTargetStep": "Quellschritt {index} ({stepType}) → Zielschritt:",
