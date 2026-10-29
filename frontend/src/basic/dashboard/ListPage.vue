@@ -1,5 +1,8 @@
 <template>
-  <Card :title="title">
+  <Card
+    class="dashboard-page"
+    :title="title"
+  >
     <template
       v-if="$slots.headerActions"
       #headerElements

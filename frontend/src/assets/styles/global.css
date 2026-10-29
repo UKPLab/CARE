@@ -445,6 +445,124 @@ html .card-header-actions .btn-secondary {
   --bs-btn-active-color: var(--bs-body-color);
 }
 
+/* Same icon light-up as the study dashboard: blue in light theme, yellow in dark.
+   Primary (filled) buttons keep their own colour. */
+html .card-header-actions .btn-secondary svg {
+  color: var(--bs-secondary-color);
+  transition: color 0.2s ease;
+}
+
+html .card-header-actions .btn-secondary:hover svg,
+html .card-header-actions .btn-secondary:focus-visible svg {
+  color: var(--bs-primary);
+}
+
+html[data-bs-theme="dark"] .card-header-actions .btn-secondary:hover svg,
+html[data-bs-theme="dark"] .card-header-actions .btn-secondary:focus-visible svg {
+  color: var(--care-accent);
+}
+
+/* List dashboards share the Studies card wash and the quiet hover chip. */
+html .dashboard-page {
+  --dash-border: rgba(15, 23, 42, 0.08);
+  --dash-ghost-hover: rgba(255, 255, 255, 0.85);
+  --dash-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --dash-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+    "Helvetica Neue", Roboto, sans-serif;
+  font-optical-sizing: auto;
+  font-feature-settings: "cv01", "cv11", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  border: 1px solid var(--dash-border);
+  border-radius: 16px;
+  background:
+    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.075), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.075), transparent 60%),
+    linear-gradient(180deg, #f7f8fc 0%, #f2f4f9 100%);
+  box-shadow: var(--dash-shadow);
+}
+
+html[data-bs-theme="dark"] .dashboard-page {
+  --dash-border: rgba(255, 255, 255, 0.08);
+  --dash-ghost-hover: rgba(255, 255, 255, 0.07);
+  --dash-panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --dash-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  background:
+    radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.09), transparent 60%),
+    color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
+}
+
+html .dashboard-page > .card-header {
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.35rem 0.4rem;
+}
+
+html .dashboard-page > .card-header .card-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--bs-emphasis-color);
+}
+
+html .dashboard-page .card-header-actions,
+html .dashboard-page .card-header-actions .btn-group {
+  gap: 0.25rem;
+}
+
+html .dashboard-page .card-header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 8px;
+}
+
+html .dashboard-page .card-header-actions .btn-group > .btn {
+  border-radius: 8px !important;
+}
+
+html .dashboard-page .card-header-actions .btn-primary {
+  padding-inline: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 6px 16px -6px rgba(var(--bs-primary-rgb), 0.55);
+}
+
+html .dashboard-page .card-header-actions .btn-primary:hover {
+  filter: brightness(1.06);
+  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 10px 22px -8px rgba(var(--bs-primary-rgb), 0.65);
+}
+
+html[data-bs-theme="dark"] .dashboard-page .card-header-actions .btn-primary {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
+    0 6px 16px -6px color-mix(in srgb, var(--care-accent) 55%, transparent);
+}
+
+html[data-bs-theme="dark"] .dashboard-page .card-header-actions .btn-primary:hover {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
+    0 10px 22px -8px color-mix(in srgb, var(--care-accent) 65%, transparent);
+}
+
+html .dashboard-page .card-header-actions .btn-secondary {
+  --bs-btn-hover-bg: var(--dash-ghost-hover);
+  --bs-btn-hover-border-color: var(--dash-border);
+  --bs-btn-hover-color: var(--bs-emphasis-color);
+  --bs-btn-active-bg: var(--dash-ghost-hover);
+  --bs-btn-active-border-color: var(--dash-border);
+  --bs-btn-active-color: var(--bs-emphasis-color);
+}
+
+html .dashboard-page .card-header-actions .btn-secondary:hover,
+html .dashboard-page .card-header-actions .btn-secondary:focus-visible {
+  box-shadow: var(--dash-panel-shadow);
+}
+
 html .dashboard-wrapper {
   background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
 }
