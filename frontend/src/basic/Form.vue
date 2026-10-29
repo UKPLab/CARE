@@ -59,6 +59,7 @@ export default {
     return {
       formData: computed(() => this.currentData),
       formButtonClick: (payload) => this.$emit("button-click", payload),
+      originalFormData: computed(() => this.originalData),
     };
   },
   props: {
@@ -69,6 +70,10 @@ export default {
     fields: {
       type: Array,
       required: true,
+    },
+    originalData: {
+      type: Object,
+      default: null,
     },
   },
   emits: ["update:modelValue", "update:configStatus", "file-change", "button-click"],
@@ -130,13 +135,54 @@ export default {
       const regularOk = this.$refs.regularGrid
         ? this.$refs.regularGrid.validate()
         : true;
-      const advancedOk =
-        !this.$refs.advancedGrid || this.$refs.advancedGrid.validate();
-      return regularOk && advancedOk;
+
+      const advancedOk = this.$refs.advancedGrid
+        ? this.$refs.advancedGrid.validate()
+        : true;
+
+      const datesOk = this.validatePastDates();
+
+      return regularOk && advancedOk && datesOk;
     },
     handleConfigStatusChange(status) {
       this.$emit("update:configStatus", status);
-    }
+    },
+
+    validatePastDates() {
+      const currentMinute = new Date();
+      currentMinute.setSeconds(0, 0);
+
+      return this.fields.every((field) => {
+        if (field.type !== "datetime" || !field.disablePast) {
+          return true;
+        }
+
+        const value = this.currentData?.[field.key];
+
+        if (value == null || value === "") {
+          return true;
+        }
+
+        const selected = new Date(value);
+
+        if (Number.isNaN(selected.getTime())) {
+          return false;
+        }
+
+        const originalValue = this.originalData?.[field.key];
+        const original = originalValue
+          ? new Date(originalValue)
+          : null;
+
+        const unchangedSavedValue =
+          original !== null &&
+          !Number.isNaN(original.getTime()) &&
+          Math.floor(selected.getTime() / 60_000) ===
+            Math.floor(original.getTime() / 60_000);
+
+        return selected >= currentMinute || unchangedSavedValue;
+      });
+    },
   },
 };
 </script>
