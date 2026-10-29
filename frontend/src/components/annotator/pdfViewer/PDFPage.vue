@@ -183,14 +183,6 @@ export default {
         offset: document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId).offsetTop - 52.5
       });
     },
-    setA4() {
-      const width = this.containerWidth;
-      if (width <= 0) {
-        return;
-      }
-      this.originalWidth = width;
-      this.currentWidth = width;
-    },
     applyZoomToWrapper() {
       if (this.originalWidth <= 0) {
         return;
@@ -257,7 +249,8 @@ export default {
         return;
       }
 
-      this.setA4();
+      this.originalWidth = available;
+      this.currentWidth = available;
       this.refit();
     },
     renderPage(page) {

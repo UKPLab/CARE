@@ -54,22 +54,18 @@ export class PDF {
         return this.state.pages[pageNumber];
     }
 
-    async getPageTextContent(pageIndex) {
-        const cachedText = this.pageTextCache.get(pageIndex);
-        if (cachedText) {
-            return cachedText;
-        } else {
-            // we have to load the page first!
-            const textContent = await this.getPage(pageIndex + 1).then((page) => {
-                return page.getTextContent({normalizeWhitespace: true})
-            });
-            const text = textContent.items.map(it => it.str).join('');
-
-            this.pageTextCache.set(pageIndex, text);
-
-            return text
+    getPageTextContent(pageIndex) {
+        // cache the promise, so concurrent callers share one extraction
+        if (!this.pageTextCache.has(pageIndex)) {
+            this.pageTextCache.set(pageIndex, this.getPage(pageIndex + 1)
+                .then(page => page.getTextContent({normalizeWhitespace: true}))
+                .then(tc => tc.items.map(it => it.str).join(''))
+                .catch(err => {
+                    this.pageTextCache.delete(pageIndex);
+                    throw err;
+                }));
         }
-
+        return this.pageTextCache.get(pageIndex);
     }
 
     /**

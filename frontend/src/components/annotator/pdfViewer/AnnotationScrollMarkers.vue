@@ -152,9 +152,11 @@ export default {
     }
   },
   methods: {
+    /** Watches every child of the viewer container for size changes, since the PDF content is inserted after load. */
     observeContent() {
       Array.from(this.container.children).forEach(child => this.resizeObserver.observe(child));
     },
+    /** Recomputes the scaled marker positions on the track from the current highlight/page positions. */
     async computeMarkers() {
       const container = this.container;
       if (!container || container.scrollHeight === 0) {
@@ -195,9 +197,11 @@ export default {
         const pageNumber = selectors?.find(s => s.type === "PagePositionSelector")?.number;
         const offset = selectors?.find(s => s.type === "TextPositionSelector")?.start;
         const top = pageNumber && offset !== undefined
-          ? await this.pdf.getTextTop(pageNumber - 1, offset).catch(() => null)
+          ? await this.pdf.getTextTop(pageNumber - 1, offset).catch(() => undefined)
           : null;
-        this.textTops.set(anno.id, top);
+        if (top !== undefined) {
+          this.textTops.set(anno.id, top);
+        }
       }));
     },
     /**
@@ -217,6 +221,7 @@ export default {
       const rect = wrapper.getBoundingClientRect();
       return rect.top + (this.textTops.get(anno.id) ?? 0) * rect.width;
     },
+    /** Scrolls the viewer to the given annotation. @param {number} annotationId */
     jumpTo(annotationId) {
       this.eventBus.emit("pdfScroll", annotationId);
     },
