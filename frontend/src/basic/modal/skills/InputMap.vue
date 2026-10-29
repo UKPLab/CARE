@@ -526,14 +526,23 @@ export default {
         switch (step.stepType) {
           case 1: {
             if (this.isTemplateMode) {
-              sources.push({
-                value: 'template_submission',
-                name: this.$t('nlp.inputMap.sources.submission'),
-                type: 'submission',
-                table: 'submission',
-                stepIndex: stepIndex,
-                isTemplate: true
-              });
+              sources.push(
+                {
+                  value: 'template_document',
+                  name: this.$t('nlp.inputMap.sources.documents'),
+                  type: 'document',
+                  table: 'document',
+                  stepIndex: stepIndex,
+                  isTemplate: true,
+                },
+                {
+                  value: 'template_submission',
+                  name: this.$t('nlp.inputMap.sources.submission'),
+                  type: 'submission',
+                  table: 'submission',
+                  stepIndex: stepIndex,
+                  isTemplate: true
+                });
             } else {
               // Add specific document/submission sources
               if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
