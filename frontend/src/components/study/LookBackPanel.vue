@@ -74,6 +74,12 @@ export default {
       isVisible: false,
     };
   },
+  beforeUnmount() {
+    // Leaving the study removes the tab without a "hidden" event, so the time it was open would have no end
+    if (this.isVisible) {
+      this.visibilityChanged(false);
+    }
+  },
   methods: {
     // Logged like pdfPageVisibilityChange: the time between visible and hidden is how long the tab was on screen
     visibilityChanged(isVisible) {

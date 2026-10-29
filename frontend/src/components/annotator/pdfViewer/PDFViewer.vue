@@ -171,11 +171,7 @@ export default {
     },
     isHidden(hidden) {
       // Hidden pages are not on screen, even though the browser still counts them as visible
-      this.visiblePages.forEach((pageNumber) => {
-        if (this.lastVisibility[pageNumber]) {
-          this.sendVisibility({...this.lastVisibility[pageNumber], isVisible: !hidden});
-        }
-      });
+      this.sendVisiblePages(!hidden);
     },
     scale(newScale) {
       // Keep form data in sync with scale
@@ -229,6 +225,12 @@ export default {
         }
       }
     );
+  },
+  beforeUnmount() {
+    // Pages still on screen would otherwise never get their "hidden" event; a hidden viewer already sent it
+    if (!this.isHidden) {
+      this.sendVisiblePages(false);
+    }
   },
   unmounted() {
     this.disconnectContainerObserver();
@@ -333,6 +335,14 @@ export default {
           studyStepId: this.studyStepId,
         }
       })
+    },
+    // Sends the visibility of every page the browser counts as visible
+    sendVisiblePages(isVisible) {
+      this.visiblePages.forEach((pageNumber) => {
+        if (this.lastVisibility[pageNumber]) {
+          this.sendVisibility({...this.lastVisibility[pageNumber], isVisible});
+        }
+      });
     },
     onCopy(event) {
       this.$emit('copy', event);
