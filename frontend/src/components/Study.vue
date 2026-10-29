@@ -180,10 +180,7 @@
               <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
                 <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
                   <template #content>
-                    <div v-if="ownTabNumber(step)" class="small text-secondary d-flex align-items-center gap-1 px-2 pt-2">
-                      <LoadIcon icon-name="pencil-fill" :size="12"/>
-                      {{ $t('components.studyRoute.panes.currentStep') }}
-                    </div>
+                    <CurrentStepNote v-if="ownTabNumber(step)"/>
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
@@ -211,10 +208,7 @@
               <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
                 <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
                   <template #content>
-                    <div v-if="ownTabNumber(step)" class="small text-secondary d-flex align-items-center gap-1 px-2 pt-2">
-                      <LoadIcon icon-name="pencil-fill" :size="12"/>
-                      {{ $t('components.studyRoute.panes.currentStep') }}
-                    </div>
+                    <CurrentStepNote v-if="ownTabNumber(step)"/>
                     <Assessment
                         :config="step.configuration"
                         :study-step-id="step.id"
@@ -268,6 +262,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
 import LookBackTab from "@/components/study/LookBackTab.vue";
+import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
 import {buildLookBack, buildStepLabels} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
@@ -289,6 +284,7 @@ export default {
     TopBarButton,
     PaneStrip,
     LookBackTab,
+    CurrentStepNote,
     StepModal,
     LoadingModal
   },
