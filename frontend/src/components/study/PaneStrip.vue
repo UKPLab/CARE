@@ -248,7 +248,8 @@ export default {
       };
       divider.setPointerCapture(event.pointerId);
       divider.addEventListener("pointermove", move);
-      divider.addEventListener("pointerup", stop, {once: true});
+      // Fires after pointerup and after pointercancel (a touch or pen gesture the browser takes over)
+      divider.addEventListener("lostpointercapture", stop, {once: true});
       document.body.style.userSelect = "none";
     },
     flip() {
