@@ -8,11 +8,16 @@
       <div
         v-for="toast in toasts"
         :key="toast.id"
-        :ref="(el) => setToastRef(toast.id, el)"
         class="care-toast"
-        :class="[`care-toast--${toast.kind}`, { 'is-ghost': toast.ghost }]"
+        :class="[`care-toast--${toast.kind}`, { 'is-paused': toast.paused }]"
         :role="toast.kind === 'danger' || toast.kind === 'warning' ? 'alert' : 'status'"
         :style="{ '--care-toast-duration': `${toast.delay}ms` }"
+        @mouseenter="onPointerEnter(toast)"
+        @mouseleave="onPointerLeave(toast, $event)"
+        @focusin="onFocusIn(toast)"
+        @focusout="onFocusOut(toast, $event)"
+        @pointerdown.stop
+        @click.stop
       >
         <div class="care-toast__icon" aria-hidden="true">
           <!-- success: circle + drawn check mark -->
@@ -41,8 +46,32 @@
         </div>
 
         <div class="care-toast__content">
-          <div v-if="toast.title" class="care-toast__title">{{ toast.title }}</div>
-          <div v-if="toast.body" class="care-toast__body">{{ toast.body }}</div>
+          <div
+            v-if="toast.title"
+            :ref="(el) => { if (!toast.body) this.setClipEl(toast.id, el); }"
+            class="care-toast__title"
+            :class="{
+              'is-clamped': toast.overflows && !toast.expanded && !toast.body,
+              'is-expanded': toast.overflows && toast.expanded && !toast.body,
+            }"
+          >{{ toast.title }}</div>
+          <div
+            v-if="toast.body"
+            :ref="(el) => this.setClipEl(toast.id, el)"
+            class="care-toast__body"
+            :class="{
+              'is-clamped': toast.overflows && !toast.expanded,
+              'is-expanded': toast.overflows && toast.expanded,
+            }"
+          >{{ toast.body }}</div>
+          <button
+            v-if="toast.overflows && !toast.expanded"
+            type="button"
+            class="care-toast__more"
+            @click="expandToast(toast)"
+          >
+            {{ $t('common.showMore') }}
+          </button>
         </div>
 
         <button
@@ -80,14 +109,17 @@
  *  delay: 5000, //in ms, 0 or less keeps the toast until it is closed manually
  *  }
  *
- * Toasts disappear automatically and do not block the page: clicks and scrolling go
- * through to the elements behind them. Only the close button is interactive. When the
- * cursor is over a toast it fades out so the content behind stays visible.
+ * Toasts disappear automatically. While the pointer or keyboard focus is on a toast
+ * the dismiss timer and the progress bar freeze, so the message stays readable.
+ * A long message stays clamped to a few lines with a "show more" control. 
+ * Once opened, the text stays expanded and scrolls inside the toast.
  *
- *  @author Dennis Zyska
+ *  @author Dennis Zyska, Andrii Nikitin
  */
 
 const MAX_TOASTS = 5;
+// About three lines in the toast column. Longer copy stays collapsed.
+const COLLAPSE_CHARS = 140;
 
 export default {
   name: "BasicToast",
@@ -105,19 +137,13 @@ export default {
   created() {
     // Non-reactive bookkeeping
     this.timers = new Map();
-    this.toastEls = new Map();
-    this.rafPending = false;
-    this.lastPointer = null;
+    this.clipEls = new Map();
   },
   mounted() {
     this.eventBus.on('toast', this.makeToast);
-    document.addEventListener('mousemove', this.onPointerMove, {passive: true});
-    document.addEventListener('mouseleave', this.onPointerLeave);
   },
   beforeUnmount() {
     this.eventBus.off('toast', this.makeToast);
-    document.removeEventListener('mousemove', this.onPointerMove);
-    document.removeEventListener('mouseleave', this.onPointerLeave);
     this.timers.forEach((t) => clearTimeout(t));
     this.timers.clear();
   },
@@ -144,13 +170,20 @@ export default {
         : this.resolveText(data.message, data.params || {});
 
       const delay = Number.isFinite(Number(data.delay)) ? Number(data.delay) : 5000;
+      const text = `${title || ""}\n${body || ""}`.trim();
       const toast = {
         id: ++this.toastCount,
         title,
         body,
         kind: this.resolveKind(data.variant),
         delay: delay > 0 ? delay : 0,
-        ghost: false,
+        remainingMs: delay > 0 ? delay : 0,
+        paused: false,
+        pointerInside: false,
+        focusInside: false,
+        dismissed: false,
+        overflows: text.length > COLLAPSE_CHARS || text.split(/\n/).length > 3,
+        expanded: false,
       };
 
       this.toasts.push(toast);
@@ -160,8 +193,106 @@ export default {
       }
 
       if (toast.delay > 0) {
-        this.timers.set(toast.id, setTimeout(() => this.dismiss(toast.id), toast.delay));
+        this.armTimer(toast);
       }
+    },
+    armTimer(toast) {
+      toast.startedAt = Date.now();
+      this.timers.set(toast.id, setTimeout(() => this.dismiss(toast.id), toast.remainingMs));
+    },
+    onPointerEnter(toast) {
+      if (toast.dismissed || toast.delay <= 0) return;
+      toast.pointerInside = true;
+      this.syncPause(toast);
+    },
+    onPointerLeave(toast, event) {
+      if (toast.dismissed || toast.delay <= 0) return;
+      toast.pointerInside = false;
+      const active = document.activeElement;
+      if (active && event.currentTarget.contains(active)) {
+        active.blur();
+      }
+      if (!event.currentTarget.contains(document.activeElement)) {
+        toast.focusInside = false;
+      }
+      this.syncPause(toast);
+    },
+    onFocusIn(toast) {
+      if (toast.dismissed || toast.delay <= 0) return;
+      toast.focusInside = true;
+      this.syncPause(toast);
+    },
+    onFocusOut(toast, event) {
+      if (toast.dismissed || toast.delay <= 0) return;
+      const next = event.relatedTarget;
+      if (next && event.currentTarget.contains(next)) return;
+      toast.focusInside = false;
+      this.syncPause(toast);
+    },
+    syncPause(toast) {
+      if (toast.pointerInside || toast.focusInside) this.pauseTimer(toast);
+      else this.resumeTimer(toast);
+    },
+    pauseTimer(toast) {
+      if (toast.paused) return;
+      const timer = this.timers.get(toast.id);
+      if (timer) {
+        clearTimeout(timer);
+        this.timers.delete(toast.id);
+      }
+      const elapsed = Date.now() - toast.startedAt;
+      toast.remainingMs = Math.max(0, toast.remainingMs - elapsed);
+      toast.paused = true;
+    },
+    resumeTimer(toast) {
+      if (toast.dismissed || !toast.paused) return;
+      toast.paused = false;
+      if (toast.remainingMs <= 0) {
+        this.dismiss(toast.id);
+        return;
+      }
+      this.armTimer(toast);
+    },
+    setClipEl(id, el) {
+      if (el) this.clipEls.set(id, el);
+      else this.clipEls.delete(id);
+    },
+    expandToast(toast) {
+      if (toast.expanded) return;
+      const el = this.clipEls.get(toast.id);
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!el || reduce) {
+        toast.expanded = true;
+        return;
+      }
+      const from = el.getBoundingClientRect().height;
+      toast.expanded = true;
+      this.$nextTick(() => {
+        const root = el.closest(".care-toast");
+        if (root && !root.contains(document.activeElement)) {
+          toast.focusInside = false;
+          this.syncPause(toast);
+        }
+        const cap = window.innerHeight * 0.3;
+        if (el._clipDone) el.removeEventListener("transitionend", el._clipDone);
+        el.style.height = `${from}px`;
+        el.style.overflow = "hidden";
+        el.style.transition = "none";
+        void el.offsetHeight;
+        const to = Math.min(el.scrollHeight, cap);
+        el.style.transition = "height 320ms ease";
+        el.style.height = `${to}px`;
+        const finish = (event) => {
+          if (event.propertyName !== "height") return;
+          el.style.height = "";
+          el.style.overflow = "";
+          el.style.transition = "";
+          el._clipDone = null;
+          el.removeEventListener("transitionend", finish);
+        };
+        el._clipDone = finish;
+        el.addEventListener("transitionend", finish);
+      });
     },
     dismiss(id) {
       const timer = this.timers.get(id);
@@ -169,51 +300,9 @@ export default {
         clearTimeout(timer);
         this.timers.delete(id);
       }
-      this.toastEls.delete(id);
+      const toast = this.toasts.find((t) => t.id === id);
+      if (toast) toast.dismissed = true;
       this.toasts = this.toasts.filter((t) => t.id !== id);
-    },
-    setToastRef(id, el) {
-      if (el) {
-        this.toastEls.set(id, el);
-      } else {
-        this.toastEls.delete(id);
-      }
-    },
-    onPointerMove(event) {
-      // Toasts use pointer-events: none, so hover is detected by hit-testing their rects
-      this.lastPointer = {x: event.clientX, y: event.clientY};
-      if (this.rafPending || this.toasts.length === 0) return;
-      this.rafPending = true;
-      requestAnimationFrame(() => {
-        this.rafPending = false;
-        this.updateGhosts();
-      });
-    },
-    onPointerLeave() {
-      this.lastPointer = null;
-      this.updateGhosts();
-    },
-    updateGhosts() {
-      const p = this.lastPointer;
-      this.toasts.forEach((toast) => {
-        const el = this.toastEls.get(toast.id);
-        let inside = false;
-        if (p && el) {
-          const r = el.getBoundingClientRect();
-          inside = p.x >= r.left && p.x <= r.right && p.y >= r.top && p.y <= r.bottom;
-          // Keep the toast readable when the user is aiming at the close button
-          const btn = el.querySelector('.care-toast__close');
-          if (inside && btn) {
-            const b = btn.getBoundingClientRect();
-            if (p.x >= b.left - 6 && p.x <= b.right + 6 && p.y >= b.top - 6 && p.y <= b.bottom + 6) {
-              inside = false;
-            }
-          }
-        }
-        if (toast.ghost !== inside) {
-          toast.ghost = inside;
-        }
-      });
     },
   }
 }
@@ -230,7 +319,7 @@ export default {
   align-items: flex-end;
   gap: 10px;
   width: min(380px, calc(100vw - 32px));
-  /* The stack never blocks the page */
+  /* The invisible box around the stack does not take clicks. Each toast does. */
   pointer-events: none;
 }
 
@@ -253,9 +342,7 @@ export default {
   border: 1px solid color-mix(in srgb, var(--care-toast-color) 30%, var(--bs-border-color-translucent));
   border-radius: var(--bs-border-radius-lg, .75rem);
   box-shadow: var(--care-shadow-3, 0 12px 24px -6px rgb(0 0 0 / .2));
-  /* Clicks, scrolling and selection go through to the page behind */
-  pointer-events: none;
-  user-select: none;
+  pointer-events: auto;
   transition: opacity 180ms ease, transform 180ms ease;
 }
 
@@ -274,10 +361,6 @@ export default {
     color-mix(in srgb, var(--care-toast-color) 45%, transparent)
   );
   box-shadow: 0 0 8px color-mix(in srgb, var(--care-toast-color) 55%, transparent);
-}
-
-.care-toast.is-ghost {
-  opacity: .18;
 }
 
 .care-toast--success { --care-toast-color: var(--bs-success); }
@@ -372,8 +455,58 @@ export default {
   overflow-wrap: anywhere;
 }
 
+.care-toast__title.is-clamped,
+.care-toast__body.is-clamped,
+.care-toast__title.is-expanded,
+.care-toast__body.is-expanded {
+  overflow: hidden;
+}
+
+.care-toast__title.is-clamped,
+.care-toast__body.is-clamped {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 1.35em), rgb(0 0 0 / 28%) 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 1.35em), rgb(0 0 0 / 28%) 100%);
+}
+
+.care-toast__title.is-clamped {
+  max-height: calc(1.3em * 2.85);
+}
+
+.care-toast__body.is-clamped {
+  max-height: calc(1.4em * 3.85);
+}
+
+.care-toast__title.is-expanded,
+.care-toast__body.is-expanded {
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
 .care-toast__title + .care-toast__body {
   margin-top: 4px;
+}
+
+.care-toast__more {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--care-toast-color);
+  font-size: .8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.care-toast__more:hover {
+  text-decoration: underline;
+}
+
+.care-toast__more:focus-visible {
+  outline: none;
+  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-radius: 4px;
 }
 
 /* ---------- Close ---------- */
@@ -391,8 +524,6 @@ export default {
   border: 0;
   border-radius: 50%;
   cursor: pointer;
-  /* The only interactive part of the toast */
-  pointer-events: auto;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
@@ -415,9 +546,29 @@ export default {
   height: 2px;
   border-radius: 999px;
   background: var(--care-toast-color);
-  opacity: .45;
+  opacity: .55;
   transform-origin: left center;
   animation: care-progress var(--care-toast-duration) linear forwards;
+  transition: opacity 700ms ease;
+}
+
+.care-toast__progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 700ms ease;
+}
+
+.care-toast.is-paused .care-toast__progress {
+  animation-play-state: paused;
+}
+
+.care-toast.is-paused .care-toast__progress::after {
+  opacity: .38;
 }
 
 /* ---------- Enter / leave ---------- */
