@@ -23,10 +23,11 @@
                   class="nav-link align-items-center"
                   :class="{
                   'active': resolvedActiveSlot === slotName,
+                  'current-step': config.current,
                 }"
                   :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                   :title="config.title || ''"
-                  :aria-label="config.title || $t('navigation.sidebar.sidebarSection')"
+                  :aria-label="config.current ? $t('navigation.sidebar.currentStepTab', {title: config.title}) : (config.title || $t('navigation.sidebar.sidebarSection'))"
                   :tabindex="isSingleConfig ? '-1' : '0'"
                   :aria-disabled="isSingleConfig ? 'true' : 'false'"
                   :disabled="isSingleConfig"
@@ -188,6 +189,13 @@ export default {
       required: false,
       default: null,
     },
+    // Decides for each tab (by its slot name) whether it belongs to the study step the user is on;
+    // such a tab gets a ring and says so to screen readers
+    isTabCurrent: {
+      type: Function,
+      required: false,
+      default: null,
+    },
     isShown: {
       type: Boolean,
       required: false,
@@ -255,6 +263,7 @@ export default {
               title: props.title,
               icon: props.icon,
               number: props.number,
+              current: this.isTabCurrent ? this.isTabCurrent(slotName) : false,
               buttons: props.buttons || []
             };
           }
@@ -649,6 +658,12 @@ export default {
 
 [data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
   color: var(--care-accent);
+}
+
+/* The tab of the study step the user is on keeps a ring, like that step on the workflow bar (study/PaneStrip.vue) */
+.sidebar-header .nav-tabs .nav-link.current-step {
+  outline: 2px solid var(--look-back-accent, var(--bs-primary));
+  outline-offset: -2px;
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {

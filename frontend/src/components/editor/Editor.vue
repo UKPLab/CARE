@@ -33,6 +33,7 @@
           :side-bar-width="350"
           :active-side-bar="activeSidebar || defaultActiveSidebar"
           :is-tab-shown="isSidebarTabShown"
+          :is-tab-current="isSidebarTabCurrent"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
@@ -89,6 +90,7 @@ import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
 import { emailTemplateTypes } from "@/assets/templateTypes";
 import { resolveApiMessage } from "@/assets/utils";
+import {isCurrentStepTab, isLookBackTabShown} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "EditorView",
@@ -164,11 +166,23 @@ export default {
       required: false,
       default: null,
     },
-    // Decides for each sidebar tab whether it is shown (see basic/Sidebar.vue)
-    isSidebarTabShown: {
-      type: Function,
+    // In a study step that can look back: its look-back sidebar tabs (see components/study/helpers/lookBack.js)
+    lookBackTabs: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
+    // The earlier step on screen, if this step has a look-back tab for it
+    shownLookBackStepId: {
+      type: Number,
       required: false,
       default: null,
+    },
+    // Hides the step's own sidebar tabs, while an earlier step is shown in its place
+    ownTabsHidden: {
+      type: Boolean,
+      required: false,
+      default: false,
     },
     withoutHistory: {
       type: Boolean,
@@ -291,6 +305,13 @@ export default {
     },
   },
   methods: {
+    // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
+    isSidebarTabShown(slotName) {
+      return isLookBackTabShown(slotName, this.lookBackTabs, this.shownLookBackStepId, this.ownTabsHidden);
+    },
+    isSidebarTabCurrent(slotName) {
+      return isCurrentStepTab(slotName, this.lookBackTabs);
+    },
     addText(text) {
       if (this.templateId) {
         this.$refs.templateEditor?.addText(text);

@@ -71,6 +71,46 @@ export function buildLookBackTabs(earlierSteps, steps, labels, $t) {
 }
 
 /**
+ * Builds the look-back sidebar tabs of every step. Kept apart from buildLookBack, so the tabs are not rebuilt
+ * when only the step on screen or the split changes, and each pane keeps the same list
+ * @param {Object} state - the study state
+ * @param {Array<Object>} state.steps - study steps in workflow order
+ * @param {Object} state.labels - step id mapped to its label, from buildStepLabels
+ * @param {Function} state.getStep - returns the study step with the given id
+ * @param {Function} state.isLoaded - whether the step with the given id is loaded
+ * @param {Function} state.$t - Vue i18n translate function
+ * @returns {Object} step id mapped to its tabs, from buildLookBackTabs
+ */
+export function buildTabsByStep({steps, labels, getStep, isLoaded, $t}) {
+  return Object.fromEntries(steps.map((step) =>
+      [step.id, buildLookBackTabs(findEarlierSteps(step, getStep, isLoaded), steps, labels, $t)]));
+}
+
+/**
+ * Whether a sidebar tab of a pane is shown: a look-back tab while its step is on screen,
+ * the pane's own tabs unless the pane is hidden
+ * @param {string} slotName - the tab's slot name
+ * @param {Array<Object>} lookBackTabs - the pane's look-back tabs, from buildTabsByStep
+ * @param {number|null} shownLookBackStepId - the earlier step on screen, if the pane has a tab for it
+ * @param {boolean} ownTabsHidden - whether the pane's own tabs are hidden
+ * @returns {boolean} whether the tab is shown
+ */
+export function isLookBackTabShown(slotName, lookBackTabs, shownLookBackStepId, ownTabsHidden) {
+  const lookBackTab = lookBackTabs.find((tab) => tab.key === slotName);
+  return lookBackTab ? lookBackTab.step.id === shownLookBackStepId : !ownTabsHidden;
+}
+
+/**
+ * Whether a sidebar tab belongs to the step itself, in a step that also has look-back tabs
+ * @param {string} slotName - the tab's slot name
+ * @param {Array<Object>} lookBackTabs - the pane's look-back tabs, from buildTabsByStep
+ * @returns {boolean} whether the tab is one of the step's own tabs
+ */
+export function isCurrentStepTab(slotName, lookBackTabs) {
+  return lookBackTabs.length > 0 && !lookBackTabs.some((tab) => tab.key === slotName);
+}
+
+/**
  * Everything Study.vue needs to show earlier steps next to or instead of the current one.
  * An earlier step takes the place of the current one while it is selected in the workflow bar. The current step
  * stays shown as well: next to it in a split, otherwise hidden except its sidebar (see PaneStrip.vue).
@@ -81,35 +121,31 @@ export function buildLookBackTabs(earlierSteps, steps, labels, $t) {
  * @param {Object} state.currentStep - the step the student is on
  * @param {number|null} state.shownStepId - the step selected in the workflow bar
  * @param {string|null} state.splitLayout - the split layout, null when not split
- * @param {Object} state.labels - step id mapped to its label, from buildStepLabels
+ * @param {Object} state.tabsByStep - step id mapped to its look-back tabs, from buildTabsByStep
  * @param {Function} state.getStep - returns the study step with the given id
  * @param {Function} state.isLoaded - whether the step with the given id is loaded
- * @param {Function} state.$t - Vue i18n translate function
- * @returns {Object} earlierSteps, hiddenStepId, dataSplit, isVisible(stepId), tabsByStep and paneProps
- *     (the props of each step's Annotator or Editor)
+ * @returns {Object} earlierSteps, hiddenStepId, dataSplit, isVisible(stepId) and paneProps
+ *     (the props of each step's Annotator or Editor; only plain values, so a pane re-renders only when its own change)
  */
-export function buildLookBack({steps, currentStep, shownStepId, splitLayout, labels, getStep, isLoaded, $t}) {
+export function buildLookBack({steps, currentStep, shownStepId, splitLayout, tabsByStep, getStep, isLoaded}) {
   const earlierSteps = findEarlierSteps(currentStep, getStep, isLoaded);
   const shownEarlier = earlierSteps.some((step) => step.id === shownStepId);
   const currentStepId = currentStep?.id ?? null;
   const hiddenStepId = shownEarlier && !splitLayout ? currentStepId : null;
   const isVisible = (stepId) => stepId === currentStepId || (shownEarlier && stepId === shownStepId);
-  const tabsByStep = Object.fromEntries(steps.map((step) =>
-      [step.id, buildLookBackTabs(findEarlierSteps(step, getStep, isLoaded), steps, labels, $t)]));
   const paneProps = Object.fromEntries(steps.map((step) => {
     const tabs = tabsByStep[step.id];
     const shownTab = tabs.find((tab) => tab.step.id === shownStepId);
     const ownTab = step.stepType === 2 && step.configuration?.settings?.configurationId ? "additionalSidebars" : null;
     return [step.id, {
       activeSidebar: shownTab ? shownTab.key : ownTab,
-      isSidebarTabShown: (slotName) => {
-        const lookBackTab = tabs.find((tab) => tab.key === slotName);
-        return lookBackTab ? lookBackTab.step.id === shownStepId : hiddenStepId !== step.id;
-      },
+      lookBackTabs: tabs,
+      shownLookBackStepId: shownTab ? shownStepId : null,
+      ownTabsHidden: hiddenStepId === step.id,
       forceReadOnly: step.id !== currentStepId,
       sidebarDisabled: step.id !== currentStepId,
       isShown: isVisible(step.id),
     }];
   }));
-  return {earlierSteps, hiddenStepId, dataSplit: splitLayout || (hiddenStepId !== null ? "single" : null), isVisible, tabsByStep, paneProps};
+  return {earlierSteps, hiddenStepId, dataSplit: splitLayout || (hiddenStepId !== null ? "single" : null), isVisible, paneProps};
 }

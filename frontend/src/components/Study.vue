@@ -191,7 +191,7 @@
                   </template>
                 </SidebarTemplate>
               </template>
-              <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
+              <template v-for="tab in tabsByStep[step.id]" :key="tab.key" #[tab.key]>
                 <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
               </template>
             </Annotator>
@@ -219,7 +219,7 @@
                   </template>
                 </SidebarTemplate>
               </template>
-              <template v-for="tab in lookBack.tabsByStep[step.id]" :key="tab.key" #[tab.key]>
+              <template v-for="tab in tabsByStep[step.id]" :key="tab.key" #[tab.key]>
                 <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
               </template>
             </Editor>
@@ -263,7 +263,7 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
 import LookBackTab from "@/components/study/LookBackTab.vue";
 import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
-import {buildLookBack, buildStepLabels} from "@/components/study/helpers/lookBack.js";
+import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
@@ -351,11 +351,17 @@ export default {
     hasInstructions() {
       return !!this.study?.description && !!this.studySession?.start;
     },
+    tabsByStep() {
+      return buildTabsByStep({
+        steps: this.orderedStudySteps, labels: this.stepLabels, getStep: this.$store.getters["table/study_step/get"],
+        isLoaded: this.isStepLoaded, $t: this.$t,
+      });
+    },
     lookBack() {
       return buildLookBack({
         steps: this.orderedStudySteps, currentStep: this.currentStudyStep, shownStepId: this.shownStepId,
-        splitLayout: this.splitLayout, labels: this.stepLabels, getStep: this.$store.getters["table/study_step/get"],
-        isLoaded: this.isStepLoaded, $t: this.$t,
+        splitLayout: this.splitLayout, tabsByStep: this.tabsByStep, getStep: this.$store.getters["table/study_step/get"],
+        isLoaded: this.isStepLoaded,
       });
     },
     currentStep() {
@@ -570,7 +576,7 @@ export default {
   methods: {
     // A step that can look back numbers its own sidebar tabs too, so they read like the workflow bar
     ownTabNumber(step) {
-      return this.lookBack.tabsByStep[step.id]?.length ? this.orderedStudySteps.indexOf(step) + 1 : null;
+      return this.tabsByStep[step.id]?.length ? this.orderedStudySteps.indexOf(step) + 1 : null;
     },
     /**
      * Move keyboard focus to the forward control after the final assessment
