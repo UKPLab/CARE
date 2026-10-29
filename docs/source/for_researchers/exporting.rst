@@ -103,7 +103,7 @@ To get all annotations of a specific user, you can simply filter by the userId f
 .. code-block:: python
 
     # data holds list of parsed json objects
-    # we are interested in the study with id 1
+    # we are interested in the user with id 1
     user_annotations = [d for d in data if d["userId"] == 1]
 
 

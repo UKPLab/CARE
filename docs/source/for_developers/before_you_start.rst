@@ -108,6 +108,8 @@ according to your needs.
 
 |
 
+.. _development-build:
+
 Development Build
 -----------------
 
@@ -121,14 +123,18 @@ Check out the following build options depending on your needs:
 
 Basic
 ~~~~~~
-If you are not sure what kind of build you want and possibly make changes both in the frontend and
-the backend, just run the basic build using the following commands in different consoles and the given order:
+Use this setup when making changes to both the frontend and backend. Run the commands in order,
+using a separate terminal for each long-running process:
+
+1. Run ``make docker`` and leave it running. This starts PostgreSQL and the development RPC services.
+2. In another terminal, run ``make init`` once the services are ready.
+3. In a third terminal, run ``make dev`` to start the frontend and backend development servers.
 
 .. code-block:: bash
 
     make docker # starts the docker containers needed for development
     make init   # initializes the database
-    make dev    # starts the development server (backend & frontend, wizard skipped) - only Linux!
+    make dev    # starts the development server (backend & frontend, wizard skipped)
 
 This will start the development server for the backend as well as the frontend. This also starts up
 a database in a docker container and populates it with the necessary schemas.
@@ -147,7 +153,7 @@ a database in a docker container and populates it with the necessary schemas.
 
 .. warning::
 
-        The ``make dev`` command only works on Linux systems.
+        The ``make dev`` command works on Unix-like systems.
         On Windows, you need to start the frontend and backend separately.
         Use ``make dev-frontend`` + ``make dev-backend`` for wizard-skipped backend runs, or
         ``make dev-frontend`` + ``make dev-backend-wizard`` to test the first-time setup wizard flow.
@@ -246,7 +252,7 @@ More Commands
     * - ``make doc_clean``
       - Clean the Sphinx documentation.
     * - ``make dev``
-      - Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix only)
+      - Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix-like systems only)
     * - ``make dev-wizard``
       - Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)
     * - ``make dev-backend``
@@ -293,4 +299,3 @@ More Commands
       - Remove ``node_modules``, ``dist``, docker containers/networks, and reset the DB state.
     * - ``make kill``
       - Kill all Node.js processes (Unix only).
-
