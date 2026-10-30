@@ -431,6 +431,7 @@
         "studySessionOwnerNotSelectedReviewer": "Le propriétaire de la session d'étude (ID utilisateur : {reviewerId}) ne figure pas dans la liste des évaluateurs sélectionnés. Veuillez l'ajouter à la sélection des évaluateurs.",
         "invalidMode": "Mode invalide pour l'attribution des évaluations.",
         "firstStepNotSubmission": "La première étape sélectionnée ne correspond pas à un travail.",
+        "invalidWorkflowMapping": "Correspondance des étapes du workflow invalide.",
         "latestSubmissionNotFound": "La dernière version du travail choisi est introuvable.",
         "selectedNotResolved": "Le devoir sélectionné {assignmentId} n'a pas pu être résolu.",
         "startAfterEnd": "L'heure de début doit précéder l'heure de fin."

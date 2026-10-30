@@ -100,7 +100,7 @@ export default {
       readOnly: computed(() => this.readOnly),
     }
   },
-  emits: ['copy'],
+  emits: ['copy', 'loaded'],
   data() {
     return {
       pdf: null,
@@ -193,6 +193,7 @@ export default {
             .then((pdf) => {
               this.pdf = new PDF();
               this.pdf.setPDF(pdf);
+              this.$emit('loaded', this.pdf);
             })
             .catch(_response => {
               this.eventBus.emit('toast', {
