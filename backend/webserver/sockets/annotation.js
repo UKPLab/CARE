@@ -336,7 +336,7 @@ class AnnotationSocket extends Socket {
      */
     async embedAnnotationsForDocument(data, options) {
         const documentSocket = this.getSocket("DocumentSocket");
-        
+
         if (!documentSocket) {
             throw new TranslatableError("errors.documents.noAccess");
         }
@@ -345,7 +345,7 @@ class AnnotationSocket extends Socket {
         if (!Number.isInteger(data.documentId) || data.documentId <= 0) {
             throw new TranslatableError("errors.documents.idRequired");
         }
-        
+
         const document = await documentSocket.validateDocument(data.documentId, "id", true);
 
         // Compute study permissions once and reuse them for annotations and every comment in a thread.
