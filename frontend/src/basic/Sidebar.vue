@@ -2,19 +2,20 @@
   <div
       v-show="isSidebarVisible && resolvedActiveSlot"
       id="sidebarContainer"
+      ref="sidebarContainer"
       class="sidebar-wrapper"
       :class="sidebarClasses"
       :style="sidebarStyle"
   >
-    <div id="hoverHotZone"></div>
+    <div id="hoverHotZone" ref="hoverHotZone"></div>
     <div id="sidebar" class="sidebar border-end d-flex flex-column">
-      <div id="hotZone" class="hot-zone"></div>
+      <div id="hotZone" ref="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
         <div v-if="sidebarConfigs" class="sidebar-header">
           <ul class="nav nav-tabs flex-grow-1">
             <li
-                v-for="(config, slotName) in sidebarConfigs.tabs"
+                v-for="(config, slotName) in shownTabs"
                 :key="slotName"
                 class="nav-item"
             >
@@ -22,15 +23,17 @@
                   class="nav-link align-items-center"
                   :class="{
                   'active': resolvedActiveSlot === slotName,
+                  'current-step': config.current,
                 }"
                   :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                   :title="config.title || ''"
-                  :aria-label="config.title || $t('navigation.sidebar.sidebarSection')"
+                  :aria-label="config.current ? $t('navigation.sidebar.currentStepTab', {title: config.title}) : (config.title || $t('navigation.sidebar.sidebarSection'))"
                   :tabindex="isSingleConfig ? '-1' : '0'"
                   :aria-disabled="isSingleConfig ? 'true' : 'false'"
                   :disabled="isSingleConfig"
                   @click="changeView(slotName)"
               >
+                <span v-if="config.number" class="fw-semibold me-1">{{ config.number }}</span>
                 <LoadIcon
                     v-if="config.icon"
                     :icon-name="config.icon"
@@ -180,6 +183,19 @@ export default {
       required: false,
       default: null,
     },
+    // Decides for each tab (by its slot name) whether it is shown; without it all tabs are shown
+    isTabShown: {
+      type: Function,
+      required: false,
+      default: null,
+    },
+    // Decides for each tab (by its slot name) whether it belongs to the study step the user is on;
+    // such a tab gets a ring and says so to screen readers
+    isTabCurrent: {
+      type: Function,
+      required: false,
+      default: null,
+    },
     isShown: {
       type: Boolean,
       required: false,
@@ -192,12 +208,12 @@ export default {
     maxSidebarWidth: {
       type: Number,
       required: false,
-      default: 400
+      default: 600
     },
     minSidebarWidth: {
       type: Number,
       required: false,
-      default: 0
+      default: 250
     },
     showToggleButton: {
       type: Boolean,
@@ -248,6 +264,8 @@ export default {
             configs.tabs[slotName] = {
               title: props.title,
               icon: props.icon,
+              number: props.number,
+              current: this.isTabCurrent ? this.isTabCurrent(slotName) : false,
               buttons: props.buttons || []
             };
           }
@@ -287,15 +305,23 @@ export default {
       // If more than 3, hide everything after first 2
       return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
     },
+    shownTabs() {
+      if (!this.isTabShown) {
+        return this.sidebarConfigs.tabs;
+      }
+      return Object.fromEntries(Object.entries(this.sidebarConfigs.tabs).filter(([slotName]) => this.isTabShown(slotName)));
+    },
     resolvedActiveSlot() {
-      return this.internalActiveSlot || this.availableSlots[0] || null;
+      // A hidden tab hands over to the first shown one, and comes back once it is shown again
+      const shown = Object.keys(this.shownTabs);
+      return shown.includes(this.internalActiveSlot) ? this.internalActiveSlot : shown[0] || null;
     },
     isToggleShown() {
       // Without an active slot the sidebar can never be displayed, so the toggle would do nothing
       return this.isShown && !!this.resolvedActiveSlot;
     },
     isSingleConfig() {
-      return Object.keys(this.sidebarConfigs.tabs).length === 1;
+      return Object.keys(this.shownTabs).length === 1;
     },
     activeSlotConfig() {
       return this.resolvedActiveSlot ? this.sidebarConfigs.tabs[this.resolvedActiveSlot] : null;
@@ -319,6 +345,13 @@ export default {
     }
   },
   watch: {
+    // A new tab to open, for example when a study shows another step, switches to it
+    activeSideBar(newSlot) {
+      if (newSlot) {
+        this.internalActiveSlot = newSlot;
+        this.$emit('sidebar-change', newSlot);
+      }
+    },
     isSidebarVisible(newVal) {
       if (newVal) {
         this.width = this.originalWidth;
@@ -392,7 +425,8 @@ export default {
      * @author Zheyu Zhang
      */
     initDragController() {
-      const dom = document.querySelector('#hotZone');
+      // Refs, not ids: a study keeps several steps with a sidebar mounted, and an id finds only the first
+      const dom = this.$refs.hotZone;
       const that = this;
 
       let startX, startWidth;
@@ -411,7 +445,8 @@ export default {
       const handleMove = (e) => {
         e.preventDefault();
         let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
+        // maxWidth is in pixels
+        const maxWidthInPixels = this.maxWidth;
         newWidth = Math.max(newWidth, this.minWidth);
         newWidth = Math.min(newWidth, maxWidthInPixels);
         this.width = newWidth;
@@ -438,8 +473,8 @@ export default {
      * @author Zheyu Zhang
      */
     initHoverController() {
-      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
-      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
+      const hoverHotZoneDom = this.$refs.hoverHotZone;
+      this.sidebarContainerDom = this.$refs.sidebarContainer;
       let hoverTimer;
 
       hoverHotZoneDom.addEventListener('mouseenter', () => {
@@ -633,6 +668,12 @@ export default {
 
 [data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
   color: var(--care-accent);
+}
+
+/* The tab of the study step the user is on keeps a ring, like that step on the workflow bar (study/PaneStrip.vue) */
+.sidebar-header .nav-tabs .nav-link.current-step {
+  outline: 2px solid var(--look-back-accent, var(--bs-primary));
+  outline-offset: -2px;
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {

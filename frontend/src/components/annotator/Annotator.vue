@@ -25,8 +25,10 @@
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
+            :active-side-bar="activeSidebar || ($slots.additionalSidebars ? 'additionalSidebars' : 'annotations')"
+            :is-tab-shown="isSidebarTabShown"
+            :is-tab-current="isSidebarTabCurrent"
             :is-shown="isShown"  
-            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -35,8 +37,10 @@
             @sidebar-action="handleButtonAction"
         >
           <template #annotations>
-            <SidebarTemplate icon="pencil-square" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
+            <SidebarTemplate icon="pencil-square" :number="stepNumber" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
               <template #content>
+                <!-- In a study step that can look back, the step's own tab says so -->
+                <CurrentStepNote v-if="stepNumber"/>
                 <AnnotationSidebar
                   ref="sidebar"
                   @new-anno-card="changeSideBarView"
@@ -109,12 +113,15 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
+import {isCurrentStepTab, isLookBackTabShown} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
     SidebarTemplate,
+    CurrentStepNote,
     PDFViewer,
     AnnotationScrollMarkers,
     AnnotationSidebar,
@@ -125,6 +132,7 @@ export default {
   provide() {
     return {
       documentId: computed(() => this.documentId),
+      readOnly: computed(() => this.readOnly || this.forceReadOnly),
       studyStepId: computed(() => this.studyStepId),
       showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
@@ -177,6 +185,40 @@ export default {
       required: false,
       default: false,
     },
+    forceReadOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    activeSidebar: {
+      type: String,
+      required: false,
+      default: null,
+    },
+    // In a study step that can look back: the step's number, shown on its own sidebar tab like on the earlier ones
+    stepNumber: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    // In a study step that can look back: its look-back sidebar tabs (see components/study/helpers/lookBack.js)
+    lookBackTabs: {
+      type: Array,
+      required: false,
+      default: () => [],
+    },
+    // The earlier step on screen, if this step has a look-back tab for it
+    shownLookBackStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    // Hides the step's own sidebar tabs, while an earlier step is shown in its place
+    ownTabsHidden: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     documentId: {
       type: Number,
       required: false,
@@ -194,8 +236,8 @@ export default {
       pdf: null,
       downloading: false,
       assessmentViewActive: true,
-      maxSidebarWidth: 400,
-      minSidebarWidth: 0,
+      maxSidebarWidth: 600,
+      minSidebarWidth: 250,
       logScroll: debounce(function () {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
@@ -445,6 +487,13 @@ export default {
     }
   },
   methods: {
+    // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
+    isSidebarTabShown(slotName) {
+      return isLookBackTabShown(slotName, this.lookBackTabs, this.shownLookBackStepId, this.ownTabsHidden);
+    },
+    isSidebarTabCurrent(slotName) {
+      return isCurrentStepTab(slotName, this.lookBackTabs);
+    },
     scrollToComment(offset) {
       this.$refs.basicSidebar.scrollTo(offset);
     },
