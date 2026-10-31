@@ -205,6 +205,10 @@ export default {
     }
   },
   beforeUnmount() {
+    // A modal removed while open never gets Bootstrap's hidden event, so log its hide here
+    if (this.isShown) {
+      this.logHide();
+    }
     if (this.$refs.Modal) {
       this.$refs.Modal.removeEventListener('hidden.bs.modal', this.hideEvent);
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
@@ -244,6 +248,12 @@ export default {
     hideEvent() {
       this.isShown = false;
       this.$emit('hide');
+      this.logHide();
+    },
+    /**
+     * Logs that the modal was hidden, if the user accepted statistics.
+     */
+    logHide() {
       if (this.acceptStats) {
         this.$socket.emit('stats', {
           action: 'hideModal',
