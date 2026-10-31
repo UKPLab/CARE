@@ -339,6 +339,8 @@ export default {
           getContext: () => this.statsContext,
         });
         this.behaviorLogger.init();
+        // The $route watcher ran before the logger existed, so log the page the logger starts on
+        this.behaviorLogger.reportRouteChange(null, this.$route);
       }
     },
     /**

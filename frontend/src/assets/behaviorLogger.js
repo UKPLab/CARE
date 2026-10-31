@@ -241,12 +241,12 @@ class BehaviorLogger {
 
     /**
      * Reports a route change event to the backend via a socket connection.
-     * @param from The route object representing the old route.
+     * @param from The route object representing the old route, or null when the logger has just started.
      * @param to The route object representing the new route.
      */
     reportRouteChange(from, to) {
         this.emit("routeStep", {
-            from: from.fullPath,
+            from: from?.fullPath ?? null,
             to: to.fullPath,
         });
     }
