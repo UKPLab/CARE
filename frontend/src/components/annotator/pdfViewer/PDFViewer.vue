@@ -247,7 +247,7 @@ export default {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "pdfPageResizeChange",
-            data: {documentId: this.documentId, width: next}
+            data: {documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId, width: next}
           });
         }
       }, 200);

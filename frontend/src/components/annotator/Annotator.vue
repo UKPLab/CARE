@@ -202,6 +202,8 @@ export default {
             action: "annotatorScrollActivity",
             data: {
               documentId: this.documentId,
+              studySessionId: this.studySessionId,
+              studyStepId: this.studyStepId,
               scrollTop: this.$refs.viewer.scrollTop,
               scrollHeight: this.$refs.viewer.scrollHeight
             }
