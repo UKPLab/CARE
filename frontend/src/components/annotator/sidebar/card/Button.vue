@@ -48,6 +48,12 @@ export default {
   inject: {
     acceptStats: {
       default: () => false
+    },
+    studySessionId: {
+      default: () => null
+    },
+    studyStepId: {
+      default: () => null
     }
   },
   props: {
@@ -88,7 +94,10 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "clickSidebarButton",
-          data: {"title": this.title, "icon": this.icon, "props": this.props}
+          data: {
+            "title": this.title, "icon": this.icon, "props": this.props,
+            studySessionId: this.studySessionId, studyStepId: this.studyStepId
+          }
         });
       }
     }
