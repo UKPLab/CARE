@@ -64,7 +64,8 @@ class BehaviorLogger {
     }
 
     /**
-     * Destroys the behavior logger by removing all event listeners from the document and window objects.
+     * Destroys the behavior logger by removing all event listeners from the document and window objects
+     * and cancelling a pending debounced mouse move.
      */
     destroy() {
         document.removeEventListener('mousemove', this.handleMouseMove);
@@ -72,6 +73,8 @@ class BehaviorLogger {
         document.removeEventListener('visibilitychange', this.reportTabVisibilityChange);
         document.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('focus', this.handleWindowFocus);
+        // Drop a mouse move that is still waiting for the debounce, so nothing is sent after consent is withdrawn
+        this.reportMouseMove.cancel();
     }
 
     /**
