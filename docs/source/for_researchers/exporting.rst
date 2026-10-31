@@ -111,8 +111,8 @@ Exporting Behavioral User Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Behavioral user data is sensitive and therefore only accessible to administrators. To export this data after logging
-in as admin to the system, simply access the "User Statistics" view of the dashboard an click on "Export all" on the
-user table.
+in as admin to the system, simply access the "User Statistics" view of the dashboard and click on "Export as CSV" or
+"Export as JSON" above the user table.
 
 The resulting stats export structure is illustrated by the following example:
 
@@ -212,3 +212,26 @@ The most important action types include:
       This is accompanied with a page number and the vertical offset of the page start to contextualize the next following action type.
     * ``annotatorScrollActivity``: indicating that a user scrolled within the PDF (provided in 500ms resolution) with a relative
       offset in the PDF.
+
+**Filtering by study session and step**
+Events logged during a study carry the study IDs in ``data``:
+
+    * ``studySessionId``: the study session the event belongs to
+    * ``studyStepId``: the step of the part of the page where the event happened, e.g. an earlier step shown next to
+      the current one
+    * ``currentStudyStepId``: the step the study session was on at that time
+
+An event that happened outside a study, or where an ID is not known, does not contain that key. Mouse movements and
+tab changes carry ``studySessionId`` and ``currentStudyStepId``. Route changes (``routeStep``) into a study do not, as
+they are logged before the study session is loaded.
+
+.. code-block:: python
+
+    import json
+
+    # stats holds the list of exported rows; data may be a JSON string or an object
+    # we are interested in the study session with id 7
+    def row_data(row):
+        return json.loads(row["data"]) if isinstance(row["data"], str) else row["data"]
+
+    session_rows = [s for s in stats if row_data(s).get("studySessionId") == 7]
