@@ -20,6 +20,7 @@ import debounce from "lodash.debounce";
  * @param {number} mouseDebounceTime - The debounce time in milliseconds for mouse move events.
  * @param {Object} options - Configuration options for the logger. Currently only contains a debounce time.
  * @param {Array} [options.clickAllowList=[]] - A list of objects that should be logged when clicked.
+ * @param {Function} [options.getContext] - Returns the current study context (e.g. studySessionId), added to every event.
  */
 class BehaviorLogger {
     constructor(socket, mouseDebounceTime, options = {}) {
@@ -27,6 +28,7 @@ class BehaviorLogger {
         this.mouseDebounceTime = mouseDebounceTime;
         this.options = {
             clickAllowList: [],
+            getContext: () => ({}),
             ...options
         };
 
@@ -37,6 +39,7 @@ class BehaviorLogger {
 
         // Bind methods
         // (necessary to access the correct 'this' context when the methods are called as event listeners)
+        this.handleMouseMove = this.handleMouseMove.bind(this);
         this.reportMouseMove = debounce(this.reportMouseMove.bind(this), this.mouseDebounceTime);
         this.reportClick = this.reportClick.bind(this);
         this.reportTabVisibilityChange = this.reportTabVisibilityChange.bind(this);
@@ -50,7 +53,7 @@ class BehaviorLogger {
      * Further directly logs device information on initialization.
      */
     init() {
-        document.addEventListener('mousemove', this.reportMouseMove);
+        document.addEventListener('mousemove', this.handleMouseMove);
         document.addEventListener('click', this.reportClick);
         document.addEventListener('visibilitychange', this.reportTabVisibilityChange);
         document.addEventListener('keydown', this.handleKeyDown);
@@ -64,11 +67,28 @@ class BehaviorLogger {
      * Destroys the behavior logger by removing all event listeners from the document and window objects.
      */
     destroy() {
-        document.removeEventListener('mousemove', this.reportMouseMove);
+        document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('click', this.reportClick);
         document.removeEventListener('visibilitychange', this.reportTabVisibilityChange);
         document.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('focus', this.handleWindowFocus);
+    }
+
+    /**
+     * Sends a statistics event to the backend, with the current study context added to its data.
+     * Context keys without a value are left out.
+     * @param {string} action The name of the event.
+     * @param {Object} data The event data.
+     * @param {Object} [context] The context to add. Defaults to the context at the time of sending.
+     */
+    emit(action, data, context = this.options.getContext()) {
+        const filledContext = Object.fromEntries(
+            Object.entries(context).filter(([, value]) => value !== null && value !== undefined)
+        );
+        this.socket.emit("stats", {
+            action: action,
+            data: {...data, ...filledContext},
+        });
     }
 
     /**
@@ -92,16 +112,13 @@ class BehaviorLogger {
             return check;
         };
 
-        this.socket.emit("stats", {
-            action: "deviceInfo",
-            data: {
-                screenSize: {
-                    width: screenWidth,
-                    height: screenHeight,
-                },
-                deviceType: isMobile() ? 'mobile' : 'desktop',
-                browserInfo: navigator.userAgent,
-            }
+        this.emit("deviceInfo", {
+            screenSize: {
+                width: screenWidth,
+                height: screenHeight,
+            },
+            deviceType: isMobile() ? 'mobile' : 'desktop',
+            browserInfo: navigator.userAgent,
         });
     }
 
@@ -146,13 +163,10 @@ class BehaviorLogger {
     reportSearchEvent(status) {
         const duration = this.searchStartTime ? Date.now() - this.searchStartTime : 0;
 
-        this.socket.emit("stats", {
-            action: "search_event",
-            data: {
-                searchId: this.currentSearchId,
-                status: status,
-                duration: duration,
-            }
+        this.emit("search_event", {
+            searchId: this.currentSearchId,
+            status: status,
+            duration: duration,
         });
 
         // Reset search state
@@ -163,20 +177,28 @@ class BehaviorLogger {
     }
 
     /**
+     * Handles a mouse move event.
+     * Takes the study context at the moment of the move, so a move just before a step change
+     * is not sent with the next step's context after the debounce.
+     * @param event The mouse move event object.
+     */
+    handleMouseMove(event) {
+        this.reportMouseMove(event, this.options.getContext());
+    }
+
+    /**
      * Reports a mouse move event to the backend via the socket connection.
      * This event is debounced based on the `mouseDebounceTime` option.
      * @param event The mouse move event object.
+     * @param context The study context at the moment of the move.
      */
-    reportMouseMove(event) {
-        this.socket.emit("stats", {
-            action: "mouseMove",
-            data: {
-                clientX: event.clientX,
-                clientY: event.clientY,
-                scrollX: window.scrollX,
-                scrollY: window.scrollY,
-            }
-        });
+    reportMouseMove(event, context) {
+        this.emit("mouseMove", {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+        }, context);
     }
 
     /**
@@ -191,19 +213,16 @@ class BehaviorLogger {
         // Necessary to avoid double logging of certain elements for which dedicated event listeners are already set
 
         if (this.options.clickAllowList.some(item => target.matches(item)))
-            this.socket.emit("stats", {
-                action: "click",
-                data: {
-                    composedPath: event.composedPath().map(el => el.tagName),
-                    elementType: target.tagName,
-                    elementId: target.id,
-                    elementClass: target.className,
-                    clientX: event.clientX,
-                    clientY: event.clientY,
-                    pageX: event.pageX,
-                    pageY: event.pageY,
-                    path: window.location.pathname,
-                }
+            this.emit("click", {
+                composedPath: event.composedPath().map(el => el.tagName),
+                elementType: target.tagName,
+                elementId: target.id,
+                elementClass: target.className,
+                clientX: event.clientX,
+                clientY: event.clientY,
+                pageX: event.pageX,
+                pageY: event.pageY,
+                path: window.location.pathname,
             });
     }
 
@@ -212,11 +231,8 @@ class BehaviorLogger {
      * This event is triggered when the user switches tabs or minimizes the browser window.
      */
     reportTabVisibilityChange() {
-        this.socket.emit("stats", {
-            action: "tabVisibilityChange",
-            data: {
-                hidden: document.hidden,
-            }
+        this.emit("tabVisibilityChange", {
+            hidden: document.hidden,
         });
     }
 
@@ -226,12 +242,9 @@ class BehaviorLogger {
      * @param to The route object representing the new route.
      */
     reportRouteChange(from, to) {
-        this.socket.emit("stats", {
-            action: "routeStep",
-            data: {
-                from: from.fullPath,
-                to: to.fullPath,
-            }
+        this.emit("routeStep", {
+            from: from.fullPath,
+            to: to.fullPath,
         });
     }
 }
