@@ -1,105 +1,142 @@
 <template>
-  <div class="container">
-    <div class="d-flex justify-content-between align-items-center">
-      <h1 class="mb-0">{{ $t('assignments.dashboard.submissions.activeTitle') }}</h1>
-    </div>
-    <div v-if="activeAssignments.length === 0">
-      <p class="fs-6">
-        {{ $t('assignments.dashboard.submissions.noActive') }}
-      </p>
-    </div>
-    <div v-else>
-      <hr>
-      <div
-        v-for="assignment in activeAssignments"
-        :key="`active-${assignment.id}`"
-      >
-        <Card
-          :title="assignment.name"
-          collapsable
-          collapsed
+  <Card
+    class="dashboard-page"
+    :title="$t('sidebar.nav.submissions')"
+  >
+    <template #body>
+      <div class="sessions-page">
+        <section
+          v-for="section in sections"
+          :key="section.key"
+          class="sessions-section"
         >
-          <template #headerElements>
-            <div class="d-flex align-items-center gap-2">
-              <span
-                v-if="!canUploadForOthers"
-                :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', submissionsBadgeClass(assignment)]"
-              >
-                <LoadIcon icon-name="file-earmark-check" size="14" />
-                {{ remainingSubmissionsLabel(assignment) }}
-              </span>
-              <span :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', timeBadgeClass(assignment)]">
-                <LoadIcon icon-name="clock" size="14" />
-                {{ timeBadgeText(assignment) }}
-              </span>
-              <BasicButton
-                class="btn btn-primary btn-sm"
-                :title="$t('dashboard.uploadModal.title')"
-                :text="$t('dashboard.uploadModal.title')"
-                icon="file-earmark-arrow-up"
-                :disabled="!canUploadSubmissionForAssignment(assignment)"
-                @click="openUploadModalForAssignment(assignment)"
-              />
-            </div>
-          </template>
-          <template #body>
-            <AssignmentSubmissionsTable
-              :assignment-id="assignment.id"
-            />
-          </template>
-        </Card>
-        <hr>
-      </div>
-    </div>
-  </div>
+          <header class="sessions-section-head">
+            <h2 class="sessions-section-title">{{ section.title }}</h2>
+          </header>
 
-  <div class="container">
-    <h1>{{ $t('assignments.dashboard.submissions.closedTitle') }}</h1>
-    <div v-if="closedAssignments.length === 0">
-      <p class="fs-6">
-        {{ $t('assignments.dashboard.submissions.noClosed') }}
-      </p>
-    </div>
-    <div v-else>
-      <hr>
-      <div
-        v-for="assignment in closedAssignments"
-        :key="`closed-${assignment.id}`"
-      >
-        <Card
-          :title="assignment.name"
-          collapsable
-          collapsed
-        >
-          <template #headerElements>
-            <div class="d-flex align-items-center gap-2">
-              <span
-                v-if="!canUploadForOthers"
-                :class="['badge', 'd-inline-flex', 'align-items-center', 'gap-1', submissionsBadgeClass(assignment)]"
-              >
-                <LoadIcon icon-name="file-earmark-check" size="14" />
-                {{ remainingSubmissionsLabel(assignment) }}
-              </span>
-              <BasicButton
-                class="btn btn-primary btn-sm"
-                :title="$t('dashboard.uploadModal.title')"
-                :text="$t('dashboard.uploadModal.title')"
-                icon="file-earmark-arrow-up"
-                :disabled="!canUploadSubmissionForAssignment(assignment)"
-                @click="openUploadModalForAssignment(assignment)"
+          <div
+            v-if="section.items.length === 0"
+            class="sessions-empty"
+          >
+            <span
+              class="sessions-empty-icon"
+              aria-hidden="true"
+            >
+              <LoadIcon
+                :icon-name="section.emptyIcon"
+                :size="22"
               />
-            </div>
-          </template>
-          <template #body>
-            <AssignmentSubmissionsTable
-              :assignment-id="assignment.id"
-            />
-          </template>
-        </Card>
-        <hr>
+            </span>
+            <p>{{ section.empty }}</p>
+          </div>
+
+          <div
+            v-else
+            class="sessions-grid sessions-grid--list"
+          >
+            <article
+              v-for="(assignment, index) in section.items"
+              :key="section.key + '-' + assignment.id"
+              class="session-study"
+              :class="[
+                'session-study--' + assignmentStateSlug(assignment),
+                { 'is-open': isOpen(assignment.id) },
+              ]"
+              :style="{ '--i': index }"
+            >
+              <header class="session-study-head">
+                <span
+                  class="study-state"
+                  :class="'study-state--' + assignmentStateSlug(assignment)"
+                >
+                  <LoadIcon
+                    v-if="getAssignmentStatus(assignment) === 'closed'"
+                    icon-name="lock-fill"
+                    :size="10"
+                  />
+                  <span
+                    v-else
+                    class="study-state-dot"
+                  />
+                  {{ $t('assignments.dashboard.status.' + getAssignmentStatus(assignment)) }}
+                </span>
+                <span class="session-study-id">#{{ assignment.id }}</span>
+              </header>
+
+              <button
+                type="button"
+                class="session-study-title"
+                :title="assignment.name"
+                :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
+                :aria-controls="'submissions-of-' + assignment.id"
+                @click="toggle(assignment.id)"
+              >
+                {{ assignment.name }}
+              </button>
+
+              <div class="session-study-meta">
+                <span
+                  v-if="!canUploadForOthers"
+                  class="session-study-meta-item"
+                >
+                  <LoadIcon
+                    icon-name="file-earmark-check"
+                    :size="12"
+                  />
+                  {{ remainingSubmissionsLabel(assignment) }}
+                </span>
+                <span
+                  v-if="section.key === 'active'"
+                  class="session-study-meta-item"
+                >
+                  <LoadIcon
+                    icon-name="clock"
+                    :size="12"
+                  />
+                  {{ timeBadgeText(assignment) }}
+                </span>
+              </div>
+
+              <footer class="session-study-foot">
+                <BasicButton
+                  class="btn btn-primary btn-sm"
+                  :title="$t('dashboard.uploadModal.title')"
+                  :text="$t('dashboard.uploadModal.title')"
+                  icon="file-earmark-arrow-up"
+                  :disabled="!canUploadSubmissionForAssignment(assignment)"
+                  @click="openUploadModalForAssignment(assignment)"
+                />
+                <button
+                  type="button"
+                  class="session-study-toggle"
+                  :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
+                  :aria-controls="'submissions-of-' + assignment.id"
+                  @click="toggle(assignment.id)"
+                >
+                  {{ isOpen(assignment.id) ? $t('common.showLess') : $t('common.details') }}
+                  <LoadIcon
+                    class="session-study-chevron"
+                    icon-name="chevron-down"
+                    :size="13"
+                  />
+                </button>
+              </footer>
+
+              <div
+                v-if="isOpen(assignment.id)"
+                :id="'submissions-of-' + assignment.id"
+                class="session-study-body"
+              >
+                <AssignmentSubmissionsTable
+                  :assignment-id="assignment.id"
+                />
+              </div>
+            </article>
+          </div>
+        </section>
       </div>
-    </div>
-  </div>
+    </template>
+  </Card>
 
   <AssignmentUploadModal ref="uploadModal" />
   <ConfirmModal ref="deleteConf" />
@@ -119,7 +156,30 @@ export default {
   name: "DashboardSubmission",
   subscribeTable: ["assignment", "submission", "user", "document"],
   components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  data() {
+    return {
+      openAssignmentIds: [],
+    };
+  },
   computed: {
+    sections() {
+      return [
+        {
+          key: "active",
+          title: this.$t("assignments.dashboard.submissions.activeTitle"),
+          empty: this.$t("assignments.dashboard.submissions.noActive"),
+          emptyIcon: "inbox",
+          items: this.activeAssignments,
+        },
+        {
+          key: "closed",
+          title: this.$t("assignments.dashboard.submissions.closedTitle"),
+          empty: this.$t("assignments.dashboard.submissions.noClosed"),
+          emptyIcon: "archive",
+          items: this.closedAssignments,
+        },
+      ];
+    },
     canUploadForOthers() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
     },
@@ -147,6 +207,23 @@ export default {
     },
   },
   methods: {
+    isOpen(assignmentId) {
+      return this.openAssignmentIds.includes(assignmentId);
+    },
+    toggle(assignmentId) {
+      const index = this.openAssignmentIds.indexOf(assignmentId);
+      if (index >= 0) {
+        this.openAssignmentIds.splice(index, 1);
+      } else {
+        this.openAssignmentIds.push(assignmentId);
+      }
+    },
+    assignmentStateSlug(assignment) {
+      const status = this.getAssignmentStatus(assignment);
+      if (status === "open") return "running";
+      if (status === "closed") return "closed";
+      return "ended";
+    },
     getAssignmentStatus(assignment) {
       if (assignment.closed) {
         return "closed";
@@ -228,23 +305,8 @@ export default {
       }
       return this.$t("assignments.dashboard.submissions.remainingLeft", { count: remaining });
     },
-    submissionsBadgeClass(assignment) {
-      return this.remainingSubmissionsCount(assignment) === 0
-        ? "bg-success text-white"
-        : "bg-body-tertiary text-body border";
-    },
     isAssignmentOverdue(assignment) {
       return isAssignmentPastDeadline(assignment);
-    },
-    isAssignmentClosingSoon(assignment) {
-      if (!assignment.end) return false;
-      const msLeft = new Date(assignment.end) - new Date();
-      return msLeft > 0 && msLeft <= 24 * 60 * 60 * 1000;
-    },
-    timeBadgeClass(assignment) {
-      if (this.isAssignmentOverdue(assignment)) return "bg-danger text-white";
-      if (this.isAssignmentClosingSoon(assignment)) return "bg-warning text-dark";
-      return "bg-body-tertiary text-body border";
     },
     timeBadgeText(assignment) {
       if (!assignment.end) {
