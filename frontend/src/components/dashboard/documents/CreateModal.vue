@@ -2,49 +2,50 @@
   <Modal ref="createModal" lg name="documentCreate">
     <template #title>{{ $t('documents.createNewDocument') }}</template>
     <template #body>
-      <div class="modal-body justify-content-center flex-grow-1 d-flex">
-        <div class="flex-grow-1">
-          <label class="form-label">{{ $t('documents.typeOfDocument') }}</label>
-          <select
-            v-model="documentType"
-            class="form-select form-select-sm selector"
-            allowClear="true"
-            name="documentType"
-          >
-            <option disabled hidden selected value="">
-              {{ $t('documents.chooseDocumentType') }}
-            </option>
-            <option value="1">{{ $t('documents.types.generalHtml') }}</option>
-            <option value="2">{{ $t('documents.types.studyModal') }}</option>
-          </select>
-          <div class="invalid-feedback">
-            {{ $t('errors.validation.documents.selectValidType') }}
-          </div>
-          <label class="form-label mt-3">{{ $t('documents.nameOfDocument') }}</label>
-          <input
-            v-model="name"
-            class="form-control"
-            name="file"
-            type="text"
-            @keyup.enter="create"
-          />
-          <label class="form-label mt-3">{{ $t('documents.templateOptional') }}</label>
-          <select
-            v-model="templateId"
-            class="form-select form-select-sm"
-            name="templateId"
-          >
-            <option :value="0">{{ $t('documents.noTemplateCreateEmpty') }}</option>
-            <option 
-              v-for="template in documentTemplates" 
-              :key="template.id" 
-              :value="template.id"
-            >
-              {{ template.name }}
-            </option>
-          </select>
-          <small class="text-muted">{{ $t('documents.templatePrefillHint') }}</small>
+      <div class="form-field">
+        <label class="form-label">{{ $t('documents.typeOfDocument') }}</label>
+        <select
+          v-model="documentType"
+          class="form-select"
+          name="documentType"
+        >
+          <option disabled hidden selected value="">
+            {{ $t('documents.chooseDocumentType') }}
+          </option>
+          <option value="1">{{ $t('documents.types.generalHtml') }}</option>
+          <option value="2">{{ $t('documents.types.studyModal') }}</option>
+        </select>
+        <div class="invalid-feedback">
+          {{ $t('errors.validation.documents.selectValidType') }}
         </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">{{ $t('documents.nameOfDocument') }}</label>
+        <input
+          v-model="name"
+          class="form-control"
+          name="file"
+          type="text"
+          @keyup.enter="create"
+        />
+      </div>
+      <div class="form-field">
+        <label class="form-label">{{ $t('documents.templateOptional') }}</label>
+        <select
+          v-model="templateId"
+          class="form-select"
+          name="templateId"
+        >
+          <option :value="0">{{ $t('documents.noTemplateCreateEmpty') }}</option>
+          <option
+            v-for="template in documentTemplates"
+            :key="template.id"
+            :value="template.id"
+          >
+            {{ template.name }}
+          </option>
+        </select>
+        <small class="text-muted">{{ $t('documents.templatePrefillHint') }}</small>
       </div>
     </template>
     <template #footer>
