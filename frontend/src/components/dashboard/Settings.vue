@@ -78,15 +78,24 @@
 
         <Loading v-if="settings === null"/>
 
-        <div v-else>
-          <SettingsSection
+        <div v-else class="settings-layout">
+          <nav class="settings-nav" :aria-label="$t('settings.title')">
+            <BasicButton
               v-for="section in sectionLayout"
               :key="section.title"
-              :title="section.title"
-              :subsections="section.subsections"
+              class="settings-nav-btn"
+              :class="{ active: section.title === activeSection }"
+              :text="translateMaybeKey(section.title)"
+              @click="activeSection = section.title"
+            />
+          </nav>
+          <SettingsSection
+              v-if="currentSection"
+              :title="currentSection.title"
+              :subsections="currentSection.subsections"
               :settings="displaySettings"
           >
-            <template v-if="section.title === 'Mail'" #footer>
+            <template v-if="currentSection.title === 'Mail'" #footer>
               <div class="mt-3">
                 <h6 class="step-group-heading">Send test email</h6>
                 <p class="small text-muted mb-2">
@@ -139,11 +148,10 @@
           <p class="mb-2">
             {{ $t('settings.importDescription') }}
           </p>
-          <input
+          <FileDropzone
               ref="settingsUploadInput"
-              type="file"
-              class="form-control"
               accept=".json"
+              :file-name="uploadFile && uploadFile.name"
               @change="onUploadFileChange"
           />
         </div>
@@ -183,9 +191,10 @@ import LoadIcon from "@/basic/Icon.vue";
 import SettingsSection from "@/components/dashboard/settings/SettingsSection.vue";
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
+import {downloadObjectsAs, resolveApiMessage, translateMaybeKey} from "@/assets/utils";
 import {onBeforeRouteUpdate} from "vue-router";
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
+import FileDropzone from "@/basic/form/FileDropzone.vue";
 
 /**
  * Order of subsections within each section (for display).
@@ -223,6 +232,7 @@ export default {
     BasicButton,
     Modal,
     ChangeUserSettingsModal,
+    FileDropzone,
   },
   data() {
     return {
@@ -235,6 +245,7 @@ export default {
       mailTestMessage: "",
       mailTestError: false,
       isHeaderStuck: false,
+      activeSection: null,
     };
   },
   computed: {
@@ -280,13 +291,20 @@ export default {
         if (!otherGroups[group]) otherGroups[group] = [];
         otherGroups[group].push(s);
       }
-      for (const [groupTitle, settingsInGroup] of Object.entries(otherGroups).sort((a, b) => a[0].localeCompare(b[0]))) {
+      for (const [groupTitle, settingsInGroup] of Object.entries(otherGroups).sort((a, b) =>
+        translateMaybeKey(a[0]).localeCompare(translateMaybeKey(b[0]))
+      )) {
         sections.push({
           title: groupTitle,
           subsections: this.buildSubsections(groupTitle.toLowerCase(), settingsInGroup),
         });
       }
       return sections;
+    },
+    currentSection() {
+      return this.sectionLayout.find((section) => section.title === this.activeSection)
+        || this.sectionLayout[0]
+        || null;
     },
     hasUnsavedChanges() {
       if (!this.settings || this.originalSettingsSnapshot === null) return false;
@@ -295,6 +313,16 @@ export default {
       } catch (_error) {
         return true;
       }
+    },
+  },
+  watch: {
+    sectionLayout: {
+      immediate: true,
+      handler(sections) {
+        if (!sections?.some((section) => section.title === this.activeSection)) {
+          this.activeSection = sections?.[0]?.title || null;
+        }
+      },
     },
   },
   mounted() {
@@ -323,6 +351,7 @@ export default {
     this.stickyObserver?.disconnect();
   },
   methods: {
+    translateMaybeKey,
     /**
      * Build subsections from settings grouped by displaySubsection.
      * @param {string} sectionKey - Section key (e.g. "general", "annotations")
@@ -431,18 +460,14 @@ export default {
       this.uploadFile = null;
       this.uploading = false;
 
-      // clear the file input so old filename disappears
-      if (this.$refs.settingsUploadInput) {
-        this.$refs.settingsUploadInput.value = null;
-      }
+      this.$refs.settingsUploadInput?.clear();
 
       if (this.$refs.settingsUploadModal) {
         this.$refs.settingsUploadModal.waiting = false;
         this.$refs.settingsUploadModal.open();
       }
     },
-    onUploadFileChange(event) {
-      const file = event.target.files && event.target.files[0];
+    onUploadFileChange(file) {
       this.uploadFile = file || null;
     },
     async importSettings() {
@@ -534,19 +559,82 @@ export default {
 
 .settings-card > :deep(.card-header) {
   position: sticky;
-  top: 0;
-  z-index: 2;
+  /* #viewerContainer is padded, and the app bar hangs past that padding.
+     Stick above the padding and paint over the strip so rows cannot show through. */
+  top: -1rem;
+  z-index: 5;
   background: var(--bs-body-bg);
   border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
   transition: box-shadow 160ms var(--care-ease, ease),
               border-color 160ms var(--care-ease, ease);
 }
 
+.settings-card > :deep(.card-header)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 2rem;
+  background: var(--bs-body-bg);
+}
+
 /* While stuck: only an accent line at the bottom edge
    (--care-primary is the yellow accent in dark mode, Bootstrap blue in light mode) */
 .settings-card.is-header-stuck > :deep(.card-header) {
+  border-radius: 0;
   border-bottom-color: var(--care-primary, var(--bs-primary));
   box-shadow: inset 0 -1px 0 var(--care-primary, var(--bs-primary));
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.settings-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  top: 4.5rem;
+}
+
+.settings-nav-btn.btn {
+  justify-content: flex-start;
+  width: 100%;
+  height: auto;
+  border: 0;
+  background: transparent;
+  color: var(--bs-body-color);
+  font-weight: 500;
+  text-align: left;
+  white-space: normal;
+  box-shadow: none;
+}
+
+.settings-nav-btn.btn:hover,
+.settings-nav-btn.btn.active {
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+  color: var(--care-primary);
+}
+
+@media (max-width: 800px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-nav {
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .settings-nav-btn.btn {
+    width: auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

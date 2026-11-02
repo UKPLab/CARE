@@ -13,7 +13,6 @@
     <!-- Step 1: Select setting and provide value -->
     <template #step-1>
       <div class="mb-3">
-        <h6>{{ $t('dashboard.settings.selectSetting') }}</h6>
         <BasicForm
           v-model="settingSelection"
           :fields="settingFields"
@@ -61,7 +60,6 @@
     <!-- Step 2: Select users -->
     <template #step-2>
       <div class="mb-3">
-        <h6>{{ $t('dashboard.projects.selectUsers') }}</h6>
         <BasicTable
           v-model="userSelection"
           :columns="userColumns"
@@ -78,8 +76,6 @@
     <!-- Step 3: Confirm -->
     <template #step-3>
       <div class="mb-3">
-        <h6>{{$t('common.confirm')}}</h6>
-
         <div class="alert alert-info">
           <strong>{{$t('dashboard.projects.summary')}}</strong><br />
           {{$t('dashboard.settings.settingLabel')}} <strong>{{ settingSelection.settingKey }}</strong><br />
