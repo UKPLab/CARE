@@ -3,17 +3,12 @@
     <p class="text-muted mb-3">
       {{ $t('assignments.metadata.upload.help') }}
     </p>
-    <input
+    <FileDropzone
       ref="metadataFileInput"
-      type="file"
-      class="form-control"
       accept=".json,.csv,application/json,text/csv"
+      :file-name="fileName"
       @change="handleFileChange"
     />
-    <div v-if="fileName" class="mt-2 small">
-      {{ $t('assignments.metadata.upload.loadedFile') }}
-      <strong>{{ fileName }}</strong>
-    </div>
     <div v-if="parseError" class="mt-2 text-danger small">
       {{ parseError }}
     </div>
@@ -24,6 +19,7 @@
 </template>
 
 <script>
+import FileDropzone from "@/basic/form/FileDropzone.vue";
 import Papa from "papaparse";
 
 /**
@@ -33,6 +29,7 @@ import Papa from "papaparse";
  */
 export default {
   name: "StepUpload",
+  components: { FileDropzone },
   props: {
     rows: {
       type: Array,
@@ -135,8 +132,7 @@ export default {
       this.$emit("update:rows", []);
       this.$emit("update:sourceFields", []);
     },
-    async handleFileChange(event) {
-      const file = event.target.files?.[0];
+    async handleFileChange(file) {
       if (!file) return;
 
       this.$emit("update:fileName", file.name);

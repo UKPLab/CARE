@@ -209,5 +209,9 @@
     },
     "search": "Rechercher...",
     "searchOptions": "Options de recherche",
-    "noMatches": "Aucun résultat"
+    "noMatches": "Aucun résultat",
+    "dropzone": {
+        "title": "Glissez un fichier ici ou cliquez pour l'ajouter",
+        "replace": "Cliquez pour remplacer"
+    }
 }

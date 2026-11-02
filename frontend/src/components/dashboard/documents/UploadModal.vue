@@ -8,34 +8,29 @@
       {{ $t('documents.uploadNewDocument') }}
     </template>
     <template #body>
-      <div class="modal-body justify-content-center flex-grow-1 d-flex">
-        <div
-          v-if="uploading"
-          class="spinner-border m-5 "
-          role="status"
-        >
-          <span class="visually-hidden">{{ $t('common.loading') }}</span>
-        </div>
-        <div
-          v-else
-          class="flex-grow-1"
-        >
-          <BasicForm
-            v-model="data"
-            :fields="fileFields"
-            @file-change="handleFileChange"
+      <div
+        v-if="uploading"
+        class="spinner-border m-5"
+        role="status"
+      >
+        <span class="visually-hidden">{{ $t('common.loading') }}</span>
+      </div>
+      <div v-else>
+        <BasicForm
+          v-model="data"
+          :fields="fileFields"
+        />
+        <div class="form-check mt-3">
+          <input
+            id="importAnnotations"
+            v-model="importAnnotations"
+            class="form-check-input"
+            type="checkbox"
+            :disabled="!isPdf"
           />
-          <div v-if="isPdf" class="form-check mt-3">
-            <input
-              id="importAnnotations"
-              v-model="importAnnotations"
-              class="form-check-input"
-              type="checkbox"
-            />
-            <label class="form-check-label" for="importAnnotations">
-              {{ $t('documents.importAnnotations') }}
-            </label>
-          </div>
+          <label class="form-check-label" for="importAnnotations">
+            {{ $t('documents.importAnnotations') }}
+          </label>
         </div>
       </div>
     </template>
@@ -84,7 +79,6 @@ export default {
     return {
       uploading: false,
       show: false,
-      isPdf: false,
       data: {},
       importAnnotations: false,
       fileFields: [
@@ -102,19 +96,17 @@ export default {
     projectId() {
       return this.$store.getters["settings/getValueAsInt"]("projects.default");
     },
+    isPdf() {
+      const name = this.data?.file?.name;
+      return typeof name === "string" && name.toLowerCase().endsWith(".pdf");
+    },
+  },
+  watch: {
+    isPdf(value) {
+      if (!value) this.importAnnotations = false;
+    },
   },
   methods: {
-    handleFileChange(file) {
-      if (file && file.name) {
-        const fileName = file.name;
-        const fileType = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-        this.isPdf = fileType === ".pdf";
-      } else {
-        this.isPdf = false;
-      }
-      this.importAnnotations = false;
-
-    },
     open() {
       this.data.file = null;
       this.importAnnotations = false;

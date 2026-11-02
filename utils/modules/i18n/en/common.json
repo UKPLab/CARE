@@ -209,5 +209,9 @@
     },
     "search": "Search...",
     "searchOptions": "Search options",
-    "noMatches": "No matches"
+    "noMatches": "No matches",
+    "dropzone": {
+        "title": "Drag a file here or click to add",
+        "replace": "Click to replace"
+    }
 }

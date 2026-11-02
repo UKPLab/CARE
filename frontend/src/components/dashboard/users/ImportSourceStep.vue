@@ -1,25 +1,13 @@
 <template>
   <div class="file-upload-container">
     <template v-if="importType === 'csv'">
-      <div
-        class="drag-drop-area"
-        @dragover.prevent
-        @drop.prevent="handleDrop"
-        @click="$refs.fileInput.click()"
-      >
-        <input
-          ref="fileInput"
-          type="file"
-          accept=".csv"
-          style="display: none"
-          @change="handleFileUpload"
-        />
-        <BasicIcon
-          icon-name="cloud-arrow-up"
-          size="64"
-        />
-        <p>{{ $t('dashboard.users.dragAndDropCSV') }}<br />{{ $t('dashboard.users.orClickToUpload') }}</p>
-      </div>
+      <FileDropzone
+        ref="fileInput"
+        accept=".csv"
+        :hint="$t('dashboard.users.dragAndDropCSV')"
+        :file-name="file.state === 1 && file.errors.length === 0 ? file.name : ''"
+        @change="processFile"
+      />
       <i18n-t keypath="dashboard.users.csvTemplateHint" tag="p">
         <a class="template-link" @click="downloadTemplateCSV">
           {{ $t('dashboard.users.downloadTemplate') }}
@@ -72,6 +60,7 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
+import FileDropzone from "@/basic/form/FileDropzone.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { downloadObjectsAs } from "@/assets/utils.js";
 import Papa from "papaparse";
@@ -81,7 +70,7 @@ import Papa from "papaparse";
  */
 export default {
   name: "ImportSourceStep",
-  components: { BasicButton, BasicIcon, MoodleOptions },
+  components: { BasicButton, BasicIcon, FileDropzone, MoodleOptions },
   props: {
     importType: {
       type: String,
@@ -109,12 +98,6 @@ export default {
         email: "test.user@example.com",
         roles: "student",
       }], "users_template", "csv");
-    },
-    handleDrop(event) {
-      this.processFile(event.dataTransfer.files[0]);
-    },
-    handleFileUpload(event) {
-      this.processFile(event.target.files[0]);
     },
     async validateCSV(file) {
       return new Promise((resolve, reject) => {
@@ -198,7 +181,7 @@ export default {
     clearFile() {
       this.$emit("update:file", { state: 0, name: "", size: 0, errors: [] });
       this.$emit("clear");
-      this.$refs.fileInput.value = "";
+      this.$refs.fileInput?.clear();
     },
   },
 };
@@ -211,24 +194,8 @@ export default {
   margin: 0 auto;
 }
 
-.drag-drop-area {
+.file-upload-container .drag-drop-area {
   margin-bottom: 0.5rem;
-  border: 2px dashed var(--bs-border-color, #ccc);
-  border-radius: 4px;
-  padding: 1.25rem;
-  text-align: center;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.drag-drop-area:hover {
-  background-color: var(--bs-tertiary-bg, #f0f0f0);
-}
-
-.drag-drop-area p {
-  margin: 0;
-  font-size: 0.925rem;
-  color: var(--bs-secondary-color, #666);
 }
 
 .template-link {

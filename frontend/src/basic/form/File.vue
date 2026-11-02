@@ -1,12 +1,11 @@
 <template>
   <FormElement ref="formElement" :data-table="dataTable" :options="options">
     <template #element>
-      <input
+      <FileDropzone
         ref="fileUpload"
-        type="file"
         :accept="options.accept"
-        :class="options.class"
-        :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
+        :disabled="options.readOnly !== undefined || options.disabled !== undefined"
+        :file-name="currentFileName"
         @change="handleFileChange"
       />
     </template>
@@ -15,10 +14,11 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue"
+import FileDropzone from "@/basic/form/FileDropzone.vue"
 
 export default {
   name: "FormFile",
-  components: {FormElement},
+  components: {FormElement, FileDropzone},
   props: {
     options: {
       type: Object,
@@ -41,13 +41,18 @@ export default {
       currentData: null,
     }
   },
+  computed: {
+    currentFileName() {
+      return this.currentData && this.currentData.name ? this.currentData.name : "";
+    },
+  },
   watch: {
     currentData() {
       this.$emit("update:modelValue", this.currentData);
     },
     modelValue() {
       if (!this.modelValue) {
-        this.$refs.fileUpload.value = "";
+        this.$refs.fileUpload?.clear();
       }
       this.currentData = this.modelValue;
     },
@@ -59,10 +64,8 @@ export default {
     validate() {
       return this.$refs.formElement.validate(this.currentData);
     },
-    handleFileChange(event) {
-      const file = event.target.files[0];
+    handleFileChange(file) {
       this.currentData = file;
-      // Emit file change event with the file object
       this.$emit('file-change', file);
     }
   }

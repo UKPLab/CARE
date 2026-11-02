@@ -13,25 +13,12 @@
 
     <!-- Step 1: File picker -->
     <template #step-1>
-      <div class="form-field d-flex flex-column">
-        <label class="form-label w-100 text-start mb-2">
-          {{ $t('modals.importExport.import.selectFile', { extensions: acceptedExtensions.join(', ') }) }}
-        </label>
-        <div class="w-100">
-          <input
-            ref="fileInput"
-            class="form-control"
-            type="file"
-            :accept="acceptString"
-            @change="handleFileSelect"
-          />
-        </div>
-      </div>
-      <div v-if="selectedFile" class="mt-2">
-        <small class="text-muted">
-          {{ $t('modals.importExport.import.selectedFile', { file: selectedFile.name }) }}
-        </small>
-      </div>
+      <FileDropzone
+        ref="fileInput"
+        :accept="acceptString"
+        :file-name="selectedFile && selectedFile.name"
+        @change="handleFileSelect"
+      />
       <div v-if="parseError" class="mt-2 text-danger">
         <small>{{ parseError }}</small>
       </div>
@@ -72,6 +59,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
+import FileDropzone from "@/basic/form/FileDropzone.vue";
 import { getSupportedImportFormats, resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -86,7 +74,7 @@ import { getSupportedImportFormats, resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "ImportFormatModal",
-  components: { StepperModal, BasicTable },
+  components: { StepperModal, BasicTable, FileDropzone },
   props: {
     title: {
       type: String,
@@ -236,12 +224,9 @@ export default {
       this.parsedData = null;
       this.selectedItems = [];
       this.parseError = null;
-      if (this.$refs.fileInput) {
-        this.$refs.fileInput.value = "";
-      }
+      this.$refs.fileInput?.clear();
     },
-    handleFileSelect(event) {
-      const file = event.target.files[0];
+    handleFileSelect(file) {
       if (!file) return;
       this.selectedFile = file;
       this.parsedData = null;
@@ -407,8 +392,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.form-field .form-label {
-  min-width: 160px;
-}
-</style>
