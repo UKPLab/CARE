@@ -35,7 +35,6 @@
                     v-if="config.icon"
                     :icon-name="config.icon"
                     :size="20"
-                    :color="isSingleConfig ? '#495057' : (resolvedActiveSlot === slotName ? '#0d6efd' : '#495057')"
                     :cursor="isSingleConfig ? 'default' : 'pointer'"
                 />
               </TopBarButton>
@@ -88,7 +87,7 @@
                           v-if="button.icon"
                           :icon-name="button.icon"
                           :size="16"
-                          :color="button.disabled ? '#6c757d' : (button.color || '#495057')"
+                          :color="button.disabled ? null : button.color"
                           class="me-2"
                       />
                       {{ button.title }}
@@ -112,7 +111,7 @@
       </div>
     </div>
     <Teleport to="#topBarNavItems">
-      <li v-if="isShown" class="nav-item">
+      <li v-if="isToggleShown" class="nav-item">
         <TopBarButton
             :show="isShown"
             :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
@@ -225,7 +224,9 @@ export default {
       isFixed: false,
       isDragging: false,
       sidebarContainerDom: undefined,
-      originalWidth: undefined
+      originalWidth: undefined,
+      isNarrow: false,
+      visibleBeforeNarrow: false
     };
   },
   computed: {
@@ -289,6 +290,10 @@ export default {
     resolvedActiveSlot() {
       return this.internalActiveSlot || this.availableSlots[0] || null;
     },
+    isToggleShown() {
+      // Without an active slot the sidebar can never be displayed, so the toggle would do nothing
+      return this.isShown && !!this.resolvedActiveSlot;
+    },
     isSingleConfig() {
       return Object.keys(this.sidebarConfigs.tabs).length === 1;
     },
@@ -330,7 +335,9 @@ export default {
     this.originalWidth = this.width;
     this.internalActiveSlot = this.activeSideBar || null;
 
-    if (window.innerWidth <= 900) {
+    this.isNarrow = window.innerWidth <= 900;
+    if (this.isNarrow) {
+      this.visibleBeforeNarrow = this.isSidebarVisible;
       this.isSidebarVisible = false;
     }
 
@@ -479,15 +486,21 @@ export default {
       this.$emit('copy', event);
     },
     onResize() {
-      if (window.innerWidth <= 900) {
-        this.isSidebarVisible = false;
-        this.sidebarIconHighlight = true;
-        setTimeout(() => {
-          this.sidebarIconHighlight = false;
-        }, 1000);
+      // Only act when the width crosses 900px, so a sidebar the user opened or closed keeps its state
+      const isNarrow = window.innerWidth <= 900;
+      if (isNarrow !== this.isNarrow) {
+        this.isNarrow = isNarrow;
+        if (isNarrow) {
+          this.visibleBeforeNarrow = this.isSidebarVisible;
+          this.isSidebarVisible = false;
+          this.sidebarIconHighlight = true;
+          setTimeout(() => {
+            this.sidebarIconHighlight = false;
+          }, 1000);
+        } else {
+          this.isSidebarVisible = this.isSidebarVisible || this.visibleBeforeNarrow;
+        }
         this.visibilityChange();
-      } else if (window.innerWidth > 900) {
-        this.isSidebarVisible = true;
       }
 
       // Log resize event with debouncing
@@ -616,6 +629,10 @@ export default {
   color: var(--bs-primary, #0d6efd);
   background-color: var(--bs-body-bg, #fff);
   border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) var(--bs-body-bg, #fff);
+}
+
+[data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
+  color: var(--care-accent);
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {

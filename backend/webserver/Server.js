@@ -376,7 +376,13 @@ module.exports = class Server {
                 ids: {},
                 merged: {}
             };
+            // Ref-count of mounted BackendTables per autoTable
+            socket.currentQueries = {};
             socket.userId = "";
+            // broadcastTable reads socket.user for every subscribed or query-mode socket.
+            // Set it here (the auth middleware above guarantees session.passport), so a
+            // reconnected client that only re-acquires query mode is covered too.
+            socket.user = socket.request.session.passport.user;
             this.logger.debug("Socket connect: " + socket.id);
 
           

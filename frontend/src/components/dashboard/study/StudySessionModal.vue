@@ -2,6 +2,7 @@
   <AddAssignmentModal
     ref="addAssignmentModal"
     name="addAssignmentModal"
+    @hide="onNestedModalHide"
   />
   <BasicModal
     ref="studySessionModal"
@@ -9,6 +10,7 @@
     size="lg"
     name="studySessionModal"
     remove-close
+    @hide="onSessionModalHide"
   >
     <template #title>
       <i18n-t
@@ -22,10 +24,11 @@
     </template>
     <template #body>
       <StudySessionTable
+        v-if="studyId"
+        ref="sessionTable"
         :study-id="studyId"
-        :current-user-only="false"
+        :study="study"
         :show-all="true"
-        @update="$emit('update')"
         @session-deleted="$emit('session-deleted', $event)"
         @session-opened="$emit('session-opened', $event)"
       />
@@ -71,15 +74,20 @@ export default {
       mainModal: computed(() => this.$refs.studySessionModal),
     };
   },
-  emits: ["update", "session-deleted", "session-opened"],
+  emits: ["update", "session-deleted", "session-opened", "hide"],
   data() {
     return {
       studyId: 0,
+      studyRecord: null,
+      nestedModalOpen: false,
     };
   },
   computed: {
     study() {
-      return this.studyId ? this.$store.getters["table/study/get"](this.studyId) : null;
+      if (this.studyRecord && Number(this.studyRecord.id) === Number(this.studyId)) {
+        return this.studyRecord;
+      }
+      return null;
     },
     studyName() {
       return this.study ? this.study.name : this.$t('common.unknown');
@@ -92,23 +100,27 @@ export default {
     },
   },
   methods: {
-    open(studyId) {
+    open(studyId, studyRow = null) {
       this.studyId = studyId;
-      this.load();
-      this.$socket.emit("studySessionSubscribe", { studyId: studyId });
+      this.studyRecord = studyRow ? { ...studyRow } : null;
       this.$refs.studySessionModal.open();
     },
     close() {
-      this.$socket.emit("studySessionUnsubscribe", { studyId: this.studyId });
       this.$refs.studySessionModal.close();
     },
-    addSingleAssignment() {
-      this.$refs.addAssignmentModal.open(this.studyId);
-    },
-    load() {
-      if (!this.study) {
-        this.$socket.emit("studyGetById", { studyId: this.studyId });
+    onSessionModalHide() {
+      if (this.nestedModalOpen) {
+        return;
       }
+      this.$emit("hide");
+    },
+    onNestedModalHide() {
+      this.nestedModalOpen = false;
+      this.$refs.sessionTable?.refetch?.();
+    },
+    addSingleAssignment() {
+      this.nestedModalOpen = true;
+      this.$refs.addAssignmentModal.open(this.studyId);
     },
   },
 };

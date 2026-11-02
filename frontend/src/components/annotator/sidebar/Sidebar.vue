@@ -30,8 +30,17 @@
     </div>
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
-  <ul v-if="showAnnotations" id="anno-list" class="list-group">
-    <li v-if="componentReadOnly" class="readonly-notice">
+  <!-- ARIA feed: Page Down / Page Up move between annotation cards -->
+  <ul
+    v-if="showAnnotations"
+    id="anno-list"
+    class="list-group"
+    role="feed"
+    :aria-label="$t('annotator.annotations')"
+    @keydown.page-down.exact="moveToCard($event, 1)"
+    @keydown.page-up.exact="moveToCard($event, -1)"
+  >
+    <li v-if="componentReadOnly" class="readonly-notice" role="none">
       <div class="card border-secondary mb-2">
         <div class="card-body text-center py-2">
           <LoadIcon
@@ -46,10 +55,13 @@
       </div>
     </li>
     <li
-      v-for="comment in documentComments"
+      v-for="(comment, index) in documentComments"
       :id="'comment-' + comment.id"
       :key="'documentComment-' + comment.id"
       class="list-group-i"
+      role="article"
+      :aria-posinset="index + 1"
+      :aria-setsize="documentComments.length"
       @mouseleave="unhover(comment.annotationId)"
       @mouseover="hover(comment.annotationId)"
     >
@@ -62,7 +74,7 @@
       />
     </li>
 
-    <li v-if="!componentReadOnly" id="addPageNote">
+    <li v-if="!componentReadOnly" id="addPageNote" role="none">
       <BasicButton
         class="btn btn-light"
         icon="plus-lg"
@@ -299,6 +311,24 @@ export default {
     })
   },
   methods: {
+    /**
+     * Moves focus to the next or previous annotation card header (ARIA feed pattern).
+     * Ignored while typing, so Page Up/Down still scroll text fields and dropdowns.
+     * @param {KeyboardEvent} event - the Page Up / Page Down keydown on the feed
+     * @param {number} direction - 1 for the next card, -1 for the previous card
+     * @returns {void}
+     */
+    moveToCard(event, direction) {
+      if (event.target.closest('textarea, input, select, [contenteditable="true"]')) return;
+      const cards = [...event.currentTarget.querySelectorAll(':scope > li[role="article"]')];
+      const index = cards.indexOf(event.target.closest('li[role="article"]'));
+      const next = index === -1 ? cards[direction > 0 ? 0 : cards.length - 1] : cards[index + direction];
+      // The chevron is hidden while a card is being edited, so fall back to its first control
+      const header = next && (next.querySelector('.card-focusable') || next.querySelector('textarea, button'));
+      if (!header) return;
+      event.preventDefault();
+      header.focus();
+    },
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },

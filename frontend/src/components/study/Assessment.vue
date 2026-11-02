@@ -7,6 +7,7 @@
           <span
               v-if="configuration && configuration.rubrics && configuration.rubrics.length"
               class="badge"
+              :class="(computedReadOnly || areAllCriteriaSaved) ? 'bg-success' : 'bg-secondary'"
           >
             {{ $t('assessment.totalPoints', { points: totalPoints, maxPoints: totalMaxPoints }) }}
           </span>
@@ -34,6 +35,7 @@
                   :rubric="rubric"
                   :group-index="groupIndex"
                   :is-expanded="!!expandedGroups[groupIndex]"
+                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :assessment-state="assessmentState"
                   :read-only="computedReadOnly"
                   :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
@@ -139,11 +141,12 @@ export default {
       default: null,
     },
   },
-  emits: ["state-changed", "assessment-ready-changed", "update:data"],
+  emits: ["state-changed", "assessment-ready-changed", "update:data", "assessment-advance-past-end"],
   data() {
     return {
       error: null,
       expandedGroups: {},
+      rubricRefs: {},
       assessmentState: {},
       showInfoPanel: false,
       selectedCriterion: null,
@@ -232,16 +235,28 @@ export default {
     assessmentDataKey() {
       return ASSESSMENT_RESULT_KEY;
     },
-    areAllCriteriaSaved() {
-      if (!this.configuration || !this.configuration.rubrics) return false;
+    unsavedCriterionNames() {
+      if (!this.configuration || !this.configuration.rubrics) return [];
+      const names = [];
       for (const rubric of this.configuration.rubrics) {
         if (!rubric.criteria) continue;
         for (const c of rubric.criteria) {
+          if (!c || !c.name) continue;
           const st = this.assessmentState[c.name];
-          if (!st || st.isSaved !== true) return false;
+          if (!st || st.isSaved !== true) names.push(c.name);
         }
       }
-      return true;
+      return names;
+    },
+    areAllCriteriaSaved() {
+      return this.unsavedCriterionNames.length === 0 && !!(this.configuration && this.configuration.rubrics);
+    },
+    assessmentReadyPayload() {
+      const ready = this.isAssessmentComplete;
+      return {
+        ready,
+        missing: ready ? [] : this.unsavedCriterionNames,
+      };
     },
     isAssessmentComplete() {
       if (!this.isLoaded) {
@@ -283,9 +298,9 @@ export default {
       },
       immediate: true,
     },
-    isAssessmentComplete: {
-      handler(v) {
-        this.$emit("assessment-ready-changed", v);
+    assessmentReadyPayload: {
+      handler(payload) {
+        this.$emit("assessment-ready-changed", payload);
       },
       immediate: true,
     },
@@ -592,8 +607,12 @@ export default {
             }
         );
         this.$emit("update:data", value);
-      }).catch((err) => {
-        console.error("Failed to save assessment data", err);
+      }).catch(() => {
+        this.eventBus.emit("toast", {
+          title: this.$t("assessment.save.failedTitle"),
+          message: this.$t("assessment.save.failedMessage"),
+          variant: "danger",
+        });
       });
     },
     onFocusNextRubric(currentGroupIndex) {
@@ -607,8 +626,10 @@ export default {
         const newExpanded = {};
         newExpanded[nextIndex] = true;
         this.expandedGroups = newExpanded;
+        this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
+        this.$emit("assessment-advance-past-end", () => this.rubricRefs[currentGroupIndex]?.focusHeader());
       }
     },
   },
@@ -619,15 +640,9 @@ export default {
 /* Layout */
 .assessment-section {
   padding: 1rem;
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .assessment-content-container {
-  flex: 1;
-  overflow-y: auto;
   padding-right: 5px;
 }
 
@@ -692,16 +707,6 @@ export default {
 .assessment-actions .btn-success:hover {
   background-color: #218838;
   border-color: #1e7e34;
-}
-
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
 }
 
 .assessment-actions .btn-secondary {

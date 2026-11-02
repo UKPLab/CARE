@@ -367,7 +367,7 @@ input:focus[type='password'] + .feedback-invalid {
 }
 
 input:focus[type='password']:not(.custom-invalid) + .feedback-invalid {
-  color: black;
+  color: var(--bs-body-color);
 }
 
 </style>

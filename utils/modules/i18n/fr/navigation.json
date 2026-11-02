@@ -1,0 +1,20 @@
+{
+    "documentation": "Documentation",
+    "feedback": "Retour d'expérience",
+    "projectPage": "Page du projet",
+    "sidebar": {
+        "collapseSidebar": "Réduire la barre latérale",
+        "toggleSidebar": "Afficher/masquer la barre latérale",
+        "hideSidebar": "Masquer la barre latérale",
+        "showSidebar": "Afficher la barre latérale",
+        "moreActions": "Plus d'actions",
+        "sidebarSection": "Section de la barre latérale"
+    },
+    "topbar": {
+        "goBack": "Retour...",
+        "projectTitle": "Projet : {name}",
+        "signedInAs": "Connecté en tant que {username}",
+        "lightMode": "Mode jour",
+        "darkMode": "Mode nuit"
+    }
+}

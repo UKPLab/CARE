@@ -23,24 +23,17 @@ module.exports = (sequelize, DataTypes) => {
          * This can be used by Socket.js to apply filtering consistently
          * @param {number} userId - The user ID
          * @param {boolean} isAdmin - Whether the user is an admin
-         * @returns {Object} Sequelize filter object
+         * @returns {Object} {owned, shared}: owned = the user's own templates,
+         *          shared = public templates. Socket.js leaves shared out when writing.
          */
         static getUserFilter(userId, isAdmin) {
             const {Op} = require("sequelize");
             
-            if (isAdmin) {
-                // Admins: own templates (all types) OR public templates from others
-                return {[Op.or]: [{userId: userId}, {public: true}]};
-            } else {
-                // Non-admins: own templates (otherTemplateTypes only) OR public templates from others (otherTemplateTypes only)
-                // Email templates (emailTemplateTypes) are admin-only
-                return {
-                    [Op.or]: [
-                        {[Op.and]: [{userId: userId}, {type: {[Op.in]: otherTemplateTypes}}]},
-                        {[Op.and]: [{public: true}, {type: {[Op.in]: otherTemplateTypes}}]}
-                    ]
-                };
-            }
+            // Non-admins are limited to otherTemplateTypes; email templates (emailTemplateTypes) are admin-only.
+            const ofType = (condition) => isAdmin
+                ? condition
+                : {[Op.and]: [condition, {type: {[Op.in]: otherTemplateTypes}}]};
+            return {owned: ofType({userId: userId}), shared: ofType({public: true})};
         }
 
         /**
@@ -232,8 +225,8 @@ module.exports = (sequelize, DataTypes) => {
                     console.warn("Could not determine admin status for user", userId, err);
                 }
                 
-                const userFilter = this.getUserFilter(userId, isAdmin);
-                Object.assign(filter, userFilter);
+                const {owned, shared} = this.getUserFilter(userId, isAdmin);
+                Object.assign(filter, {[Op.or]: [owned, shared]});
             }
             
             let options = {where: filter, raw: true};

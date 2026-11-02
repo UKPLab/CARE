@@ -25,6 +25,9 @@ export const i18n = createI18n({
   locale: getInitialLocale(),
   fallbackLocale: DEFAULT_LOCALE,
   messages: i18nBundles,
+  pluralizationRules: {
+    fr: (choice, choicesLength) => (choicesLength === 2 && Math.abs(choice) > 1 ? 1 : 0),
+  },
 });
 
 app.use(i18n);

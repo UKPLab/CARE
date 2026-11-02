@@ -29,6 +29,7 @@
   </div>
   <div
     v-if="!collapseComment"
+    ref="commentBody"
     :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
     class="comment card-text blockquote pb-1"
   >
@@ -38,7 +39,9 @@
         v-model="comment.text"
         class="form-control"
         :placeholder="$t('components.comment.enterText')"
-        @keydown.ctrl.enter="saveOnDeactivated(false)"
+        @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.esc.exact.prevent="cancelOnEscape"
         @paste="onPaste"
       />
     </div>
@@ -122,6 +125,7 @@
             <VoteButtons :comment="comment"/>
             <SidebarButton
               v-if="comment.userId === userId && !readOnly"
+              ref="editButton"
               :loading="false"
               :props="$props"
               icon="pencil-square"
@@ -134,7 +138,7 @@
               :props="$props"
               icon="trash3"
               :title="$t('common.delete')"
-              @click="remove"
+              @click="moveFocusToNextCard(); remove()"
             />
           </div>
         </div>
@@ -154,6 +158,7 @@
     <div class="btn-group">
       <BasicButton
         v-if="showExtenderButton"
+        ref="showMore"
         class="btn btn-light btn-sm"
         :text="$t('common.showMore')"
         @click="maxComments+=5"
@@ -162,7 +167,7 @@
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
         class="btn btn-light btn-sm"
         :text="$t('common.showLess')"
-        @click="maxComments=defaultNumComments"
+        @click="showLess"
       />
       <BasicButton
         v-if="maxComments > defaultNumComments"
@@ -183,7 +188,7 @@ import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
-import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -244,7 +249,7 @@ export default {
       default: 1,
     }
   },
-  emits: ["saveCard"],
+  emits: ["saveCard", "cancelCard"],
   data() {
     return {
       awaitingNlpResult: false,
@@ -252,6 +257,7 @@ export default {
       collapseComment: true,
       listeningToFocus: false,
       maxComments: 1,
+      returnFocusEl: null,
     }
   },
   computed: {
@@ -345,7 +351,23 @@ export default {
     },
     openedTextarea(newVal) {
       if (newVal) {
+        // Remember what opened the editor (e.g. the Reply button) to return focus there
+        const opener = document.activeElement;
+        this.returnFocusEl = opener && opener !== document.body ? opener : null;
         this.$nextTick(() => this.$refs.textarea.focus());
+      } else {
+        // Runs before the editor closes, so we can tell if the keyboard was in this comment
+        const body = this.$refs.commentBody;
+        const hadFocus = body && body.contains(document.activeElement);
+        const opener = this.returnFocusEl;
+        this.returnFocusEl = null;
+        if (hadFocus) {
+          this.$nextTick(() => {
+            // Back to the button that opened the editor; Edit is replaced while editing, so use the new one
+            if (opener && opener.isConnected) opener.focus();
+            else if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+          });
+        }
       }
     },
     editedByMyself(newVal) {
@@ -442,6 +464,23 @@ export default {
       }
       this.editMode = null;
     },
+    /**
+     * Cancels the edit from the keyboard, mirroring the mouse Cancel button.
+     * The card's main comment (level 0) is cancelled by the parent card,
+     * the same route saveCard uses; replies cancel themselves.
+     * Drafts are ignored so a single key press cannot delete a new comment.
+     * @returns {void}
+     */
+    cancelOnEscape() {
+      if (this.comment.draft) {
+        return;
+      }
+      if (this.level === 0) {
+        this.$emit("cancelCard");
+      } else {
+        this.cancel();
+      }
+    },
     remove() {
       this.$socket.emit('commentUpdate', {
         "commentId": this.comment.id,
@@ -458,6 +497,26 @@ export default {
     },
     editComment() {
       this.$refs.collab.startCollab();
+    },
+    /**
+     * Before the comment is deleted, moves keyboard focus to the next annotation card.
+     * @returns {void}
+     */
+    moveFocusToNextCard() {
+      const body = this.$refs.commentBody;
+      if (body && body.contains(document.activeElement)) {
+        focusNextAnnotationCard(body);
+      }
+    },
+    /**
+     * Shows fewer replies; the Show less button disappears, so focus moves to Show more.
+     * @returns {void}
+     */
+    showLess() {
+      this.maxComments = this.defaultNumComments;
+      this.$nextTick(() => {
+        if (this.$refs.showMore) this.$refs.showMore.$el.focus();
+      });
     },
     toEditMode(status) {
       this.editMode = status;

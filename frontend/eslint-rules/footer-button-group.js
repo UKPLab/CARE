@@ -1,48 +1,35 @@
+import { componentNames, normalizeName, slotName, staticClasses } from './template-utils.js'
+
 export default {
     meta: {
         type: 'suggestion',
         schema: [],
         messages: {
-            missingGroup: 'Wrap grouped modal footer BasicButton actions in an element with class "btn-group".',
+            missingGroup: 'Wrap modal footer BasicButton actions in an element with class "btn-group", including actions inside nested wrappers.',
         },
     },
     create(context) {
-        const sourceCode = context.sourceCode
-
-        const hasClass = (node, className) => {
-            const classAttribute = node.startTag.attributes.find(
-                (attribute) => !attribute.directive && attribute.key.name === 'class',
-            )
-
-            return classAttribute?.value?.value?.split(/\s+/).includes(className)
-        }
-        const isFooterSlot = (node) =>
-            node.rawName === 'template' &&
-            node.startTag.attributes.some(
-                (attribute) =>
-                    attribute.directive &&
-                    attribute.key.name.name === 'slot' &&
-                    attribute.key.argument?.name === 'footer',
-            )
-        const isInFooterSlot = (node) => {
-            let current = node
-
-            while (current) {
-                if (current.type === 'VElement' && isFooterSlot(current)) return true
-                current = current.parent
-            }
-
-            return false
-        }
-        const directBasicButtons = (node) =>
-            node.children.filter((child) => child.type === 'VElement' && child.rawName === 'BasicButton')
-
-        return sourceCode.parserServices.defineTemplateBodyVisitor({
+        const names = componentNames(context)
+        return context.sourceCode.parserServices.defineTemplateBodyVisitor({
             VElement(node) {
-                if (!isInFooterSlot(node) || hasClass(node, 'btn-group')) return
-                if (directBasicButtons(node).length < 2) return
-
-                context.report({ node: node.startTag, messageId: 'missingGroup' })
+                const name = normalizeName(node.rawName)
+                if (name !== 'basicbutton' && !names.get(name)?.endsWith('/basic/Button.vue')) return
+                let parent = node.parent
+                let grouped = false
+                while (parent?.type === 'VElement') {
+                    if (staticClasses(parent).includes('btn-group')) grouped = true
+                    if (['footer', 'success-footer'].includes(slotName(parent))) {
+                        const owner = parent.parent
+                        const ownerName = normalizeName(owner?.rawName || '')
+                        const path = names.get(ownerName) || ''
+                        if (!grouped && (/Modal\.vue$|\/modal\/|\/Coordinator\.vue$/.test(path) ||
+                            ['basicmodal', 'basiccoordinator', 'steppermodal'].includes(ownerName))) {
+                            context.report({ node: node.startTag, messageId: 'missingGroup' })
+                        }
+                        return
+                    }
+                    parent = parent.parent
+                }
             },
         })
     },

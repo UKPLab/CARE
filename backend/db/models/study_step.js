@@ -4,6 +4,7 @@ const path = require("path");
 const {promises: fs} = require("fs");
 const {applyTemplateToDocument} = require("../../utils/helper/documentTemplate.js");
 const TranslatableError = require("../../utils/TranslatableError");
+const {Op, literal, where: sqlWhere} = require("sequelize");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 const stepTypes = Object.freeze({
@@ -91,6 +92,46 @@ module.exports = (sequelize, DataTypes) => {
          */
         static async getStudyStepsByDocumentId(documentId) {
             return await this.findAll({where: {documentId}});
+        }
+
+        /**
+         * Get the study steps of a study, sorted by their order.
+         *
+         * A soft-deleted step breaks the studyStepPrevious chain (getAllByKey excludes it, so the
+         * walk can't find the step that points past it). A corrupted chain (bad migration, manual
+         * DB edit, a reordering race) could also cycle back on itself. Either way the walk stops
+         * rather than looping or silently losing data: any steps left unreachable are still
+         * non-deleted data and are appended at the end (id order) rather than dropped, so an
+         * export or session-progression check never silently loses a live step.
+         * @param studyId
+         * @returns {Promise<[]>} Array of study step objects
+         */
+        static async getSortedStudySteps(studyId) {
+            const studySteps = await sequelize.models.study_step.getAllByKey("studyId", studyId);
+            const studyStepsSorted = [];
+            const visitedIds = new Set();
+            let current = studySteps.find(step => step.studyStepPrevious === null);
+
+            while (current && !visitedIds.has(current.id)) {
+                visitedIds.add(current.id);
+                studyStepsSorted.push(current);
+                current = studySteps.find(step => step.studyStepPrevious === current.id);
+            }
+
+            if (current) {
+                console.warn(`getSortedStudySteps: study ${studyId} has a cycle in studyStepPrevious (step ${current.id} revisited); stopping traversal early.`);
+            }
+
+            if (studyStepsSorted.length < studySteps.length) {
+                const includedIds = new Set(studyStepsSorted.map(step => step.id));
+                const orphanedSteps = studySteps
+                    .filter(step => !includedIds.has(step.id))
+                    .sort((a, b) => a.id - b.id);
+                console.warn(`getSortedStudySteps: study ${studyId} has ${orphanedSteps.length} step(s) unreachable via studyStepPrevious (likely a soft-deleted step broke the chain, or a cycle); appending them out of order instead of dropping them.`);
+                studyStepsSorted.push(...orphanedSteps);
+            }
+
+            return studyStepsSorted;
         }
 
         /**
@@ -288,6 +329,51 @@ module.exports = (sequelize, DataTypes) => {
             return count;
         }
 
+
+        /**
+         * Steps of these studies that run one assessment configuration, restricted to a given
+         * set of (workflowId, stepNumber) pairs
+         * @param {number[]} studyIds
+         * @param {number} configurationId
+         * @param {Array<{workflowId: number, stepNumber: number}>} steps allowed (workflowId, stepNumber) pairs
+         * @returns {Promise<Array<Object>>} rows with the study's `workflowId`
+         */
+        static async findForAssessment(studyIds, configurationId, steps) {
+            return this.findAll({
+                where: {
+                    [Op.and]: [
+                        {studyId: {[Op.in]: studyIds}, deleted: false},
+                        sqlWhere(literal(this.assessmentConfigurationSql("study_step")), String(configurationId)),
+                        {
+                            [Op.or]: steps.map((step) => ({
+                                "$study.workflowId$": step.workflowId,
+                                stepNumber: step.stepNumber,
+                            })),
+                        },
+                    ],
+                },
+                include: [{model: sequelize.models.study, as: "study", attributes: [], required: true}],
+                attributes: [
+                    "id", "studyId", "stepNumber", "documentId", "configuration",
+                    [sequelize.col("study.workflowId"), "workflowId"],
+                ],
+                order: [["stepNumber", "ASC"], ["id", "ASC"]],
+                raw: true,
+            });
+        }
+
+        /**
+         * SQL for the assessment configuration a step runs. Coordinator writes it to
+         * `settings.configurationId`; older rows keep it at the top level.
+         * Shared by the Publish Assessment workflow list and the study_session scope filter so
+         * both decide "this step belongs to that configuration" the same way.
+         * @param {string} [alias] table alias of study_step in the surrounding query
+         * @returns {string}
+         */
+        static assessmentConfigurationSql(alias = "study_step") {
+            const column = `"${alias}"."configuration"`;
+            return `COALESCE(${column}#>>'{settings,configurationId}', ${column}#>>'{configurationId}')`;
+        }
 
         /**
          * Helper method for defining associations.

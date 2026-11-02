@@ -229,8 +229,8 @@ export default {
 
 /* Focus styles for better accessibility */
 input:focus {
-  border-color: #80bdff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
 }
 
 /* Custom validation styles */

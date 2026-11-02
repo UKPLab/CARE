@@ -1,0 +1,10 @@
+{
+    "noText": "(aucun texte)",
+    "ref": "(réf. {citation})",
+    "show": "(afficher)",
+    "reviewReport": "Rapport d'évaluation",
+    "emptyReport": "Rapport vide : pas d'annotations ni de commentaires.",
+    "generalComments": "Commentaires généraux",
+    "noComments": "Aucun commentaire.",
+    "tip": "*Astuce : survolez une référence pour voir le texte cité, ou cliquez dessus pour afficher l'annotation dans le PDF."
+}

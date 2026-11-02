@@ -251,11 +251,11 @@ export default {
 }
 
 .stepper div.active {
-  --btn-color: var(--bs-primary, #0d6efd);
+  --btn-color: var(--care-primary);
   border-color: var(--btn-color);
 
   &:before {
-    color: white;
+    color: var(--care-on-primary);
     background-color: var(--btn-color);
     border-color: var(--btn-color);
   }

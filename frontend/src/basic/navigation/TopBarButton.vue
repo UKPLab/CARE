@@ -1,7 +1,7 @@
 <template>
   <button
     :title="title"
-    class="btn"
+    class="btn care-focus-ring"
     type="button"
     :disabled="disabled"
     @click="action"

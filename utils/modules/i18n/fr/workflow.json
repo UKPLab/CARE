@@ -1,0 +1,162 @@
+{
+    "inspectStep": "Inspecter l'étape",
+    "general": "Général",
+    "stepType": "Type d'étape",
+    "navigation": "Navigation",
+    "previousStep": "Étape précédente",
+    "allowBackward": "Autoriser le retour",
+    "documentReference": "Document de référence",
+    "firstStep": "Première étape",
+    "configuration": "Configuration",
+    "noConfigurationDefined": "Aucune configuration définie.",
+    "stepTypes": {
+        "annotator": "Annotateur",
+        "editor": "Éditeur",
+        "modal": "Modale"
+    },
+    "dashboard": {
+        "title": "Processus",
+        "addWorkflow": "Ajouter un processus",
+        "exportWorkflows": "Exporter les processus",
+        "exportAll": "Tout exporter",
+        "importWorkflows": "Importer des processus",
+        "types": {
+            "system": "Système",
+            "user": "Utilisateur"
+        },
+        "columns": {
+            "hidden": "Masqué"
+        },
+        "actions": {
+            "copyWorkflow": "Copier le processus",
+            "editWorkflow": "Modifier le processus",
+            "renameWorkflow": "Renommer le processus",
+            "exportWorkflow": "Exporter le processus",
+            "toggleHidden": "Afficher/masquer",
+            "deleteWorkflow": "Supprimer le processus"
+        },
+        "visibility": {
+            "hidden": "masqué",
+            "visible": "visible"
+        },
+        "toasts": {
+            "workflowUpdated": {
+                "title": "Processus mis à jour",
+                "message": "Le processus est désormais {state} dans l'interface"
+            },
+            "updateFailed": "Échec de la mise à jour",
+            "workflowDeleted": {
+                "title": "Processus supprimé",
+                "message": "Le processus a été supprimé"
+            },
+            "deleteFailed": "Échec de la suppression"
+        },
+        "confirmDelete": {
+            "title": "Supprimer le processus",
+            "message": "Voulez-vous vraiment supprimer le processus « {name} » ?",
+            "warning": "Cette action est irréversible."
+        }
+    },
+    "exportFormatModal": {
+        "title": "Exporter les processus"
+    },
+    "importFormatModal": {
+        "title": "Importer des processus"
+    },
+    "createModal": {
+        "title": "Processus",
+        "success": {
+            "linkCopied": {
+                "title": "Lien copié",
+                "message": "Lien du processus copié dans le presse-papiers !"
+            }
+        },
+        "errors": {
+            "linkNotCopied": {
+                "title": "Lien non copié",
+                "message": "Impossible de copier le lien du processus dans le presse-papiers !"
+            }
+        }
+    },
+    "editModal": {
+        "title": "Modifier le processus : {name}",
+        "workflow": "Processus",
+        "description": "Description",
+        "copiedStep": "Étape copiée",
+        "copiedStepValue": "{name} ({type})",
+        "unnamedStep": "Étape sans nom",
+        "loadingWorkflow": "Chargement du processus...",
+        "loadingWorkflowGraph": "Chargement du graphe du processus...",
+        "savingChanges": "Enregistrement des modifications...",
+        "stepTypes": {
+            "annotater": "Annotateur",
+            "editor": "Éditeur",
+            "modal": "Modale",
+            "annotaterStep": "Étape d'annotation",
+            "editorStep": "Étape d'édition",
+            "modalStep": "Étape modale"
+        },
+        "errors": {
+            "saveFailed": "Échec de l'enregistrement",
+            "saveStepFailed": "Impossible d'enregistrer l'étape"
+        }
+    },
+    "renameModal": {
+        "title": "Renommer le processus",
+        "description": "Le processus existant sera renommé.",
+        "currentWorkflow": "Processus actuel",
+        "renamingWorkflow": "Renommage du processus...",
+        "renameWorkflow": "Renommer le processus",
+        "form": {
+            "newWorkflowName": "Nouveau nom du processus",
+            "enterNewWorkflowName": "Saisissez le nouveau nom du processus"
+        },
+        "errors": {
+            "workflowNotFound": {
+                "title": "Erreur",
+                "message": "Processus introuvable"
+            },
+            "creationFailed": "Échec de la création",
+            "hideOriginalFailed": "Impossible de masquer l'original",
+            "renameFailed": "Échec du renommage",
+            "renameFailedMessage": "Impossible de renommer le processus"
+        },
+        "success": {
+            "title": "Processus renommé",
+            "message": "Le processus « {oldName} » a été renommé en « {newName} »"
+        }
+    },
+    "fields": {
+        "name": {
+            "label": "Nom du processus :",
+            "placeholder": "Mon processus"
+        },
+        "description": {
+            "label": "Description du processus :",
+            "placeholder": "Description du processus"
+        },
+        "hideInFrontend": {
+            "label": "Masquer le processus dans l'interface :",
+            "help": "Si cette option est activée, ce processus sera masqué pour les utilisateurs dans l'interface."
+        },
+        "step": {
+            "name": {
+                "label": "Nom de l'étape du processus :",
+                "placeholder": "Mon étape de processus"
+            },
+            "stepType": {
+                "label": "Sélectionnez le type d'étape :",
+                "help": "Choisissez le type de l'étape du processus."
+            },
+            "allowBackward": {
+                "label": "Autoriser le retour en arrière :",
+                "help": "Permettre aux utilisateurs de revenir à cette étape."
+            },
+            "configuration": {
+                "label": "Configuration :",
+                "placeholder": "Saisissez la configuration JSON de cette étape",
+                "help": "Paramètres de configuration supplémentaires pour cette étape du processus, au format JSON."
+            }
+        }
+    }
+}

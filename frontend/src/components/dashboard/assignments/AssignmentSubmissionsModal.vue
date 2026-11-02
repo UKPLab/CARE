@@ -51,6 +51,7 @@ import AssignmentUploadModal from "@/components/dashboard/assignments/Assignment
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
+import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 /**
  * Modal displaying all submissions for a given assignment.
@@ -92,13 +93,12 @@ export default {
 
       const now = new Date();
       const start = this.assignment.start ? new Date(this.assignment.start) : null;
-      const end = this.assignment.end ? new Date(this.assignment.end) : null;
 
       if (start && now < start) {
         return "notStarted";
       }
 
-      if (end && now > end) {
+      if (isAssignmentPastDeadline(this.assignment)) {
         return "closed";
       }
 

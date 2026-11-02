@@ -1,5 +1,5 @@
 /**
- * Helpers for choosing and applying the UI language (German or English).
+ * Helpers for choosing and applying the UI language (see {@link SUPPORTED_LOCALES}).
  *
  * Logged-in users:
  * 1. `app.locale` from the server
@@ -28,6 +28,7 @@ const STORAGE_KEY = "locale";
 export const SUPPORTED_LOCALES = [
     { code: "de", name: "Deutsch", flag: "🇩🇪" },
     { code: "en", name: "English", flag: "🇬🇧" },
+    { code: "fr", name: "Français", flag: "🇫🇷" },
 ];
 
 /** Supported locale codes for fast lookup in {@link normalizeLocale} */

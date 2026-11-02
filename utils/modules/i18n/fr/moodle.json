@@ -1,0 +1,14 @@
+{
+    "assignmentId": "ID du devoir :",
+    "courseId": "ID du cours :",
+    "apiKey": "Jeton Moodle (clé API) :",
+    "apiUrl": "URL Moodle :",
+    "refresh": "Actualiser",
+    "refreshTooltip": "Actualiser la liste des devoirs",
+    "placeholders": {
+        "assignmentId": "Saisissez l'ID du devoir",
+        "courseId": "Saisissez l'ID du cours",
+        "apiKey": "Saisissez le jeton (clé API)",
+        "apiUrl": "https://example.moodle.com"
+    }
+}

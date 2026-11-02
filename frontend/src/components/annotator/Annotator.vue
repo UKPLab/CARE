@@ -10,21 +10,23 @@
         <div
             :id="'viewerContainer-' + documentId"
             ref="viewer"
-            class="flex-grow-1 border mh-100 justify-content-center p-3"
-            style="overflow-y: scroll;"
+            class="annotator-viewer flex-grow-1 border mh-100 justify-content-center p-3"
         >
           <PDFViewer
               ref="pdfViewer"
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
               @copy="onCopy"
+              @loaded="pdf = $event"
           />
 
         </div>
+        <AnnotationScrollMarkers :pdf="pdf"/>
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
             :is-shown="isShown"  
+            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -93,6 +95,7 @@
  * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
@@ -113,6 +116,7 @@ export default {
   components: {
     SidebarTemplate,
     PDFViewer,
+    AnnotationScrollMarkers,
     AnnotationSidebar,
     Loader,
     TopBarButton,
@@ -187,6 +191,7 @@ export default {
   emits: ['update:data'],
   data() {
     return {
+      pdf: null,
       downloading: false,
       assessmentViewActive: true,
       maxSidebarWidth: 400,
@@ -701,6 +706,12 @@ export default {
 </script>
 
 <style scoped>
+
+.annotator-viewer {
+  /* auto would freeze this column at the widened page width. */
+  min-width: 0;
+  overflow-y: scroll;
+}
 
 .sidebar-highlight {
   border: 2px solid #ff9800 !important;

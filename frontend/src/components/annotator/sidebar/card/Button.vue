@@ -12,7 +12,7 @@
   </button>
   <button
     v-else
-    class="btn btn-sm position-relative border-0"
+    class="btn btn-sm position-relative border-0 care-focus-ring"
     data-placement="top"
     data-toggle="tooltip"
     :title="title"

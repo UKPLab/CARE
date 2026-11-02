@@ -4,7 +4,7 @@
       <button
         v-if="requestId === null"
         :title="nlpAvailable ? title : $t('nlp.notAvailable', { name: title })"
-        class="btn btn-sm"
+        class="btn btn-sm care-focus-ring"
         data-placement="top"
         data-toggle="tooltip"
         type="button"

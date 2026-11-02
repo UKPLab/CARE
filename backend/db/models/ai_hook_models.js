@@ -33,9 +33,9 @@ module.exports = (sequelize, DataTypes) => {
             });
             const hookIds = hooks.map((hook) => hook.id).filter(Boolean);
             if (hookIds.length === 0) {
-                return {aiHookId: -1};
+                return {owned: {aiHookId: -1}, shared: null};
             }
-            return {aiHookId: {[Op.in]: hookIds}};
+            return {owned: {aiHookId: {[Op.in]: hookIds}}, shared: null};
         }
 
         static async validateHookModel(hookModel, options = {}) {

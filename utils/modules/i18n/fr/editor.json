@@ -1,0 +1,25 @@
+{
+    "reqTitle": "Envoyer une requête",
+    "cmdTitle": "Envoyer une commande",
+    "cmdToSend": "la commande à envoyer",
+    "serviceToContact": "le service à contacter",
+    "waitingForResponse": "En attente de réponse",
+    "payload": "Payload",
+    "placeholders": "Variables",
+    "emptyMsgHistory": "Aucun message envoyé/reçu.",
+    "readOnlyMode": "Mode lecture seule",
+    "seePayload": "Voir le payload",
+    "request": "Requête",
+    "copyJsonSuccess": {
+        "title": "JSON copié",
+        "message": "JSON copié dans le presse-papiers !"
+    },
+    "editJson": "Modifier le JSON",
+    "history": "Historique",
+    "configurator": "Configurateur",
+    "downloadDocument": "Télécharger le document",
+    "annotator": {
+        "searchTags": "Rechercher des étiquettes",
+        "expandAdder": "Développer le panneau d'ajout"
+    }
+}

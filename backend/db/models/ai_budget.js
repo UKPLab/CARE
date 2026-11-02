@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
         };
          // userId is denormalized on each row so visibility is a direct column filter — no FK-chain queries at read time.
         static async getUserFilter(userId) {
-            return { userId };
+            return { owned: { userId }, shared: null };
         }
 
         static associate(models) {

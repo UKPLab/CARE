@@ -262,6 +262,15 @@ export default {
     appLoaded() {
       this.syncPostLoginModalFlow();
     },
+    // Consent can change at runtime (consent modal, preferences modal)
+    acceptStats(accepted) {
+      if (accepted && this.loaded.settings) {
+        this.initializeBehaviorLogger();
+      } else if (this.behaviorLogger) {
+        this.behaviorLogger.destroy();
+        this.behaviorLogger = null;
+      }
+    },
     // Initialize logger after settings are loaded because we access the settings table
     'loaded.settings': {
       handler(isLoaded) {

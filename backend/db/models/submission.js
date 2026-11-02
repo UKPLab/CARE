@@ -1,6 +1,8 @@
 "use strict";
 const MetaModel = require("../MetaModel.js");
-const {Op} = require("sequelize");
+const {Op, literal} = require("sequelize");
+const {NUMERIC_OPERATORS} = require("../../utils/helper/queryTableColumnFilters.js");
+const {includesCondition} = require("../../utils/helper/queryTableSearch.js");
 const fs = require("fs");
 const path = require("path");
 const TranslatableError = require("../../utils/TranslatableError");
@@ -210,6 +212,106 @@ module.exports = (sequelize, DataTypes) => {
                 originalSubmissionId,
             };
         }
+        /**
+         * Owner name columns for the assignment submission picker.
+         * userName needs userPublicInfo; firstName / lastName need userPrivateInfo.
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<string[]>}
+         */
+        static async assignmentNameFields(ctx = {}) {
+            const fields = [];
+            const hasAccess = typeof ctx.hasAccess === "function" ? ctx.hasAccess : async () => false;
+            if (await hasAccess("frontend.dashboard.studies.view.userPublicInfo")) {
+                fields.push("userName");
+            }
+            if (await hasAccess("frontend.dashboard.studies.view.userPrivateInfo")) {
+                fields.push("firstName", "lastName");
+            }
+            return fields;
+        }
+
+        /**
+         * Related user fields for queryTable. Server-built; not a client parent inject.
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<Array<Object>>}
+         */
+        static async getQueryTableInjects(ctx = {}) {
+            const fields = await Submission.assignmentNameFields(ctx);
+            const injects = [{
+                type: "sql",
+                table: "submission",
+                on: "id",
+                fields: {rolesNames: Submission.assignmentRoleNamesSql()},
+            }];
+            if (fields.length > 0) injects.push({
+                type: "parent",
+                table: "user",
+                by: "userId",
+                fields,
+            });
+            return injects;
+        }
+
+        /**
+         * Submitter roles using the same active-role aggregation as the reviewer picker.
+         * @returns {string} SQL expression correlated with the submission row
+         */
+        static assignmentRoleNamesSql() {
+            const roles = sequelize.models.user.assignmentReviewerColumnSql().rolesNames;
+            return `COALESCE((SELECT ${roles} FROM "user"`
+                + ' WHERE "user"."id" = "submission"."userId" AND "user"."deleted" = false), \'\')';
+        }
+
+        /**
+         * Search the submitter roles when requested by the submission picker.
+         * @param {string} needle Normalized search text
+         * @param {Object} ctx Query search context
+         * @returns {Object[]} Sequelize search conditions
+         */
+        static getQueryTableSearchConditions(needle, ctx = {}) {
+            return ctx.canSearch?.("rolesNames")
+                ? [includesCondition(literal(Submission.assignmentRoleNamesSql()), needle)]
+                : [];
+        }
+
+        /**
+         * Searchable keys for the assignment submission picker.
+         * @param {Object} ctx
+         * @param {function(string): Promise<boolean>} ctx.hasAccess
+         * @returns {Promise<string[]>}
+         */
+        static async getQueryTableSearchColumns(ctx = {}) {
+            const columns = ["id", "rolesNames"];
+            columns.push(...await Submission.assignmentNameFields(ctx));
+            return columns;
+        }
+
+        /**
+         * Chip filters for the assignment submission picker.
+         * Name keys are subqueries on user, same rights as the inject.
+         * @param {Object} [ctx]
+         * @param {function(string): Promise<boolean>} [ctx.hasAccess]
+         * @returns {Promise<Object>}
+         */
+        static async getQueryTableFilterColumns(ctx = {}) {
+            const spec = {
+                id: {type: "numeric", operators: NUMERIC_OPERATORS},
+                assignmentId: {type: "numeric", operators: ["%"]},
+                createdAt: {type: "date"},
+                rolesNames: {type: "text", operators: ["%"], sql: Submission.assignmentRoleNamesSql()},
+            };
+            const names = await Submission.assignmentNameFields(ctx);
+            const userColumn = (column) =>
+                `(SELECT "user"."${column}" FROM "user"`
+                + ` WHERE "user"."id" = "submission"."userId" AND "user"."deleted" = false)`;
+            for (const column of names) {
+                spec[column] = {type: "text", sql: userColumn(column)};
+            }
+            return spec;
+        }
+
         /**
          * Load all documents for a submission and convert them to base64.
          *

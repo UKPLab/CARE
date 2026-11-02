@@ -394,6 +394,6 @@ export default {
   cursor: pointer;
 }
 .bi-gear:hover {
-  color: var(--bs-primary, #0d6efd); /* Bootstrap primary color */
+  color: var(--care-primary);
 }
 </style>

@@ -1,0 +1,166 @@
+{
+    "notAvailable": "{name} indisponible",
+    "skillDetails": "Détails de la compétence",
+    "copyConfig": "Copier la configuration",
+    "downloadConfig": "Télécharger la configuration",
+    "sendCommand": "Envoyer la commande",
+    "configCopied": "Configuration copiée",
+    "skillConfigCopied": "Configuration de la compétence copiée dans le presse-papiers !",
+    "downloadSuccess": "Téléchargement réussi",
+    "downloadedConfigMessage": "Configuration de {name} téléchargée",
+    "services": {
+        "availableServices": "Services disponibles",
+        "noServices": "Aucune configuration de services disponible pour cette étape.",
+        "costLimits": "Limites de coût (facultatif)",
+        "totalCostLimit": "Total ($)",
+        "sessionCostLimit": "Par session ($)",
+        "userCostLimit": "Par utilisateur ($)",
+        "noLimit": "Aucune limite",
+        "totalCostLimitHelp": "Plafond de dépenses total",
+        "sessionCostLimitHelp": "Plafond de dépenses par session",
+        "userCostLimitHelp": "Plafond de dépenses par utilisateur"
+    },
+    "hooks": {
+        "requestTitle": "Requête de fonction IA",
+        "requestFailed": "La requête de la fonction IA a échoué",
+        "documentLoadFailed": "Impossible de charger le document"
+    },
+    "inputConfirm": {
+        "confirmSelections": "Confirmez vos sélections",
+        "selectedSkill": "Compétence sélectionnée :",
+        "inputMappings": "Mappages des entrées :",
+        "selectedFiles": "Fichiers sélectionnés :",
+        "baseFileSelections": "Fichiers de base sélectionnés :",
+        "defaultConfiguration": "Configuration",
+        "unknownSelection": "Inconnu"
+    },
+    "inputFiles": {
+        "filesSelectedFor": "Fichiers sélectionnés pour {param} : {count} fichier(s)",
+        "selectFilesFor": "Veuillez sélectionner des fichiers pour le paramètre : {param}",
+        "documents": "Documents",
+        "submissions": "Travaux"
+    },
+    "inputGroup": {
+        "validationConfiguration": "Configuration de validation {id}"
+    },
+    "skillSelector": {
+        "selectNlpSkill": "Sélectionnez une compétence NLP :",
+        "selectSkill": "Sélectionnez une compétence :"
+    },
+    "inputMap": {
+        "inputMapping": "Mappage des entrées",
+        "outputMapping": "Mappage des sorties",
+        "selectFilesToInclude": "Sélectionnez les fichiers à inclure :",
+        "saveInDocumentData": "Enregistrer dans les données du document",
+        "insertIntoEditor": "Insérer dans l'éditeur",
+        "sources": {
+            "documents": "<Documents>",
+            "submissions": "<Travaux>",
+            "submission": "<Travail>",
+            "configuration": "<Configuration> {name}",
+            "document": "<Document> {name}",
+            "documentFallback": "Document {id}",
+            "submissionWithName": "<Travail> {name}",
+            "annotatorAnnotations": "<Annotateur> Annotations (étape de processus {step})",
+            "annotatorComments": "<Annotateur> Commentaires (étape de processus {step})",
+            "editorFirstVersion": "<Éditeur> Première version (étape de processus {step})",
+            "editorCurrentVersion": "<Éditeur> Version actuelle (étape de processus {step})",
+            "assessmentResults": "<Évaluation> Résultats (étape de processus {step})",
+            "serviceOutput": "<Service {service}> {skill}_{output} (étape de processus {step})"
+        }
+    },
+    "preprocessing": {
+        "title": "Prétraitement de la notation",
+        "cancelButton": "Annuler le prétraitement",
+        "submissionName": "Travail {id}",
+        "cancelApplySkills": "Annuler l'application des compétences",
+        "toasts": {
+            "inProgressTitle": "Prétraitement en cours",
+            "inProgressMsg": "Le prétraitement est en cours. Affichage de la progression...",
+            "cancelledTitle": "Prétraitement annulé",
+            "cancelledMsg": "Le prétraitement a été annulé.",
+            "cancellationFailedTitle": "Échec de l'annulation du prétraitement",
+            "startedTitle": "Prétraitement démarré",
+            "startedMsg": "Le prétraitement a été lancé.",
+            "nowRunningMsg": "Le prétraitement est en cours. La progression s'affiche dans la fenêtre.",
+            "completeTitle": "Prétraitement terminé",
+            "completeMsg": "Consultez les résultats ci-dessous.",
+            "confirmationFailedTitle": "Échec de la confirmation"
+        },
+        "setupStepper": {
+            "title": "Appliquer des compétences",
+            "submit": "Appliquer les compétences",
+            "steps": {
+                "selectSkill": "Sélectionner la compétence",
+                "selectFiles": "Sélectionner les fichiers",
+                "selectBaseFiles": "Sélectionner les fichiers de base",
+                "confirmation": "Confirmation"
+            },
+            "closeModalTitle": "Fermer la fenêtre",
+            "closeModalMessage": "Les sélections actuelles seront perdues si vous fermez cette fenêtre. Voulez-vous vraiment continuer ?"
+        },
+        "processStepper": {
+            "errors": {
+                "title": "Erreurs rencontrées",
+                "errorLabel": "Erreur :",
+                "submissionId": "ID du travail",
+                "documentId": "ID du document"
+            },
+            "steps": {
+                "progress": "Progression du traitement",
+                "confirmCancel": "Confirmer l'annulation",
+                "complete": "Traitement terminé"
+            },
+            "stats": {
+                "processed": "Traité :",
+                "currentRuntime": "Durée de la requête en cours :",
+                "estimatedPerRequest": "Durée estimée par requête :",
+                "estimatedRemaining": "Temps restant estimé :",
+                "calculating": "Calcul en cours...",
+                "almostDone": "Presque terminé...",
+                "takingLonger": "Plus long que prévu"
+            },
+            "queue": {
+                "title": "Travaux en file d'attente",
+                "empty": "Aucun travail en file d'attente. Traitement de la dernière requête...",
+                "columns": {
+                    "id": "ID",
+                    "submissionName": "Nom du travail",
+                    "user": "Utilisateur"
+                }
+            },
+            "cancel": {
+                "title": "Annuler le traitement",
+                "message": "Voulez-vous vraiment annuler les requêtes restantes ?"
+            }
+        }
+    },
+    "skills": {
+        "title": "Compétences",
+        "descriptions": {
+            "f1000_classification": "Il s'agit d'une tâche de classification",
+            "generating_feedback_german": "Cette compétence génère un retour sur l'exposé à partir du résultat de la notation",
+            "generating_feedback_english": "Cette compétence génère un retour sur l'exposé à partir du résultat de la notation",
+            "grading_expose_german": "Cette compétence sert à noter l'exposé d'un étudiant",
+            "grading_expose_english": "Cette compétence sert à noter l'exposé d'un étudiant",
+            "skill_eic": "Compétence de classification des intentions de modification, basée sur le modèle Leo-LM 13b affiné",
+            "summarization": "Résumer un texte",
+            "sentiment_classification": "Classe un paragraphe donné selon son sentiment et renvoie une estimation de polarité."
+        },
+        "status": {
+            "online": "EN LIGNE",
+            "offline": "HORS LIGNE",
+            "activating": "Activation"
+        },
+        "columns": {
+            "nodes": "Nb de serveurs",
+            "activated": "Activé",
+            "fallback": "Solution de repli"
+        },
+        "toasts": {
+            "settingUpdatedTitle": "Paramètre mis à jour",
+            "settingUpdatedMessage": "Activation de la compétence « {name} » mise à jour.",
+            "updateFailedTitle": "Échec de la mise à jour du paramètre"
+        }
+    }
+}

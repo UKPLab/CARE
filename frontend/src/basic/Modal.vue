@@ -293,21 +293,27 @@ export default {
         this.parentModal.hide();
       }
     },
-    suspendParentModal() {
-      if (!this.parentModal || this.parentModal.suspendedByChild) return;
-      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+    suspendByChild() {
+      if (this.suspendedByChild) return;
+      const el = this.$refs && this.$refs.Modal;
       if (el) {
         el.classList.add('nested-suspended');
       }
-      this.parentModal.suspendedByChild = true;
+      this.suspendedByChild = true;
     },
-    resumeParentModal() {
-      if (!this.parentModal || !this.parentModal.suspendedByChild) return;
-      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+    resumeFromChild() {
+      if (!this.suspendedByChild) return;
+      const el = this.$refs && this.$refs.Modal;
       if (el) {
         el.classList.remove('nested-suspended');
       }
-      this.parentModal.suspendedByChild = false;
+      this.suspendedByChild = false;
+    },
+    suspendParentModal() {
+      this.parentModal?.suspendByChild();
+    },
+    resumeParentModal() {
+      this.parentModal?.resumeFromChild();
     }
   }
 };

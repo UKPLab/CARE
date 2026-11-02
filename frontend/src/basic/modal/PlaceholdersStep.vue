@@ -539,9 +539,9 @@ export default {
   font-weight: bold;
   font-size: 12px;
   padding: 0.25rem 0.5rem;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: color-mix(in srgb, var(--bs-body-bg) 80%, transparent);
   border-radius: 0.25rem;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--bs-border-color-translucent);
 }
 
 .placeholders-config {
@@ -608,8 +608,8 @@ export default {
 }
 
 .form-control:focus {
-  border-color: var(--bs-primary, #0d6efd);
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  border-color: var(--care-primary);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-primary) 25%, transparent);
 }
 
 .no-content {

@@ -157,10 +157,10 @@ export default {
 
 <style scoped>
 .metric-card {
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color);
   border-radius: 0.5rem;
   padding: 0.9rem 1rem;
-  background: #fff;
+  background: var(--bs-body-bg);
   min-height: 86px;
   display: flex;
   flex-direction: column;
@@ -169,14 +169,14 @@ export default {
 
 .metric-label {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   margin-bottom: 0.3rem;
 }
 
 .metric-value {
   font-size: 1.35rem;
   font-weight: 600;
-  color: #212529;
+  color: var(--bs-body-color);
   line-height: 1.2;
 }
 </style>

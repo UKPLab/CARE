@@ -10,6 +10,7 @@
           @blur="blur(currentDate)"
       >
       <input
+          v-if="!dateOnly"
           v-model="time"
           class="form-control"
           type="time"
@@ -17,6 +18,7 @@
           @blur="blur(currentDate)"
       >
       <button
+          v-if="!dateOnly"
           class="btn btn-outline-secondary"
           type="button"
           @click="date = null"
@@ -41,7 +43,12 @@ export default {
     modelValue: {
       type: [String, null],
       required: true
-    }
+    },
+    dateOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
   },
   emits: ["update:modelValue"],
   data() {
@@ -102,9 +109,13 @@ export default {
         const day = ("0" + this.currentDate.getDate()).slice(-2);
         const month = ("0" + (this.currentDate.getMonth() + 1)).slice(-2);
         this.date = this.currentDate.getFullYear() + "-" + (month) + "-" + (day);
-        const hours = ("0" + this.currentDate.getHours()).slice(-2);
-        const minutes = ("0" + this.currentDate.getMinutes()).slice(-2);
-        this.time = hours + ":" + minutes;
+        if (this.dateOnly) {
+          this.time = "00:00";
+        } else {
+          const hours = ("0" + this.currentDate.getHours()).slice(-2);
+          const minutes = ("0" + this.currentDate.getMinutes()).slice(-2);
+          this.time = hours + ":" + minutes;
+        }
       } else {
         this.date = null
         this.time = null

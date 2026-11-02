@@ -204,7 +204,7 @@ export default {
     left: 0;
     right: 0;
     height: 20px;
-    background: linear-gradient(to bottom, transparent, white);
+    background: linear-gradient(to bottom, transparent, var(--bs-body-bg));
     pointer-events: none;
     border-radius: 0 0 4px 4px;
     transition: opacity 0.2s ease;

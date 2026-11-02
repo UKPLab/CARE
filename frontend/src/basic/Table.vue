@@ -42,7 +42,7 @@
               />
             </div>
           </th>
-          <th
+          <HeaderCell
             v-for="(c, index) in visibleColumns"
             :key="c.key"
             :ref="'header-' + c.key"
@@ -50,91 +50,17 @@
               'width' in c ? 'col-' + c.width : 'col-auto',
               getFixedColumnClass(c, index),
             ]"
-          
             :style="[getFixedColumnStyle(c), c.style || {}]"
-          >
-            {{ c.name }}
-            <span
-              v-if="c.sortable"
-              :title="$t('common.sortBy')"
-            >
-              <LoadIcon
-                v-if="c.sortable"
-                :class="{
-                  'bg-success': sortColumn === c.key,
-                  'bg-opacity-50': sortColumn === c.key,
-                  'bg-opacity-10': sortColumn !== c.key,
-                  'bg-black': sortColumn !== c.key,
-                }"
-                :icon-name="sortColumn === c.key ? sortIcon : 'sort-down'"
-                class="me-1"
-                style="cursor: pointer"
-                @click="sort('sortKey' in c ? c.sortKey : c.key)"
-              />
-            </span>
-            <span v-if="filter && c.filter && hasFilterableData">
-              <span
-                aria-expanded="true"
-                aria-haspopup="true"
-                data-bs-toggle="dropdown"
-                role="button"
-                style="cursor: pointer"
-              >
-                <LoadIcon
-                  :id="'filterDropDown_' + c.key"
-                  :color="c.key in sequelizeFilter ? 'blue' : ''"
-                  :icon-name="
-                    c.key in sequelizeFilter ? 'funnel-fill' : 'funnel'
-                  "
-                />
-              </span>
-              <template v-if="!c.filter.type">
-                <ul
-                  :aria-labelledby="'filterDropDown_' + c.key"
-                  class="dropdown-menu p-1"
-                  @click.stop=""
-                >
-                  <li
-                    v-for="f in c.filter"
-                    :key="f.key"
-                    class="form-check"
-                  >
-                    <input
-                      :id="'filterDropDown_' + c.key + '_label_' + f.key"
-                      v-model="filter[c.key][f.key]"
-                      class="form-check-input"
-                      type="checkbox"
-                    />
-                    <label
-                      :for="'filterDropDown_' + c.key + '_label_' + f.key"
-                      class="form-check-label"
-                      >{{ f.name }}</label
-                    >
-                  </li>
-                </ul>
-              </template>
-              <template v-else-if="c.filter.type === 'numeric'">
-                <div class="dropdown-menu p-2">
-                  <select
-                    v-model="filter[c.key].operator"
-                    class="form-select form-select-sm mb-2"
-                  >
-                    <option value="gt">&gt;</option>
-                    <option value="lt">&lt;</option>
-                    <option value="gte">&ge;</option>
-                    <option value="lte">&le;</option>
-                    <option value="eq">=</option>
-                  </select>
-                  <input
-                    v-model="filter[c.key].value"
-                    class="form-control form-control-sm"
-                    type="number"
-                    min="0"
-                  />
-                </div>
-              </template>
-            </span>
-          </th>
+            :column="c"
+            :sort-column="sortColumn"
+            :sort-icon="sortIcon"
+            :filter="filter"
+            :sequelize-filter="sequelizeFilter"
+            :has-filterable-data="hasFilterableData"
+            @sort="sort"
+            @filter-checkbox-change="(key, checked) => (filter[c.key][key] = checked)"
+            @filter-numeric-change="(field, value) => (filter[c.key][field] = value)"
+          />
           <th
             v-if="hasManageButtons"
             ref="manageHeader"
@@ -196,67 +122,11 @@
             :style="[getFixedColumnStyle(c), c.style || {}]"
           >
             <span v-if="c.key in r">
-              <TIcon
-                v-if="c.type === 'icon'"
-                :color="typeof r[c.key] === 'object' ? r[c.key].color : null"
-                :value="typeof r[c.key] === 'object' ? r[c.key].icon : r[c.key]"
-                :title="typeof r[c.key] === 'object' ? r[c.key].title : null"
-                :size="c.typeOptions?.size ?? 16"
-              />
-              <TBadge
-                v-else-if="c.type === 'badge'"
-                :options="c.typeOptions ? c.typeOptions : null"
-                :value="r[c.key]"
-              />
-              <TButton
-                v-else-if="c.type === 'button'"
-                :action="r[c.key].action"
-                :stats="r[c.key].stats"
-                :icon="r[c.key].icon"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
+              <TCell
+                :column="c"
+                :row="r"
                 @action="actionEmitter"
               />
-              <TToggle
-                v-else-if="c.type === 'toggle'"
-                :action="r[c.key].action"
-                :value="r[c.key].value"
-                :options="r[c.key].options"
-                :params="r"
-                :title="r[c.key].title"
-                @action="actionEmitter"
-              />
-              <span v-else-if="c.type === 'datetime'">
-                {{ formatLocalizedDateTime(r[c.key]) }}
-              </span>
-
-              <span v-else-if="c.type === 'icon-selector'">
-                <LoadIcon
-                  v-if="r[c.key].selected"
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  style="color: yellowgreen"
-                />
-                <LoadIcon
-                  v-else
-                  v-tooltip
-                  :icon-name="r[c.key].icon"
-                  :size="16"
-                  :title="r[c.key].title"
-                  role="button"
-                  @click="actionEmitter({ action: r[c.key].action, params: r })"
-                />
-              </span>
-              <span
-                v-else
-                :class="{
-                  multiline: c.multiline,
-                }"
-                :style="getMultilineStyles(c)"
-              >
-                {{ r[c.key] }}
-              </span>
             </span>
             <span v-else> - </span>
           </td>
@@ -296,6 +166,7 @@
     :current-page="currentPage"
     :items-per-page="limit"
     :items-per-page-list="itemsPerPageList"
+    :allow-all="true"
     :pages="pages"
     :show-pages="paginationShowPages"
     :total-items="total"
@@ -305,17 +176,18 @@
 </template>
 
 <script>
-import TButton from "./table/Button.vue";
 import TButtonGroup from "./table/ButtonGroup.vue";
-import TToggle from "./table/Toggle.vue";
-import TBadge from "./table/Badge.vue";
-import TIcon from "./table/Icon.vue";
+import TCell from "./table/Cell.vue";
 import Pagination from "./table/Pagination.vue";
-import LoadIcon from "@/basic/Icon.vue";
+import HeaderCell from "./table/HeaderCell.vue";
 import BasicIcon from "@/basic/Icon.vue";
-import { tooltip } from "@/assets/tooltip.js";
-import { formatLocalizedDateTime } from "@/assets/utils";
 import deepEqual from "deep-equal";
+import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
+import { tableFixedColumnsData, tableFixedColumnsComputed, tableFixedColumnsMethods } from "@/basic/table/helpers/tableFixedColumns.js";
+import { tableDataPipelineData, tableDataPipelineComputed, tableDataPipelineMethods } from "@/basic/table/helpers/tableDataPipeline.js";
+import { tableRowInteractionsData, tableRowInteractionsComputed, tableRowInteractionsMethods } from "@/basic/table/helpers/tableRowInteractions.js";
+import { tableProgressiveRenderingData, tableProgressiveRenderingMethods } from "@/basic/table/helpers/tableProgressiveRendering.js";
+import { tableCellHelpersMethods } from "@/basic/table/helpers/tableCellHelpers.js";
 
 /**
  * generic table with feature-rich API
@@ -350,14 +222,10 @@ export default {
   components: {
     BasicIcon,
     Pagination,
-    TIcon,
-    TBadge,
+    TCell,
     TButtonGroup,
-    TButton,
-    TToggle,
-    LoadIcon,
+    HeaderCell,
   },
-  directives: { tooltip },
   inject: {
     acceptStats: {
       default: () => false,
@@ -404,187 +272,38 @@ export default {
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
     return {
-      tableClass: {
-        "table-striped": this.options && this.options.striped,
-        "table-hover": this.options && this.options.hover,
-        "table-bordered": this.options && this.options.bordered,
-        "table-borderless": this.options && this.options.borderless,
-        "table-sm": this.options && this.options.small,
-      },
-      sortColumn: this.options && this.options.sort && this.options.sort.column ? this.options.sort.column : null,
-      sortDirection: this.options && this.options.sort && this.options.sort.order ? this.options.sort.order : "ASC",
-      currentPage: 1,
       selectableRows: this.options && this.options.selectableRows,
-      currentData: [],
-      itemsPerPage: null,
-      itemsPerPageList: [10, 25, 50, 100],
-      paginationShowPages: 3,
-      filter: null, // Can be assigned an object or an array, see example above.
-      search: "",
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
-      fixedColumnStyles: {},
-      manageColumnStyle: {},
-      debouncedComputeFixedColumns: null,
-      hasHorizontalOverflow: false,
-      resizeObserver: null,
-      allRenderLimit: 75, // Render only the first 75 items when "All" is selected to avoid UI freeze
-      allChunkSize: 50, // Append the next 50 items on scroll
-      allObserver: null,
+      // tableLayout.js
+      ...tableLayoutData(this.options),
+      // tableFixedColumns.js
+      ...tableFixedColumnsData(),
+      // tableDataPipeline.js
+      ...tableDataPipelineData(this.options),
+      // tableRowInteractions.js
+      ...tableRowInteractionsData(),
+      // tableProgressiveRendering.js
+      ...tableProgressiveRenderingData(),
     };
   },
   computed: {
-    hasFilterableData() {
-      return this.data && this.data.length > 0;
-    },
-    isAllRowsSelected() {
-      // Use the existing method to get filtered data across all pages
-      const allFilteredData = this.getFilteredAndSortedData();
-      const enabledFilteredRows = allFilteredData.filter((r) => !r.isDisabled);
-      return this.currentData.length === enabledFilteredRows.length && enabledFilteredRows.length > 0;
-    },
-    tableWrapperStyle() {
-      if (!this.maxTableHeight) return null;
-      const maxHeight = this.normalizeCssSize(this.maxTableHeight);
-      if (!maxHeight) return null;
-      return {
-        maxHeight,
-        overflowY: "auto",
-      };
-    },
-    serverSidePagination() {
-      return (
-        this.options &&
-        this.options.pagination &&
-        typeof this.options.pagination === "object" &&
-        "serverSide" in this.options.pagination &&
-        this.options.pagination.serverSide
-      );
-    },
-    emptyColspan() {
-      let colspan = this.visibleColumns.length;
-      if (this.selectableRows) {
-        colspan += 1;
-      }
-      if (this.buttons.length > 0) {
-        colspan += 1;
-      }
-      return colspan;
-    },
-    total() {
-      if (this.serverSidePagination) {
-        return this.options.pagination.total;
-      }
-      return this.data.length;
-    },
-    isAllMode() {
-      return this.itemsPerPage === 0;
-    },
-    limit() {
-      // if manually set, use that
-      if (this.itemsPerPage !== null) {
-        if (this.itemsPerPage === 0) {
-          // Prevent UI freeze when "All" is selected
-          return Math.min(this.total, this.allRenderLimit);
-        }
-        return this.itemsPerPage;
-      }
-      // if pagination is enabled, use that
-      if (this.options && this.options.pagination) {
-        if (typeof this.options.pagination === "object") {
-          return this.options.pagination.itemsPerPage;
-        } else {
-          return this.options.pagination;
-        }
-      }
-      // otherwise, use all elements
-      return this.total;
-    },
-    pages() {
-      if (this.isAllMode) {
-        return 1;
-      }
-      if (this.serverSidePagination) {
-        return Math.ceil(this.total / this.limit);
-      }
-      // For client-side pagination, use filtered data length
-      return Math.ceil(this.filteredDataLength / this.limit);
-    },
-    filteredDataLength() {
-      if (this.serverSidePagination) {
-        return this.total;
-      }
-      
-      return this.getFilteredAndSortedData().length;
-    },
-    sortIcon() {
-      return this.sortDirection === "ASC" ? "sort-down" : "sort-up";
-    },
-    tableData() {
-      if (this.serverSidePagination) {
-        return this.data;
-      }
-      
-      let data = this.getFilteredAndSortedData();
-
-      if (this.options && this.options.pagination && !this.isAllMode) {
-        data = data.slice((this.currentPage - 1) * this.limit, this.currentPage * this.limit);
-      } else if (this.isAllMode) {
-        // In "All" mode we render a growing prefix (0..limit)
-        data = data.slice(0, this.limit);
-      }
-      return data;
-    },
-    sequelizeFilter() {
-      let sequelizeFilter = Object.assign(
-        {},
-        ...Object.entries(this.filter).map(([k, v]) => ({
-          [k]: Object.entries(v)
-            .filter(([_k, v]) => v)
-            .map(([k, _v]) => k),
-        }))
-      );
-      return Object.assign(
-        {},
-        ...Object.entries(sequelizeFilter)
-          .filter(([_k, v]) => v.length > 0)
-          .map(([k, v]) => ({ [k]: v }))
-      );
-    },
-    // Hide columns whose key is absent from every row (e.g. fields stripped server-side for the current user's rights).
-    // Keep all columns while data hasn't loaded yet, so the header doesn't flash empty.
     visibleColumns() {
-      if (!this.data || this.data.length === 0) return this.columns;
-      return this.columns.filter((c) => this.data.some((row) => Object.prototype.hasOwnProperty.call(row, c.key)));
+      return visibleColumnsForRows(this.columns, this.data);
     },
-    hasFixedColumns() {
-      return this.visibleColumns.some((c) => ["left", "right"].includes(c.fixed));
-    },
-    hasRightFixedColumns() {
-      return this.visibleColumns.some((c) => c.fixed === "right");
-    },
-    // Determine if manage column should be sticky
-    shouldFixManageColumn() {
-      return this.hasManageButtons && (this.hasHorizontalOverflow || this.hasRightFixedColumns);
-    },
-    // Cache the indices to avoid repeated searches
-    fixedColumnIndices() {
-      return {
-        lastLeft: this.visibleColumns.findLastIndex((col) => col.fixed === "left"),
-        firstRight: this.visibleColumns.findIndex((col) => col.fixed === "right"),
-      };
-    },
-    selectedCount() {
-      return this.currentData.length;
-    },
-    totalSelectableCount() {
-      if (!this.selectableRows) return 0;
-      const allFilteredData = this.getFilteredAndSortedData();
-      return allFilteredData.filter((r) => !r.isDisabled).length;
-    },
+    // tableLayout.js
+    ...tableLayoutComputed,
+    // tableFixedColumns.js
+    ...tableFixedColumnsComputed,
+    // tableDataPipeline.js
+    ...tableDataPipelineComputed,
+    // tableRowInteractions.js
+    ...tableRowInteractionsComputed,
   },
   watch: {
     currentData: {
       handler() {
+        // The parent's v-model target may already be gone while the table unmounts
+        if (this._unmounting) return;
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -592,8 +311,10 @@ export default {
       deep: true,
     },
     modelValue: {
-      handler() {
-        this.currentData = this.updateValues(this.modelValue);
+      handler(value) {
+        // Our own emit echoing back: keep the selection array (and its reactivity) as is
+        if (deepEqual(this.currentData, value)) return;
+        this.currentData = this.updateValues(value);
       },
       deep: true,
     },
@@ -659,490 +380,33 @@ export default {
     }
   },
   created() {
-    this.debouncedComputeFixedColumns = this.debounce(() => {
-      this.computeFixedColumnStyles();
-    }, 150);
+    this.initFixedColumns();
   },
   beforeUnmount() {
+    this._unmounting = true;
     this.cleanupFixedColumns();
     this.cleanupAllObserver();
   },
   methods: {
-    formatLocalizedDateTime,
-    setupFixedColumns() {
-      this.$nextTick(() => {
-        this.computeFixedColumnStyles();
-        // Use ResizeObserver for better performance if available
-        if (window.ResizeObserver && this.$refs.tableWrapper) {
-          this.resizeObserver = new ResizeObserver(this.debounce(() => this.computeFixedColumnStyles(), 150));
-          this.resizeObserver.observe(this.$refs.tableWrapper);
-        } else {
-          // Fallback to window resize
-          window.addEventListener("resize", this.debouncedComputeFixedColumns);
-        }
-      });
-    },
-    cleanupFixedColumns() {
-      if (this.resizeObserver) {
-        this.resizeObserver.disconnect();
-        this.resizeObserver = null;
-      }
-      if (this.debouncedComputeFixedColumns) {
-        window.removeEventListener("resize", this.debouncedComputeFixedColumns);
-      }
-    },
-    getManageColumnClass() {
-      if (!this.shouldFixManageColumn) return null;
-
-      return {
-        "table-fixed": true,
-        "table-fixed-right": true,
-        "table-fixed-shadow": !this.hasRightFixedColumns,
-      };
-    },
-    getFixedColumnStyle(column) {
-      if (!column?.key || !column?.fixed) return null;
-      return this.fixedColumnStyles[column.key] || null;
-    },
-    getFixedColumnClass(column, index) {
-      if (!column?.fixed) return null;
-
-      const { lastLeft, firstRight } = this.fixedColumnIndices;
-      const isLastLeft = column.fixed === "left" && index === lastLeft;
-      const isFirstRight = column.fixed === "right" && index === firstRight;
-
-      return {
-        "table-fixed": true,
-        "table-fixed-left": column.fixed === "left",
-        "table-fixed-right": column.fixed === "right",
-        "table-fixed-shadow": isLastLeft || isFirstRight,
-      };
-    },
-    getManageColumnWidth() {
-      const ref = this.$refs.manageHeader;
-      const el = Array.isArray(ref) ? ref[0] : ref;
-      return el?.offsetWidth || 100; // Default 100px 
-    },
-    computeFixedColumnStyles() {
-      // Check for horizontal overflow
-      const hasOverflow = this.detectHorizontalOverflow();
-      if (hasOverflow !== this.hasHorizontalOverflow) {
-        this.hasHorizontalOverflow = hasOverflow;
-      }
-
-      // Early return if no fixed columns needed
-      if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
-        this.fixedColumnStyles = {};
-        this.manageColumnStyle = {};
-        return;
-      }
-
-      const styles = {};
-      const baseStyle = {
-        position: "sticky",
-        zIndex: 2,
-        background: "var(--bs-body-bg, #fff)",
-      };
-
-      // Compute left-fixed columns
-      let leftOffset = 0;
-      this.visibleColumns.forEach((column) => {
-        if (column.fixed === "left") {
-          styles[column.key] = {
-            ...baseStyle,
-            left: `${leftOffset}px`,
-          };
-          leftOffset += this.getColumnWidth(column);
-        }
-      });
-
-      // Compute right-fixed columns
-      let rightOffset = 0;
-
-      // Reserve space for manage column if it should be fixed
-      if (this.shouldFixManageColumn) {
-        rightOffset = this.getManageColumnWidth();
-      }
-
-      // Process right-fixed columns from right to left
-      [...this.visibleColumns]
-        .reverse()
-        .filter((c) => c.fixed === "right")
-        .forEach((column) => {
-          styles[column.key] = {
-            ...baseStyle,
-            right: `${rightOffset}px`,
-          };
-          rightOffset += this.getColumnWidth(column);
-        });
-
-      // Set manage column style
-      this.manageColumnStyle = this.shouldFixManageColumn
-        ? {
-            ...baseStyle,
-            right: "0px",
-            zIndex: 3, // Higher z-index for manage column
-          }
-        : null;
-
-      this.fixedColumnStyles = styles;
-    },
-    getColumnWidth(column) {
-      // Check explicit width properties first 
-      if (column.fixedWidth) return Number(column.fixedWidth);
-      if (column.widthPx) return Number(column.widthPx);
-      if (column.width) return Number(column.width);
-
-      // Fall back to measuring DOM
-      const ref = this.$refs[`header-${column.key}`];
-      const el = Array.isArray(ref) ? ref[0] : ref;
-      if (el?.offsetWidth) return el.offsetWidth;
-
-      // Default fallback
-      return 150;
-    },
-    detectHorizontalOverflow() {
-      const wrapper = this.$refs.tableWrapper;
-      const table = this.$refs.tableElement;
-
-      if (!wrapper || !table) return false;
-
-      return table.scrollWidth > wrapper.clientWidth;
-    },
-    normalizeCssSize(value) {
-      if (!value) return null;
-      if (typeof value === "number" && !Number.isNaN(value)) {
-        return `${value}px`;
-      }
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (!trimmed) return null;
-        if (/^\d+$/.test(trimmed)) {
-          return `${trimmed}px`;
-        }
-        return trimmed;
-      }
-      return null;
-    },
-    debounce(func, wait = 100) {
-      let timeout;
-      return (...args) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-          func.apply(this, args);
-        }, wait);
-      };
-    },
-    getFilteredAndSortedData() {
-      let data = this.data.map((d) => d);
-
-      // Apply search filter
-      if (this.search && this.search !== "") {
-        data = data.filter((d) => {
-          for (const [_key, value] of Object.entries(d)) {
-            if (typeof value === "string" && value.toLowerCase().includes(this.search.toLowerCase())) {
-              return true;
-            }
-          }
-          return false;
-        });
-      }
-
-      // Apply sorting (pre-group)
-      if (this.sortColumn) {
-        if (this.sortDirection === "ASC") {
-          data = data.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
-        } else {
-          data = data.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
-        }
-      }
-
-      // Apply filters
-      if (this.filter) {
-        data = data.filter((d) => {
-          for (const [key, filterValue] of Object.entries(this.filter)) {
-            if (typeof filterValue === "object" && "operator" in filterValue) {
-              const value = parseFloat(d[key]);
-              const compareValue = parseFloat(filterValue.value);
-
-              switch (filterValue.operator) {
-                case "gt":
-                  if (!(value > compareValue)) return false;
-                  break;
-                case "lt":
-                  if (!(value < compareValue)) return false;
-                  break;
-                case "gte":
-                  if (!(value >= compareValue)) return false;
-                  break;
-                case "lte":
-                  if (!(value <= compareValue)) return false;
-                  break;
-                case "eq":
-                  if (value !== compareValue) return false;
-                  break;
-              }
-            } else {
-              // only selected filter
-              const filter = Object.entries(filterValue)
-                .filter(([_k, v]) => v)
-                .map(([k, _v]) => k);
-              if (filter.length > 0) {
-                const dataValues = Array.isArray(d[key]) ? d[key] : String(d[key]).split(/,\s*/);
-                const hasMatch = dataValues.some((val) =>
-                  filter.some((f) => String(val).toLowerCase().trim() === String(f).toLowerCase().trim())
-                );
-
-                if (!hasMatch) {
-                  return false;
-                }
-              }
-            }
-          }
-          return true;
-        });
-      }
-
-      // Group rows if requested
-      if (this.options && this.options.groupBy) {
-        const groupBy = this.options.groupBy;
-        const groupKey = typeof groupBy === "string" ? groupBy : groupBy.key;
-        const groups = {};
-        for (const row of data) {
-          const key = row[groupKey];
-          if (!(key in groups)) groups[key] = [];
-          groups[key].push(row);
-        }
-        let aggregated = Object.values(groups).map((rows) => {
-          if (typeof groupBy === "object" && typeof groupBy.aggregate === "function") {
-            return groupBy.aggregate(rows);
-          }
-          // Default: use first row of the group
-          return rows[0];
-        });
-
-        // Re-apply sorting on aggregated rows to respect current sort
-        if (this.sortColumn) {
-          if (this.sortDirection === "ASC") {
-            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] > b[this.sortColumn] ? 1 : b[this.sortColumn] > a[this.sortColumn] ? -1 : 0));
-          } else {
-            aggregated = aggregated.sort((a, b) => (a[this.sortColumn] < b[this.sortColumn] ? 1 : b[this.sortColumn] < a[this.sortColumn] ? -1 : 0));
-          }
-        }
-
-        return aggregated;
-      }
-
-      return data;
-    },
-    updateValues(data) {
-      return data;
-    },
-    sort(column) {
-      if (this.sortColumn && this.sortColumn === column) {
-        this.sortDirection = this.sortDirection === "ASC" ? "DESC" : "ASC";
-      } else {
-        this.sortDirection = "ASC";
-      }
-      this.sortColumn = column;
-      this.paginationUpdate();
-    },
-    actionEmitter(data) {
-      this.$emit("action", data);
-      let statsParams = {};
-      if (data.stats) {
-        // Only include the stat fields in the stats data
-       Object.entries(data.stats).forEach(([statsKey, paramKey]) => {
-        statsParams[statsKey] = data.params[paramKey];
-      });
-      }
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "actionClick",
-            data: {
-              action: data.action,
-              params: statsParams,
-            },
-          });
-        }
-    },
-    selectRow(row) {
-      if (this.selectableRows) {
-        if (!this.isRowSelected(row)) {
-          // check if selected
-          if (this.options && this.options.singleSelect) {
-            this.currentData = [row];
-          } else {
-            this.currentData.push(row);
-          }
-        } else {
-          const toRemove = this.currentData.findIndex((r) => r.id !== undefined ? r.id === row.id : deepEqual(r, row));
-          if (toRemove >= 0) {
-            this.currentData.splice(toRemove, 1);
-          }
-        }
-      }
-    },
-    selectAllRows() {
-      if (this.isAllRowsSelected) {
-        this.currentData = [];
-      } else {
-        // Use the existing method to get filtered data across all pages
-        const allFilteredData = this.getFilteredAndSortedData();
-        // Select all filtered rows that are not disabled
-        this.currentData = [...allFilteredData.filter((t) => !t.isDisabled)];
-      }
-    },
-    paginationPageChange(page) {
-      this.currentPage = page;
-      this.paginationUpdate();
-    },
-    paginationUpdate() {
-      if (this.serverSidePagination) {
-        this.$emit("paginationUpdate", {
-          page: this.currentPage - 1,
-          limit: this.limit,
-          order: this.sortColumn ? [[this.sortColumn, this.sortDirection]] : null,
-          filter: this.sequelizeFilter,
-        });
-      }
-    },
-    paginationItemsPerPageChange(value) {
-      this.itemsPerPage = value;
-      this.currentPage = 1;
-      this.paginationUpdate();
-    },
-    // NOTE: Because deepEqual is imported after its reference in the template.
-    // Therefore, add this wrapper function here to prevent reference error.
-    deepEqual(row1, row2) {
-      return deepEqual(row1, row2);
-    },
-    getFilteredButtons(row) {
-      const filteredButtons = this.buttons.filter((b) => {
-        if (!b.filter || !b.filter.length) return true;
-        
-        // Support filterMode: "and" or "or" (default: "or" for backward compatibility)
-        const filterMode = b.filterMode || "or";
-        
-        if (filterMode === "and") {
-          // AND logic: all filters must match
-          return b.filter.every((f) => {
-            if (f.type === "not") {
-              return row[f.key] !== f.value;
-            }
-            return row[f.key] === f.value;
-          });
-        } else {
-          // OR logic (default): at least one filter must match
-          return b.filter.some((f) => {
-            if (f.type === "not") {
-              return row[f.key] !== f.value;
-            }
-            return row[f.key] === f.value;
-          });
-        }
-      });
-
-      // Update this flag if there are any buttons
-      if (filteredButtons.length > 0) {
-        this.hasManageButtons = true;
-      }
-
-
-      return filteredButtons;
-    },
-    getMultilineStyles(column) {
-      if (!column.multiline) {
-        return null;
-      }
-      const lines =
-        typeof column.multiline === "number" ? 
-          column.multiline
-          : column.multiline === true
-            ? 2
-            : column.multiline;
-      return {
-        "--line-clamp": lines,
-      };
-    },
-    setupAllObserver() {
-      this.cleanupAllObserver();
-
-      const wrapper = this.$refs.tableWrapper;
-      const sentinel = this.$refs.loadMoreSentinel;
-      if (!sentinel) return;
-
-      // If there is a scroll container (maxTableHeight), observe within it.
-      // Otherwise observe in the viewport.
-      const root = wrapper && this.maxTableHeight ? wrapper : null;
-
-      this.allObserver = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (!entry?.isIntersecting) return;
-
-          if (this.allRenderLimit < this.total) {
-            this.allRenderLimit = Math.min(this.total, this.allRenderLimit + this.allChunkSize);
-          }
-        },
-        { 
-          root, 
-          threshold: 0.1,
-        }
-      );
-
-      this.allObserver.observe(sentinel);
-    },
-
-    cleanupAllObserver() {
-      if (this.allObserver) {
-        this.allObserver.disconnect();
-        this.allObserver = null;
-      }
-    },
-
-    isRowSelected(row) {
-      if (row.id !== undefined) {
-        return this.currentData.some(r => r.id === row.id);
-      }
-      return this.currentData.some(r => deepEqual(r, row));
-    },
+    // tableLayout.js
+    ...tableLayoutMethods,
+    // tableFixedColumns.js
+    ...tableFixedColumnsMethods,
+    // tableDataPipeline.js
+    ...tableDataPipelineMethods,
+    // tableRowInteractions.js
+    ...tableRowInteractionsMethods,
+    // tableProgressiveRendering.js
+    ...tableProgressiveRenderingMethods,
+    // tableCellHelpers.js
+    ...tableCellHelpersMethods,
   },
 };
 </script>
 
+<style scoped src="./table/table.css"></style>
+
 <style scoped>
-.table-wrapper {
-  position: relative;
-  overflow-x: auto;
-  min-height: 80px;
-  margin-bottom: 1rem;
-}
-
-.table {
-  width: max-content;
-  min-width: 100%;
-  border-spacing: 0;
-  border-collapse: separate;
-}
-
-.table-fixed {
-  position: sticky;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-fixed-left.table-fixed-shadow {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table-fixed-right.table-fixed-shadow {
-  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
-}
-
-.table thead .table-fixed {
-  z-index: 3;
-}
-
 .form-check-input:disabled {
   cursor: not-allowed;
   pointer-events: initial;
@@ -1150,61 +414,4 @@ export default {
   background-color: var(--bs-secondary-bg, #d8d8d8);
   border: 1px solid var(--bs-border-color, gray);
 }
-
-.pointer {
-  cursor: pointer;
-}
-
-.multiline {
-  display: -webkit-box;
-  -webkit-line-clamp: var(--line-clamp, 2);
-  line-clamp: var(--line-clamp, 2);
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: normal;
-  word-break: break-word;
-}
-
-.table-wrapper thead th {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed,
-.table-wrapper thead th.table-fixed-left,
-.table-wrapper thead th.table-fixed-right {
-  z-index: 6 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th.table-fixed-right {
-  z-index: 7 !important;
-}
-
-.table-wrapper tbody td.table-fixed,
-.table-wrapper tbody td.table-fixed-left,
-.table-wrapper tbody td.table-fixed-right {
-  z-index: 2 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th:has(.dropdown-menu.show) {
-  z-index: 5 !important;
-  background: var(--bs-body-bg, #fff);
-}
-
-.table-wrapper thead th .dropdown-menu {
-  z-index: 9999 !important;
-}
-
-.input-group.input-group-sm,
-.input-group.input-group-sm .input-group-text,
-.input-group.input-group-sm .form-control {
-  position: relative;
-  z-index: 20;
-}
-
 </style>

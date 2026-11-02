@@ -27,6 +27,7 @@ export class PDF {
         this.pageCount = 0;
         this.cursor = 0;
         this.pageTextCache = new Map();
+        this.pageLayoutCache = new Map();
         this.renderingDone = new Map();
     }
 
@@ -53,22 +54,59 @@ export class PDF {
         return this.state.pages[pageNumber];
     }
 
-    async getPageTextContent(pageIndex) {
-        const cachedText = this.pageTextCache.get(pageIndex);
-        if (cachedText) {
-            return cachedText;
-        } else {
-            // we have to load the page first!
-            const textContent = await this.getPage(pageIndex + 1).then((page) => {
-                return page.getTextContent({normalizeWhitespace: true})
-            });
-            const text = textContent.items.map(it => it.str).join('');
-
-            this.pageTextCache.set(pageIndex, text);
-
-            return text
+    getPageTextContent(pageIndex) {
+        // cache the promise, so concurrent callers share one extraction
+        if (!this.pageTextCache.has(pageIndex)) {
+            this.pageTextCache.set(pageIndex, this.getPage(pageIndex + 1)
+                .then(page => page.getTextContent({normalizeWhitespace: true}))
+                .then(tc => tc.items.map(it => it.str).join(''))
+                .catch(err => {
+                    this.pageTextCache.delete(pageIndex);
+                    throw err;
+                }));
         }
+        return this.pageTextCache.get(pageIndex);
+    }
 
+    /**
+     * Returns the vertical position of a text offset without rendering the page,
+     * so annotations on not yet rendered pages can be placed close to their final position.
+     *
+     * @param {number} pageIndex 0-based page index
+     * @param {number} offset document-wide text offset (as in the TextPositionSelector)
+     * @returns {Promise<number|null>} distance from the page top in units of the page width, null if unknown
+     */
+    async getTextTop(pageIndex, offset) {
+        if (!this.pageLayoutCache.has(pageIndex)) {
+            const page = await this.getPage(pageIndex + 1);
+            const textContent = await page.getTextContent({normalizeWhitespace: true});
+            const [x0, , x1, y1] = page.view;
+            let start = 0;
+            const items = textContent.items.map(item => {
+                const layout = {start, top: y1 - item.transform[5] - item.height};
+                start += item.str.length;
+                return layout;
+            });
+            this.pageLayoutCache.set(pageIndex, {items, width: x1 - x0});
+        }
+        const {items, width} = this.pageLayoutCache.get(pageIndex);
+        const pageStart = await this.getPageOffset(pageIndex);
+        const item = items.findLast(item => item.start <= offset - pageStart);
+        return item ? item.top / width : null;
+    }
+
+    /**
+     * Returns the document-wide text offset at which a page starts (the length of all text before it).
+     *
+     * @param {number} pageIndex 0-based page index
+     * @returns {Promise<number>}
+     */
+    async getPageOffset(pageIndex) {
+        let offset = 0;
+        for (let i = 0; i < pageIndex; i++) {
+            offset += (await this.getPageTextContent(i))?.length ?? 0;
+        }
+        return offset;
     }
 
 }
