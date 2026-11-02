@@ -111,6 +111,7 @@ module.exports = (sequelize, DataTypes) => {
                 }
             }, 
             required: true,
+            emptyText: "studies.fields.stepDocuments.empty",
         }, {
             key: "description",
             label: "studies.fields.description.label",

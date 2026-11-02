@@ -215,7 +215,8 @@
       "help": "Wählen Sie ein Tag-Set für die Studie aus."
     },
     "stepDocuments": {
-      "label": "Dokumente Workflow-Schritten zuweisen:"
+      "label": "Dokumente Workflow-Schritten zuweisen:",
+      "empty": "Wählen Sie einen Workflow, um Dokumente den Schritten zuzuweisen."
     },
     "description": {
       "label": "Beschreibung der Studie:",

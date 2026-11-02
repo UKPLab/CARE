@@ -1,8 +1,13 @@
 <template>
   <FormElement :options="options">
     <template #element>
-      <table class="table table-hover">
+      <table class="table table-hover mb-0">
         <tbody>
+          <tr v-if="!choices.length && emptyMessage">
+            <td class="text-secondary border-0 px-0 py-2">
+              {{ emptyMessage }}
+            </td>
+          </tr>
           <tr
             v-for="(choice, index) in choices"
             :key="'entry_' + index"
@@ -63,6 +68,7 @@ import FormElement from "@/basic/form/Element.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import { defineAsyncComponent } from "vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 
 /**
@@ -101,6 +107,9 @@ export default {
     },
     isTemplateMode() {
       return this.formData?.isTemplateMode || false;
+    },
+    emptyMessage() {
+      return this.options.emptyText ? translateMaybeKey(this.options.emptyText) : "";
     },
     workflowSteps() {
       if (!this.formData) return [];

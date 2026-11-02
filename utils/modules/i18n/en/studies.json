@@ -215,7 +215,8 @@
       "help": "Select a tag set to use in the study."
     },
     "stepDocuments": {
-      "label": "Assign Documents to Workflow Steps:"
+      "label": "Assign Documents to Workflow Steps:",
+      "empty": "Select a workflow to assign documents to its steps."
     },
     "description": {
       "label": "Description of the study:",

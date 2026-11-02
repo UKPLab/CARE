@@ -212,7 +212,8 @@
             "help": "Sélectionnez la liste d'étiquettes à utiliser dans l'étude."
         },
         "stepDocuments": {
-            "label": "Attribuer des documents aux étapes du processus :"
+            "label": "Attribuer des documents aux étapes du processus :",
+            "empty": "Sélectionnez un processus pour attribuer des documents à ses étapes."
         },
         "description": {
             "label": "Description de l'étude :",
