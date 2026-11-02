@@ -115,10 +115,10 @@ export default {
   background: linear-gradient(to left, var(--table-scroll-shade), transparent);
 }
 
-/* Small, quiet round button; vertically centred but never taller than the header + a row */
+/* Quiet round button, centred on the scrolling area. */
 .table-scroll-btn {
   position: absolute;
-  top: min(50%, 4.5rem);
+  top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
