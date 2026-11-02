@@ -1,5 +1,5 @@
 <template>
-  <AuthLayout :title="$t('auth.login')">
+  <AuthLayout :title="$t('auth.login')" aside>
     <template #header-action>
       <a
         v-if="showRegisterButton"

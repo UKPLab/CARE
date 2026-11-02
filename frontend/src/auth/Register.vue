@@ -1,5 +1,5 @@
 <template>
-  <AuthLayout :title="$t('auth.register')">
+  <AuthLayout :title="$t('auth.register')" aside>
     <template #header-action>
       <a
           class="btn btn-link btn-sm"
