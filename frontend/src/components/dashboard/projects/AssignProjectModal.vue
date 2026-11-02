@@ -4,7 +4,6 @@
     :steps="assignSteps"
     :validation="stepValid"
     :submit-text="$t('common.assign')"
-    @step-change="handleAssignStepChange"
     @submit="handleAssignSubmit"
   >
     <template #title>
@@ -12,47 +11,39 @@
     </template>
 
     <template #step-1>
-      <div class="mb-3">
-        <h6>{{ $t('dashboard.projects.selectProjectToAssign') }}</h6>
-        <BasicForm
-          ref="dataSelectionForm"
-          v-model="dataSelection"
-          :fields="dataSelectionFields"
-        />
-        <small class="text-muted">{{
-          dataSelection.project ?  $t('dashboard.projects.OneProjectSelected')  : $t('dashboard.projects.ZeroProjectsSelected')
-        }}</small>
-      </div>
+      <BasicForm
+        ref="dataSelectionForm"
+        v-model="dataSelection"
+        :fields="dataSelectionFields"
+      />
+      <small class="text-muted">{{
+        dataSelection.project ? $t('dashboard.projects.OneProjectSelected') : $t('dashboard.projects.ZeroProjectsSelected')
+      }}</small>
     </template>
 
     <template #step-2>
-      <div class="mb-3">
-        <h6>{{ $t('dashboard.projects.selectUsersToAssignProjectsTo') }}</h6>
-        <BasicTable
-          v-model="userSelection"
-          :columns="table.columns"
-          :data="users"
-          :options="table.options"
-          :max-table-height="'60vh'"
-        />
-        <small class="text-muted">{{
-          $t('dashboard.projects.usersSelected', { count: Object.keys(userSelection || {}).length })
-        }}</small>
-      </div>
+      <BasicTable
+        v-model="userSelection"
+        :columns="tableColumns"
+        :data="users"
+        :options="table.options"
+        :max-table-height="'60vh'"
+      />
+      <small class="text-muted">{{
+        $t('dashboard.projects.usersSelected', { count: userSelection.length })
+      }}</small>
     </template>
 
     <template #step-3>
-      <div class="mb-3">
-        <h6>{{ $t('dashboard.projects.confirmAssignment') }}</h6>
-        <div class="alert alert-info">
-          <strong>{{ $t('dashboard.projects.summary') }}</strong><br />
-          <i18n-t keypath="dashboard.projects.aboutToAssign" tag="span">
-             <template #projectCount><strong>1</strong></template>
-             <template #userCount>
-              <strong>{{ Object.keys(userSelection || {}).length }}</strong>
-            </template>
-          </i18n-t>
-        </div>
+      <div class="alert alert-info">
+        <strong>{{ $t('dashboard.projects.summary') }}</strong><br />
+        <i18n-t keypath="dashboard.projects.aboutToAssign" tag="span">
+          <template #projectCount><strong>1</strong></template>
+          <template #userCount>
+            <strong>{{ userSelection.length }}</strong>
+          </template>
+        </i18n-t>
+      </div>
 
         <div class="alert alert-warning">
           <strong>{{ $t('dashboard.projects.noteLabel') }}</strong> {{ $t('dashboard.projects.noteBody') }}
@@ -63,14 +54,14 @@
             <h6 class="text-primary">{{ $t('dashboard.projects.selectedProjects') }}</h6>
             <div v-if="dataSelection.project" class="mb-1">
               <i class="bi bi-folder me-1"></i>
-              {{ getProject(dataSelection.project).name }}
+              {{ getProject(dataSelection.project)?.name }}
             </div>
           </div>
           <div class="col-md-6">
             <h6 class="text-success">{{ $t('dashboard.projects.selectedUsers') }}</h6>
             <ul class="list-unstyled">
               <li
-                v-for="user in Object.values(userSelection || {})"
+                v-for="user in userSelection"
                 :key="user.id"
                 class="mb-1"
               >
@@ -80,7 +71,6 @@
             </ul>
           </div>
         </div>
-      </div>
     </template>
   </StepperModal>
 </template>
@@ -100,7 +90,7 @@ export default {
   },
   data() {
     return {
-      dataSelection: [],
+      dataSelection: {},
       userSelection: [],
       table: {
         options: {
@@ -147,7 +137,7 @@ export default {
           key: "project",
           label: this.$t('dashboard.projects.selectProject'),
           type: "select",
-          default: 1,
+          default: this.projects[0]?.id,
           options: this.projects.map((project) => ({
             name: project.name,
             value: project.id,
@@ -159,9 +149,9 @@ export default {
   },
   methods: {
     open() {
-      this.$refs.assignProjectStepper.open();
-      this.dataSelection = [];
+      this.dataSelection = {};
       this.userSelection = [];
+      this.$refs.assignProjectStepper.open();
     },
     async handleAssignSubmit() {
       const projectId = this.dataSelection.project;
@@ -226,7 +216,7 @@ export default {
       );
     },
     close() {
-      this.dataSelection = [];
+      this.dataSelection = {};
       this.userSelection = [];
       this.$refs.assignProjectStepper.close();
     },
