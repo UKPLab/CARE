@@ -586,12 +586,12 @@
         "closingSoon": "{count} se terminent sous 7 jours",
         "oldestStarted": "La plus ancienne a commencé il y a {when}",
         "continue": "Reprendre",
-        "studiesInProgress": "Études en cours",
-        "sessionCount": "{done} / {total} sessions",
-        "closes": "Se termine le {date}",
+        "yourSessions": "Vos sessions",
         "started": "Commencée il y a {when}",
         "noOpenSessions": "Aucune session ouverte",
         "nothingToResume": "Rien à reprendre pour le moment",
-        "noStudies": "Aucune étude en cours"
+        "recentDocuments": "Documents récents",
+        "viewAll": "Tout voir",
+        "noDocuments": "Aucun document pour le moment"
     }
 }

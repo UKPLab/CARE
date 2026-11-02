@@ -1,18 +1,11 @@
 <template>
-  <div class="mb-3">
+  <div class="home mb-3">
     <div class="row g-3 mb-3">
       <div class="col-sm-6 col-xl-3">
         <router-link class="card home-tile" to="/dashboard/documents">
           <span>{{ $t('sidebar.nav.documents') }}</span>
           <b>{{ documents.length }}</b>
           <span>{{ $t('dashboard.home.addedThisWeek', { count: documentsAddedThisWeek }) }}</span>
-        </router-link>
-      </div>
-      <div v-if="canSeeStudies" class="col-sm-6 col-xl-3">
-        <router-link class="card home-tile" to="/dashboard/studies">
-          <span>{{ $t('dashboard.home.openStudies') }}</span>
-          <b>{{ openStudies.length }}</b>
-          <span>{{ $t('dashboard.home.closingSoon', { count: studiesClosingSoon }) }}</span>
         </router-link>
       </div>
       <div class="col-sm-6 col-xl-3">
@@ -22,15 +15,24 @@
           <span>{{ oldestSessionLabel }}</span>
         </router-link>
       </div>
+      <div v-if="canSeeStudies" class="col-sm-6 col-xl-3">
+        <router-link class="card home-tile" to="/dashboard/studies">
+          <span>{{ $t('dashboard.home.openStudies') }}</span>
+          <b>{{ openStudies.length }}</b>
+          <span>{{ $t('dashboard.home.closingSoon', { count: studiesClosingSoon }) }}</span>
+        </router-link>
+      </div>
       <div v-if="canSeeSubmissions" class="col-sm-6 col-xl-3">
         <HomeSubmissionsTile />
       </div>
     </div>
 
-    <div class="row g-3">
+    <div class="row g-3 mb-3">
       <div class="col-lg-6">
         <section class="card home-panel">
-          <h2>{{ $t('dashboard.home.continue') }}</h2>
+          <header class="home-panel-head">
+            <h2>{{ $t('dashboard.home.continue') }}</h2>
+          </header>
           <p v-if="continueItems.length === 0" class="home-empty">
             {{ $t('dashboard.home.nothingToResume') }}
           </p>
@@ -45,46 +47,89 @@
           </BasicButton>
         </section>
       </div>
-      <div v-if="canSeeStudies" class="col-lg-6">
+      <div class="col-lg-6">
         <section class="card home-panel">
-          <h2>{{ $t('dashboard.home.studiesInProgress') }}</h2>
-          <p v-if="studiesInProgress.length === 0" class="home-empty">
-            {{ $t('dashboard.home.noStudies') }}
+          <header class="home-panel-head">
+            <h2>{{ $t('dashboard.home.yourSessions') }}</h2>
+          </header>
+          <p v-if="sessionItems.length === 0" class="home-empty">
+            {{ $t('dashboard.home.noOpenSessions') }}
           </p>
-          <div
-            v-for="study in studiesInProgress"
-            :key="study.id"
-            class="home-study"
+          <router-link
+            v-for="item in sessionItems"
+            :key="item.key"
+            class="home-session"
+            :to="item.to"
           >
-            <b>{{ study.name }}</b>
-            <small>
-              {{ $t('dashboard.home.sessionCount', { done: study.done, total: study.total }) }}
-              <template v-if="study.closes"> · {{ $t('dashboard.home.closes', { date: study.closes }) }}</template>
-            </small>
-            <div class="home-bar"><i :style="{ width: study.percent }" /></div>
-          </div>
+            <b>{{ item.title }}</b>
+            <small>{{ item.detail }}</small>
+          </router-link>
+        </section>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12">
+        <section class="card home-panel">
+          <header class="home-panel-head">
+            <h2>{{ $t('dashboard.home.recentDocuments') }}</h2>
+            <router-link
+              class="home-panel-link"
+              to="/dashboard/documents"
+            >
+              {{ $t('dashboard.home.viewAll') }}
+            </router-link>
+          </header>
+          <p
+            v-if="recentDocuments.length === 0"
+            class="home-empty"
+          >
+            {{ $t('dashboard.home.noDocuments') }}
+          </p>
+          <table
+            v-else
+            class="home-docs"
+          >
+            <thead>
+              <tr>
+                <th>{{ $t('common.title') }}</th>
+                <th>{{ $t('common.updatedAt') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="doc in recentDocuments"
+                :key="doc.id"
+              >
+                <td>
+                  <router-link :to="'/document/' + doc.hash">{{ doc.name }}</router-link>
+                </td>
+                <td>{{ formatLocalizedDateTime(doc.updatedAt || doc.createdAt) }}</td>
+              </tr>
+            </tbody>
+          </table>
         </section>
       </div>
     </div>
   </div>
-  <Documents />
 </template>
 
 <script>
-import Documents from "@/components/dashboard/Documents.vue";
 import HomeSubmissionsTile from "@/components/dashboard/HomeSubmissionsTile.vue";
 import BasicButton from "@/basic/Button.vue";
 import { formatLocalizedDateTime, getTimeDiffString, isOwnListedDocument } from "@/assets/utils";
 
+const HOME_DOCUMENT_LIMIT = 8;
+
 /**
- * Dashboard home. Counts and the resume list come from tables the
- * dashboard already loads. The documents list below is the existing page.
+ * Dashboard home. Counts, resume links, and a short recent-documents
+ * list come from tables the dashboard already loads.
  *
  * @author Mohammad Sherif
  */
 export default {
   name: "DashboardHome",
-  components: { Documents, HomeSubmissionsTile, BasicButton },
+  components: { HomeSubmissionsTile, BasicButton },
   subscribeTable: ["document", "study", "study_session"],
   computed: {
     projectId() {
@@ -146,80 +191,135 @@ export default {
     canSeeSubmissions() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.submissions.view");
     },
+    sessionItems() {
+      return this.openSessions.slice(0, 6).map((session) => this.sessionLink(session));
+    },
     continueItems() {
-      const sessions = this.openSessions.slice(0, 3).map((session) => {
-        const study = this.$store.getters["table/study/get"](session.studyId);
-        const when = getTimeDiffString(Date.now(), new Date(session.start || session.createdAt));
-        return {
-          key: `session-${session.id}`,
-          title: study?.name || this.$t("sidebar.nav.my_sessions"),
-          detail: this.$t("dashboard.home.started", { when }),
-          to: `/session/${session.hash}`,
-        };
-      });
-      const documents = [...this.documents]
-        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
-        .slice(0, 2)
-        .map((doc) => ({
-          key: `doc-${doc.id}`,
-          title: doc.name,
-          detail: formatLocalizedDateTime(doc.updatedAt || doc.createdAt),
-          to: `/document/${doc.hash}`,
-        }));
+      const sessions = this.openSessions.slice(0, 3).map((session) => this.sessionLink(session));
+      const documents = this.recentDocuments.slice(0, 2).map((doc) => ({
+        key: `doc-${doc.id}`,
+        title: doc.name,
+        detail: formatLocalizedDateTime(doc.updatedAt || doc.createdAt),
+        to: `/document/${doc.hash}`,
+      }));
       return [...sessions, ...documents];
     },
-    studiesInProgress() {
-      return this.openStudies
-        .map((study) => {
-          const sessions = this.$store.getters["table/study_session/getFiltered"](
-            (session) => session.studyId === study.id
-          );
-          const total = sessions.length;
-          const done = sessions.filter((session) => session.end != null).length;
-          const percent = total === 0 ? "0%" : `${Math.round((done / total) * 100)}%`;
-          return {
-            id: study.id,
-            name: study.name,
-            done,
-            total,
-            percent,
-            closes: study.end ? formatLocalizedDateTime(study.end, { dateStyle: "medium" }) : "",
-            end: study.end ? new Date(study.end).getTime() : Infinity,
-          };
-        })
-        .sort((a, b) => a.end - b.end)
-        .slice(0, 4);
+    recentDocuments() {
+      return [...this.documents]
+        .sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt))
+        .slice(0, HOME_DOCUMENT_LIMIT);
+    },
+  },
+  methods: {
+    formatLocalizedDateTime,
+    sessionLink(session) {
+      const study = this.$store.getters["table/study/get"](session.studyId);
+      const when = getTimeDiffString(Date.now(), new Date(session.start || session.createdAt));
+      return {
+        key: `session-${session.id}`,
+        title: study?.name || this.$t("sidebar.nav.my_sessions"),
+        detail: this.$t("dashboard.home.started", { when }),
+        to: `/session/${session.hash}`,
+      };
     },
   },
 };
 </script>
 
 <style scoped>
+.home .row > [class*="col"] {
+  min-width: 0;
+}
+
 .home-panel {
+  min-width: 0;
   height: 100%;
   padding: 14px 16px;
+  overflow: hidden;
+  background: var(--bs-body-bg);
+}
+
+.home-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: 12px;
 }
 
 .home-panel h2 {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: .95rem;
   font-weight: 650;
+}
+
+.home-panel-link {
+  flex: 0 0 auto;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-docs {
+  width: 100%;
+  margin: 0;
+}
+
+.home-docs th,
+.home-docs td {
+  padding: .45rem 0;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+  font-size: .9rem;
+  vertical-align: top;
+}
+
+.home-docs th {
+  padding-top: 0;
+  color: var(--bs-secondary-color);
+  font-size: .75rem;
+  font-weight: 650;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.home-docs th:not(:first-child),
+.home-docs td:not(:first-child) {
+  padding-left: 1rem;
+  color: var(--bs-secondary-color);
+  white-space: nowrap;
+  width: 1%;
+}
+
+.home-docs tr:last-child td {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.home-docs a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-docs a:hover {
+  color: var(--care-primary);
 }
 
 .home-resume.btn {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  text-align: left;
-  white-space: normal;
+  min-width: 0;
+  max-width: 100%;
   height: auto;
-  margin: 0 -8px;
-  width: calc(100% + 16px);
+  margin: 0;
   padding: 8px;
   border: 0;
   border-radius: 8px;
   color: inherit;
   background: transparent;
+  text-align: left;
+  white-space: normal;
   --bs-btn-hover-bg: var(--bs-secondary-bg);
   --bs-btn-hover-color: inherit;
 }
@@ -229,8 +329,17 @@ export default {
   box-shadow: none;
 }
 
+.home-resume b,
+.home-session b {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .home-resume small,
-.home-study small,
+.home-session small,
 .home-empty {
   color: var(--bs-secondary-color);
 }
@@ -240,26 +349,18 @@ export default {
   font-size: .9rem;
 }
 
-.home-study {
-  padding: 8px 0;
-  border-top: 1px solid var(--bs-border-color);
+.home-session {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0 -8px;
+  padding: 8px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
 }
 
-.home-study:first-of-type {
-  border-top: 0;
-}
-
-.home-bar {
-  height: 6px;
-  margin-top: 6px;
-  border-radius: 99px;
-  background: var(--bs-tertiary-bg);
-  overflow: hidden;
-}
-
-.home-bar i {
-  display: block;
-  height: 100%;
-  background: var(--care-primary, var(--bs-primary));
+.home-session:hover {
+  background: var(--bs-secondary-bg);
 }
 </style>
