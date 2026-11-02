@@ -13,18 +13,12 @@
           v-model="moodleOptions"
           with-assignment-id
       />
-      <!-- TODO: Turn this file uploading functionality into a component -->
-      <div class="form-field">
-        <div class="flex-grow-1">
-          <input
-              ref="fileInput"
-              class="form-control"
-              type="file"
-              accept=".csv"
-              @change="handleFileUpload"
-          />
-        </div>
-      </div>
+      <FileDropzone
+          ref="fileInput"
+          accept=".csv"
+          :file-name="uploadedFileName"
+          @change="processFile"
+      />
       <div
           v-if="fileErrors.length > 0"
           class="scrollable-error-container"
@@ -61,6 +55,7 @@
 <script>
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import FileDropzone from "@/basic/form/FileDropzone.vue";
 import Papa from "papaparse";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import { resolveApiMessage } from "@/assets/utils";
@@ -71,7 +66,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "UploadModal",
-  components: {MoodleOptions, BasicModal, BasicButton},
+  components: {MoodleOptions, BasicModal, BasicButton, FileDropzone},
   data() {
     return {
       formFields: [
@@ -106,6 +101,7 @@ export default {
       ],
       moodleOptions: {},
       uploadedUsers: [],
+      uploadedFileName: "",
       fileErrors: [],
     };
   },
@@ -122,10 +118,9 @@ export default {
     reset() {
       this.$refs.moodleOptionsForm.reset();
       this.uploadedUsers = [];
-      if (this.$refs.fileInput) {
-        this.$refs.fileInput.value = "";
-        this.fileErrors = [];
-      }
+      this.uploadedFileName = "";
+      this.fileErrors = [];
+      this.$refs.fileInput?.clear();
     },
     uploadToMoodle() {
       this.$refs.modal.waiting = true;
@@ -150,10 +145,6 @@ export default {
 
         }
       });
-    },
-    handleFileUpload(event) {
-      const file = event.target.files[0];
-      this.processFile(file);
     },
     async validateCSV(file) {
       return new Promise((resolve, reject) => {
@@ -200,6 +191,7 @@ export default {
       if (file && file.name.endsWith(".csv")) {
         try {
           this.uploadedUsers = await this.validateCSV(file);
+          this.uploadedFileName = file.name;
           this.fileErrors = [];
           this.eventBus.emit("toast", {
             title: this.$t('dashboard.users.validationCompleted'),
@@ -207,6 +199,7 @@ export default {
             variant: "success",
           });
         } catch (errors) {
+          this.uploadedFileName = "";
           this.fileErrors = errors;
         }
       } else {
