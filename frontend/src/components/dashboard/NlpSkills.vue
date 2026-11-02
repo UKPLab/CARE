@@ -8,7 +8,12 @@
       @action="action"
   >
     <template #headerActions>
-      <span v-if="!waitForStatus" class="badge" :class="onlineStatus? 'bg-success' : 'bg-danger'">
+      <span
+        v-if="!waitForStatus"
+        class="status-chip"
+        :class="onlineStatus ? 'is-online' : 'is-offline'"
+      >
+        <span class="status-chip-dot" aria-hidden="true" />
         {{ onlineStatus ? $t('nlp.skills.status.online') : $t('nlp.skills.status.offline') }}
       </span>
       <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
