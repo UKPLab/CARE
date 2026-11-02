@@ -206,7 +206,7 @@ To get all annotations of a specific study, you can simply filter for the studyI
 <p><strong>Filtering by user</strong>
 To get all annotations of a specific user, you can simply filter by the userId field:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># data holds list of parsed json objects</span>
-<span class="c1"># we are interested in the study with id 1</span>
+<span class="c1"># we are interested in the user with id 1</span>
 <span class="n">user_annotations</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">data</span> <span class="k">if</span> <span class="n">d</span><span class="p">[</span><span class="s2">&quot;userId&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span>
 </pre></div>
 </div>

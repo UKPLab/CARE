@@ -126,7 +126,7 @@
 on prerequisites and your building options.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>If you just want to get started <em>real quick</em>, check out the <a class="reference internal" href="#development-build">Development Build</a> section below.</p>
+<p>If you just want to get started <em>real quick</em>, check out the <a class="reference internal" href="#id1">Development Build</a> section below.</p>
 </div>
 <section id="software-prerequisites">
 <h2>Software Prerequisites<a class="headerlink" href="#software-prerequisites" title="Link to this heading"></a></h2>
@@ -195,8 +195,8 @@ To reinitialize the database, run <code class="docutils literal notranslate"><sp
 <h3>Special Flags<a class="headerlink" href="#special-flags" title="Link to this heading"></a></h3>
 <p>The following flags are relevant to configure the functionality of the built CARE instance and should be adapted
 according to your needs.</p>
-<table class="docutils align-default" id="id1">
-<caption><span class="caption-text">Environment Variables</span><a class="headerlink" href="#id1" title="Link to this table"></a></caption>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">Environment Variables</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 25.0%" />
 <col style="width: 75.0%" />
@@ -232,7 +232,7 @@ again.</p>
 </section>
 </section>
 <section id="development-build">
-<h2>Development Build<a class="headerlink" href="#development-build" title="Link to this heading"></a></h2>
+<span id="id1"></span><h2>Development Build<a class="headerlink" href="#development-build" title="Link to this heading"></a></h2>
 <p>The development build consists of two individual components – the frontend and the backend – which can be build
 and run jointly or separately. For more advanced development, you need to understand the difference between the frontend
 and backend and how they interact.
@@ -241,13 +241,13 @@ The source code is located in the <code class="docutils literal notranslate"><sp
 <p>Check out the following build options depending on your needs:</p>
 <section id="basic">
 <h3>Basic<a class="headerlink" href="#basic" title="Link to this heading"></a></h3>
-<p>If you are not sure what kind of build you want and possibly make changes both in the frontend and
-the backend, just run the basic build using the following commands in different consoles and the given order:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>make<span class="w"> </span>docker<span class="w"> </span><span class="c1"># starts the docker containers needed for development</span>
-make<span class="w"> </span>init<span class="w">   </span><span class="c1"># initializes the database</span>
-make<span class="w"> </span>dev<span class="w">    </span><span class="c1"># starts the development server (backend &amp; frontend, wizard skipped) - only Linux!</span>
-</pre></div>
-</div>
+<p>Use this setup when making changes to both the frontend and backend. Run the commands in order,
+using a separate terminal for each long-running process:</p>
+<ol class="arabic simple">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">docker</span></code> and leave it running. This starts PostgreSQL and the development RPC services.</p></li>
+<li><p>In another terminal, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">init</span></code> once the services are ready.</p></li>
+<li><p>In a third terminal, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code> to start the frontend and backend development servers (setup wizard skipped).</p></li>
+</ol>
 <p>This will start the development server for the backend as well as the frontend. This also starts up
 a database in a docker container and populates it with the necessary schemas.</p>
 <div class="admonition note">
@@ -264,7 +264,7 @@ Please make sure you run <code class="docutils literal notranslate"><span class=
 </div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code> command only works on Linux systems.
+<p>The <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code> command works on Unix-like systems.
 On Windows, you need to start the frontend and backend separately.
 Use <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-frontend</span></code> + <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend</span></code> for wizard-skipped backend runs, or
 <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-frontend</span></code> + <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend-wizard</span></code> to test the first-time setup wizard flow.</p>
@@ -331,8 +331,8 @@ backend.</p>
 </section>
 <section id="more-commands">
 <h2>More Commands<a class="headerlink" href="#more-commands" title="Link to this heading"></a></h2>
-<table class="docutils align-default" id="id2">
-<caption><span class="caption-text">Make Commands</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Make Commands</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
 <colgroup>
 <col style="width: 60.0%" />
 <col style="width: 40.0%" />
@@ -356,10 +356,10 @@ backend.</p>
 <td><p>Clean the Sphinx documentation.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev</span></code></p></td>
-<td><p>Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix only)</p></td>
+<td><p>Run frontend (dev) and backend (dev) together, with setup wizard skipped. (Unix-like systems only)</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-wizard</span></code></p></td>
-<td><p>Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix only)</p></td>
+<td><p>Run frontend (dev) and backend (dev) together, with setup wizard enabled. (Unix-like systems only)</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">dev-backend</span></code></p></td>
 <td><p>Run backend in development mode with setup wizard skipped.</p></td>

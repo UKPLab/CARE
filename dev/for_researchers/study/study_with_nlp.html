@@ -161,7 +161,7 @@
 <p>.env:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">PROJECT_NAME</span><span class="o">=</span><span class="n">my_care</span>
 <span class="n">PUBLISHED_PORT</span><span class="o">=</span><span class="mi">8992</span>
-<span class="n">POSTGRES_URL</span><span class="o">=</span><span class="n">postgres</span>
+<span class="n">POSTGRES_HOST</span><span class="o">=</span><span class="n">postgres</span>
 <span class="n">RPC_MOODLE_HOST</span><span class="o">=</span><span class="n">rpc_moodle</span>
 <span class="n">RPC_MOODLE_PORT</span><span class="o">=</span><span class="mi">8081</span>
 <span class="n">ADMIN_PWD</span><span class="o">=</span><span class="n">PjGcbLEUDEH93PY</span>
@@ -205,8 +205,8 @@ server {
     server_name rub.ukp.informatik.tu-darmstadt.de;
     server_tokens off;
 
-    ssl_certificate /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/rub.ukp.informatik.tu-darmstadt.de/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/rub.ukp.informatik.tu-darmstadt.de/privkey.pem;
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
