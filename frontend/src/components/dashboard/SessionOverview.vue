@@ -1,12 +1,14 @@
 <template>
-  <div class="container-fluid">
-    <h1>{{ $t('dashboard.sessionOverview.title') }}</h1>
-    <div class="filters-container mb-3">
-      <div class="d-flex-col align-items-center gap-3">
-        <div class="form-check form-switch">
-          <label class="form-check-label" for="showOpenStudiesSwitch">
-            {{ $t('dashboard.sessionOverview.showOnlyOpenStudies') }}
-          </label>
+  <DashboardListPage
+    :title="$t('dashboard.sessionOverview.title')"
+    :columns="columns"
+    :data="filteredStudySessions"
+    :table-options="tableOptions"
+    @action="handleAction"
+  >
+    <template #headerActions>
+      <div class="dashboard-filters">
+        <div class="form-check form-switch mb-0">
           <input
             id="showOpenStudiesSwitch"
             v-model="filters.showOpenStudies"
@@ -14,6 +16,9 @@
             type="checkbox"
             role="switch"
           >
+          <label class="form-check-label" for="showOpenStudiesSwitch">
+            {{ $t('dashboard.sessionOverview.showOnlyOpenStudies') }}
+          </label>
         </div>
         <BasicFilterDropdown
           v-model="filters.workflowType"
@@ -22,20 +27,14 @@
           :options="workflowFilterOptions"
         />
       </div>
-    </div>
-    <BasicTable
-      :columns="columns"
-      :data="filteredStudySessions"
-      :options="tableOptions"
-      :max-table-height="'70vh'"
-      @action="handleAction"
-    />
-  </div>
+    </template>
+  </DashboardListPage>
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import BasicFilterDropdown from "@/basic/FilterDropdown.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { translateMaybeKey } from "@/assets/utils";
 
 /**
@@ -45,7 +44,7 @@ import { translateMaybeKey } from "@/assets/utils";
  */
 export default {
   name: "SessionOverview",
-  components: { BasicTable, BasicFilterDropdown },
+  components: { DashboardListPage, BasicFilterDropdown },
   subscribeTable: ["study_session", "study", "workflow", "user", "study_step"],
   data() {
     return {
@@ -54,11 +53,7 @@ export default {
         workflowType: "all"
       },
       tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
+        ...DEFAULT_DASHBOARD_TABLE_OPTIONS,
         pagination: 20,
         search: true,
       },
@@ -185,23 +180,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.filters-container {
-  padding: .625rem .875rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg, .75rem);
-}
-
-.filters-container > div {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .75rem 1.5rem;
-}
-
-.filters-container .form-check {
-  margin-bottom: 0;
-}
-</style>
