@@ -55,10 +55,10 @@ export default {
 
 <style scoped>
 .editor-wrapper {
-  min-height: 150px;
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 0.375rem;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  padding: 0;
+  background: transparent;
 }
 </style>
