@@ -563,6 +563,11 @@ html .dashboard-page .card-header-actions .btn-secondary:focus-visible {
   box-shadow: var(--dash-panel-shadow);
 }
 
+html .settings-card .card-header-actions .btn {
+  font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+    "Helvetica Neue", Roboto, sans-serif;
+}
+
 html .dashboard-wrapper {
   background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
 }

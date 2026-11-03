@@ -50,7 +50,7 @@
               :class="hasUnsavedChanges ? 'btn-warning' : 'btn-primary'"
               :text="hasUnsavedChanges ? $t('settings.saveSettingsUnsaved') : $t('settings.saveSettings')"
               :title="hasUnsavedChanges ? $t('settings.saveSettingsUnsaved') : $t('settings.saveSettings')"
-              icon="upload"
+              icon="floppy"
               @click="save"
           />
 
