@@ -346,7 +346,9 @@ export default {
   /* backwards, not both: a held end frame would block the hover lift below. */
   animation: status-card-in 0.5s var(--care-card-ease) backwards;
   animation-delay: calc(min(var(--i, 0), 12) * 35ms);
+  top: 0;
   transition:
+    top 0.35s var(--care-card-ease),
     transform 0.35s var(--care-card-ease),
     box-shadow 0.35s var(--care-card-ease),
     border-color 0.35s var(--care-card-ease),
@@ -382,8 +384,12 @@ export default {
   opacity: 0.85;
 }
 
+/* Lift with `top`, not `transform`: a transform runs on the compositor at
+   sub-pixel offsets and the text snaps back to the pixel grid when it ends,
+   so the card visibly drops and twitches at the end of the lift. `top` is
+   pixel-snapped on every frame, so there is nothing to snap at the end. */
 .status-card:hover {
-  transform: translateY(-3px);
+  top: -3px;
   box-shadow: var(--care-card-shadow-hover);
   border-color: color-mix(in srgb, var(--care-card-accent) 35%, transparent);
 }
@@ -395,7 +401,7 @@ export default {
 /* Expanded: marked, not moved, since it may hold a whole table. */
 .status-card.is-open,
 .status-card.is-open:hover {
-  transform: none;
+  top: 0;
   border-color: color-mix(in srgb, var(--care-card-accent) 45%, transparent);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--care-card-accent) 25%, transparent), var(--care-card-shadow);
 }
@@ -826,7 +832,7 @@ button.status-card-title:focus-visible,
 }
 
 .status-card--compact:hover {
-  transform: translateY(-2px);
+  top: -2px;
   box-shadow: 0 8px 20px -12px rgb(var(--care-shadow-rgb) / 0.35);
 }
 
@@ -989,7 +995,7 @@ button.status-card-title:focus-visible,
   }
 
   .status-card:hover {
-    transform: none;
+    top: 0;
   }
 }
 </style>
