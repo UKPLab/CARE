@@ -45,34 +45,37 @@
               :item-id="assignment.id"
               :title="assignment.name"
               title-clickable
+              card-clickable
               :expanded="isOpen(assignment.id)"
               :controls="'submissions-of-' + assignment.id"
               :meta="metaItems(assignment, section.key)"
               @title-click="toggle(assignment.id)"
             >
               <template #footer>
-                <BasicButton
-                  class="btn btn-primary btn-sm"
-                  :title="$t('dashboard.uploadModal.title')"
-                  :text="$t('dashboard.uploadModal.title')"
-                  icon="file-earmark-arrow-up"
-                  :disabled="!canUploadSubmissionForAssignment(assignment)"
-                  @click="openUploadModalForAssignment(assignment)"
-                />
-                <button
-                  type="button"
-                  class="status-card-primary status-card-primary--ghost"
-                  :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
-                  :aria-controls="'submissions-of-' + assignment.id"
-                  @click="toggle(assignment.id)"
-                >
-                  {{ isOpen(assignment.id) ? $t('common.showLess') : $t('common.details') }}
-                  <LoadIcon
-                    class="status-card-chevron"
-                    icon-name="chevron-down"
-                    :size="13"
+                <div class="status-card-foot-cluster">
+                  <BasicButton
+                    class="btn btn-primary btn-sm"
+                    :title="$t('dashboard.uploadModal.title')"
+                    :text="$t('dashboard.uploadModal.title')"
+                    icon="file-earmark-arrow-up"
+                    :disabled="!canUploadSubmissionForAssignment(assignment)"
+                    @click="openUploadModalForAssignment(assignment)"
                   />
-                </button>
+                  <button
+                    type="button"
+                    class="status-card-primary status-card-primary--ghost"
+                    :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
+                    :aria-controls="'submissions-of-' + assignment.id"
+                    @click="toggle(assignment.id)"
+                  >
+                    {{ isOpen(assignment.id) ? $t('common.showLess') : $t('common.details') }}
+                    <LoadIcon
+                      class="status-card-chevron"
+                      icon-name="chevron-down"
+                      :size="13"
+                    />
+                  </button>
+                </div>
               </template>
 
               <template

@@ -4,6 +4,7 @@
     :class="cardClasses"
     :style="{ '--i': index }"
     :aria-hidden="skeleton ? 'true' : null"
+    @click="onCardClick"
   >
     <template v-if="skeleton">
       <div class="status-card-skeleton status-card-skeleton--pill" />
@@ -220,6 +221,12 @@ export default {
       required: false,
       default: false,
     },
+    /** A click on the card itself emits `title-click`. Buttons, links and the details slot do not. */
+    cardClickable: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     /** Expanded look (marked, not lifted) and aria-expanded on the title. */
     expanded: {
       type: Boolean,
@@ -285,6 +292,7 @@ export default {
         "status-card--live": this.live,
         "status-card--dimmed": this.dimmed,
         "status-card--compact": this.compact,
+        "status-card--clickable": this.cardClickable,
         "status-card--skeleton": this.skeleton,
         "status-card--entering": s.entering,
         "status-card--updated": s.updated,
@@ -292,6 +300,18 @@ export default {
         "status-card--placeholder": s.placeholder,
         "is-open": this.expanded,
       };
+    },
+  },
+  methods: {
+    /** Expand from anywhere on the card, but leave real controls and the open table alone. */
+    onCardClick(event) {
+      if (!this.cardClickable || this.skeleton) {
+        return;
+      }
+      if (event.target.closest("button, a, input, select, textarea, label, .status-card-details")) {
+        return;
+      }
+      this.$emit("title-click");
     },
   },
 };
@@ -382,6 +402,14 @@ export default {
   width: 3px;
   background: var(--care-card-accent);
   opacity: 0.85;
+}
+
+.status-card--clickable {
+  cursor: pointer;
+}
+
+.status-card--clickable .status-card-details {
+  cursor: default;
 }
 
 /* Lift with `top`, not `transform`: a transform runs on the compositor at
@@ -761,6 +789,14 @@ button.status-card-title:hover {
   justify-content: flex-end;
   gap: 0.15rem;
   margin-left: auto;
+}
+
+/* Keeps footer actions together. Without it, space-between parks the last button on the far edge. */
+.status-card-foot-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .status-card-icon-btn {
