@@ -156,6 +156,7 @@ export default {
       this.isOpen = true;
       this.updatePosition();
       this.$nextTick(() => {
+        this.updatePosition();
         this.$refs.menu?.focus({ preventScroll: true });
         this.scrollActiveIntoView();
       });
@@ -184,17 +185,44 @@ export default {
       const button = this.$refs.button;
       if (!button) return;
       const rect = button.getBoundingClientRect();
-      const spaceBelow = window.innerHeight - rect.bottom - 12;
-      const spaceAbove = rect.top - 12;
+      const margin = 12;
+      const spaceBelow = window.innerHeight - rect.bottom - margin;
+      const spaceAbove = rect.top - margin;
       const openUp = spaceBelow < 220 && spaceAbove > spaceBelow;
       const maxHeight = Math.max(160, Math.min(320, openUp ? spaceAbove : spaceBelow));
+      const maxWidth = window.innerWidth - margin * 2;
+
+      let width = Math.max(rect.width, 200);
+      const menu = this.$refs.menu;
+      if (menu) {
+        const labels = menu.querySelectorAll(".care-filter__option-label");
+        let text = 0;
+        labels.forEach((el) => { text = Math.max(text, el.scrollWidth); });
+        const option = menu.querySelector(".care-filter__option");
+        const label = option?.querySelector(".care-filter__option-label");
+        const extra = option && label
+          ? option.getBoundingClientRect().width - label.getBoundingClientRect().width
+          : 56;
+        if (text > 0) width = Math.max(width, Math.ceil(text + extra + 2));
+      }
+      width = Math.min(width, maxWidth);
+
+      // Grow to the right of the button. Near the viewport edge, pin the menu
+      // to the button's other corner so the labels stay on screen.
+      let left = rect.left;
+      if (left + width > window.innerWidth - margin) {
+        left = rect.right - width;
+      }
+      left = Math.max(margin, Math.min(left, window.innerWidth - margin - width));
+
       this.menuStyle = {
-        left: `${Math.round(rect.left)}px`,
-        minWidth: `${Math.round(Math.max(rect.width, 200))}px`,
+        left: `${Math.round(left)}px`,
+        width: `${Math.round(width)}px`,
+        maxWidth: `${Math.round(maxWidth)}px`,
         maxHeight: `${Math.round(maxHeight)}px`,
         ...(openUp
-          ? { bottom: `${Math.round(window.innerHeight - rect.top + 6)}px` }
-          : { top: `${Math.round(rect.bottom + 6)}px` }),
+          ? { bottom: `${Math.round(window.innerHeight - rect.top + 6)}px`, top: "auto" }
+          : { top: `${Math.round(rect.bottom + 6)}px`, bottom: "auto" }),
       };
     },
     onOutsidePointer(event) {
@@ -340,7 +368,7 @@ export default {
 .care-filter__menu {
   position: fixed;
   z-index: 1080; /* above Bootstrap modals (1055) */
-  max-width: min(420px, calc(100vw - 24px));
+  max-width: calc(100vw - 24px);
   margin: 0;
   padding: .25rem;
   overflow-y: auto;
