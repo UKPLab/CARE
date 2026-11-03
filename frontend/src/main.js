@@ -33,8 +33,10 @@ import 'bootstrap/dist/css/bootstrap.css'
 import 'bootstrap-vue-3/dist/bootstrap-vue-3.css'
 import "bootstrap-icons/font/bootstrap-icons.css";
 import "quill/dist/quill.snow.css";
-// App-wide UI font. Self-hosted by Vite (no font CDN), SIL Open Font License 1.1.
+// App-wide fonts, chosen in global.css. Self-hosted by Vite (no font CDN), SIL Open Font License 1.1.
+// Import them only here, not in components.
 import "@fontsource-variable/inter/opsz.css";
+import "@fontsource-variable/jetbrains-mono/wght.css";
 import './assets/styles/global.css';
 import BootstrapVue3 from "bootstrap-vue-3";
 import {BToastPlugin} from 'bootstrap-vue-3'

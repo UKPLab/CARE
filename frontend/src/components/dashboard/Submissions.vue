@@ -32,72 +32,25 @@
 
           <div
             v-else
-            class="sessions-grid sessions-grid--list"
+            class="status-card-grid status-card-grid--list"
           >
-            <article
+            <StatusCard
               v-for="(assignment, index) in section.items"
               :key="section.key + '-' + assignment.id"
-              class="session-study"
-              :class="[
-                'session-study--' + assignmentStateSlug(assignment),
-                { 'is-open': isOpen(assignment.id) },
-              ]"
-              :style="{ '--i': index }"
+              :index="index"
+              :tone="assignmentTone(assignment)"
+              :state-label="$t('assignments.dashboard.status.' + getAssignmentStatus(assignment))"
+              :locked="getAssignmentStatus(assignment) === 'closed'"
+              :live="getAssignmentStatus(assignment) === 'open'"
+              :item-id="assignment.id"
+              :title="assignment.name"
+              title-clickable
+              :expanded="isOpen(assignment.id)"
+              :controls="'submissions-of-' + assignment.id"
+              :meta="metaItems(assignment, section.key)"
+              @title-click="toggle(assignment.id)"
             >
-              <header class="session-study-head">
-                <span
-                  class="study-state"
-                  :class="'study-state--' + assignmentStateSlug(assignment)"
-                >
-                  <LoadIcon
-                    v-if="getAssignmentStatus(assignment) === 'closed'"
-                    icon-name="lock-fill"
-                    :size="10"
-                  />
-                  <span
-                    v-else
-                    class="study-state-dot"
-                  />
-                  {{ $t('assignments.dashboard.status.' + getAssignmentStatus(assignment)) }}
-                </span>
-                <span class="session-study-id">#{{ assignment.id }}</span>
-              </header>
-
-              <button
-                type="button"
-                class="session-study-title"
-                :title="assignment.name"
-                :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
-                :aria-controls="'submissions-of-' + assignment.id"
-                @click="toggle(assignment.id)"
-              >
-                {{ assignment.name }}
-              </button>
-
-              <div class="session-study-meta">
-                <span
-                  v-if="!canUploadForOthers"
-                  class="session-study-meta-item"
-                >
-                  <LoadIcon
-                    icon-name="file-earmark-check"
-                    :size="12"
-                  />
-                  {{ remainingSubmissionsLabel(assignment) }}
-                </span>
-                <span
-                  v-if="section.key === 'active'"
-                  class="session-study-meta-item"
-                >
-                  <LoadIcon
-                    icon-name="clock"
-                    :size="12"
-                  />
-                  {{ timeBadgeText(assignment) }}
-                </span>
-              </div>
-
-              <footer class="session-study-foot">
+              <template #footer>
                 <BasicButton
                   class="btn btn-primary btn-sm"
                   :title="$t('dashboard.uploadModal.title')"
@@ -108,30 +61,27 @@
                 />
                 <button
                   type="button"
-                  class="session-study-toggle"
+                  class="status-card-primary status-card-primary--ghost"
                   :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
                   :aria-controls="'submissions-of-' + assignment.id"
                   @click="toggle(assignment.id)"
                 >
                   {{ isOpen(assignment.id) ? $t('common.showLess') : $t('common.details') }}
                   <LoadIcon
-                    class="session-study-chevron"
+                    class="status-card-chevron"
                     icon-name="chevron-down"
                     :size="13"
                   />
                 </button>
-              </footer>
+              </template>
 
-              <div
+              <template
                 v-if="isOpen(assignment.id)"
-                :id="'submissions-of-' + assignment.id"
-                class="session-study-body"
+                #details
               >
-                <AssignmentSubmissionsTable
-                  :assignment-id="assignment.id"
-                />
-              </div>
-            </article>
+                <AssignmentSubmissionsTable :assignment-id="assignment.id" />
+              </template>
+            </StatusCard>
           </div>
         </section>
       </div>
@@ -149,13 +99,14 @@ import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import AssignmentSubmissionsTable from "@/components/dashboard/assignments/AssignmentSubmissionsTable.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import StatusCard from "@/basic/dashboard/card/StatusCard.vue";
 import { getTimeDiffString, isListedAssignment } from "@/assets/utils";
 import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
 export default {
   name: "DashboardSubmission",
   subscribeTable: ["assignment", "submission", "user", "document"],
-  components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal, StatusCard },
   data() {
     return {
       openAssignmentIds: [],
@@ -218,11 +169,23 @@ export default {
         this.openAssignmentIds.push(assignmentId);
       }
     },
-    assignmentStateSlug(assignment) {
-      const status = this.getAssignmentStatus(assignment);
-      if (status === "open") return "running";
-      if (status === "closed") return "closed";
-      return "ended";
+    /** StatusCard tone: open green, not started amber (as on Studies), closed violet. */
+    assignmentTone(assignment) {
+      return {
+        open: "success",
+        notStarted: "warning",
+        closed: "violet",
+      }[this.getAssignmentStatus(assignment)] || "neutral";
+    },
+    metaItems(assignment, sectionKey) {
+      const items = [];
+      if (!this.canUploadForOthers) {
+        items.push({ key: "remaining", icon: "file-earmark-check", text: this.remainingSubmissionsLabel(assignment) });
+      }
+      if (sectionKey === "active") {
+        items.push({ key: "due", icon: "clock", text: this.timeBadgeText(assignment) });
+      }
+      return items;
     },
     getAssignmentStatus(assignment) {
       if (assignment.closed) {

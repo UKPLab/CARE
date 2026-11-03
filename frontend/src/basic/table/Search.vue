@@ -1286,7 +1286,7 @@ export default {
   place-items: center;
   min-width: 1.9rem;
   padding: 0.05rem 0.35rem;
-  font-family: "JetBrains Mono Variable", var(--bs-font-monospace, monospace);
+  font-family: var(--bs-font-monospace, monospace);
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--care-primary);

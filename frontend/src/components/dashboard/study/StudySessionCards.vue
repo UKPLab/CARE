@@ -22,66 +22,26 @@
         </p>
         <div
           v-else
-          class="ss-list"
+          class="status-card-grid status-card-grid--compact ss-list"
         >
-          <article
+          <StatusCard
             v-for="(card, index) in cards.rows"
             :key="card.id"
-            class="ss-card"
-            :class="[
-              'ss-card--' + card.cardStatus,
-              {
-                'ss-card--deleting': cards.rowState(card).deleting,
-                'ss-card--updated': cards.rowState(card).updated,
-              },
-            ]"
-            :style="{ '--i': index }"
+            compact
+            :index="index"
+            :tone="statusTone(card.cardStatus)"
+            :state-label="statusLabel(card.cardStatus)"
+            :live="card.cardStatus === 'running'"
+            :item-id="card.id"
+            :meta="metaItems(card)"
+            :live-state="cards.rowState(card) || {}"
           >
-            <header class="ss-card-head">
-              <span class="ss-pill">
-                <span class="ss-dot" />
-                {{ statusLabel(card.cardStatus) }}
-              </span>
-              <span class="ss-card-id">#{{ card.id }}</span>
-            </header>
-
-            <div class="ss-card-meta">
-              <span class="ss-meta-item">
-                <LoadIcon
-                  icon-name="calendar3"
-                  :size="12"
-                />
-                {{ card.startedLabel }}
-              </span>
-              <span
-                v-if="card.parentStudySessionId"
-                class="ss-meta-item"
-                :title="$t('studies.dashboard.copiedFrom', { id: card.parentStudySessionId })"
-              >
-                <LoadIcon
-                  icon-name="diagram-2"
-                  :size="12"
-                />
-                #{{ card.parentStudySessionId }}
-              </span>
-              <span
-                v-if="card.showResumable"
-                class="ss-meta-item"
-              >
-                <LoadIcon
-                  icon-name="arrow-repeat"
-                  :size="12"
-                />
-                {{ $t('studies.dashboard.resumable') }}
-              </span>
-            </div>
-
-            <footer class="ss-card-foot">
+            <template #footer>
               <button
                 v-if="card.primary"
                 type="button"
-                class="ss-open"
-                :class="{ 'ss-open--ghost': card.primary === 'inspect' }"
+                class="status-card-primary"
+                :class="{ 'status-card-primary--ghost': card.primary === 'inspect' }"
                 @click="emitAction(card.primary, card)"
               >
                 <LoadIcon
@@ -90,10 +50,10 @@
                 />
                 {{ primaryLabel(card.primary) }}
               </button>
-              <div class="ss-actions">
+              <div class="status-card-actions">
                 <button
                   type="button"
-                  class="ss-action"
+                  class="status-card-icon-btn"
                   :title="$t('dashboard.study.copySession')"
                   :aria-label="$t('dashboard.study.copySession')"
                   @click="emitAction('copy', card)"
@@ -106,7 +66,7 @@
                 <button
                   v-if="card.showDeleteButton"
                   type="button"
-                  class="ss-action ss-action--danger"
+                  class="status-card-icon-btn status-card-icon-btn--danger"
                   :title="$t('dashboard.study.deleteSession')"
                   :aria-label="$t('dashboard.study.deleteSession')"
                   @click="emitAction('delete', card)"
@@ -117,8 +77,8 @@
                   />
                 </button>
               </div>
-            </footer>
-          </article>
+            </template>
+          </StatusCard>
         </div>
       </div>
     </template>
@@ -128,6 +88,7 @@
 <script>
 import BackendTable from "@/basic/BackendTable.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import StatusCard from "@/basic/dashboard/card/StatusCard.vue";
 import { formatLocalizedDateTime } from "@/assets/utils";
 
 /**
@@ -142,7 +103,7 @@ import { formatLocalizedDateTime } from "@/assets/utils";
  */
 export default {
   name: "StudySessionCards",
-  components: { BackendTable, LoadIcon },
+  components: { BackendTable, LoadIcon, StatusCard },
   props: {
     /** Study row from the page's BackendTable (closed, end, resumable, multipleSubmit, owners). */
     study: {
@@ -222,6 +183,25 @@ export default {
         : this.$t("studies.dashboard.notStartedYet");
       return row;
     },
+    /** In progress uses the theme accent (blue / yellow), finished green, not started grey. */
+    statusTone(status) {
+      return { finished: "success", running: "primary", pending: "neutral" }[status] || "neutral";
+    },
+    metaItems(card) {
+      const items = [{ key: "started", icon: "calendar3", text: card.startedLabel }];
+      if (card.parentStudySessionId) {
+        items.push({
+          key: "parent",
+          icon: "diagram-2",
+          text: "#" + card.parentStudySessionId,
+          title: this.$t("studies.dashboard.copiedFrom", { id: card.parentStudySessionId }),
+        });
+      }
+      if (card.showResumable) {
+        items.push({ key: "resumable", icon: "arrow-repeat", text: this.$t("studies.dashboard.resumable") });
+      }
+      return items;
+    },
     statusLabel(status) {
       return {
         finished: this.$t("studies.dashboard.finished"),
@@ -261,250 +241,11 @@ export default {
   margin: 0;
   padding: 0.6rem 0.2rem;
   font-size: 0.85rem;
-  color: var(--sc-muted, var(--bs-secondary-color));
+  color: var(--care-card-muted, var(--bs-secondary-color));
 }
 
+/* The cards themselves are compact StatusCards (StatusCard.vue). */
 .ss-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
-  gap: 0.75rem;
   margin-bottom: 0.75rem;
-}
-
-.ss-card {
-  --ss-accent: var(--bs-secondary);
-  --ss-accent-rgb: var(--bs-secondary-rgb);
-
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-width: 0;
-  padding: 0.7rem 0.85rem 0.6rem 1rem;
-  overflow: hidden;
-  background: var(--sc-surface-raised, var(--bs-tertiary-bg));
-  border: 1px solid var(--sc-border, var(--bs-border-color-translucent));
-  border-radius: 12px;
-  animation: ss-in 0.4s var(--sc-ease, ease) both;
-  animation-delay: calc(min(var(--i, 0), 10) * 30ms);
-  transition: transform 0.25s var(--sc-ease, ease), border-color 0.25s ease, box-shadow 0.25s ease, opacity 0.4s ease;
-}
-
-.ss-card::before {
-  content: "";
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--ss-accent);
-  opacity: 0.85;
-}
-
-.ss-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(var(--ss-accent-rgb), 0.35);
-  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.35);
-}
-
-.ss-card--deleting {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.ss-card--updated {
-  border-color: rgba(var(--ss-accent-rgb), 0.5);
-}
-
-.ss-card--running { --ss-accent: var(--bs-primary); --ss-accent-rgb: var(--bs-primary-rgb); }
-.ss-card--finished { --ss-accent: var(--bs-success); --ss-accent-rgb: var(--bs-success-rgb); }
-
-[data-bs-theme="dark"] .ss-card--running {
-  --ss-accent: var(--care-accent);
-  --ss-accent-rgb: 227, 213, 168;
-}
-
-.ss-card-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.ss-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.15rem 0.55rem 0.15rem 0.45rem;
-  font-size: 0.7rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--ss-accent);
-  background: rgba(var(--ss-accent-rgb), 0.12);
-  border: 1px solid rgba(var(--ss-accent-rgb), 0.22);
-  border-radius: 999px;
-}
-
-.ss-dot {
-  position: relative;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.ss-card--running .ss-dot::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: currentColor;
-  animation: ss-pulse 2.2s ease-out infinite;
-}
-
-.ss-card-id {
-  font-family: var(--sc-font-mono, var(--bs-font-monospace));
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--sc-muted, var(--bs-secondary-color));
-  opacity: 0.85;
-}
-
-.ss-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.2rem 0.8rem;
-  font-size: 0.78rem;
-  color: var(--sc-muted, var(--bs-secondary-color));
-}
-
-.ss-meta-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  white-space: nowrap;
-}
-
-.ss-card-foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  min-height: 2rem;
-  margin-top: auto;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--sc-border, var(--bs-border-color-translucent));
-}
-
-.ss-open {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--care-on-primary);
-  background: var(--care-primary);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  transition: filter 0.2s ease, transform 0.2s var(--sc-ease, ease), background-color 0.2s ease;
-}
-
-.ss-open:hover {
-  filter: brightness(1.08);
-}
-
-[data-bs-theme="dark"] .ss-open:hover {
-  filter: none;
-  background: var(--care-accent-hover);
-}
-
-.ss-open:active {
-  transform: scale(0.97);
-}
-
-/* Inspect is a read-only look, so it is less loud than start / resume */
-.ss-open--ghost {
-  color: var(--sc-text, var(--bs-emphasis-color));
-  background: transparent;
-  border-color: var(--sc-border, var(--bs-border-color));
-}
-
-.ss-open--ghost:hover {
-  filter: none;
-  background: rgba(var(--bs-secondary-rgb), 0.12);
-}
-
-[data-bs-theme="dark"] .ss-open--ghost:hover {
-  background: rgba(var(--bs-secondary-rgb), 0.18);
-}
-
-.ss-actions {
-  display: flex;
-  gap: 0.15rem;
-  margin-left: auto;
-}
-
-.ss-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  padding: 0;
-  color: var(--sc-muted, var(--bs-secondary-color));
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s var(--sc-ease, ease);
-}
-
-.ss-action:hover {
-  color: var(--sc-text, var(--bs-emphasis-color));
-  background: rgba(var(--bs-secondary-rgb), 0.12);
-  border-color: var(--sc-border, var(--bs-border-color));
-}
-
-.ss-action:active {
-  transform: scale(0.92);
-}
-
-.ss-action--danger:hover {
-  color: var(--bs-danger);
-  background: rgba(var(--bs-danger-rgb), 0.1);
-  border-color: rgba(var(--bs-danger-rgb), 0.25);
-}
-
-.ss-open:focus-visible,
-.ss-action:focus-visible {
-  outline: 2px solid rgba(var(--bs-primary-rgb), 0.55);
-  outline-offset: 2px;
-}
-
-[data-bs-theme="dark"] .ss-open:focus-visible,
-[data-bs-theme="dark"] .ss-action:focus-visible {
-  outline-color: var(--care-accent);
-}
-
-@keyframes ss-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
-}
-
-@keyframes ss-pulse {
-  0% { transform: scale(1); opacity: 0.55; }
-  70%, 100% { transform: scale(2.6); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ss-card,
-  .ss-card:hover {
-    animation: none;
-    transform: none;
-    transition: none;
-  }
-
-  .ss-card--running .ss-dot::after {
-    animation: none;
-  }
 }
 </style>

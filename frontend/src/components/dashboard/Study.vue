@@ -1,12 +1,9 @@
 <template>
   <span>
     <Card
-        class="study-dashboard"
+        class="study-dashboard dashboard-page"
         :title="$t('studies.title')"
     >
-      <template #title>
-        <span class="study-dashboard-title">{{ $t('studies.title') }}</span>
-      </template>
       <template #headerElements>
         <div class="study-header-actions">
           <BasicButton
@@ -164,9 +161,6 @@
 </template>
 
 <script>
-// Self-hosted (bundled by Vite, no third-party font CDN), SIL Open Font License 1.1.
-import "@fontsource-variable/inter/opsz.css";
-import "@fontsource-variable/jetbrains-mono/wght.css";
 import Card from "@/basic/dashboard/card/Card.vue";
 import BackendTable from "@/basic/BackendTable.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
@@ -762,77 +756,13 @@ export default {
 
 <style scoped>
 /* ======================================================================
-   Study dashboard shell: page background, header and view toggle. Table,
-   search and pagination look comes from the shared basic/table components.
+   Studies dashboard: only what this page adds.
+   - Page shell, title and header buttons (ghost secondary, one filled
+     primary): .dashboard-page in global.css.
+   - Cards: StudyCardGrid.vue, which renders each study as a StatusCard
+     (basic/dashboard/card/StatusCard.vue, shared with My Sessions and Submissions).
+   - Table, search and pagination: the shared basic/table components.
    ====================================================================== */
-
-.study-dashboard {
-  --sd-radius: 16px;
-  --sd-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --sd-border: rgb(var(--care-shadow-rgb) / 0.11);
-  --sd-panel: var(--bs-body-bg);
-  --sd-shadow: var(--care-shadow-1);
-  --sd-panel-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06), 0 1px 3px rgb(var(--care-shadow-rgb) / 0.07);
-  --sd-ghost-hover: rgba(255, 255, 255, 0.85);
-  /* Page surface sits between the canvas and the cards (see global.css light mode). */
-  --sd-bg:
-    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
-    var(--care-page-surface, #f2f5fa);
-
-  font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
-    "Helvetica Neue", Roboto, sans-serif;
-  font-optical-sizing: auto;
-  font-feature-settings: "cv01", "cv11", "ss03";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  border: 1px solid var(--sd-border);
-  border-radius: var(--sd-radius);
-  background: var(--sd-bg);
-  box-shadow: var(--sd-shadow);
-}
-
-[data-bs-theme="dark"] .study-dashboard {
-  --sd-border: rgba(255, 255, 255, 0.08);
-  --sd-panel: color-mix(in srgb, var(--bs-body-bg) 95%, #ffffff 5%);
-  --sd-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
-  --sd-panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
-  --sd-ghost-hover: rgba(255, 255, 255, 0.07);
-  --sd-bg:
-    radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.09), transparent 60%),
-    color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
-}
-
-/* ---------- Header ---------- */
-
-.study-dashboard :deep(.card-header) {
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1.15rem 1.35rem 0.4rem;
-  background: transparent;
-  border-bottom: 0;
-}
-
-.study-dashboard :deep(.card-header .card-title) {
-  margin: 0;
-}
-
-.study-dashboard :deep(.card-body) {
-  padding: 0.85rem 1.35rem 1.35rem;
-  background: transparent;
-}
-
-.study-dashboard-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.022em;
-  color: var(--bs-emphasis-color);
-}
 
 .study-header-actions {
   display: flex;
@@ -842,99 +772,30 @@ export default {
   gap: 0.25rem;
 }
 
-/* Secondary header actions: quiet ghost buttons; one filled primary at the end. */
-.study-header-actions :deep(.btn) {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.38rem 0.7rem;
-  font-size: 0.82rem;
-  font-weight: 500;
-  border-radius: 8px;
-  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--sd-ease);
-}
-
-.study-header-actions :deep(.btn:active) {
-  transform: scale(0.97);
-}
-
-.study-header-actions :deep(.btn-secondary) {
-  --bs-btn-bg: transparent;
-  --bs-btn-border-color: transparent;
-  --bs-btn-color: var(--bs-body-color);
-  --bs-btn-hover-bg: var(--sd-ghost-hover);
-  --bs-btn-hover-border-color: var(--sd-border);
-  --bs-btn-hover-color: var(--bs-emphasis-color);
-  --bs-btn-active-bg: var(--sd-ghost-hover);
-  --bs-btn-active-border-color: var(--sd-border);
-  --bs-btn-active-color: var(--bs-emphasis-color);
-  --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
-}
-
-.study-header-actions :deep(.btn-secondary:hover) {
-  box-shadow: var(--sd-panel-shadow);
-}
-
-.study-header-actions :deep(.btn-secondary svg) {
-  color: var(--bs-secondary-color);
-  transition: color 0.2s ease;
-}
-
-.study-header-actions :deep(.btn-secondary:hover svg) {
-  color: var(--bs-primary);
-}
-
-[data-bs-theme="dark"] .study-header-actions :deep(.btn-secondary:hover svg) {
-  color: var(--care-accent);
-}
-
-.study-header-actions :deep(.btn-primary) {
-  padding-inline: 0.85rem;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 6px 16px -6px rgba(var(--bs-primary-rgb), 0.55);
-}
-
-.study-header-actions :deep(.btn-primary:hover) {
-  filter: brightness(1.06);
-  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 10px 22px -8px rgba(var(--bs-primary-rgb), 0.65);
-}
-
-[data-bs-theme="dark"] .study-header-actions :deep(.btn-primary) {
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
-    0 6px 16px -6px color-mix(in srgb, var(--care-accent) 55%, transparent);
-}
-
-[data-bs-theme="dark"] .study-header-actions :deep(.btn-primary:hover) {
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
-    0 10px 22px -8px color-mix(in srgb, var(--care-accent) 65%, transparent);
-}
-
 .study-header-sep {
   width: 1px;
   height: 1.25rem;
   margin: 0 0.35rem;
-  background: var(--sd-border);
+  background: var(--dash-border);
 }
 
 /* ---------- Table view: panel on the tinted page ----------
    Table, search bar, pagination, badges and row actions are styled by the shared
-   basic/table components. This page only feeds them its surface colours and puts
-   the table into a panel. */
+   basic/table components. This page only feeds them the shell's panel colours
+   and puts the table into a panel. */
 
 .study-dashboard {
-  --table-bg: var(--sd-panel);
-  --table-border-color: var(--sd-border);
+  --table-bg: var(--dash-panel);
+  --table-border-color: var(--dash-border);
 }
 
 .study-dashboard :deep(.table-scroll-shell) {
   margin-top: 1rem;
   margin-bottom: 1.25rem;
-  background: var(--sd-panel);
-  border: 1px solid var(--sd-border);
+  background: var(--dash-panel);
+  border: 1px solid var(--dash-border);
   border-radius: 12px;
-  box-shadow: var(--sd-panel-shadow);
+  box-shadow: var(--dash-panel-shadow);
   overflow: hidden;
 }
 
@@ -942,12 +803,6 @@ export default {
 .study-dashboard :deep(.table-scroll-shell .table-wrapper),
 .study-dashboard :deep(.table-scroll-shell .table) {
   margin-bottom: 0;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .study-header-actions :deep(.btn) {
-    transition: none;
-  }
 }
 
 /* Segmented Cards / Table switch at the end of the search bar. */
@@ -971,8 +826,8 @@ export default {
   width: calc(50% - 2px);
   border-radius: 6px;
   background: var(--bs-body-bg);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12), 0 1px 1px rgba(15, 23, 42, 0.06);
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.12), 0 1px 1px rgb(var(--care-shadow-rgb) / 0.06);
+  transition: transform 0.35s var(--care-card-ease);
   z-index: -1;
 }
 
