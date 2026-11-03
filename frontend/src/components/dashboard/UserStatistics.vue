@@ -1,5 +1,8 @@
 <template>
-  <Card :title="$t('users.title')">
+  <Card
+    class="dashboard-page mb-3"
+    :title="$t('users.title')"
+  >
     <template #headerElements>
       <div class="btn-group gap-2">
         <BasicButton
@@ -27,8 +30,8 @@
       />
     </template>
   </Card>
-  <hr>
   <Card
+      class="dashboard-page"
       :title="$t('users.stats.userStatsTitle', { count: selectedUsers ? selectedUsers.length : 0 })">
     <template #body>
       <BasicTable
@@ -36,7 +39,7 @@
           :columns="statsTableColumns"
           :data="stats"
           :options="stats_table.options"
-          :max-table-height="'25vh'"
+          :max-table-height="'30vh'"
       />
     </template>
   </Card>
@@ -94,7 +97,7 @@ export default {
           pagination: 20
         },
       },
-      selectedUsers: []
+      selectedUsers: [],
     }
   },
   computed: {
