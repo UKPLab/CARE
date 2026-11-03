@@ -64,9 +64,12 @@ html[data-bs-theme="dark"] {
   --care-primary: var(--care-accent);
   --care-on-primary: var(--care-on-accent);
   --care-violet-rgb: 167, 151, 255;
-  /* Bootstrap's link colour drives nav tabs, pagination and btn-link */
+  /* Bootstrap paints <a> from the rgb channel, not from --bs-link-color.
+     Leave the channel at Bootstrap's blue and links stay blue in dark mode. */
   --bs-link-color: var(--care-accent);
   --bs-link-hover-color: var(--care-accent-hover);
+  --bs-link-color-rgb: 227, 213, 168;
+  --bs-link-hover-color-rgb: 213, 199, 149;
 }
 
 /* ===== Light mode =====
