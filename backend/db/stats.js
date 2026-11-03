@@ -24,6 +24,58 @@
 
 let _timer = null;
 
+import fs from 'node:fs/promises';
+import path from 'node:path'
+
+const csvPath = path.resolve(
+    process.env.PG_STATS_CSV_PATH || "logs/pg-performance.csv"
+);
+
+// Serialize writes within this Node.js process.
+let csvWriteQueue = Promise.resolve();
+
+function escapeCsv(value) {
+    if (value === null || value === undefined) return "";
+    const text = typeof value === "object"
+        ? JSON.stringify(value)
+        : String(value);
+
+    return `"${text.replace(/"/g, '""')}"`;
+}
+
+function saveSnapshotToCsv(snap, intervalMs) {
+    const row = {
+        counts: snap.counts,
+		oldestActive: snap.oldestActive,
+		sequelizePool: snap.sequelizePool,
+		dbStats: snap.dbStats,
+		locks: snap.locks,
+		intervalMs,
+		collectedAt: snap.collectedAt
+    };
+
+    const write = csvWriteQueue.then(async () => {
+        await fs.mkdir(path.dirname(csvPath), { recursive: true });
+
+        const file = await fs.open(csvPath, "a");
+        try {
+            const { size } = await file.stat();
+            const header = size === 0
+                ? Object.keys(row).map(escapeCsv).join(",") + "\n"
+                : "";
+            const line = Object.values(row).map(escapeCsv).join(",") + "\n";
+
+            await file.appendFile(header + line, "utf8");
+        } finally {
+            await file.close();
+        }
+    });
+
+    // Keep the queue usable after a failed write.
+    csvWriteQueue = write.catch(() => {});
+    return write;
+}
+
 /**
  * Convert an object with possibly string-based numeric fields to integers where
  * appropriate. Non-numeric values are preserved.
@@ -277,17 +329,7 @@ function start(sequelize, logger, options = {}) {
 	async function collect() {
 		try {
 			const snap = await snapshot(sequelize, logger);
-			logger.info('pg_stat_activity snapshot', {
-				pg_stat_activity: {
-					counts: snap.counts,
-					oldestActive: snap.oldestActive,
-					sequelizePool: snap.sequelizePool,
-					dbStats: snap.dbStats,
-					locks: snap.locks,
-					intervalMs,
-					collectedAt: snap.collectedAt
-				}
-			});
+        	await saveSnapshotToCsv(snap, intervalMs);
 		} catch (e) {
 			logger.error('pg_stat_activity scheduler error: ' + e.message);
 		}
