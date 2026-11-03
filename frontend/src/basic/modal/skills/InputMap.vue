@@ -541,8 +541,9 @@ export default {
                   type: 'submission',
                   table: 'submission',
                   stepIndex: stepIndex,
-                  isTemplate: true
-                });
+                  isTemplate: true,
+                }
+              );
             } else {
               // Add specific document/submission sources
               if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
