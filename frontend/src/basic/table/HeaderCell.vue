@@ -7,11 +7,7 @@
     >
       <LoadIcon
         v-if="column.sortable"
-        :class="{
-          'bg-success': sortColumn === column.key,
-          'bg-opacity-50': sortColumn === column.key,
-          'table-sort-icon--idle': sortColumn !== column.key,
-        }"
+        :class="sortColumn === column.key ? 'table-sort-icon--active' : 'table-sort-icon--idle'"
         :icon-name="sortColumn === column.key ? sortIcon : 'sort-down'"
         class="table-sort-icon me-1"
         style="cursor: pointer"
@@ -189,10 +185,23 @@ th :deep(.table-sort-icon--idle:hover) {
   background-color: color-mix(in srgb, var(--bs-body-color) 20%, transparent);
 }
 
-/* Sorted column in dark mode: accent instead of Bootstrap green (its bg utility is !important). */
-[data-bs-theme="dark"] th :deep(.table-sort-icon.bg-success) {
-  color: var(--care-accent);
-  background-color: color-mix(in srgb, var(--care-accent) 28%, transparent) !important;
+/* Sorted column: the theme's primary colour (blue in light, the accent in dark),
+   the same as other active controls, instead of Bootstrap's green. */
+th :deep(.table-sort-icon--active) {
+  color: var(--care-primary);
+  background-color: color-mix(in srgb, var(--care-primary) 18%, transparent);
+}
+
+[data-bs-theme="dark"] th :deep(.table-sort-icon--active) {
+  background-color: color-mix(in srgb, var(--care-primary) 28%, transparent);
+}
+
+th :deep(.table-sort-icon--active:hover) {
+  background-color: color-mix(in srgb, var(--care-primary) 26%, transparent);
+}
+
+[data-bs-theme="dark"] th :deep(.table-sort-icon--active:hover) {
+  background-color: color-mix(in srgb, var(--care-primary) 36%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
