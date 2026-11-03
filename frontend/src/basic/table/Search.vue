@@ -1106,9 +1106,9 @@ export default {
 
 .token-chip {
   font-weight: 500;
-  color: rgb(var(--care-violet-rgb));
-  background-color: rgba(var(--care-violet-rgb), 0.1);
-  border: 1px solid rgba(var(--care-violet-rgb), 0.22);
+  color: var(--care-primary);
+  background-color: color-mix(in srgb, var(--care-primary) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--care-primary) 25%, transparent);
   cursor: pointer;
 }
 
@@ -1149,7 +1149,7 @@ export default {
 .token-raw {
   min-width: 3ch;
   padding: 0 0.25rem;
-  border: 1px solid var(--bs-primary, #0d6efd);
+  border: 1px solid var(--care-primary, var(--bs-primary));
   border-radius: 0.25rem;
   background: transparent;
   font-family: var(--bs-font-monospace, monospace);
@@ -1178,9 +1178,13 @@ export default {
 .token-suggestions {
   --bs-dropdown-padding-y: 0;
   --bs-dropdown-padding-x: 0;
-  --_menu-bg: var(--bs-body-bg);
+  /* Frosted glass like the toasts (Toast.vue): the page shows through, blurred, under a soft
+     wash of the theme accent (--care-primary: blue in light, warm in dark) from the top, so the menu belongs to the bar instead of a native popup. */
+  --_menu-bg: color-mix(in srgb, var(--bs-body-bg) 78%, transparent);
+  --_menu-wash: color-mix(in srgb, var(--care-primary) 9%, transparent);
+  --_menu-edge: rgb(255 255 255 / 0.6);
   --bs-dropdown-bg: var(--_menu-bg);
-  --bs-dropdown-border-color: var(--table-border-color, var(--bs-border-color-translucent));
+  --bs-dropdown-border-color: color-mix(in srgb, var(--care-primary) 22%, var(--bs-border-color-translucent));
   position: absolute;
   top: calc(100% + 0.25rem);
   left: var(--token-menu-left, 0px);
@@ -1188,15 +1192,20 @@ export default {
   min-width: 15rem;
   max-height: 18rem;
   margin: 0.3rem 0 0;
-  padding: 0.35rem;
+  padding: 0.4rem;
   overflow-x: hidden;
   overflow-y: auto;
   font-size: 0.85rem;
   list-style: none;
-  background: var(--_menu-bg);
+  background:
+    linear-gradient(180deg, var(--_menu-wash) 0%, transparent 60%),
+    var(--_menu-bg);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
   border: 1px solid var(--bs-dropdown-border-color);
   border-radius: 12px;
-  box-shadow: var(--care-shadow-2);
+  /* Inner top highlight gives the glass an edge; outer shadow lifts it off the table */
+  box-shadow: inset 0 1px 0 var(--_menu-edge), var(--care-shadow-3);
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--bs-secondary-rgb), 0.35) transparent;
   scrollbar-gutter: stable;
@@ -1205,7 +1214,18 @@ export default {
 }
 
 [data-bs-theme="dark"] .token-suggestions {
-  --_menu-bg: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
+  --_menu-bg: color-mix(in srgb, color-mix(in srgb, var(--bs-body-bg) 88%, #ffffff 12%) 80%, transparent);
+  --_menu-wash: color-mix(in srgb, var(--care-primary) 10%, transparent);
+  --_menu-edge: rgb(255 255 255 / 0.07);
+  --bs-dropdown-border-color: color-mix(in srgb, var(--care-primary) 18%, var(--bs-border-color-translucent));
+}
+
+/* Without backdrop blur a translucent menu would be unreadable over table rows */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .token-suggestions,
+  [data-bs-theme="dark"] .token-suggestions {
+    --_menu-bg: var(--bs-body-bg);
+  }
 }
 
 .token-suggestions::-webkit-scrollbar {
@@ -1240,13 +1260,13 @@ export default {
   transition: background-color 0.12s ease, color 0.12s ease;
 }
 
-/* Mouse and keyboard share one look: a soft violet tint; keyboard adds an accent bar. */
+/* Mouse and keyboard share one look: a soft tint of the theme accent; keyboard adds an accent bar. */
 .token-suggestions .dropdown-item:hover,
 .token-suggestions .dropdown-item.hovered,
 .token-suggestions .dropdown-item.keyboard-focus,
 .token-suggestions .dropdown-item.keyboard-focus:focus {
   color: var(--bs-emphasis-color);
-  background-color: rgba(var(--care-violet-rgb), 0.12);
+  background-color: color-mix(in srgb, var(--care-primary) 14%, transparent);
   box-shadow: none;
 }
 
@@ -1258,7 +1278,7 @@ export default {
   bottom: 25%;
   width: 3px;
   border-radius: 3px;
-  background: rgb(var(--care-violet-rgb));
+  background: var(--care-primary);
 }
 
 .token-suggestion-symbol {
@@ -1269,8 +1289,8 @@ export default {
   font-family: "JetBrains Mono Variable", var(--bs-font-monospace, monospace);
   font-size: 0.8rem;
   font-weight: 600;
-  color: rgb(var(--care-violet-rgb));
-  background: rgba(var(--care-violet-rgb), 0.1);
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
   border-radius: 6px;
 }
 
