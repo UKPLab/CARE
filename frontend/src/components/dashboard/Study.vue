@@ -769,15 +769,16 @@ export default {
 .study-dashboard {
   --sd-radius: 16px;
   --sd-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --sd-border: rgba(15, 23, 42, 0.08);
+  --sd-border: rgb(var(--care-shadow-rgb) / 0.11);
   --sd-panel: var(--bs-body-bg);
-  --sd-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
-  --sd-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
+  --sd-shadow: var(--care-shadow-1);
+  --sd-panel-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06), 0 1px 3px rgb(var(--care-shadow-rgb) / 0.07);
   --sd-ghost-hover: rgba(255, 255, 255, 0.85);
+  /* Page surface sits between the canvas and the cards (see global.css light mode). */
   --sd-bg:
-    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.075), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.075), transparent 60%),
-    linear-gradient(180deg, #f7f8fc 0%, #f2f4f9 100%);
+    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
+    var(--care-page-surface, #f2f5fa);
 
   font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
     "Helvetica Neue", Roboto, sans-serif;

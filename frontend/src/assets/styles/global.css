@@ -69,6 +69,118 @@ html[data-bs-theme="dark"] {
   --bs-link-hover-color: var(--care-accent-hover);
 }
 
+/* ===== Light mode =====
+   Bootstrap's light theme is pure white cards on a near-white page with a
+   saturated #0d6efd blue, which glares and makes sections hard to tell apart.
+   CARE uses a cool blue-white palette instead:
+   - cards are a soft, slightly blue white on a light blue-grey canvas
+     (--care-canvas), so sections separate by colour as well as by shadow;
+   - text is a slate ink rather than flat #212529;
+   - the primary blue is calmer and deeper;
+   - shadows are tinted navy (--care-shadow-rgb) instead of neutral grey.
+   Bootstrap gives some components a fixed #0d6efd, so those get the new blue
+   below, the same way dark mode handles its accent. */
+html[data-bs-theme="light"] {
+  /* Three surface levels, each a visible step apart:
+     canvas (page background) < --care-page-surface (list page container)
+     < --bs-body-bg (cards, tables, tiles). */
+  --care-canvas: #e4e9f2;
+  --care-page-surface: #f2f5fa;
+  --care-light-primary-hover: #2c4bb0;
+  --care-light-primary-active: #253f96;
+
+  --bs-body-bg: #fdfeff;
+  --bs-body-bg-rgb: 253, 254, 255;
+  --bs-body-color: #222a38;
+  --bs-body-color-rgb: 34, 42, 56;
+  --bs-emphasis-color: #131a27;
+  --bs-emphasis-color-rgb: 19, 26, 39;
+  --bs-secondary-color: rgba(34, 42, 56, 0.68);
+  --bs-secondary-color-rgb: 34, 42, 56;
+  --bs-tertiary-color: rgba(34, 42, 56, 0.5);
+  --bs-tertiary-color-rgb: 34, 42, 56;
+  --bs-secondary-bg: #e8edf5;
+  --bs-secondary-bg-rgb: 232, 237, 245;
+  --bs-tertiary-bg: #f4f6fb;
+  --bs-tertiary-bg-rgb: 244, 246, 251;
+  --bs-border-color: #dce3ee;
+  --bs-border-color-translucent: rgba(30, 48, 90, 0.12);
+
+  --bs-primary: #3557c6;
+  --bs-primary-rgb: 53, 87, 198;
+  --bs-primary-text-emphasis: #1f3477;
+  --bs-primary-bg-subtle: #e4e9f8;
+  --bs-primary-border-subtle: #bcc9ee;
+  --bs-link-color: #3557c6;
+  --bs-link-color-rgb: 53, 87, 198;
+  --bs-link-hover-color: #2a469f;
+  --bs-link-hover-color-rgb: 42, 70, 159;
+}
+
+html[data-bs-theme="light"] .btn-primary {
+  --bs-btn-bg: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: var(--care-light-primary-hover);
+  --bs-btn-hover-border-color: var(--care-light-primary-hover);
+  --bs-btn-active-bg: var(--care-light-primary-active);
+  --bs-btn-active-border-color: var(--care-light-primary-active);
+  --bs-btn-disabled-bg: var(--bs-primary);
+  --bs-btn-disabled-border-color: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .btn-outline-primary {
+  --bs-btn-color: var(--bs-primary);
+  --bs-btn-border-color: var(--bs-primary);
+  --bs-btn-hover-bg: var(--bs-primary);
+  --bs-btn-hover-border-color: var(--bs-primary);
+  --bs-btn-active-bg: var(--care-light-primary-active);
+  --bs-btn-active-border-color: var(--care-light-primary-active);
+  --bs-btn-disabled-color: var(--bs-primary);
+  --bs-btn-disabled-border-color: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .pagination {
+  --bs-pagination-active-bg: var(--bs-primary);
+  --bs-pagination-active-border-color: var(--bs-primary);
+  --bs-pagination-focus-box-shadow: var(--care-focus-ring);
+}
+
+html[data-bs-theme="light"] .nav-pills {
+  --bs-nav-pills-link-active-bg: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .list-group {
+  --bs-list-group-active-bg: var(--bs-primary);
+  --bs-list-group-active-border-color: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .form-check-input:checked {
+  background-color: var(--bs-primary);
+  border-color: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .form-check-input:focus {
+  border-color: color-mix(in srgb, var(--bs-primary) 55%, #ffffff);
+  box-shadow: var(--care-focus-ring);
+}
+
+/* Bootstrap's focused switch knob is a fixed light-blue SVG (#86b7fe). */
+html[data-bs-theme="light"] .form-switch .form-check-input:focus:not(:checked) {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%239aabe2'/%3e%3c/svg%3e");
+}
+
+html[data-bs-theme="light"] .form-range::-webkit-slider-thumb {
+  background-color: var(--bs-primary);
+}
+
+html[data-bs-theme="light"] .form-range::-moz-range-thumb {
+  background-color: var(--bs-primary);
+}
+
 /* Tell the browser which theme is showing. Bootstrap declares
    color-scheme: light dark, which lets the browser pick scrollbar and native
    control colours from the operating system rather than from CARE. The html
@@ -357,9 +469,16 @@ html .care-focus-ring:focus-visible {
   --bs-border-radius-lg: .75rem;
   --bs-border-radius-xl: .875rem;
   --bs-border-radius-pill: 999px;
-  --care-shadow-1: 0 1px 2px rgb(16 24 40 / .05), 0 6px 16px -6px rgb(16 24 40 / .10);
-  --care-shadow-2: 0 2px 4px rgb(16 24 40 / .04), 0 12px 28px -8px rgb(16 24 40 / .14);
-  --care-shadow-3: 0 4px 8px rgb(16 24 40 / .05), 0 24px 48px -12px rgb(16 24 40 / .18);
+  /* Inter (SIL Open Font License 1.1, free for any use) is bundled through
+     @fontsource-variable/inter in main.js, so no font CDN is contacted. */
+  --bs-body-font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+    "Helvetica Neue", Roboto, sans-serif;
+  /* Light shadows are tinted navy to match the blue-grey canvas, so they read
+     as depth rather than as grey smudges. Space-separated for rgb(... / alpha). */
+  --care-shadow-rgb: 30 48 90;
+  --care-shadow-1: 0 1px 2px rgb(var(--care-shadow-rgb) / .08), 0 4px 14px -6px rgb(var(--care-shadow-rgb) / .16);
+  --care-shadow-2: 0 2px 4px rgb(var(--care-shadow-rgb) / .08), 0 12px 28px -10px rgb(var(--care-shadow-rgb) / .24);
+  --care-shadow-3: 0 4px 10px rgb(var(--care-shadow-rgb) / .06), 0 24px 48px -16px rgb(var(--care-shadow-rgb) / .26);
   --care-ease: cubic-bezier(.2, .8, .2, 1);
   --care-dur-fast: 120ms;
   --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--bs-primary) 35%, transparent);
@@ -370,6 +489,14 @@ html[data-bs-theme="dark"] {
   --care-shadow-2: 0 4px 10px -2px rgb(0 0 0 / .5);
   --care-shadow-3: 0 14px 28px -6px rgb(0 0 0 / .6);
   --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--care-accent) 35%, transparent);
+}
+
+/* Inter's alternate glyphs: alternate 1 (cv01), single-storey a (cv11), round
+   quotes (ss03). The same set the dashboard pages already used. */
+body {
+  font-feature-settings: "cv01", "cv11", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html .btn {
@@ -468,10 +595,10 @@ html[data-bs-theme="dark"] .card-header-actions .btn-secondary:focus-visible svg
 
 /* List dashboards share the Studies card wash and the quiet hover chip. */
 html .dashboard-page {
-  --dash-border: rgba(15, 23, 42, 0.08);
+  --dash-border: rgb(var(--care-shadow-rgb) / 0.09);
   --dash-ghost-hover: rgba(255, 255, 255, 0.85);
-  --dash-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.05);
-  --dash-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  --dash-panel-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.05), 0 1px 3px rgb(var(--care-shadow-rgb) / 0.06);
+  --dash-shadow: var(--care-shadow-1);
   font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
     "Helvetica Neue", Roboto, sans-serif;
   font-optical-sizing: auto;
@@ -481,9 +608,9 @@ html .dashboard-page {
   border: 1px solid var(--dash-border);
   border-radius: 16px;
   background:
-    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.075), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.075), transparent 60%),
-    linear-gradient(180deg, #f7f8fc 0%, #f2f4f9 100%);
+    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
+    var(--care-page-surface, #f2f5fa);
   box-shadow: var(--dash-shadow);
 }
 
@@ -574,6 +701,21 @@ html .settings-card .card-header-actions .btn {
 
 html .dashboard-wrapper {
   background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
+}
+
+/* Blue-grey canvas with a faint glow of the primary blue top left and a
+   lighter sky blue top right, so the page has some colour without tinting
+   the cards. */
+html[data-bs-theme="light"] .dashboard-wrapper {
+  background:
+    radial-gradient(1200px 560px at 0% 0%, rgba(var(--bs-primary-rgb), 0.07), transparent 62%),
+    radial-gradient(1000px 520px at 100% 0%, rgb(96 165 250 / 0.08), transparent 60%),
+    var(--care-canvas);
+}
+
+/* Cards on the canvas get a navy-tinted hairline border to go with the shadow. */
+html[data-bs-theme="light"] .card {
+  --bs-card-border-color: rgb(var(--care-shadow-rgb) / 0.11);
 }
 
 html .dashboard-page .dashboard-filters {
@@ -692,7 +834,7 @@ html .session-study {
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color-translucent);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 1px 3px rgba(15, 23, 42, .06);
+  box-shadow: var(--care-shadow-1);
 }
 
 html .session-study::after {
@@ -708,7 +850,7 @@ html .session-study--ended { --sc-accent: var(--bs-danger); --sc-accent-rgb: var
 html .session-study--closed { --sc-accent: rgb(111, 92, 230); --sc-accent-rgb: 111, 92, 230; }
 
 html .session-study.is-open {
-  box-shadow: 0 10px 28px -12px rgba(15, 23, 42, .18);
+  box-shadow: var(--care-shadow-2);
 }
 
 html .session-study-head {
@@ -1375,16 +1517,36 @@ html .input-group:has(.drag-drop-area) > * {
   color: inherit;
   background: var(--bs-body-bg);
   text-decoration: none;
-  transition: box-shadow var(--care-dur-fast) var(--care-ease);
+  transition: box-shadow var(--care-dur-fast) var(--care-ease),
+              border-color var(--care-dur-fast) var(--care-ease),
+              transform var(--care-dur-fast) var(--care-ease);
 }
 
 .home-tile:hover {
   box-shadow: var(--care-shadow-2);
+  border-color: color-mix(in srgb, var(--care-primary) 28%, var(--bs-border-color-translucent));
+  transform: translateY(-1px);
+}
+
+.home-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--care-shadow-2), var(--care-focus-ring);
 }
 
 .home-tile b {
-  font-size: 1.6rem;
+  font-size: 1.65rem;
+  font-weight: 700;
   line-height: 1.2;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--bs-emphasis-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-tile,
+  .home-tile:hover {
+    transform: none;
+  }
 }
 
 .home-tile span {

@@ -608,8 +608,8 @@ export default {
   --sc-border: var(--bs-border-color-translucent);
   --sc-text: var(--bs-emphasis-color);
   --sc-muted: var(--bs-secondary-color);
-  --sc-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --sc-shadow-hover: 0 10px 28px -12px rgba(15, 23, 42, 0.22), 0 4px 10px -4px rgba(15, 23, 42, 0.08);
+  --sc-shadow: var(--care-shadow-1);
+  --sc-shadow-hover: var(--care-shadow-2);
   --sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --sc-font: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
     "Helvetica Neue", Roboto, sans-serif;

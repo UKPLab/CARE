@@ -580,12 +580,13 @@ export default {
 
 .sessions-dashboard {
   --sd-radius: 16px;
-  --sd-border: rgba(15, 23, 42, 0.08);
-  --sd-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -12px rgba(15, 23, 42, 0.12);
+  --sd-border: rgb(var(--care-shadow-rgb) / 0.11);
+  --sd-shadow: var(--care-shadow-1);
+  /* Page surface sits between the canvas and the cards (see global.css light mode). */
   --sd-bg:
-    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.075), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.075), transparent 60%),
-    linear-gradient(180deg, #f7f8fc 0%, #f2f4f9 100%);
+    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
+    var(--care-page-surface, #f2f5fa);
 
   font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
     "Helvetica Neue", Roboto, sans-serif;
@@ -640,8 +641,8 @@ export default {
   --sc-border: var(--bs-border-color-translucent);
   --sc-text: var(--bs-emphasis-color);
   --sc-muted: var(--bs-secondary-color);
-  --sc-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
-  --sc-shadow-hover: 0 10px 28px -12px rgba(15, 23, 42, 0.22), 0 4px 10px -4px rgba(15, 23, 42, 0.08);
+  --sc-shadow: var(--care-shadow-1);
+  --sc-shadow-hover: var(--care-shadow-2);
   --sc-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --sc-font-mono: "JetBrains Mono Variable", var(--bs-font-monospace);
 

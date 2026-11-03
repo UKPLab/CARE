@@ -392,6 +392,14 @@ export default {
   flex-wrap: nowrap;
 }
 
+/* In light mode the bar sits on the blue-grey canvas: a soft shadow and a faint
+   border instead of Bootstrap's hard grey line. The border utility uses
+   !important, so the colour override needs it too. */
+[data-bs-theme="light"] .navbar.fixed-top {
+  border-bottom-color: rgb(var(--care-shadow-rgb) / .08) !important;
+  box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / .04), 0 6px 18px -12px rgb(var(--care-shadow-rgb) / .22);
+}
+
 #dropdownMenuButton::after {
   display: none;
 }

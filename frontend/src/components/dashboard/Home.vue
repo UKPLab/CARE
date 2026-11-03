@@ -239,18 +239,23 @@ export default {
   background: var(--bs-body-bg);
 }
 
+/* A hairline under the heading separates it from the list below. */
 .home-panel-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: .75rem;
-  margin-bottom: 12px;
+  margin: 0 -16px 10px;
+  padding: 0 16px 10px;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
 }
 
 .home-panel h2 {
   margin: 0;
   font-size: .95rem;
   font-weight: 650;
+  letter-spacing: -.01em;
+  color: var(--bs-emphasis-color);
 }
 
 .home-panel-link {
