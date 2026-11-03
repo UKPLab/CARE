@@ -1,28 +1,28 @@
 <template>
   <div class="home mb-3">
     <div class="row g-3 mb-3">
-      <div class="col-sm-6 col-xl-3">
+      <div class="col-sm-6 col-xl-3 home-tile-wrap">
         <router-link class="card home-tile" to="/dashboard/documents">
           <span>{{ $t('sidebar.nav.documents') }}</span>
           <b>{{ documents.length }}</b>
           <span>{{ $t('dashboard.home.addedThisWeek', { count: documentsAddedThisWeek }) }}</span>
         </router-link>
       </div>
-      <div class="col-sm-6 col-xl-3">
+      <div class="col-sm-6 col-xl-3 home-tile-wrap">
         <router-link class="card home-tile" to="/dashboard/my_sessions">
           <span>{{ $t('sidebar.nav.my_sessions') }}</span>
           <b>{{ openSessions.length }}</b>
           <span>{{ oldestSessionLabel }}</span>
         </router-link>
       </div>
-      <div v-if="canSeeStudies" class="col-sm-6 col-xl-3">
+      <div v-if="canSeeStudies" class="col-sm-6 col-xl-3 home-tile-wrap">
         <router-link class="card home-tile" to="/dashboard/studies">
           <span>{{ $t('dashboard.home.openStudies') }}</span>
           <b>{{ openStudies.length }}</b>
           <span>{{ $t('dashboard.home.closingSoon', { count: studiesClosingSoon }) }}</span>
         </router-link>
       </div>
-      <div v-if="canSeeSubmissions" class="col-sm-6 col-xl-3">
+      <div v-if="canSeeSubmissions" class="col-sm-6 col-xl-3 home-tile-wrap">
         <HomeSubmissionsTile />
       </div>
     </div>
