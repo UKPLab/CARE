@@ -335,15 +335,28 @@ export default {
   color: var(--bs-body-color);
   /* Soft tint from the left instead of a hard coloured border */
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--care-toast-color) 12%, transparent) 0%, transparent 45%),
-    color-mix(in srgb, var(--bs-body-bg) 82%, transparent);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  border: 1px solid color-mix(in srgb, var(--care-toast-color) 30%, var(--bs-border-color-translucent));
+    linear-gradient(90deg, var(--_toast-wash) 0%, transparent 45%),
+    var(--_toast-bg);
+  backdrop-filter: var(--_toast-blur);
+  -webkit-backdrop-filter: var(--_toast-blur);
+  border: 1px solid var(--_toast-border);
   border-radius: var(--bs-border-radius-lg, .75rem);
-  box-shadow: var(--care-shadow-3, 0 12px 24px -6px rgb(0 0 0 / .2));
+  box-shadow: var(--_toast-shadow);
   pointer-events: auto;
   transition: opacity 180ms ease, transform 180ms ease;
+
+  /* Flat tinted surface in both themes. A translucent wash let the page show through. */
+  --_toast-bg: color-mix(in srgb, var(--bs-body-bg) 94%, var(--care-toast-color) 6%);
+  --_toast-wash: transparent;
+  --_toast-border: color-mix(in srgb, var(--care-toast-color) 28%, var(--bs-border-color));
+  --_toast-shadow: 0 1px 2px rgb(16 24 40 / .08), 0 6px 16px -6px rgb(16 24 40 / .16);
+  --_toast-bar-glow: none;
+  --_toast-blur: none;
+}
+
+/* Same surface as light. The light shadow disappears on a dark page, so this one is black. */
+[data-bs-theme="dark"] .care-toast {
+  --_toast-shadow: 0 1px 2px rgb(0 0 0 / .45), 0 6px 16px -6px rgb(0 0 0 / .55);
 }
 
 /* Inset rounded accent bar with a soft glow */
@@ -360,7 +373,7 @@ export default {
     var(--care-toast-color),
     color-mix(in srgb, var(--care-toast-color) 45%, transparent)
   );
-  box-shadow: 0 0 8px color-mix(in srgb, var(--care-toast-color) 55%, transparent);
+  box-shadow: var(--_toast-bar-glow);
 }
 
 .care-toast--success { --care-toast-color: var(--bs-success); }
