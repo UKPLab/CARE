@@ -151,7 +151,7 @@
                   :loading="resultsLoading"
                   :clear-search="clearSearch"
                 >
-                  <!-- Hold the chat until the search results are in, so it does not flash. -->
+                  <!-- Hold the empty scene until the search results are in, so it does not flash. -->
                   <TableEmptyState
                     v-if="!resultsLoading || hasActiveSearch"
                     :searching="hasActiveSearch"
