@@ -569,7 +569,13 @@ export default {
               border-color 160ms var(--care-ease, ease);
 }
 
-.settings-card > :deep(.card-header)::before {
+.settings-card.is-header-stuck > :deep(.card-header) {
+  border-radius: 0;
+  border-bottom-color: var(--care-primary, var(--bs-primary));
+  box-shadow: inset 0 -1px 0 var(--care-primary, var(--bs-primary));
+}
+
+.settings-card.is-header-stuck > :deep(.card-header)::before {
   content: "";
   position: absolute;
   left: 0;
@@ -577,14 +583,6 @@ export default {
   bottom: 100%;
   height: 2rem;
   background: var(--bs-body-bg);
-}
-
-/* While stuck: only an accent line at the bottom edge
-   (--care-primary is the yellow accent in dark mode, Bootstrap blue in light mode) */
-.settings-card.is-header-stuck > :deep(.card-header) {
-  border-radius: 0;
-  border-bottom-color: var(--care-primary, var(--bs-primary));
-  box-shadow: inset 0 -1px 0 var(--care-primary, var(--bs-primary));
 }
 
 .settings-layout {
