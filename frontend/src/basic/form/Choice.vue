@@ -1,7 +1,7 @@
 <template>
   <FormElement :options="options">
     <template #element>
-      <table class="table table-hover mb-0">
+      <table class="table table-hover mb-0 choice-table">
         <tbody>
           <tr v-if="!choices.length && emptyMessage">
             <td class="text-secondary border-0 px-0 py-2">
@@ -16,11 +16,11 @@
               v-for="field in fields"
               :key="field.key"
             >
-              <div class="d-flex align-items-center">
-                <span class="badge bg-primary me-2">
+              <div class="choice-row d-flex align-items-center">
+                <span class="badge bg-primary me-2 flex-shrink-0">
                   <i class="bi bi-file-earmark-text"></i> {{ choice.stepNumber }}
                 </span>
-                <div class="flex-grow-1 d-flex align-items-center">
+                <div class="choice-field flex-grow-1 d-flex align-items-center">
                   <FormSelect
                     v-if="field.type === 'select'"
                     :ref="'ref_' + field.key"
@@ -29,8 +29,7 @@
                     :parent-value="choice"
                     :options="{ options: field.options }"
                     :placeholder="field.label"
-                    class="flex-grow-1"
-                    style="min-width: 200px; max-width: 800px"
+                    class="choice-select flex-grow-1"
                     @update:model-value="(val) => updateFieldValue(index, field.key, val)"
                   />
                   <FormDefault
@@ -42,7 +41,7 @@
                   />
                   <span
                     v-if="choice.hasConfiguration"
-                    class="ms-2"
+                    class="ms-2 flex-shrink-0"
                   >
                     <ConfigurationModal
                       :model-value="currentData[index].configuration"
@@ -398,6 +397,23 @@ export default {
 </script>
 
 <style scoped>
+.choice-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.choice-row,
+.choice-field {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.choice-select {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
 .bi-gear {
   color: var(--bs-secondary-color, #6c757d); /* Bootstrap muted color */
   cursor: pointer;
