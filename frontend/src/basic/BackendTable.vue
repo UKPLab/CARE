@@ -3041,27 +3041,28 @@ export default {
   flex: 0 0 14px;
   position: relative;
   margin-left: 6px;
-  background: #dee2e6;
-  border: 1px solid #ced4da;
+  background: var(--bs-secondary-bg);
+  border: 1px solid var(--bs-border-color);
   border-radius: 8px;
   cursor: pointer;
 }
 
+/* Theme colours instead of fixed Bootstrap greys, so the bar follows light and dark. */
 .infinite-scrollbar-thumb {
   position: absolute;
   left: 2px;
   right: 2px;
-  background: #6c757d;
+  background: rgba(var(--bs-emphasis-color-rgb), 0.4);
   border-radius: 6px;
 }
 
 .infinite-scrollbar-thumb:hover {
-  background: #495057;
+  background: rgba(var(--bs-emphasis-color-rgb), 0.55);
 }
 
 .infinite-scrollbar:active .infinite-scrollbar-thumb,
 .infinite-scrollbar-thumb:active {
-  background: #343a40;
+  background: rgba(var(--bs-emphasis-color-rgb), 0.7);
 }
 
 .virtual-spacer-fill {
@@ -3077,7 +3078,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--bs-body-bg) 45%, transparent);
   pointer-events: none;
 }
 
@@ -3132,7 +3133,7 @@ export default {
   right: 0;
   bottom: 3px;
   height: 3px;
-  background: #dee2e6;
+  background: var(--bs-border-color);
   border-radius: 2px;
 }
 
@@ -3281,12 +3282,12 @@ export default {
 .row-placeholder td {
   opacity: 1 !important;
   color: transparent !important;
-  border-color: #e9ecef !important;
+  border-color: var(--bs-border-color-translucent) !important;
   background: linear-gradient(
     90deg,
-    #eceff1 0%,
-    #f5f7f8 40%,
-    #eceff1 80%
+    var(--bs-secondary-bg) 0%,
+    var(--bs-tertiary-bg) 40%,
+    var(--bs-secondary-bg) 80%
   ) !important;
   background-size: 200% 100% !important;
   animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
@@ -3393,8 +3394,8 @@ export default {
 
 @keyframes row-enter-flash {
   0% {
-    background-color: rgba(13, 110, 253, 0.42);
-    box-shadow: inset 3px 0 0 #0d6efd;
+    background-color: rgba(var(--bs-primary-rgb), 0.42);
+    box-shadow: inset 3px 0 0 var(--bs-primary);
   }
   45% {
     background-color: rgba(25, 135, 84, 0.22);
@@ -3408,8 +3409,8 @@ export default {
 
 @keyframes row-enter-flash-sticky {
   0% {
-    background-color: color-mix(in srgb, #0d6efd 42%, var(--bs-body-bg, #fff));
-    box-shadow: inset 3px 0 0 #0d6efd;
+    background-color: color-mix(in srgb, var(--bs-primary) 42%, var(--bs-body-bg, #fff));
+    box-shadow: inset 3px 0 0 var(--bs-primary);
   }
   45% {
     background-color: color-mix(in srgb, #198754 22%, var(--bs-body-bg, #fff));
@@ -3423,8 +3424,8 @@ export default {
 
 @keyframes row-enter-from-bottom {
   0% {
-    background-color: rgba(13, 110, 253, 0.4);
-    box-shadow: inset 0 -3px 0 #0d6efd;
+    background-color: rgba(var(--bs-primary-rgb), 0.4);
+    box-shadow: inset 0 -3px 0 var(--bs-primary);
     opacity: 0.15;
   }
   40% {
@@ -3441,8 +3442,8 @@ export default {
 
 @keyframes row-enter-from-bottom-sticky {
   0% {
-    background-color: color-mix(in srgb, #0d6efd 40%, var(--bs-body-bg, #fff));
-    box-shadow: inset 0 -3px 0 #0d6efd;
+    background-color: color-mix(in srgb, var(--bs-primary) 40%, var(--bs-body-bg, #fff));
+    box-shadow: inset 0 -3px 0 var(--bs-primary);
     opacity: 0.15;
   }
   40% {
