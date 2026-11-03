@@ -850,11 +850,11 @@ button.study-card-title {
 }
 
 button.study-card-title:hover {
-  color: var(--bs-primary);
+  color: var(--care-primary);
 }
 
 button.study-card-title:focus-visible {
-  outline: 2px solid rgba(var(--bs-primary-rgb), 0.5);
+  outline: 2px solid color-mix(in srgb, var(--care-primary) 50%, transparent);
   outline-offset: 3px;
   border-radius: 4px;
 }
