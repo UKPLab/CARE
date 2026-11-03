@@ -1,5 +1,8 @@
 <template>
-  <Card :title="$t('triggers.dashboard.title')">
+  <Card
+    class="dashboard-page"
+    :title="$t('triggers.dashboard.title')"
+  >
     <template #headerElements>
       <BasicButton
         class="btn-primary btn-sm"

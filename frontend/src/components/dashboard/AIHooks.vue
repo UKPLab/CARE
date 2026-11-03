@@ -1,5 +1,8 @@
 <template>
-  <BasicCard :title="$t('ai.hooks.title')">
+  <BasicCard
+    class="dashboard-page"
+    :title="$t('ai.hooks.title')"
+  >
     <template #headerElements>
       <BasicButton
         class="btn-primary btn-sm"

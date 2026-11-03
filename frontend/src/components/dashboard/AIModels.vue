@@ -1,6 +1,9 @@
 <template>
   <div>
-    <BasicCard :title="$t('ai.models.credentialsTitle')" class="mb-3">
+    <BasicCard
+      class="dashboard-page mb-3"
+      :title="$t('ai.models.credentialsTitle')"
+    >
       <template #headerElements>
         <BasicButton
           class="btn-primary btn-sm"
@@ -22,7 +25,10 @@
       </template>
     </BasicCard>
 
-    <BasicCard :title="$t('ai.models.modelsTitle')">
+    <BasicCard
+      class="dashboard-page"
+      :title="$t('ai.models.modelsTitle')"
+    >
       <template #headerElements>
         <BasicButton
           class="btn-primary btn-sm"
