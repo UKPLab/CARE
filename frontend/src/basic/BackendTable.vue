@@ -3172,16 +3172,17 @@ export default {
   cursor: pointer;
   margin-bottom: 0.5rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.25rem;
-  background: rgba(13, 110, 253, 0.12);
-  color: #084298;
+  border: 1px solid color-mix(in srgb, var(--care-primary) 35%, transparent);
+  border-radius: var(--bs-border-radius);
+  background: color-mix(in srgb, var(--care-primary) 14%, transparent);
+  color: var(--care-primary);
   font-size: 0.875rem;
   text-align: center;
   overflow: hidden;
 }
 
 .pending-inserts-banner:hover {
-  background: rgba(13, 110, 253, 0.2);
+  background: color-mix(in srgb, var(--care-primary) 22%, transparent);
 }
 
 .pending-banner-enter-active,
