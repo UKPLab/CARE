@@ -100,6 +100,11 @@ export default {
   margin-top: -52.5px;
 }
 
+#viewerContainer {
+  min-width: 0;
+  overflow-x: hidden;
+}
+
 #viewerContainer::-webkit-scrollbar {
   display: none;
 }

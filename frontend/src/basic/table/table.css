@@ -20,6 +20,7 @@
 
   position: relative;
   overflow-x: auto;
+  max-width: 100%;
   min-height: 80px;
   margin-bottom: 1rem;
   /* Visible scrollbar: users missed the default thin overlay one. Tinted from the
@@ -37,9 +38,12 @@
   }
 }
 
-/* Frame around the wrapper; positions the scroll hint overlay (ScrollHints.vue). */
+/* Frame around the wrapper; positions the scroll hint overlay (ScrollHints.vue).
+   min-width: 0 lets a long cell scroll inside the frame instead of widening the page. */
 .table-scroll-frame {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
 }
 
 /* Chromium/Safari: a visible track and a chunkier thumb instead of the thin
@@ -186,8 +190,10 @@
 }
 
 .table-wrapper tbody td {
+  max-width: 32rem;
   padding: 0.7rem 0.8rem;
   vertical-align: middle;
+  overflow-wrap: anywhere;
   transition: background-color 0.15s ease;
 }
 

@@ -633,6 +633,8 @@ html[data-bs-theme="dark"] .card-header-actions .btn-secondary:focus-visible svg
    per component. Pages that place their own panels inside (the Studies table)
    use --dash-panel, --dash-border and --dash-panel-shadow. */
 html .dashboard-page {
+  min-width: 0;
+  max-width: 100%;
   --dash-border: rgb(var(--care-shadow-rgb) / 0.11);
   --dash-panel: var(--bs-body-bg);
   --dash-ghost-hover: rgba(255, 255, 255, 0.85);
@@ -676,6 +678,7 @@ html .dashboard-page > .card-header .card-title {
 /* Low specificity on purpose: it only has to beat Bootstrap's .card-body, so
    ListPage.vue can keep its own tighter 1rem padding. */
 :where(.dashboard-page) > .card-body {
+  min-width: 0;
   padding: 0.85rem 1.35rem 1.35rem;
   background: transparent;
 }
