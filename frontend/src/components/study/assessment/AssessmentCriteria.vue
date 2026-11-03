@@ -468,7 +468,7 @@ export default {
 
 .assessment-actions .btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgb(var(--care-shadow-rgb) / 0.15);
 }
 
 .assessment-actions .d-flex {

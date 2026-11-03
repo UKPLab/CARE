@@ -167,7 +167,7 @@ export default {
 .auth-blob {
   position: absolute;
   background: color-mix(in srgb, var(--bs-primary) 34%, #fff);
-  box-shadow: 0 16px 28px -10px rgb(37 99 235 / .35), 0 4px 10px -4px rgb(16 24 40 / .16);
+  box-shadow: 0 16px 28px -10px rgba(var(--bs-primary-rgb), .35), 0 4px 10px -4px rgb(var(--care-shadow-rgb) / .16);
 }
 
 .auth-blob--bubble {
@@ -283,7 +283,7 @@ export default {
 
 .auth-mark {
   position: relative;
-  filter: drop-shadow(0 18px 24px rgb(16 24 40 / .14));
+  filter: drop-shadow(0 18px 24px rgb(var(--care-shadow-rgb) / .14));
 }
 
 html[data-bs-theme="dark"] .auth-blob {

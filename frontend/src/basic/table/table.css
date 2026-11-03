@@ -93,11 +93,11 @@
 }
 
 .table-fixed-left.table-fixed-shadow {
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 2px 0 4px rgb(var(--care-shadow-rgb) / 0.1);
 }
 
 .table-fixed-right.table-fixed-shadow {
-  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.1);
+  box-shadow: -2px 0 4px rgb(var(--care-shadow-rgb) / 0.1);
 }
 
 .table thead .table-fixed {

@@ -623,7 +623,7 @@ export default {
   color: var(--bs-primary, #0d6efd);
   background-color: var(--bs-body-bg, #fff);
   border-color: transparent;
-  box-shadow: 0 1px 2px rgb(16 24 40 / .08);
+  box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / .08);
 }
 
 [data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
@@ -679,7 +679,7 @@ export default {
 
 /* ===== DROPDOWN STYLES ===== */
 .dropdown-menu {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px rgb(var(--care-shadow-rgb) / 0.15);
   border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
   padding: 4px

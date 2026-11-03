@@ -563,7 +563,7 @@ export default {
 <style scoped>
 #adder {
   border-radius: 12px;
-  box-shadow: 0 12px 24px -6px rgb(16 24 40 / .16), 0 4px 8px -4px rgb(16 24 40 / .08);
+  box-shadow: 0 12px 24px -6px rgb(var(--care-shadow-rgb) / .16), 0 4px 8px -4px rgb(var(--care-shadow-rgb) / .08);
   position: absolute;
   top: 0;
   left: 0;

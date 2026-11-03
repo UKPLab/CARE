@@ -148,7 +148,7 @@ export default {
   gap: 4px;
   padding: 4px 8px;
   min-height: 40px;
-  box-shadow: 0 4px 8px -2px rgb(16 24 40 / .10), 0 2px 4px -2px rgb(16 24 40 / .06);
+  box-shadow: 0 4px 8px -2px rgb(var(--care-shadow-rgb) / .10), 0 2px 4px -2px rgb(var(--care-shadow-rgb) / .06);
 }
 
 .pdf-toolbar.collapsed {

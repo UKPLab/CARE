@@ -349,7 +349,7 @@ export default {
   --_toast-bg: color-mix(in srgb, var(--bs-body-bg) 94%, var(--care-toast-color) 6%);
   --_toast-wash: transparent;
   --_toast-border: color-mix(in srgb, var(--care-toast-color) 28%, var(--bs-border-color));
-  --_toast-shadow: 0 1px 2px rgb(16 24 40 / .08), 0 6px 16px -6px rgb(16 24 40 / .16);
+  --_toast-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / .08), 0 6px 16px -6px rgb(var(--care-shadow-rgb) / .16);
   --_toast-bar-glow: none;
   --_toast-blur: none;
 }

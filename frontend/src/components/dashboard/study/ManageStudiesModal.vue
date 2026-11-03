@@ -583,7 +583,7 @@ export default {
   border-radius: 0.5rem;
   padding: 1.5rem;
   border: 1px solid var(--bs-border-color, #e9ecef);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 4px rgb(var(--care-shadow-rgb) / 0.05);
 }
 
 .confirmation-content h6 {

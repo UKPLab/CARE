@@ -124,7 +124,7 @@ export default {
 }
 
 .btn:hover:not(:disabled) {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgb(var(--care-shadow-rgb) / 0.15);
 }
 
 .btn:disabled {

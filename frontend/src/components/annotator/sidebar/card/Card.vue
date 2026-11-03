@@ -172,7 +172,7 @@ export default {
   padding: 12px 14px 10px;
   border: 0;
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(16 24 40 / .06), 0 1px 3px rgb(16 24 40 / .08);
+  box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / .06), 0 1px 3px rgb(var(--care-shadow-rgb) / .08);
 }
 
 .card-body {

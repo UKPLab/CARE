@@ -428,7 +428,7 @@ export default {
 .readonly-notice .card {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgb(var(--care-shadow-rgb) / 0.08);
 }
 
 .readonly-notice .card-body {

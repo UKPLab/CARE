@@ -675,7 +675,7 @@ export default {
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
   border-radius: 9px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06);
   transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--te-ease);
 }
 
