@@ -4,7 +4,10 @@
     :title="$t('studies.dashboard.title')"
   >
     <template #body>
-      <div class="sessions-page">
+      <div
+        ref="page"
+        class="sessions-page"
+      >
         <section
           v-for="section in sections"
           :key="section.key"
@@ -96,11 +99,19 @@
             </StatusCard>
 
             <!-- Sessions panel: its own full-width grid row right after the row of the open
-                 card, so the card itself stays where it is. -->
+                 card, so the card itself stays where it is. Not keyed by study: switching
+                 within one row reuses the panel (the notch slides over); a panel that
+                 appears in or leaves a row unfolds / collapses (animatePanel). -->
+            <Transition
+              :css="false"
+              @enter="panelEnter"
+              @enter-cancelled="panelPause"
+              @leave="panelLeave"
+              @after-leave="panelStop"
+            >
             <div
               v-if="openStudyId !== null && index === panelAfterIndex(section.key, cards.rows)"
               :id="'sessions-of-' + openStudyId"
-              :key="'panel-' + openStudyId"
               class="session-panel"
               :class="'session-panel--' + openStudy(cards.rows).cardStatus.tone"
               :style="{ '--notch-left': notchLeft(section.key, cards.rows) }"
@@ -129,6 +140,7 @@
                 @action="onSessionAction"
               />
             </div>
+            </Transition>
             </template>
           </div>
             </template>
@@ -164,6 +176,23 @@ import {
   studyCardStatus,
   timeLeftFormatter,
 } from "@/components/dashboard/study/studyCardHelpers.js";
+
+/** Length of a full unfold (open) and fold (close) of the sessions panel (animatePanel). */
+const PANEL_OPEN_MS = 300;
+const PANEL_CLOSE_MS = 380;
+
+/**
+ * Inline styles animatePanel puts on a panel; cleared again by panelStop. `animation: none`
+ * stays: clearing it would replay the CSS entry animation of .session-panel once unfolded.
+ */
+const PANEL_ANIM_STYLES = [
+  "position", "top", "left", "width", "margin", "pointerEvents", "opacity", "clipPath",
+];
+
+/** Slow start and slow end: no visible kick when the panel starts or stops moving. */
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
 /** One BackendTable per section; each needs its own options (pagination.total is written back). */
 function sectionOptions() {
@@ -266,7 +295,17 @@ export default {
       ];
     },
   },
+  mounted() {
+    // Set by toggle(): the clicked card that a collapsing panel must not move on screen.
+    this.scrollAnchor = null;
+    ["wheel", "touchmove", "keydown"].forEach((type) =>
+      window.addEventListener(type, this.releaseScrollAnchor, { passive: true })
+    );
+  },
   beforeUnmount() {
+    ["wheel", "touchmove", "keydown"].forEach((type) =>
+      window.removeEventListener(type, this.releaseScrollAnchor)
+    );
     Object.values(this.gridObservers || {}).forEach((observer) => observer.disconnect());
     this.gridObservers = {};
   },
@@ -353,9 +392,138 @@ export default {
     isOpen(id) {
       return this.openStudyId === id;
     },
-    /** Opening one study closes the panel of any other. */
+    /**
+     * Opening one study closes the panel of any other. When that panel sat above the clicked
+     * card, removing it would pull the page up under the cursor; the scroll position is
+     * corrected in the same frame so the clicked card stays where it was on screen.
+     */
     toggle(id) {
+      const card = this.cardElement(id);
+      this.scrollAnchor = card
+        ? { card, top: card.getBoundingClientRect().top, scroller: this.scrollParent(card) }
+        : null;
       this.openStudyId = this.openStudyId === id ? null : id;
+      // Vue patches the DOM (and starts panelLeave) before this callback and the browser
+      // paints after it, so the first shift and its correction land in one frame.
+      this.$nextTick(() => this.keepScrollAnchor());
+    },
+    /** Scroll by however far the clicked card has moved, so it stays put on screen. */
+    keepScrollAnchor() {
+      const anchor = this.scrollAnchor;
+      if (!anchor || !anchor.card.isConnected) return;
+      const shift = anchor.card.getBoundingClientRect().top - anchor.top;
+      if (Math.abs(shift) < 0.5) return;
+      anchor.scroller.scrollTo({ top: anchor.scroller.scrollTop + shift, behavior: "instant" });
+    },
+    /** The user scrolls on their own: stop holding the card in place. */
+    releaseScrollAnchor() {
+      this.scrollAnchor = null;
+    },
+    /** A panel appears in a row: unfold it (animatePanel). */
+    panelEnter(el, done) {
+      this.animatePanel(el, 1, done);
+    },
+    /** A panel leaves its row: fold it away (animatePanel). */
+    panelLeave(el, done) {
+      this.animatePanel(el, 0, done);
+    },
+    /** Closed while still unfolding: freeze it, panelLeave folds it back from there. */
+    panelPause(el) {
+      if (el._panelAnim) cancelAnimationFrame(el._panelAnim.raf);
+    },
+    /** Puts the panel back into the grid flow and drops every animation style. */
+    panelStop(el) {
+      const state = el._panelAnim;
+      if (!state) return;
+      cancelAnimationFrame(state.raf);
+      state.prev.style.marginBottom = "";
+      PANEL_ANIM_STYLES.forEach((prop) => { el.style[prop] = ""; });
+      delete el._panelAnim;
+    },
+    /**
+     * Unfolds (target 1) or folds (target 0) a sessions panel.
+     *
+     * A grid row keeps its gap while it exists, so growing or shrinking the panel itself would
+     * jump by one gap when the row appears or goes. Instead, while animating, the panel sits out
+     * of the grid flow (absolute, at its own place) and its row (height + gap) is stood in for by
+     * a margin-bottom on the card right before it. That margin runs between 0 and the full row,
+     * so the layout matches "no panel" at 0 and "panel in flow" at 1 exactly; the panel fades and
+     * clips along with it. Driven per frame from JS so the scroll correction (keepScrollAnchor)
+     * lands in the same frame as the layout change, never one behind.
+     */
+    animatePanel(el, target, done) {
+      let state = el._panelAnim;
+      if (state) {
+        cancelAnimationFrame(state.raf);
+      } else {
+        const grid = el.parentElement;
+        const prev = el.previousElementSibling;
+        const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        if (!grid || !prev || reduced) {
+          done();
+          return;
+        }
+        // Stop the CSS entry animation first: its translateY would skew the measurement.
+        el.style.animation = "none";
+        const gridRect = grid.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
+        Object.assign(el.style, {
+          position: "absolute",
+          top: `${rect.top - gridRect.top - grid.clientTop}px`,
+          left: `${rect.left - gridRect.left - grid.clientLeft}px`,
+          width: `${rect.width}px`,
+          margin: "0",
+          animation: "none",
+          pointerEvents: "none",
+        });
+        state = { prev, gap: parseFloat(getComputedStyle(grid).rowGap) || 0, p: 1 - target, raf: 0 };
+        el._panelAnim = state;
+        this.paintPanel(el, state);
+      }
+
+      const from = state.p;
+      const duration = (target === 1 ? PANEL_OPEN_MS : PANEL_CLOSE_MS) * Math.abs(target - from);
+      const start = performance.now();
+      const step = (now) => {
+        const t = duration > 0 ? Math.min(1, (now - start) / duration) : 1;
+        state.p = from + (target - from) * easeInOutCubic(t);
+        this.paintPanel(el, state);
+        this.keepScrollAnchor();
+        if (t < 1) {
+          state.raf = requestAnimationFrame(step);
+          return;
+        }
+        // Unfolded: back into the flow, which takes exactly the room the margin held.
+        if (target === 1) this.panelStop(el);
+        done();
+        this.keepScrollAnchor();
+      };
+      state.raf = requestAnimationFrame(step);
+    },
+    /** One frame of animatePanel at progress state.p (0 = gone, 1 = fully open). */
+    paintPanel(el, state) {
+      // Read every frame: the sessions inside may still be loading and change the height.
+      const row = el.offsetHeight + state.gap;
+      state.prev.style.marginBottom = `${row * state.p}px`;
+      el.style.opacity = String(state.p);
+      // 20px of slack keeps the notch and shadow visible until the clip reaches them.
+      el.style.clipPath = `inset(-20px -20px calc(${1 - state.p} * (100% + 20px)) -20px)`;
+    },
+    /** The study card with this id, found through its footer button. */
+    cardElement(id) {
+      return this.$refs.page
+        ?.querySelector(`.status-card-primary[aria-controls="sessions-of-${id}"]`)
+        ?.closest(".status-card") || null;
+    },
+    /** Nearest ancestor that scrolls vertically, else the document. */
+    scrollParent(el) {
+      for (let node = el.parentElement; node && node !== document.body; node = node.parentElement) {
+        const { overflowY } = getComputedStyle(node);
+        if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
+          return node;
+        }
+      }
+      return document.scrollingElement || document.documentElement;
     },
     openStudy(rows) {
       return rows.find((row) => row.id === this.openStudyId) || null;
@@ -461,6 +629,17 @@ export default {
    - Study cards, grid and footer buttons: StatusCard.vue.
    - Colours, shadows, radius: the --care-card-* tokens in global.css.
    ====================================================================== */
+
+/* toggle() keeps the clicked card in place itself; the browser's own scroll
+   anchoring must not correct the same shift a second time. */
+.sessions-page {
+  overflow-anchor: none;
+}
+
+/* Containing block for a collapsing panel (panelLeave lifts it out of the flow). */
+.status-card-grid {
+  position: relative;
+}
 
 /* ---------- Sessions panel (own grid row under the open card's row) ---------- */
 
