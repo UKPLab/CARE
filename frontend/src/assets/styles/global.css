@@ -225,9 +225,13 @@ html .ql-toolbar.ql-snow {
 
 html .ql-container.ql-snow {
   border-color: var(--bs-border-color);
-  border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
+  border-radius: var(--bs-border-radius-lg);
   background: var(--bs-body-bg);
   color: var(--bs-body-color);
+}
+
+html .ql-toolbar.ql-snow + .ql-container.ql-snow {
+  border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
 }
 
 html .ql-editor.ql-blank::before {

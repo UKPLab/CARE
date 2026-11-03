@@ -30,7 +30,7 @@
             @action="sessionAction"
         />
       </span>
-      <span v-else>
+      <div v-else>
         <div
             v-if="foreignUnstartedSession"
             class="text-xxl-center text-danger fs-5">
@@ -52,12 +52,12 @@
             class="text-xxl-center text-danger fs-5">
           {{ $t('studies.noMoreSessions') }}
         </div>
-        <span v-else>
+        <div v-else>
           <Editor
               v-if="study.description"
               v-model="study.description"
               :read-only="true"
-              class="ql-snow ql-container border"
+              class="study-description border"
           />
           <div v-else>
             {{ $t('studies.clickToStart') }}
@@ -91,8 +91,8 @@
               </template>
             </i18n-t>
           </div>
-        </span>
-      </span>
+        </div>
+      </div>
     </template>
     <template #footer>
       <BasicButton
@@ -100,7 +100,6 @@
           :text="$t('studies.returnToDashboard')"
           @click="returnToDashboard"
       />
-      <vr/>
       <div
           v-if="showSessions"
           class="btn-group"
@@ -113,7 +112,7 @@
       </div>
       <div
           v-else
-          class="btn-group"
+          class="btn-group study-start-actions"
       >
         <BasicButton
             v-if="studySessions.length > 0 && !studyClosed && studySessionId === 0"
@@ -417,4 +416,25 @@ export default {
 </script>
 
 <style scoped>
+.study-description {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: var(--bs-border-radius-lg);
+  overflow: hidden;
+}
+</style>
+
+<style>
+/* The start dialog keeps the dev footer: buttons packed to the right.
+   Side padding is 40px, so the default 500px dialog wraps that row. */
+.modal-dialog:not(.modal-lg):not(.modal-xl):has(.study-start-actions) {
+  max-width: min(36rem, calc(100vw - 2rem));
+}
+
+.modal-footer:has(.study-start-actions) {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  padding-top: 1.15rem;
+}
 </style>
