@@ -98,7 +98,10 @@ export default {
       }
     },
     studyContext() {
-      return {studySessionId: this.studySessionId, currentStudyStepId: this.currentStudyStep?.id ?? null};
+      return {
+        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
     },
     sendStats(action, data) {
       if (this.acceptStats) {

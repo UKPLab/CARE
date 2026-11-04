@@ -90,7 +90,10 @@ export default {
       }
       this.isVisible = isVisible;
       if (isVisible) {
-        this.visibleContext = {studySessionId: this.studySessionId, currentStudyStepId: this.currentStudyStep?.id ?? null};
+        this.visibleContext = {
+          ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        };
       }
       if (this.acceptStats) {
         this.$socket.emit("stats", {
