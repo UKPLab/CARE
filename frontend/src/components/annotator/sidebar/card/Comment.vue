@@ -42,10 +42,11 @@
         @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
         @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
         @keydown.esc.exact.prevent="cancelOnEscape"
+        @copy="onCopy"
         @paste="onPaste"
       />
     </div>
-    <div v-else-if="comment.text != null && comment.text.length > 0">
+    <div v-else-if="comment.text != null && comment.text.length > 0" @copy="onCopy">
       {{ comment.text }}
     </div>
     <div v-else>
@@ -257,6 +258,7 @@ export default {
       collapseComment: true,
       listeningToFocus: false,
       maxComments: 1,
+      commentTextBeforeEdit: null,
       returnFocusEl: null,
     }
   },
@@ -351,7 +353,7 @@ export default {
     },
     openedTextarea(newVal) {
       if (newVal) {
-        // Remember what opened the editor (e.g. the Reply button) to return focus there
+        this.commentTextBeforeEdit = this.comment?.text || "";
         const opener = document.activeElement;
         this.returnFocusEl = opener && opener !== document.body ? opener : null;
         this.$nextTick(() => this.$refs.textarea.focus());
@@ -389,6 +391,7 @@ export default {
     }
 
     if (this.editedByMyself) {
+      this.commentTextBeforeEdit = this.comment?.text || "";
       this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
       this.listeningToFocus = true;
     }
@@ -411,6 +414,8 @@ export default {
     formatLocalizedDate,
     save() {
       if (this.commentId && this.comment) {
+        const previousText = this.commentTextBeforeEdit === null ? this.comment.text : this.commentTextBeforeEdit;
+        const updatedText = this.comment.text;
         this.$socket.emit('commentUpdate', {
           "commentId": this.commentId,
           "tags": JSON.stringify(this.comment.tags.sort()),
@@ -422,6 +427,9 @@ export default {
               message: resolveApiMessage(res),
               variant: "danger",
             });
+          } else {
+            this.logCommentUpdate(previousText, updatedText);
+            this.commentTextBeforeEdit = updatedText;
           }
         });
         if (this.$refs.collab) {
@@ -462,6 +470,7 @@ export default {
       if (this.$refs.collab) {
         this.$refs.collab.removeCollab();
       }
+      this.commentTextBeforeEdit = null;
       this.editMode = null;
     },
     /**
@@ -563,7 +572,56 @@ export default {
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
+            from: "comment",
+            commentId: this.commentId,
             pastedText: pastedText
+          }
+        })
+      }
+    },
+    /**
+     * Logs saved comment text changes.
+     *
+     * @param {string} previousText - Text before editing.
+     * @param {string} updatedText - Saved text.
+     * @returns {void}
+     */
+    logCommentUpdate(previousText, updatedText) {
+      if (!this.acceptStats || previousText === updatedText) return;
+      this.$socket.emit("stats", {
+        action: "commentUpdated",
+        data: {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          from: "comment",
+          commentId: this.commentId,
+          previousText: previousText,
+          updatedText: updatedText
+        }
+      })
+    },
+    /**
+     * Logs copied comment text.
+     *
+     * @param {ClipboardEvent} event - Copy event.
+     * @returns {void}
+     */
+    onCopy(event) {
+      const target = event.target;
+      const copiedText = target?.value
+        ? target.value.substring(target.selectionStart, target.selectionEnd)
+        : window.getSelection()?.toString();
+      if (this.acceptStats && copiedText) {
+        this.$socket.emit("stats", {
+          action: "textCopied",
+          data: {
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            from: "comment",
+            commentId: this.commentId,
+            copiedText: copiedText
           }
         })
       }

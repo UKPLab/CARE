@@ -97,6 +97,7 @@ export default {
         case 1: return this.$t('workflow.stepTypes.annotator');
         case 2: return this.$t('workflow.stepTypes.editor');
         case 3: return this.$t('workflow.stepTypes.modal');
+        case 4: return this.$t('workflow.stepTypes.dialogue');
         default: return this.$t('common.unknown');
       }
     },
@@ -105,6 +106,7 @@ export default {
         case 1: return "text-bg-primary";
         case 2: return "text-bg-info";
         case 3: return "text-bg-warning";
+        case 4: return "text-bg-dark";
         default: return "text-bg-secondary";
       }
     },
@@ -113,6 +115,7 @@ export default {
         case 1: return "pencil-square";
         case 2: return "file-text";
         case 3: return "window";
+        case 4: return "chat-dots";
         default: return "question-circle";
       }
     },
