@@ -218,7 +218,9 @@ export default {
       return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
     showDefaultAllAnnotations(){
-      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
+      // Use the step of this Annotator: Study keeps earlier steps mounted, and later steps read their data
+      const studyStep = this.$store.getters["table/study_step/get"](this.studyStepId);
+      return studyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
@@ -265,8 +267,8 @@ export default {
           }
       ).map(session => session.id);
     },
-    annotations() {
-      const annotations = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
+    documentAnnotations() {
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
         const a_noanchor = a.anchors === null || a.anchors.length === 0;
         const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
@@ -276,33 +278,35 @@ export default {
 
         return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
       });
+    },
+    annotations() {
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return annotations.filter(annotation =>
+        return this.documentAnnotations.filter(annotation =>
             !this.openSessionIds.includes(annotation.studySessionId)
         );
       } else {
-        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
-            annotation.studySessionId === this.studySessionId
-        ) : annotations.filter(annotation =>
-            annotation.studySessionId === null && annotation.studyStepId === null
-        );
+        return this.documentAnnotations.filter(this.isInCurrentView);
       }
     },
-    comments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](c =>
+    documentComments() {
+      return this.$store.getters["table/comment/getFiltered"](c =>
           c.documentId === this.documentId
       );
+    },
+    comments() {
       if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return comments.filter(comment =>
+        return this.documentComments.filter(comment =>
             !this.openSessionIds.includes(comment.studySessionId)
         );
       } else {
-        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
-            comment.studySessionId === this.studySessionId
-        ) : comments.filter(comment =>
-            comment.studySessionId === null && comment.studyStepId === null
-        );
+        return this.documentComments.filter(this.isInCurrentView);
       }
+    },
+    downloadableAnnotations() {
+      return this.documentAnnotations.filter(annotation => annotation.studySessionId === this.studySessionId);
+    },
+    downloadableComments() {
+      return this.documentComments.filter(comment => comment.studySessionId === this.studySessionId);
     },
     sidebarButtons() {
       const buttons = [];
@@ -330,7 +334,7 @@ export default {
 
       // Download Button
       if (this.studySessionId && this.studySessionId !== 0) {
-        const canDownload = this.annotations.length + this.comments.length > 0 &&
+        const canDownload = this.downloadableAnnotations.length + this.downloadableComments.length > 0 &&
             !this.downloading &&
             (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
         buttons.push({
@@ -646,6 +650,22 @@ export default {
         });
       }
     },
+    /**
+     * Checks whether a record belongs to the current view. In a study session this matches the
+     * records shown by the sidebar and the PDF highlights.
+     *
+     * @param {Object} record an annotation or comment
+     * @returns {boolean}
+     */
+    isInCurrentView(record) {
+      if (!this.studySessionId) {
+        return record.studySessionId === this.studySessionId;
+      }
+      if (this.showDefaultAllAnnotations && record.studySessionId === null && record.studyStepId === null) {
+        return true;
+      }
+      return record.studySessionId === this.studySessionId && record.studyStepId === this.studyStepId;
+    },
     downloadAnnotations() {
 
       const attributesToDelete = [
@@ -660,8 +680,7 @@ export default {
         "studyStepId",
         "userId"
       ];
-      const annotations = this.annotations
-          .filter(a => a.studySessionId === this.studySessionId)
+      const annotations = this.downloadableAnnotations
           .map(a => {
             return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
           });
@@ -674,7 +693,7 @@ export default {
         }
       });
 
-      const comments = this.comments.map(c => {
+      const comments = this.downloadableComments.map(c => {
         return Object.fromEntries(Object.entries(c).filter(([key]) => !attributesToDelete.includes(key)));
       });
 
