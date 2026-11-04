@@ -1506,13 +1506,11 @@ Configure and Monitor AI Use
        type.
      - I can manage cost limits for models, hooks, studies, and study steps.
      - The AI log shows request status, token usage, and cost.
-     - Each new AI log preserves the model, provider, supported parameters, and the
-       source template's ID and update time when known, even after configuration edits.
      - Authorized offline and context-length failures are recorded without invented
        token usage or cost. Existing access, spending, and pending-request checks apply.
-     - With statistics consent, Dialogue records question copies, paste lengths and
-       observed CARE-copy matches, and aggregate answer composition totals with the
-       question and follow-up identifiers. Copied text is not added to these statistics.
+     - With statistics consent, Dialogue records question copies, paste lengths, and
+       aggregate answer composition totals with question and follow-up identifiers.
+       Copied text is not added to these statistics.
      - A hook cannot be saved without a prompt template and at least one model.
 
 -----
