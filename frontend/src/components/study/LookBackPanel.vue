@@ -72,6 +72,8 @@ export default {
   data() {
     return {
       isVisible: false,
+      // The study IDs at the moment the tab appeared, also sent when it disappears, so both events match
+      visibleContext: null,
     };
   },
   beforeUnmount() {
@@ -87,16 +89,18 @@ export default {
         return;
       }
       this.isVisible = isVisible;
+      if (isVisible) {
+        this.visibleContext = {studySessionId: this.studySessionId, currentStudyStepId: this.currentStudyStep?.id ?? null};
+      }
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "lookBackPanelVisibilityChange",
           data: {
             documentId: this.step.documentId,
-            stepId: this.step.id,
+            studyStepId: this.step.id,
             type: this.type,
             isVisible: isVisible,
-            studySessionId: this.studySessionId,
-            studyStepId: this.currentStudyStep?.id,
+            ...this.visibleContext,
           }
         });
       }
