@@ -21,7 +21,7 @@ To begin editing a document:
 
 1. Open the **Documents** section in the dashboard
 2. Click on the ``Create`` button to start a new document
-3. There you can choose between an ``General Document`` or a ``Study Modal Document``
+3. There you can choose between a ``General Document`` or a ``Study Modal Document``
    
    - In a **General Document**, you can write freely without any study context.
    - In a **Study Modal Document**, you can write within the context of a specific study, which means that this document is then meant to be used as one step within a study. More information about studies can be found in the :doc:`Studies documentation <study/study>`.
