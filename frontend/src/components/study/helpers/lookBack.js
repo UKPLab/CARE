@@ -124,7 +124,8 @@ export function isCurrentStepTab(slotName, lookBackTabs) {
  * @param {Object} state.tabsByStep - step id mapped to its look-back tabs, from buildTabsByStep
  * @param {Function} state.getStep - returns the study step with the given id
  * @param {Function} state.isLoaded - whether the step with the given id is loaded
- * @returns {Object} earlierSteps, hiddenStepId, dataSplit, isVisible(stepId) and paneProps
+ * @returns {Object} earlierSteps, shownEarlier (whether one is on screen), hiddenStepId, dataSplit, isVisible(stepId)
+ *     and paneProps
  *     (the props of each step's Annotator or Editor; only plain values, so a pane re-renders only when its own change)
  */
 export function buildLookBack({steps, currentStep, shownStepId, splitLayout, tabsByStep, getStep, isLoaded}) {
@@ -148,5 +149,5 @@ export function buildLookBack({steps, currentStep, shownStepId, splitLayout, tab
       isShown: isVisible(step.id),
     }];
   }));
-  return {earlierSteps, hiddenStepId, dataSplit: splitLayout || (hiddenStepId !== null ? "single" : null), isVisible, paneProps};
+  return {earlierSteps, shownEarlier, hiddenStepId, dataSplit: splitLayout || (hiddenStepId !== null ? "single" : null), isVisible, paneProps};
 }

@@ -215,6 +215,11 @@ The most important action types include:
     * ``lookBackPanelVisibilityChange``: indicating that the annotations or the assessment of an earlier study step appeared in
       or disappeared from the sidebar. This is accompanied with the earlier step, the kind of content, whether it is now
       visible, and the step the user is on.
+    * ``studyPaneMouseChange`` and ``studyPaneClick``: indicating that the mouse entered or left the document of a study step,
+      or clicked in it, while an earlier step is shown next to or instead of the current one. The sidebar does not count
+      as the document. This is accompanied with the step of the document, the step the user is on, and for
+      ``studyPaneMouseChange`` whether the mouse is now inside. The time between inside and outside is how long the mouse was in
+      that document.
     * ``clickTopBarButton`` and ``clickCardButton``: indicating the user clicked a button. In a study, ``props.key`` says
       which one: ``studyPane.strip`` (showing or hiding the workflow bar), ``studyPane.tab`` (a step in the workflow bar),
       ``studyPane.split`` and ``studyPane.flip`` (opening and swapping a split view), ``studyNav.previous`` and

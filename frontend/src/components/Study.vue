@@ -149,7 +149,15 @@
         :earlier-steps="lookBack.earlierSteps"
         :labels="stepLabels"
     />
-    <div v-for="step in orderedStudySteps" :key="'step_' + step.id" :class="{ 'study-pane': lookBack.isVisible(step.id) }">
+    <StudyPane
+        v-for="step in orderedStudySteps"
+        :key="'step_' + step.id"
+        :class="{ 'study-pane': lookBack.isVisible(step.id) }"
+        :step="step"
+        :label="stepLabels[step.id]"
+        :show-label="shownStepId !== null && lookBack.isVisible(step.id)"
+        :track-mouse="lookBack.shownEarlier && lookBack.isVisible(step.id)"
+    >
       <div v-show="lookBack.isVisible(step.id)">
         <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
@@ -235,13 +243,7 @@
           </div>
         </div>
       </div>
-      <div v-if="shownStepId !== null && lookBack.isVisible(step.id)" class="pane-label-holder">
-        <span class="badge d-inline-flex align-items-center gap-1">
-          <LoadIcon v-if="step.id !== currentStudyStepId" icon-name="lock-fill" :size="10"/>
-          {{ stepLabels[step.id] }}
-        </span>
-      </div>
-    </div>
+    </StudyPane>
   </div>
 </template>
 
@@ -263,6 +265,7 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
 import LookBackTab from "@/components/study/LookBackTab.vue";
 import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
+import StudyPane from "@/components/study/StudyPane.vue";
 import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
@@ -285,6 +288,7 @@ export default {
     PaneStrip,
     LookBackTab,
     CurrentStepNote,
+    StudyPane,
     StepModal,
     LoadingModal
   },
