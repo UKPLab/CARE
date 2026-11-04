@@ -100,7 +100,7 @@ export default {
       readOnly: computed(() => this.readOnly),
     }
   },
-  emits: ['copy'],
+  emits: ['copy', 'loaded'],
   data() {
     return {
       pdf: null,
@@ -193,6 +193,7 @@ export default {
             .then((pdf) => {
               this.pdf = new PDF();
               this.pdf.setPDF(pdf);
+              this.$emit('loaded', this.pdf);
             })
             .catch(_response => {
               this.eventBus.emit('toast', {
@@ -246,7 +247,7 @@ export default {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "pdfPageResizeChange",
-            data: {documentId: this.documentId, width: next}
+            data: {documentId: this.documentId, ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}), ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}), width: next}
           });
         }
       }, 200);

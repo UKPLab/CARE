@@ -122,6 +122,7 @@
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal
+                v-if="step.stepType !== 4"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
                 :config="step.configuration"
@@ -156,6 +157,16 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <AiChatSidebar
+                    icon="chat-dots"
+                    :title="$t('ai.chat.sidebarTitle')"
+                    :study-step-id="step.id"
+                    :document-id="step.documentId"
+                    :service="getAiChatService(step)"
+                    :read-only="readOnlyComputed || !!studySession?.end"
+                />
+              </template>
             </Annotator>
 
             <Editor
@@ -180,6 +191,16 @@
                   </template>
                 </SidebarTemplate>
               </template>
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <AiChatSidebar
+                    icon="chat-dots"
+                    :title="$t('ai.chat.sidebarTitle')"
+                    :study-step-id="step.id"
+                    :document-id="step.documentId"
+                    :service="getAiChatService(step)"
+                    :read-only="readOnlyComputed || !!studySession?.end"
+                />
+              </template>
             </Editor>
 
             <StepModal
@@ -188,6 +209,18 @@
                 :is-last-step="step.id === lastStep.id"
                 @close="handleModalClose"
                 @update:data="updateStudyData(step.id, 'modal', $event)"
+            />
+
+            <Dialogue
+                v-if="step.stepType === 4"
+                :is-shown="currentStudyStepId === step.id"
+                :study-description="study?.description || ''"
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :read-only="readOnlyComputed"
+                @update:ready="stepsReady[step.id] = $event"
+                @update:data="updateStudyData(step.id, 'dialogue', $event)"
             />
 
           </div>
@@ -217,11 +250,15 @@ import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
+import AiChatSidebar from "@/components/aiAssistant/AiChatSidebar.vue";
+import Dialogue from "@/components/dialogue/Dialogue.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
+    AiChatSidebar,
+    Dialogue,
     SidebarTemplate,
     Assessment,
     LoadIcon,
@@ -233,6 +270,7 @@ export default {
     StepModal,
     LoadingModal
   },
+  inject: ["setStatsContext"],
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -307,21 +345,23 @@ export default {
     },
     canLoadStepById() {
       return this.orderedStudySteps.reduce((acc, step, i, steps) => {
-        if (i === 0) {
-          acc[step.id] = true; // first step can always load
+        // always load the active step, including when resuming a session.
+        if (step.id === this.currentStudyStepId || i === 0) {
+          acc[step.id] = true;
           return acc;
         }
 
         const prev = steps[i - 1];
         const prevLoaded = this.isStepLoaded(prev.id);
         const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
+        const prevRequiresReady = prevHasAssessment || prev.stepType === 4;
 
         const readyMap = this.stepsReady || {};
         const hasEntry = Object.hasOwn(readyMap, prev.id);
 
-        const prevReady = prevHasAssessment
+        const prevReady = prevRequiresReady
             ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
-            : true;                                  // no assessment → always ready
+            : true;                                  // nothing to wait for → always ready
 
         acc[step.id] = prevLoaded && prevReady;
         return acc;
@@ -398,6 +438,10 @@ export default {
     currentStudyStep() {
       return this.currentStudyStepId ? this.$store.getters["table/study_step/get"](this.currentStudyStepId) : null;
     },
+    studyStatsContext() {
+      // studySessionId is 0 until the session loads; send null so it is left out of the stats
+      return {studySessionId: this.studySessionId || null, currentStudyStepId: this.currentStudyStepId};
+    },
     currentStudyStepId() {
       if (this.readOnlyComputed && this.firstStep) {
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
@@ -457,6 +501,12 @@ export default {
     },
   },
   watch: {
+    studyStatsContext: {
+      handler(context) {
+        this.setStatsContext(context);
+      },
+      immediate: true,
+    },
     studySession() {
       if (this.study && this.study.timeLimit > 0 && this.studySession) {
         //studySession required, otherwise not all data may be there yet
@@ -477,6 +527,7 @@ export default {
     this.getStudyData();
   },
   beforeUnmount() {
+    this.setStatsContext({studySessionId: null, currentStudyStepId: null});
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
@@ -538,6 +589,13 @@ export default {
     handleLoadingError(errorData) {
       this.setStudyError(errorData.message, errorData.code);
     },
+    getAiChatService(step) {
+      const services = step.configuration?.services || [];
+      return services.find(service => service.type === "aiChat") || null;
+    },
+    hasAiChat(step) {
+      return !!this.getAiChatService(step);
+    },
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
@@ -545,6 +603,10 @@ export default {
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
+      const step = this.studySteps.find((entry) => Number(entry.id) === Number(stepId));
+      if (step?.stepType === 4) {
+        return true;
+      }
       if (stepId in this.loadingReady) {
         return this.loadingReady[stepId];
       }

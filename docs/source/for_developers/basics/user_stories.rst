@@ -1506,7 +1506,38 @@ Configure and Monitor AI Use
        type.
      - I can manage cost limits for models, hooks, studies, and study steps.
      - The AI log shows request status, token usage, and cost.
+     - Each new AI log preserves the model, provider, supported parameters, and the
+       source template's ID and update time when known, even after configuration edits.
+     - Authorized offline and context-length failures are recorded without invented
+       token usage or cost. Existing access, spending, and pending-request checks apply.
+     - With statistics consent, Dialogue records question copies, paste lengths and
+       observed CARE-copy matches, and aggregate answer composition totals with the
+       question and follow-up identifiers. Copied text is not added to these statistics.
      - A hook cannot be saved without a prompt template and at least one model.
+
+-----
+
+Use AI Assistance in a Study
+---------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want Chat and Dialogue to recover predictably, so that
+     I can continue my study without losing an answer or submitting it twice.
+
+   :Acceptance:
+     - Assessment and Feedback hooks receive the configured annotation or comment
+       input key when that data is available.
+     - Reopening a Chat restores its last completed answer's available model and the
+       corresponding context warning. A new conversation uses the default model.
+     - A context-length rejection preserves my draft and offers a new conversation.
+     - A Chat loading timeout retries once automatically, then offers manual Retry.
+       Recovery preserves my draft and does not submit a message.
+     - Stopping Dialogue settles the cancelled request so Retry can run immediately
+       with the saved answer. An answered stopped turn has no editable Submit field.
+     - Streaming Chat responses preserve my position when I scroll up. Jump to latest
+       returns to the newest content and resumes following the response.
 
 -----
 
