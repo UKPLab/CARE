@@ -96,7 +96,8 @@ export default {
           action: "clickSidebarButton",
           data: {
             "title": this.title, "icon": this.icon, "props": this.props,
-            studySessionId: this.studySessionId, studyStepId: this.studyStepId
+            ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+            ...(this.studyStepId ? {studyStepId: this.studyStepId} : {})
           }
         });
       }

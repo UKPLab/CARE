@@ -334,8 +334,8 @@ export default {
             commentId: this.commentId,
             state: newValue,
             documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+            ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
           }
         });
       }
