@@ -219,7 +219,7 @@ The most important action types include:
       or clicked in it, while an earlier step is shown next to or instead of the current one. The sidebar does not count
       as the document. This is accompanied with the step of the document, the step the user is on, and for
       ``studyPaneMouseChange`` whether the mouse is now inside. The time between inside and outside is how long the mouse was in
-      that document.
+      that document. Going to another window or browser tab also counts as outside.
     * ``clickTopBarButton`` and ``clickCardButton``: indicating the user clicked a button. In a study, ``props.key`` says
       which one: ``studyPane.strip`` (showing or hiding the workflow bar), ``studyPane.tab`` (a step in the workflow bar),
       ``studyPane.split`` and ``studyPane.flip`` (opening and swapping a split view), ``studyNav.previous`` and

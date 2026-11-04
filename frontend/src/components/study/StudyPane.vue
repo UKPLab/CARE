@@ -74,10 +74,23 @@ export default {
       }
     },
   },
+  mounted() {
+    // Going to another window or browser tab ends the time in the document too: the student is not looking at it
+    window.addEventListener("blur", this.leavePage);
+    document.addEventListener("visibilitychange", this.leavePage);
+  },
   beforeUnmount() {
+    window.removeEventListener("blur", this.leavePage);
+    document.removeEventListener("visibilitychange", this.leavePage);
     this.setInside(false);
   },
   methods: {
+    leavePage() {
+      // Focus that moves inside the page (e.g. into a frame) keeps it
+      if (document.hidden || !document.hasFocus()) {
+        this.setInside(false);
+      }
+    },
     mouseOver(event) {
       this.setInside(!event.target.closest("#sidebarContainer"));
     },
