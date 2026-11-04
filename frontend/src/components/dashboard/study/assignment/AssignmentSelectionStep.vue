@@ -22,6 +22,8 @@
         ref="submissionTable"
         table="submission"
         :columns="submissionColumns"
+        :query-scope="submissionQueryScope"
+        :query-scope-matcher="isSubmissionInScope"
         :query-filter-schema="submissionFilterSchema"
         :query-search-columns="submissionSearchColumns"
         :options="sessionTableOptions"
@@ -95,6 +97,9 @@ export default {
     },
     isSubmissionType() {
       return this.assignmentType === "submission";
+    },
+    submissionQueryScope() {
+      return {assignmentBulk: true};
     },
     queryScope() {
       if (!this.isSessionType || !this.targetWorkflowId) {
@@ -329,6 +334,14 @@ export default {
     }
   },
   methods: {
+    /**
+     * Client mirror of the server's assignment scope, for rows arriving live.
+     * @param {Object} row submission row
+     * @returns {boolean}
+     */
+    isSubmissionInScope(row) {
+      return !row.hideInFrontend;
+    },
     restoreSessionSelection() {
       const saved = this.initialSelection;
       if (!this.isSessionType || !saved) return;

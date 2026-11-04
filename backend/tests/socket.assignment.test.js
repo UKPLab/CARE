@@ -1,15 +1,40 @@
 const fs = require("fs");
-const os = require("os");
 const path = require("path");
 const Server = require("../webserver/Server.js");
 const {createInitialAdmin} = require("../webserver/utils/setupAdmin.js");
 const {getSocketClient} = require("./utils.js");
 
 const PORT = 3112;
-const PEER_REVIEW_WORKFLOW_ID = 1;
-const ANNOTATOR_WORKFLOW_STEP_ID = 1;
 const SCOPE = {assignmentBulk: true};
-const BACKFILL_MIGRATION = "../db/migrations/20261104120000-extend-submission-hideInFrontend.js";
+// Fixtures run whole bulk assignments, and the first request loads the socket modules.
+const SLOW = 60000;
+const HIDDEN_FLAG_MIGRATION = "../db/migrations/20261104120000-extend-submission-hideInFrontend.js";
+const FILES_DIR = path.join(__dirname, "../../files");
+// Every copy of a fixture PDF has these bytes, including copies whose transaction was rolled back.
+const PDF_CONTENT = `%PDF-1.4 T14 ${process.pid} ${Date.now()}`;
+// parentStudyId plus document ancestry: looks like session provenance, but real group copies match too.
+const SESSION_LIKE_ANCESTRY = `
+    SELECT DISTINCT copy."id"
+    FROM "submission" AS copy
+    JOIN "document" AS copy_document ON copy_document."submissionId" = copy."id"
+    JOIN "study_step" AS child_step ON child_step."documentId" = copy_document."id"
+    JOIN "study" AS child_study ON child_study."id" = child_step."studyId"
+    JOIN "study_step" AS parent_step
+      ON parent_step."studyId" = child_study."parentStudyId"
+      AND parent_step."documentId" = copy_document."parentDocumentId"
+    WHERE copy."parentSubmissionId" IS NOT NULL`;
+
+/**
+ * Remove the fixture PDFs and all their copies. Rolled-back copies have no document row left to find them by.
+ */
+function removeFixturePdfs() {
+    for (const name of fs.readdirSync(FILES_DIR).filter((file) => file.endsWith(".pdf"))) {
+        const file = path.join(FILES_DIR, name);
+        if (fs.statSync(file).size === Buffer.byteLength(PDF_CONTENT) && fs.readFileSync(file, "utf8") === PDF_CONTENT) {
+            fs.rmSync(file);
+        }
+    }
+}
 
 /**
  * Emit a socket event and wait for its acknowledgement.
@@ -27,11 +52,10 @@ function request(socket, event, data) {
  * its submission, and those copies must not come back as candidates for a new assignment.
  */
 describe("Test Websockets - Bulk assignments", () => {
-    let server, models, sequelize, socket, adminId;
-    const createdFiles = [];
+    let server, models, sequelize, socket, adminId, workflowId, workflowStepId;
 
     /**
-     * Create a study with its steps from the Peer Review workflow.
+     * Create a study with its step from the test workflow.
      * @param {Object} overrides study attributes
      * @param {number|null} documentId document of the annotator step
      * @returns {Promise<Object>}
@@ -39,13 +63,13 @@ describe("Test Websockets - Bulk assignments", () => {
     async function addStudy(overrides, documentId) {
         const study = {
             name: "T14 study",
-            workflowId: PEER_REVIEW_WORKFLOW_ID,
+            workflowId,
             userId: adminId,
             createdByUserId: adminId,
             resumable: true,
             ...overrides,
         };
-        const stepDocuments = [{id: ANNOTATOR_WORKFLOW_STEP_ID, documentId}];
+        const stepDocuments = [{id: workflowStepId, documentId}];
         return await models.study.add(study, {context: {...study, stepDocuments}});
     }
 
@@ -59,9 +83,7 @@ describe("Test Websockets - Bulk assignments", () => {
         const document = await models.document.add({
             name: "T14 document", type: 0, userId, submissionId: submission.id,
         });
-        const file = path.join(__dirname, "../../files", `${document.hash}.pdf`);
-        fs.writeFileSync(file, "%PDF-1.4 T14");
-        createdFiles.push(file);
+        fs.writeFileSync(path.join(FILES_DIR, `${document.hash}.pdf`), PDF_CONTENT);
         return {submission, document};
     }
 
@@ -85,7 +107,7 @@ describe("Test Websockets - Bulk assignments", () => {
     async function addSessions(studyId, ownerIds) {
         const sessions = [];
         for (const userId of ownerIds) {
-            sessions.push(await models.study_session.create({studyId, userId}));
+            sessions.push(await models.study_session.add({studyId, userId}));
         }
         return sessions;
     }
@@ -117,7 +139,7 @@ describe("Test Websockets - Bulk assignments", () => {
             assignmentType: "study_session",
             assignmentSelection,
             reviewerQuerySelection: {ids: reviewerIds},
-            workflowMapping: {[ANNOTATOR_WORKFLOW_STEP_ID]: ANNOTATOR_WORKFLOW_STEP_ID},
+            workflowMapping: {[workflowStepId]: workflowStepId},
         });
     }
 
@@ -158,11 +180,14 @@ describe("Test Websockets - Bulk assignments", () => {
         }
         socket = await getSocketClient(server, PORT, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
         adminId = (await models.user.findOne({where: {email: process.env.ADMIN_EMAIL}, raw: true})).id;
-    });
+        // Other suites empty the seeded workflows, so this one brings its own.
+        workflowId = (await models.workflow.add({name: "T14 workflow"})).id;
+        workflowStepId = (await models.workflow_step.add({workflowId, stepType: 1})).id;
+    }, SLOW);
 
     afterAll(async () => {
         socket.disconnect();
-        createdFiles.forEach((file) => fs.rmSync(file, {force: true}));
+        removeFixturePdfs();
         await server.stop();
     });
 
@@ -174,21 +199,21 @@ describe("Test Websockets - Bulk assignments", () => {
             ownerB = await addUser(`t14OwnerB${Date.now()}`);
             source = await addSubmission(ownerA.id);
             template = await addStudy({name: "T14 template", template: true}, null);
-            sourceStudy = await addStudy({name: "T14 source", userId: ownerA.id}, source.document.id);
+            sourceStudy = await addStudy({name: "T14 source", userId: ownerA.id, limitSessionsPerUser: null}, source.document.id);
             sessions = await addSessions(sourceStudy.id, [ownerA.id, ownerA.id, ownerB.id]);
             result = await createSessionUserBulk({
                 template,
                 // Select-all: the client sends the query, not the rows.
                 assignmentSelection: {
                     allMatching: true,
-                    scope: {assignmentBulk: {workflowId: PEER_REVIEW_WORKFLOW_ID}},
+                    scope: {assignmentBulk: {workflowId}},
                     filter: [{key: "studyId", value: sourceStudy.id}],
                     excludeIds: [],
                 },
                 reviewerIds: [ownerA.id, ownerB.id],
             });
             copies = await childrenOf(source.submission.id);
-        });
+        }, SLOW);
 
         test("creates one assignment per session, for that session's owner", async () => {
             expect(result).toHaveProperty("success", true);
@@ -276,27 +301,33 @@ describe("Test Websockets - Bulk assignments", () => {
             expect(root.id).toBe(source.submission.id);
 
             const created = await models.study.findOne({where: {parentStudyId: sourceStudy.id}, raw: true});
-            const [session] = await models.study_session.findAll({where: {studyId: created.id}, raw: true});
-            const inputs = await server.db.models.study_step.findAll({where: {studyId: created.id}, raw: true});
+            const steps = await models.study_step.findAll({where: {studyId: created.id}, raw: true});
             const stepDocument = await models.document.findByPk(
-                inputs.find((step) => step.documentId).documentId, {raw: true},
+                steps.find((step) => step.workflowStepId === workflowStepId).documentId, {raw: true},
             );
             expect(copies.map((copy) => copy.id)).toContain(stepDocument.submissionId);
-            expect(session).toBeTruthy();
         });
 
-        test("a session owner who was not selected is still rejected", async () => {
-            const before = await models.study.count();
+        test("a session owner who was not selected is rejected and nothing is kept", async () => {
+            const counts = async () => ({
+                studies: await models.study.count(),
+                submissions: await models.submission.count(),
+                documents: await models.document.count(),
+                copies: (await childrenOf(source.submission.id)).length,
+                copiedDocuments: await models.document.count({where: {parentDocumentId: source.document.id}}),
+            });
+            const before = await counts();
+            expect(before.copies).toBe(sessions.length);
             const res = await createSessionUserBulk({
                 template,
                 assignmentSelection: {
                     ids: sessions.map((session) => session.id),
-                    scope: {assignmentBulk: {workflowId: PEER_REVIEW_WORKFLOW_ID}},
+                    scope: {assignmentBulk: {workflowId}},
                 },
                 reviewerIds: [ownerA.id],
             });
             expect(res.success).toBe(false);
-            expect(await models.study.count()).toBe(before);
+            expect(await counts()).toEqual(before);
         });
     });
 
@@ -313,7 +344,7 @@ describe("Test Websockets - Bulk assignments", () => {
             });
             expect(res.success).toBe(true);
             groupCopy = (await childrenOf(source.submission.id))[0];
-        });
+        }, SLOW);
 
         test("a copy made by group assignment is a real submission, not a hidden copy", async () => {
             expect(groupCopy.hideInFrontend).toBe(false);
@@ -379,49 +410,213 @@ describe("Test Websockets - Bulk assignments", () => {
     });
 
     describe("historical copies", () => {
-        test("the migration hides only copies with session provenance", async () => {
-            const owner = await addUser(`t14History${Date.now()}`);
-            const template = await addStudy({name: "T14 history template", template: true}, null);
+        let owner, steps, template, editedCopy, replacedTemplateCopy, unmappedStepCopy, sessionCopy, unusedCopy, usedCopy;
 
-            // A real session copy, on the code path that sets parentStudyId.
-            const sessionSource = await addSubmission(owner.id);
-            const sourceStudy = await addStudy({name: "T14 history source"}, sessionSource.document.id);
-            const [session] = await addSessions(sourceStudy.id, [owner.id]);
-            const created = await createSessionUserBulk({
-                template,
-                assignmentSelection: {
-                    ids: [session.id],
-                    scope: {assignmentBulk: {workflowId: PEER_REVIEW_WORKFLOW_ID}},
-                },
-                reviewerIds: [owner.id],
+        /**
+         * Create a study on both steps of this block's workflow.
+         * @param {Object} overrides study attributes
+         * @param {Array<number|null>} documentIds document of each step
+         * @returns {Promise<Object>}
+         */
+        async function addTwoStepStudy(overrides, documentIds) {
+            const study = {
+                name: "T14 history study",
+                workflowId: steps.workflowId,
+                userId: adminId,
+                createdByUserId: adminId,
+                resumable: true,
+                ...overrides,
+            };
+            const stepDocuments = steps.ids.map((id, index) => ({id, documentId: documentIds[index]}));
+            return await models.study.add(study, {context: {...study, stepDocuments}});
+        }
+
+        /**
+         * Copy a new submission the way the group assignment does.
+         * @returns {Promise<{source: Object, id: number, documentId: number}>} source and its group copy
+         */
+        async function addGroupCopy() {
+            const source = await addSubmission(owner.id);
+            const res = await request(socket, "submissionAssignGroup", {
+                group: 1, isCopied: true, submissionIds: [source.submission.id],
             });
-            expect(created.success).toBe(true);
-            const [sessionCopy] = await childrenOf(sessionSource.submission.id);
+            expect(res.success).toBe(true);
+            const {copiedSubmission, copiedDocuments} = res.data.copiedSubmissions[0];
+            return {source, id: copiedSubmission.id, documentId: copiedDocuments[0].id};
+        }
 
-            // A group copy that is not used, and one a submission assignment put on a study step.
-            const groupSource = await addSubmission(owner.id);
-            const unusedCopy = await models.submission.copySubmission(groupSource.submission.id, adminId);
-            const usedSource = await addSubmission(owner.id);
-            const usedCopy = await models.submission.copySubmission(usedSource.submission.id, adminId);
-            await addStudy(
-                {name: "T14 history assigned"},
-                usedCopy.copiedDocuments[0].id,
+        /**
+         * Assign a session of a new study back to its owner, copying the submission of the first step.
+         * @param {Object} assignmentTemplate template study row
+         * @param {Object} submissionFixture source submission
+         * @returns {Promise<Array<Object>>} children of the source submission
+         */
+        async function assignSessionCopy(assignmentTemplate, submissionFixture) {
+            const documentId = submissionFixture.document.id;
+            const study = await addTwoStepStudy({limitSessionsPerUser: null}, [documentId, documentId]);
+            const [session] = await addSessions(study.id, [adminId]);
+            const res = await request(socket, "assignmentCreateBulk", {
+                template: assignmentTemplate,
+                mode: "session_user",
+                assignmentType: "study_session",
+                assignmentSelection: {ids: [session.id], scope: {assignmentBulk: {workflowId: steps.workflowId}}},
+                reviewerQuerySelection: {ids: [adminId]},
+                workflowMapping: {[steps.ids[0]]: steps.ids[0]},
+            });
+            expect(res.success).toBe(true);
+            return await childrenOf(submissionFixture.submission.id);
+        }
+
+        const hidden = async (id) => (await models.submission.findByPk(id, {raw: true})).hideInFrontend;
+
+        /**
+         * The real paths that give a group copy the ancestry of a session copy, and a real session copy.
+         * Migrating drops and adds the column, which is the state of data from before the flag existed.
+         */
+        beforeAll(async () => {
+            owner = await addUser(`t14History${Date.now()}`);
+            const historyWorkflowId = (await models.workflow.add({name: "T14 history workflow"})).id;
+            const first = await models.workflow_step.add({workflowId: historyWorkflowId, stepType: 1});
+            const second = await models.workflow_step.add({
+                workflowId: historyWorkflowId, stepType: 1, workflowStepPrevious: first.id,
+            });
+            steps = {workflowId: historyWorkflowId, ids: [first.id, second.id]};
+            template = await models.study.findByPk(
+                (await addTwoStepStudy({name: "T14 history template", template: true}, [null, null])).id, {raw: true},
             );
 
-            const migration = require(BACKFILL_MIGRATION);
+            // Editing a study versions it: the group copy replaces its source on the new version.
+            editedCopy = await addGroupCopy();
+            const edited = await addTwoStepStudy({}, Array(2).fill(editedCopy.source.document.id));
+            const row = await models.study.findByPk(edited.id, {raw: true});
+            const update = await request(socket, "appDataUpdate", {
+                table: "study",
+                data: {
+                    id: edited.id,
+                    name: row.name,
+                    workflowId: steps.workflowId,
+                    description: "edited",
+                    tagSetId: row.tagSetId || 1,
+                    stepDocuments: steps.ids.map((id) => ({id, documentId: editedCopy.documentId})),
+                },
+            });
+            expect(update.success).toBe(true);
+
+            // Replacing a template points its new version at the group copy.
+            replacedTemplateCopy = await addGroupCopy();
+            const replaced = await addTwoStepStudy(
+                {template: true}, Array(2).fill(replacedTemplateCopy.source.document.id),
+            );
+            const replacement = await request(socket, "studySaveAsTemplate", {
+                onlyTemplate: true,
+                replaceTemplateId: replaced.id,
+                templateData: {
+                    name: "T14 history replacement",
+                    workflowId: steps.workflowId,
+                    stepDocuments: steps.ids.map((id) => ({id, documentId: replacedTemplateCopy.documentId})),
+                },
+            });
+            expect(replacement.success).toBe(true);
+
+            // A session assignment keeps the template's document on a step that is not mapped.
+            unmappedStepCopy = await addGroupCopy();
+            const keepingTemplate = await addTwoStepStudy(
+                {name: "T14 history keeping template", template: true}, [null, unmappedStepCopy.documentId],
+            );
+            await assignSessionCopy(
+                await models.study.findByPk(keepingTemplate.id, {raw: true}), unmappedStepCopy.source,
+            );
+
+            // A session copy, whose flag is true until the column is rebuilt.
+            const sessionCopies = await assignSessionCopy(template, await addSubmission(owner.id));
+            expect(sessionCopies).toHaveLength(1);
+            expect(sessionCopies[0].hideInFrontend).toBe(true);
+            sessionCopy = sessionCopies[0];
+
+            // A group copy that is not used, and one a submission assignment put on a study step.
+            unusedCopy = await models.submission.copySubmission((await addSubmission(owner.id)).submission.id, adminId);
+            usedCopy = await models.submission.copySubmission((await addSubmission(owner.id)).submission.id, adminId);
+            await addTwoStepStudy({name: "T14 history assigned"}, Array(2).fill(usedCopy.copiedDocuments[0].id));
+
+            const migration = require(HIDDEN_FLAG_MIGRATION);
             const queryInterface = sequelize.getQueryInterface();
             await migration.down(queryInterface, sequelize.constructor);
             await migration.up(queryInterface, sequelize.constructor);
+        }, SLOW * 2);
 
-            const hidden = async (id) => (await models.submission.findByPk(id, {raw: true})).hideInFrontend;
-            expect(await hidden(sessionCopy.id)).toBe(true);
-            expect(await hidden(sessionSource.submission.id)).toBe(false);
-            expect(await hidden(unusedCopy.copiedSubmission.id)).toBe(false);
-            expect(await hidden(usedCopy.copiedSubmission.id)).toBe(false);
+        test("group and session copies have the same ancestry, so it cannot tell them apart", async () => {
+            const rows = await sequelize.query(SESSION_LIKE_ANCESTRY, {type: sequelize.QueryTypes.SELECT});
+            expect(rows.map((row) => row.id)).toEqual(expect.arrayContaining([
+                editedCopy.id, replacedTemplateCopy.id, unmappedStepCopy.id, sessionCopy.id,
+            ]));
         });
 
-        test("the temp dir helper is not left behind", () => {
-            expect(fs.existsSync(os.tmpdir())).toBe(true);
+        test.each([
+            ["a study edit", () => editedCopy.id],
+            ["a template replacement", () => replacedTemplateCopy.id],
+            ["an unmapped template step", () => unmappedStepCopy.id],
+            ["no study", () => unusedCopy.copiedSubmission.id],
+            ["a study step", () => usedCopy.copiedSubmission.id],
+        ])("a group copy linked through %s stays visible and assignable", async (_, copyId) => {
+            const id = copyId();
+            expect(await hidden(id)).toBe(false);
+            expect((await queryPicker()).ids).toContain(id);
+            const res = await resolveSubmissions({ids: [id]});
+            expect(res.success).toBe(true);
+            expect(res.data.selectedAssignments.map((submission) => submission.id)).toEqual([id]);
+        });
+
+        test("a historical session copy stays visible, it needs a reviewed cleanup", async () => {
+            expect(await hidden(sessionCopy.id)).toBe(false);
+            expect((await queryPicker()).ids).toContain(sessionCopy.id);
+        });
+
+        test("the column is a required boolean that defaults to visible", async () => {
+            const {hideInFrontend} = await sequelize.getQueryInterface().describeTable("submission");
+            expect(hideInFrontend).toMatchObject({type: "BOOLEAN", allowNull: false, defaultValue: false});
+        });
+
+        test("a session copy made after the migration is hidden everywhere", async () => {
+            const fixture = await addSubmission(owner.id);
+            const [copy] = await assignSessionCopy(template, fixture);
+            expect(copy.hideInFrontend).toBe(true);
+            expect(await hidden(fixture.submission.id)).toBe(false);
+
+            const {ids} = await queryPicker();
+            expect(ids).toContain(fixture.submission.id);
+            expect(ids).not.toContain(copy.id);
+
+            const selectAll = await resolveSubmissions({allMatching: true, excludeIds: []});
+            expect(selectAll.success).toBe(true);
+            expect(selectAll.data.selectedAssignments.map((submission) => submission.id)).not.toContain(copy.id);
+
+            expect((await resolveSubmissions({ids: [copy.id]})).success).toBe(false);
+
+            const before = await models.study.count();
+            const reviewer = await addUser(`t14HistoryReviewer${Date.now()}`);
+            const bulk = await request(socket, "assignmentCreateBulk", {
+                template,
+                mode: "reviewer",
+                assignmentType: "submission",
+                assignmentSelection: {ids: [copy.id]},
+                reviewerQuerySelection: {ids: [reviewer.id]},
+                reviewerSelection: {[reviewer.id]: 1},
+            });
+            expect(bulk.success).toBe(false);
+            const single = await request(socket, "assignmentCreateSingle", {
+                template,
+                assignmentType: "submission",
+                selectedAssignments: [{id: copy.id, userId: copy.userId}],
+                reviewer: [{id: reviewer.id}],
+            });
+            expect(single.success).toBe(false);
+            expect(await models.study.count()).toBe(before);
+        }, SLOW);
+
+        test("a group copy made after the migration is visible", async () => {
+            const {id} = await addGroupCopy();
+            expect(await hidden(id)).toBe(false);
+            expect((await queryPicker()).ids).toContain(id);
         });
     });
 });

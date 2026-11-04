@@ -213,6 +213,17 @@ module.exports = (sequelize, DataTypes) => {
             };
         }
         /**
+         * Rows the assignment submission picker may offer. Hidden copies belong to the study they
+         * were made for; everything else that reads submissions still sees them.
+         * @param {Object} scope queryTable scope
+         * @param {boolean} [scope.assignmentBulk] restrict to submissions eligible for an assignment
+         * @returns {Promise<Object|null>} Sequelize where condition, null for no restriction
+         */
+        static async getQueryTableScopeFilter(scope) {
+            return scope?.assignmentBulk ? {hideInFrontend: false} : null;
+        }
+
+        /**
          * Owner name columns for the assignment submission picker.
          * userName needs userPublicInfo; firstName / lastName need userPrivateInfo.
          * @param {Object} ctx
@@ -365,6 +376,10 @@ module.exports = (sequelize, DataTypes) => {
             description: DataTypes.TEXT,
             additionalSettings: DataTypes.JSONB,
             validationConfigurationId: DataTypes.INTEGER,
+            hideInFrontend: {
+                type: DataTypes.BOOLEAN,
+                defaultValue: false,
+            },
             deleted: DataTypes.BOOLEAN,
             deletedAt: DataTypes.DATE,
             createdAt: DataTypes.DATE,

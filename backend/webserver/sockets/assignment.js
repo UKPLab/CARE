@@ -239,6 +239,17 @@ class AssignmentSocket extends Socket {
     }
 
     /**
+     * Resolve a submission selection to the ids that may be assigned.
+     * The scope is set here, not by the client, so neither select-all nor an explicit id reaches a hidden copy.
+     * @param {Object} selection BackendTable selection
+     * @param {import("sequelize").Transaction} [transaction] share the caller's transaction
+     * @returns {Promise<number[]>}
+     */
+    resolveEligibleSubmissionIds(selection, transaction = null) {
+        return this.resolveSelectionIds("submission", {...selection, scope: {assignmentBulk: true}}, transaction);
+    }
+
+    /**
      * Resolve query-scoped session / submission / reviewer selections into the row arrays
      * @param {Object} data
      * @param {Object} [options]
@@ -282,7 +293,7 @@ class AssignmentSocket extends Socket {
             if (!data.assignmentSelection) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
             }
-            const submissionIds = await this.resolveSelectionIds("submission", data.assignmentSelection, transaction);
+            const submissionIds = await this.resolveEligibleSubmissionIds(data.assignmentSelection, transaction);
             if (submissionIds.length === 0) {
                 throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId: "none"});
             }
@@ -742,6 +753,14 @@ class AssignmentSocket extends Socket {
      */
     async createAssignmentSingle(data, options) {
         data["assignment"] = data.selectedAssignments[0];
+
+        if (data.assignmentType === "submission") {
+            const assignmentId = data.assignment?.id;
+            const eligible = await this.resolveEligibleSubmissionIds({ids: [assignmentId]}, options.transaction);
+            if (eligible.length === 0) {
+                throw new TranslatableError("errors.assignment.selectedNotResolved", {assignmentId});
+            }
+        }
 
         if(data.assignmentType === "study_session"){
             const documents= await this.duplicate(data, options);

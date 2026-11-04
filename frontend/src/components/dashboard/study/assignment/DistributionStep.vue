@@ -117,6 +117,9 @@ export default {
         return Object.values(this.roleSelection)
             .map(value => parseInt(value, 0))
             .reduce((a, b) => a + b, 0) * total;
+      } else if (this.reviewerSelectionMode.mode === 'session_user') {
+        // One study per selected session, however many sessions an owner has.
+        return this.assignmentCount || this.selectedAssignments.length;
       } else {
         return Object.values(this.reviewerSelection)
             .map(value => parseInt(value, 0))
@@ -165,6 +168,8 @@ export default {
         this.$emit('update:numberOfReviews', val);
       },
       deep: true,
+      // The stepper remounts this step, and the selection may have changed in the meantime.
+      immediate: true,
     },
     isValid(val) {
       this.$emit('update:isValid', val);
