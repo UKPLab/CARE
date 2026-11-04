@@ -22,26 +22,13 @@
       @finish="finalFinish"
       @start="start"
   />
-  <StudyModal
+  <StudyInstructions
       v-if="studySession && studySession.start"
-      ref="studyInfoModal"
-      info-only
       :study-id="studyId"
       :study-closed="studyClosed"
       :study-session-id="studySessionId"
+      :show-button="!!study?.description"
   />
-  <Teleport to="#topBarNavItems">
-    <li v-if="hasInstructions" class="nav-item">
-      <TopBarButton
-          class="btn rounded-circle"
-          :title="$t('components.studyRoute.instructions')"
-          :props="{ key: 'studyInstructions.open' }"
-          @click="$refs.studyInfoModal.open()"
-      >
-        <LoadIcon icon-name="info-circle" :size="18"/>
-      </TopBarButton>
-    </li>
-  </Teleport>
   <FinishModal
       v-if="!studyError"
       ref="studyFinishModal"
@@ -219,6 +206,7 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
 import StudyPane from "@/components/study/StudyPane.vue";
 import StepView from "@/components/study/StepView.vue";
+import StudyInstructions from "@/components/study/StudyInstructions.vue";
 import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
@@ -235,6 +223,7 @@ export default {
     PaneStrip,
     StudyPane,
     StepView,
+    StudyInstructions,
     StepModal,
     LoadingModal
   },
@@ -298,9 +287,6 @@ export default {
     },
     nextLabel() {
       return this.$t('components.studyRoute.nextStep', {step: this.stepLabels[this.nextStudyStep?.id]});
-    },
-    hasInstructions() {
-      return !!this.study?.description && !!this.studySession?.start;
     },
     tabsByStep() {
       return buildTabsByStep({
