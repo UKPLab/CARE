@@ -700,15 +700,51 @@ components should use the <code class="docutils literal notranslate"><span class
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="n"><span class="pre">AnnotationSocket</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#AnnotationSocket" title="Link to this definition"></a></dt>
 <dd><p>Handle all annotation through websocket</p>
 <dl class="js function">
+<dt class="sig sig-object js" id="AnnotationSocket.addAnnotationMetadata">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AnnotationSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">addAnnotationMetadata</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">annotations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commentsByAnnotation</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnnotationSocket.addAnnotationMetadata" title="Link to this definition"></a></dt>
+<dd><p>Add tag names, author names, and permitted comment threads to downloadable annotations.
+Tag and user records are loaded in batches so the query count does not grow per annotation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>annotations</strong> (<strong>Array.&lt;Object&gt;</strong>) – The annotations permitted in the downloaded PDF.</p></li>
+<li><p><strong>commentsByAnnotation</strong> (<strong>Map.&lt;number, Array.&lt;Object&gt;&gt;</strong>) – Permitted comments grouped by annotation ID.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;Array.&lt;Object&gt;&gt;</strong> – Annotations enriched for the PDF service.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AnnotationSocket.canDownloadNote">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AnnotationSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">canDownloadNote</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visibility</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnnotationSocket.canDownloadNote" title="Link to this definition"></a></dt>
+<dd><p>Apply the same PDF visibility rule to an annotation or comment after document access is validated.
+No-session notes are shared document content, regardless of their author.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<strong>Object</strong>) – The annotation or comment to check.</p></li>
+<li><p><strong>visibility</strong> (<strong>Object</strong>) – Download permissions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>boolean</strong> – Whether the item may be exported.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
 <dt class="sig sig-object js" id="AnnotationSocket.embedAnnotationsForDocument">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">AnnotationSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">embedAnnotationsForDocument</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">options</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnnotationSocket.embedAnnotationsForDocument" title="Link to this definition"></a></dt>
 <dd><p><strong>Socket Event</strong>: <cite>annotationEmbed</cite></p>
-<p>Embed all annotations into the PDF for a document.</p>
+<p>Embed permitted annotations and comment threads into the PDF after validating document access.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>data</strong> (<strong>Object</strong>) – The data containing the document ID and other parameters.</p></li>
-<li><p><strong>options</strong> (<strong>Object</strong>) – Additional options for the emmfbedding process.</p></li>
+<li><p><strong>options</strong> (<strong>Object</strong>) – Additional options for the embedding process.</p></li>
 <li><p><strong>data.documentId</strong> (<strong>number</strong>) – The ID of the document to embed annotations into.</p></li>
 </ul>
 </dd>
@@ -733,6 +769,47 @@ components should use the <code class="docutils literal notranslate"><span class
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Promise.&lt;void&gt;</strong> – A promise that resolves (with no value) once the annotations have been successfully fetched and sent to the client.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AnnotationSocket.getDownloadableAnnotations">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AnnotationSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getDownloadableAnnotations</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">documentId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnnotationSocket.getDownloadableAnnotations" title="Link to this definition"></a></dt>
+<dd><p>Get the annotations permitted in a PDF download after document access is validated.
+Users with full study access receive all annotations. Other users receive their own and no-session annotations,
+plus all annotations from a study when they participate in a collaborative study or when the
+study is closed and they are either a participant or its owner.
+Also see DocumentSocket#notesForClosedStudiesOrNoSession for the no-session document view.
+That view filters by study closure only; PDF export also checks user roles. Review both when changing visibility.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>documentId</strong> (<strong>number</strong>) – The document whose annotations should be exported.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Promise.&lt;{annotations: Array.&lt;Object&gt;, hasFullAccess: boolean, visibleStudySessionIds: Set.&lt;number&gt;}&gt;</strong> – Visible annotations and the permissions reused to filter each comment.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="js function">
+<dt class="sig sig-object js" id="AnnotationSocket.getDownloadableCommentsByAnnotation">
+<span class="sig-prename descclassname"><span class="n"><span class="pre">AnnotationSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">getDownloadableCommentsByAnnotation</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">comments</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">annotations</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">visibility</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#AnnotationSocket.getDownloadableCommentsByAnnotation" title="Link to this definition"></a></dt>
+<dd><p>Select permitted root comments attached to downloadable annotations and their permitted replies.
+Document-level comment threads are intentionally excluded because they have no PDF position.
+Hidden comments and their descendants are excluded, even if a descendant would otherwise be visible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Arguments<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>comments</strong> (<strong>Array.&lt;Object&gt;</strong>) – All comments for the document.</p></li>
+<li><p><strong>annotations</strong> (<strong>Array.&lt;Object&gt;</strong>) – The annotations permitted in the downloaded PDF.</p></li>
+<li><p><strong>visibility</strong> (<strong>Object</strong>) – Download permissions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Map.&lt;number, Array.&lt;Object&gt;&gt;</strong> – Comments grouped by annotation ID.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1982,7 +2059,10 @@ This method reads the delta file from the disk and returns it as a Delta object.
 <dl class="js function">
 <dt class="sig sig-object js" id="DocumentSocket.notesForClosedStudiesOrNoSession">
 <span class="sig-prename descclassname"><span class="n"><span class="pre">DocumentSocket</span></span><span class="p"><span class="pre">.</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">notesForClosedStudiesOrNoSession</span></span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">documentId</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#DocumentSocket.notesForClosedStudiesOrNoSession" title="Link to this definition"></a></dt>
-<dd><p>Notes and comments with no study session, or from a closed study.</p>
+<dd><p>Notes and comments with no study session, or from a closed study.
+Used by getData() when no study session is supplied, after document access is validated.
+Also see AnnotationSocket#getDownloadableAnnotations: PDF export additionally checks user roles.
+Review both methods when changing visibility; their policies are not yet unified.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Arguments<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
