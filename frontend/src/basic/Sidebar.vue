@@ -226,7 +226,7 @@ export default {
       sidebarContainerDom: undefined,
       originalWidth: undefined,
       isNarrow: false,
-      visibleBeforeNarrow: false
+      visibleBeforeNarrow: false,
       activeSlotStartedAt: null
     };
   },
