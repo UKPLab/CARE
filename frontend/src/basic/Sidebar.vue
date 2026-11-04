@@ -105,7 +105,7 @@
         <div class="sidebar-content">
           <template v-for="slotName in availableSlots" :key="slotName">
             <keep-alive>
-              <div v-show="resolvedActiveSlot === slotName">
+              <div v-show="resolvedActiveSlot === slotName" :data-sidebar-slot="slotName">
                 <slot :name="slotName"/>
               </div>
             </keep-alive>
@@ -150,6 +150,12 @@ import debounce from "lodash.debounce";
 export default {
   name: "BasicSidebar",
   components: {LoadIcon, TopBarButton},
+  provide() {
+    return {
+      showSidebarTabOf: this.showTabOf,
+      scrollSidebarTo: this.scrollTo,
+    };
+  },
   inject: {
     studySessionId: {
       type: Number,
@@ -387,6 +393,19 @@ export default {
     window.removeEventListener('resize', this.onResize);
   },
   methods: {
+    /**
+     * Switches to the tab that holds the given element, e.g. the card of a clicked annotation
+     * @param {HTMLElement} element - an element inside one of the tabs
+     * @returns {boolean} whether another tab is shown now
+     */
+    showTabOf(element) {
+      const slotName = element?.closest("[data-sidebar-slot]")?.dataset.sidebarSlot;
+      if (!slotName || slotName === this.resolvedActiveSlot) {
+        return false;
+      }
+      this.changeView(slotName);
+      return this.resolvedActiveSlot === slotName;
+    },
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
       const newSlot = slotName;

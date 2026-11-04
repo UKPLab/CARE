@@ -5,7 +5,7 @@
     <div class="look-back-header d-flex align-items-center gap-2 px-2 pt-2">
       <span class="badge">{{ label }}</span>
     </div>
-    <AnnotationSidebar v-if="type === 'annotations'"/>
+    <AnnotationSidebar v-if="type === 'annotations'" @scroll-to-comment="scrollSidebarTo"/>
     <Assessment
         v-else-if="type === 'assessment'"
         :config="step.configuration"
@@ -39,6 +39,10 @@ export default {
     };
   },
   inject: {
+    // Scrolls the sidebar this tab is in to an offset, like the Annotator does for its own tab (basic/Sidebar.vue)
+    scrollSidebarTo: {
+      default: () => () => {},
+    },
     acceptStats: {
       default: () => false
     },

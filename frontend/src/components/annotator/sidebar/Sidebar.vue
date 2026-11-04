@@ -107,6 +107,10 @@ export default {
     isStepShown: {
       default: true,
     },
+    // Shows the sidebar tab that holds an element (basic/Sidebar.vue)
+    showSidebarTabOf: {
+      default: () => () => false,
+    },
     documentId: {
       type: Number,
       required: true,
@@ -303,11 +307,16 @@ export default {
      * steps, look-back tabs), so only one that lists the annotation and belongs to a step on screen handles it.
      * @param {number} annotationId - the clicked annotation
      */
-    onSidebarScroll(annotationId) {
+    async onSidebarScroll(annotationId) {
       // in case the comment might not be loaded yet, or belongs to another document or step
       const comment = this.documentComments.find(comm => comm.annotationId === annotationId);
       if (!comment || !this.isStepShown) {
         return;
+      }
+      // The card may be in a tab that is not open, e.g. an earlier step's tab next to the current one: open it first,
+      // so the scroll goes to a card on screen
+      if (this.showSidebarTabOf(this.$refs["annocard" + comment.id]?.[0]?.$el)) {
+        await this.$nextTick();
       }
 
       this.sidebarScrollTo(comment.id);
