@@ -1,18 +1,6 @@
 <template>
     <!-- Error state -->
-  <div v-if="studyError" class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
-    <div class="error-card text-center p-5 bg-body rounded shadow">
-      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
-      <h2 class="mt-4 text-danger">{{ studyError.title }}</h2>
-      <p class="text-muted mb-4">{{ studyError.message }}</p>
-      <div class="d-flex gap-3 justify-content-center">
-        <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>{{ $t('components.studyRoute.errors.goToDashboard') }}
-        </router-link>
-      </div>
-    </div>
-  </div>
-
+  <StudyErrorPage v-if="studyError" :error="studyError"/>
   <StudyModal
       v-else-if="studySessionId === 0 || (studySession && studySession.start === null)"
       ref="studyModal"
@@ -36,26 +24,7 @@
       :show-time-up="timeUp"
       @finish="finalFinish({ studySessionId: studySessionId })"
   />
-
-  <Teleport to="#topbarCenterPlaceholder">
-    <div
-        v-show="readOnlyComputed"
-        :title="$t('common.readOnly')"
-    >
-      <span
-          :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }"
-      >
-        {{ $t('common.readOnly') }}
-      </span>
-      <LoadIcon
-          :size="22"
-          :color="'var(--bs-danger-text-emphasis)'"
-          icon-name="lock-fill"
-      />
-    </div>
-
-  </Teleport>
-
+  <ReadOnlyBadge :show="readOnlyComputed"/>
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
       <TopBarButton
@@ -207,6 +176,8 @@ import PaneStrip from "@/components/study/PaneStrip.vue";
 import StudyPane from "@/components/study/StudyPane.vue";
 import StepView from "@/components/study/StepView.vue";
 import StudyInstructions from "@/components/study/StudyInstructions.vue";
+import StudyErrorPage from "@/components/study/StudyErrorPage.vue";
+import ReadOnlyBadge from "@/components/study/ReadOnlyBadge.vue";
 import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
@@ -224,6 +195,8 @@ export default {
     StudyPane,
     StepView,
     StudyInstructions,
+    StudyErrorPage,
+    ReadOnlyBadge,
     StepModal,
     LoadingModal
   },
@@ -775,15 +748,6 @@ export default {
 
 .ms-3 {
   margin-left: 1rem;
-}
-
-.study-error-page {
-  background-color: var(--bs-tertiary-bg, #f5f5f5);
-  min-height: 100vh;
-}
-.error-card {
-  max-width: 500px;
-  border: 1px solid var(--bs-border-color, #e0e0e0);
 }
 
 </style>
