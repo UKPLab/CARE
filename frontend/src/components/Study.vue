@@ -176,61 +176,17 @@
           </div>
           <div v-if="isStepLoaded(step.id)">
 
-            <Annotator
-                v-if="step.stepType === 1"
-                v-bind="lookBack.paneProps[step.id]"
-                :step-number="ownTabNumber(step)"
-                :document-id="step.documentId"
-                :study-step-id="step.id"
+            <StepView
+                v-if="[1, 2].includes(step.stepType)"
+                :step="step"
+                :pane-props="lookBack.paneProps[step.id]"
+                :tabs="tabsByStep[step.id]"
+                :labels="stepLabels"
                 @error="error"
-                @update:data="updateStudyData(step.id, 'annotator', $event)"
-            >
-              <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
-                  <template #content>
-                    <CurrentStepNote v-if="ownTabNumber(step)"/>
-                    <Assessment
-                        :config="step.configuration"
-                        :study-step-id="step.id"
-                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
-                        @assessment-advance-past-end="focusForwardControl"
-                        @update:data="updateStudyData(step.id, 'assessment', $event)"
-                    />
-                  </template>
-                </SidebarTemplate>
-              </template>
-              <template v-for="tab in tabsByStep[step.id]" :key="tab.key" #[tab.key]>
-                <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
-              </template>
-            </Annotator>
-
-            <Editor
-                v-if="step.stepType === 2"
-                ref="editor"
-                v-bind="lookBack.paneProps[step.id]"
-                :document-id="step.documentId"
-                :study-step-id="step.id"
-                :without-history="true"
-                @update:data="updateStudyData(step.id, 'editor', $event)"
-            >
-              <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
-                  <template #content>
-                    <CurrentStepNote v-if="ownTabNumber(step)"/>
-                    <Assessment
-                        :config="step.configuration"
-                        :study-step-id="step.id"
-                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
-                        @assessment-advance-past-end="focusForwardControl"
-                        @update:data="updateStudyData(step.id, 'assessment', $event)"
-                    />
-                  </template>
-                </SidebarTemplate>
-              </template>
-              <template v-for="tab in tabsByStep[step.id]" :key="tab.key" #[tab.key]>
-                <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
-              </template>
-            </Editor>
+                @update:data="updateStudyData(step.id, $event.type, $event.data)"
+                @assessment-ready-changed="onAssessmentReady(step.id, $event)"
+                @assessment-advance-past-end="focusForwardControl"
+            />
 
             <StepModal
                 v-if="step.stepType === 3"
@@ -257,38 +213,28 @@
  * @author Dennis Zyska, Manu Sundar Raj Nandyal, Linyin Huang
  */
 import StudyModal from "@/components/study/StudyModal.vue";
-import Annotator from "./annotator/Annotator.vue";
-import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
-import LookBackTab from "@/components/study/LookBackTab.vue";
-import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
 import StudyPane from "@/components/study/StudyPane.vue";
+import StepView from "@/components/study/StepView.vue";
 import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import Assessment from "@/components/study/Assessment.vue";
-import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
-    SidebarTemplate,
-    Assessment,
     LoadIcon,
     FinishModal,
     StudyModal,
-    Annotator,
-    Editor,
     TopBarButton,
     PaneStrip,
-    LookBackTab,
-    CurrentStepNote,
     StudyPane,
+    StepView,
     StepModal,
     LoadingModal
   },
@@ -591,10 +537,6 @@ export default {
     }
   },
   methods: {
-    // A step that can look back numbers its own sidebar tabs too, so they read like the workflow bar
-    ownTabNumber(step) {
-      return this.tabsByStep[step.id]?.length ? this.orderedStudySteps.indexOf(step) + 1 : null;
-    },
     /**
      * Move keyboard focus to the forward control after the final assessment
      * criterion is marked done. Under forcedAssessment the button is enabled
