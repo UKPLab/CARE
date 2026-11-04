@@ -250,13 +250,14 @@ The ``createSocket`` method allows you to define a socket event with built-in su
 
 .. code-block:: javascript
 
-    createSocket(eventName, func, options = {}, transaction = false)
+    createSocket(eventName, func, options = {}, transaction = false, getQueueKey = null)
 
 **Arguments:**
     - ``eventName``: Name of the socket event to register
     - ``func``: Async function handling the request, with parameters ``(data, options)``
     - ``options``: Object passed through the socket pipeline; can contain any contextual data (e.g., transaction info, user session, metadata)
     - ``transaction``: If ``true``, wraps execution in a Sequelize DB transaction
+    - ``getQueueKey``: Optional function mapping the event data to a queue key. Events with the same key run one after the other in the order they were received, including begin, handler, commit or rollback, and the acknowledgement. Only use it for events that depend on the order of earlier events, like ``documentEdit``. If it throws for malformed data, the event runs outside of any queue, so the handler has to reject the same data to send a failed acknowledgement
 
 .. warning::
 
@@ -283,6 +284,14 @@ If your socket operation modifies data, set ``transaction = true``. This will:
     - Pass it to your function via ``options.transaction``
     - Automatically commit/rollback
     - Allow you to define `afterCommit()` behavior
+    - Allow you to register work for after a successful commit with ``options.afterSuccessfulCommit(hook)``
+
+.. warning::
+
+   Sequelize also runs ``transaction.afterCommit()`` hooks when the ``COMMIT`` fails, and the client then gets a failed acknowledgement.
+   If telling other clients about data that was not saved would be wrong, use ``options.afterSuccessfulCommit(hook)``.
+   It runs only after a successful commit and before the acknowledgement. A returned promise is awaited, so queued events (see ``getQueueKey``) stay in commit order.
+   If a hook fails, the failure is logged and the event still succeeds, as the data is already saved.
 
 .. code-block:: javascript
 
@@ -311,7 +320,7 @@ If your socket operation modifies data, set ``transaction = true``. This will:
                 template: true,
             }, {transaction: options.transaction});
 
-            // Code executed after transaction commit success (code only, without further DB changes!)
+            // Code executed after the commit (code only, without further DB changes!), see the warning above
             options.transaction.afterCommit(() => {
                 this.emit("studyRefresh", template);
             });

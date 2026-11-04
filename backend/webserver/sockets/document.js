@@ -5,7 +5,7 @@ const {docTypes} = require("../../db/models/document.js");
 const {inject} = require("../../utils/helper/generic");
 const path = require("path");
 const {getTextPositions} = require("../../utils/helper/text.js");
-const {enqueueDocumentTask} = require("../../utils/helper/queue.js");
+const {nextDocumentTimestamp} = require("../../utils/helper/queue.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/Validator.js");
 const {Op} = require('sequelize');
@@ -802,10 +802,32 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Returns the queue key of a documentEdit event.
+     *
+     * Edits are position dependent, so all edits of one document context (document + study session + study step) have
+     * to be persisted in the order they were received. Other contexts are independent and stay concurrent.
+     *
+     * @param {Object} data The data payload of the documentEdit event.
+     * @returns {string} The queue key of the document context.
+     * @throws {Error} If the context is not made of plain values, as it must neither be converted to a key nor reach a
+     * query. createSocket and editDocument both call this, so the client gets a failed acknowledgement.
+     */
+    getDocumentEditQueueKey(data) {
+        const {documentId, studySessionId, studyStepId} = data || {};
+        if ([documentId, studySessionId, studyStepId].some((value) => typeof value === "object" && value !== null)) {
+            throw new Error("The document context of an edit must not contain objects");
+        }
+        return `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+    }
+
+    /**
      * Edits the document based on the provided data.
      *
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
      * and if so, it applies the edits to the document and sends the updated document to the client.
+     *
+     * Runs inside the document context queue of its socket event (see getDocumentEditQueueKey), which covers the whole
+     * transaction. Do not enqueue on the same key in here, as it would wait for itself.
      *
      * @socketEvent documentEdit
      * @param {Object} data The data payload containing the edits and their context.
@@ -815,48 +837,62 @@ class DocumentSocket extends Socket {
      * @param {number} [data.studyStepId] If provided, associates the edits with a specific study step.
      * @param {Object} options The options object containing the transaction.
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure all edits are added atomically.
+     * @param {Function} options.afterSuccessfulCommit Registers the broadcast of the saved edits (see createSocket).
      * @returns {Promise<void>} A promise that resolves (with no value) once all edits have been processed and saved.
      */
     async editDocument(data, options) {
         const {documentId, studySessionId, studyStepId, ops} = data;
 
-        // Generate queue key for this document context
-        const key = `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+        const key = this.getDocumentEditQueueKey(data);
+        const timestamps = this.server.documentTimestamps;
 
-        return enqueueDocumentTask(this.server.documentQueues, key, async () => {
-            const bulkEdits = ops.map((op, idx) => ({
-                userId: this.userId,
-                draft: true,
-                documentId,
-                studySessionId: studySessionId || null,
-                studyStepId: studyStepId || null,
-                order: idx + 1,
-                ...op
-            }));
-
-            const savedEdits = await this.models['document_edit'].bulkCreate(
-                bulkEdits,
-                {
-                    transaction: options.transaction
-                }
-            );
-
-            const appliedEdits = savedEdits.map(se => ({
-                ...se.get({plain: true}),
-                applied: true,
-                sender: this.socket.id
-            }));
-
-            if (studySessionId !== null) {
-                this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-                return;
-            }
-
-            options.transaction.afterCommit(() => {
-                this.emitDoc(documentId, "document_editRefresh", appliedEdits);
+        // New edits must sort after the persisted ones, which can be ahead of the clock after it was set back. Only the
+        // first edit of a context in this process has to read them, as the queue serializes the context from then on.
+        if (!timestamps.has(key)) {
+            const lastCreatedAt = await this.models['document_edit'].max('createdAt', {
+                where: {
+                    documentId,
+                    studySessionId: studySessionId || null,
+                    studyStepId: studyStepId || null,
+                },
+                transaction: options.transaction,
             });
+            timestamps.set(key, lastCreatedAt ? new Date(lastCreatedAt).getTime() : 0);
+        }
 
-        });
+        const createdAt = nextDocumentTimestamp(timestamps, key);
+
+        const bulkEdits = ops.map((op, idx) => ({
+            userId: this.userId,
+            draft: true,
+            documentId,
+            studySessionId: studySessionId || null,
+            studyStepId: studyStepId || null,
+            order: idx + 1,
+            ...op,
+            createdAt
+        }));
+
+        const savedEdits = await this.models['document_edit'].bulkCreate(
+            bulkEdits,
+            {
+                transaction: options.transaction
+            }
+        );
+
+        const appliedEdits = savedEdits.map(se => ({
+            ...se.get({plain: true}),
+            applied: true,
+            sender: this.socket.id
+        }));
+
+        if (studySessionId !== null) {
+            this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+            return;
+        }
+
+        // Clients must not apply edits of a failed commit, and returning the promise keeps the context in commit order.
+        options.afterSuccessfulCommit(() => this.emitDoc(documentId, "document_editRefresh", appliedEdits));
     }
 
     /**
@@ -1965,7 +2001,7 @@ class DocumentSocket extends Socket {
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
-        this.createSocket("documentEdit", this.editDocument, {}, true);
+        this.createSocket("documentEdit", this.editDocument, {}, true, this.getDocumentEditQueueKey);
         this.createSocket("documentSubscribe", this.subscribeDocument, {}, false);
         this.createSocket("documentUnsubscribe", this.unsubscribeDocument, {}, false);
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);

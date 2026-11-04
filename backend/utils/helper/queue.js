@@ -36,5 +36,24 @@ function enqueueDocumentTask(queue, key, task) {
     return newQueue;
 }
 
+/**
+ * Get the creation time for the next message of a document context
+ *
+ * Edits are reconstructed by sorting on createdAt and then on the order inside of their message. Messages that are
+ * saved one after the other can still get the same millisecond, which would interleave their operations, so the
+ * time is strictly increasing for each context. The caller has to seed a context it has not seen in this process with
+ * its persisted time, as that can be ahead of the clock.
+ *
+ * @param {Map} timestamps - The Map containing the last timestamp of each context
+ * @param {string} key - The unique key identifying the document context
+ * @returns {Date} - The creation time for the next message of this context
+ */
+function nextDocumentTimestamp(timestamps, key) {
+    const next = Math.max(Date.now(), (timestamps.get(key) || 0) + 1);
+    timestamps.set(key, next);
+    return new Date(next);
+}
+
 // Export functions
 exports.enqueueDocumentTask = enqueueDocumentTask;
+exports.nextDocumentTimestamp = nextDocumentTimestamp;
