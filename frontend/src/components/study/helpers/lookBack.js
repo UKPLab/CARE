@@ -151,3 +151,20 @@ export function buildLookBack({steps, currentStep, shownStepId, splitLayout, tab
   }));
   return {earlierSteps, shownEarlier, hiddenStepId, dataSplit: splitLayout || (hiddenStepId !== null ? "single" : null), isVisible, paneProps};
 }
+
+/**
+ * The props Annotator.vue and Editor.vue take for the look-back, the same in both; Study.vue fills them from paneProps
+ * of buildLookBack.
+ */
+export const lookBackPaneProps = {
+  // Makes the step read-only, when it is not the current step
+  forceReadOnly: {type: Boolean, required: false, default: false},
+  // The sidebar tab to open, null for the component's default
+  activeSidebar: {type: String, required: false, default: null},
+  // In a study step that can look back: its look-back sidebar tabs (see buildTabsByStep)
+  lookBackTabs: {type: Array, required: false, default: () => []},
+  // The earlier step on screen, if this step has a look-back tab for it
+  shownLookBackStepId: {type: Number, required: false, default: null},
+  // Hides the step's own sidebar tabs, while an earlier step is shown in its place
+  ownTabsHidden: {type: Boolean, required: false, default: false},
+};

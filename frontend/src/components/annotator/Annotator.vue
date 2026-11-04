@@ -114,7 +114,7 @@ import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
-import {isCurrentStepTab, isLookBackTabShown} from "@/components/study/helpers/lookBack.js";
+import {isCurrentStepTab, isLookBackTabShown, lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "AnnotatorView",
@@ -186,40 +186,13 @@ export default {
       required: false,
       default: false,
     },
-    forceReadOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    activeSidebar: {
-      type: String,
-      required: false,
-      default: null,
-    },
     // In a study step that can look back: the step's number, shown on its own sidebar tab like on the earlier ones
     stepNumber: {
       type: Number,
       required: false,
       default: null,
     },
-    // In a study step that can look back: its look-back sidebar tabs (see components/study/helpers/lookBack.js)
-    lookBackTabs: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-    // The earlier step on screen, if this step has a look-back tab for it
-    shownLookBackStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    // Hides the step's own sidebar tabs, while an earlier step is shown in its place
-    ownTabsHidden: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+    ...lookBackPaneProps,
     documentId: {
       type: Number,
       required: false,
