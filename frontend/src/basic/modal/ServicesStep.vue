@@ -204,22 +204,8 @@ export default {
      * @returns {string} Service display label
      */
     getServiceLabel(serviceName) {
-      switch (serviceName) {
-        case "nlpAssessment":
-          return "NLP Assessment";
-        case "textualFeedback":
-          return "Textual Feedback";
-        case "aiChat":
-          return "AI Chat";
-        case "dialogueContext":
-          return "Dialogue Context";
-        case "dialogueDecision":
-          return "Dialogue Decision";
-        case "dialogueAnchor":
-          return "Dialogue Anchor";
-        default:
-          return serviceName;
-      }
+      const key = `ai.services.${serviceName}`;
+      return this.$te(key) ? this.$t(key) : serviceName;
     },
     /**
      * Return the service declaration at an index.

@@ -276,6 +276,14 @@
       "stopUnconfirmedWithError": "{error}. Das Stoppen wurde nicht bestätigt; es wird auf das Ergebnis der Anfrage gewartet."
     }
   },
+  "services": {
+    "nlpAssessment": "NLP-Bewertung",
+    "textualFeedback": "Textuelles Feedback",
+    "aiChat": "KI-Chat",
+    "dialogueContext": "Dialogkontext",
+    "dialogueDecision": "Dialogentscheidung",
+    "dialogueAnchor": "Dialoganker"
+  },
   "chat": {
     "title": "Studienchat",
     "sidebarTitle": "KI-Chat",

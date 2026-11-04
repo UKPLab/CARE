@@ -276,6 +276,14 @@
       "stopUnconfirmedWithError": "{error}. Stop was not confirmed; waiting for the request outcome."
     }
   },
+  "services": {
+    "nlpAssessment": "NLP Assessment",
+    "textualFeedback": "Textual Feedback",
+    "aiChat": "AI Chat",
+    "dialogueContext": "Dialogue Context",
+    "dialogueDecision": "Dialogue Decision",
+    "dialogueAnchor": "Dialogue Anchor"
+  },
   "chat": {
     "title": "Study chat",
     "sidebarTitle": "AI Chat",
