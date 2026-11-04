@@ -45,6 +45,30 @@ You can inject the `acceptStats` variable into any component by using:
     }
 
 
+Study Context
+-------------
+Events logged inside a study should carry the study IDs, so that they can be filtered by study session and step.
+There are two step IDs with different meanings:
+
+- ``studyStepId``: the step the logging component belongs to (provided by ``Annotator.vue`` and ``Editor.vue``).
+- ``currentStudyStepId``: the step the study session is on (``currentStudyStep``, provided by ``Study.vue``).
+
+Usually both are the same. They differ when an earlier step is shown while the session is on a later one.
+
+In a component, inject the IDs and add the available ones to ``data``:
+
+.. code-block:: javascript
+
+    inject: {
+        studySessionId: {default: () => null},
+        studyStepId: {default: () => null},
+        currentStudyStep: {default: () => null},
+    }
+
+The ``BehaviorLogger`` (see below) is not a component and cannot inject. Instead, ``Study.vue`` sets
+``studySessionId`` and ``currentStudyStepId`` through ``setStatsContext``, which ``App.vue`` provides, and clears them
+when the study is left. The logger adds them to every event it sends and leaves out keys without a value.
+
 Logging a New Interaction
 --------------------------
 Let's assume we want to log a new interaction ``specialButtonClick`` upon click on a button. Please always use
@@ -128,10 +152,7 @@ the statistics table.
 .. code-block:: javascript
 
         handleNewInteraction() {
-            this.socket.emit("stats", {
-              action: "newInteraction",
-              data: {id: Math.random()}
-            })
+            this.emit("newInteraction", {id: Math.random()})
         }
 
 .. important::
@@ -139,7 +160,7 @@ the statistics table.
 
     1. Bind new logging functions in the constructor to maintain the correct context.
     2. Add new event listeners to both ``init()`` and ``destroy()`` methods.
-    3. Use the existing WebSocket connection (``this.socket.emit``) to send data to the backend.
+    3. Send events with ``this.emit(action, data)``, not ``this.socket.emit``, so that the study context is added.
     4. Consider performance optimizations (like debouncing) for frequent events.
 
 Usage in CARE

@@ -17,9 +17,11 @@
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
               @copy="onCopy"
+              @loaded="pdf = $event"
           />
 
         </div>
+        <AnnotationScrollMarkers :pdf="pdf"/>
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
@@ -97,6 +99,7 @@
  * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
@@ -120,6 +123,7 @@ export default {
     SidebarTemplate,
     CurrentStepNote,
     PDFViewer,
+    AnnotationScrollMarkers,
     AnnotationSidebar,
     Loader,
     TopBarButton,
@@ -230,6 +234,7 @@ export default {
   emits: ['update:data'],
   data() {
     return {
+      pdf: null,
       downloading: false,
       assessmentViewActive: true,
       maxSidebarWidth: 600,
@@ -240,6 +245,8 @@ export default {
             action: "annotatorScrollActivity",
             data: {
               documentId: this.documentId,
+              ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+              ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
               scrollTop: this.$refs.viewer.scrollTop,
               scrollHeight: this.$refs.viewer.scrollHeight
             }

@@ -292,6 +292,7 @@ export default {
     StepModal,
     LoadingModal
   },
+  inject: ["setStatsContext"],
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -395,8 +396,9 @@ export default {
     },
     canLoadStepById() {
       return this.orderedStudySteps.reduce((acc, step, i, steps) => {
-        if (i === 0) {
-          acc[step.id] = true; // first step can always load
+        // always load the active step, including when resuming a session.
+        if (step.id === this.currentStudyStepId || i === 0) {
+          acc[step.id] = true;
           return acc;
         }
 
@@ -486,6 +488,10 @@ export default {
     currentStudyStep() {
       return this.currentStudyStepId ? this.$store.getters["table/study_step/get"](this.currentStudyStepId) : null;
     },
+    studyStatsContext() {
+      // studySessionId is 0 until the session loads; send null so it is left out of the stats
+      return {studySessionId: this.studySessionId || null, currentStudyStepId: this.currentStudyStepId};
+    },
     currentStudyStepId() {
       if (this.readOnlyComputed && this.firstStep) {
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
@@ -553,6 +559,12 @@ export default {
       },
       immediate: true,
     },
+    studyStatsContext: {
+      handler(context) {
+        this.setStatsContext(context);
+      },
+      immediate: true,
+    },
     studySession() {
       if (this.study && this.study.timeLimit > 0 && this.studySession) {
         //studySession required, otherwise not all data may be there yet
@@ -573,6 +585,7 @@ export default {
     this.getStudyData();
   },
   beforeUnmount() {
+    this.setStatsContext({studySessionId: null, currentStudyStepId: null});
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }

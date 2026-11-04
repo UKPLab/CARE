@@ -1,10 +1,15 @@
 Installation
 ============
 
-To get started quickly, follow the instructions below.
+Both local development and production hosting require the prerequisites below.
 
-For a complete overview on building, development and deployment options
-checkout the :doc:`Before You Start <../for_developers/before_you_start>` option.
+* **Local development:** after completing the prerequisites, follow
+  :ref:`development-build` in :doc:`Before You Start <../for_developers/before_you_start>`.
+  The production build, mail server, DNS, Nginx, and Certbot sections can be skipped.
+* **Production hosting:** after completing the prerequisites, continue with the build
+  and deployment instructions on this page.
+
+The production deployment steps are not required for contributing to CARE locally.
 
 Prerequisites
 -------------
@@ -295,6 +300,4 @@ You can check which make is used with ``where make`` (under Windows).
 .. note::
 
     In case of doubt, you can uninstall the cygwin make with the installer package manager ``setup-x86_64.exe`` of `Cygwin <https://cygwin.com/install.html>`_.
-
-
 
