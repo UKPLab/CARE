@@ -130,6 +130,7 @@ export default {
       documentId: computed(() => this.documentId),
       readOnly: computed(() => this.readOnly || this.forceReadOnly),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
   },
@@ -256,8 +257,7 @@ export default {
     },
     showDefaultAllAnnotations(){
       // From this Annotator's own step, which is not the current step when an earlier step is shown
-      const step = this.$store.getters["table/study_step/get"](this.studyStepId);
-      return step?.configuration?.settings?.showAllDocumentAnnotations ?? false;
+      return this.$store.getters["table/study_step/get"](this.studyStepId)?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers

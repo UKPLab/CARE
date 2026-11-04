@@ -109,6 +109,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       readOnly: computed(() => this.readOnlyOverwrite),
       templateId: computed(() => this.templateId),
     }
