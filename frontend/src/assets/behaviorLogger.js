@@ -6,7 +6,7 @@
  * - Tab visibility changes
  * - Route changes
  * - Specific key down events (currently only cmd/ctrl + f to detect search start)
- * - Window focus events (currently only used to detect search end)
+ * - Window focus and blur events (time spent outside the window, and search end)
  * @author: Timo Imhof
  */
 
@@ -37,6 +37,9 @@ class BehaviorLogger {
         this.searchStartTime = null;
         this.currentSearchId = null;
 
+        // Window focus state
+        this.blurStartTime = null;
+
         // Bind methods
         // (necessary to access the correct 'this' context when the methods are called as event listeners)
         this.handleMouseMove = this.handleMouseMove.bind(this);
@@ -46,6 +49,7 @@ class BehaviorLogger {
         this.reportRouteChange = this.reportRouteChange.bind(this);
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleWindowFocus = this.handleWindowFocus.bind(this);
+        this.handleWindowBlur = this.handleWindowBlur.bind(this);
     }
 
     /**
@@ -58,6 +62,7 @@ class BehaviorLogger {
         document.addEventListener('visibilitychange', this.reportTabVisibilityChange);
         document.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('focus', this.handleWindowFocus);
+        window.addEventListener('blur', this.handleWindowBlur);
 
         // Log device info on initialization
         this.logDeviceInfo();
@@ -73,6 +78,7 @@ class BehaviorLogger {
         document.removeEventListener('visibilitychange', this.reportTabVisibilityChange);
         document.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('focus', this.handleWindowFocus);
+        window.removeEventListener('blur', this.handleWindowBlur);
         // Drop a mouse move that is still waiting for the debounce, so nothing is sent after consent is withdrawn
         this.reportMouseMove.cancel();
     }
@@ -139,14 +145,34 @@ class BehaviorLogger {
 
     /**
      * Detects a window focus event.
+     * Reports that the window regained focus, with the time spent outside the window.
      * If a search is active, the search is assumed to be complete and reported to the backend.
      */
     handleWindowFocus() {
+        this.emit("windowFocusChange", {
+            focused: true,
+            duration: this.blurStartTime ? Date.now() - this.blurStartTime : null,
+        });
+        this.blurStartTime = null;
+
         if (this.searchActive) {
             // Assume search is complete if window regains focus
             this.reportSearchEvent(`complete`);
             this.searchActive = false;
         }
+    }
+
+    /**
+     * Detects a window blur event.
+     * Triggered when the window loses focus, e.g. the user clicks into another application,
+     * switches tabs, opens the browser search or clicks the address bar.
+     * Saves the time and reports that the window lost focus.
+     */
+    handleWindowBlur() {
+        this.blurStartTime = Date.now();
+        this.emit("windowFocusChange", {
+            focused: false,
+        });
     }
 
     /**
