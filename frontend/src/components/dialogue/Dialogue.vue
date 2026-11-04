@@ -29,6 +29,7 @@
             @retry="retryMessage"
             @typing-started="logDialogueEvent('dialogueTypingStarted', $event)"
             @paste="logDialogueEvent('dialogueInputPaste', $event)"
+            @copy="logDialogueEvent('dialogueQuestionCopy', $event)"
         />
 
         <AiAssistantRequest
@@ -389,6 +390,8 @@ export default {
       this.logDialogueEvent("dialogueAnswerSubmit", {
         requestId,
         questionId: this.currentQuestion.id,
+        followUpIndex: answer.followUpIndex || 0,
+        ...(answer.composition || {}),
       });
       this.pendingAnswer = skipped ? this.$t("ai.dialogue.skipped") : answer.answerText;
       this.pendingSkipped = skipped;

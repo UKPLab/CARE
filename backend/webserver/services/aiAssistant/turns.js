@@ -133,6 +133,8 @@ async function abortPendingMessage(service, client, data, descriptor) {
     if (updatedCount === 0 && providerResult?.aborted !== true) {
         return {aborted: false, key: "errors.ai.requestNotAbortable"};
     }
+    // A stage that had not reached the provider yet keeps its log open, which would block Retry.
+    await models["ai_log"].update({status: "aborted"}, {where: {requestId, userId, status: "in_progress"}});
     return {aborted: true};
 }
 

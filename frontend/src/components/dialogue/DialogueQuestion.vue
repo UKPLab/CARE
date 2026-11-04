@@ -8,7 +8,7 @@
         <span :class="markerClass(turn.question)">{{ marker(turn.question) }}</span>
       </div>
       <div class="flex-grow-1">
-        <div class="assistant-message">
+        <div class="assistant-message" @copy="onQuestionCopy(turn.question)">
           <template v-if="anchoredQuestionParts">
             <AiMessageMarkdown
                 v-if="anchoredQuestionParts.before"
@@ -36,7 +36,7 @@
             <div :class="markerClass(entry.question)" class="mb-2">
               {{ marker(entry.question) }}
             </div>
-            <div class="assistant-message">
+            <div class="assistant-message" @copy="onQuestionCopy(entry.question)">
               <AiMessageMarkdown :text="entry.question.content || ''" />
             </div>
           </template>
@@ -55,8 +55,10 @@
               @retry="$emit('retry', $event)"
           />
 
+          <BasicButton v-if="entry.answer && !activeRequest && isActiveQuestion(entry.question) && allowSkip && !readOnly"
+                       :disabled="isBusy" @click="$emit('send', {skipped: true, followUpIndex: questionFromMessage(entry.question).followUpIndex})">{{ $t("ai.dialogue.skip") }}</BasicButton>
           <DialogueAnswerInput
-              v-if="isActiveQuestion(entry.question)"
+              v-if="isActiveQuestion(entry.question) && (!entry.answer || activeRequest)"
               class="mt-3"
               :question="questionFromMessage(entry.question)"
               :read-only="readOnly"
@@ -78,6 +80,7 @@
 
 <script>
 import {defineAsyncComponent} from "vue";
+import BasicButton from "@/basic/Button.vue";
 import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 import DialogueAnswerInput from "@/components/dialogue/DialogueAnswerInput.vue";
 import {splitDialogueQuestionText} from "@/components/dialogue/dialogueMessages.js";
@@ -93,7 +96,8 @@ const AiMessageMarkdown = defineAsyncComponent(
  */
 export default {
   name: "DialogueQuestion",
-  components: {AiConversationMessage, AiMessageMarkdown, DialogueAnswerInput},
+  components: {BasicButton, AiConversationMessage, AiMessageMarkdown, DialogueAnswerInput},
+  inject: {acceptStats: {default: false}},
   props: {
     turn: {
       type: Object,
@@ -140,7 +144,7 @@ export default {
       default: false,
     },
   },
-  emits: ["send", "abort", "retry", "typing-started", "paste"],
+  emits: ["send", "abort", "retry", "typing-started", "paste", "copy"],
   computed: {
     anchoredQuestionParts() {
       return splitDialogueQuestionText(this.turn.question);
@@ -153,6 +157,19 @@ export default {
     },
   },
   methods: {
+    /**
+     * Records the question identity and length, without persisting copied text.
+     * @param {Object} message - Question message and Dialogue metadata.
+     * @returns {void}
+     */
+    onQuestionCopy(message) {
+      const text = window.getSelection()?.toString() || "";
+      if (!this.acceptStats || !text) {
+        return;
+      }
+      this.$emit("copy", {questionId: message.metadata?.dialogue?.questionId,
+        followUpIndex: message.metadata?.dialogue?.followUpIndex || 0, copiedLength: text.length});
+    },
     /**
      * Builds the question object expected by the answer input.
      *

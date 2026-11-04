@@ -13,7 +13,7 @@ module.exports = {
                 conversationId: {
                     type: Sequelize.INTEGER,
                     allowNull: false,
-                    references: { model: 'ai_conversation', key: 'id' },
+                    references: { model: 'ai_conversation', key: 'id', deferrable: Sequelize.Deferrable.INITIALLY_DEFERRED },
                     onDelete: 'CASCADE',
                     onUpdate: 'CASCADE',
                 },

@@ -143,6 +143,14 @@ async function beginRequest(service, request, options = {}) {
         }
     }
 
+    // A stopped assistant message must not start a new model call.
+    if (aiMessageId) {
+        const pending = await service.server.db.models["ai_message"].getPendingMessageByRequestId(requestId);
+        if (!pending || Number(pending.id) !== Number(aiMessageId)) {
+            return deny("Request aborted", "errors.ai.assistant.requestAborted");
+        }
+    }
+
     try {
         const log = await service.server.db.models["ai_log"].add({
             userId,

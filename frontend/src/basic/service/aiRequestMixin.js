@@ -209,9 +209,9 @@ export default {
      *
      * @returns {void}
      */
-    scrollToBottom() {
+    scrollToBottom(options) {
       this.$nextTick(() => {
-        this.$refs.body?.scrollToBottom();
+        this.$refs.body?.scrollToBottom(options);
       });
     },
     /**

@@ -1,5 +1,5 @@
 <template>
-  <div ref="messageList" class="conversation-body flex-grow-1 p-3">
+  <div ref="messageList" class="conversation-body flex-grow-1 p-3" @scroll="onScroll">
     <div
         v-if="loading"
         class="conversation-state text-center text-muted"
@@ -23,12 +23,16 @@
 
     <template v-else>
       <slot />
+      <BasicButton v-if="followLatest && !followingLatest" class="jump-to-latest" @click="scrollToBottom({force: true})">
+        {{ $t("ai.chat.jumpToLatest") }}
+      </BasicButton>
     </template>
   </div>
 </template>
 
 <script>
 import BasicIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Scrollable message body shell shared by AI conversation surfaces.
@@ -40,8 +44,16 @@ import BasicIcon from "@/basic/Icon.vue";
  */
 export default {
   name: "AiConversationBody",
-  components: {BasicIcon},
+  components: {BasicIcon, BasicButton},
+  data() {
+    return {followingLatest: true};
+  },
   props: {
+    followLatest: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
     loading: {
       type: Boolean,
       required: false,
@@ -74,7 +86,13 @@ export default {
      *
      * @returns {void}
      */
-    scrollToBottom() {
+    scrollToBottom({force = false} = {}) {
+      if (this.followLatest && !force && !this.followingLatest) {
+        return;
+      }
+      if (force) {
+        this.followingLatest = true;
+      }
       this.$nextTick(() => {
         const list = this.$refs.messageList;
         if (list) {
@@ -82,11 +100,25 @@ export default {
         }
       });
     },
+    /** Remembers the reader's position before the next streamed update. */
+    onScroll() {
+      const list = this.$refs.messageList;
+      if (list) {
+        this.followingLatest = list.scrollHeight - list.clientHeight - list.scrollTop <= 48;
+      }
+    },
   },
 };
 </script>
 
 <style scoped>
+.jump-to-latest {
+  position: sticky;
+  bottom: 0;
+  display: block;
+  margin-left: auto;
+}
+
 .conversation-body {
   min-height: 0;
   overflow-y: auto;

@@ -285,6 +285,8 @@
     "dialogueAnchor": "Dialoganker"
   },
   "chat": {
+    "retry": "Erneut versuchen",
+    "jumpToLatest": "Zur neuesten Nachricht",
     "title": "Studienchat",
     "sidebarTitle": "KI-Chat",
     "withContext": "Mit Studienkontext",

@@ -23,6 +23,7 @@
           @retry="$emit('retry', $event)"
           @typing-started="$emit('typing-started', $event)"
           @paste="$emit('paste', $event)"
+          @copy="$emit('copy', $event)"
       />
       <AiConversationMessage
           v-else
@@ -100,7 +101,7 @@ export default {
       default: false,
     },
   },
-  emits: ["send", "abort", "retry", "typing-started", "paste"],
+  emits: ["send", "abort", "retry", "typing-started", "paste", "copy"],
   computed: {
     dialogueTurns() {
       return buildDialogueTurns(this.messages);

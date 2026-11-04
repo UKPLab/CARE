@@ -285,6 +285,8 @@
     "dialogueAnchor": "Dialogue Anchor"
   },
   "chat": {
+    "retry": "Retry",
+    "jumpToLatest": "Jump to latest",
     "title": "Study chat",
     "sidebarTitle": "AI Chat",
     "withContext": "With study context",

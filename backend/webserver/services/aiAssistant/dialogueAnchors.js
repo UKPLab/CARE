@@ -11,6 +11,7 @@
  */
 
 const completion = require("./completion.js");
+const TranslatableError = require("../../../utils/TranslatableError");
 const {DIALOGUE_MODEL_PARAMETERS, DIALOGUE_SOURCES, parseAnchorSelections} = require("./dialoguePlan.js");
 
 /**
@@ -91,6 +92,10 @@ async function prepareDialogueAnchors(service, client, context, turn, requestId)
     }
 
     if (state.message) {
+        const pending = await service.server.db.models["ai_message"].getPendingMessageByRequestId(requestId);
+        if (!pending || Number(pending.id) !== Number(turn.assistantMessage.id)) {
+            throw new TranslatableError("errors.ai.assistant.requestAborted");
+        }
         await service.server.db.models["ai_message"].updateById(state.message.id, {
             metadata: {
                 ...state.message.metadata,

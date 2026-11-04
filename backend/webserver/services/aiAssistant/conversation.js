@@ -10,6 +10,7 @@
 const TranslatableError = require("../../../utils/TranslatableError");
 
 const {AI_CONVERSATION_TYPES} = require("../../../db/models/ai_conversation");
+const {AI_MESSAGE_ROLES, AI_MESSAGE_STATUSES} = require("../../../db/models/ai_message");
 const helpers = require("../../../utils/helper/ai/helpers.js");
 const completion = require("./completion.js");
 const turns = require("./turns.js");
@@ -266,16 +267,22 @@ async function getConversation(service, client, data) {
 
     const defaultModel = models[0] || null;
     const defaultModelId = defaultModel?.id || null;
-    let contextNearLimit = false;
-    if (activeConversation && defaultModel) {
-        contextNearLimit = await isContextNearLimit(service, activeConversation.id, defaultModel.contextWindowTokens);
-    }
+    const messages = activeConversation
+        ? await service.server.db.models["ai_message"].getVisibleMessages(activeConversation.id) : [];
+    const latestAnswer = [...messages].reverse().find(message =>
+        Number(message.role) === AI_MESSAGE_ROLES.ASSISTANT
+        && Number(message.status) === AI_MESSAGE_STATUSES.COMPLETED && message.aiModelId);
+    const selectedModel = models.find(model => Number(model.id) === Number(data?.aiModelId))
+        || models.find(model => Number(model.id) === Number(latestAnswer?.aiModelId)) || defaultModel;
+    const contextNearLimit = activeConversation && selectedModel
+        ? await isContextNearLimit(service, activeConversation.id, selectedModel.contextWindowTokens) : false;
 
     return {
         conversations,
         activeConversationId: activeConversation?.id || null,
         includeContext: activeConversation?.includeContext !== false,
-        messages: activeConversation ? await service.server.db.models["ai_message"].getVisibleMessages(activeConversation.id) : [],
+        messages,
+        selectedModelId: selectedModel?.id || null,
         models,
         defaultModelId,
         contextNearLimit,

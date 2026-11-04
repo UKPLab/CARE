@@ -48,8 +48,12 @@
           rows="3"
           :placeholder="$t('ai.dialogue.answerPlaceholder')"
           :aria-label="question.text || $t('ai.dialogue.answer')"
+          @beforeinput="onBeforeInput"
           @input="onInput"
           @paste="onPaste"
+          @compositionstart="onCompositionStart"
+          @compositionend="onCompositionEnd"
+          @blur="endTypingInterval"
       />
     </fieldset>
 
@@ -100,6 +104,9 @@ const CHECKBOX_TYPES = Object.freeze(["multipleChoice"]);
 export default {
   name: "DialogueAnswerInput",
   components: {BasicButton},
+  inject: {
+    acceptStats: {default: false},
+  },
   props: {
     question: {
       type: Object,
@@ -143,6 +150,11 @@ export default {
       selectedOption: null,
       selectedOptions: [],
       typingStarted: false,
+      compositionSummary: {typedCharacters: 0, pastedCharacters: 0, deletedCharacters: 0, activeTypingMs: 0},
+      previousText: "",
+      beforeEdit: null,
+      composing: false,
+      lastEditAt: null,
     };
   },
   computed: {
@@ -188,8 +200,20 @@ export default {
   },
   watch: {
     "question.id"() {
-      this.typingStarted = false;
+      this.resetComposition();
     },
+    "question.followUpIndex"() {
+      this.resetComposition();
+    },
+    acceptStats() {
+      this.resetComposition();
+    },
+  },
+  mounted() {
+    document.addEventListener("visibilitychange", this.endTypingInterval);
+  },
+  beforeUnmount() {
+    document.removeEventListener("visibilitychange", this.endTypingInterval);
   },
   methods: {
     /**
@@ -199,6 +223,10 @@ export default {
      * @returns {void}
      */
     onInput(event) {
+      if (event.isComposing || this.composing) {
+        return;
+      }
+      this.recordEdit(event.target?.value ?? this.answerDraft ?? "", event.inputType);
       if (this.typingStarted || event.inputType === "insertFromPaste") {
         return;
       }
@@ -215,6 +243,9 @@ export default {
      * @returns {void}
      */
     onPaste(event) {
+      if (!this.acceptStats) {
+        return;
+      }
       const pastedText = (event.clipboardData || window.clipboardData).getData("text");
       if (!pastedText) {
         return;
@@ -224,6 +255,97 @@ export default {
         followUpIndex: this.question.followUpIndex || 0,
         pastedLength: pastedText.length,
       });
+    },
+    /**
+     * Resets aggregate measurements for the active question instance.
+     * @returns {void}
+     */
+    resetComposition() {
+      this.typingStarted = false;
+      this.compositionSummary = {typedCharacters: 0, pastedCharacters: 0, deletedCharacters: 0, activeTypingMs: 0};
+      this.previousText = this.acceptStats ? this.answerDraft : "";
+      this.beforeEdit = null;
+      this.composing = false;
+      this.lastEditAt = null;
+    },
+    /**
+     * Ends a typing interval on focus or visibility changes.
+     * @returns {void}
+     */
+    endTypingInterval() {
+      this.lastEditAt = null;
+    },
+    /**
+     * Captures selected-text replacement without recording a keystroke event.
+     * @param {InputEvent} event - Textarea edit event.
+     * @returns {void}
+     */
+    onBeforeInput(event) {
+      if (this.acceptStats && !this.composing) {
+        this.beforeEdit = {start: event.target.selectionStart, end: event.target.selectionEnd, text: event.target.value};
+      }
+    },
+    /**
+     * Defers composition previews until the committed text is available.
+     * @param {CompositionEvent} event - Textarea edit event.
+     * @returns {void}
+     */
+    onCompositionStart(event) {
+      this.onBeforeInput(event);
+      this.composing = true;
+    },
+    /**
+     * Counts committed composition text once.
+     * @param {CompositionEvent} event - Textarea edit event.
+     * @returns {void}
+     */
+    onCompositionEnd(event) {
+      this.composing = false;
+      this.onInput({target: event.target, inputType: "insertCompositionText"});
+    },
+    /**
+     * Adds edit totals without sending per-keystroke statistics.
+     * @param {string} text - Current textarea value.
+     * @param {string} inputType - Browser edit operation.
+     * @returns {void}
+     */
+    recordEdit(text, inputType = "") {
+      if (!this.acceptStats) {
+        return;
+      }
+      const previous = this.previousText;
+      let prefix = 0;
+      while (prefix < previous.length && prefix < text.length && previous[prefix] === text[prefix]) {
+        prefix += 1;
+      }
+      let suffix = 0;
+      while (suffix < previous.length - prefix && suffix < text.length - prefix
+          && previous[previous.length - suffix - 1] === text[text.length - suffix - 1]) {
+        suffix += 1;
+      }
+      let removed = previous.length - prefix - suffix;
+      let inserted = text.length - prefix - suffix;
+      if (this.beforeEdit && inputType.startsWith("insert") && this.beforeEdit.end > this.beforeEdit.start) {
+        removed = this.beforeEdit.end - this.beforeEdit.start;
+        inserted = Math.max(0, text.length - (this.beforeEdit.text.length - removed));
+      }
+      this.beforeEdit = null;
+      this.previousText = text;
+      if (!removed && !inserted) {
+        return;
+      }
+      this.compositionSummary.deletedCharacters += removed;
+      if (inputType === "insertFromPaste") {
+        this.compositionSummary.pastedCharacters += inserted;
+      } else if (!inputType.startsWith("history")) {
+        this.compositionSummary.typedCharacters += inserted;
+      }
+      const now = Date.now();
+      const interval = this.lastEditAt === null ? 0 : now - this.lastEditAt;
+      if (interval >= 0 && interval <= 2000) {
+        this.compositionSummary.activeTypingMs += interval;
+      }
+      this.lastEditAt = now;
     },
     /**
      * Builds a stable input id for one option.
@@ -280,14 +402,22 @@ export default {
       this.$emit("send", {
         answerText: this.answerText,
         answerValue: this.answerValue,
+        followUpIndex: this.question.followUpIndex || 0,
+        ...(this.acceptStats ? {composition: {...this.compositionSummary}} : {}),
       });
     },
-    /** Records an explicit skipped answer. */
+    /**
+     * Records an explicit skipped answer.
+     * @returns {void}
+     */
     skip() {
       if (!this.allowSkip || this.isBusy || this.readOnly) {
         return;
       }
-      this.$emit("send", {answerText: "", answerValue: null, skipped: true});
+      this.$emit("send", {answerText: "", answerValue: null, skipped: true,
+        followUpIndex: this.question.followUpIndex || 0,
+        ...(this.acceptStats ? {composition: {...this.compositionSummary}} : {}),
+      });
     },
   },
 };

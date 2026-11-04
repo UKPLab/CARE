@@ -6,7 +6,7 @@ module.exports = {
             await queryInterface.addColumn('ai_log', 'aiMessageId', {
                 type: Sequelize.INTEGER,
                 allowNull: true,
-                references: { model: 'ai_message', key: 'id' },
+                references: { model: 'ai_message', key: 'id', deferrable: Sequelize.Deferrable.INITIALLY_DEFERRED },
                 onDelete: 'SET NULL',
                 onUpdate: 'CASCADE',
             }, { transaction });
