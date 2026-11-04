@@ -143,7 +143,8 @@ export function buildLookBack({steps, currentStep, shownStepId, splitLayout, tab
       shownLookBackStepId: shownTab ? shownStepId : null,
       ownTabsHidden: hiddenStepId === step.id,
       forceReadOnly: step.id !== currentStepId,
-      sidebarDisabled: step.id !== currentStepId,
+      // Only an earlier step on screen loses its sidebar; a hidden step keeps it, so it is not created again
+      sidebarDisabled: step.id !== currentStepId && isVisible(step.id),
       isShown: isVisible(step.id),
     }];
   }));
