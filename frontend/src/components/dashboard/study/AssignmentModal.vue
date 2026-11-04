@@ -184,6 +184,7 @@ export default {
         fields: ["firstName", "lastName", "userName"],
       }],
     },
+    { table: "assignment" },
     { table: "study", filter: [{ key: "template", value: true }] },
     { table: "template" },
   ],

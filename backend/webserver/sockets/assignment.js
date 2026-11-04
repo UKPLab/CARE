@@ -883,6 +883,116 @@ class AssignmentSocket extends Socket {
     }
 
     /**
+     * Check whether the current user can read an assignment.
+     * @param {number} assignmentId The assignment to check
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @returns {Promise<boolean>} True if the assignment exists and is readable
+     */
+    async canReadAssignment(assignmentId, options) {
+        const access = await this.getReadFilter(
+            this.userId, { id: assignmentId, deleted: false }, {}, "assignment", this.rolesUpdatedAt
+        );
+        return access.accessAllowed && !!await this.models.assignment.findOne({
+            where: access.filter, transaction: options.transaction
+        });
+    }
+
+    /**
+     * Load the submissions whose documents are used in the study steps of a study session.
+     * @param {Object} studySession The selected study session
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @returns {Promise<Map<number, Object>|null>} Submissions by id, or null if the session is not readable
+     */
+    async getSessionInputSubmissions(studySession, options) {
+        const sessionAccess = await this.getReadFilter(
+            this.userId, { id: studySession.id, deleted: false }, {}, "study_session", this.rolesUpdatedAt
+        );
+        const selectedSession = sessionAccess.accessAllowed && await this.models.study_session.findOne({
+            where: sessionAccess.filter, transaction: options.transaction
+        });
+        if (!selectedSession) return null;
+
+        const steps = await this.models.study_step.findAll({
+            where: { studyId: selectedSession.studyId, deleted: false },
+            transaction: options.transaction
+        });
+        const documentIds = steps.map(step => step.documentId).filter(Boolean);
+        const documents = documentIds.length ? await this.models.document.findAll({
+            where: { id: documentIds, deleted: false },
+            transaction: options.transaction
+        }) : [];
+        const submissionIds = documents.map(document => document.submissionId).filter(Boolean);
+        const submissions = submissionIds.length ? await this.models.submission.findAll({
+            where: { id: submissionIds, deleted: false },
+            transaction: options.transaction
+        }) : [];
+        return new Map(submissions.map(submission => [submission.id, submission]));
+    }
+
+    /**
+     * Resolve an assignment placeholder of the workflow mapping for one selected study session.
+     * Uses the session's input submission of that assignment if there is exactly one, otherwise the
+     * latest root submission of the session's single input author.
+     * @param {Object} studySession The selected study session
+     * @param {string} sourceType "submission" (needs a ZIP document) or "document" (needs a PDF document)
+     * @param {number} assignmentId The assignment chosen in the workflow mapping
+     * @param {Object} options holds the managed transaction of the database (see createSocket function)
+     * @param {Object} cache Lookups shared within one duplicate() call ({assignments: Map, sessions: Map})
+     * @returns {Promise<{documentId: number|null, submissionId: number}>} The PDF document (if any) and the submission
+     * @throws {TranslatableError} errors.assignment.selectedNotResolved if the assignment or session is not readable
+     * or no unique submission with the required document type is found
+     */
+    async resolveAssignmentSource(studySession, sourceType, assignmentId, options, cache) {
+        const unresolved = () => new TranslatableError(
+            "errors.assignment.selectedNotResolved", { assignmentId }
+        );
+        if (!cache.assignments.has(assignmentId)) {
+            cache.assignments.set(assignmentId, await this.canReadAssignment(assignmentId, options));
+        }
+        if (!cache.assignments.get(assignmentId)) throw unresolved();
+
+        if (!cache.sessions.has(studySession.id)) {
+            cache.sessions.set(studySession.id, await this.getSessionInputSubmissions(studySession, options));
+        }
+        const submissions = cache.sessions.get(studySession.id);
+        if (!submissions) throw unresolved();
+
+        const matching = [...submissions.values()].filter(item => item.assignmentId === assignmentId);
+        let submission;
+        if (matching.length === 1) {
+            submission = matching[0];
+        } else if (matching.length > 1) {
+            // A placeholder must never silently pick between multiple session inputs.
+            throw unresolved();
+        } else {
+            const authors = [...new Set([...submissions.values()].map(item => item.userId))];
+            if (authors.length !== 1) throw unresolved();
+            submission = await this.models.submission.findOne({
+                where: {
+                    assignmentId, userId: authors[0], parentSubmissionId: null, deleted: false
+                },
+                order: [["createdAt", "DESC"], ["id", "DESC"]],
+                transaction: options.transaction
+            });
+        }
+        if (!submission) throw unresolved();
+
+        const documents = await this.models.document.findAll({
+            where: { submissionId: submission.id, deleted: false },
+            order: [["id", "ASC"]],
+            transaction: options.transaction
+        });
+        const { DOC_TYPE_PDF, DOC_TYPE_ZIP } = this.models.document.docTypes;
+        const pdf = documents.find(document => document.type === DOC_TYPE_PDF);
+        if (sourceType === "document" && !pdf) throw unresolved();
+        if (sourceType === "submission" && !documents.some(document => document.type === DOC_TYPE_ZIP)) {
+            throw unresolved();
+        }
+        // The annotator uses the PDF; ZIP input is addressed through submissionId in config.
+        return { documentId: pdf?.id || null, submissionId: submission.id };
+    }
+
+    /**
      * Duplicates documents for study sessions based on the provided data.
      *  * For each selected assignment (study session), documents are duplicated according to the workflow mapping.
      * * If the original document is part of a submission, the entire submission is copied with overrides for context.
@@ -894,14 +1004,29 @@ class AssignmentSocket extends Socket {
      * @returns {Promise<Array>} A promise that resolves with an array of arrays, each containing duplicated document objects for the corresponding study session.
      * @throws {Error} Throws an error if the underlying duplication methods fail.
      */
-    
     async duplicate(data, options) {
 
         const duplicatedDocuments = [];
+        const sourceCache = { assignments: new Map(), sessions: new Map() };
         for (const studySession of data.selectedAssignments) {
             const currentDocuments = [];
             let previousSubmissionId = null;
             for (const [sourceWorkflowStepId, targetWorkflowStepId] of Object.entries(data.workflowMapping)) {
+                const assignmentSource = typeof targetWorkflowStepId === 'string'
+                    ? /^(submission|document):assignment:([1-9]\d*)$/.exec(targetWorkflowStepId)
+                    : null;
+                if (assignmentSource) {
+                    const source = await this.resolveAssignmentSource(
+                        studySession, assignmentSource[1], Number(assignmentSource[2]), options, sourceCache
+                    );
+                    previousSubmissionId = source.submissionId;
+                    currentDocuments.push({ ...source, workflowStepId: Number(sourceWorkflowStepId) });
+                    continue;
+                }
+                if (targetWorkflowStepId !== 'previousSubmission' &&
+                    !/^[1-9]\d*$/.test(String(targetWorkflowStepId))) {
+                    throw new TranslatableError("errors.assignment.invalidWorkflowMapping");
+                }
                 if( targetWorkflowStepId === 'previousSubmission'){
                     // Get the original submission first
                     if(previousSubmissionId === null){
@@ -913,7 +1038,13 @@ class AssignmentSocket extends Socket {
                     );
                     
                     // Follow the parent chain to find the root submission
+                    if (!originalSubmission) {
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
+                    }
                     originalSubmission = await this.models['submission'].getRootSubmission(originalSubmission);
+                    if (!originalSubmission) {
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
+                    }
                     
                     // Now find the submission that has previousSubmissionId pointing to this root
                     const latestSubmission = await this.models['submission'].findOne(
@@ -929,6 +1060,9 @@ class AssignmentSocket extends Socket {
                         { transaction: options.transaction }
                     );
                     
+                    if (!document) {
+                        throw new TranslatableError("errors.assignment.latestSubmissionNotFound");
+                    }
                     currentDocuments.push({
                         documentId: document.id,
                         workflowStepId: Number(sourceWorkflowStepId),
@@ -940,11 +1074,17 @@ class AssignmentSocket extends Socket {
                     { where: { workflowStepId: targetWorkflowStepId, studyId: studySession.studyId } }, 
                     { transaction: options.transaction }
                 );
+                if (!sourceStudyStep || !sourceStudyStep.documentId) {
+                    throw new TranslatableError("errors.assignment.firstStepNotSubmission");
+                }
                 
                 const originalDocument = await this.models['document'].getById(
                     sourceStudyStep.documentId, 
                     { transaction: options.transaction }
                 );
+                if (!originalDocument) {
+                    throw new TranslatableError("errors.assignment.firstStepNotSubmission");
+                }
                 
                 let duplicatedDocument;
                 previousSubmissionId = originalDocument.submissionId;

@@ -431,6 +431,7 @@
         "studySessionOwnerNotSelectedReviewer": "Study session owner (User ID: {reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.",
         "invalidMode": "Invalid mode provided for assignment creation.",
         "firstStepNotSubmission": "First step selected does not map to a submission.",
+        "invalidWorkflowMapping": "Invalid workflow step mapping.",
         "latestSubmissionNotFound": "The latest version of the chosen submission could not be found.",
         "selectedNotResolved": "The selected assignment {assignmentId} could not be resolved.",
         "startAfterEnd": "Start time must be before end time."

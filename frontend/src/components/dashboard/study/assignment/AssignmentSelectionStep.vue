@@ -140,6 +140,12 @@ export default {
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
     },
+    assignmentOptions() {
+      return this.$store.getters["table/assignment/getAll"].map((assignment) => ({
+        value: assignment.id,
+        label: this.$t("dashboard.study.assignmentOption", {name: assignment.name, id: assignment.id}),
+      }));
+    },
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
         const newD = {...d};
@@ -178,12 +184,21 @@ export default {
           {name: this.$t("common.lastName"), key: "lastName"},
         );
       }
-      columns.push({name: this.$t("common.createdAt"), key: "createdAt", sortable: true});
+      columns.push(
+        {name: this.$t("dashboard.study.roles"), key: "rolesNames"},
+        {name: this.$t("common.createdAt"), key: "createdAt", sortable: true},
+      );
       return columns;
     },
     submissionFilterSchema() {
       const schema = {
         id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
+        assignmentId: {
+          label: this.$t("common.assignment"),
+          type: "enum",
+          operators: ["%"],
+          options: this.assignmentOptions,
+        },
       };
       if (this.canReadPublicInformation) {
         schema.userName = {label: this.$t("common.userName"), type: "text"};
@@ -193,6 +208,13 @@ export default {
         schema.lastName = {label: this.$t("common.lastName"), type: "text"};
       }
       schema.createdAt = {label: this.$t("common.createdAt"), type: "date"};
+      schema.rolesNames = {
+        label: this.$t("dashboard.study.roles"),
+        type: "enum",
+        operators: ["%"],
+        options: [...new Set((this.$store.getters["admin/getSystemRoles"] || []).map((role) => role.name))]
+            .map((name) => ({value: name, label: name})),
+      };
       return schema;
     },
     submissionSearchColumns() {
