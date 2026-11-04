@@ -16,13 +16,25 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "AiAssistantRequest",
-  props: {
-    request: {
+  inject: {
+    studyData: {
       type: Object,
       required: true,
+      default: () => ({}),
+    },
+    orderedStudySteps: {
+      type: Array,
+      required: true,
+      default: () => [],
     },
     studySessionId: {
       type: Number,
+      required: true,
+    },
+  },
+  props: {
+    request: {
+      type: Object,
       required: true,
     },
     studyStepId: {
@@ -36,14 +48,6 @@ export default {
     },
     service: {
       type: Object,
-      required: true,
-    },
-    studyData: {
-      type: Object,
-      required: true,
-    },
-    orderedStudySteps: {
-      type: Array,
       required: true,
     },
     selectedModelId: {

@@ -158,19 +158,14 @@
                 </SidebarTemplate>
               </template>
               <template v-if="hasAiChat(step)" #aiConversation>
-                <SidebarTemplate icon="chat-dots" :title="$t('ai.chat.sidebarTitle')">
-                  <template #content>
-                    <AiConversation
-                        :study-session-id="studySessionId"
-                        :study-step-id="step.id"
-                        :document-id="step.documentId"
-                        :service="getAiChatService(step)"
-                        :study-data="studyData"
-                        :ordered-study-steps="orderedStudySteps"
-                        :read-only="readOnlyComputed || !!studySession?.end"
-                    />
-                  </template>
-                </SidebarTemplate>
+                <AiChatSidebar
+                    icon="chat-dots"
+                    :title="$t('ai.chat.sidebarTitle')"
+                    :study-step-id="step.id"
+                    :document-id="step.documentId"
+                    :service="getAiChatService(step)"
+                    :read-only="readOnlyComputed || !!studySession?.end"
+                />
               </template>
             </Annotator>
 
@@ -197,19 +192,14 @@
                 </SidebarTemplate>
               </template>
               <template v-if="hasAiChat(step)" #aiConversation>
-                <SidebarTemplate icon="chat-dots" :title="$t('ai.chat.sidebarTitle')">
-                  <template #content>
-                    <AiConversation
-                        :study-session-id="studySessionId"
-                        :study-step-id="step.id"
-                        :document-id="step.documentId"
-                        :service="getAiChatService(step)"
-                        :study-data="studyData"
-                        :ordered-study-steps="orderedStudySteps"
-                        :read-only="readOnlyComputed || !!studySession?.end"
-                    />
-                  </template>
-                </SidebarTemplate>
+                <AiChatSidebar
+                    icon="chat-dots"
+                    :title="$t('ai.chat.sidebarTitle')"
+                    :study-step-id="step.id"
+                    :document-id="step.documentId"
+                    :service="getAiChatService(step)"
+                    :read-only="readOnlyComputed || !!studySession?.end"
+                />
               </template>
             </Editor>
 
@@ -225,12 +215,9 @@
                 v-if="step.stepType === 4"
                 :is-shown="currentStudyStepId === step.id"
                 :study-description="study?.description || ''"
-                :study-session-id="studySessionId"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
                 :config="step.configuration"
-                :study-data="studyData"
-                :ordered-study-steps="orderedStudySteps"
                 :read-only="readOnlyComputed"
                 @update:ready="stepsReady[step.id] = $event"
                 @update:data="updateStudyData(step.id, 'dialogue', $event)"
@@ -263,14 +250,14 @@ import StepModal from "./stepmodal/StepModal.vue";
 import Assessment from "@/components/study/Assessment.vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
-import AiConversation from "@/components/aiAssistant/AiConversation.vue";
+import AiChatSidebar from "@/components/aiAssistant/AiChatSidebar.vue";
 import Dialogue from "@/components/dialogue/Dialogue.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
-    AiConversation,
+    AiChatSidebar,
     Dialogue,
     SidebarTemplate,
     Assessment,

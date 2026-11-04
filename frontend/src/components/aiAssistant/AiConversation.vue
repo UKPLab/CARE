@@ -73,12 +73,9 @@
         :key="activeRequest.requestId"
         ref="aiAssistantRequest"
         :request="activeRequest"
-        :study-session-id="studySessionId"
         :study-step-id="studyStepId"
         :document-id="documentId"
         :service="service"
-        :study-data="studyData"
-        :ordered-study-steps="orderedStudySteps"
         :selected-model-id="selectedModelId"
         @complete="handleRequestComplete"
         @failed="handleChatRequestFailed"
@@ -125,12 +122,22 @@ export default {
     acceptStats: {
       default: () => false,
     },
-  },
-  props: {
+    studyData: {
+      type: Object,
+      required: true,
+      default: () => ({}),
+    },
+    orderedStudySteps: {
+      type: Array,
+      required: true,
+      default: () => [],
+    },
     studySessionId: {
       type: Number,
       required: true,
     },
+  },
+  props: {
     studyStepId: {
       type: Number,
       required: true,
@@ -141,14 +148,6 @@ export default {
     },
     service: {
       type: Object,
-      required: true,
-    },
-    studyData: {
-      type: Object,
-      required: true,
-    },
-    orderedStudySteps: {
-      type: Array,
       required: true,
     },
     readOnly: {
