@@ -1,12 +1,12 @@
 <template>
   <div class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
     <div class="error-card text-center p-5 bg-body rounded shadow">
-      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+      <BasicIcon icon-name="exclamation-triangle-fill" :size="80" class="text-danger" />
       <h2 class="mt-4 text-danger">{{ error.title }}</h2>
       <p class="text-muted mb-4">{{ error.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>{{ $t('components.studyRoute.errors.goToDashboard') }}
+          <BasicIcon icon-name="house" class="me-2" />{{ $t('components.studyRoute.errors.goToDashboard') }}
         </router-link>
       </div>
     </div>
@@ -19,8 +19,11 @@
  *
  * @author Ilyas Mohammed
  */
+import BasicIcon from "@/basic/Icon.vue";
+
 export default {
   name: "StudyErrorPage",
+  components: {BasicIcon},
   props: {
     // The error to show, with title and message
     error: {
