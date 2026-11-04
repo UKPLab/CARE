@@ -212,8 +212,8 @@ It uses a <cite>post-process</cite> hook to transform the response before export
 <div class="highlight-html notranslate"><div class="highlight"><pre><span></span><span class="p">&lt;</span><span class="nt">ExportSingle</span>
     <span class="na">ref</span><span class="o">=</span><span class="s">&quot;export&quot;</span>
     <span class="na">name</span><span class="o">=</span><span class="s">&quot;stats&quot;</span>
-    <span class="na">req-msg</span><span class="o">=</span><span class="s">&quot;statsGetAll&quot;</span>
-    <span class="na">res-msg</span><span class="o">=</span><span class="s">&quot;statsData&quot;</span>
+    <span class="na">req-msg</span><span class="o">=</span><span class="s">&quot;statsGetByUser&quot;</span>
+    <span class="na">res-msg</span><span class="o">=</span><span class="s">&quot;statsDataByUser&quot;</span>
     <span class="na">:post-process</span><span class="o">=</span><span class="s">&quot;x =&gt; x.statistics&quot;</span>
 <span class="p">/&gt;</span>
 </pre></div>
@@ -224,7 +224,7 @@ It uses a <cite>post-process</cite> hook to transform the response before export
 <span class="w">  </span><span class="nx">components</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ExportSingle</span><span class="w"> </span><span class="p">},</span>
 <span class="w">  </span><span class="nx">methods</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">downloadAsCSV</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="k">export</span><span class="p">.</span><span class="nx">requestExport</span><span class="p">({</span><span class="w"> </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="mf">42</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="s2">&quot;csv&quot;</span><span class="p">);</span>
+<span class="w">      </span><span class="k">this</span><span class="p">.</span><span class="nx">$refs</span><span class="p">.</span><span class="k">export</span><span class="p">.</span><span class="nx">requestExport</span><span class="p">({</span><span class="w"> </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="mf">42</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="s2">&quot;csv&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>

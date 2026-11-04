@@ -214,8 +214,8 @@ To get all annotations of a specific user, you can simply filter by the userId f
 <section id="exporting-behavioral-user-data">
 <h3>Exporting Behavioral User Data<a class="headerlink" href="#exporting-behavioral-user-data" title="Link to this heading"></a></h3>
 <p>Behavioral user data is sensitive and therefore only accessible to administrators. To export this data after logging
-in as admin to the system, simply access the “User Statistics” view of the dashboard an click on “Export all” on the
-user table.</p>
+in as admin to the system, simply access the “User Statistics” view of the dashboard and click on “Export as CSV” or
+“Export as JSON” above the user table.</p>
 <p>The resulting stats export structure is illustrated by the following example:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">[</span>
 <span class="w">  </span><span class="p">{</span>
@@ -314,6 +314,29 @@ This is accompanied with a page number and the vertical offset of the page start
 offset in the PDF.</p></li>
 </ul>
 </div></blockquote>
+<p><strong>Filtering by study session and step</strong>
+Events logged during a study carry the study IDs in <code class="docutils literal notranslate"><span class="pre">data</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>: the study session the event belongs to</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>: the step of the part of the page where the event happened, e.g. an earlier step shown next to
+the current one</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">currentStudyStepId</span></code>: the step the study session was on at that time</p></li>
+</ul>
+</div></blockquote>
+<p>An event that happened outside a study, or where an ID is not known, does not contain that key. Mouse movements and
+tab changes carry <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> and <code class="docutils literal notranslate"><span class="pre">currentStudyStepId</span></code>. Route changes (<code class="docutils literal notranslate"><span class="pre">routeStep</span></code>) into a study do not, as
+they are logged before the study session is loaded.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="c1"># stats holds the list of exported rows; data may be a JSON string or an object</span>
+<span class="c1"># we are interested in the study session with id 7</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">row_data</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+
+<span class="n">session_rows</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span> <span class="k">if</span> <span class="n">row_data</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;studySessionId&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">7</span><span class="p">]</span>
+</pre></div>
+</div>
 </section>
 </section>
 </section>

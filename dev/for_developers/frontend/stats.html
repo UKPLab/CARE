@@ -62,6 +62,7 @@
 <li class="toctree-l2"><a class="reference internal" href="vuex_store.html">Vuex Store</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">User Statistics</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#user-statistics-logging">User Statistics Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#study-context">Study Context</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#logging-a-new-interaction">Logging a New Interaction</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#advanced-logging-class">Advanced Logging Class</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#extending-the-logging-class">Extending the Logging Class</a></li>
@@ -160,6 +161,27 @@ But we also want to reduce the network traffic and the load on the backend, so m
 </pre></div>
 </div>
 </section>
+<section id="study-context">
+<h2>Study Context<a class="headerlink" href="#study-context" title="Link to this heading"></a></h2>
+<p>Events logged inside a study should carry the study IDs, so that they can be filtered by study session and step.
+There are two step IDs with different meanings:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>: the step the logging component belongs to (provided by <code class="docutils literal notranslate"><span class="pre">Annotator.vue</span></code> and <code class="docutils literal notranslate"><span class="pre">Editor.vue</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">currentStudyStepId</span></code>: the step the study session is on (<code class="docutils literal notranslate"><span class="pre">currentStudyStep</span></code>, provided by <code class="docutils literal notranslate"><span class="pre">Study.vue</span></code>).</p></li>
+</ul>
+<p>Usually both are the same. They differ when an earlier step is shown while the session is on a later one.</p>
+<p>In a component, inject the IDs and add the available ones to <code class="docutils literal notranslate"><span class="pre">data</span></code>:</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">inject</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">studySessionId</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="kc">null</span><span class="p">},</span>
+<span class="w">    </span><span class="nx">studyStepId</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="kc">null</span><span class="p">},</span>
+<span class="w">    </span><span class="nx">currentStudyStep</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="k">default</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="kc">null</span><span class="p">},</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">BehaviorLogger</span></code> (see below) is not a component and cannot inject. Instead, <code class="docutils literal notranslate"><span class="pre">Study.vue</span></code> sets
+<code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> and <code class="docutils literal notranslate"><span class="pre">currentStudyStepId</span></code> through <code class="docutils literal notranslate"><span class="pre">setStatsContext</span></code>, which <code class="docutils literal notranslate"><span class="pre">App.vue</span></code> provides, and clears them
+when the study is left. The logger adds them to every event it sends and leaves out keys without a value.</p>
+</section>
 <section id="logging-a-new-interaction">
 <h2>Logging a New Interaction<a class="headerlink" href="#logging-a-new-interaction" title="Link to this heading"></a></h2>
 <p>Let’s assume we want to log a new interaction <code class="docutils literal notranslate"><span class="pre">specialButtonClick</span></code> upon click on a button. Please always use
@@ -231,10 +253,7 @@ the key down logging function to log a new interaction when the user presses a s
 <p>The <code class="docutils literal notranslate"><span class="pre">handleNewInteraction</span></code> function would then dictate the logic on how to interpret the event and send the log to
 the statistics table.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="nx">handleNewInteraction</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;stats&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nx">action</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;newInteraction&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">data</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()}</span>
-<span class="w">    </span><span class="p">})</span>
+<span class="w">    </span><span class="k">this</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;newInteraction&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()})</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -244,7 +263,7 @@ the statistics table.</p>
 <ol class="arabic simple">
 <li><p>Bind new logging functions in the constructor to maintain the correct context.</p></li>
 <li><p>Add new event listeners to both <code class="docutils literal notranslate"><span class="pre">init()</span></code> and <code class="docutils literal notranslate"><span class="pre">destroy()</span></code> methods.</p></li>
-<li><p>Use the existing WebSocket connection (<code class="docutils literal notranslate"><span class="pre">this.socket.emit</span></code>) to send data to the backend.</p></li>
+<li><p>Send events with <code class="docutils literal notranslate"><span class="pre">this.emit(action,</span> <span class="pre">data)</span></code>, not <code class="docutils literal notranslate"><span class="pre">this.socket.emit</span></code>, so that the study context is added.</p></li>
 <li><p>Consider performance optimizations (like debouncing) for frequent events.</p></li>
 </ol>
 </div>
