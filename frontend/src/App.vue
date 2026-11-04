@@ -71,6 +71,7 @@ export default {
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
+      setStatsContext: this.setStatsContext,
     }
   },
   data() {
@@ -83,6 +84,7 @@ export default {
       },
       disconnected: false,
       behaviorLogger: null,
+      statsContext: {},
       postLoginModalFlowToken: 0,
     }
   },
@@ -333,9 +335,21 @@ export default {
     },
     initializeBehaviorLogger() {
       if (this.acceptStats && !this.behaviorLogger) {
-        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
+        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime, {
+          getContext: () => this.statsContext,
+        });
         this.behaviorLogger.init();
+        // The $route watcher ran before the logger existed, so log the page the logger starts on
+        this.behaviorLogger.reportRouteChange(null, this.$route);
       }
+    },
+    /**
+     * Adds or changes keys of the study context that the behavior logger adds to its events.
+     * Set a key to null to remove it.
+     * @param {Object} partial The context keys to set, e.g. {studySessionId: 7}.
+     */
+    setStatsContext(partial) {
+      this.statsContext = {...this.statsContext, ...partial};
     },
     syncLocaleForRoute(route) {
       if (route.meta.requireAuth) {
