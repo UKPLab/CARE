@@ -1,5 +1,8 @@
 <template>
   <AuthLayout :title="$t('auth.register')" aside>
+    <template #above-card>
+      <ScientistMascot :mood="mascotMood"/>
+    </template>
     <template #header-action>
       <a
           class="btn btn-link btn-sm"
@@ -142,17 +145,35 @@
                     for="password"
                 >{{ $t('auth.password') }}</label>
                 <div class="col-md-6">
-                  <input
-                      id="password"
-                      v-model="formData['password']"
-                      autocomplete="new-password"
-                      class="form-control"
-                      name="password"
-                      pattern=".{8,}"
-                      required
-                      type="password"
-                      @blur="checkVal('password')"
+                  <div
+                      class="password-field"
+                      @focusin="passwordFocused = true"
+                      @focusout="onPasswordFocusOut"
                   >
+                    <input
+                        id="password"
+                        v-model="formData['password']"
+                        autocomplete="new-password"
+                        class="form-control"
+                        name="password"
+                        pattern=".{8,}"
+                        required
+                        :type="showPassword ? 'text' : 'password'"
+                        @blur="checkVal('password')"
+                    >
+                    <!-- mousedown.prevent keeps the focus in the input while toggling -->
+                    <button
+                        class="password-toggle"
+                        type="button"
+                        :aria-label="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
+                        :aria-pressed="showPassword"
+                        :title="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
+                        @mousedown.prevent
+                        @click="showPassword = !showPassword"
+                    >
+                      <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
+                    </button>
+                  </div>
                   <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
                     {{ $t('errors.validation.auth.passwordRequirements') }}
                   </div>
@@ -245,14 +266,18 @@
 import TermsModal from "./TermsModal.vue";
 import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
+import ScientistMascot from "@/auth/ScientistMascot.vue";
 import { navigateWithAuthTransition } from "@/auth/authTransition";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
+/** How long the mascot waves after the page opens */
+const MASCOT_WAVE_MS = 3200;
+
 export default {
   name: "AuthRegister",
-  components: {AuthLayout, TermsModal, BasicButton},
+  components: {AuthLayout, TermsModal, BasicButton, ScientistMascot},
   data() {
     return {
       formData: {
@@ -268,6 +293,10 @@ export default {
       validity: null,
       currentStep: 0,
       isSubmitting: false,
+      showPassword: false,
+      passwordFocused: false,
+      mascotWaving: true,
+      mascotWaveTimer: null,
     }
   },
   computed: {
@@ -308,6 +337,24 @@ export default {
     },
     isLastStep() {
       return this.currentStep === this.steps.length - 1;
+    },
+    /**
+     * Covers the eyes while the password is typed, peeks while it is shown,
+     * reads a stack of documents on the agreements step and approves them once the terms are accepted.
+     */
+    mascotMood() {
+      if (this.activeStep.id === "consent") {
+        return this.formData.acceptTerms ? "approve" : "read";
+      }
+      if (this.activeStep.id === "credentials") {
+        if (this.showPassword) {
+          return "peek";
+        }
+        if (this.passwordFocused) {
+          return "cover";
+        }
+      }
+      return this.mascotWaving ? "wave" : "idle";
     },
     validFirstName() {
       return this.formData.firstName.trim() !== "";
@@ -354,6 +401,12 @@ export default {
       this.formData.acceptDataSharing = this.config.isDataShared;
     }
     this.focusFirstField();
+    this.mascotWaveTimer = setTimeout(() => {
+      this.mascotWaving = false;
+    }, MASCOT_WAVE_MS);
+  },
+  beforeUnmount() {
+    clearTimeout(this.mascotWaveTimer);
   },
   beforeMount() {
     this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
@@ -361,6 +414,12 @@ export default {
   methods: {
     checkVal(key) {
       this.validity[key] = true;
+    },
+    /** Focus moving between the input and the eye button still counts as "in the password field" */
+    onPasswordFocusOut(event) {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        this.passwordFocused = false;
+      }
     },
     onSubmit() {
       if (this.isLastStep) {
@@ -450,13 +509,50 @@ export default {
 </script>
 
 <style scoped>
-input[type='password'] + .feedback-invalid:not(.invalid) {
+/* The password hint stays visible as a plain note until it turns into an error */
+.password-field + .feedback-invalid:not(.invalid) {
   visibility: visible;
   color: var(--bs-secondary-color);
 }
 
-input[type='password'] + .feedback-invalid:not(.invalid)::before {
+.password-field + .feedback-invalid:not(.invalid)::before {
   content: none;
+}
+
+.password-field {
+  position: relative;
+}
+
+.password-field .form-control {
+  padding-right: 2.5rem;
+}
+
+/* The global invalid-border rule needs the input next to the message; restore it here */
+.password-field:has(+ .feedback-invalid.invalid) .form-control {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: .35rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bs-border-radius-sm);
+  background: transparent;
+  color: var(--bs-secondary-color);
+  transform: translateY(-50%);
+  transition: color .15s ease, background-color .15s ease;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+  color: var(--bs-primary);
+  background: rgba(var(--bs-primary-rgb), .08);
 }
 
 .register-progress {
