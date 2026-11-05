@@ -124,7 +124,7 @@ Currently, the class logs the following interactions:
 - Mouse move events
 - Click events
 - Specific key down events (currently only cmd/ctrl + f to detect search start)
-- Window focus events (currently only used to detect search end)
+- Window focus and blur events (logged as ``windowFocusChange`` with ``focused`` and the ``duration`` away in ms; also used to detect search end)
 
 Extending the Logging Class
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
