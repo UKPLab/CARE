@@ -3,6 +3,7 @@ const path = require("path");
 const Server = require("../webserver/Server.js");
 const {createInitialAdmin} = require("../webserver/utils/setupAdmin.js");
 const {getSocketClient} = require("./utils.js");
+const {auditSubmissionCopies, readOnlyTransaction, toCsv} = require("../scripts/auditSubmissionCopies.js");
 
 const PORT = 3112;
 const SCOPE = {assignmentBulk: true};
@@ -617,6 +618,59 @@ describe("Test Websockets - Bulk assignments", () => {
             const {id} = await addGroupCopy();
             expect(await hidden(id)).toBe(false);
             expect((await queryPicker()).ids).toContain(id);
+        });
+
+        test("the audit reports visible copies, decides nothing and changes nothing", async () => {
+            const [hiddenCopy] = await assignSessionCopy(template, await addSubmission(owner.id));
+            expect(hiddenCopy.hideInFrontend).toBe(true);
+
+            const flags = 'SELECT "id", "hideInFrontend" FROM "submission" ORDER BY "id"';
+            const before = await sequelize.query(flags, {type: sequelize.QueryTypes.SELECT});
+            const rows = await auditSubmissionCopies(sequelize);
+            expect(await sequelize.query(flags, {type: sequelize.QueryTypes.SELECT})).toEqual(before);
+
+            const reported = (id) => rows.find((row) => row.copyId === id);
+            // A session copy and valid group copies report the same: a person has to decide.
+            [sessionCopy.id, editedCopy.id, replacedTemplateCopy.id, unmappedStepCopy.id].forEach((id) => {
+                expect(reported(id)).toMatchObject({sessionLikeAncestry: true});
+            });
+            expect(reported(unusedCopy.copiedSubmission.id)).toMatchObject({sessionLikeAncestry: false, studyIds: []});
+            expect(reported(hiddenCopy.id)).toBeUndefined();
+            expect(toCsv(rows).split("\n")).toHaveLength(rows.length + 1);
+
+            // The database itself refuses a write in the audit's transaction.
+            await expect(readOnlyTransaction(sequelize, (transaction) => sequelize.query(
+                'UPDATE "submission" SET "hideInFrontend" = true', {transaction},
+            ))).rejects.toThrow(/read-only/);
+            expect(await sequelize.query(flags, {type: sequelize.QueryTypes.SELECT})).toEqual(before);
+        }, SLOW);
+
+        test("a database that ran the deleted feature-branch migration keeps its flags", async () => {
+            const migration = require(HIDDEN_FLAG_MIGRATION);
+            const queryInterface = sequelize.getQueryInterface();
+            const {BOOLEAN} = sequelize.constructor;
+            const flag = async (id) => (await sequelize.query(
+                'SELECT "hideInFrontend" FROM "submission" WHERE "id" = :id',
+                {replacements: {id}, type: sequelize.QueryTypes.SELECT},
+            ))[0].hideInFrontend;
+            await migration.down(queryInterface, sequelize.constructor);
+            // What 20251220162803 left behind: a nullable column, with true on session copies.
+            await queryInterface.addColumn("submission", "hideInFrontend", {
+                type: BOOLEAN, allowNull: true, defaultValue: false,
+            });
+            await sequelize.query('UPDATE "submission" SET "hideInFrontend" = true WHERE "id" = :id', {
+                replacements: {id: sessionCopy.id},
+            });
+            await sequelize.query('UPDATE "submission" SET "hideInFrontend" = NULL WHERE "id" = :id', {
+                replacements: {id: editedCopy.id},
+            });
+
+            await migration.up(queryInterface, sequelize.constructor);
+
+            expect(await flag(sessionCopy.id)).toBe(true);
+            expect(await flag(editedCopy.id)).toBe(false);
+            const {hideInFrontend} = await queryInterface.describeTable("submission");
+            expect(hideInFrontend).toMatchObject({type: "BOOLEAN", allowNull: false, defaultValue: false});
         });
     });
 });

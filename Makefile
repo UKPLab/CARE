@@ -33,6 +33,7 @@ help:
 	@echo "make recover_db CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Recover database into container"
 	@echo "make anonymize_dump CONTAINER=<name/id>  DUMP=<name in db_dumps folder>  [SEED=<int>]  [NUM=<int>]	Create anonymized dump (consent-filtered + pseudonymized)"
 	@echo "make export_dump_files CONTAINER=<name/id>  DUMP=<name in db_dumps folder>	Archive document files referenced by an existing anonymized dump"
+	@echo "make audit-submission-copies		 	List visible submission copies for manual review (read-only)"
 	@echo "make clean             				Delete development files"
 	@echo "make lint             				Run linter"
 	@echo "make kill             				Kill all node instances (only unix)"
@@ -240,6 +241,10 @@ export_dump_files:
 .PHONY: admin-password
 admin-password: backend/node_modules/.uptodate
 	cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" npm run set-admin-password
+
+.PHONY: audit-submission-copies
+audit-submission-copies: backend/node_modules/.uptodate
+	@cd backend && npm run --silent audit-submission-copies
 
 .PHONY: check_clean clean
 

@@ -340,3 +340,27 @@ Example use inside a model update utility:
 
    While this behavior is important to be aware of, it's not something we've encountered often in practice. In most cases, bulk updates work as expected without needing `individualHooks`.
 
+Reviewing old submission copies
+-------------------------------
+
+Session assignments copy a submission and hide the copy from the assignment picker with ``hideInFrontend``.
+Copies made before that column existed were not marked and cannot be told apart from group copies:
+both are written with the same columns, and study edits, template replacement and unmapped template steps
+give a group copy the same ancestry as a session copy. The migration therefore leaves every old copy visible.
+
+To list them without changing anything:
+
+.. code-block:: bash
+
+    make audit-submission-copies > copies.csv
+
+The report runs in a read-only transaction. It shows each visible copy with its studies and whether its ancestry
+looks like a session copy. ``sessionLikeAncestry`` is true for valid group copies as well, so it only tells you
+where to look. Never hide rows by it automatically. Check each copy with the people who run that study, then hide
+the ones you have confirmed by hand:
+
+.. code-block:: sql
+
+    UPDATE "submission" SET "hideInFrontend" = true WHERE "id" IN (<confirmed ids>);
+
+This change only affects the assignment picker. Hidden copies keep working in the studies that use them.
