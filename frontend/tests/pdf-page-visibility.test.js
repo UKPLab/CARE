@@ -64,7 +64,7 @@ async function settle() {
 /** Mounts the viewer for a PDF of the given length and waits until the document is open. Register `unmount` with t.after. */
 async function openPdf({pageCount = 6, acceptStats = true, ObserveVisibility} = {}) {
     elementsById.clear()
-    const state = reactive({acceptStats})
+    const state = reactive({acceptStats, hiddenStudyStepId: null})
     const stats = []
     const requestedPages = new Set()
     const observed = new Map()
@@ -137,6 +137,7 @@ async function openPdf({pageCount = 6, acceptStats = true, ObserveVisibility} = 
             studyStepId: STEP_ID,
             readOnly: false,
             acceptStats: computed(() => state.acceptStats),
+            hiddenStudyStepId: computed(() => state.hiddenStudyStepId),
         }),
         render: () => h(PDFViewer),
     })
@@ -315,5 +316,34 @@ test('logs the initial rows through the real visibility directive', async t => {
         } else {
             globalThis.IntersectionObserver = previousObserver
         }
+    }
+})
+
+test('preserves hidden-step and unmount visibility after the dev merge', async t => {
+    const {report, rows, state, unmount} = await openPdf()
+    t.after(unmount)
+    await report(1, true)
+    state.hiddenStudyStepId = STEP_ID
+    await settle()
+    assert.deepEqual(rows(), [[1, true], [1, false]])
+    await report(2, true)
+    assert.deepEqual(rows(), [[1, true], [1, false]], 'hidden viewer emits no observer stats')
+    state.hiddenStudyStepId = null
+    await settle()
+    assert.deepEqual(rows(), [[1, true], [1, false], [1, true], [2, true]])
+    unmount()
+    assert.deepEqual(rows().slice(-2), [[1, false], [2, false]])
+})
+
+test('a fresh viewer logs page 1 again after remount', async () => {
+    const first = await openPdf()
+    await first.report(1, true)
+    first.unmount()
+    const second = await openPdf()
+    try {
+        await second.report(1, true)
+        assert.deepEqual(second.rows(), [[1, true]])
+    } finally {
+        second.unmount()
     }
 })
