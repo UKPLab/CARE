@@ -533,7 +533,7 @@ export default {
                   type: 'document',
                   table: 'document',
                   stepIndex: stepIndex,
-                  isTemplate: true,
+                  isTemplate: true
                 },
                 {
                   value: 'template_submission',
@@ -541,7 +541,7 @@ export default {
                   type: 'submission',
                   table: 'submission',
                   stepIndex: stepIndex,
-                  isTemplate: true,
+                  isTemplate: true
                 }
               );
             } else {

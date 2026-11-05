@@ -70,7 +70,7 @@ class AssignmentSocket extends Socket {
                     contextData = {
                         assignmentType: assignmentType,
                         submissionId: data['assignment']?.id || null,
-                        documentId: null
+                        documentId: stepDocumentId || null
                     };
                 } else {
                     assignmentType = 'document';
