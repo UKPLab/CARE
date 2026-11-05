@@ -257,7 +257,7 @@ The ``createSocket`` method allows you to define a socket event with built-in su
     - ``func``: Async function handling the request, with parameters ``(data, options)``
     - ``options``: Object passed through the socket pipeline; can contain any contextual data (e.g., transaction info, user session, metadata)
     - ``transaction``: If ``true``, wraps execution in a Sequelize DB transaction
-    - ``getQueueKey``: Optional function mapping the event data to a queue key. Events with the same key run one after the other in the order they were received, including begin, handler, commit or rollback, and the acknowledgement. Only use it for events that depend on the order of earlier events, like ``documentEdit``. If it throws for malformed data, the event runs outside of any queue, so the handler has to reject the same data to send a failed acknowledgement
+    - ``getQueueKey``: Optional function mapping the event data to a queue key. Events with the same key run one after the other in the order they were received, including begin, handler, commit or rollback, and the acknowledgement. Only use it for events that depend on the order of earlier events, like ``documentEdit``. If it throws for malformed data, the event runs outside of any queue, so the handler has to reject the same data to send a failed acknowledgement. The queues live in the memory of the backend process, so they only order events of one process. CARE runs one backend process; running several for the same database would need a shared ordering instead
 
 .. warning::
 
