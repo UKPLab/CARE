@@ -103,6 +103,14 @@ export default {
   subscribeTable: ["comment", "annotation"],
   components: {SideCard, AnnoCard, LoadIcon, BasicButton},
   inject: {
+    // Whether the study step this sidebar belongs to is on screen; outside a study always true
+    isStepShown: {
+      default: true,
+    },
+    // Shows the sidebar tab that holds an element (basic/Sidebar.vue)
+    showSidebarTabOf: {
+      default: () => () => false,
+    },
     documentId: {
       type: Number,
       required: true,
@@ -288,12 +296,27 @@ export default {
   },
   mounted() {
     this.originalWidth = this.width;
-    this.eventBus.on('sidebarScroll', (annotationId) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
-        .find(comm => comm.parentCommentId === null);
-      // in case the comment might not be loaded yet
-      if (!comment) {
+    this.eventBus.on('sidebarScroll', this.onSidebarScroll);
+  },
+  beforeUnmount() {
+    this.eventBus.off('sidebarScroll', this.onSidebarScroll);
+  },
+  methods: {
+    /**
+     * Scrolls to the comment of a clicked annotation and logs it. Several sidebars can be mounted at once (hidden study
+     * steps, look-back tabs), so only one that lists the annotation and belongs to a step on screen handles it.
+     * @param {number} annotationId - the clicked annotation
+     */
+    async onSidebarScroll(annotationId) {
+      // in case the comment might not be loaded yet, or belongs to another document or step
+      const comment = this.documentComments.find(comm => comm.annotationId === annotationId);
+      if (!comment || !this.isStepShown) {
         return;
+      }
+      // The card may be in a tab that is not open, e.g. an earlier step's tab next to the current one: open it first,
+      // so the scroll goes to a card on screen
+      if (this.showSidebarTabOf(this.$refs["annocard" + comment.id]?.[0]?.$el)) {
+        await this.$nextTick();
       }
 
       this.sidebarScrollTo(comment.id);
@@ -308,9 +331,7 @@ export default {
           }
         });
       }
-    })
-  },
-  methods: {
+    },
     /**
      * Moves focus to the next or previous annotation card header (ARIA feed pattern).
      * Ignored while typing, so Page Up/Down still scroll text fields and dropdowns.

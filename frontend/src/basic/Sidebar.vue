@@ -2,19 +2,20 @@
   <div
       v-show="isSidebarVisible && resolvedActiveSlot"
       id="sidebarContainer"
+      ref="sidebarContainer"
       class="sidebar-wrapper"
       :class="sidebarClasses"
       :style="sidebarStyle"
   >
-    <div id="hoverHotZone"></div>
+    <div id="hoverHotZone" ref="hoverHotZone"></div>
     <div id="sidebar" class="sidebar border-end d-flex flex-column">
-      <div id="hotZone" class="hot-zone"></div>
+      <div id="hotZone" ref="hotZone" class="hot-zone"></div>
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
         <div v-if="sidebarConfigs" class="sidebar-header">
           <ul class="nav nav-tabs flex-grow-1">
             <li
-                v-for="(config, slotName) in sidebarConfigs.tabs"
+                v-for="(config, slotName) in shownTabs"
                 :key="slotName"
                 class="nav-item"
             >
@@ -22,15 +23,17 @@
                   class="nav-link align-items-center"
                   :class="{
                   'active': resolvedActiveSlot === slotName,
+                  'current-step': config.current,
                 }"
                   :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                   :title="config.title || ''"
-                  :aria-label="config.title || $t('navigation.sidebar.sidebarSection')"
+                  :aria-label="config.current ? $t('navigation.sidebar.currentStepTab', {title: config.title}) : (config.title || $t('navigation.sidebar.sidebarSection'))"
                   :tabindex="isSingleConfig ? '-1' : '0'"
                   :aria-disabled="isSingleConfig ? 'true' : 'false'"
                   :disabled="isSingleConfig"
                   @click="changeView(slotName)"
               >
+                <span v-if="config.number" class="fw-semibold me-1">{{ config.number }}</span>
                 <LoadIcon
                     v-if="config.icon"
                     :icon-name="config.icon"
@@ -102,7 +105,7 @@
         <div class="sidebar-content">
           <template v-for="slotName in availableSlots" :key="slotName">
             <keep-alive>
-              <div v-show="resolvedActiveSlot === slotName">
+              <div v-show="resolvedActiveSlot === slotName" :data-sidebar-slot="slotName">
                 <slot :name="slotName"/>
               </div>
             </keep-alive>
@@ -147,6 +150,12 @@ import debounce from "lodash.debounce";
 export default {
   name: "BasicSidebar",
   components: {LoadIcon, TopBarButton},
+  provide() {
+    return {
+      showSidebarTabOf: this.showTabOf,
+      scrollSidebarTo: this.scrollTo,
+    };
+  },
   inject: {
     studySessionId: {
       type: Number,
@@ -180,6 +189,19 @@ export default {
       required: false,
       default: null,
     },
+    // Decides for each tab (by its slot name) whether it is shown; without it all tabs are shown
+    isTabShown: {
+      type: Function,
+      required: false,
+      default: null,
+    },
+    // Decides for each tab (by its slot name) whether it belongs to the study step the user is on;
+    // such a tab gets a ring and says so to screen readers
+    isTabCurrent: {
+      type: Function,
+      required: false,
+      default: null,
+    },
     isShown: {
       type: Boolean,
       required: false,
@@ -192,12 +214,12 @@ export default {
     maxSidebarWidth: {
       type: Number,
       required: false,
-      default: 400
+      default: 600
     },
     minSidebarWidth: {
       type: Number,
       required: false,
-      default: 0
+      default: 250
     },
     showToggleButton: {
       type: Boolean,
@@ -248,6 +270,8 @@ export default {
             configs.tabs[slotName] = {
               title: props.title,
               icon: props.icon,
+              number: props.number,
+              current: this.isTabCurrent ? this.isTabCurrent(slotName) : false,
               buttons: props.buttons || []
             };
           }
@@ -287,15 +311,23 @@ export default {
       // If more than 3, hide everything after first 2
       return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
     },
+    shownTabs() {
+      if (!this.isTabShown) {
+        return this.sidebarConfigs.tabs;
+      }
+      return Object.fromEntries(Object.entries(this.sidebarConfigs.tabs).filter(([slotName]) => this.isTabShown(slotName)));
+    },
     resolvedActiveSlot() {
-      return this.internalActiveSlot || this.availableSlots[0] || null;
+      // A hidden tab hands over to the first shown one, and comes back once it is shown again
+      const shown = Object.keys(this.shownTabs);
+      return shown.includes(this.internalActiveSlot) ? this.internalActiveSlot : shown[0] || null;
     },
     isToggleShown() {
       // Without an active slot the sidebar can never be displayed, so the toggle would do nothing
       return this.isShown && !!this.resolvedActiveSlot;
     },
     isSingleConfig() {
-      return Object.keys(this.sidebarConfigs.tabs).length === 1;
+      return Object.keys(this.shownTabs).length === 1;
     },
     activeSlotConfig() {
       return this.resolvedActiveSlot ? this.sidebarConfigs.tabs[this.resolvedActiveSlot] : null;
@@ -319,6 +351,13 @@ export default {
     }
   },
   watch: {
+    // A new tab to open, for example when a study shows another step, switches to it
+    activeSideBar(newSlot) {
+      if (newSlot) {
+        this.internalActiveSlot = newSlot;
+        this.$emit('sidebar-change', newSlot);
+      }
+    },
     isSidebarVisible(newVal) {
       if (newVal) {
         this.width = this.originalWidth;
@@ -354,6 +393,19 @@ export default {
     window.removeEventListener('resize', this.onResize);
   },
   methods: {
+    /**
+     * Switches to the tab that holds the given element, e.g. the card of a clicked annotation
+     * @param {HTMLElement} element - an element inside one of the tabs
+     * @returns {boolean} whether another tab is shown now
+     */
+    showTabOf(element) {
+      const slotName = element?.closest("[data-sidebar-slot]")?.dataset.sidebarSlot;
+      if (!slotName || slotName === this.resolvedActiveSlot) {
+        return false;
+      }
+      this.changeView(slotName);
+      return this.resolvedActiveSlot === slotName;
+    },
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
       const newSlot = slotName;
@@ -392,7 +444,8 @@ export default {
      * @author Zheyu Zhang
      */
     initDragController() {
-      const dom = document.querySelector('#hotZone');
+      // Refs, not ids: a study keeps several steps with a sidebar mounted, and an id finds only the first
+      const dom = this.$refs.hotZone;
       const that = this;
 
       let startX, startWidth;
@@ -411,7 +464,8 @@ export default {
       const handleMove = (e) => {
         e.preventDefault();
         let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
+        // maxWidth is in pixels
+        const maxWidthInPixels = this.maxWidth;
         newWidth = Math.max(newWidth, this.minWidth);
         newWidth = Math.min(newWidth, maxWidthInPixels);
         this.width = newWidth;
@@ -438,8 +492,8 @@ export default {
      * @author Zheyu Zhang
      */
     initHoverController() {
-      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
-      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
+      const hoverHotZoneDom = this.$refs.hoverHotZone;
+      this.sidebarContainerDom = this.$refs.sidebarContainer;
       let hoverTimer;
 
       hoverHotZoneDom.addEventListener('mouseenter', () => {
@@ -538,265 +592,4 @@ export default {
 };
 </script>
 
-<style scoped>
-/* ===== MAIN CONTAINER STYLES ===== */
-.sidebar-wrapper {
-  position: relative;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-left: 1px solid var(--bs-border-color, #ddd);
-  flex-shrink: 0;
-}
-
-.sidebar-wrapper.sidebar-visible {
-  opacity: 1;
-}
-
-.sidebar-wrapper.sidebar-hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-#sidebarContainer {
-  position: relative;
-  padding: 0;
-  transition: width 0.3s ease;
-}
-
-#sidebarContainer::-webkit-scrollbar {
-  display: none;
-}
-
-/* ===== SIDEBAR CONTENT LAYOUT ===== */
-.sidebar {
-  flex: 1;
-  height: 100%;
-  width: 100%;
-  position: relative;
-  overflow-y: hidden;
-}
-
-.sidebar-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding-bottom: 4.5rem;
-  scroll-padding-bottom: 1.5rem;
-  box-sizing: border-box;
-}
-
-#sidepane {
-  background-color: var(--bs-secondary-bg, #e6e6e6);
-  width: 100%;
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-#spacer {
-  background-color: transparent;
-}
-
-/* ===== HEADER SECTION ===== */
-.sidebar-header {
-  display: flex;
-  align-items: stretch;
-  padding: 10px;
-  border-bottom: 1px solid var(--bs-border-color, #ddd);
-  background-color: var(--bs-body-bg, #ffffff);
-  flex-shrink: 0;
-}
-
-.sidebar-header .nav-tabs {
-  border-bottom: none;
-  margin-bottom: 0;
-}
-
-.sidebar-header .nav-tabs .nav-link {
-  border: 1px solid transparent;
-  border-radius: 0.375rem 0.375rem 0 0;
-  padding: 8px 8px;
-  color: var(--bs-body-color, #495057);
-  transition: all 0.2s ease-in-out;
-}
-
-.sidebar-header .nav-tabs .nav-link:hover {
-  border-color: var(--bs-border-color, #dee2e6);
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-}
-
-.sidebar-header .nav-tabs .nav-link.active {
-  color: var(--bs-primary, #0d6efd);
-  background-color: var(--bs-body-bg, #fff);
-  border-color: var(--bs-border-color, #dee2e6) var(--bs-border-color, #dee2e6) var(--bs-body-bg, #fff);
-}
-
-[data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
-  color: var(--care-accent);
-}
-
-.sidebar-header .nav-tabs .nav-link.disabled {
-  color: var(--bs-secondary-color, #6c757d);
-  background-color: transparent;
-  border-color: transparent;
-  cursor: not-allowed;
-}
-
-.sidebar-buttons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.sidebar-buttons .dropdown {
-  position: relative;
-}
-
-/* ===== BUTTON STYLES ===== */
-.sidebar-action-button {
-  position: relative;
-  border-radius: 6px !important;
-  transition: all 0.2s ease-in-out;
-}
-
-.sidebar-action-button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
-  background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
-  border-color: var(--bs-border-color, #dee2e6) !important;
-}
-
-.sidebar-action-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-}
-
-.sidebar-action-button.disabled {
-  opacity: 0.6;
-  cursor: not-allowed !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.sidebar-action-button.disabled:hover {
-  transform: none !important;
-  box-shadow: none !important;
-  background-color: inherit !important;
-  border-color: inherit !important;
-}
-
-/* ===== DROPDOWN STYLES ===== */
-.dropdown-menu {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 8px;
-  padding: 4px
-}
-
-.dropdown-item:hover {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  transform: translateY(-1px);
-  transition: all 0.2s ease;
-}
-
-.dropdown-toggle::after {
-  display: none;
-}
-
-#addPageNote {
-  padding-top: 1rem;
-  text-align: center;
-}
-
-#addPageNote .btn {
-  border: none;
-  color: var(--bs-secondary-color, #575757);
-}
-
-.nav-text {
-  font-size: 0.875rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Hide text on smaller screens, show only icons */
-@media (max-width: 768px) {
-  .nav-text {
-    display: none;
-  }
-
-  .sidebar-header .nav-tabs .nav-link {
-    padding: 8px;
-  }
-}
-
-/* ===== CONTENT AREA STYLES ===== */
-
-#anno-list {
-  list-style-type: none;
-}
-
-#anno-list .list-group-i {
-  border: none;
-  background-color: transparent;
-  margin-top: 4px;
-  margin-left: 2px;
-  margin-right: 2px;
-}
-
-/* ===== DRAG & RESIZE FUNCTIONALITY ===== */
-.hot-zone {
-  width: 5px;
-  background-color: transparent;
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  cursor: col-resize;
-  z-index: 2;
-}
-
-#hoverHotZone {
-  position: fixed;
-  height: 100%;
-  width: 6px;
-  top: 0;
-  right: 0px;
-  z-index: 999;
-  display: none;
-}
-
-/* ===== SIDEBAR STATES ===== */
-#sidebarContainer.is-hidden {
-  position: fixed;
-  height: 100%;
-  right: 0;
-  width: 10px;
-}
-
-#sidebarContainer.is-hidden #hoverHotZone {
-  display: block;
-}
-
-#sidebarContainer.is-dragging {
-  transition: unset;
-}
-
-#sidebarContainer.is-fixed {
-  position: fixed;
-  right: 0;
-}
-
-#sidebarContainer.is-fixed .hot-zone {
-  display: none;
-}
-
-/* ===== RESPONSIVE STYLES ===== */
-/* @media screen and (max-width: 900px) {
-  #sidebarContainer {
-    display: none;
-  }
-} */
-</style>
+<style scoped src="./sidebar/sidebar.css"></style>
