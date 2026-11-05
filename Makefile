@@ -243,7 +243,7 @@ admin-password: backend/node_modules/.uptodate
 	cd backend && ADMIN_EMAIL="$(ADMIN_EMAIL)" npm run set-admin-password
 
 .PHONY: audit-submission-copies
-audit-submission-copies: backend/node_modules/.uptodate
+audit-submission-copies:
 	@cd backend && npm run --silent audit-submission-copies
 
 .PHONY: check_clean clean

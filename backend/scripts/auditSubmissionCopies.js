@@ -83,6 +83,7 @@ function toCsv(rows) {
 
 if (require.main === module) {
     const db = require("../db");
+    db.sequelize.options.logging = false;
     auditSubmissionCopies(db.sequelize)
         .then((rows) => {
             console.log(toCsv(rows));

@@ -34,6 +34,7 @@ module.exports = {
     });
   },
 
+  // Dropping the column loses all flags; a later up cannot recover them and defaults every row to false.
   async down(queryInterface) {
     await queryInterface.removeColumn('submission', 'hideInFrontend');
   },
