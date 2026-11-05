@@ -483,6 +483,42 @@ describe("documentEdit ordering (controlled transactions)", () => {
     });
 
     test.each([
+        ["a string", "not-a-function"],
+        ["a number", 42],
+        ["an object", {not: "a function"}],
+        ["null", null],
+    ])("%s as acknowledgement neither fails the saved edit nor rejects the listener", async (_, ack) => {
+        const backend = createBackend();
+        const client = backend.connect();
+        const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+
+        await expect(client.handlers.documentEdit(editOf("X", 1), ack)).resolves.toBeUndefined();
+        await expect(client.handlers.documentEdit(null, ack)).resolves.toBeUndefined();
+        consoleLog.mockRestore();
+        const y = client.edit(editOf("Y", 2));
+        await y.done;
+
+        expect(await y.ack).toEqual({success: true, data: undefined});
+        expect(backend.trace).not.toContain("rollback:1");
+        expect(backend.text(1)).toBe("aXYb");
+    });
+
+    test("a non-function acknowledgement does not reject the listener of an event without a queue", async () => {
+        const backend = createBackend();
+        const client = backend.connect();
+        const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+        const handler = jest.fn(async () => {
+            throw new Error("rejected by the handler");
+        });
+        Socket.prototype.createSocket.call(client.documentSocket, "plainEvent", handler);
+
+        await expect(client.handlers.plainEvent({}, "not-a-function")).resolves.toBeUndefined();
+        consoleLog.mockRestore();
+
+        expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    test.each([
         ["document", {documentId: 2}],
         ["study session", {studySessionId: 7}],
         ["study step", {studySessionId: null, studyStepId: 9}],
@@ -1250,6 +1286,19 @@ describe("documentEdit ordering (real sockets and database)", () => {
         expect(acks.every((ack) => ack.success === false)).toBe(true);
         expect(await emitEdit({...base, ops: [insert("X", 1)]})).toMatchObject({success: true});
         expect(await persistedText(documentId)).toBe("aXb");
+    });
+
+    test("a non-function acknowledgement saves the edit once and the server keeps working", async () => {
+        const documentId = await createDocument();
+        const base = {documentId, studySessionId: null, studyStepId: null};
+        const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+
+        client.emit("documentEdit", {...base, ops: [insert("X", 1)]}, "not-a-function");
+        client.emit("documentEdit", null, 42);
+
+        expect(await emitEdit({...base, ops: [insert("Y", 2)]})).toMatchObject({success: true});
+        consoleLog.mockRestore();
+        expect(await persistedText(documentId)).toBe("aXYb");
     });
 
     test("a burst of multi operation messages is reconstructed correctly", async () => {

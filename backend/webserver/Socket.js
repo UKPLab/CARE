@@ -84,7 +84,10 @@ module.exports = class Socket {
      * @returns {void}
      */
     createSocket(eventName, func, options = {}, useTransaction = false, getQueueKey = null) {
-        const execute = async (data, callback) => {
+        const execute = async (data, ack) => {
+            // The client decides what is sent as last argument. Calling anything else than its ack function would
+            // reject this listener, and an unhandled rejection ends the process.
+            const callback = typeof ack === "function" ? ack : null;
             let t;
             const perCallOptions = {...options};
             const successfulCommitHooks = [];
