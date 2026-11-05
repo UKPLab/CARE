@@ -39,6 +39,24 @@
         }
     },
     "studyRoute": {
+        "instructions": "Afficher les instructions de l'étude",
+        "previousStep": "Précédent : {step}",
+        "nextStep": "Suivant : {step}",
+        "panes": {
+            "label": "Étapes du workflow",
+            "workflow": "Workflow",
+            "showStrip": "Afficher les étapes du workflow",
+            "hideStrip": "Masquer les étapes du workflow",
+            "stepFallback": "Étape {number}",
+            "annotationsOfStep": "{step} : Annotations",
+            "assessmentOfStep": "{step} : Évaluation",
+            "currentStep": "Étape actuelle",
+            "flip": "Inverser les côtés",
+            "split": {
+                "row": "Diviser côte à côte",
+                "column": "Diviser en haut et en bas"
+            }
+        },
         "errors": {
             "goToDashboard": "Aller au tableau de bord",
             "studyNotFoundTitle": "Étude introuvable",

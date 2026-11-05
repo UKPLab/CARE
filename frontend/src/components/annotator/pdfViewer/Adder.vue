@@ -530,7 +530,7 @@ export default {
           textRange.endOffset
       ).relativeTo(textLayer);
 
-      const pageOffset = await this.getPageOffset(page - 1);
+      const pageOffset = await this.pdf.getPageOffset(page - 1);
 
       /** @type {TextPositionSelector} */
       const position = {
@@ -546,14 +546,6 @@ export default {
       }
 
       return [position, quote, pageSelector];
-    },
-    async getPageOffset(pageIndex) {
-      let offset = 0;
-      for (let i = 0; i < pageIndex; i++) {
-        const text = await this.pdf.getPageTextContent(i);
-        offset += text.length;
-      }
-      return offset;
     },
   }
 }

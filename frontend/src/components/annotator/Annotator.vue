@@ -17,9 +17,11 @@
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
               @copy="onCopy"
+              @loaded="pdf = $event"
           />
 
         </div>
+        <AnnotationScrollMarkers :pdf="pdf"/>
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
@@ -97,6 +99,7 @@
  * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
@@ -111,7 +114,7 @@ import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
-import {isCurrentStepTab, isLookBackTabShown} from "@/components/study/helpers/lookBack.js";
+import {isCurrentStepTab, isLookBackTabShown, lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "AnnotatorView",
@@ -120,6 +123,7 @@ export default {
     SidebarTemplate,
     CurrentStepNote,
     PDFViewer,
+    AnnotationScrollMarkers,
     AnnotationSidebar,
     Loader,
     TopBarButton,
@@ -130,6 +134,7 @@ export default {
       documentId: computed(() => this.documentId),
       readOnly: computed(() => this.readOnly || this.forceReadOnly),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
   },
@@ -181,40 +186,13 @@ export default {
       required: false,
       default: false,
     },
-    forceReadOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    activeSidebar: {
-      type: String,
-      required: false,
-      default: null,
-    },
     // In a study step that can look back: the step's number, shown on its own sidebar tab like on the earlier ones
     stepNumber: {
       type: Number,
       required: false,
       default: null,
     },
-    // In a study step that can look back: its look-back sidebar tabs (see components/study/helpers/lookBack.js)
-    lookBackTabs: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-    // The earlier step on screen, if this step has a look-back tab for it
-    shownLookBackStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    // Hides the step's own sidebar tabs, while an earlier step is shown in its place
-    ownTabsHidden: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+    ...lookBackPaneProps,
     documentId: {
       type: Number,
       required: false,
@@ -229,6 +207,7 @@ export default {
   emits: ['update:data'],
   data() {
     return {
+      pdf: null,
       downloading: false,
       assessmentViewActive: true,
       maxSidebarWidth: 600,
@@ -239,6 +218,8 @@ export default {
             action: "annotatorScrollActivity",
             data: {
               documentId: this.documentId,
+              ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+              ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
               scrollTop: this.$refs.viewer.scrollTop,
               scrollHeight: this.$refs.viewer.scrollHeight
             }
@@ -255,7 +236,8 @@ export default {
       return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
     showDefaultAllAnnotations(){
-      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
+      // From this Annotator's own step, which is not the current step when an earlier step is shown
+      return this.$store.getters["table/study_step/get"](this.studyStepId)?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers

@@ -1,18 +1,6 @@
 <template>
     <!-- Error state -->
-  <div v-if="studyError" class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
-    <div class="error-card text-center p-5 bg-body rounded shadow">
-      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
-      <h2 class="mt-4 text-danger">{{ studyError.title }}</h2>
-      <p class="text-muted mb-4">{{ studyError.message }}</p>
-      <div class="d-flex gap-3 justify-content-center">
-        <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>{{ $t('components.studyRoute.errors.goToDashboard') }}
-        </router-link>
-      </div>
-    </div>
-  </div>
-
+  <StudyErrorPage v-if="studyError" :error="studyError"/>
   <StudyModal
       v-else-if="studySessionId === 0 || (studySession && studySession.start === null)"
       ref="studyModal"
@@ -22,26 +10,13 @@
       @finish="finalFinish"
       @start="start"
   />
-  <StudyModal
+  <StudyInstructions
       v-if="studySession && studySession.start"
-      ref="studyInfoModal"
-      info-only
       :study-id="studyId"
       :study-closed="studyClosed"
       :study-session-id="studySessionId"
+      :show-button="!!study?.description"
   />
-  <Teleport to="#topBarNavItems">
-    <li v-if="hasInstructions" class="nav-item">
-      <TopBarButton
-          class="btn rounded-circle"
-          :title="$t('components.studyRoute.instructions')"
-          :props="{ key: 'studyInstructions.open' }"
-          @click="$refs.studyInfoModal.open()"
-      >
-        <LoadIcon icon-name="info-circle" :size="18"/>
-      </TopBarButton>
-    </li>
-  </Teleport>
   <FinishModal
       v-if="!studyError"
       ref="studyFinishModal"
@@ -49,26 +24,7 @@
       :show-time-up="timeUp"
       @finish="finalFinish({ studySessionId: studySessionId })"
   />
-
-  <Teleport to="#topbarCenterPlaceholder">
-    <div
-        v-show="readOnlyComputed"
-        :title="$t('common.readOnly')"
-    >
-      <span
-          :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }"
-      >
-        {{ $t('common.readOnly') }}
-      </span>
-      <LoadIcon
-          :size="22"
-          :color="'var(--bs-danger-text-emphasis)'"
-          icon-name="lock-fill"
-      />
-    </div>
-
-  </Teleport>
-
+  <ReadOnlyBadge :show="readOnlyComputed"/>
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
       <TopBarButton
@@ -149,7 +105,15 @@
         :earlier-steps="lookBack.earlierSteps"
         :labels="stepLabels"
     />
-    <div v-for="step in orderedStudySteps" :key="'step_' + step.id" :class="{ 'study-pane': lookBack.isVisible(step.id) }">
+    <StudyPane
+        v-for="step in orderedStudySteps"
+        :key="'step_' + step.id"
+        :class="{ 'study-pane': lookBack.isVisible(step.id) }"
+        :step="step"
+        :label="stepLabels[step.id]"
+        :show-label="shownStepId !== null && lookBack.isVisible(step.id)"
+        :track-mouse="lookBack.shownEarlier && lookBack.isVisible(step.id)"
+    >
       <div v-show="lookBack.isVisible(step.id)">
         <div v-if="studyTrajectory.includes(step.id) || readOnly">
 
@@ -168,61 +132,17 @@
           </div>
           <div v-if="isStepLoaded(step.id)">
 
-            <Annotator
-                v-if="step.stepType === 1"
-                v-bind="lookBack.paneProps[step.id]"
-                :step-number="ownTabNumber(step)"
-                :document-id="step.documentId"
-                :study-step-id="step.id"
+            <StepView
+                v-if="[1, 2].includes(step.stepType)"
+                :step="step"
+                :pane-props="lookBack.paneProps[step.id]"
+                :tabs="tabsByStep[step.id]"
+                :labels="stepLabels"
                 @error="error"
-                @update:data="updateStudyData(step.id, 'annotator', $event)"
-            >
-              <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
-                  <template #content>
-                    <CurrentStepNote v-if="ownTabNumber(step)"/>
-                    <Assessment
-                        :config="step.configuration"
-                        :study-step-id="step.id"
-                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
-                        @assessment-advance-past-end="focusForwardControl"
-                        @update:data="updateStudyData(step.id, 'assessment', $event)"
-                    />
-                  </template>
-                </SidebarTemplate>
-              </template>
-              <template v-for="tab in tabsByStep[step.id]" :key="tab.key" #[tab.key]>
-                <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
-              </template>
-            </Annotator>
-
-            <Editor
-                v-if="step.stepType === 2"
-                ref="editor"
-                v-bind="lookBack.paneProps[step.id]"
-                :document-id="step.documentId"
-                :study-step-id="step.id"
-                :without-history="true"
-                @update:data="updateStudyData(step.id, 'editor', $event)"
-            >
-              <template v-if="step.configuration?.settings?.configurationId" #additionalSidebars>
-                <SidebarTemplate icon="list-check" :number="ownTabNumber(step)" :title="$t('assessment.title')">
-                  <template #content>
-                    <CurrentStepNote v-if="ownTabNumber(step)"/>
-                    <Assessment
-                        :config="step.configuration"
-                        :study-step-id="step.id"
-                        @assessment-ready-changed="onAssessmentReady(step.id, $event)"
-                        @assessment-advance-past-end="focusForwardControl"
-                        @update:data="updateStudyData(step.id, 'assessment', $event)"
-                    />
-                  </template>
-                </SidebarTemplate>
-              </template>
-              <template v-for="tab in tabsByStep[step.id]" :key="tab.key" #[tab.key]>
-                <LookBackTab v-bind="tab" :label="stepLabels[tab.step.id]"/>
-              </template>
-            </Editor>
+                @update:data="updateStudyData(step.id, $event.type, $event.data)"
+                @assessment-ready-changed="onAssessmentReady(step.id, $event)"
+                @assessment-advance-past-end="focusForwardControl"
+            />
 
             <StepModal
                 v-if="step.stepType === 3"
@@ -235,13 +155,7 @@
           </div>
         </div>
       </div>
-      <div v-if="shownStepId !== null && lookBack.isVisible(step.id)" class="pane-label-holder">
-        <span class="badge d-inline-flex align-items-center gap-1">
-          <LoadIcon v-if="step.id !== currentStudyStepId" icon-name="lock-fill" :size="10"/>
-          {{ stepLabels[step.id] }}
-        </span>
-      </div>
-    </div>
+    </StudyPane>
   </div>
 </template>
 
@@ -255,39 +169,38 @@
  * @author Dennis Zyska, Manu Sundar Raj Nandyal, Linyin Huang
  */
 import StudyModal from "@/components/study/StudyModal.vue";
-import Annotator from "./annotator/Annotator.vue";
-import Editor from "./editor/Editor.vue";
 import FinishModal from "./study/FinishModal.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import PaneStrip from "@/components/study/PaneStrip.vue";
-import LookBackTab from "@/components/study/LookBackTab.vue";
-import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
+import StudyPane from "@/components/study/StudyPane.vue";
+import StepView from "@/components/study/StepView.vue";
+import StudyInstructions from "@/components/study/StudyInstructions.vue";
+import StudyErrorPage from "@/components/study/StudyErrorPage.vue";
+import ReadOnlyBadge from "@/components/study/ReadOnlyBadge.vue";
 import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/study/helpers/lookBack.js";
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
-import Assessment from "@/components/study/Assessment.vue";
-import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
-    SidebarTemplate,
-    Assessment,
     LoadIcon,
     FinishModal,
     StudyModal,
-    Annotator,
-    Editor,
     TopBarButton,
     PaneStrip,
-    LookBackTab,
-    CurrentStepNote,
+    StudyPane,
+    StepView,
+    StudyInstructions,
+    StudyErrorPage,
+    ReadOnlyBadge,
     StepModal,
     LoadingModal
   },
+  inject: ["setStatsContext"],
   provide() {
     return {
       studySessionId: computed(() => this.studySessionId),
@@ -348,9 +261,6 @@ export default {
     nextLabel() {
       return this.$t('components.studyRoute.nextStep', {step: this.stepLabels[this.nextStudyStep?.id]});
     },
-    hasInstructions() {
-      return !!this.study?.description && !!this.studySession?.start;
-    },
     tabsByStep() {
       return buildTabsByStep({
         steps: this.orderedStudySteps, labels: this.stepLabels, getStep: this.$store.getters["table/study_step/get"],
@@ -391,8 +301,9 @@ export default {
     },
     canLoadStepById() {
       return this.orderedStudySteps.reduce((acc, step, i, steps) => {
-        if (i === 0) {
-          acc[step.id] = true; // first step can always load
+        // always load the active step, including when resuming a session.
+        if (step.id === this.currentStudyStepId || i === 0) {
+          acc[step.id] = true;
           return acc;
         }
 
@@ -482,6 +393,10 @@ export default {
     currentStudyStep() {
       return this.currentStudyStepId ? this.$store.getters["table/study_step/get"](this.currentStudyStepId) : null;
     },
+    studyStatsContext() {
+      // studySessionId is 0 until the session loads; send null so it is left out of the stats
+      return {studySessionId: this.studySessionId || null, currentStudyStepId: this.currentStudyStepId};
+    },
     currentStudyStepId() {
       if (this.readOnlyComputed && this.firstStep) {
         return this.localStudyStepId === 0 ? this.firstStep.id : this.localStudyStepId;
@@ -549,6 +464,12 @@ export default {
       },
       immediate: true,
     },
+    studyStatsContext: {
+      handler(context) {
+        this.setStatsContext(context);
+      },
+      immediate: true,
+    },
     studySession() {
       if (this.study && this.study.timeLimit > 0 && this.studySession) {
         //studySession required, otherwise not all data may be there yet
@@ -569,15 +490,12 @@ export default {
     this.getStudyData();
   },
   beforeUnmount() {
+    this.setStatsContext({studySessionId: null, currentStudyStepId: null});
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
   },
   methods: {
-    // A step that can look back numbers its own sidebar tabs too, so they read like the workflow bar
-    ownTabNumber(step) {
-      return this.tabsByStep[step.id]?.length ? this.orderedStudySteps.indexOf(step) + 1 : null;
-    },
     /**
      * Move keyboard focus to the forward control after the final assessment
      * criterion is marked done. Under forcedAssessment the button is enabled
@@ -830,15 +748,6 @@ export default {
 
 .ms-3 {
   margin-left: 1rem;
-}
-
-.study-error-page {
-  background-color: var(--bs-tertiary-bg, #f5f5f5);
-  min-height: 100vh;
-}
-.error-card {
-  max-width: 500px;
-  border: 1px solid var(--bs-border-color, #e0e0e0);
 }
 
 </style>

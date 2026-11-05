@@ -5,7 +5,7 @@
     <div class="look-back-header d-flex align-items-center gap-2 px-2 pt-2">
       <span class="badge">{{ label }}</span>
     </div>
-    <AnnotationSidebar v-if="type === 'annotations'"/>
+    <AnnotationSidebar v-if="type === 'annotations'" @scroll-to-comment="scrollSidebarTo"/>
     <Assessment
         v-else-if="type === 'assessment'"
         :config="step.configuration"
@@ -39,6 +39,10 @@ export default {
     };
   },
   inject: {
+    // Scrolls the sidebar this tab is in to an offset, like the Annotator does for its own tab (basic/Sidebar.vue)
+    scrollSidebarTo: {
+      default: () => () => {},
+    },
     acceptStats: {
       default: () => false
     },
@@ -72,6 +76,8 @@ export default {
   data() {
     return {
       isVisible: false,
+      // The study IDs at the moment the tab appeared, also sent when it disappears, so both events match
+      visibleContext: null,
     };
   },
   beforeUnmount() {
@@ -87,16 +93,21 @@ export default {
         return;
       }
       this.isVisible = isVisible;
+      if (isVisible) {
+        this.visibleContext = {
+          ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        };
+      }
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "lookBackPanelVisibilityChange",
           data: {
             documentId: this.step.documentId,
-            stepId: this.step.id,
+            studyStepId: this.step.id,
             type: this.type,
             isVisible: isVisible,
-            studySessionId: this.studySessionId,
-            studyStepId: this.currentStudyStep?.id,
+            ...this.visibleContext,
           }
         });
       }

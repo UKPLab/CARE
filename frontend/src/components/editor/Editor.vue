@@ -90,7 +90,7 @@ import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
 import { emailTemplateTypes } from "@/assets/templateTypes";
 import { resolveApiMessage } from "@/assets/utils";
-import {isCurrentStepTab, isLookBackTabShown} from "@/components/study/helpers/lookBack.js";
+import {isCurrentStepTab, isLookBackTabShown, lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "EditorView",
@@ -109,6 +109,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       readOnly: computed(() => this.readOnlyOverwrite),
       templateId: computed(() => this.templateId),
     }
@@ -156,34 +157,7 @@ export default {
       required: false,
       default: null,
     },
-    forceReadOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    activeSidebar: {
-      type: String,
-      required: false,
-      default: null,
-    },
-    // In a study step that can look back: its look-back sidebar tabs (see components/study/helpers/lookBack.js)
-    lookBackTabs: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-    // The earlier step on screen, if this step has a look-back tab for it
-    shownLookBackStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    // Hides the step's own sidebar tabs, while an earlier step is shown in its place
-    ownTabsHidden: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+    ...lookBackPaneProps,
     withoutHistory: {
       type: Boolean,
       required: false,

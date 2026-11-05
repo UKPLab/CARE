@@ -48,9 +48,17 @@ import FormSelect from "@/basic/form/Select.vue";
  * user vs. study owner) when creating bulk assignments.
  * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
+const DOC_TYPE_PDF = 0;
+const DOC_TYPE_ZIP = 4;
+
 export default {
   name: "WorkflowMappingStep",
   components: { FormSelect },
+  subscribeTable: [
+    { table: "assignment" },
+    { table: "submission" },
+    { table: "document" },
+  ],
   props: {
     workflowSteps: {
       type: Array,
@@ -73,6 +81,39 @@ export default {
     };
   },
   computed: {
+    assignmentSourceOptions() {
+      const assignments = this.$store.getters["table/assignment/getAll"] || [];
+      const submissions = this.$store.getters["table/submission/getAll"] || [];
+      const documents = this.$store.getters["table/document/getAll"] || [];
+      const assignmentBySubmission = new Map(submissions
+          .filter(submission => !submission.deleted)
+          .map(submission => [submission.id, submission.assignmentId]));
+      const typesByAssignment = new Map();
+      for (const document of documents) {
+        if (document.deleted || !assignmentBySubmission.has(document.submissionId)) continue;
+        const assignmentId = assignmentBySubmission.get(document.submissionId);
+        if (!typesByAssignment.has(assignmentId)) typesByAssignment.set(assignmentId, new Set());
+        typesByAssignment.get(assignmentId).add(document.type);
+      }
+
+      return assignments.filter(assignment => !assignment.deleted).flatMap(assignment => {
+        const types = typesByAssignment.get(assignment.id);
+        const options = [];
+        if (types?.has(DOC_TYPE_ZIP)) {
+          options.push({
+            name: `<${this.$t('dashboard.study.typeSubmission')}> ${assignment.name}`,
+            value: `submission:assignment:${assignment.id}`,
+          });
+        }
+        if (types?.has(DOC_TYPE_PDF)) {
+          options.push({
+            name: `<${this.$t('dashboard.study.typeDocument')}> ${assignment.name}`,
+            value: `document:assignment:${assignment.id}`,
+          });
+        }
+        return options;
+      });
+    },
     workflowOptions() {
       return {
         options: this.$store.getters["table/workflow/getAll"].map(workflow => ({
@@ -169,7 +210,7 @@ export default {
           }
         }
       }
-      return options;
+      return stepType === 1 ? [...options, ...this.assignmentSourceOptions] : options;
     },
     reset() {
       this.targetWorkflowId = null;
