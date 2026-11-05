@@ -93,6 +93,11 @@ export default {
     acceptStats: {
       default: () => false
     },
+    hiddenStudyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
   },
   provide() {
     return {
@@ -110,8 +115,8 @@ export default {
       resizeDebounced: undefined,
       // Starts with page 1 so the first pages render before any page has reported its visibility.
       visiblePages: [1],
-      // Last reported state per page. Separate from visiblePages, which holds page 1 before it reports.
       reportedVisibility: {},
+      lastVisibility: {},
       scale: 1.0,
       originalScale: null,
       DEFAULT_SCALE: 1.0,
@@ -136,6 +141,9 @@ export default {
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+    isHidden() {
+      return this.studyStepId !== null && this.studyStepId === this.hiddenStudyStepId;
     },
     componentReadOnly() {
       if(!this.readOnly) {
@@ -162,6 +170,10 @@ export default {
         }
       },
       deep: true,
+    },
+    isHidden(hidden) {
+      // Hidden pages are not on screen, even though the browser still counts them as visible
+      this.sendVisiblePages(!hidden);
     },
     scale(newScale) {
       // Keep form data in sync with scale
@@ -217,6 +229,12 @@ export default {
       }
     );
   },
+  beforeUnmount() {
+    // Pages still on screen would otherwise never get their "hidden" event; a hidden viewer already sent it
+    if (!this.isHidden) {
+      this.sendVisiblePages(false);
+    }
+  },
   unmounted() {
     this.disconnectContainerObserver();
     this.pdf = null;
@@ -250,7 +268,7 @@ export default {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "pdfPageResizeChange",
-            data: {documentId: this.documentId, width: next}
+            data: {documentId: this.documentId, ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}), ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}), width: next}
           });
         }
       }, 200);
@@ -310,18 +328,33 @@ export default {
       }
       const stateChanged = Boolean(this.reportedVisibility[page.pageNumber]) !== page.isVisible;
       this.reportedVisibility[page.pageNumber] = page.isVisible;
-      if (stateChanged && this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfPageVisibilityChange",
-          data: {
-            documentId: this.documentId,
-            readOnly: this.readOnly,
-            visibility: page,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-          }
-        })
+      this.lastVisibility[page.pageNumber] = page;
+      if (stateChanged && !this.isHidden) {
+        this.sendVisibility(page);
       }
+    },
+    sendVisibility(page) {
+      if (!this.acceptStats) {
+        return;
+      }
+      this.$socket.emit("stats", {
+        action: "pdfPageVisibilityChange",
+        data: {
+          documentId: this.documentId,
+          readOnly: this.readOnly,
+          visibility: page,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+        }
+      })
+    },
+    // Sends the visibility of every page the browser counts as visible
+    sendVisiblePages(isVisible) {
+      this.visiblePages.forEach((pageNumber) => {
+        if (this.lastVisibility[pageNumber]) {
+          this.sendVisibility({...this.lastVisibility[pageNumber], isVisible});
+        }
+      });
     },
     onCopy(event) {
       this.$emit('copy', event);
