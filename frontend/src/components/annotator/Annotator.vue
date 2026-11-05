@@ -193,6 +193,8 @@ export default {
     return {
       pdf: null,
       downloading: false,
+      recordsLoaded: false,
+      recordsRequestId: 0,
       assessmentViewActive: true,
       maxSidebarWidth: 400,
       minSidebarWidth: 0,
@@ -358,31 +360,23 @@ export default {
     },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
+        this.loadRecords();
       }
     },
     studyStepId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
+        this.loadRecords();
       }
     },
     annotations: {
       handler() {
-        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+        this.emitStudyData();
       },
       deep: true
     },
     comments: {
       handler() {
-        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+        this.emitStudyData();
       },
       deep: true
     }
@@ -624,11 +618,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      this.$socket.emit("documentGetData", {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId
-      });
+      this.loadRecords();
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
@@ -648,6 +638,37 @@ export default {
           command: "skillGetConfig",
           data: {name: "sentiment_classification"}
         });
+      }
+    },
+    /**
+     * Requests the records of the current view. The backend acknowledges after sending the annotation
+     * and comment refreshes, and table subscriptions can deliver rows at any time before that. So only
+     * the acknowledgement of the latest request tells that an empty list means there are no records.
+     */
+    loadRecords() {
+      const requestId = ++this.recordsRequestId;
+      if (this.recordsLoaded) {
+        // The study must not read the records of the previous session or step
+        this.recordsLoaded = false;
+        this.$emit('update:data', null);
+      }
+      this.$socket.emit("documentGetData", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId
+      }, (res) => {
+        if (res?.success && requestId === this.recordsRequestId) {
+          this.recordsLoaded = true;
+          this.emitStudyData();
+        }
+      });
+    },
+    /**
+     * Passes the records of the current view on to the study, once they are loaded.
+     */
+    emitStudyData() {
+      if (this.recordsLoaded) {
+        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
       }
     },
     /**

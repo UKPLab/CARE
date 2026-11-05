@@ -644,7 +644,7 @@ class DocumentSocket extends Socket {
      * @param {number} data.studySessionId The ID of the current study session, if applicable.
      * @param {number} data.studyStepId The ID of the current study step, required when a `studySessionId` is provided.
      * @param {Object} options Additional configuration parameters (passed down to sub-methods).
-     * @returns {Promise<void>} A promise that resolves (with no value) once all relevant data has been fetched and emitted to the client.
+     * @returns {Promise<void>} Resolves after the annotation and comment refreshes were sent, so the client can treat the acknowledgement as "records loaded". The other refreshes may still follow.
      */
     async getData(data, options) {
         if (!data.documentId) {
@@ -692,7 +692,7 @@ class DocumentSocket extends Socket {
                     }));
                     annotations = annotations.flat(1);
                 
-                    this.emit("annotationRefresh", annotations);
+                    await this.emit("annotationRefresh", annotations);
 
                     // send comments - if showAllDocumentAnnotations is true, include document comments in OR condition
                     let comments;
@@ -710,7 +710,7 @@ class DocumentSocket extends Socket {
                         });
                     }));
                     comments = comments.flat(1);
-                    this.emit("commentRefresh", comments);
+                    await this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
                     const commentIds = Array.isArray(comments) ? comments.map(c => c.id) : [];
@@ -735,7 +735,7 @@ class DocumentSocket extends Socket {
                         raw: true
                     });
 
-                    this.emit("annotationRefresh", annotations);
+                    await this.emit("annotationRefresh", annotations);
 
                     let comments;
                     const commentWhereCondition = showAllDocumentAnnotations ? {
@@ -749,7 +749,7 @@ class DocumentSocket extends Socket {
                         where: commentWhereCondition,
                         raw: true
                     });
-                    this.emit("commentRefresh", comments);
+                    await this.emit("commentRefresh", comments);
 
                     // send comment votes (get votes for all comments)
                     const commentIds = Array.isArray(comments) ? comments.map(c => c.id) : [];
@@ -765,8 +765,8 @@ class DocumentSocket extends Socket {
                 // send comments and annotations for closed studies and without study session
                 const {annotations: closedAnnotations, comments: closedComments, allComments} = await this.notesForClosedStudiesOrNoSession(data.documentId);
 
-                this.emit("annotationRefresh", closedAnnotations);
-                this.emit("commentRefresh", closedComments);
+                await this.emit("annotationRefresh", closedAnnotations);
+                await this.emit("commentRefresh", closedComments);
                 this.emit("comment_voteRefresh", await this.models['comment_vote'].getAllByKeyValues('commentId', allComments.map(c => c.id)), false);
 
                 const tagIds = new Set(closedAnnotations.flat(1).map(a => a.tagId));

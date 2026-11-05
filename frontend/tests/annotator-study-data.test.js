@@ -93,10 +93,14 @@ function mountAnnotator({
     })
     const app = createApp(Parent)
     Object.assign(app.config.globalProperties, {
-        $store: {getters}, $socket: {emit: noop}, $t: key => key, eventBus: {on: noop, off: noop},
+        $store: {getters},
+        $socket: {emit: (_event, _data, ack) => ack?.({success: true})},
+        $t: key => key,
+        eventBus: {on: noop, off: noop},
     })
     app.mount({})
 
+    instance.loadRecords()
     state.records = records
     return {
         state,
