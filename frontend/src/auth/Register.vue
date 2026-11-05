@@ -4,177 +4,227 @@
       <a
           class="btn btn-link btn-sm"
           href="#"
-          @click="toLogin"
+          @click.prevent="toLogin"
       >{{ $t('auth.login') }}</a>
     </template>
+
+    <div class="register-progress">
+      <ol class="register-progress-track">
+        <li
+            v-for="(step, index) in steps"
+            :key="step.id"
+            :class="{ 'is-done': index < currentStep, 'is-active': index === currentStep }"
+            :aria-current="index === currentStep ? 'step' : null"
+        >
+          <span class="visually-hidden">{{ step.title }}</span>
+        </li>
+      </ol>
+      <div class="register-progress-label">
+        <span class="register-progress-title">{{ activeStep.title }}</span>
+        <span>{{ $t('auth.registerSteps.stepOf', { current: currentStep + 1, total: steps.length }) }}</span>
+      </div>
+    </div>
+
     <form
         ref="registerForm"
         class="needs-validation"
         novalidate
-        @submit.prevent="checkForm"
+        @submit.prevent="onSubmit"
     >
-      <div
-          v-if="config['requestName']"
-          class="row"
-      >
-        <label
-            class="col-md-4 col-form-label"
-            for="firstName"
-        >{{ $t('auth.firstName') }}</label>
-        <div class="col-md-6">
-          <input
-              id="firstName"
-              v-model="formData['firstName']"
-              autofocus
-              class="form-control"
-              name="firstName"
-              required
-              type="text"
+      <!-- All steps share one grid cell, so the card keeps the height of the tallest step -->
+      <div ref="stepViewport" class="register-viewport">
+          <div
+              v-for="(step, index) in steps"
+              :key="step.id"
+              class="register-step"
+              :class="{
+                'is-active': index === currentStep,
+                'is-before': index < currentStep,
+                'is-after': index > currentStep,
+              }"
+              :inert="index !== currentStep"
           >
-          <div class="feedback-invalid">
-            {{ $t('errors.validation.auth.provideFirstName') }}
+            <template v-if="step.id === 'profile'">
+              <div v-if="config['requestName']" class="row">
+                <label
+                    class="col-md-4 col-form-label"
+                    for="firstName"
+                >{{ $t('auth.firstName') }}</label>
+                <div class="col-md-6">
+                  <input
+                      id="firstName"
+                      v-model="formData['firstName']"
+                      autocomplete="given-name"
+                      class="form-control"
+                      name="firstName"
+                      required
+                      type="text"
+                      @blur="checkVal('firstName')"
+                  >
+                  <div class="feedback-invalid" :class="{invalid: validity['firstName'] && !validFirstName}">
+                    {{ $t('errors.validation.auth.provideFirstName') }}
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="config['requestName']" class="row">
+                <label
+                    class="col-md-4 col-form-label"
+                    for="lastName"
+                >{{ $t('auth.lastName') }}</label>
+                <div class="col-md-6">
+                  <input
+                      id="lastName"
+                      v-model="formData['lastName']"
+                      autocomplete="family-name"
+                      class="form-control"
+                      name="lastName"
+                      required
+                      type="text"
+                      @blur="checkVal('lastName')"
+                  >
+                  <div class="feedback-invalid" :class="{invalid: validity['lastName'] && !validLastName}">
+                    {{ $t('errors.validation.auth.provideLastName') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <label
+                    class="col-md-4 col-form-label"
+                    for="userName"
+                >{{ $t('auth.username') }}</label>
+                <div class="col-md-6">
+                  <input
+                      id="userName"
+                      v-model="formData['userName']"
+                      autocomplete="username"
+                      class="form-control"
+                      name="userName"
+                      pattern="^[a-zA-Z0-9]+$"
+                      required
+                      type="text"
+                      @blur="checkVal('userName')"
+                  >
+                  <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
+                    {{ $t('errors.validation.auth.usernameNoSpecialChars') }}
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template v-else-if="step.id === 'credentials'">
+              <div class="row">
+                <label
+                    class="col-md-4 col-form-label"
+                    for="email"
+                >{{ $t('auth.email') }}</label>
+                <div class="col-md-6">
+                  <input
+                      id="email"
+                      v-model="formData['email']"
+                      autocomplete="email"
+                      class="form-control"
+                      name="email"
+                      required
+                      type="email"
+                      @blur="checkVal('email')"
+                  >
+                  <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
+                    {{ $t('errors.validation.auth.provideEmail') }}
+                  </div>
+                </div>
+              </div>
+
+              <div class="row">
+                <label
+                    class="col-md-4 col-form-label"
+                    for="password"
+                >{{ $t('auth.password') }}</label>
+                <div class="col-md-6">
+                  <input
+                      id="password"
+                      v-model="formData['password']"
+                      autocomplete="new-password"
+                      class="form-control"
+                      name="password"
+                      pattern=".{8,}"
+                      required
+                      type="password"
+                      @blur="checkVal('password')"
+                  >
+                  <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
+                    {{ $t('errors.validation.auth.passwordRequirements') }}
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <div v-else class="d-grid gap-2 pt-1">
+              <div class="form-check">
+                <input
+                    id="acceptTerms"
+                    v-model="formData['acceptTerms']"
+                    class="form-check-input"
+                    name="acceptTerms"
+                    type="checkbox"
+                    @blur="checkVal('acceptTerms')"
+                >
+                <label class="form-check-label" for="acceptTerms">
+                  {{ $t('auth.acceptTermsPrefix') }} <a
+                    href="#"
+                    @click.prevent="$refs.terms.open()"
+                  >{{ $t('auth.termsOfService') }}</a>
+                </label>
+                <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">
+                  {{ $t('errors.validation.auth.acceptTermsRequired') }}
+                </div>
+              </div>
+              <div v-if="config['requestStats']" class="form-check">
+                <input
+                    id="acceptStats"
+                    v-model="formData['acceptStats']"
+                    class="form-check-input"
+                    name="acceptStats"
+                    type="checkbox"
+                >
+                <label class="form-check-label" for="acceptStats">{{ $t('auth.acceptStats') }}</label>
+              </div>
+              <div v-if="config['requestData']" class="form-check">
+                <input
+                    id="acceptDataSharing"
+                    v-model="formData['acceptDataSharing']"
+                    class="form-check-input"
+                    name="acceptDataSharing"
+                    type="checkbox"
+                >
+                <label class="form-check-label" for="acceptDataSharing">{{ $t('auth.acceptDataSharing') }}</label>
+              </div>
+            </div>
           </div>
-        </div>
       </div>
 
-
-      <div
-          v-if="config['requestName']"
-          class="row"
-      >
-        <label
-            class="col-md-4 col-form-label"
-            for="lastName"
-        >{{ $t('auth.lastName') }}</label>
-        <div class="col-md-6">
-          <input
-              id="lastName"
-              v-model="formData['lastName']"
-              class="form-control"
-              name="lastName"
-              required
-              type="text"
-          >
-          <div class="feedback-invalid">
-            {{ $t('errors.validation.auth.provideLastName') }}
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <label
-            class="col-md-4 col-form-label"
-            for="userName"
-        >{{ $t('auth.username') }}</label>
-        <div class="col-md-6">
-          <input
-              id="userName"
-              v-model="formData['userName']"
-              class="form-control"
-              name="userName"
-              pattern="^[a-zA-Z0-9]+$"
-              required
-              type="text"
-              @blur="checkVal('userName')"
-          >
-          <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
-            {{ $t('errors.validation.auth.usernameNoSpecialChars') }}
-          </div>
-        </div>
-      </div>
-
-      <div class="row">
-        <label
-            class="col-md-4 col-form-label"
-            for="email"
-        >{{ $t('auth.email') }}</label>
-        <div class="col-md-6">
-          <input
-              id="email"
-              v-model="formData['email']"
-              class="form-control"
-              name="email"
-              required
-              type="email"
-              @blur="checkVal('email')"
-          >
-          <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
-            {{ $t('errors.validation.auth.provideEmail') }}
-          </div>
-        </div>
-      </div>
-
-
-      <div class="row">
-        <label
-            class="col-md-4 col-form-label"
-            for="password"
-        >{{ $t('auth.password') }}</label>
-        <div class="col-md-6">
-          <input
-              id="password"
-              v-model="formData['password']"
-              class="form-control"
-              name="password"
-              pattern=".{8,}"
-              required
-              type="password"
-              @blur="checkVal('password')"
-          >
-          <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-            {{ $t('errors.validation.auth.passwordRequirements') }}
-          </div>
-        </div>
-      </div>
-
-
-      <div class="d-grid gap-2 mt-3">
-        <div class="form-check">
-          <input
-              id="acceptTerms"
-              v-model="formData['acceptTerms']"
-              class="form-check-input"
-              name="acceptTerms"
-              type="checkbox"
-              @blur="checkVal('acceptTerms')"
-          >
-          <label class="form-check-label" for="acceptTerms">
-            {{ $t('auth.acceptTermsPrefix') }} <a
-              href="#"
-              @click.prevent="$refs.terms.open()"
-            >{{ $t('auth.termsOfService') }}</a>
-          </label>
-          <div class="feedback-invalid" :class="{invalid: validity['acceptTerms'] && !validTerms}">
-            {{ $t('errors.validation.auth.acceptTermsRequired') }}
-          </div>
-        </div>
-        <div v-if="config['requestStats']" class="form-check">
-          <input
-              id="acceptStats"
-              v-model="formData['acceptStats']"
-              class="form-check-input"
-              name="acceptStats"
-              type="checkbox"
-          >
-          <label class="form-check-label" for="acceptStats">{{ $t('auth.acceptStats') }}</label>
-        </div>
-        <div v-if="config['requestData']" class="form-check">
-          <input
-              id="acceptDataSharing"
-              v-model="formData['acceptDataSharing']"
-              class="form-check-input"
-              name="acceptDataSharing"
-              type="checkbox"
-          >
-          <label class="form-check-label" for="acceptDataSharing">{{ $t('auth.acceptDataSharing') }}</label>
-        </div>
-      </div>
-      <div class="mt-4">
+      <div class="register-actions mt-4">
         <BasicButton
-          class="btn btn-primary w-100"
-          type="submit"
-          :disabled="!config['isRegistrationEnabled']"
-          :title="$t('auth.register')"
+            v-if="currentStep > 0"
+            class="btn btn-outline-secondary"
+            :title="$t('common.back')"
+            :disabled="isSubmitting"
+            @click="previousStep"
+        />
+        <BasicButton
+            v-if="!isLastStep"
+            class="btn btn-primary flex-grow-1"
+            type="submit"
+            :title="$t('common.next')"
+        />
+        <BasicButton
+            v-else
+            class="btn btn-primary flex-grow-1"
+            type="submit"
+            :disabled="!config['isRegistrationEnabled']"
+            :loading="isSubmitting"
+            :title="$t('auth.register')"
         />
       </div>
     </form>
@@ -186,14 +236,16 @@
 /**
  *  Registration component
  *
- *  This component provides a basic mask to enter user information
- *  and register a user on the server.
+ *  This component provides a mask to enter user information and register a user
+ *  on the server. The fields are split into steps (profile, login details,
+ *  agreements); each step is validated before the next one is shown.
  *
  *  @Author: Dennis Zyska, Carly Gettinger, Linyin Huang
  */
 import TermsModal from "./TermsModal.vue";
 import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
+import { navigateWithAuthTransition } from "@/auth/authTransition";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
@@ -213,7 +265,9 @@ export default {
         acceptStats: false,
         acceptDataSharing: false,
       },
-      validity: null
+      validity: null,
+      currentStep: 0,
+      isSubmitting: false,
     }
   },
   computed: {
@@ -226,6 +280,40 @@ export default {
         isDataShared: JSON.parse(window.config["app.register.acceptDataSharing.default"]),
         isRegistrationEnabled: JSON.parse(window.config["app.register.enabled"])
       };
+    },
+    steps() {
+      return [
+        {
+          id: "profile",
+          title: this.$t("auth.registerSteps.profile"),
+          fields: this.config.requestName ? ["firstName", "lastName", "userName"] : ["userName"],
+          valid: this.validUsername && (!this.config.requestName || (this.validFirstName && this.validLastName)),
+        },
+        {
+          id: "credentials",
+          title: this.$t("auth.registerSteps.credentials"),
+          fields: ["email", "password"],
+          valid: this.validEmail && this.validPassword,
+        },
+        {
+          id: "consent",
+          title: this.$t("auth.registerSteps.consent"),
+          fields: ["acceptTerms"],
+          valid: this.validTerms,
+        },
+      ];
+    },
+    activeStep() {
+      return this.steps[this.currentStep];
+    },
+    isLastStep() {
+      return this.currentStep === this.steps.length - 1;
+    },
+    validFirstName() {
+      return this.formData.firstName.trim() !== "";
+    },
+    validLastName() {
+      return this.formData.lastName.trim() !== "";
     },
     validEmail() {
       const emailRegEx = new RegExp("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
@@ -249,7 +337,7 @@ export default {
       return this.formData.acceptTerms;
     },
     validForm() {
-      return this.validEmail && this.validUsername && this.validPassword && this.validTerms;
+      return this.steps.every((step) => step.valid);
     }
   },
   mounted() {
@@ -265,6 +353,7 @@ export default {
     if (this.config.requestData) {
       this.formData.acceptDataSharing = this.config.isDataShared;
     }
+    this.focusFirstField();
   },
   beforeMount() {
     this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
@@ -273,21 +362,58 @@ export default {
     checkVal(key) {
       this.validity[key] = true;
     },
-    async checkForm() {
-      if (!this.config.isRegistrationEnabled) {
+    onSubmit() {
+      if (this.isLastStep) {
+        this.checkForm();
+      } else {
+        this.nextStep();
+      }
+    },
+    nextStep() {
+      this.activeStep.fields.forEach((key) => this.checkVal(key));
+      if (!this.activeStep.valid) {
         return;
       }
-      Object.keys(this.validity).map(key => {
+      this.goToStep(this.currentStep + 1);
+    },
+    previousStep() {
+      if (this.currentStep === 0) {
+        return;
+      }
+      this.goToStep(this.currentStep - 1);
+    },
+    async checkForm() {
+      if (!this.config.isRegistrationEnabled || this.isSubmitting) {
+        return;
+      }
+      Object.keys(this.validity).forEach(key => {
         this.validity[key] = true
       })
-      if (this.validForm) {
-        await this.registerUser();
+      if (!this.validForm) {
+        // Show the first step that still has a problem
+        const invalidIndex = this.steps.findIndex((step) => !step.valid);
+        if (invalidIndex !== this.currentStep) {
+          this.goToStep(invalidIndex);
+        }
+        return;
       }
+      await this.registerUser();
+    },
+    async goToStep(index) {
+      this.currentStep = index;
+      // Wait until the step is no longer inert, otherwise it cannot take focus
+      await this.$nextTick();
+      this.focusFirstField();
+    },
+    focusFirstField() {
+      const step = this.$refs.stepViewport?.children[this.currentStep];
+      step?.querySelector("input")?.focus({ preventScroll: true });
     },
     toLogin() {
-      this.$router.push({name: "login", query: {redirectedFrom: this.$route.query.redirectedFrom}});
+      navigateWithAuthTransition(this.$router, {name: "login", query: {redirectedFrom: this.$route.query.redirectedFrom}}, "back");
     },
     async registerUser() {
+      this.isSubmitting = true;
       try {
         await axios.post(getServerURL() + '/auth/register', {...this.formData, acceptedAt: new Date()}, {
           validateStatus: function (status) {
@@ -308,7 +434,6 @@ export default {
           });
         }
 
-
         this.toLogin();
       } catch (err) {
         this.eventBus.emit('toast', {
@@ -316,6 +441,8 @@ export default {
           title: this.$t('errors.auth.invalidCredentials'),
           variant: 'danger'
         });
+      } finally {
+        this.isSubmitting = false;
       }
     }
   }
@@ -330,5 +457,90 @@ input[type='password'] + .feedback-invalid:not(.invalid) {
 
 input[type='password'] + .feedback-invalid:not(.invalid)::before {
   content: none;
+}
+
+.register-progress {
+  margin-bottom: .75rem;
+}
+
+.register-progress-track {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.register-progress-track li {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--bs-border-color);
+  transition: background-color .3s ease;
+}
+
+.register-progress-track li.is-done,
+.register-progress-track li.is-active {
+  background: var(--bs-primary);
+}
+
+.register-progress-label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: .5rem;
+  font-size: .8rem;
+  color: var(--bs-secondary-color);
+}
+
+.register-progress-title {
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+/* Steps are stacked in the same grid cell: the viewport is as tall as the tallest
+   step, so switching steps never changes the card height. */
+.register-viewport {
+  display: grid;
+  overflow-x: clip;
+  overflow-clip-margin: 4px; /* keep input focus rings visible */
+}
+
+.register-step {
+  grid-area: 1 / 1;
+  display: flow-root;
+  transition:
+    opacity .3s ease,
+    transform .4s cubic-bezier(.22, 1, .36, 1),
+    visibility 0s linear .4s;
+}
+
+.register-step.is-active {
+  transition-delay: .08s, .08s, 0s;
+}
+
+.register-step:not(.is-active) {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.register-step.is-before {
+  transform: translateX(-32px);
+}
+
+.register-step.is-after {
+  transform: translateX(32px);
+}
+
+.register-actions {
+  display: flex;
+  gap: .5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .register-progress-track li,
+  .register-step {
+    transition: none;
+  }
 }
 </style>

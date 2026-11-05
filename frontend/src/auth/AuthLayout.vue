@@ -85,6 +85,16 @@ export default {
 
 .auth-card {
   width: 100%;
+  view-transition-name: auth-card;
+}
+
+/* Named separately so the frame snapshot holds only background, border and shadow */
+.auth-card > .card-header {
+  view-transition-name: auth-card-header;
+}
+
+.auth-card > .card-body {
+  view-transition-name: auth-card-body;
 }
 
 .auth-card .card-title {
@@ -351,6 +361,68 @@ html[data-bs-theme="dark"] .auth-aside::before {
   .auth-float,
   .auth-aside {
     display: none;
+  }
+}
+</style>
+
+<style>
+/* View Transition between auth pages (see auth/authTransition.js). Must be global,
+   the pseudo-elements live on the document root.
+   - auth-card: the empty frame. Only the new snapshot is shown, stretched to the
+     animated size, so the shadow moves with the card instead of being clipped or
+     cross-faded.
+   - auth-card-header: same layout on both pages, short cross-fade of the title.
+   - auth-card-body: old content leaves quickly, new content slides in after it. */
+html {
+  --auth-shift-out: -24px;
+  --auth-shift-in: 24px;
+}
+
+html[data-auth-direction="back"] {
+  --auth-shift-out: 24px;
+  --auth-shift-in: -24px;
+}
+
+::view-transition-group(auth-card),
+::view-transition-group(auth-card-header),
+::view-transition-group(auth-card-body) {
+  animation-duration: .55s;
+  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+
+::view-transition-old(auth-card) {
+  display: none;
+}
+
+::view-transition-new(auth-card) {
+  height: 100%;
+  animation: none;
+}
+
+::view-transition-old(auth-card-header),
+::view-transition-new(auth-card-header) {
+  animation-duration: .3s;
+}
+
+::view-transition-old(auth-card-body) {
+  animation: auth-content-out .2s cubic-bezier(.4, 0, 1, 1) both;
+}
+
+::view-transition-new(auth-card-body) {
+  animation: auth-content-in .45s .15s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+@keyframes auth-content-out {
+  to {
+    opacity: 0;
+    transform: translateX(var(--auth-shift-out));
+  }
+}
+
+@keyframes auth-content-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--auth-shift-in));
   }
 }
 </style>

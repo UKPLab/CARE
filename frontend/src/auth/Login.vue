@@ -165,6 +165,7 @@ import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
 import ForgotPasswordModal from "@/auth/ForgotPasswordModal.vue";
 import EmailVerificationModal from "@/auth/EmailVerificationModal.vue";
+import { navigateWithAuthTransition } from "@/auth/authTransition";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
@@ -324,7 +325,7 @@ export default {
       }
     },
     toRegister() {
-      this.$router.push({name: "register", query: {redirectedFrom: this.$route.query.redirectedFrom}});
+      navigateWithAuthTransition(this.$router, {name: "register", query: {redirectedFrom: this.$route.query.redirectedFrom}}, "forward");
     },
     async login_guest() {
       try {
