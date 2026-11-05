@@ -385,18 +385,8 @@ export default {
         this.loadRecords();
       }
     },
-    annotations: {
-      handler() {
-        this.emitStudyData();
-      },
-      deep: true
-    },
-    comments: {
-      handler() {
-        this.emitStudyData();
-      },
-      deep: true
-    }
+    annotations: {handler: 'emitStudyData', deep: true},
+    comments: {handler: 'emitStudyData', deep: true}
   },
   mounted() {
     // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
