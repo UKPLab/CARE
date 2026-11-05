@@ -181,10 +181,6 @@ conditions stopped the climb, and the highest concurrency at which none of them 
 change over time: the first third of the batches is compared with the last third for latency,
 failures, unanswered requests and throughput.
 
-*ramp*, *ceiling* and *soak* only report. They reach no stable or failed verdict: they exit with
-``0`` when the run completed and ``1`` when the tool could not run it or the server connection
-dropped. *regression* keeps its pass/fail exit code.
-
 .. code-block:: bash
 
     npm run perf -- --mode soak --recordings 12 --concurrency 10 --duration 30m
@@ -195,6 +191,10 @@ Soak additionally correlates memory growth against the trace types active in eac
 
     The memory correlation is a lead, not proof. True per-trace memory attribution requires heap
     snapshots, which distort the measurement they are taken from.
+
+*ramp*, *ceiling* and *soak* only report. They reach no stable or failed verdict: they exit with
+``0`` when the run completed and ``1`` when the tool could not run it or the server connection
+dropped. *regression* keeps its pass/fail exit code.
 
 Option reference
 ~~~~~~~~~~~~~~~~
@@ -347,6 +347,8 @@ Saved results
 Each run writes two files to ``backend/logs/perf/``: a timestamped **.json** file containing raw
 machine-readable data, and a **.txt** file containing the terminal output verbatim. The text file is
 byte-identical to what appeared on screen, so a run can be attached to an issue without repeating it.
+If the server connection drops mid-run, the load modes stop and still save the results collected up
+to that point.
 
 The regression suite
 --------------------
