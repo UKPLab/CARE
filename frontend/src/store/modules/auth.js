@@ -112,6 +112,22 @@ export default {
             const rights = getters.getUserRights;
             return Array.isArray(rights) && rights.includes("frontend.preferences.disableLanguageSelection");
         },
+
+        /**
+         * Whether the user is on the shared guest account, so the dashboard home shows
+         * the guest page instead of personal statistics (restriction right, not a permission).
+         *
+         * @param {Object} state
+         * @param {Object} getters
+         * @returns {boolean} `true` for the guest home, otherwise `false`
+         */
+        isGuestHome: (state, getters) => {
+            if (getters.isAdmin) {
+                return false;
+            }
+            const rights = getters.getUserRights;
+            return Array.isArray(rights) && rights.includes("frontend.dashboard.home.guestView");
+        },
     },
     mutations: {
         /**

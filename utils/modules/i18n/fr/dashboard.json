@@ -623,6 +623,21 @@
         "ago": "il y a {when}",
         "lastSevenDays": "7 derniers jours",
         "weekEvents": "Activité : {count}",
-        "dayEvents": "{date} : {count} (documents ajoutés, sessions commencées ou terminées)"
+        "dayEvents": "{date} : {count} (documents ajoutés, sessions commencées ou terminées)",
+        "guest": {
+            "badge": "Accès invité",
+            "title": "Bienvenue sur CARE",
+            "intro": "Explorez la plateforme, essayez l'annotation sur le document d'exemple ou participez à une étude à laquelle vous avez été invité.",
+            "register": "Pour conserver vos documents et votre progression à votre nom, créez un compte.",
+            "askAdmin": "Pour obtenir un compte personnel, contactez votre administrateur.",
+            "example": "Exemple",
+            "createAccount": "Créer un compte",
+            "startHere": "Pour commencer",
+            "showcaseDetail": "Document d'exemple pour essayer l'annotation",
+            "documentsDetail": "Importer et ouvrir des documents",
+            "studiesDetail": "Études auxquelles vous avez été invité",
+            "studyDetail": "Ouvrir pour commencer ou reprendre",
+            "noStudies": "Aucune étude ouverte pour le moment"
+        }
     }
 }

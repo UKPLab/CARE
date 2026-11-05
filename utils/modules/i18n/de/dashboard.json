@@ -623,6 +623,21 @@
     "ago": "vor {when}",
     "lastSevenDays": "Letzte 7 Tage",
     "weekEvents": "Aktivität: {count}",
-    "dayEvents": "{date}: {count} (Dokumente hinzugefügt, Sitzungen begonnen oder abgeschlossen)"
+    "dayEvents": "{date}: {count} (Dokumente hinzugefügt, Sitzungen begonnen oder abgeschlossen)",
+    "guest": {
+      "badge": "Gastzugang",
+      "title": "Willkommen bei CARE",
+      "intro": "Schau dich um, probiere die Annotation am Beispieldokument aus oder nimm an einer Studie teil, zu der du eingeladen wurdest.",
+      "register": "Damit deine Dokumente und dein Fortschritt unter deinem Namen gespeichert werden, erstelle ein Konto.",
+      "askAdmin": "Für ein persönliches Konto wende dich an deine Administration.",
+      "example": "Beispiel",
+      "createAccount": "Konto erstellen",
+      "startHere": "Hier starten",
+      "showcaseDetail": "Beispieldokument zum Ausprobieren der Annotation",
+      "documentsDetail": "Dokumente hochladen und öffnen",
+      "studiesDetail": "Studien, zu denen du eingeladen wurdest",
+      "studyDetail": "Öffnen, um zu starten oder fortzusetzen",
+      "noStudies": "Derzeit keine offenen Studien"
+    }
   }
 }

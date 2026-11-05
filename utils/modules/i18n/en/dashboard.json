@@ -623,6 +623,21 @@
         "ago": "{when} ago",
         "lastSevenDays": "Last 7 days",
         "weekEvents": "Activity: {count}",
-        "dayEvents": "{date}: {count} (documents added, sessions started or finished)"
+        "dayEvents": "{date}: {count} (documents added, sessions started or finished)",
+        "guest": {
+            "badge": "Guest access",
+            "title": "Welcome to CARE",
+            "intro": "Look around, try annotating the example document, or take part in a study you were invited to.",
+            "register": "To keep your documents and progress under your own name, create an account.",
+            "askAdmin": "For a personal account, contact your administrator.",
+            "example": "Example",
+            "createAccount": "Create account",
+            "startHere": "Start here",
+            "showcaseDetail": "Example document to try annotating",
+            "documentsDetail": "Upload and open documents",
+            "studiesDetail": "Studies you have been invited to",
+            "studyDetail": "Open to start or continue",
+            "noStudies": "No open studies right now"
+        }
     }
 }
