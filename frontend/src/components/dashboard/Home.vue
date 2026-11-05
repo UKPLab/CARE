@@ -6,10 +6,7 @@
           <span>{{ $t('sidebar.nav.documents') }}</span>
           <b>{{ documents.length }}</b>
           <span>{{ $t('dashboard.home.addedThisWeek', { count: documentsAddedThisWeek }) }}</span>
-          <HomeActivityGraph
-            :dates="documentActivity"
-            :description="$t('dashboard.home.activityDocuments')"
-          />
+          <HomeActivityGraph :series="documentActivity" />
         </router-link>
       </div>
       <div class="col-sm-6 col-xl-3 home-tile-wrap">
@@ -17,10 +14,7 @@
           <span>{{ $t('sidebar.nav.my_sessions') }}</span>
           <b>{{ openSessions.length }}</b>
           <span>{{ oldestSessionLabel }}</span>
-          <HomeActivityGraph
-            :dates="sessionActivity"
-            :description="$t('dashboard.home.activitySessions')"
-          />
+          <HomeActivityGraph :series="sessionActivity" />
         </router-link>
       </div>
       <div v-if="canSeeStudies" class="col-sm-6 col-xl-3 home-tile-wrap">
@@ -28,10 +22,7 @@
           <span>{{ $t('dashboard.home.openStudies') }}</span>
           <b>{{ openStudies.length }}</b>
           <span>{{ $t('dashboard.home.closingSoon', { count: studiesClosingSoon }) }}</span>
-          <HomeActivityGraph
-            :dates="studyActivity"
-            :description="$t('dashboard.home.activityStudies')"
-          />
+          <HomeActivityGraph :series="studyActivity" />
         </router-link>
       </div>
       <div v-if="canSeeSubmissions" class="col-sm-6 col-xl-3 home-tile-wrap">
@@ -198,17 +189,53 @@ export default {
       const when = getTimeDiffString(Date.now(), new Date(oldest.start || oldest.createdAt));
       return this.$t("dashboard.home.oldestStarted", { when });
     },
-    // Activity graphs: one date per event, bucketed by day in HomeActivityGraph.
+    // Activity graphs (HomeActivityGraph): one date per event, counted
+    // per week. The first series is the filled line, the second the
+    // violet "closed" line.
     documentActivity() {
-      return this.documents.map((doc) => doc.createdAt);
+      return [{
+        key: "added",
+        label: this.$t("dashboard.home.activityDocuments"),
+        dates: this.documents.map((doc) => doc.createdAt),
+      }];
     },
     sessionActivity() {
-      // All of the user's sessions, finished ones included, so the graph shows work done.
-      return this.$store.getters["table/study_session/getByUser"](this.userId)
-        .map((session) => session.start || session.createdAt);
+      // All of the user's sessions, not only the open ones counted on the tile.
+      const sessions = this.$store.getters["table/study_session/getByUser"](this.userId);
+      return [
+        {
+          key: "started",
+          label: this.$t("dashboard.home.activitySessions"),
+          dates: sessions.map((session) => session.start || session.createdAt),
+        },
+        {
+          key: "finished",
+          label: this.$t("dashboard.home.activitySessionsFinished"),
+          dates: sessions.map((session) => session.end),
+        },
+      ];
     },
     studyActivity() {
-      return this.projectStudies.map((study) => study.createdAt);
+      const now = Date.now();
+      return [
+        {
+          key: "created",
+          label: this.$t("dashboard.home.activityStudies"),
+          dates: this.projectStudies.map((study) => study.createdAt),
+        },
+        {
+          key: "closed",
+          label: this.$t("dashboard.home.activityStudiesClosed"),
+          // Closed by hand, or ended by its deadline. Same rule as
+          // openStudies: a multipleSubmit study stays open after its end.
+          dates: this.projectStudies.map((study) => {
+            if (study.closed) return study.closed;
+            if (!study.end || study.multipleSubmit) return null;
+            const end = new Date(study.end).getTime();
+            return end <= now ? study.end : null;
+          }),
+        },
+      ];
     },
     canSeeStudies() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view");

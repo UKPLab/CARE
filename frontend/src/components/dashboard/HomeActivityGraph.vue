@@ -1,7 +1,7 @@
 <template>
   <div
     class="home-spark"
-    :class="{ 'is-empty': max === 0, 'is-active': hoverIndex !== null }"
+    :class="{ 'is-empty': max === 0 }"
   >
     <div
       class="home-spark-plot"
@@ -43,15 +43,23 @@
           :y2="baseline"
           vector-effect="non-scaling-stroke"
         />
-        <path
-          :d="areaPath"
-          :fill="`url(#${gradientId})`"
-        />
-        <path
-          class="home-spark-line"
-          :d="linePath"
-          vector-effect="non-scaling-stroke"
-        />
+        <!-- Reverse order: the first series is drawn last, on top. -->
+        <g
+          v-for="line in [...lines].reverse()"
+          :key="line.key"
+          :class="`home-spark-series is-${line.tone}`"
+        >
+          <path
+            v-if="line.index === 0"
+            :d="line.area"
+            :fill="`url(#${gradientId})`"
+          />
+          <path
+            class="home-spark-line"
+            :d="line.path"
+            vector-effect="non-scaling-stroke"
+          />
+        </g>
       </svg>
 
       <!-- HTML, not SVG: the SVG is stretched, a circle in it would be an ellipse. -->
@@ -61,20 +69,27 @@
           :style="{ left: hover.left }"
         />
         <i
-          class="home-spark-dot"
-          :style="{ left: hover.left, top: hover.top }"
+          v-for="row in hover.rows"
+          :key="row.key"
+          :class="`home-spark-dot is-${row.tone}`"
+          :style="{ left: hover.left, top: row.top }"
         />
+        <div
+          class="home-spark-tip"
+          :class="`is-${hover.align}`"
+          :style="{ left: hover.left }"
+        >
+          <div
+            v-for="row in hover.rows"
+            :key="row.key"
+            class="home-spark-tip-row"
+          >
+            <i :class="`home-spark-swatch is-${row.tone}`" />
+            <strong>{{ row.count }}</strong> {{ row.label }}
+          </div>
+          <small>{{ $t('dashboard.home.activityWeek', { range: hover.range }) }}</small>
+        </div>
       </template>
-
-      <div
-        v-if="hover"
-        class="home-spark-tip"
-        :class="`is-${hover.align}`"
-        :style="{ left: hover.left }"
-      >
-        <div><strong>{{ hover.count }}</strong> {{ description }}</div>
-        <small>{{ $t('dashboard.home.activityWeek', { range: hover.range }) }}</small>
-      </div>
     </div>
 
     <div
@@ -93,6 +108,9 @@ import { formatLocalizedDate } from "@/assets/utils";
 const DAY_MS = 24 * 60 * 60 * 1000;
 const DAYS_PER_WEEK = 7;
 const SHORT_DATE = { day: "numeric", month: "short" };
+// One tone per series position. The second one is the "closed" violet
+// from global.css (--care-violet-rgb).
+const TONES = ["primary", "closed"];
 
 /**
  * Smooth path through the points that never overshoots between two
@@ -131,20 +149,22 @@ function monotonePath(points) {
 /**
  * Activity sparkline for a Home tile, like the small graphs in the
  * GitHub repository list. One point per week, ending with the current
- * week. Hovering shows what the graph counts and the value of the
- * nearest week; the axis below names the period.
+ * week. Takes one or two series on a shared scale: the first one (e.g.
+ * started) is filled, the second one (e.g. finished) is a violet line.
+ * Hovering shows every series' value for the nearest week; the axis
+ * below names the period.
  */
 export default {
   name: "HomeActivityGraph",
   props: {
-    /** Dates to count: Date objects, ISO strings, or timestamps. */
-    dates: {
+    /**
+     * Series to draw, first on top. Each one is
+     * { key: string, label: string, dates: Array } where label says what
+     * one count means ("sessions started") and dates are Date objects,
+     * ISO strings, or timestamps. Empty values in dates are skipped.
+     */
+    series: {
       type: Array,
-      default: () => [],
-    },
-    /** What one count means, e.g. "documents added". Shown on hover. */
-    description: {
-      type: String,
       required: true,
     },
     /** Number of weeks shown, ending with the current week. */
@@ -175,10 +195,85 @@ export default {
         this.today.getDate() - weekday - (this.weeks - 1) * DAYS_PER_WEEK
       );
     },
-    buckets() {
+    counted() {
+      return this.series.slice(0, TONES.length).map((entry, index) => ({
+        key: entry.key,
+        label: entry.label,
+        index,
+        tone: TONES[index],
+        buckets: this.bucket(entry.dates || []),
+      }));
+    },
+    /** Shared by all series so their heights compare. */
+    max() {
+      return Math.max(0, ...this.counted.flatMap((entry) => entry.buckets));
+    },
+    baseline() {
+      return this.height - this.padding;
+    },
+    lines() {
+      const last = Math.max(1, this.weeks - 1);
+      const span = this.baseline - this.padding;
+      // Square-root scale: one busy week would otherwise flatten all
+      // the others into the baseline. The tooltip shows real numbers.
+      const scale = Math.sqrt(this.max);
+      return this.counted.map((entry) => {
+        const points = entry.buckets.map((count, i) => [
+          (i / last) * this.width,
+          scale === 0 ? this.baseline : this.baseline - (Math.sqrt(count) / scale) * span,
+        ]);
+        const path = monotonePath(points);
+        return {
+          ...entry,
+          points,
+          path,
+          area: `${path} L${this.width},${this.height} L0,${this.height} Z`,
+        };
+      });
+    },
+    startLabel() {
+      return formatLocalizedDate(this.start, SHORT_DATE);
+    },
+    summary() {
+      const parts = this.counted.map((entry) => this.$t("dashboard.home.activityCount", {
+        count: entry.buckets.reduce((sum, count) => sum + count, 0),
+        description: entry.label,
+      }));
+      return this.$t("dashboard.home.activitySummary", { parts: parts.join(", "), weeks: this.weeks });
+    },
+    hover() {
+      if (this.hoverIndex === null || this.lines.length === 0) return null;
+      const i = this.hoverIndex;
+      const x = this.lines[0].points[i][0];
+      const from = new Date(this.start.getFullYear(), this.start.getMonth(), this.start.getDate() + i * DAYS_PER_WEEK);
+      const weekEnd = new Date(from.getFullYear(), from.getMonth(), from.getDate() + DAYS_PER_WEEK - 1);
+      const to = weekEnd > this.today ? this.today : weekEnd;
+      const ratio = x / this.width;
+      return {
+        left: `${ratio * 100}%`,
+        align: ratio < 0.25 ? "start" : ratio > 0.75 ? "end" : "center",
+        range: `${formatLocalizedDate(from, SHORT_DATE)} – ${formatLocalizedDate(to, SHORT_DATE)}`,
+        rows: this.lines.map((line) => ({
+          key: line.key,
+          label: line.label,
+          tone: line.tone,
+          count: line.buckets[i],
+          top: `${(line.points[i][1] / this.height) * 100}%`,
+        })),
+      };
+    },
+  },
+  methods: {
+    /**
+     * Counts dates per week of the shown range.
+     *
+     * @param {Array} dates
+     * @returns {number[]} One count per week, oldest first.
+     */
+    bucket(dates) {
       const buckets = new Array(this.weeks).fill(0);
       const from = this.start.getTime();
-      for (const value of this.dates) {
+      for (const value of dates) {
         if (value === null || value === undefined || value === "") continue;
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) continue;
@@ -189,61 +284,6 @@ export default {
       }
       return buckets;
     },
-    max() {
-      return Math.max(0, ...this.buckets);
-    },
-    total() {
-      return this.buckets.reduce((sum, count) => sum + count, 0);
-    },
-    baseline() {
-      return this.height - this.padding;
-    },
-    points() {
-      const last = Math.max(1, this.buckets.length - 1);
-      const span = this.baseline - this.padding;
-      // Square-root scale: one busy week would otherwise flatten all
-      // the others into the baseline. The tooltip shows real numbers.
-      const scale = Math.sqrt(this.max);
-      return this.buckets.map((count, i) => [
-        (i / last) * this.width,
-        scale === 0 ? this.baseline : this.baseline - (Math.sqrt(count) / scale) * span,
-      ]);
-    },
-    linePath() {
-      return monotonePath(this.points);
-    },
-    areaPath() {
-      if (this.points.length === 0) return "";
-      return `${this.linePath} L${this.width},${this.height} L0,${this.height} Z`;
-    },
-    startLabel() {
-      return formatLocalizedDate(this.start, SHORT_DATE);
-    },
-    summary() {
-      return this.$t("dashboard.home.activitySummary", {
-        description: this.description,
-        count: this.total,
-        weeks: this.weeks,
-      });
-    },
-    hover() {
-      if (this.hoverIndex === null) return null;
-      const i = this.hoverIndex;
-      const [x, y] = this.points[i];
-      const from = new Date(this.start.getFullYear(), this.start.getMonth(), this.start.getDate() + i * DAYS_PER_WEEK);
-      const weekEnd = new Date(from.getFullYear(), from.getMonth(), from.getDate() + DAYS_PER_WEEK - 1);
-      const to = weekEnd > this.today ? this.today : weekEnd;
-      const ratio = x / this.width;
-      return {
-        count: this.buckets[i],
-        left: `${ratio * 100}%`,
-        top: `${(y / this.height) * 100}%`,
-        align: ratio < 0.25 ? "start" : ratio > 0.75 ? "end" : "center",
-        range: `${formatLocalizedDate(from, SHORT_DATE)} – ${formatLocalizedDate(to, SHORT_DATE)}`,
-      };
-    },
-  },
-  methods: {
     onMove(event) {
       const rect = event.currentTarget.getBoundingClientRect();
       if (rect.width === 0) return;
@@ -257,12 +297,13 @@ export default {
 <style scoped>
 /* Right column of the .home-tile grid (global.css), full tile height. */
 .home-spark {
+  --home-spark-primary: var(--care-primary);
+  --home-spark-closed: rgb(var(--care-violet-rgb));
   grid-column: 2;
   grid-row: 1 / -1;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  color: var(--care-primary);
 }
 
 .home-spark-plot {
@@ -285,6 +326,14 @@ export default {
   stroke-dasharray: 2 3;
 }
 
+.is-primary {
+  color: var(--home-spark-primary);
+}
+
+.is-closed {
+  color: var(--home-spark-closed);
+}
+
 .home-spark-line {
   fill: none;
   stroke: currentColor;
@@ -293,7 +342,15 @@ export default {
   stroke-linecap: round;
 }
 
-.home-spark.is-empty {
+/* The second series is a thinner line without fill so the first one
+   stays the main read. */
+.home-spark-series.is-closed .home-spark-line {
+  stroke-width: 1.25px;
+  opacity: .9;
+}
+
+.home-spark.is-empty .is-primary,
+.home-spark.is-empty .is-closed {
   color: var(--bs-secondary-color);
 }
 
@@ -306,7 +363,7 @@ export default {
   top: 0;
   bottom: 0;
   width: 1px;
-  background: color-mix(in srgb, currentColor 35%, transparent);
+  background: var(--bs-border-color);
   pointer-events: none;
 }
 
@@ -322,14 +379,15 @@ export default {
   pointer-events: none;
 }
 
+/* Below the plot: the tiles are the first row of the scroll
+   container, so a tip above them could be clipped. */
 .home-spark-tip {
-  /* Below the plot: the tiles are the first row of the scroll
-     container, so a tip above them could be clipped. */
   position: absolute;
   top: calc(100% + 6px);
   z-index: 5;
   display: flex;
   flex-direction: column;
+  gap: 1px;
   padding: 5px 8px;
   border-radius: 6px;
   color: var(--bs-body-bg);
@@ -353,12 +411,28 @@ export default {
   transform: translateX(calc(-100% + 12px));
 }
 
+.home-spark-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.home-spark-swatch {
+  display: block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: currentColor;
+}
+
 .home-spark-tip strong {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .home-spark-tip small {
+  margin-top: 1px;
   opacity: .7;
   font-size: .7rem;
 }

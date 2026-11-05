@@ -593,12 +593,16 @@
         "recentDocuments": "Recent documents",
         "viewAll": "View all",
         "noDocuments": "No documents yet",
-        "activitySummary": "{count} {description} in the last {weeks} weeks",
+        "activitySummary": "In the last {weeks} weeks: {parts}",
+        "activityCount": "{count} {description}",
         "activityWeek": "Week of {range}",
         "activityNow": "Now",
         "activityDocuments": "documents added",
         "activitySessions": "sessions started",
+        "activitySessionsFinished": "sessions finished",
         "activityStudies": "studies created",
-        "activitySubmissions": "submissions created"
+        "activityStudiesClosed": "studies closed",
+        "activitySubmissions": "assignments created",
+        "activitySubmitted": "submissions uploaded"
     }
 }

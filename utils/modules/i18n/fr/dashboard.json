@@ -593,12 +593,16 @@
         "recentDocuments": "Documents récents",
         "viewAll": "Tout voir",
         "noDocuments": "Aucun document pour le moment",
-        "activitySummary": "{count} {description} sur les {weeks} dernières semaines",
+        "activitySummary": "Sur les {weeks} dernières semaines : {parts}",
+        "activityCount": "{count} {description}",
         "activityWeek": "Semaine du {range}",
         "activityNow": "Maintenant",
         "activityDocuments": "documents ajoutés",
         "activitySessions": "sessions commencées",
+        "activitySessionsFinished": "sessions terminées",
         "activityStudies": "études créées",
-        "activitySubmissions": "soumissions créées"
+        "activityStudiesClosed": "études clôturées",
+        "activitySubmissions": "devoirs créés",
+        "activitySubmitted": "travaux déposés"
     }
 }
