@@ -306,6 +306,10 @@ analyze usage timings.</p>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">routeStep</span></code>: indicating the user navigated to a different route in the app, e.g. accessing a document</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">windowFocusChange</span></code>: indicating that the CARE window lost (<code class="docutils literal notranslate"><span class="pre">focused:</span> <span class="pre">false</span></code>) or regained (<code class="docutils literal notranslate"><span class="pre">focused:</span> <span class="pre">true</span></code>)
+focus, e.g. the user clicked into another application or browser tab. When focus returns, <code class="docutils literal notranslate"><span class="pre">duration</span></code> gives the
+milliseconds spent outside the window (<code class="docutils literal notranslate"><span class="pre">null</span></code> if the time of leaving is unknown). If no <code class="docutils literal notranslate"><span class="pre">tabVisibilityChange</span></code>
+with <code class="docutils literal notranslate"><span class="pre">hidden:</span> <span class="pre">true</span></code> falls in between, CARE stayed visible while the user worked in another window.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">openModal</span></code>: indicating the user opened a modal of the type specified in the parameters</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">actionClick</span></code>: indicating the user clicked a button in a table with details of the button and table row</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">pdfPageVisibilityChange</span></code>: indicating that a page particular page was rendered or underendered on the user’s screen.
@@ -337,7 +341,7 @@ the current one</p></li>
 </ul>
 </div></blockquote>
 <p>An event that happened outside a study, or where an ID is not known, does not contain that key. Mouse movements and
-tab changes carry <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> and <code class="docutils literal notranslate"><span class="pre">currentStudyStepId</span></code>. Route changes (<code class="docutils literal notranslate"><span class="pre">routeStep</span></code>) into a study do not, as
+tab and window focus changes carry <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code> and <code class="docutils literal notranslate"><span class="pre">currentStudyStepId</span></code>. Route changes (<code class="docutils literal notranslate"><span class="pre">routeStep</span></code>) into a study do not, as
 they are logged before the study session is loaded.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
