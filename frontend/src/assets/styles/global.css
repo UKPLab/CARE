@@ -943,6 +943,67 @@ html .modal-header {
 
 html .modal-body {
   padding: 12px 40px 28px;
+  /* A classic scrollbar must take its own column, not paint over the
+     last buttons of a full-width row. */
+  scrollbar-gutter: stable;
+}
+
+/* A table inside a stepper fills the room left under the header and
+   footer. The rows scroll; the search ring, the selection count and
+   the pagination stay outside that scroll, so neither is clipped. */
+html .modal .content-container:has(.table-scroll-shell) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Room for the search focus ring, which the scrollport would cut. */
+  padding-inline: 8px;
+}
+
+html .modal .content-container:has(.table-scroll-shell) > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+html .modal .content-container:has(.table-scroll-shell) > div > :not(.table-scroll-shell) {
+  flex: 0 0 auto;
+}
+
+html .modal .table-scroll-shell,
+html .modal .table-scroll-frame {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+html .modal .table-scroll-shell {
+  min-height: 8rem;
+}
+
+html .modal .table-wrapper {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* Beats the inline 50vh: that height plus the modal chrome pushed the
+     pagination under the footer and opened a second scrollbar. */
+  max-height: none !important;
+}
+
+/* Bootstrap's .container is sized for the page, so pagination inside a
+   modal overflows the dialog and the right-hand buttons disappear. */
+html .modal .content-container .container {
+  width: 100%;
+  max-width: 100%;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+html .modal .content-container .container > .row {
+  margin-right: 0;
+  margin-left: 0;
 }
 
 html .modal-footer {
