@@ -603,6 +603,26 @@
         "activityStudies": "studies created",
         "activityStudiesClosed": "studies closed",
         "activitySubmissions": "assignments created",
-        "activitySubmitted": "submissions uploaded"
+        "activitySubmitted": "submissions uploaded",
+        "dueIn": "Due in {when}",
+        "overdue": "Overdue by {when}",
+        "noDeadline": "No deadline",
+        "deadlineStudy": "Study closes {date}",
+        "deadlineTimeLimit": "Time limit ends {date}",
+        "stepOf": "On step {current} of {total}",
+        "upcomingDeadlines": "Upcoming deadlines",
+        "closesIn": "Closes in {when}",
+        "endsOn": "Ends {date}",
+        "noUpcomingDeadlines": "No study closes soon",
+        "withoutDeadline": "{count} open studies have no end date",
+        "kindSession": "Study session",
+        "kindPdf": "PDF document",
+        "kindText": "Text document",
+        "kindConfig": "Configuration",
+        "edited": "Edited {when} ago",
+        "ago": "{when} ago",
+        "lastSevenDays": "Last 7 days",
+        "weekEvents": "Activity: {count}",
+        "dayEvents": "{date}: {count} (documents added, sessions started or finished)"
     }
 }

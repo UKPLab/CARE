@@ -603,6 +603,26 @@
         "activityStudies": "études créées",
         "activityStudiesClosed": "études clôturées",
         "activitySubmissions": "devoirs créés",
-        "activitySubmitted": "travaux déposés"
+        "activitySubmitted": "travaux déposés",
+        "dueIn": "Échéance dans {when}",
+        "overdue": "En retard de {when}",
+        "noDeadline": "Sans échéance",
+        "deadlineStudy": "L'étude se termine le {date}",
+        "deadlineTimeLimit": "La limite de temps se termine le {date}",
+        "stepOf": "À l'étape {current} sur {total}",
+        "upcomingDeadlines": "Échéances à venir",
+        "closesIn": "Se termine dans {when}",
+        "endsOn": "Se termine le {date}",
+        "noUpcomingDeadlines": "Aucune étude ne se termine bientôt",
+        "withoutDeadline": "{count} études ouvertes sans date de fin",
+        "kindSession": "Session d'étude",
+        "kindPdf": "Document PDF",
+        "kindText": "Document texte",
+        "kindConfig": "Configuration",
+        "edited": "Modifié il y a {when}",
+        "ago": "il y a {when}",
+        "lastSevenDays": "7 derniers jours",
+        "weekEvents": "Activité : {count}",
+        "dayEvents": "{date} : {count} (documents ajoutés, sessions commencées ou terminées)"
     }
 }

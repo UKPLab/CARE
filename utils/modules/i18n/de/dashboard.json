@@ -603,6 +603,26 @@
     "activityStudies": "Studien erstellt",
     "activityStudiesClosed": "Studien geschlossen",
     "activitySubmissions": "Assignments erstellt",
-    "activitySubmitted": "Einreichungen hochgeladen"
+    "activitySubmitted": "Einreichungen hochgeladen",
+    "dueIn": "Fällig in {when}",
+    "overdue": "Seit {when} überfällig",
+    "noDeadline": "Keine Frist",
+    "deadlineStudy": "Studie endet {date}",
+    "deadlineTimeLimit": "Zeitlimit endet {date}",
+    "stepOf": "Bei Schritt {current} von {total}",
+    "upcomingDeadlines": "Anstehende Fristen",
+    "closesIn": "Endet in {when}",
+    "endsOn": "Endet {date}",
+    "noUpcomingDeadlines": "Keine Studie endet bald",
+    "withoutDeadline": "{count} offene Studien ohne Enddatum",
+    "kindSession": "Studiensitzung",
+    "kindPdf": "PDF-Dokument",
+    "kindText": "Textdokument",
+    "kindConfig": "Konfiguration",
+    "edited": "Bearbeitet vor {when}",
+    "ago": "vor {when}",
+    "lastSevenDays": "Letzte 7 Tage",
+    "weekEvents": "Aktivität: {count}",
+    "dayEvents": "{date}: {count} (Dokumente hinzugefügt, Sitzungen begonnen oder abgeschlossen)"
   }
 }
