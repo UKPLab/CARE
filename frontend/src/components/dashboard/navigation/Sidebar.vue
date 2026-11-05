@@ -34,6 +34,12 @@
           :to="'/dashboard/' + element.path"
           @click="hoveredKey = null"
         >
+          <LoadIcon
+            v-if="element.icon"
+            class="dashboard-topnav-link-icon"
+            :icon-name="element.icon"
+            :size="16"
+          />
           {{ elementLabel(element) }}
         </router-link>
       </div>
@@ -47,11 +53,13 @@
  * Rendered in the top bar on dashboard routes; hovering a group opens its pages.
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
+import LoadIcon from "@/basic/Icon.vue";
 import { navElementLabel, navGroupLabel } from "./helpers/navLabels.js";
 
 export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
+  components: { LoadIcon },
 
   data() {
     return {
@@ -126,7 +134,7 @@ export default {
       const rect = button.getBoundingClientRect();
       this.menuStyle = {
         top: `${rect.bottom + 6}px`,
-        left: `${Math.min(rect.left, window.innerWidth - 220)}px`,
+        left: `${Math.min(rect.left, window.innerWidth - 280)}px`,
       };
     },
 
@@ -270,12 +278,18 @@ export default {
 }
 
 .dashboard-topnav-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   border-radius: 8px;
   padding: 8px 10px;
   color: var(--bs-body-color);
   text-decoration: none;
   font-size: .875rem;
+}
+
+.dashboard-topnav-link-icon {
+  flex: 0 0 auto;
 }
 
 .dashboard-topnav-link:hover {
