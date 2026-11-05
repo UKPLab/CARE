@@ -2,10 +2,10 @@
   <Modal
       ref="modal"
       :props="$props"
-      disable-keyboard
+      :disable-keyboard="!infoOnly"
       :size="showSessions ? 'lg' : 'md'"
-      name="studyStart"
-      :remove-close="!studyClosed"
+      :name="infoOnly ? 'studyInfo' : 'studyStart'"
+      :remove-close="!studyClosed && !infoOnly"
   >
     <template #title>
       <span v-if="showSessions">
@@ -94,7 +94,7 @@
         </span>
       </span>
     </template>
-    <template #footer>
+    <template v-if="!infoOnly" #footer>
       <BasicButton
           class="btn btn-outline-secondary"
           :text="$t('studies.returnToDashboard')"
@@ -173,6 +173,11 @@ export default {
       type: Number,
       required: false,
       default: 0,
+    },
+    infoOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
     }
   },
   emits: ["start", "finish"],
