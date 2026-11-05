@@ -7,6 +7,7 @@ import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import {extractPdfPages, resolveApiMessage} from "@/assets/utils";
+import {annotatorRecordsForPrompt} from "@/assets/annotations";
 import {
   buildHookResultKey,
   buildServiceSkillKey,
@@ -313,7 +314,7 @@ export default {
           if (studyStep && this.studyData[studyStep.id]?.annotator == null) {
             throw new Error("nlp.hooks.requestFailed");
           }
-          return this.buildPayloadFromStudyData(spec);
+          return annotatorRecordsForPrompt(this.studyData[studyStep?.id]?.annotator, spec.key);
         }
         case 'assessment':
         case 'editor':

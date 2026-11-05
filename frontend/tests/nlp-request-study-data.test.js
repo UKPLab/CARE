@@ -10,9 +10,11 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
 import {computed} from 'vue'
+import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
 import {loadOptions} from './helpers/loadOptions.js'
 
 const NlpRequestOptions = loadOptions('basic/service/NlpRequest.vue', {
+    annotatorRecordsForPrompt,
     pdfjsLib: {GlobalWorkerOptions: {}},
     resolveApiMessage: () => 'request failed',
 })
@@ -21,8 +23,11 @@ const StudyOptions = loadOptions('components/Study.vue', {computed})
 const ANNOTATOR_STEP = {id: 9}
 const EDITOR_STEP = {id: 10}
 const STEPS = [ANNOTATOR_STEP, EDITOR_STEP]
-const COMMENT = {id: 1, text: 'a comment'}
-const ANNOTATION = {id: 2, text: 'a quote'}
+const IDENTITY = {userId: 4, creator_name: 'someone', studySessionId: 42, studyStepId: 9, documentId: 5, anonymous: false}
+const ANNOTATION = {id: 2, text: 'a quote', tagId: 1, createdAt: '2026-01-01', anchors: [{range: {}}], selectors: {target: []}, ...IDENTITY}
+const COMMENT = {id: 1, text: 'a comment', annotationId: ANNOTATION.id, createdAt: '2026-01-02', ...IDENTITY}
+const COMMENT_IN_PROMPT = {id: 1, comment: 'a comment', quote: 'a quote', annotationId: 2, createdAt: '2026-01-02'}
+const ANNOTATION_IN_PROMPT = {id: 2, quote: 'a quote', tagId: 1, createdAt: '2026-01-01'}
 
 const COMMENTS_INPUT = {value: 'annotator_comments_step0', stepIndex: 0, key: 'comments', type: 'annotator'}
 const ANNOTATIONS_INPUT = {value: 'annotator_annotation_step0', stepIndex: 0, key: 'annotations', type: 'annotator'}
@@ -61,9 +66,40 @@ test('saved keyed mappings read their field from the annotator data', async () =
     await vm.sendHookRequest()
     assert.equal(vm.status, 'completed')
     assert.deepEqual(overSocket(vm.runHook[0].values), {
-        'inlineComments[1]': [COMMENT],
-        'inlineComments[2]': [ANNOTATION],
+        'inlineComments[1]': [COMMENT_IN_PROMPT],
+        'inlineComments[2]': [ANNOTATION_IN_PROMPT],
     })
+})
+
+test('prompt values carry no identity, location or study fields', async () => {
+    const vm = request([[ANNOTATOR_STEP.id, 'annotator', {annotations: [ANNOTATION], comments: [COMMENT]}]], {
+        'inlineComments[1]': COMMENTS_INPUT,
+        'inlineComments[2]': ANNOTATIONS_INPUT,
+    })
+    await vm.sendHookRequest()
+    const sent = JSON.stringify(vm.runHook[0].values)
+    for (const field of ['userId', 'creator_name', 'anonymous', 'studySessionId', 'studyStepId', 'documentId', 'anchors', 'selectors']) {
+        assert.equal(sent.includes(field), false, field)
+    }
+})
+
+test('a comment without an annotation has an empty quote', async () => {
+    const note = {...COMMENT, annotationId: null}
+    const vm = request([[ANNOTATOR_STEP.id, 'annotator', {annotations: [], comments: [note]}]], {
+        'inlineComments[1]': COMMENTS_INPUT,
+    })
+    await vm.sendHookRequest()
+    assert.deepEqual(overSocket(vm.runHook[0].values), {
+        'inlineComments[1]': [{...COMMENT_IN_PROMPT, quote: '', annotationId: null}],
+    })
+})
+
+test('a mapped annotator field that does not exist sends null', async () => {
+    const vm = request([[ANNOTATOR_STEP.id, 'annotator', {annotations: [], comments: []}]], {
+        'inlineComments[1]': {...COMMENTS_INPUT, key: 'unknown'},
+    })
+    await vm.sendHookRequest()
+    assert.deepEqual(overSocket(vm.runHook[0].values), {'inlineComments[1]': null})
 })
 
 test('empty annotator records stay empty lists', async () => {
@@ -87,7 +123,7 @@ test('annotator data that is not loaded yet fails the hook, and the retry sends 
     StudyOptions.methods.updateStudyData.call(vm, ANNOTATOR_STEP.id, 'annotator', {annotations: [], comments: [COMMENT]})
     await vm.sendHookRequest()
     assert.equal(vm.status, 'completed')
-    assert.deepEqual(overSocket(vm.runHook[0].values), {'inlineComments[1]': [COMMENT]})
+    assert.deepEqual(overSocket(vm.runHook[0].values), {'inlineComments[1]': [{...COMMENT_IN_PROMPT, quote: '', annotationId: 2}]})
 })
 
 test('a mapped assessment that a step never stored sends null and keeps its key', async () => {

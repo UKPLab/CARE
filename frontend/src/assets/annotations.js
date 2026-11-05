@@ -148,3 +148,34 @@ export function getAnnotationPreview(store, annotation, maxLength = 100) {
         commentText: truncate(comment?.text),
     };
 }
+
+/**
+ * Reduces the annotator data of a study step to the fields a model prompt may contain. Store records
+ * also hold author and study fields, which must not reach a model provider. Comments use the
+ * same fields as the backend `~inlineComments~` value in templatePromptValues.js.
+ *
+ * @param {{annotations?: Object[], comments?: Object[]}} [annotator] Data the Annotator passes on to the study
+ * @param {string} key The mapped field, "annotations" or "comments"
+ * @returns {Object[]|null} The reduced records, or null when the field does not exist
+ */
+export function annotatorRecordsForPrompt(annotator, key) {
+    const annotations = annotator?.annotations;
+    if (key === "annotations" && annotations) {
+        return annotations.map(({id, text, tagId, createdAt}) => ({
+            id,
+            quote: text || "",
+            tagId: tagId ?? null,
+            createdAt: createdAt || null,
+        }));
+    }
+    if (key === "comments" && annotator?.comments) {
+        return annotator.comments.map(({id, text, annotationId, createdAt}) => ({
+            id,
+            comment: text || "",
+            quote: annotations?.find(annotation => annotation.id === annotationId)?.text || "",
+            annotationId: annotationId || null,
+            createdAt: createdAt || null,
+        }));
+    }
+    return null;
+}
