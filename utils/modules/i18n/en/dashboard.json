@@ -592,6 +592,13 @@
         "nothingToResume": "Nothing to resume yet",
         "recentDocuments": "Recent documents",
         "viewAll": "View all",
-        "noDocuments": "No documents yet"
+        "noDocuments": "No documents yet",
+        "activitySummary": "{count} {description} in the last {weeks} weeks",
+        "activityWeek": "Week of {range}",
+        "activityNow": "Now",
+        "activityDocuments": "documents added",
+        "activitySessions": "sessions started",
+        "activityStudies": "studies created",
+        "activitySubmissions": "submissions created"
     }
 }

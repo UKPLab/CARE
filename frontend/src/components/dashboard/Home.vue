@@ -6,6 +6,10 @@
           <span>{{ $t('sidebar.nav.documents') }}</span>
           <b>{{ documents.length }}</b>
           <span>{{ $t('dashboard.home.addedThisWeek', { count: documentsAddedThisWeek }) }}</span>
+          <HomeActivityGraph
+            :dates="documentActivity"
+            :description="$t('dashboard.home.activityDocuments')"
+          />
         </router-link>
       </div>
       <div class="col-sm-6 col-xl-3 home-tile-wrap">
@@ -13,6 +17,10 @@
           <span>{{ $t('sidebar.nav.my_sessions') }}</span>
           <b>{{ openSessions.length }}</b>
           <span>{{ oldestSessionLabel }}</span>
+          <HomeActivityGraph
+            :dates="sessionActivity"
+            :description="$t('dashboard.home.activitySessions')"
+          />
         </router-link>
       </div>
       <div v-if="canSeeStudies" class="col-sm-6 col-xl-3 home-tile-wrap">
@@ -20,6 +28,10 @@
           <span>{{ $t('dashboard.home.openStudies') }}</span>
           <b>{{ openStudies.length }}</b>
           <span>{{ $t('dashboard.home.closingSoon', { count: studiesClosingSoon }) }}</span>
+          <HomeActivityGraph
+            :dates="studyActivity"
+            :description="$t('dashboard.home.activityStudies')"
+          />
         </router-link>
       </div>
       <div v-if="canSeeSubmissions" class="col-sm-6 col-xl-3 home-tile-wrap">
@@ -116,6 +128,7 @@
 
 <script>
 import HomeSubmissionsTile from "@/components/dashboard/HomeSubmissionsTile.vue";
+import HomeActivityGraph from "@/components/dashboard/HomeActivityGraph.vue";
 import BasicButton from "@/basic/Button.vue";
 import { formatLocalizedDateTime, getTimeDiffString, isOwnListedDocument } from "@/assets/utils";
 
@@ -129,7 +142,7 @@ const HOME_DOCUMENT_LIMIT = 8;
  */
 export default {
   name: "DashboardHome",
-  components: { HomeSubmissionsTile, BasicButton },
+  components: { HomeSubmissionsTile, HomeActivityGraph, BasicButton },
   subscribeTable: ["document", "study", "study_session"],
   computed: {
     projectId() {
@@ -184,6 +197,18 @@ export default {
       )[0];
       const when = getTimeDiffString(Date.now(), new Date(oldest.start || oldest.createdAt));
       return this.$t("dashboard.home.oldestStarted", { when });
+    },
+    // Activity graphs: one date per event, bucketed by day in HomeActivityGraph.
+    documentActivity() {
+      return this.documents.map((doc) => doc.createdAt);
+    },
+    sessionActivity() {
+      // All of the user's sessions, finished ones included, so the graph shows work done.
+      return this.$store.getters["table/study_session/getByUser"](this.userId)
+        .map((session) => session.start || session.createdAt);
+    },
+    studyActivity() {
+      return this.projectStudies.map((study) => study.createdAt);
     },
     canSeeStudies() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view");

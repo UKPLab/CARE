@@ -592,6 +592,13 @@
     "nothingToResume": "Noch nichts zum Fortsetzen",
     "recentDocuments": "Letzte Dokumente",
     "viewAll": "Alle anzeigen",
-    "noDocuments": "Noch keine Dokumente"
+    "noDocuments": "Noch keine Dokumente",
+    "activitySummary": "{count} {description} in den letzten {weeks} Wochen",
+    "activityWeek": "Woche {range}",
+    "activityNow": "Jetzt",
+    "activityDocuments": "Dokumente hinzugefügt",
+    "activitySessions": "Sitzungen begonnen",
+    "activityStudies": "Studien erstellt",
+    "activitySubmissions": "Abgaben erstellt"
   }
 }

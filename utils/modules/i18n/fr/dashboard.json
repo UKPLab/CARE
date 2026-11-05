@@ -592,6 +592,13 @@
         "nothingToResume": "Rien à reprendre pour le moment",
         "recentDocuments": "Documents récents",
         "viewAll": "Tout voir",
-        "noDocuments": "Aucun document pour le moment"
+        "noDocuments": "Aucun document pour le moment",
+        "activitySummary": "{count} {description} sur les {weeks} dernières semaines",
+        "activityWeek": "Semaine du {range}",
+        "activityNow": "Maintenant",
+        "activityDocuments": "documents ajoutés",
+        "activitySessions": "sessions commencées",
+        "activityStudies": "études créées",
+        "activitySubmissions": "soumissions créées"
     }
 }
