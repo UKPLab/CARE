@@ -206,6 +206,10 @@ analyze usage timings.
 The most important action types include:
 
     * ``routeStep``: indicating the user navigated to a different route in the app, e.g. accessing a document
+    * ``windowFocusChange``: indicating that the CARE window lost (``focused: false``) or regained (``focused: true``)
+      focus, e.g. the user clicked into another application or browser tab. When focus returns, ``duration`` gives the
+      milliseconds spent outside the window (``null`` if the time of leaving is unknown). If no ``tabVisibilityChange``
+      with ``hidden: true`` falls in between, CARE stayed visible while the user worked in another window.
     * ``openModal``: indicating the user opened a modal of the type specified in the parameters
     * ``actionClick``: indicating the user clicked a button in a table with details of the button and table row
     * ``pdfPageVisibilityChange``: indicating that a page particular page was rendered or underendered on the user's screen.
@@ -222,7 +226,7 @@ Events logged during a study carry the study IDs in ``data``:
     * ``currentStudyStepId``: the step the study session was on at that time
 
 An event that happened outside a study, or where an ID is not known, does not contain that key. Mouse movements and
-tab changes carry ``studySessionId`` and ``currentStudyStepId``. Route changes (``routeStep``) into a study do not, as
+tab and window focus changes carry ``studySessionId`` and ``currentStudyStepId``. Route changes (``routeStep``) into a study do not, as
 they are logged before the study session is loaded.
 
 .. code-block:: python

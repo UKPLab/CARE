@@ -164,8 +164,7 @@ class BehaviorLogger {
 
     /**
      * Detects a window blur event.
-     * Triggered when the window loses focus, e.g. the user clicks into another application,
-     * switches tabs, opens the browser search or clicks the address bar.
+     * Triggered when the window loses focus, e.g. the user clicks into another application or switches tabs.
      * Saves the time and reports that the window lost focus.
      */
     handleWindowBlur() {
