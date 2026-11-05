@@ -157,11 +157,20 @@ export default {
       }
       this.sendRequest();
     },
-    buildPayloadFromStudyData(inputSpec, type, key) {
+    /**
+     * Reads the mapped data of an earlier study step.
+     *
+     * @param {Object} inputSpec Saved mapping (stepIndex, type and optionally the field in `key`)
+     * @returns {*} The mapped data, or null when the step did not provide it
+     */
+    buildPayloadFromStudyData(inputSpec) {
       const studyStepFromIndex = this.orderedStudySteps[inputSpec.stepIndex];
+      if (!studyStepFromIndex) return null;
       const studyStepData = this.studyData[studyStepFromIndex.id];
+      if (studyStepData?.[inputSpec.type] == null) return null;
       if (inputSpec.key) {
-        return studyStepData[inputSpec.type][key];
+        // null instead of undefined: the socket drops undefined and the prompt keeps its placeholder
+        return studyStepData[inputSpec.type][inputSpec.key] ?? null;
       } else {
         return studyStepData[inputSpec.type];
       }
@@ -297,8 +306,16 @@ export default {
           }
           return {type: "serviceReplacement", input: {...spec, pdfText}};
         }
+        case 'annotator': {
+          // Empty records are passed on as lists. No data yet means the session reopened on a later
+          // step while this Annotator still loads: fail, so that "Try again" sends the real records.
+          const studyStep = this.orderedStudySteps[spec.stepIndex];
+          if (studyStep && this.studyData[studyStep.id]?.annotator == null) {
+            throw new Error("nlp.hooks.requestFailed");
+          }
+          return this.buildPayloadFromStudyData(spec);
+        }
         case 'assessment':
-        case 'annotator':
         case 'editor':
           return this.buildPayloadFromStudyData(spec);
         default:
