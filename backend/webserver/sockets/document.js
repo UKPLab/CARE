@@ -6,6 +6,7 @@ const {inject} = require("../../utils/helper/generic");
 const path = require("path");
 const {getTextPositions} = require("../../utils/helper/text.js");
 const {nextDocumentTimestamp} = require("../../utils/helper/queue.js");
+const {positiveInt} = require("../../utils/helper/positiveInt.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/Validator.js");
 const {Op} = require('sequelize');
@@ -809,15 +810,37 @@ class DocumentSocket extends Socket {
      *
      * @param {Object} data The data payload of the documentEdit event.
      * @returns {string} The queue key of the document context.
-     * @throws {Error} If the context is not made of plain values, as it must neither be converted to a key nor reach a
-     * query. createSocket and editDocument both call this, so the client gets a failed acknowledgement.
+     * @throws {Error} If the context is invalid, as it must neither be converted to a key nor reach a query.
+     * createSocket and editDocument both call this, so the client gets a failed acknowledgement.
      */
     getDocumentEditQueueKey(data) {
-        const {documentId, studySessionId, studyStepId} = data || {};
-        if ([documentId, studySessionId, studyStepId].some((value) => typeof value === "object" && value !== null)) {
-            throw new Error("The document context of an edit must not contain objects");
-        }
+        const {documentId, studySessionId, studyStepId} = this.getDocumentEditContext(data);
         return `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+    }
+
+    /**
+     * Returns the ids of the document context of a documentEdit event in their one canonical form.
+     *
+     * The database would accept other spellings of an id, like "01". They must not end up in another queue.
+     *
+     * @param {Object} data The data payload of the documentEdit event.
+     * @returns {{documentId: number, studySessionId: number|null, studyStepId: number|null}} The document context.
+     * @throws {Error} If an id is not a positive integer. A missing study session or step is null.
+     */
+    getDocumentEditContext(data) {
+        const {documentId, studySessionId, studyStepId} = data || {};
+        const toId = (value) => (typeof value === "number" || (typeof value === "string" && /^\d+$/.test(value))
+            ? positiveInt(value)
+            : null);
+        const context = {
+            documentId: toId(documentId),
+            studySessionId: studySessionId ? toId(studySessionId) : null,
+            studyStepId: studyStepId ? toId(studyStepId) : null,
+        };
+        if (!context.documentId || (studySessionId && !context.studySessionId) || (studyStepId && !context.studyStepId)) {
+            throw new Error("The document context of an edit must be made of positive integers");
+        }
+        return context;
     }
 
     /**
@@ -841,7 +864,9 @@ class DocumentSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once all edits have been processed and saved.
      */
     async editDocument(data, options) {
-        const {documentId, studySessionId, studyStepId, ops} = data;
+        const {ops} = data;
+        const context = this.getDocumentEditContext(data);
+        const {documentId} = context;
 
         const key = this.getDocumentEditQueueKey(data);
         const timestamps = this.server.documentTimestamps;
@@ -850,11 +875,7 @@ class DocumentSocket extends Socket {
         // first edit of a context in this process has to read them, as the queue serializes the context from then on.
         if (!timestamps.has(key)) {
             const lastCreatedAt = await this.models['document_edit'].max('createdAt', {
-                where: {
-                    documentId,
-                    studySessionId: studySessionId || null,
-                    studyStepId: studyStepId || null,
-                },
+                where: context,
                 transaction: options.transaction,
             });
             timestamps.set(key, lastCreatedAt ? new Date(lastCreatedAt).getTime() : 0);
@@ -862,16 +883,25 @@ class DocumentSocket extends Socket {
 
         const createdAt = nextDocumentTimestamp(timestamps, key);
 
-        const bulkEdits = ops.map((op, idx) => ({
-            userId: this.userId,
-            draft: true,
-            documentId,
-            studySessionId: studySessionId || null,
-            studyStepId: studyStepId || null,
-            order: idx + 1,
-            ...op,
-            createdAt
-        }));
+        // Only what an operation describes comes from the client. The rows must stay in the context of this queue.
+        const bulkEdits = ops.map(({operationType, offset, span, text, attributes}, idx) => {
+            // dbToDelta throws on any other type, so a saved one would break every later reload of the document.
+            if (![0, 1, 2].includes(operationType)) {
+                throw new Error("Unknown operation type of a document edit");
+            }
+            return {
+                userId: this.userId,
+                draft: true,
+                ...context,
+                order: idx + 1,
+                operationType,
+                offset,
+                span,
+                text,
+                attributes,
+                createdAt
+            };
+        });
 
         const savedEdits = await this.models['document_edit'].bulkCreate(
             bulkEdits,
@@ -886,8 +916,8 @@ class DocumentSocket extends Socket {
             sender: this.socket.id
         }));
 
-        if (studySessionId !== null) {
-            this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
+        if (data.studySessionId !== null) {
+            this.logger.debug(`Edits for document ${documentId} with study session ${data.studySessionId} saved in the database only.`);
             return;
         }
 

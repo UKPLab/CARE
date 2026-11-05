@@ -368,6 +368,120 @@ describe("documentEdit ordering (controlled transactions)", () => {
         expect(backend.text(1)).toBe("aXb");
     });
 
+    test("other spellings of a document context share its queue and are saved under its ids", async () => {
+        const backend = createBackend();
+        const held = backend.gate("acquire:1");
+        const client = backend.connect();
+
+        const x = client.edit(editOf("X", 1, {documentId: 1, studySessionId: 7, studyStepId: 9}));
+        const y = client.edit(editOf("Y", 2, {documentId: "01", studySessionId: "07", studyStepId: "009"}));
+        await flush();
+        expect(backend.transactions).toBe(1);
+        held.resolve();
+        await Promise.all([x.done, y.done]);
+
+        expect(await y.ack).toEqual({success: true, data: undefined});
+        expect(backend.text(1, 7, 9)).toBe("aXYb");
+    });
+
+    test.each([
+        ["padded document", {documentId: "1 "}],
+        ["padded study session", {studySessionId: " 7"}],
+        ["boolean document", {documentId: true}],
+        ["zero document", {documentId: 0}],
+        ["negative document", {documentId: -1}],
+        ["fractional study step", {studyStepId: 1.5}],
+        ["exponent study session", {studySessionId: "1e3"}],
+        ["hexadecimal study step", {studyStepId: "0x10"}],
+        ["boolean study session", {studySessionId: true}],
+    ])("a %s id is rejected without opening a queue for it", async (_, context) => {
+        const backend = createBackend();
+        const client = backend.connect();
+
+        const malformed = client.edit(editOf("!", 1, context));
+        await malformed.done;
+
+        expect(await malformed.ack).toMatchObject({success: false});
+        expect(backend.documentQueues.size).toBe(0);
+        expect(backend.committed).toEqual([]);
+    });
+
+    test.each([
+        ["0", {studySessionId: 0, studyStepId: 0}],
+        ["an empty string", {studySessionId: "", studyStepId: ""}],
+        ["undefined", {studySessionId: undefined, studyStepId: undefined}],
+    ])("%s as study session and step means no session and step", async (_, context) => {
+        const backend = createBackend();
+        const client = backend.connect();
+
+        const x = client.edit(editOf("X", 1, context));
+        await x.done;
+
+        expect(await x.ack).toEqual({success: true, data: undefined});
+        expect(backend.text(1)).toBe("aXb");
+    });
+
+    test("only the known fields of an operation are saved", async () => {
+        const backend = createBackend();
+        const client = backend.connect();
+
+        const x = client.edit({
+            ...editOf("", 0),
+            ops: [{
+                ...insert("X", 1),
+                attributes: {bold: true},
+                documentId: 2,
+                studySessionId: 7,
+                studyStepId: 9,
+                userId: 99,
+                order: 99,
+                draft: false,
+                deleted: true,
+                id: 12345,
+                createdAt: new Date(0),
+                updatedAt: new Date(0),
+            }],
+        });
+        await x.done;
+
+        expect(await x.ack).toEqual({success: true, data: undefined});
+        expect(backend.committed).toHaveLength(1);
+        const {id, createdAt, userId, ...row} = backend.committed[0];
+        expect(id).not.toBe(12345);
+        expect(createdAt.getTime()).toBeGreaterThan(0);
+        expect(userId).toBe(client.documentSocket.userId);
+        expect(row).toEqual({
+            draft: true,
+            documentId: 1,
+            studySessionId: null,
+            studyStepId: null,
+            order: 1,
+            operationType: 0,
+            offset: 1,
+            span: 0,
+            text: "X",
+            attributes: {bold: true},
+        });
+    });
+
+    test.each([
+        ["unknown", 7],
+        ["null", null],
+        ["missing", undefined],
+        ["text", "0"],
+    ])("an operation with an %s type fails its whole message", async (_, operationType) => {
+        const backend = createBackend();
+        const client = backend.connect();
+
+        const malformed = client.edit({...editOf("", 0), ops: [insert("X", 1), {...insert("!", 1), operationType}]});
+        const y = client.edit(editOf("Y", 1));
+        await Promise.all([malformed.done, y.done]);
+
+        expect(await malformed.ack).toMatchObject({success: false});
+        expect(await y.ack).toEqual({success: true, data: undefined});
+        expect(backend.text(1)).toBe("aYb");
+    });
+
     test.each([
         ["document", {documentId: 2}],
         ["study session", {studySessionId: 7}],
@@ -1089,6 +1203,53 @@ describe("documentEdit ordering (real sockets and database)", () => {
         await Promise.all([edit("X", 1), edit("Y", 2), edit("Z", 3)]);
         // The refresh of the last edit is sent before its acknowledgement
         expect(received).toEqual(["X", "Y", "Z"]);
+    });
+
+    test("operation fields cannot leave the context of the message", async () => {
+        const documentId = await createDocument();
+        const otherDocumentId = await createDocument();
+        const otherSessionId = await createStudySession();
+
+        const ack = await emitEdit({
+            documentId,
+            studySessionId: null,
+            studyStepId: null,
+            ops: [{
+                ...insert("X", 1),
+                documentId: otherDocumentId,
+                studySessionId: otherSessionId,
+                userId: user.id + 1,
+                order: 99,
+                draft: false,
+                deleted: true,
+                id: 2147483000,
+                createdAt: new Date(0),
+            }],
+        });
+
+        expect(ack).toMatchObject({success: true});
+        const row = await server.db.models["document_edit"].findOne({where: {text: "X", documentId}, raw: true});
+        expect(row).toMatchObject({studySessionId: null, userId: user.id, order: 1, draft: true, deleted: false});
+        expect(row.id).not.toBe(2147483000);
+        expect(row.createdAt.getTime()).toBeGreaterThan(0);
+        expect(await persistedText(documentId)).toBe("aXb");
+        expect(await persistedText(otherDocumentId)).toBe("ab");
+    });
+
+    test("an operation type the reader cannot apply is not saved", async () => {
+        const documentId = await createDocument();
+        const base = {documentId, studySessionId: null, studyStepId: null};
+        const consoleLog = jest.spyOn(console, "log").mockImplementation(() => {});
+
+        const acks = await Promise.all([7, null, undefined, "abc"].map((operationType) => emitEdit({
+            ...base,
+            ops: [{...insert("!", 0), operationType}],
+        })));
+        consoleLog.mockRestore();
+
+        expect(acks.every((ack) => ack.success === false)).toBe(true);
+        expect(await emitEdit({...base, ops: [insert("X", 1)]})).toMatchObject({success: true});
+        expect(await persistedText(documentId)).toBe("aXb");
     });
 
     test("a burst of multi operation messages is reconstructed correctly", async () => {
