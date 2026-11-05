@@ -3100,11 +3100,16 @@ export default {
   position: relative;
 }
 
+/* The scroll track is taken out of the line: padding under the text
+   made the name sit higher than the other cells in the row. */
+.table-wrapper td > span:has(.cell-scroll) {
+  display: block;
+}
+
 .cell-scroll-content {
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
-  padding-bottom: 10px;
   scrollbar-width: none;
 }
 
@@ -3117,8 +3122,8 @@ export default {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
-  height: 12px;
+  top: calc(100% + 2px);
+  height: 8px;
   background: transparent;
   border-radius: 2px;
   opacity: 0;
@@ -3145,7 +3150,7 @@ export default {
 
 .cell-scroll-thumb {
   position: relative;
-  height: 12px;
+  height: 100%;
   background: transparent;
   will-change: transform;
 }
