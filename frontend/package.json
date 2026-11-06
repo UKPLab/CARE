@@ -11,9 +11,9 @@
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
     "frontend-lint": "npm run test:ui-rules && npm run test:unit && eslint src",
-    "test:ui-rules": "node --test eslint-rules/*.test.js",
+    "test:ui-rules": "node --test eslint-rules",
     "frontend-i18n-check": "node scripts/check-i18n-keys.mjs",
-    "test:unit": "node --test tests/*.test.js"
+    "test:unit": "node --test tests"
   },
   "dependencies": {
     "@pgrabovets/json-view": "^2.8.1",
