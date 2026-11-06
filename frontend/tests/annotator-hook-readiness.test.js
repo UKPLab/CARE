@@ -8,7 +8,7 @@
  * Run from `frontend`: npm run test:unit
  */
 import assert from 'node:assert/strict'
-import {test} from 'node:test'
+import {afterEach, test} from 'node:test'
 import {computed, createRenderer, h, nextTick, reactive} from 'vue'
 import {createStore} from 'vuex'
 import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
@@ -41,6 +41,8 @@ const HOOK_INPUTS = {
     'inlineComments[2]': {stepIndex: 0, key: 'annotations', type: 'annotator'},
 }
 
+const cleanups = []
+afterEach(() => { cleanups.splice(0).forEach(cleanup => cleanup()) })
 const noop = () => {}
 const element = () => ({addEventListener: noop, removeEventListener: noop, querySelectorAll: () => []})
 const {createApp} = createRenderer({
@@ -94,6 +96,7 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
     const ui = reactive({showRequest: withRequest, sessionId: SESSION})
     const toasts = []
     const runHook = []
+    let annotatorVm
     let requestVm
 
     const {components: _a, ...annotatorOptions} = AnnotatorOptions
@@ -108,6 +111,7 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
         }),
         render: () => [
             h(Annotator, {
+                ref: vm => { annotatorVm = vm ?? annotatorVm },
                 documentId: DOC,
                 studyStepId: STEP,
                 'onUpdate:data': data => StudyOptions.methods.updateStudyData.call(study, STEP, 'annotator', data),
@@ -134,6 +138,14 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
         eventBus: {on: noop, off: noop, emit: (name, toast) => toasts.push(toast)},
     })
     app.mount({})
+    cleanups.push(() => {
+        ++annotatorVm.recordsRequestId
+        clearTimeout(annotatorVm.recordsTimer)
+        if (requestVm) {
+            ++requestVm.hookGeneration
+            requestVm.cancelReadiness?.()
+        }
+    })
 
     const deliver = (table, rows) => store.commit(`table/${table}/SOCKET_${table}Refresh`, JSON.parse(JSON.stringify(rows)))
     const dataRequests = () => socketCalls.filter(call => call.event === 'documentGetData')
@@ -191,7 +203,7 @@ test('rows already in the store: the refresh changes nothing, and they still rea
         },
     })
     await settle()
-    assert.equal(page.annotator(), undefined)
+    assert.equal(page.annotator(), null)
 
     page.dataRequests()[0].ack({success: true})
     await settle()
@@ -242,12 +254,12 @@ test('nothing before the acknowledgement counts as loaded: no empty prompt from 
     page.deliver('annotation', [])
     page.deliver('comment', [comment(99, null, null, 'other document', DOC + 1)])
     await settle()
-    assert.equal(page.annotator(), undefined)
+    assert.equal(page.annotator(), null)
 
     await page.startRequest()
     assert.deepEqual(page.runHook, [])
-    assert.equal(page.request().status, 'failed')
-    assert.equal(page.toasts.length, 1)
+    assert.equal(page.request().status, 'pending')
+    assert.equal(page.toasts.length, 0)
 
     // Annotations arrive, comments do not yet: still no partial prompt
     page.deliver('annotation', [annotation(1, SESSION, STEP, 'quote')])
@@ -255,7 +267,7 @@ test('nothing before the acknowledgement counts as loaded: no empty prompt from 
     page.request().retryRequest()
     await settle()
     assert.deepEqual(page.runHook, [])
-    assert.equal(page.request().status, 'failed')
+    assert.equal(page.request().status, 'pending')
 
     await page.answerData({annotations: [annotation(1, SESSION, STEP, 'quote')], comments: [comment(2, SESSION, STEP, 'note')]})
     page.request().retryRequest()
@@ -267,29 +279,26 @@ test('nothing before the acknowledgement counts as loaded: no empty prompt from 
     assert.equal(page.request().status, 'completed')
 })
 
-test('resume on the later step: the hook fails while loading, and the retry sends the real records', async () => {
+test('resume on the later step: late readiness automatically sends one prompt', async () => {
     // Annotator and request mount in the same flush, as when the page reopens on the later step
     const page = mountStudy({withRequest: true})
     await settle()
     assert.deepEqual(page.runHook, [])
-    assert.equal(page.request().status, 'failed')
-    assert.equal(page.toasts.length, 1)
+    assert.equal(page.request().status, 'pending')
+    assert.equal(page.toasts.length, 0)
 
     await page.answerData({comments: [comment(2, SESSION, STEP, 'note')]})
-    assert.equal(page.request().status, 'failed')
-    assert.deepEqual(page.runHook, [])
+    assert.equal(page.request().status, 'completed')
 
-    page.request().retryRequest()
-    await settle()
     assert.deepEqual(sentValues(page), [{'inlineComments[1]': [COMMENT_VALUE(2, 'note')], 'inlineComments[2]': []}])
     assert.equal(page.request().status, 'completed')
-    assert.equal(page.toasts.length, 1)
+    assert.equal(page.toasts.length, 0)
 })
 
-test('resume with no records at all: the retry completes with empty lists', async () => {
+test('resume with no records at all: readiness completes with empty lists', async () => {
     const page = mountStudy({withRequest: true})
     await settle()
-    assert.equal(page.request().status, 'failed')
+    assert.equal(page.request().status, 'pending')
 
     await page.answerData()
     page.request().retryRequest()
@@ -303,11 +312,11 @@ test('a failed acknowledgement stays not loaded, even when rows were delivered',
     page.deliver('comment', [comment(2, SESSION, STEP, 'note')])
     page.dataRequests()[0].ack({success: false, message: 'denied'})
     await settle()
-    assert.equal(page.annotator(), undefined)
+    assert.equal(page.annotator(), null)
 
     await page.startRequest()
     assert.deepEqual(page.runHook, [])
-    assert.equal(page.request().status, 'failed')
+    assert.equal(page.request().status, 'pending')
 })
 
 test('records made after loading reach a later hook, and moving forward does not reload', async () => {
@@ -353,10 +362,49 @@ test('session change: the old records are withdrawn, and only the latest acknowl
 
     await page.startRequest()
     assert.deepEqual(page.runHook, [])
-    assert.equal(page.request().status, 'failed')
+    assert.equal(page.request().status, 'pending')
 
     await page.answerData({comments: [comment(3, SESSION + 2, STEP, 'new session')], request: latest})
     page.request().retryRequest()
     await settle()
     assert.deepEqual(sentValues(page), [{'inlineComments[1]': [COMMENT_VALUE(3, 'new session')], 'inlineComments[2]': []}])
+})
+
+
+test('lost acknowledgement is retried read-only; late old acknowledgement cannot unlock data', async t => {
+    t.mock.timers.enable({apis: ['setTimeout']})
+    const page = mountStudy({withRequest: true})
+    await settle()
+    const old = page.dataRequests()[0]
+    t.mock.timers.tick(10000)
+    t.mock.timers.tick(500)
+    assert.equal(page.dataRequests().length, 2)
+    old.ack({success: true})
+    await settle()
+    assert.equal(page.annotator(), null)
+    assert.deepEqual(page.runHook, [])
+    await page.answerData({comments: [comment(2, SESSION, STEP, 'recovered')]})
+    assert.equal(page.runHook.length, 1)
+    assert.equal(page.request().status, 'completed')
+    assert.equal(page.toasts.length, 0)
+    t.mock.timers.tick(40000)
+    assert.equal(page.dataRequests().length, 2)
+    assert.equal(page.runHook.length, 1)
+})
+
+test('failed record loads stop after three attempts with an explicit hook error', async t => {
+    t.mock.timers.enable({apis: ['setTimeout']})
+    const page = mountStudy({withRequest: true})
+    await settle()
+    for (const delay of [500, 1000, 0]) {
+        page.dataRequests().at(-1).ack({success: false})
+        if (delay) t.mock.timers.tick(delay)
+    }
+    await settle()
+    assert.equal(page.dataRequests().length, 3)
+    assert.deepEqual(page.runHook, [])
+    assert.equal(page.request().status, 'failed')
+    assert.equal(page.toasts.length, 1)
+    t.mock.timers.tick(60000)
+    assert.equal(page.dataRequests().length, 3)
 })

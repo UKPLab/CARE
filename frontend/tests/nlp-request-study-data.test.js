@@ -9,7 +9,7 @@
  */
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
-import {computed} from 'vue'
+import {computed, watch} from 'vue'
 import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
 import {loadOptions} from './helpers/loadOptions.js'
 
@@ -38,7 +38,9 @@ function request(stored = [], inputs = {}) {
     stored.forEach(([stepId, type, data]) => StudyOptions.methods.updateStudyData.call(study, stepId, type, data))
     const runHook = []
     return {
+        ...NlpRequestOptions.data(),
         ...NlpRequestOptions.methods,
+        $watch: (source, callback, options) => watch(source, callback, options),
         studyData: study.studyData,
         orderedStudySteps: STEPS,
         service: {hookId: 3, inputs},
@@ -111,8 +113,8 @@ test('empty annotator records stay empty lists', async () => {
     assert.deepEqual(overSocket(vm.runHook[0].values), {'inlineComments[1]': []})
 })
 
-test('annotator data that is not loaded yet fails the hook, and the retry sends the records', async () => {
-    const vm = request([], {'inlineComments[1]': COMMENTS_INPUT})
+test('terminal annotator load failure fails the hook, and an explicit retry sends recovered records', async () => {
+    const vm = request([[ANNOTATOR_STEP.id, 'annotator', {loadError: true}]], {'inlineComments[1]': COMMENTS_INPUT})
     const toasts = []
     vm.eventBus = {emit: (name, toast) => toasts.push(toast)}
     await vm.sendHookRequest()

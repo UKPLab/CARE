@@ -75,6 +75,9 @@ export default {
       id: null,
       status: null,
       timeoutId: null,
+      hookGeneration: 0,
+      cancelReadiness: null,
+      hookInFlight: false,
     };
   },
   computed: {
@@ -110,6 +113,9 @@ export default {
     },
   },
   watch: {
+    studySessionId: "cancelHookContext",
+    studyStepId: "cancelHookContext",
+    documentId: "cancelHookContext",
     nlpResults: {
       handler() {
         if (this.status !== 'pending') return;
@@ -140,7 +146,17 @@ export default {
       this.sendRequest();
     }
   },
+  beforeUnmount() {
+    ++this.hookGeneration;
+    this.cancelReadiness?.();
+    clearTimeout(this.timeoutId);
+  },
   methods: {
+    cancelHookContext() {
+      ++this.hookGeneration;
+      this.cancelReadiness?.();
+      this.status = "failed";
+    },
     requestAlreadyDone() {
       if (this.isHook) {
         return this.resultKeyCandidates.some((key) =>
@@ -250,9 +266,15 @@ export default {
      * @returns {Promise<void>}
      */
     async sendHookRequest() {
+      if (this.hookInFlight || this.status === 'completed') return;
+      this.hookInFlight = true;
+      const generation = ++this.hookGeneration;
       this.status = 'pending';
       try {
+        await this.waitForAnnotatorData();
+        if (generation !== this.hookGeneration) return;
         const values = await this.buildHookValues();
+        if (generation !== this.hookGeneration) return;
         const response = await this.$ai.runHook({
           hookId: this.service.hookId,
           values,
@@ -260,16 +282,45 @@ export default {
           studySessionId: this.studySessionId,
           documentId: this.documentId,
         });
+        if (generation !== this.hookGeneration) return;
         this.saveHookResult(response);
         this.status = 'completed';
       } catch (error) {
+        if (generation !== this.hookGeneration) return;
         this.eventBus.emit('toast', {
           title: this.$t("nlp.hooks.requestTitle"),
           message: resolveApiMessage(error, "nlp.hooks.requestFailed"),
           variant: "danger",
         });
         this.status = 'failed';
+      } finally {
+        this.hookInFlight = false;
       }
+    },
+    waitForAnnotatorData() {
+      return new Promise((resolve, reject) => {
+        let stop;
+        let timer;
+        const finish = error => {
+          stop?.();
+          clearTimeout(timer);
+          this.cancelReadiness = null;
+          error ? reject(error) : resolve();
+        };
+        this.cancelReadiness = () => finish(new Error('cancelled'));
+        timer = setTimeout(() => finish(new Error('nlp.hooks.requestFailed')), 35000);
+        const check = () => {
+          const sources = Object.values(this.service.inputs || {})
+            .filter(spec => spec?.type === 'annotator')
+            .map(spec => this.orderedStudySteps[spec.stepIndex])
+            .filter(Boolean)
+            .map(step => this.studyData[step.id]?.annotator);
+          if (sources.some(data => data?.loadError)) finish(new Error('nlp.hooks.requestFailed'));
+          else if (sources.every(data => data != null)) finish();
+        };
+        stop = this.$watch(() => this.studyData, check, {deep: true});
+        check();
+      });
     },
     /**
      * Resolves all mapped inputs into a { placeholderKey: value } map for the hook's template.
