@@ -16,12 +16,10 @@ import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
 import * as serviceKeys from '../src/assets/serviceDocumentDataKeys.js'
 import subscribeTable from '../src/plugins/subscribeTable.js'
 import {createTable} from '../src/store/utils.js'
-import {loadAnnotatorRecords} from '../src/components/annotator/loadRecords.js'
 import {loadOptions} from './helpers/loadOptions.js'
 
 const AnnotatorOptions = loadOptions('components/annotator/Annotator.vue', {
     computed,
-    loadAnnotatorRecords,
     debounce: fn => fn,
     mapMutations: () => ({}),
     resolveApiMessage: () => 'failed',

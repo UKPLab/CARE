@@ -11,14 +11,12 @@ import assert from 'node:assert/strict'
 import {test} from 'node:test'
 import {computed, createRenderer, h, nextTick, reactive} from 'vue'
 import {isInSessionScope} from '../src/assets/annotations.js'
-import {loadAnnotatorRecords} from '../src/components/annotator/loadRecords.js'
 import {loadOptions} from './helpers/loadOptions.js'
 
 const downloads = []
 
 const AnnotatorOptions = loadOptions('components/annotator/Annotator.vue', {
     computed,
-    loadAnnotatorRecords,
     debounce: fn => fn,
     mapMutations: () => ({}),
     mergeAnnotationsAndComments: (annotations, comments) => ({annotations, comments}),

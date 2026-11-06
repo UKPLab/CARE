@@ -98,7 +98,6 @@
  *
  * @author Dennis Zyska, Marina Sakharova
  */
-import {loadAnnotatorRecords} from "./loadRecords.js";
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
@@ -246,14 +245,13 @@ export default {
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
-      const data = this.$store.getters['table/user_environment/getAll'].filter(
+      return this.$store.getters['table/user_environment/getAll'].find(
           e => e.userId === this.userId &&
               e.documentId === this.documentId &&
               e.studySessionId === this.studySessionId &&
               e.studyStepId === this.studyStepId &&
               e.key === "scroll"
-      );
-      return data[0] || null;
+      ) || null;
     },
     anchors() {
       return [].concat(
@@ -302,27 +300,13 @@ export default {
       });
     },
     annotations() {
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return this.documentAnnotations.filter(annotation =>
-            !this.openSessionIds.includes(annotation.studySessionId)
-        );
-      } else {
-        return this.documentAnnotations.filter(this.isInCurrentView);
-      }
+      return this.documentAnnotations.filter(this.isInCurrentView);
     },
     documentComments() {
-      return this.$store.getters["table/comment/getFiltered"](c =>
-          c.documentId === this.documentId
-      );
+      return this.$store.getters["table/comment/getFiltered"](c => c.documentId === this.documentId);
     },
     comments() {
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return this.documentComments.filter(comment =>
-            !this.openSessionIds.includes(comment.studySessionId)
-        );
-      } else {
-        return this.documentComments.filter(this.isInCurrentView);
-      }
+      return this.documentComments.filter(this.isInCurrentView);
     },
     downloadableAnnotations() {
       return this.documentAnnotations.filter(annotation => annotation.studySessionId === this.studySessionId);
@@ -438,27 +422,15 @@ export default {
 
     const currentPage = this.getCurrentPageNumber();
     const payload = JSON.stringify({page: currentPage, value: this.$refs.viewer.scrollTop});
-    if (!this.savedScroll) {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          userId: this.userId,
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          key: "scroll",
-          value: payload
-        }
-      });
-    } else {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          id: this.savedScroll.id,
-          value: payload
-        }
-      });
-    }
+    const data = this.savedScroll ? {id: this.savedScroll.id, value: payload} : {
+      userId: this.userId,
+      documentId: this.documentId,
+      studySessionId: this.studySessionId,
+      studyStepId: this.studyStepId,
+      key: "scroll",
+      value: payload
+    };
+    this.$socket.emit("appDataUpdate", {table: "user_environment", data});
   },
   methods: {
     // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
@@ -679,7 +651,46 @@ export default {
     recoverRecords() {
       if (this.recordsStatus !== "ready") this.loadRecords();
     },
-    loadRecords: loadAnnotatorRecords,
+    loadRecords() {
+      const requestId = ++this.recordsRequestId;
+      clearTimeout(this.recordsTimer);
+      this.recordsLoaded = false;
+      this.recordsStatus = "loading";
+      this.$emit('update:data', null);
+      let attempt = 0;
+      const fetch = () => {
+        if (requestId !== this.recordsRequestId) return;
+        const currentAttempt = ++attempt;
+        let settled = false;
+        const failed = () => {
+          if (settled || requestId !== this.recordsRequestId || currentAttempt !== attempt) return;
+          settled = true;
+          clearTimeout(this.recordsTimer);
+          if (attempt < 3) {
+            this.recordsTimer = setTimeout(fetch, 500 * attempt);
+          } else {
+            ++attempt;
+            this.recordsStatus = "error";
+            this.$emit('update:data', {loadError: true});
+          }
+        };
+        this.recordsTimer = setTimeout(failed, 10000);
+        this.$socket.emit("documentGetData", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId
+        }, (res) => {
+          if (settled || requestId !== this.recordsRequestId || currentAttempt !== attempt) return;
+          if (!res?.success) { failed(); return; }
+          settled = true;
+          clearTimeout(this.recordsTimer);
+          this.recordsLoaded = true;
+          this.recordsStatus = "ready";
+          this.emitStudyData();
+        });
+      };
+      fetch();
+    },
     /**
      * Passes the records of the current view on to the study, once they are loaded.
      */
@@ -696,32 +707,25 @@ export default {
      * @returns {boolean}
      */
     isInCurrentView(record) {
+      if (this.studySessionId === null && !this.downloadBeforeStudyClosingAllowed) {
+        return !this.openSessionIds.includes(record.studySessionId);
+      }
       if (!this.studySessionId) {
         return record.studySessionId === this.studySessionId;
       }
-      if (this.showDefaultAllAnnotations && record.studySessionId === null && record.studyStepId === null) {
-        return true;
-      }
-      return record.studySessionId === this.studySessionId && record.studyStepId === this.studyStepId;
+      return (this.showDefaultAllAnnotations && record.studySessionId === null && record.studyStepId === null) ||
+          (record.studySessionId === this.studySessionId && record.studyStepId === this.studyStepId);
     },
     downloadAnnotations() {
 
       const attributesToDelete = [
-        "draft",
-        "anonymous",
-        "createdAt",
-        "updatedAt",
-        "deleted",
-        "deletedAt",
-        "documentId",
-        "studySessionId",
-        "studyStepId",
-        "userId"
+        "draft", "anonymous", "createdAt", "updatedAt", "deleted", "deletedAt",
+        "documentId", "studySessionId", "studyStepId", "userId"
       ];
-      const annotations = this.downloadableAnnotations
-          .map(a => {
-            return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-          });
+      const withoutMetadata = record => Object.fromEntries(
+          Object.entries(record).filter(([key]) => !attributesToDelete.includes(key))
+      );
+      const annotations = this.downloadableAnnotations.map(withoutMetadata);
       // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {
@@ -731,9 +735,7 @@ export default {
         }
       });
 
-      const comments = this.downloadableComments.map(c => {
-        return Object.fromEntries(Object.entries(c).filter(([key]) => !attributesToDelete.includes(key)));
-      });
+      const comments = this.downloadableComments.map(withoutMetadata);
 
       const content = mergeAnnotationsAndComments(annotations, comments);
 
