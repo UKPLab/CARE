@@ -278,3 +278,50 @@ To add support for mutiple table-based selections:
 1. Modify ``InputFiles.vue`` to allow multi-parameter table selections
 2. Update ``prepareProcessingItems()`` to compute Cartesian product (or other suitable combination) across multiple table-based selections;
 Take care that this can generate arbitrarly large number of combinations, which might need some anchor points to limit the purpose and combinations
+
+Study annotator inputs for NLP skills
+------------------------------------
+
+``NlpRequest.buildPayload`` serializes mapped ``annotator`` inputs separately
+from hook prompt values. This is a CARE-side compatibility decision, not an
+annotation schema advertised by an existing skill. The checked-in SDF files
+under ``files/sdf`` do not define an annotation-consuming skill. Live skill
+configurations arrive dynamically through ``skillConfig`` in
+``backend/webserver/services/nlp.js``; that adapter forwards ordinary values
+unchanged to ``skillRequest`` and does not validate their schema.
+
+The supported record fields are:
+
+* Annotations: ``id``, ``text``, ``tagId``, ``createdAt``, ``updatedAt``, and
+  ``selectors.target[].selector[]``.
+* Comments: ``id``, ``text``, ``annotationId``, ``parentCommentId``, ``tags``,
+  ``createdAt``, and ``updatedAt``.
+
+Names and optional-field presence are retained from the persisted models in
+``backend/db/models/annotation.js`` and ``comment.js``. Selectors retain only
+fields defined by CARE's TextQuote, TextPosition, PagePosition and Range
+selectors. ``Adder.vue`` constructs the first three; RangeSelector is defined
+in ``assets/anchoring/types.js``. Extra fields, including target source links,
+are excluded. Browser ``anchors`` contain runtime ranges and highlights rather
+than the persisted location contract and are excluded, along with author,
+document, session and step metadata. Record IDs and comment relationships are
+retained for correlation; this is data minimization, not anonymization of text
+or record identifiers.
+
+Loaded empty inputs are arrays. Missing mappings, unpublished record arrays,
+and unsupported selector types fail visibly before emitting a request. Loading
+and retry scheduling remain the caller's responsibility. Editor and assessment
+mapping behavior and hook prompt serialization are unchanged.
+
+Before using a live annotation-consuming skill, its owner must confirm these
+fields against its registered input schema. No checked-in contract establishes
+that it accepts this shape, and consumers requiring removed metadata or runtime
+anchors need an explicit contract review rather than a raw-record escape hatch.
+
+Run the transport contract regressions without a model service or database::
+
+    node --test frontend/tests/nlp-skill-annotator-contract.test.js
+
+These tests execute the component methods and real NLP service forwarding method
+with infrastructure imports replaced and the external socket captured. They do
+not mount Vue in a browser, connect to a broker node, or persist database data.

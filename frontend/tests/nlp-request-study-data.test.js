@@ -10,11 +10,11 @@
 import assert from 'node:assert/strict'
 import {test} from 'node:test'
 import {computed, watch} from 'vue'
-import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
+import {annotatorRecordsForPrompt, annotatorRecordsForSkill} from '../src/assets/annotations.js'
 import {loadOptions} from './helpers/loadOptions.js'
 
 const NlpRequestOptions = loadOptions('basic/service/NlpRequest.vue', {
-    annotatorRecordsForPrompt,
+    annotatorRecordsForPrompt, annotatorRecordsForSkill,
     pdfjsLib: {GlobalWorkerOptions: {}},
     resolveApiMessage: () => 'request failed',
 })
@@ -154,5 +154,5 @@ test('editor and assessment mappings keep their shape', () => {
 
 test('skill requests resolve keyed mappings the same way', () => {
     const vm = request([[ANNOTATOR_STEP.id, 'annotator', {annotations: [], comments: [COMMENT]}]])
-    assert.deepEqual(vm.buildPayload(COMMENTS_INPUT), [COMMENT])
+    assert.deepEqual(vm.buildPayload(COMMENTS_INPUT), [{id: 1, text: 'a comment', annotationId: 2, createdAt: '2026-01-02'}])
 })

@@ -7,7 +7,7 @@ import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import {extractPdfPages, resolveApiMessage} from "@/assets/utils";
-import {annotatorRecordsForPrompt} from "@/assets/annotations";
+import {annotatorRecordsForPrompt, annotatorRecordsForSkill} from "@/assets/annotations";
 import {
   buildHookResultKey,
   buildServiceSkillKey,
@@ -214,7 +214,10 @@ export default {
         case 'configuration':
           return {'type': 'serviceReplacement', 'input': inputSpec}
         case 'annotator':
-          return this.buildPayloadFromStudyData(inputSpec);
+          return annotatorRecordsForSkill(
+            this.studyData[this.orderedStudySteps[inputSpec.stepIndex]?.id]?.annotator,
+            inputSpec.key,
+          );
         case 'editor':
           return this.buildPayloadFromStudyData(inputSpec);
         default:
@@ -229,8 +232,18 @@ export default {
       this.status = 'pending';
 
       const basePayload = {};
-      for (const input in this.service.inputs) {
-        basePayload[input] = this.buildPayload(this.service.inputs[input]);
+      try {
+        for (const input in this.service.inputs) {
+          basePayload[input] = this.buildPayload(this.service.inputs[input]);
+        }
+      } catch (error) {
+        this.eventBus.emit('toast', {
+          title: this.$t('common.nlp.serviceRequest'),
+          message: resolveApiMessage(error, 'nlp.hooks.requestFailed'),
+          variant: 'danger',
+        });
+        this.status = 'failed';
+        return;
       }
 
       this.$socket.emit("serviceRequest", {

@@ -179,3 +179,46 @@ export function annotatorRecordsForPrompt(annotator, key) {
     }
     return null;
 }
+
+/**
+ * Serializes study annotator inputs for NLP skills, retaining persisted content and location
+ * field names rather than the hook prompt format. Runtime anchors and author/study metadata
+ * are deliberately excluded. Unknown or unloaded inputs fail before a request is emitted.
+ *
+ * @param {Object} annotator Published annotator data
+ * @param {string} key Supported input field: annotations or comments
+ * @returns {Object[]} Skill records
+ * @throws {Error} When the mapped records or selector type are unavailable or unsupported
+ */
+export function annotatorRecordsForSkill(annotator, key) {
+    const fields = {
+        annotations: ['id', 'text', 'tagId', 'createdAt', 'updatedAt'],
+        comments: ['id', 'text', 'annotationId', 'parentCommentId', 'tags', 'createdAt', 'updatedAt'],
+    };
+    const selectorFields = {
+        TextQuoteSelector: ['type', 'exact', 'prefix', 'suffix'],
+        TextPositionSelector: ['type', 'start', 'end'],
+        PagePositionSelector: ['type', 'number'],
+        RangeSelector: ['type', 'startContainer', 'startOffset', 'endContainer', 'endOffset'],
+    };
+    if (!Object.hasOwn(fields, key) || !Array.isArray(annotator?.[key])) {
+        throw new Error('nlp.hooks.requestFailed');
+    }
+    const pick = (record, keys) => Object.fromEntries(
+        keys.filter(field => Object.hasOwn(record, field)).map(field => [field, record[field]])
+    );
+    return annotator[key].map(record => {
+        const result = pick(record, fields[key]);
+        if (key === 'annotations' && record.selectors != null) {
+            result.selectors = {target: record.selectors.target.map(target => ({
+                selector: target.selector.map(selector => {
+                    if (!Object.hasOwn(selectorFields, selector.type)) {
+                        throw new Error('nlp.hooks.requestFailed');
+                    }
+                    return pick(selector, selectorFields[selector.type]);
+                }),
+            }))};
+        }
+        return result;
+    });
+}
