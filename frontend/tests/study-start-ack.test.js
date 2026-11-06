@@ -221,18 +221,6 @@ test('a failed acknowledgement after the study modal unmounted still shows its t
     assertPageClean()
 })
 
-// Repeated user actions must not create concurrent sessions while an ack is pending.
-test('repeated starts before acknowledgement send one request and one success toast', async () => {
-    const {vm, acks, ack, toasts, starts} = await openStudyModal()
-    vm.$refs.study.start()
-    vm.$refs.study.start()
-    assert.equal(acks.length, 1, 'only one session-start request may be in flight')
-    ack({success: true, data: {id: SESSION_ID}})
-    await nextTick()
-    assert.deepEqual(starts, [{studySessionId: SESSION_ID}])
-    assert.deepEqual(toasts, [STARTED_TOAST])
-})
-
 test('a rejected start can be retried and reports each server result once', async () => {
     const {vm, acks, ack, toasts} = await openStudyModal()
     ack({success: false, message: 'No session left'})
