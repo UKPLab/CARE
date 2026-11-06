@@ -7,6 +7,7 @@ import {v4 as uuid} from "uuid";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import {extractPdfPages, resolveApiMessage} from "@/assets/utils";
+import {annotatorRecordsForPrompt, annotatorRecordsForSkill} from "@/assets/annotations";
 import {
   buildHookResultKey,
   buildServiceSkillKey,
@@ -74,6 +75,9 @@ export default {
       id: null,
       status: null,
       timeoutId: null,
+      hookGeneration: 0,
+      cancelReadiness: null,
+      hookInFlight: false,
     };
   },
   computed: {
@@ -109,6 +113,9 @@ export default {
     },
   },
   watch: {
+    studySessionId: "cancelHookContext",
+    studyStepId: "cancelHookContext",
+    documentId: "cancelHookContext",
     nlpResults: {
       handler() {
         if (this.status !== 'pending') return;
@@ -139,7 +146,18 @@ export default {
       this.sendRequest();
     }
   },
+  beforeUnmount() {
+    ++this.hookGeneration;
+    this.cancelReadiness?.();
+    clearTimeout(this.timeoutId);
+  },
   methods: {
+    cancelHookContext() {
+      ++this.hookGeneration;
+      this.cancelReadiness?.();
+      clearTimeout(this.timeoutId);
+      this.status = "failed";
+    },
     requestAlreadyDone() {
       if (this.isHook) {
         return this.resultKeyCandidates.some((key) =>
@@ -155,13 +173,32 @@ export default {
         clearTimeout(this.timeoutId);
         this.timeoutId = null;
       }
+      if (this.isHook && !this.hookInFlight && this.status !== "completed") {
+        const steps = new Set(Object.values(this.service.inputs || {})
+          .filter(spec => spec?.type === "annotator")
+          .map(spec => this.orderedStudySteps[spec.stepIndex]?.id)
+          .filter(id => id != null));
+        for (const studyStepId of steps) this.eventBus.emit("annotatorRetryLoad", {
+          documentId: this.orderedStudySteps.find(step => step.id === studyStepId)?.documentId ?? this.documentId,
+          studySessionId: this.studySessionId, studyStepId,
+        });
+      }
       this.sendRequest();
     },
-    buildPayloadFromStudyData(inputSpec, type, key) {
+    /**
+     * Reads the mapped data of an earlier study step.
+     *
+     * @param {Object} inputSpec Saved mapping (stepIndex, type and optionally the field in `key`)
+     * @returns {*} The mapped data, or null when the step did not provide it
+     */
+    buildPayloadFromStudyData(inputSpec) {
       const studyStepFromIndex = this.orderedStudySteps[inputSpec.stepIndex];
+      if (!studyStepFromIndex) return null;
       const studyStepData = this.studyData[studyStepFromIndex.id];
+      if (studyStepData?.[inputSpec.type] == null) return null;
       if (inputSpec.key) {
-        return studyStepData[inputSpec.type][key];
+        // null instead of undefined: the socket drops undefined and the prompt keeps its placeholder
+        return studyStepData[inputSpec.type][inputSpec.key] ?? null;
       } else {
         return studyStepData[inputSpec.type];
       }
@@ -177,7 +214,10 @@ export default {
         case 'configuration':
           return {'type': 'serviceReplacement', 'input': inputSpec}
         case 'annotator':
-          return this.buildPayloadFromStudyData(inputSpec);
+          return annotatorRecordsForSkill(
+            this.studyData[this.orderedStudySteps[inputSpec.stepIndex]?.id]?.annotator,
+            inputSpec.key,
+          );
         case 'editor':
           return this.buildPayloadFromStudyData(inputSpec);
         default:
@@ -192,8 +232,18 @@ export default {
       this.status = 'pending';
 
       const basePayload = {};
-      for (const input in this.service.inputs) {
-        basePayload[input] = this.buildPayload(this.service.inputs[input]);
+      try {
+        for (const input in this.service.inputs) {
+          basePayload[input] = this.buildPayload(this.service.inputs[input]);
+        }
+      } catch (error) {
+        this.eventBus.emit('toast', {
+          title: this.$t('common.nlp.serviceRequest'),
+          message: resolveApiMessage(error, 'nlp.hooks.requestFailed'),
+          variant: 'danger',
+        });
+        this.status = 'failed';
+        return;
       }
 
       this.$socket.emit("serviceRequest", {
@@ -240,9 +290,15 @@ export default {
      * @returns {Promise<void>}
      */
     async sendHookRequest() {
+      if (this.hookInFlight || this.status === 'completed') return;
+      this.hookInFlight = true;
+      const generation = ++this.hookGeneration;
       this.status = 'pending';
       try {
+        await this.waitForAnnotatorData();
+        if (generation !== this.hookGeneration) return;
         const values = await this.buildHookValues();
+        if (generation !== this.hookGeneration) return;
         const response = await this.$ai.runHook({
           hookId: this.service.hookId,
           values,
@@ -250,16 +306,45 @@ export default {
           studySessionId: this.studySessionId,
           documentId: this.documentId,
         });
+        if (generation !== this.hookGeneration) return;
         this.saveHookResult(response);
         this.status = 'completed';
       } catch (error) {
+        if (generation !== this.hookGeneration) return;
         this.eventBus.emit('toast', {
           title: this.$t("nlp.hooks.requestTitle"),
           message: resolveApiMessage(error, "nlp.hooks.requestFailed"),
           variant: "danger",
         });
         this.status = 'failed';
+      } finally {
+        this.hookInFlight = false;
       }
+    },
+    waitForAnnotatorData() {
+      return new Promise((resolve, reject) => {
+        let stop;
+        let timer;
+        const finish = error => {
+          stop?.();
+          clearTimeout(timer);
+          this.cancelReadiness = null;
+          error ? reject(error) : resolve();
+        };
+        this.cancelReadiness = () => finish(new Error('cancelled'));
+        timer = setTimeout(() => finish(new Error('nlp.hooks.requestFailed')), 35000);
+        const check = () => {
+          const sources = Object.values(this.service.inputs || {})
+            .filter(spec => spec?.type === 'annotator')
+            .map(spec => this.orderedStudySteps[spec.stepIndex])
+            .filter(Boolean)
+            .map(step => this.studyData[step.id]?.annotator);
+          if (sources.some(data => data?.loadError)) finish(new Error('nlp.hooks.requestFailed'));
+          else if (sources.every(data => data != null)) finish();
+        };
+        stop = this.$watch(() => this.studyData, check, {deep: true});
+        check();
+      });
     },
     /**
      * Resolves all mapped inputs into a { placeholderKey: value } map for the hook's template.
@@ -297,8 +382,16 @@ export default {
           }
           return {type: "serviceReplacement", input: {...spec, pdfText}};
         }
+        case 'annotator': {
+          // Empty records are passed on as lists. No data yet means the session reopened on a later
+          // step while this Annotator still loads: fail, so that "Try again" sends the real records.
+          const studyStep = this.orderedStudySteps[spec.stepIndex];
+          if (studyStep && this.studyData[studyStep.id]?.annotator == null) {
+            throw new Error("nlp.hooks.requestFailed");
+          }
+          return annotatorRecordsForPrompt(this.studyData[studyStep?.id]?.annotator, spec.key);
+        }
         case 'assessment':
-        case 'annotator':
         case 'editor':
           return this.buildPayloadFromStudyData(spec);
         default:

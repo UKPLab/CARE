@@ -278,3 +278,31 @@ To add support for mutiple table-based selections:
 1. Modify ``InputFiles.vue`` to allow multi-parameter table selections
 2. Update ``prepareProcessingItems()`` to compute Cartesian product (or other suitable combination) across multiple table-based selections;
 Take care that this can generate arbitrarly large number of combinations, which might need some anchor points to limit the purpose and combinations
+
+Study annotator inputs for NLP skills
+------------------------------------
+
+``NlpRequest.buildPayload`` serializes mapped ``annotator`` inputs with these
+persisted fields:
+
+* Annotations: ``id``, ``text``, ``tagId``, ``createdAt``, ``updatedAt``, and
+  ``selectors.target[].selector[]``.
+* Comments: ``id``, ``text``, ``annotationId``, ``parentCommentId``, ``tags``,
+  ``createdAt``, and ``updatedAt``.
+
+Optional fields retain their persisted names and presence. Selectors retain
+only CARE's TextQuote, TextPosition, PagePosition and Range fields. Runtime
+``anchors``, target source links, author, document, session and step metadata
+are excluded. IDs and comment relationships remain; text and IDs are not
+anonymized.
+
+Loaded empty inputs are arrays. Unloaded records are not published as empty.
+Missing mappings, unpublished arrays, unsupported selectors and non-scalar
+field values fail visibly before a request is emitted. Loading retries belong
+to the caller. Hook prompt serialization and editor/assessment mappings are
+unchanged.
+
+External skill compatibility is not proven: no checked-in skill contract
+establishes acceptance of this shape. Before use, the skill owner must confirm
+these fields against its registered input schema, including any need for
+excluded metadata.
