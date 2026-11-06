@@ -53,6 +53,7 @@ module.exports = (sequelize, DataTypes) => {
 				default: null,
 				required: false,
 				disablePast: true,
+				invalidText: "errors.element.pastDate",
 			},
 			{
 				key: "end",
@@ -62,6 +63,7 @@ module.exports = (sequelize, DataTypes) => {
 				default: null,
 				required: false,
 				disablePast: true,
+				invalidText: "errors.element.pastDate",
 			},
 			{
 				key: "validationConfigurationId",

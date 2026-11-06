@@ -170,6 +170,7 @@ module.exports = (sequelize, DataTypes) => {
             default: null,
             advanced: true,
             disablePast: true,
+            invalidText: "errors.element.pastDate",
         }, {
             key: "end",
             label: "studies.fields.end.label",
@@ -178,6 +179,7 @@ module.exports = (sequelize, DataTypes) => {
             default: null,
             advanced: true,
             disablePast: true,
+            invalidText: "errors.element.pastDate",
         }, {
             key: "collab",
             label: "studies.fields.collab.label",

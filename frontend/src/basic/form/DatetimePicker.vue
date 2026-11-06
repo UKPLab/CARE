@@ -37,8 +37,8 @@ export default {
   name: "DatetimePicker",
   components: {FormElement},
   inject: {
-    formData: {
-      default: () => null,
+    validateDateValue: {
+      default: null,
     },
   },
   props: {
@@ -62,7 +62,6 @@ export default {
       currentDate: null,
       date: null,
       time: null,
-      originalValue: null,
       now: new Date(),
       clockTimer: null,
     }
@@ -86,9 +85,12 @@ export default {
           this.time = null;
         } else {
           if (this.time === null) {
-            this.time = this.options.disablePast && this.date === this.today 
-              ? this.currentTime 
-              : "00:00"
+            this.now = new Date();
+            if (!this.dateOnly && this.options.disablePast && this.date === this.today) {
+              this.time = this.currentTime;
+            } else {
+              this.time = "00:00";
+            }
           } else {
             this.emitDate();
           }
@@ -115,10 +117,6 @@ export default {
   },
 
   mounted() {
-    this.originalValue = this.formData?.value?.id
-      ? this.modelValue
-      : null;
-
     this.currentDate = this.modelValue
       ? new Date(this.modelValue)
       : null;
@@ -138,7 +136,12 @@ export default {
   },
 
   methods: {
-    // format a date as YYYY-MM-DD using the user's local time.
+    /**
+     * Format a date as YYYY-MM-DD using the user's local time.
+     *
+     * @param {Date} value Date to format.
+     * @returns {string} Local calendar date.
+     */
     formatLocalDate(value) {
       const year = value.getFullYear();
       const month = String(value.getMonth() + 1).padStart(2, "0");
@@ -146,7 +149,12 @@ export default {
       return `${year}-${month}-${day}`;
     },
 
-    // format a time as HH:mm using the user's local time (24-hour clock).
+    /**
+     * Format a time as HH:mm using the user's local time (24-hour clock).
+     *
+     * @param {Date} value Date containing the time.
+     * @returns {string} Local time in 24-hour format.
+     */
     formatLocalTime(value) {
       const hours = String(value.getHours()).padStart(2, "0");
       const minutes = String(value.getMinutes()).padStart(2, "0");
@@ -177,39 +185,33 @@ export default {
       }
       this.$emit("update:modelValue", newDate);
     },
+    /**
+     * Validate the visible input using the parent form's shared date rule.
+     *
+     * @returns {boolean} Whether the input is valid.
+     */
     validate() {
       const element = this.$refs.formElement;
 
-      // use the input value as currentDate can lag behind a manual edit.
-      if (!element.validate(this.date || null)) return false;
-
-      if (!this.options.disablePast || !this.date) {
-        element.invalidField = false;
-        return true;
+      // Read the inputs because currentDate may lag behind a manual edit.
+      if (!element.validate(this.date || null)) {
+        return false;
       }
 
-      const selected = new Date(`${this.date}T${this.time || "00:00"}`);
-      const original = this.originalValue
-        ? new Date(this.originalValue)
-        : null;
+      const time = this.dateOnly ? "00:00" : this.time || "00:00";
+      const value = this.date ? `${this.date}T${time}` : null;
 
-      const unchangedExistingValue =
-        original &&
-        !Number.isNaN(original.getTime()) &&
-        this.date === this.formatLocalDate(original) &&
-        this.time === this.formatLocalTime(original);
+      // Restricted pickers must be descendants of BasicForm.
+      const valid = this.validateDateValue
+        ? this.validateDateValue({
+            key: this.options.key,
+            value,
+            disablePast: this.options.disablePast,
+            dateOnly: this.dateOnly,
+          })
+        : !this.options.disablePast;
 
-      // inputs have minute precision, so permit the current minute.
-      const currentMinute = new Date();
-      currentMinute.setSeconds(0, 0);
-
-      const valid =
-        !Number.isNaN(selected.getTime()) &&
-        (selected >= currentMinute || unchangedExistingValue);
-
-      element.invalidField = !valid;
-      if (!valid) element.shakeIt();
-
+      element.setInvalid(!valid);
       return valid;
     },
   },
