@@ -10,9 +10,10 @@
     "frontend-preview": "vite preview --port 5050",
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
-    "frontend-lint": "npm run test:ui-rules && eslint src",
-    "test:ui-rules": "node --test eslint-rules/*.test.js",
-    "frontend-i18n-check": "node scripts/check-i18n-keys.mjs"
+    "frontend-lint": "npm run test:unit && eslint src",
+    "test:ui-rules": "node --test eslint-rules/rules.test.js",
+    "frontend-i18n-check": "node scripts/check-i18n-keys.mjs",
+    "test:unit": "node --test"
   },
   "dependencies": {
     "@pgrabovets/json-view": "^2.8.1",
