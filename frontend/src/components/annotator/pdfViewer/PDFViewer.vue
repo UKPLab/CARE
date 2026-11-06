@@ -115,7 +115,6 @@ export default {
       resizeDebounced: undefined,
       // Starts with page 1 so the first pages render before any page has reported its visibility.
       visiblePages: [1],
-      reportedVisibility: {},
       lastVisibility: {},
       scale: 1.0,
       originalScale: null,
@@ -326,8 +325,7 @@ export default {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
         }
       }
-      const stateChanged = Boolean(this.reportedVisibility[page.pageNumber]) !== page.isVisible;
-      this.reportedVisibility[page.pageNumber] = page.isVisible;
+      const stateChanged = Boolean(this.lastVisibility[page.pageNumber]?.isVisible) !== page.isVisible;
       this.lastVisibility[page.pageNumber] = page;
       if (stateChanged && !this.isHidden) {
         this.sendVisibility(page);
