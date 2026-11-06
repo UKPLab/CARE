@@ -309,7 +309,7 @@ retained for correlation; this is data minimization, not anonymization of text
 or record identifiers.
 
 Loaded empty inputs are arrays. Missing mappings, unpublished record arrays,
-and unsupported selector types fail visibly before emitting a request. Loading
+unsupported selector types, and non-scalar field values fail visibly before emitting a request. Loading
 and retry scheduling remain the caller's responsibility. Editor and assessment
 mapping behavior and hook prompt serialization are unchanged.
 

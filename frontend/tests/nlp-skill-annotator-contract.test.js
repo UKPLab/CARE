@@ -90,3 +90,20 @@ test('unsupported mapping keys fail instead of exposing the whole annotator obje
     assert.equal(result.external.length, 0)
     assert.equal(result.toasts.length, 1)
 })
+
+
+test('nested values in allowed fields fail before an external request', async () => {
+    const invalid = [
+        {...annotation, text: {userId: 44}},
+        {...annotation, selectors: {target: [{selector: [{type: 'TextQuoteSelector', exact: {userId: 44}}]}]}},
+        {...annotation, selectors: {target: [{selector: [{type: 'TextPositionSelector', start: {userId: 44}, end: 7}]}]}},
+    ]
+    for (const record of invalid) {
+        const result = await outgoing({annotations: [record], comments: []})
+        assert.equal(result.request.status, 'failed')
+        assert.equal(result.external.length, 0)
+    }
+    const result = await outgoing({annotations: [], comments: [{...comment, tags: {userId: 44}}]})
+    assert.equal(result.request.status, 'failed')
+    assert.equal(result.external.length, 0)
+})

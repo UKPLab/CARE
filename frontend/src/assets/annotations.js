@@ -204,8 +204,20 @@ export function annotatorRecordsForSkill(annotator, key) {
     if (!Object.hasOwn(fields, key) || !Array.isArray(annotator?.[key])) {
         throw new Error('nlp.hooks.requestFailed');
     }
+    const numericFields = new Set([
+        'id', 'tagId', 'annotationId', 'parentCommentId', 'start', 'end', 'number', 'startOffset', 'endOffset',
+    ]);
     const pick = (record, keys) => Object.fromEntries(
-        keys.filter(field => Object.hasOwn(record, field)).map(field => [field, record[field]])
+        keys.filter(field => Object.hasOwn(record, field)).map(field => {
+            const value = record[field];
+            const valid = value === null || (numericFields.has(field)
+                ? typeof value === 'number' && Number.isFinite(value)
+                : typeof value === 'string');
+            if (!valid) {
+                throw new Error('nlp.hooks.requestFailed');
+            }
+            return [field, value];
+        })
     );
     return annotator[key].map(record => {
         const result = pick(record, fields[key]);
