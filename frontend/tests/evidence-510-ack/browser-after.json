@@ -1,0 +1,46 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"toolIcon\":{\"_tag\":\"website\",\"pageUrl\":\"http://127.0.0.1:45183/?fixed2\"},\"value\":{\"done\":true,\"pageErrors\":[],\"results\":[{\"name\":\"a mounted study modal closes, reports the start and shows a translated toast\",\"pass\":true},{\"name\":\"a mounted study modal stays open and shows a translated toast if the start fails\",\"pass\":true},{\"name\":\"a successful acknowledgement after the study modal unmounted still shows its toast\",\"pass\":true},{\"name\":\"a failed acknowledgement after the study modal unmounted still shows its toast\",\"pass\":true},{\"name\":\"repeated starts before acknowledgement send one request and one success toast\",\"pass\":true},{\"name\":\"a rejected start can be retried and reports each server result once\",\"pass\":true}],\"text\":\"ssful acknowledgement after the study modal unmounted still shows its toast\\\",\\n      \\\"pass\\\": true\\n    },\\n    {\\n      \\\"name\\\": \\\"a failed acknowledgement after the study modal unmounted still shows its toast\\\",\\n      \\\"pass\\\": true\\n    },\\n    {\\n      \\\"name\\\": \\\"repeated starts before acknowledgement send one request and one success toast\\\",\\n      \\\"pass\\\": true\\n    },\\n    {\\n      \\\"name\\\": \\\"a rejected start can be retried and reports each server result once\\\",\\n      \\\"pass\\\": true\\n    }\\n  ],\\n  \\\"pageErrors\\\": []\\n}\"}}"
+    }
+  ],
+  "structuredContent": {
+    "toolIcon": {
+      "_tag": "website",
+      "pageUrl": "http://127.0.0.1:45183/?fixed2"
+    },
+    "value": {
+      "done": true,
+      "pageErrors": [],
+      "results": [
+        {
+          "name": "a mounted study modal closes, reports the start and shows a translated toast",
+          "pass": true
+        },
+        {
+          "name": "a mounted study modal stays open and shows a translated toast if the start fails",
+          "pass": true
+        },
+        {
+          "name": "a successful acknowledgement after the study modal unmounted still shows its toast",
+          "pass": true
+        },
+        {
+          "name": "a failed acknowledgement after the study modal unmounted still shows its toast",
+          "pass": true
+        },
+        {
+          "name": "repeated starts before acknowledgement send one request and one success toast",
+          "pass": true
+        },
+        {
+          "name": "a rejected start can be retried and reports each server result once",
+          "pass": true
+        }
+      ],
+      "text": "ssful acknowledgement after the study modal unmounted still shows its toast\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"a failed acknowledgement after the study modal unmounted still shows its toast\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"repeated starts before acknowledgement send one request and one success toast\",\n      \"pass\": true\n    },\n    {\n      \"name\": \"a rejected start can be retried and reports each server result once\",\n      \"pass\": true\n    }\n  ],\n  \"pageErrors\": []\n}"
+    }
+  },
+  "isError": false
+}

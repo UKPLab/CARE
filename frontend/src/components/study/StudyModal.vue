@@ -128,7 +128,7 @@
         </BasicButton>
         <BasicButton
             v-if="studyId !== 0 && !foreignUnstartedSession"
-            :disabled="!available"
+            :disabled="!available || startPending"
             class="btn btn-primary"
             :text="study.collab ? $t('studies.joinStudy') : $t('studies.startStudy')"
             @click="start"
@@ -186,6 +186,7 @@ export default {
       hash: null,
       documentId: 0,
       showSessions: false,
+      startPending: false,
       sessionTableOptions: {
         striped: true,
         hover: true,
@@ -378,6 +379,7 @@ export default {
      * @param {number} studySessionId The existing session to start, 0 to start a new one
      */
     startStudy(studyId = null, studySessionId) {
+      if (this.startPending) return;
       const eventBus = this.eventBus;
       const startedToast = {
         title: this.$t('studies.messages.studyStarted'),
@@ -386,8 +388,10 @@ export default {
       };
       const errorTitle = this.$t('errors.studies.studyCannotStart');
 
+      this.startPending = true;
       this.$socket.emit("studySessionStart",
           {studyId: studyId, studySessionId: studySessionId}, (response) => {
+            this.startPending = false;
             if (response.success) {
               // Close before emitting: the parent may unmount this modal in response to "start".
               this.$refs.modal?.close();

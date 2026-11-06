@@ -1,0 +1,52 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"toolIcon\":{\"_tag\":\"website\",\"pageUrl\":\"http://127.0.0.1:45184/?baseline\"},\"value\":{\"done\":true,\"pageErrors\":[],\"results\":[{\"name\":\"a mounted study modal closes, reports the start and shows a translated toast\",\"pass\":true},{\"name\":\"a mounted study modal stays open and shows a translated toast if the start fails\",\"pass\":true},{\"error\":\"TypeError: this.$t is not a function\",\"name\":\"a successful acknowledgement after the study modal unmounted still shows its toast\",\"pass\":false,\"stack\":\"TypeError: this.$t is not a function\\n    at eval (eval at loadComponent (http://127.0.0.1:45184/run.js:34:21), <anonymous>:242:29)\\n    at http://127.0.0.1:45184/run.js:215:5\\n    at async http://127.0.0.1:45184/run.js:256:35\"},{\"error\":\"TypeError: this.$t is not a function\",\"name\":\"a failed acknowledgement after the study modal unmounted still shows its toast\",\"pass\":false,\"stack\":\"TypeError: this.$t is not a function\\n    at eval (eval at loadComponent (http://127.0.0.1:45184/run.js:34:21), <anonymous>:248:29)\\n    at http://127.0.0.1:45184/run.js:228:5\\n    at async http://127.0.0.1:45184/run.js:256:35\"},{\"error\":\"Error: only one session-start request may be in flight\",\"name\":\"repeated starts before acknowledgement send one request and one success toast\",\"pass\":false,\"stack\":\"Error: only one session-start request may be in flight\\n    at Object.equal (http://127.0.0.1:45184/run.js:1:27444)\\n    at http://127.0.0.1:45184/run.js:241:12\\n    at async http://127.0.0.1:45184/run.js:256:35\"},{\"name\":\"a rejected start can be retried and reports each server result once\",\"pass\":true}],\"userAgent\":\"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) T3CodeNightly/0.1.8-nightly.20261104.4179 Chrome/152.0.7977.169 Electron/44.10.1 Safari/537.36\"}}"
+    }
+  ],
+  "structuredContent": {
+    "toolIcon": {
+      "_tag": "website",
+      "pageUrl": "http://127.0.0.1:45184/?baseline"
+    },
+    "value": {
+      "done": true,
+      "pageErrors": [],
+      "results": [
+        {
+          "name": "a mounted study modal closes, reports the start and shows a translated toast",
+          "pass": true
+        },
+        {
+          "name": "a mounted study modal stays open and shows a translated toast if the start fails",
+          "pass": true
+        },
+        {
+          "error": "TypeError: this.$t is not a function",
+          "name": "a successful acknowledgement after the study modal unmounted still shows its toast",
+          "pass": false,
+          "stack": "TypeError: this.$t is not a function\n    at eval (eval at loadComponent (http://127.0.0.1:45184/run.js:34:21), <anonymous>:242:29)\n    at http://127.0.0.1:45184/run.js:215:5\n    at async http://127.0.0.1:45184/run.js:256:35"
+        },
+        {
+          "error": "TypeError: this.$t is not a function",
+          "name": "a failed acknowledgement after the study modal unmounted still shows its toast",
+          "pass": false,
+          "stack": "TypeError: this.$t is not a function\n    at eval (eval at loadComponent (http://127.0.0.1:45184/run.js:34:21), <anonymous>:248:29)\n    at http://127.0.0.1:45184/run.js:228:5\n    at async http://127.0.0.1:45184/run.js:256:35"
+        },
+        {
+          "error": "Error: only one session-start request may be in flight",
+          "name": "repeated starts before acknowledgement send one request and one success toast",
+          "pass": false,
+          "stack": "Error: only one session-start request may be in flight\n    at Object.equal (http://127.0.0.1:45184/run.js:1:27444)\n    at http://127.0.0.1:45184/run.js:241:12\n    at async http://127.0.0.1:45184/run.js:256:35"
+        },
+        {
+          "name": "a rejected start can be retried and reports each server result once",
+          "pass": true
+        }
+      ],
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) T3CodeNightly/0.1.8-nightly.20261104.4179 Chrome/152.0.7977.169 Electron/44.10.1 Safari/537.36"
+    }
+  },
+  "isError": false
+}
