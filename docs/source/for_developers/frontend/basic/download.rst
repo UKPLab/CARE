@@ -85,8 +85,8 @@ Example for exporting a single data point:
     <ExportSingle
         ref="export"
         name="stats"
-        req-msg="statsGetAll"
-        res-msg="statsData"
+        req-msg="statsGetByUser"
+        res-msg="statsDataByUser"
         :post-process="x => x.statistics"
     />
 
@@ -98,7 +98,7 @@ Example for exporting a single data point:
       components: { ExportSingle },
       methods: {
         downloadAsCSV() {
-          this.$refs.export.requestExport({ id: 42 }, "csv");
+          this.$refs.export.requestExport({ userId: 42 }, "csv");
         }
       }
     }
