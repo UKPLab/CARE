@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Regression tests for the errors around starting a study (#510).
  *
  * Mounts the real StudyModal and BasicModal with the real Vue, vue-i18n and Bootstrap on a Happy DOM
@@ -241,4 +241,3 @@ test('a rejected start can be retried and reports each server result once', asyn
     acks[1].ack({success: true, data: {id: SESSION_ID}})
     assert.deepEqual(toasts, [FAILED_TOAST, STARTED_TOAST])
 })
-
