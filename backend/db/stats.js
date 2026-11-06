@@ -1,80 +1,13 @@
 /**
- * Periodic PostgreSQL activity statistics logger.
- *
- * Runs the pg_stat_activity / pg_stat_database / pg_locks queries on an interval
- * and logs the aggregated counts and a shortlist of the oldest active queries.
- * The same snapshot logic is exposed as `snapshot()` for on-demand callers
- * (e.g. the perf load-testing tool).
- *
- * Configuration (env):
- *   PG_STATS_INTERVAL_MS  Interval in ms (default 60000)
- *   PG_STATS_MIN_AGE_MS   Minimum query age in ms for second query (default 1000)
- *   PG_STATS_TOP_N        How many oldest active queries to list (default 10)
- *
- * The log entry structure (level=info) is:
- *   message: "pg_stat_activity snapshot"
- *   pg_stat_activity: {
- *     counts: { total, active, idle },
- *     oldestActive: [ { pid, age_ms, wait, backend, query }... ],
- *     sequelizePool: { max, min, size, available, using, waiting } | { write, read } | null,
- *     intervalMs: <interval>,
- *     collectedAt: <ISO timestamp>
- *   }
+ * Periodic PostgreSQL statistics, stored in daily UTC CSV files.
+ * Admin settings control collection and optional retention. PG_STATS_INTERVAL_MS
+ * is the interval fallback (100000 ms); PG_STATS_CSV_PATH supplies the path/stem
+ * (default logs/pg-performance.csv -> logs/pg-performance-YYYY-MM-DD.csv).
+ * snapshot() remains available for on-demand performance tools.
  */
-
-const fs = require('node:fs/promises');
-const path = require('node:path');
-
-let _timer = null;
-
-const csvPath = path.resolve(
-    process.env.PG_STATS_CSV_PATH || "logs/pg-performance.csv"
-);
-
-// Serialize writes within this Node.js process.
-let csvWriteQueue = Promise.resolve();
-
-function escapeCsv(value) {
-    if (value === null || value === undefined) return "";
-    const text = typeof value === "object"
-        ? JSON.stringify(value)
-        : String(value);
-
-    return `"${text.replace(/"/g, '""')}"`;
-}
-
-function saveSnapshotToCsv(snap, intervalMs) {
-    const row = {
-        counts: snap.counts,
-		oldestActive: snap.oldestActive,
-		sequelizePool: snap.sequelizePool,
-		dbStats: snap.dbStats,
-		locks: snap.locks,
-		intervalMs,
-		collectedAt: snap.collectedAt
-    };
-
-    const write = csvWriteQueue.then(async () => {
-        await fs.mkdir(path.dirname(csvPath), { recursive: true });
-
-        const file = await fs.open(csvPath, "a");
-        try {
-            const { size } = await file.stat();
-            const header = size === 0
-                ? Object.keys(row).map(escapeCsv).join(",") + "\n"
-                : "";
-            const line = Object.values(row).map(escapeCsv).join(",") + "\n";
-
-            await file.appendFile(header + line, "utf8");
-        } finally {
-            await file.close();
-        }
-    });
-
-    // Keep the queue usable after a failed write.
-    csvWriteQueue = write.catch(() => {});
-    return write;
-}
+const { createCsvStore } = require('./statsCsv');
+const { loadSettings } = require('./statsSettings');
+let scheduler = null;
 
 /**
  * Convert an object with possibly string-based numeric fields to integers where
@@ -300,60 +233,79 @@ async function snapshot(sequelize, logger = null) {
 	return result;
 }
 
-/**
- * Start the periodic PostgreSQL statistics scheduler.
- *
- * Creates an interval that periodically captures a `snapshot()` and emits it via
- * logger.info with message 'pg_stat_activity snapshot'. Multiple concurrent
- * invocations are ignored (idempotent start).
- *
- * @param {import('sequelize').Sequelize} sequelize - Initialized Sequelize instance (must be Postgres dialect)
- * @param {object} logger - Winston logger instance (child acceptable) used for output
- * @param {object} [options] - Optional overrides
- * @param {number} [options.intervalMs] - Override collection interval in ms (default env PG_STATS_INTERVAL_MS or 100000)
- * @param {number} [options.minAgeMs] - (Currently unused after fixed 1s query; retained for compatibility)
- * @param {number} [options.topN] - (Currently unused after fixed LIMIT 10; retained for compatibility)
- * @returns {void}
- */
+/** Start once; refresh() applies committed admin settings without a restart. */
 function start(sequelize, logger, options = {}) {
-	if (_timer) return; // already running
-	const intervalMs = parseInt(process.env.PG_STATS_INTERVAL_MS || options.intervalMs || '100000', 10);
-	const minAgeMs = parseInt(process.env.PG_STATS_MIN_AGE_MS || options.minAgeMs || '10000', 10);
-	const topN = parseInt(process.env.PG_STATS_TOP_N || options.topN || '10', 10);
-
-	/**
-	 * Collect one snapshot and emit it via the logger. Never throws.
-	 * @private
-	 * @returns {Promise<void>}
-	 */
-	async function collect() {
-		try {
-			const snap = await snapshot(sequelize, logger);
-        	await saveSnapshotToCsv(snap, intervalMs);
-		} catch (e) {
-			logger.error('pg_stat_activity scheduler error: ' + e.message);
-		}
-	}
-
-	// Kick off immediately then schedule
-	collect();
-	_timer = setInterval(collect, intervalMs);
-	logger.debug(`Started pg_stat_activity scheduler (interval ${intervalMs} ms, minAge ${minAgeMs} ms, topN ${topN}).`);
+    if (scheduler) return;
+    const requested = Number(process.env.PG_STATS_INTERVAL_MS || options.intervalMs || 100000);
+    const fallback = Number.isInteger(requested) && requested > 0 && requested <= 2147483647 ? requested : 100000;
+    const state = {
+        sequelize, logger, fallback, timer: null, cleanupTimer: null, collecting: null,
+        config: { intervalMs: fallback, autoDelete: false, retentionDays: 30 },
+        store: createCsvStore(process.env.PG_STATS_CSV_PATH || 'logs/pg-performance.csv'),
+        refreshQueue: Promise.resolve(),
+    };
+    scheduler = state;
+    state.collect = () => {
+        if (scheduler !== state || state.collecting) return;
+        state.collecting = (async () => {
+            try {
+                const intervalMs = state.config.intervalMs;
+                const snap = await snapshot(sequelize, logger);
+                await state.store.write(snap, intervalMs);
+            } catch (error) {
+                logger.error('pg_stat_activity scheduler error: ' + error.message);
+            }
+        })().finally(() => { state.collecting = null; });
+        return state.collecting;
+    };
+    state.cleanup = () => state.store.cleanup(state.config, logger).catch(error => {
+        logger.error('pg_stats cleanup error: ' + error.message);
+    });
+    const scheduleCleanup = () => {
+        const now = Date.now();
+        const nextMidnight = Math.floor(now / 86400000) * 86400000 + 86400000;
+        state.cleanupTimer = setTimeout(async () => {
+            await state.cleanup();
+            if (scheduler === state) scheduleCleanup();
+        }, nextMidnight - now);
+    };
+    scheduleCleanup();
+    return refresh().then(() => state.collect());
 }
 
-/**
- * Stop the running statistics scheduler interval if active. Safe to call
- * multiple times.
- *
- * @param {object} [logger] - Logger for optional debug message
- * @returns {void}
- */
-function stop(logger) {
-	if (_timer) {
-		clearInterval(_timer);
-		_timer = null;
-		if (logger) logger.debug('Stopped pg_stat_activity scheduler.');
-	}
+/** Reload only after settings transactions commit. Keep collection running on read failures. */
+function refresh() {
+    const state = scheduler;
+    if (!state) return Promise.resolve();
+    state.refreshQueue = state.refreshQueue.then(async () => {
+        try {
+            const config = await loadSettings(state.sequelize, state.fallback);
+            if (scheduler !== state) return;
+            Object.assign(state.config, config);
+        } catch (error) {
+            state.logger.error('pg_stats settings error: ' + error.message);
+            // Fail closed: a settings read failure must never enable deletion.
+            state.config.autoDelete = false;
+        }
+        if (scheduler !== state) return;
+        clearInterval(state.timer);
+        state.timer = setInterval(state.collect, state.config.intervalMs);
+        await state.cleanup();
+    });
+    return state.refreshQueue;
 }
 
-module.exports = { start, stop, snapshot };
+/** Stop scheduling and wait for the current collection and queued file operations. */
+async function stop() {
+    const state = scheduler;
+    if (!state) return;
+    scheduler = null;
+    state.config.autoDelete = false;
+    clearInterval(state.timer);
+    clearTimeout(state.cleanupTimer);
+    await state.refreshQueue;
+    await state.collecting;
+    await state.store.drain();
+}
+
+module.exports = { start, stop, snapshot, refresh };

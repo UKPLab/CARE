@@ -19,6 +19,7 @@
           >
             <SettingItem
               :setting="getSetting(key)"
+              :disabled="key === 'system.pgStats.retentionDays' && getSetting('system.pgStats.autoDelete')?.value !== 'true'"
               @update:value="(v) => setSettingValue(key, v)"
             />
           </div>
@@ -31,6 +32,7 @@
           >
             <SettingItem
               :setting="getSetting(key)"
+              :disabled="key === 'system.pgStats.retentionDays' && getSetting('system.pgStats.autoDelete')?.value !== 'true'"
               @update:value="(v) => setSettingValue(key, v)"
             />
           </div>
