@@ -113,6 +113,7 @@ export default {
       pdfContainer: null,
       containerWidth: 0,
       resizeDebounced: undefined,
+      // Starts with page 1 so the first pages render before any page has reported its visibility.
       visiblePages: [1],
       lastVisibility: {},
       scale: 1.0,
@@ -304,19 +305,27 @@ export default {
     resetZoom() {
       this.scale = this.originalScale || this.DEFAULT_SCALE;
     },
+    /**
+     * Update the pages to render and log the page state when it changed.
+     * A page never reported before counts as not visible, so its first visible report is logged.
+     *
+     * @param {Object} page The reported page
+     * @param {number} page.pageNumber The page number
+     * @param {boolean} page.isVisible Whether the page is visible
+     * @param {number} page.offset The vertical offset of the page
+     * @returns {void}
+     */
     updateVisibility(page) {
-      let stateChanged = false;
       if (page.isVisible) {
         if (!this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.push(page.pageNumber);
-          stateChanged = true;
         }
       } else {
         if (this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
-          stateChanged = true;
         }
       }
+      const stateChanged = Boolean(this.lastVisibility[page.pageNumber]?.isVisible) !== page.isVisible;
       this.lastVisibility[page.pageNumber] = page;
       if (stateChanged && !this.isHidden) {
         this.sendVisibility(page);
