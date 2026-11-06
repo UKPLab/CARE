@@ -58,6 +58,7 @@
 					ref="assignmentForm"
 					v-model="formData"
 					:fields="assignmentFields"
+					:original-data="originalDates"
 				/>
 				<BasicButton
 					type="button"
@@ -113,6 +114,7 @@ export default {
 				scrollX: true,
 				search: true,
 			},
+			originalDates: null,
 		};
 	},
 	computed: {
@@ -221,6 +223,7 @@ export default {
 			return defaults;
 		},
 		open(assignmentId = 0, copy = false) {
+			this.originalDates = null;
 			this.assignmentId = assignmentId;
 			this.isCopy = copy;
 			this.assignByUser = false;
@@ -232,6 +235,13 @@ export default {
 				const assignment = this.$store.getters["table/assignment/get"](assignmentId);
 				if (assignment) {
 					this.formData = { ...this.formData, ...assignment };
+
+					if (!copy) {
+						this.originalDates = {
+							start: assignment.start,
+							end: assignment.end,
+						};
+					}
 
 					const entries = (this.$store.getters["table/assignment_share/getAll"] || [])
 						.filter(e => e.assignmentId === assignmentId && !e.deleted);

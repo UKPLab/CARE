@@ -168,14 +168,18 @@ module.exports = (sequelize, DataTypes) => {
             type: "datetime",
             size: 6,
             default: null,
-            advanced: true
+            advanced: true,
+            disablePast: true,
+            invalidText: "errors.element.pastDate",
         }, {
             key: "end",
             label: "studies.fields.end.label",
             type: "datetime",
             size: 6,
             default: null,
-            advanced: true
+            advanced: true,
+            disablePast: true,
+            invalidText: "errors.element.pastDate",
         }, {
             key: "collab",
             label: "studies.fields.collab.label",
