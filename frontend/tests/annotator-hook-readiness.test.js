@@ -78,7 +78,7 @@ async function settle() {
  * @param {boolean} [options.withRequest] Mount the later step's request together with the Annotator
  * @param {Function} [options.prepare] Runs with the store before anything is mounted
  */
-function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
+function mountStudy({flag, withRequest = false, requestDocumentId = DOC, prepare = noop} = {}) {
     const store = createStore({
         modules: {
             auth: {namespaced: true, getters: {getUserId: () => 1}},
@@ -110,7 +110,7 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
     const Parent = {
         provide: () => ({
             studyData: computed(() => study.studyData),
-            orderedStudySteps: computed(() => [{id: STEP}, {id: LATER_STEP}]),
+            orderedStudySteps: computed(() => [{id: STEP, documentId: DOC}, {id: LATER_STEP, documentId: requestDocumentId}]),
             studySessionId: computed(() => ui.sessionId),
             currentStudyStep: computed(() => ({id: STEP})),
         }),
@@ -126,7 +126,7 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
                 service: {hookId: 3, inputs: HOOK_INPUTS},
                 inputs: HOOK_INPUTS,
                 documentData: {},
-                documentId: DOC,
+                documentId: requestDocumentId,
                 studyStepId: LATER_STEP,
                 ref: vm => { requestVm = vm ?? requestVm },
             }) : null,
@@ -417,9 +417,9 @@ test('failed record loads stop after three attempts with an explicit hook error'
     assert.equal(page.dataRequests().length, 3)
 })
 
-for (const lost of [true, false]) test(`exhaustion (${lost ? 'lost acks' : 'server failure'}) retries reads without reload`, async t => {
+for (const lost of [true, false]) test(`exhaustion (${lost ? 'lost acks' : 'server failure'}) retries a different source document without reload`, async t => {
     t.mock.timers.enable({apis: ['setTimeout']})
-    const page = mountStudy({withRequest: true})
+    const page = mountStudy({withRequest: true, requestDocumentId: DOC + 1})
     await settle()
     for (const delay of [500, 1000, 0]) {
         if (lost) t.mock.timers.tick(10000)

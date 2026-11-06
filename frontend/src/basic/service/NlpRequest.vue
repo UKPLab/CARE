@@ -179,7 +179,8 @@ export default {
           .map(spec => this.orderedStudySteps[spec.stepIndex]?.id)
           .filter(id => id != null));
         for (const studyStepId of steps) this.eventBus.emit("annotatorRetryLoad", {
-          documentId: this.documentId, studySessionId: this.studySessionId, studyStepId,
+          documentId: this.orderedStudySteps.find(step => step.id === studyStepId)?.documentId ?? this.documentId,
+          studySessionId: this.studySessionId, studyStepId,
         });
       }
       this.sendRequest();
