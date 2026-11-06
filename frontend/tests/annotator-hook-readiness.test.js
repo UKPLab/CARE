@@ -9,16 +9,19 @@
  */
 import assert from 'node:assert/strict'
 import {afterEach, test} from 'node:test'
+import {EventEmitter} from 'node:events'
 import {computed, createRenderer, h, nextTick, reactive} from 'vue'
 import {createStore} from 'vuex'
 import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
 import * as serviceKeys from '../src/assets/serviceDocumentDataKeys.js'
 import subscribeTable from '../src/plugins/subscribeTable.js'
 import {createTable} from '../src/store/utils.js'
+import {loadAnnotatorRecords} from '../src/components/annotator/loadRecords.js'
 import {loadOptions} from './helpers/loadOptions.js'
 
 const AnnotatorOptions = loadOptions('components/annotator/Annotator.vue', {
     computed,
+    loadAnnotatorRecords,
     debounce: fn => fn,
     mapMutations: () => ({}),
     resolveApiMessage: () => 'failed',
@@ -94,6 +97,8 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
     const socketCalls = []
     const study = reactive({studyData: {}})
     const ui = reactive({showRequest: withRequest, sessionId: SESSION})
+    const bus = new EventEmitter()
+    bus.on("toast", toast => toasts.push(toast))
     const toasts = []
     const runHook = []
     let annotatorVm
@@ -132,10 +137,10 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
     app.use(subscribeTable)
     Object.assign(app.config.globalProperties, {
         $store: store,
-        $socket: {emit: (event, data, ack) => socketCalls.push({event, data, ack})},
+        $socket: {on: bus.on.bind(bus), off: bus.off.bind(bus), emit: (event, data, ack) => socketCalls.push({event, data, ack})},
         $t: key => key,
         $ai: {runHook: async params => { runHook.push(params); return {output: 'done'} }},
-        eventBus: {on: noop, off: noop, emit: (name, toast) => toasts.push(toast)},
+        eventBus: bus,
     })
     app.mount({})
     cleanups.push(() => {
@@ -151,7 +156,10 @@ function mountStudy({flag, withRequest = false, prepare = noop} = {}) {
     const dataRequests = () => socketCalls.filter(call => call.event === 'documentGetData')
 
     return {
-        ui, toasts, runHook, deliver, dataRequests,
+        ui, toasts, runHook, deliver, dataRequests, bus, unmount: () => {
+            AnnotatorOptions.beforeUnmount.call(annotatorVm)
+            NlpRequestOptions.beforeUnmount.call(requestVm)
+        },
         annotator: () => study.studyData[STEP]?.annotator,
         request: () => requestVm,
         /** The table subscriptions answer: this must never count as "records loaded". */
@@ -407,4 +415,77 @@ test('failed record loads stop after three attempts with an explicit hook error'
     assert.equal(page.toasts.length, 1)
     t.mock.timers.tick(60000)
     assert.equal(page.dataRequests().length, 3)
+})
+
+for (const lost of [true, false]) test(`exhaustion (${lost ? 'lost acks' : 'server failure'}) retries reads without reload`, async t => {
+    t.mock.timers.enable({apis: ['setTimeout']})
+    const page = mountStudy({withRequest: true})
+    await settle()
+    for (const delay of [500, 1000, 0]) {
+        if (lost) t.mock.timers.tick(10000)
+        else page.dataRequests().at(-1).ack({success: false})
+        if (delay) t.mock.timers.tick(delay)
+    }
+    await settle()
+    assert.equal(page.request().status, 'failed')
+    assert.equal(page.dataRequests().length, 3)
+    assert.equal(page.runHook.length, 0)
+    page.request().retryRequest()
+    page.request().retryRequest()
+    await settle()
+    assert.equal(page.dataRequests().length, 4)
+    assert.equal(page.request().status, 'pending')
+    page.dataRequests()[0].ack({success: true})
+    await settle()
+    assert.equal(page.runHook.length, 0)
+    await page.answerData({comments: [comment(2, SESSION, STEP, 'recovered')]})
+    assert.equal(page.request().status, 'completed')
+    assert.equal(page.runHook.length, 1)
+    page.request().retryRequest()
+    t.mock.timers.tick(60000)
+    assert.equal(page.runHook.length, 1)
+    assert.equal(page.dataRequests().length, 4)
+})
+
+test('reconnect restarts an unfinished read and ignores its old acknowledgement', async t => {
+    t.mock.timers.enable({apis: ['setTimeout']})
+    const page = mountStudy({withRequest: true})
+    await settle()
+    const old = page.dataRequests()[0]
+    page.bus.emit('connect')
+    old.ack({success: true})
+    await settle()
+    assert.equal(page.annotator(), null)
+    assert.equal(page.runHook.length, 0)
+    await page.answerData()
+    assert.equal(page.runHook.length, 1)
+    page.bus.emit('connect')
+    assert.equal(page.dataRequests().length, 2)
+})
+
+
+test('unmount clears read timers, retry listeners and the waiting hook', async t => {
+    t.mock.timers.enable({apis: ['setTimeout']})
+    const page = mountStudy({withRequest: true})
+    await settle()
+    const request = page.dataRequests()[0]
+    page.unmount()
+    assert.equal(page.bus.listenerCount('annotatorRetryLoad'), 0)
+    assert.equal(page.bus.listenerCount('connect'), 0)
+    page.bus.emit('connect')
+    request.ack({success: true})
+    t.mock.timers.tick(60000)
+    await settle()
+    assert.equal(page.dataRequests().length, 1)
+    assert.equal(page.runHook.length, 0)
+})
+
+test('context changes cancel a waiting hook before any model call', async () => {
+    const page = mountStudy({withRequest: true})
+    await settle()
+    page.ui.sessionId++
+    await settle()
+    await page.answerData()
+    assert.equal(page.runHook.length, 0)
+    assert.equal(page.request().status, 'failed')
 })

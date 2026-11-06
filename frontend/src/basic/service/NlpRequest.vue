@@ -155,6 +155,7 @@ export default {
     cancelHookContext() {
       ++this.hookGeneration;
       this.cancelReadiness?.();
+      clearTimeout(this.timeoutId);
       this.status = "failed";
     },
     requestAlreadyDone() {
@@ -171,6 +172,15 @@ export default {
       if (this.timeoutId) {
         clearTimeout(this.timeoutId);
         this.timeoutId = null;
+      }
+      if (this.isHook && !this.hookInFlight && this.status !== "completed") {
+        const steps = new Set(Object.values(this.service.inputs || {})
+          .filter(spec => spec?.type === "annotator")
+          .map(spec => this.orderedStudySteps[spec.stepIndex]?.id)
+          .filter(id => id != null));
+        for (const studyStepId of steps) this.eventBus.emit("annotatorRetryLoad", {
+          documentId: this.documentId, studySessionId: this.studySessionId, studyStepId,
+        });
       }
       this.sendRequest();
     },

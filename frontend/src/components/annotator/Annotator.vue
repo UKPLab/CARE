@@ -98,6 +98,7 @@
  *
  * @author Dennis Zyska, Marina Sakharova
  */
+import {loadAnnotatorRecords} from "./loadRecords.js";
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
 import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
@@ -210,6 +211,7 @@ export default {
       pdf: null,
       downloading: false,
       recordsLoaded: false,
+      recordsStatus: "unread",
       recordsRequestId: 0,
       recordsTimer: null,
       assessmentViewActive: true,
@@ -409,6 +411,9 @@ export default {
       }
     });
 
+    this.eventBus.on("annotatorRetryLoad", this.retryRecords);
+    this.$socket.on("connect", this.recoverRecords);
+
     // init component
     this.load();
 
@@ -423,6 +428,8 @@ export default {
 
   },
   beforeUnmount() {
+    this.eventBus.off("annotatorRetryLoad", this.retryRecords);
+    this.$socket.off("connect", this.recoverRecords);
     ++this.recordsRequestId;
     clearTimeout(this.recordsTimer);
     // Leave the room for document updates
@@ -663,43 +670,16 @@ export default {
      * and comment refreshes, and table subscriptions can deliver rows at any time before that. So only
      * the acknowledgement of the latest request tells that an empty list means there are no records.
      */
-    loadRecords() {
-      const requestId = ++this.recordsRequestId;
-      clearTimeout(this.recordsTimer);
-      this.recordsLoaded = false;
-      this.$emit('update:data', null);
-      let attempt = 0;
-      const fetch = () => {
-        if (requestId !== this.recordsRequestId) return;
-        const currentAttempt = ++attempt;
-        let settled = false;
-        const failed = () => {
-          if (settled || requestId !== this.recordsRequestId || currentAttempt !== attempt) return;
-          settled = true;
-          clearTimeout(this.recordsTimer);
-          if (attempt < 3) {
-            this.recordsTimer = setTimeout(fetch, 500 * attempt);
-          } else {
-            ++attempt;
-            this.$emit('update:data', {loadError: true});
-          }
-        };
-        this.recordsTimer = setTimeout(failed, 10000);
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        }, (res) => {
-          if (settled || requestId !== this.recordsRequestId || currentAttempt !== attempt) return;
-          if (!res?.success) { failed(); return; }
-          settled = true;
-          clearTimeout(this.recordsTimer);
-          this.recordsLoaded = true;
-          this.emitStudyData();
-        });
-      };
-      fetch();
+    retryRecords(context) {
+      if (this.recordsStatus === "error" &&
+          context.documentId === this.documentId &&
+          context.studySessionId === this.studySessionId &&
+          context.studyStepId === this.studyStepId) this.loadRecords();
     },
+    recoverRecords() {
+      if (this.recordsStatus !== "ready") this.loadRecords();
+    },
+    loadRecords: loadAnnotatorRecords,
     /**
      * Passes the records of the current view on to the study, once they are loaded.
      */
