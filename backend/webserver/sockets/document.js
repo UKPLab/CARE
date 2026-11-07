@@ -5,7 +5,8 @@ const {docTypes} = require("../../db/models/document.js");
 const {inject} = require("../../utils/helper/generic");
 const path = require("path");
 const {getTextPositions} = require("../../utils/helper/text.js");
-const {enqueueDocumentTask} = require("../../utils/helper/queue.js");
+const {nextDocumentTimestamp} = require("../../utils/helper/queue.js");
+const {positiveInt} = require("../../utils/helper/positiveInt.js");
 const {dbToDelta} = require("editor-delta-conversion");
 const Validator = require("../../utils/Validator.js");
 const {Op} = require('sequelize');
@@ -802,10 +803,90 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Returns the queue key of a documentEdit event.
+     *
+     * Edits are position dependent, so all edits of one document context (document + study session + study step) have
+     * to be persisted in the order they were received. Other contexts are independent and stay concurrent.
+     *
+     * @param {Object} data The data payload of the documentEdit event.
+     * @returns {string} The queue key of the document context.
+     * @throws {Error} If the context is invalid, as it must neither be converted to a key nor reach a query.
+     * createSocket and editDocument both call this, so the client gets a failed acknowledgement.
+     */
+    getDocumentEditQueueKey(data) {
+        const {documentId, studySessionId, studyStepId} = this.getDocumentEditContext(data);
+        return `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+    }
+
+    /**
+     * Returns the ids of the document context of a documentEdit event in their one canonical form.
+     *
+     * The database would accept other spellings of an id, like "01". They must not end up in another queue.
+     *
+     * @param {Object} data The data payload of the documentEdit event.
+     * @returns {{documentId: number, studySessionId: number|null, studyStepId: number|null}} The document context.
+     * @throws {Error} If an id is not a positive integer. A missing study session or step is null.
+     */
+    getDocumentEditContext(data) {
+        const {documentId, studySessionId, studyStepId} = data || {};
+        const toId = (value) => (typeof value === "number" || (typeof value === "string" && /^\d+$/.test(value))
+            ? positiveInt(value)
+            : null);
+        const context = {
+            documentId: toId(documentId),
+            studySessionId: studySessionId ? toId(studySessionId) : null,
+            studyStepId: studyStepId ? toId(studyStepId) : null,
+        };
+        if (!context.documentId || (studySessionId && !context.studySessionId) || (studyStepId && !context.studyStepId)) {
+            throw new Error("The document context of an edit must be made of positive integers");
+        }
+        return context;
+    }
+
+    /**
+     * Authorize the canonical edit context inside the queued transaction.
+     * Public/read access does not grant write access. Collaborative participants
+     * write their own session; loading combines those separate contributions.
+     */
+    async assertDocumentEditAccess(context, options) {
+        const deny = () => { throw new TranslatableError("errors.documents.noAccess", {}, "ACCESS_DENIED"); };
+        const {documentId, studySessionId, studyStepId} = context;
+        if (!this.userId || Boolean(studySessionId) !== Boolean(studyStepId)) deny();
+        const query = {transaction: options.transaction};
+        const document = await this.models.document.getById(documentId, query);
+        if (!document || document.deleted) deny();
+        if (!studySessionId) {
+            if (document.userId !== this.userId) {
+                await this.assertWriteAccess("document", documentId, options);
+            }
+            return;
+        }
+        const session = await this.models.study_session.getById(studySessionId, query);
+        const step = await this.models.study_step.getById(studyStepId, query);
+        if (!session || !step || session.deleted || step.deleted ||
+            session.studyId !== step.studyId || step.documentId !== documentId) deny();
+        const study = await this.models.study.getById(session.studyId, query);
+        // Unfinished copied sessions remain available after closure or the study deadline (Study.studyClosed).
+        const continuation = session.parentStudySessionId != null && session.end === null;
+        if (!study || study.deleted ||
+            (!continuation && (study.closed || (!study.multipleSubmit && study.end &&
+                new Date(study.end).getTime() < Date.now()))) ||
+            (session.end && !study.multipleSubmit) ||
+            (study.timeLimit > 0 && session.start &&
+                Date.now() >= new Date(session.start).getTime() + study.timeLimit * 60000) ||
+            step.configuration?.readOnlyComponents?.includes("editor")) deny();
+        // Staff viewing another participant's session is read-only in Study.vue too.
+        if (session.userId !== this.userId) deny();
+    }
+
+    /**
      * Edits the document based on the provided data.
      *
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
      * and if so, it applies the edits to the document and sends the updated document to the client.
+     *
+     * Runs inside the document context queue of its socket event (see getDocumentEditQueueKey), which covers the whole
+     * transaction. Do not enqueue on the same key in here, as it would wait for itself.
      *
      * @socketEvent documentEdit
      * @param {Object} data The data payload containing the edits and their context.
@@ -815,48 +896,73 @@ class DocumentSocket extends Socket {
      * @param {number} [data.studyStepId] If provided, associates the edits with a specific study step.
      * @param {Object} options The options object containing the transaction.
      * @param {Object} options.transaction A Sequelize DB transaction object to ensure all edits are added atomically.
+     * @param {Function} options.afterSuccessfulCommit Registers the broadcast of the saved edits (see createSocket).
      * @returns {Promise<void>} A promise that resolves (with no value) once all edits have been processed and saved.
      */
     async editDocument(data, options) {
-        const {documentId, studySessionId, studyStepId, ops} = data;
+        const {ops} = data;
+        const context = this.getDocumentEditContext(data);
+        const {documentId} = context;
+        await this.assertDocumentEditAccess(context, options);
 
-        // Generate queue key for this document context
-        const key = `${documentId}-${studySessionId || 'null'}-${studyStepId || 'null'}`;
+        const key = this.getDocumentEditQueueKey(data);
+        const timestamps = this.server.documentTimestamps;
 
-        return enqueueDocumentTask(this.server.documentQueues, key, async () => {
-            const bulkEdits = ops.map((op, idx) => ({
+        // New edits must sort after the persisted ones, which can be ahead of the clock after it was set back. Only the
+        // first edit of a context in this process has to read them, as the queue serializes the context from then on.
+        if (!timestamps.has(key)) {
+            const lastCreatedAt = await this.models['document_edit'].max('createdAt', {
+                where: context,
+                transaction: options.transaction,
+            });
+            timestamps.set(key, lastCreatedAt ? new Date(lastCreatedAt).getTime() : 0);
+        }
+
+        const createdAt = nextDocumentTimestamp(timestamps, key);
+
+        // Only what an operation describes comes from the client. The rows must stay in the context of this queue.
+        const bulkEdits = ops.map(({operationType, offset, span, text, attributes}, idx) => {
+            // dbToDelta throws on any other type, so a saved one would break every later reload of the document.
+            if (![0, 1, 2].includes(operationType)) {
+                throw new Error("Unknown operation type of a document edit");
+            }
+            if (operationType === 0 && typeof text !== "string") {
+                throw new Error("The text of an insert must be a string");
+            }
+            return {
                 userId: this.userId,
                 draft: true,
-                documentId,
-                studySessionId: studySessionId || null,
-                studyStepId: studyStepId || null,
+                ...context,
                 order: idx + 1,
-                ...op
-            }));
-
-            const savedEdits = await this.models['document_edit'].bulkCreate(
-                bulkEdits,
-                {
-                    transaction: options.transaction
-                }
-            );
-
-            const appliedEdits = savedEdits.map(se => ({
-                ...se.get({plain: true}),
-                applied: true,
-                sender: this.socket.id
-            }));
-
-            if (studySessionId !== null) {
-                this.logger.debug(`Edits for document ${documentId} with study session ${studySessionId} saved in the database only.`);
-                return;
-            }
-
-            options.transaction.afterCommit(() => {
-                this.emitDoc(documentId, "document_editRefresh", appliedEdits);
-            });
-
+                operationType,
+                offset,
+                span,
+                text,
+                attributes,
+                createdAt
+            };
         });
+
+        const savedEdits = await this.models['document_edit'].bulkCreate(
+            bulkEdits,
+            {
+                transaction: options.transaction
+            }
+        );
+
+        const appliedEdits = savedEdits.map(se => ({
+            ...se.get({plain: true}),
+            applied: true,
+            sender: this.socket.id
+        }));
+
+        if (context.studySessionId !== null) {
+            this.logger.debug(`Edits for document ${documentId} with study session ${data.studySessionId} saved in the database only.`);
+            return;
+        }
+
+        // Clients must not apply edits of a failed commit, and returning the promise keeps the context in commit order.
+        options.afterSuccessfulCommit(() => this.emitDoc(documentId, "document_editRefresh", appliedEdits));
     }
 
     /**
@@ -1543,6 +1649,23 @@ class DocumentSocket extends Socket {
      *  If the document's PDF file (.pdf) for a PDF document is missing from the filesystem.
      */
     async getDocument(data, options) {
+        const context = this.getDocumentEditContext(data);
+        data = {...data, ...context};
+        if (context.studySessionId || context.studyStepId) {
+            const deny = () => { throw new TranslatableError("errors.documents.noAccess", {}, "ACCESS_DENIED"); };
+            const session = await this.models.study_session.getById(context.studySessionId);
+            const step = await this.models.study_step.getById(context.studyStepId);
+            if (!session || !step || session.deleted || step.deleted ||
+                session.studyId !== step.studyId || step.documentId !== context.documentId) deny();
+            const study = await this.models.study.getById(session.studyId);
+            if (!study || study.deleted) deny();
+            if (session.userId !== this.userId && study.userId !== this.userId &&
+                !(await this.isAdmin()) && !(await this.hasAccess("frontend.dashboard.studies.fullAccess"))) {
+                const participants = study.collab
+                    ? await this.models.study_session.getAllByKey('studyId', study.id) : [];
+                if (!participants.some(s => s.userId === this.userId && !s.deleted)) deny();
+            }
+        }
         // Unified validation (checks db record, access, and file existence)
         const document = await this.validateDocument(data['documentId'], 'id', true);
 
@@ -1965,12 +2088,14 @@ class DocumentSocket extends Socket {
     init() {
         this.createSocket("documentGetByHash", this.sendByHash, {}, false);
         this.createSocket("documentPublish", this.publishDocument, {}, false);
-        this.createSocket("documentEdit", this.editDocument, {}, true);
+        this.createSocket("documentEdit", this.editDocument, {}, true, this.getDocumentEditQueueKey);
         this.createSocket("documentSubscribe", this.subscribeDocument, {}, false);
         this.createSocket("documentUnsubscribe", this.unsubscribeDocument, {}, false);
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
+        // Recovery snapshots must follow the full lifecycle of earlier received edits.
+        this.createSocket("documentRecover", this.getDocument, {}, false, this.getDocumentEditQueueKey);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.uploadDocument, {}, true);
         this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);

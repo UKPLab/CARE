@@ -186,6 +186,9 @@
       "title": "Keine Cursorposition",
       "message": "Bitte klicken Sie in den Editor, um die Cursorposition festzulegen, bevor Sie einen Platzhalter einfügen. "
     },
+    "saveRecovery": "Speichern angehalten. Ihr unbest?tigter Entwurf bleibt zum Herunterladen erhalten. Laden Sie vor dem Bearbeiten den gespeicherten Inhalt neu; unbest?tigte ?nderungen werden nicht erneut gesendet.",
+    "reloadSaved": "Gespeicherten Inhalt neu laden",
+    "downloadDraft": "Unbest?tigten Entwurf herunterladen",
     "previousEditFailed": "Vorherige Bearbeitung fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "editHistoryRetrievalFailed": "Fehler beim Abrufen des Bearbeitungsverlaufs"
   },

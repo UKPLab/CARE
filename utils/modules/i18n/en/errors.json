@@ -186,6 +186,9 @@
             "title": "No Cursor Position",
             "message": "Please click in the editor to set the cursor position before inserting a placeholder."
         },
+        "saveRecovery": "Saving stopped. Your unconfirmed draft is kept for download. Reload saved content before editing; unconfirmed changes will not be replayed.",
+        "reloadSaved": "Reload saved content",
+        "downloadDraft": "Download unconfirmed draft",
         "previousEditFailed": "Previous edit failed; try again",
         "editHistoryRetrievalFailed": "Failed retrieving edit history"
     },

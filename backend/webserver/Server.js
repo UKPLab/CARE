@@ -50,6 +50,7 @@ module.exports = class Server {
         this.availSockets = {};
         this.services = {};
         this.documentQueues = new Map();
+        this.documentTimestamps = new Map();
         this.triggers = new TriggerManager(this);
         this.authProviderStatus = {
             local: { ready: false, reason: "not-initialized" },

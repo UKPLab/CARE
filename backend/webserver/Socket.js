@@ -9,6 +9,7 @@ const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("..
 const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../utils/helper/queryTableColumnFilters.js");
 const {SECRET_COLUMN_SET, hiddenColumns} = require("../utils/helper/sensitiveColumns.js");
 const {uniquePositiveInts} = require("../utils/helper/positiveInt.js");
+const {enqueueDocumentTask} = require("../utils/helper/queue.js");
 
 // Upper bound for a query-scoped bulk ("select all matching")
 const MAX_BULK_SELECTION = 100000;
@@ -72,19 +73,31 @@ module.exports = class Socket {
      * @param {string} eventName The name of the event
      * @param {Function} func  The function to execute (need parameter data and options)
      * @param {Object} options Additional options for the function
-     * @param {boolean} useTransaction If the function should be executed in a transaction for db operations
+     * @param {boolean} useTransaction If the function should be executed in a transaction for db operations. The function
+     * then gets options.transaction and options.afterSuccessfulCommit, which registers a hook that only runs if the commit
+     * succeeded, before the acknowledgement. Failing hooks are logged and do not fail the event.
+     * @param {Function|null} getQueueKey Optional function mapping the event data to a queue key. Events with the same
+     * key run strictly one after the other in the order they were received, including their whole transaction
+     * lifecycle (begin, handler, commit or rollback) and the acknowledgement. The key is taken synchronously on
+     * reception. An event without a key because getQueueKey throws runs outside of any queue, so its handler has to
+     * reject the same data. The handler must not enqueue itself on the same key.
      * @returns {void}
      */
-    createSocket(eventName, func, options = {}, useTransaction = false) {
-        this.socket.on(eventName, async (data, callback) => {
+    createSocket(eventName, func, options = {}, useTransaction = false, getQueueKey = null) {
+        const execute = async (data, ack) => {
+            // The client decides what is sent as last argument. Calling anything else than its ack function would
+            // reject this listener, and an unhandled rejection ends the process.
+            const callback = typeof ack === "function" ? ack : null;
             let t;
             const perCallOptions = {...options};
+            const successfulCommitHooks = [];
             let finished = false;
             try {
                 if (useTransaction) {
                     this.transactionMonitor.start(); //Start Transaction Time Tracking 
                     t = await this.server.db.sequelize.transaction();
                     perCallOptions.transaction = t;
+                    perCallOptions.afterSuccessfulCommit = (hook) => successfulCommitHooks.push(hook);
 
                     t.afterCommit(() => {
                         this.broadcastTransactionChanges(t);
@@ -96,6 +109,16 @@ module.exports = class Socket {
                     await t.commit();
                     this.transactionMonitor.finish(eventName, true); //transaction successful 
                     finished = true;
+
+                    // Sequelize also runs its afterCommit hooks if the COMMIT failed, but then commit() rejects and
+                    // this is not reached. The changes are saved, so a failing hook must not fail the event.
+                    for (const hook of successfulCommitHooks) {
+                        try {
+                            await hook();
+                        } catch (hookError) {
+                            this.logger.error(`Post-commit hook of event ${eventName} failed: ${hookError.message}`);
+                        }
+                    }
                 }
                 if (callback) {
                     callback({success: true, data: result});
@@ -175,6 +198,21 @@ module.exports = class Socket {
                     }
                 }
             }
+        };
+
+        this.socket.on(eventName, (data, callback) => {
+            if (!getQueueKey) {
+                return execute(data, callback);
+            }
+
+            // A listener that throws would take down the whole process: malformed data has to end in a failed ack.
+            let queueKey;
+            try {
+                queueKey = getQueueKey.call(this, data);
+            } catch (err) {
+                return execute(data, callback);
+            }
+            return enqueueDocumentTask(this.server.documentQueues, queueKey, () => execute(data, callback));
         });
     }
 
