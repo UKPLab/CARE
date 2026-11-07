@@ -1649,6 +1649,23 @@ class DocumentSocket extends Socket {
      *  If the document's PDF file (.pdf) for a PDF document is missing from the filesystem.
      */
     async getDocument(data, options) {
+        const context = this.getDocumentEditContext(data);
+        data = {...data, ...context};
+        if (context.studySessionId || context.studyStepId) {
+            const deny = () => { throw new TranslatableError("errors.documents.noAccess", {}, "ACCESS_DENIED"); };
+            const session = await this.models.study_session.getById(context.studySessionId);
+            const step = await this.models.study_step.getById(context.studyStepId);
+            if (!session || !step || session.deleted || step.deleted ||
+                session.studyId !== step.studyId || step.documentId !== context.documentId) deny();
+            const study = await this.models.study.getById(session.studyId);
+            if (!study || study.deleted) deny();
+            if (session.userId !== this.userId && study.userId !== this.userId &&
+                !(await this.isAdmin()) && !(await this.hasAccess("frontend.dashboard.studies.fullAccess"))) {
+                const participants = study.collab
+                    ? await this.models.study_session.getAllByKey('studyId', study.id) : [];
+                if (!participants.some(s => s.userId === this.userId && !s.deleted)) deny();
+            }
+        }
         // Unified validation (checks db record, access, and file existence)
         const document = await this.validateDocument(data['documentId'], 'id', true);
 

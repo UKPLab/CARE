@@ -1430,3 +1430,32 @@ describe("documentEdit ordering (real sockets and database)", () => {
         expect(await persistedText(documentId)).toBe(`a${expected.join("")}b`);
     }, 30000);
 });
+
+describe("document snapshot session read boundary", () => {
+    const fixture = () => {
+        const socket = Object.create(DocumentSocket.prototype);
+        socket.userId = 1;
+        const study = {id: 4, userId: 9, collab: false};
+        socket.models = {
+            study_session: {getById: async () => ({studyId: 4, userId: 2}), getAllByKey: async () => [{userId: 1}]},
+            study_step: {getById: async () => ({studyId: 4, documentId: 3})},
+            study: {getById: async () => study},
+        };
+        socket.isAdmin = async () => false;
+        socket.hasAccess = async () => false;
+        const reached = new Error("authorized snapshot");
+        socket.validateDocument = jest.fn(async () => { throw reached; });
+        return {socket, study, reached};
+    };
+    test("foreign participant cannot read a private session through get or recover", async () => {
+        const {socket} = fixture();
+        await expect(socket.getDocument({documentId: 3, studySessionId: 2, studyStepId: 5}, {})).rejects.toThrow();
+        expect(socket.validateDocument).not.toHaveBeenCalled();
+    });
+    test("collaborative participant retains snapshot access with canonical ids", async () => {
+        const {socket, study, reached} = fixture();
+        study.collab = true;
+        await expect(socket.getDocument({documentId: "3", studySessionId: "2", studyStepId: "5"}, {})).rejects.toBe(reached);
+        expect(socket.validateDocument).toHaveBeenCalledWith(3, 'id', true);
+    });
+});
