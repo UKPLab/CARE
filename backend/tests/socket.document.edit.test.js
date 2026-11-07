@@ -419,6 +419,7 @@ describe("documentEdit ordering (controlled transactions)", () => {
 
         expect(await x.ack).toEqual({success: true, data: undefined});
         expect(backend.text(1)).toBe("aXb");
+        expect(backend.trace).toContain("broadcast:X:sent");
     });
 
     test("only the known fields of an operation are saved", async () => {
@@ -1029,6 +1030,22 @@ describe("documentEdit ordering (real sockets and database)", () => {
         expect(textsOf(null).sort()).toEqual(["B", "ab"]);
     });
 
+    test.each([null, undefined, 42, {}, []])("rejects non-string insert text %p without persisting a partial batch", async (text) => {
+        const documentId = await createDocument();
+        const base = {documentId, studySessionId: null, studyStepId: null};
+        const result = await emitEdit({...base, ops: [insert("Q", 1), insert(text, 1)]});
+        expect(result.success).toBe(false);
+        expect(await persistedText(documentId)).toBe("ab");
+        expect(await emitEdit({...base, ops: [insert("X", 1)]})).toMatchObject({success: true});
+        expect(await persistedText(documentId)).toBe("aXb");
+    });
+
+    test("accepts empty inserts and deletions without insert text", async () => {
+        const documentId = await createDocument();
+        const base = {documentId, studySessionId: null, studyStepId: null};
+        expect(await emitEdit({...base, ops: [insert("", 1), {operationType: 1, offset: 1, span: 1}]})).toMatchObject({success: true});
+        expect(await persistedText(documentId)).toBe("a");
+    });
     test.each([
         ["document", {documentId: {toString: 1}}],
         ["study session", {studySessionId: {toString: 1}}],

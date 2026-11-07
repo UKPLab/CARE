@@ -889,6 +889,9 @@ class DocumentSocket extends Socket {
             if (![0, 1, 2].includes(operationType)) {
                 throw new Error("Unknown operation type of a document edit");
             }
+            if (operationType === 0 && typeof text !== "string") {
+                throw new Error("The text of an insert must be a string");
+            }
             return {
                 userId: this.userId,
                 draft: true,
@@ -916,7 +919,7 @@ class DocumentSocket extends Socket {
             sender: this.socket.id
         }));
 
-        if (data.studySessionId !== null) {
+        if (context.studySessionId !== null) {
             this.logger.debug(`Edits for document ${documentId} with study session ${data.studySessionId} saved in the database only.`);
             return;
         }
