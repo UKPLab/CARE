@@ -102,3 +102,42 @@ test('failed snapshot keeps draft paused and permits another explicit read', asy
   await sent[1].callback({success:true,data:{deltas:new Delta().insert('ab\n')}});
   assert.equal(quill.isEnabled(),true);
 });
+
+
+test('lost acknowledgement expires locally; only a queued recovery read unlocks editing', async () => {
+  const original = sandbox.setTimeout;
+  let expire;
+  sandbox.setTimeout = callback => { expire = callback; return 0; };
+  const {c, sent, quill, type} = setup();
+  try {
+    type(1, 'X'); const pending = c.processDelta(); type(2, 'Y');
+    expire(); await pending;
+    assert.equal(quill.isEnabled(), false);
+    assert.equal(c.saveInFlight, null);
+    c.recoverSavedContent();
+    assert.equal(sent[1].event, 'documentRecover');
+    assert.equal(quill.isEnabled(), false);
+    await sent[1].callback({success:true,data:{deltas:new Delta().insert('aXb\n')}});
+    assert.equal(quill.getText(), 'aXb\n');
+    assert.equal(quill.isEnabled(), true);
+    type(2, 'Z'); c.processDelta();
+    sent[0].callback({success:false});
+    assert.equal(c.saveFailed, false);
+    assert.ok(c.saveInFlight);
+    sent[2].callback({success:true});
+  } finally { sandbox.setTimeout = original; }
+});
+
+
+test('missing acknowledgement after unmount settles flush without sending dependent edits', async () => {
+  const original = sandbox.setTimeout;
+  let expire;
+  sandbox.setTimeout = callback => { expire = callback; return 0; };
+  const {c, sent, type} = setup();
+  try {
+    type(1, 'X'); c.processDelta(); type(2, 'Y'); c.disposed = true;
+    const flushed = c.flushPendingEdits(); expire(); await flushed;
+    assert.equal(sent.length, 1);
+    assert.equal(c.deltaBuffer.length, 0);
+  } finally { sandbox.setTimeout = original; }
+});

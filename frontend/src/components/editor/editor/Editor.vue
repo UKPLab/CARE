@@ -370,7 +370,6 @@ export default {
   },
   unmounted() {
     this.disposed = true;
-    clearTimeout(this.saveTimer);
     clearTimeout(this.recoveryTimer);
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);
@@ -432,7 +431,7 @@ export default {
     downloadFailedDraft() {
       downloadDocument(this.failedDraft, `${this.documentHash || this.documentId}.html`, "text/html");
     },
-    /** Replace the paused draft with saved content only after the write has settled. */
+    /** Read behind earlier received writes before replacing the paused draft. */
     recoverSavedContent() {
       if (this.saveInFlight || this.recovering || this.disposed) return;
       this.recovering = true;
@@ -443,7 +442,7 @@ export default {
         this.recoveryRequest++;
         this.recovering = false;
       }, 10000);
-      this.$socket.emit("documentGet", {
+      this.$socket.emit("documentRecover", {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
@@ -468,7 +467,8 @@ export default {
         }
         // The snapshot includes these persisted edits. Let the store watchers
         // settle while paused so they cannot apply them for a second time.
-        this.$store.commit("table/document_edit/applyEdits", this.unappliedEdits.map(edit => edit.id));
+        if (this.unappliedEdits.length) this.$store.commit("table/document_edit/SOCKET_document_editRefresh",
+          this.unappliedEdits.map(edit => ({id: edit.id, applied: true})));
         await this.$nextTick();
         if (this.disposed || version !== this.contextVersion || request !== this.recoveryRequest) return;
         if (revision !== this.recoveryRevision) { this.recoverSavedContent(); return; }
@@ -591,7 +591,11 @@ export default {
       const pending = new Promise(resolve => { finish = resolve; });
       this.saveInFlight = pending;
       this.saveTimer = setTimeout(() => {
+        this.saveFailed = true;
+        this.deltaBuffer = [];
         if (!this.disposed && version === this.contextVersion) this.pauseFailedSave();
+        this.saveInFlight = null;
+        finish();
       }, 10000);
       this.$socket.emit("documentEdit", {
         documentId: this.documentId,
@@ -599,6 +603,8 @@ export default {
         studyStepId: this.studyStepId || null,
         ops,
       }, (res) => {
+        // A timed-out write may acknowledge after recovery or a newer save.
+        if (this.saveInFlight !== pending) return;
         clearTimeout(this.saveTimer);
         this.saveInFlight = null;
         if (version === this.contextVersion) {
@@ -650,7 +656,8 @@ export default {
       if (this.unappliedEdits.length > 0) {
         const delta = dbToDelta(this.unappliedEdits);
         this.editor.getEditor().updateContents(delta, "api");
-        this.$store.commit("table/document_edit/applyEdits", this.unappliedEdits.map((edit) => edit.id));
+        this.$store.commit("table/document_edit/SOCKET_document_editRefresh",
+          this.unappliedEdits.map(edit => ({id: edit.id, applied: true})));
       }
     },
     handleDocumentError(error) {

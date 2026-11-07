@@ -2077,6 +2077,8 @@ class DocumentSocket extends Socket {
         this.createSocket("documentGetDeltas", this.sendDocumentDeltas, {}, false);
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
+        // Recovery snapshots must follow the full lifecycle of earlier received edits.
+        this.createSocket("documentRecover", this.getDocument, {}, false, this.getDocumentEditQueueKey);
         this.createSocket("documentCreate", this.createDocument, {}, true);
         this.createSocket("documentAdd", this.uploadDocument, {}, true);
         this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);
