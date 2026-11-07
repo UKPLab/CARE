@@ -1,0 +1,33 @@
+---
+title: "Ruhr-Uni Bochum Project"
+---
+stateDiagram-v2
+  s0: Awaiting session start
+  s1: Step 1: Edit first revision
+  s2: Run nlpEditComparison for revision 1
+  s3: Comparison 1 failed or timed out
+  s4: Step 2: Read configured feedback modal
+  s5: Step 3: Edit second revision (same document)
+  s6: Run nlpEditComparison for revision 2
+  s7: Comparison 2 failed or timed out
+  s8: Step 4: Read final configured feedback modal
+  s9: Confirm finish
+  s10: Submitting session
+  s11: Session finished
+  [*] --> s0
+  s0 --> s1: Start [admitted session and document loaded]
+  s1 --> s2: Next [modal document loaded#59; service starts]
+  s2 --> s3: Service fails or times out
+  s2 --> s4: Service settles#59; open configured modal
+  s3 --> s2: Retry failed request
+  s3 --> s4: Skip service support#59; open modal
+  s4 --> s5: Next [load step 1 document for revision 2]
+  s5 --> s6: Next [modal document loaded#59; service starts]
+  s6 --> s7: Service fails or times out
+  s6 --> s8: Service settles#59; open configured modal
+  s7 --> s6: Retry failed request
+  s7 --> s8: Skip service support#59; open modal
+  s8 --> s9: Finish
+  s9 --> s10: Confirm finish [study not closed]
+  s10 --> s11: Server accepts finish#59; end timestamp set
+  s10 --> s8: Server rejects finish#59; show error
