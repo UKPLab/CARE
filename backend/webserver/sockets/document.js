@@ -844,6 +844,38 @@ class DocumentSocket extends Socket {
     }
 
     /**
+     * Authorize the canonical edit context inside the queued transaction.
+     * Public/read access does not grant write access. Collaborative participants
+     * write their own session; loading combines those separate contributions.
+     */
+    async assertDocumentEditAccess(context, options) {
+        const deny = () => { throw new TranslatableError("errors.documents.noAccess", {}, "ACCESS_DENIED"); };
+        const {documentId, studySessionId, studyStepId} = context;
+        if (!this.userId || Boolean(studySessionId) !== Boolean(studyStepId)) deny();
+        const query = {transaction: options.transaction};
+        const document = await this.models.document.getById(documentId, query);
+        if (!document || document.deleted) deny();
+        if (!studySessionId) {
+            if (document.userId !== this.userId) {
+                await this.assertWriteAccess("document", documentId, options);
+            }
+            return;
+        }
+        const session = await this.models.study_session.getById(studySessionId, query);
+        const step = await this.models.study_step.getById(studyStepId, query);
+        if (!session || !step || session.deleted || step.deleted ||
+            session.studyId !== step.studyId || step.documentId !== documentId) deny();
+        const study = await this.models.study.getById(session.studyId, query);
+        if (!study || study.deleted || study.closed ||
+            (session.end && !study.multipleSubmit) ||
+            (study.timeLimit > 0 && session.start &&
+                Date.now() >= new Date(session.start).getTime() + study.timeLimit * 60000) ||
+            step.configuration?.readOnlyComponents?.includes("editor")) deny();
+        // Staff viewing another participant's session is read-only in Study.vue too.
+        if (session.userId !== this.userId) deny();
+    }
+
+    /**
      * Edits the document based on the provided data.
      *
      * This method is called when the client requests to edit a document. It first checks if the user has access to the document,
@@ -867,6 +899,7 @@ class DocumentSocket extends Socket {
         const {ops} = data;
         const context = this.getDocumentEditContext(data);
         const {documentId} = context;
+        await this.assertDocumentEditAccess(context, options);
 
         const key = this.getDocumentEditQueueKey(data);
         const timestamps = this.server.documentTimestamps;

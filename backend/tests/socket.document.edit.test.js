@@ -161,6 +161,7 @@ function createBackend() {
             }
             backend.trace.push(`${name}:sent`);
         };
+        documentSocket.assertDocumentEditAccess = jest.fn().mockResolvedValue(undefined);
         documentSocket.models = backend.models;
         documentSocket.server = {
             db: backend.db,
@@ -810,7 +811,7 @@ describe("documentEdit ordering (controlled transactions)", () => {
 });
 
 describe("documentEdit ordering (real sockets and database)", () => {
-    const PORT = 3112;
+    const PORT = Number(process.env.DOCUMENT_EDIT_TEST_PORT || 3112);
     let server;
     let client;
     let serverSocket;
@@ -839,7 +840,15 @@ describe("documentEdit ordering (real sockets and database)", () => {
         return document.id;
     };
 
-    const createStudySession = async () => {
+    const createStudySession = async (documentId) => {
+        if (documentId) {
+            const m = server.db.models;
+            const study = await m.study.create({name: "ordering", hash: randomUUID(), userId: user.id}, {hooks: false});
+            const workflow = await m.workflow_step.findOne({where: {stepType: 2}, raw: true});
+            const step = await m.study_step.create({workflowStepId: workflow.id, studyId: study.id, documentId, stepType: 2, configuration: {}}, {hooks: false});
+            const session = await m.study_session.create({hash: randomUUID(), studyId: study.id, userId: user.id}, {hooks: false});
+            return {id: session.id, stepId: step.id};
+        }
         const [[row]] = await server.db.sequelize.query(
             `INSERT INTO study_session (hash, "createdAt", "updatedAt") VALUES (:hash, now(), now()) RETURNING id`,
             {replacements: {hash: randomUUID()}}
@@ -909,6 +918,56 @@ describe("documentEdit ordering (real sockets and database)", () => {
 
     afterAll(async () => {
         await server.stop();
+    });
+
+    test("edit authorization rejects forged contexts without rows or refresh and recovers", async () => {
+        const m = server.db.models;
+        const documentId = await createDocument();
+        const otherDocumentId = await createDocument();
+        const study = await m.study.create({name: "access test", hash: randomUUID(), userId: user.id,
+            multipleSubmit: true}, {hooks: false});
+        const otherStudy = await m.study.create({name: "other", hash: randomUUID(), userId: user.id}, {hooks: false});
+        const workflow = await m.workflow_step.findOne({where: {stepType: 2}, raw: true});
+        const step = await m.study_step.create({workflowStepId: workflow.id, studyId: study.id, documentId, stepType: 2,
+            configuration: {}}, {hooks: false});
+        const wrongStep = await m.study_step.create({workflowStepId: workflow.id, studyId: otherStudy.id, documentId,
+            stepType: 2, configuration: {}}, {hooks: false});
+        const own = await m.study_session.create({studyId: study.id, userId: user.id, hash: randomUUID()}, {hooks: false});
+        const foreignUser = await m.user.create({firstName: "Other", lastName: "Participant", passwordHash: "unused", salt: "unused", userName: randomUUID(), email: randomUUID() + "@example.test"}, {hooks: false});
+        const foreign = await m.study_session.create({studyId: study.id, userId: foreignUser.id,
+            hash: randomUUID()}, {hooks: false});
+        const base = {documentId, studySessionId: own.id, studyStepId: step.id, ops: [insert("X", 1)]};
+        const refresh = jest.fn();
+        client.on("document_editRefresh", refresh);
+        const log = jest.spyOn(console, "log").mockImplementation(() => {});
+        try {
+            for (const context of [
+                {studySessionId: foreign.id}, {studyStepId: wrongStep.id},
+                {documentId: otherDocumentId}, {studyStepId: null}, {studySessionId: null},
+            ]) {
+                expect(await emitEdit({...base, ...context})).toMatchObject({success: false});
+            }
+            await m.study_step.update({configuration: {readOnlyComponents: ["editor"]}}, {where: {id: step.id}, hooks: false});
+            expect(await emitEdit(base)).toMatchObject({success: false});
+            await m.study_step.update({configuration: {}}, {where: {id: step.id}, hooks: false});
+            await m.document.update({public: true, userId: foreignUser.id}, {where: {id: otherDocumentId}, hooks: false});
+            expect(await emitEdit({...base, documentId: otherDocumentId, studySessionId: null, studyStepId: null}))
+                .toMatchObject({success: false});
+            expect(await m.document_edit.count({where: {text: "X", documentId: [documentId, otherDocumentId]}})).toBe(0);
+            expect(refresh).not.toHaveBeenCalled();
+            expect(await emitEdit(base)).toMatchObject({success: true});
+            await m.study.update({collab: true}, {where: {id: study.id}, hooks: false});
+            expect(await emitEdit({...base, ops: [insert("Y", 2)]})).toMatchObject({success: true});
+            expect(await emitEdit({...base, studySessionId: foreign.id})).toMatchObject({success: false});
+            const rows = await m.document_edit.findAll({where: {documentId, studySessionId: own.id}, raw: true});
+            expect(plainText(rows)).toBe("XY");
+            expect(await m.document_edit.count({where: {documentId, studySessionId: foreign.id}})).toBe(0);
+            expect(await emitEdit({...base, studySessionId: null, studyStepId: null})).toMatchObject({success: true});
+            expect(await persistedText(documentId)).toBe("aXb");
+        } finally {
+            log.mockRestore();
+            client.off("document_editRefresh", refresh);
+        }
     });
 
     test("delayed transaction acquisition keeps reception order in the database", async () => {
@@ -995,8 +1054,10 @@ describe("documentEdit ordering (real sockets and database)", () => {
     test("a held edit does not block other documents and study sessions", async () => {
         const documentId = await createDocument();
         const otherDocumentId = await createDocument();
-        const sessionId = await createStudySession();
-        const otherSessionId = await createStudySession();
+        const session = await createStudySession(documentId);
+        const otherSession = await createStudySession(documentId);
+        const sessionId = session.id;
+        const otherSessionId = otherSession.id;
         const control = controlTransactions();
         const hold = deferred();
         control.holds[0] = hold;
@@ -1004,7 +1065,7 @@ describe("documentEdit ordering (real sockets and database)", () => {
         const edit = (id, studySessionId, text) => emitEdit({
             documentId: id,
             studySessionId,
-            studyStepId: null,
+            studyStepId: studySessionId === sessionId ? session.stepId : studySessionId === otherSessionId ? otherSession.stepId : null,
             ops: [insert(text, 1)],
         });
         const held = edit(documentId, sessionId, "H");
