@@ -1,0 +1,131 @@
+{
+    "title": "Assessments",
+    "recordCount": "{count} records",
+    "prototypeNote": "Prototype with local sample data. Changes are not saved to CARE.",
+    "tabs": {
+        "assessments": "Assessments",
+        "rubrics": "Rubrics",
+        "criteria": "Criteria"
+    },
+    "actions": {
+        "edit": "Edit",
+        "delete": "Delete",
+        "save": "Save",
+        "next": "Next"
+    },
+    "fields": {
+        "id": "ID",
+        "name": "Name",
+        "assessmentName": "Assessment name",
+        "code": "Code",
+        "description": "Description",
+        "version": "Version",
+        "rubrics": "Rubrics",
+        "criteria": "Criteria",
+        "points": "Points",
+        "minPoints": "Minimum points",
+        "maxPoints": "Maximum points",
+        "calculation": "Calculation method",
+        "defaultPoints": "Default points",
+        "defaultPointsHelp": "Starting score; the criterion scores are added to it.",
+        "isBonus": "Bonus rubric",
+        "gradingFunction": "Grading function",
+        "expertLevel": "Expert level",
+        "subjective": "Subjective evaluation",
+        "scoringDescription": "Scoring description"
+    },
+    "calculation": {
+        "sum": "Sum",
+        "min": "Capped sum",
+        "max": "Base + adjustments"
+    },
+    "gradingFunction": {
+        "auto_grading": "Automatic grading",
+        "manual_grading": "Manual grading",
+        "check_latex_metadata": "Check LaTeX metadata",
+        "check_latex_template": "Check LaTeX template",
+        "check_pdf_pages": "Check PDF page count"
+    },
+    "expertLevel": {
+        "0": "0 — Beginner",
+        "1": "1 — Intermediate",
+        "2": "2 — Expert"
+    },
+    "assessment": {
+        "listTitle": "Assessment definitions",
+        "add": "Add Assessment",
+        "addTitle": "Add Assessment",
+        "editTitle": "Edit Assessment",
+        "stepDetails": "Assessment Details",
+        "stepRubrics": "Rubrics Selection & Order",
+        "detailsTitle": "Assessment Details",
+        "rubricsTitle": "Rubrics Selection & Order",
+        "rubricsHelp": "Use the selection table to add existing rubrics and arrange them in the intended order.",
+        "noRubricsSelected": "No rubrics selected yet."
+    },
+    "rubric": {
+        "listTitle": "Rubric library",
+        "add": "Add Rubric",
+        "addTitle": "Add Rubric",
+        "editTitle": "Edit Rubric",
+        "stepDetails": "Rubric Details",
+        "stepCriteria": "Criteria Selection & Order",
+        "detailsTitle": "Rubric Details",
+        "criteriaTitle": "Criteria Selection & Order",
+        "criteriaHelp": "Use the selection table to add existing criteria and arrange them in the intended order.",
+        "noCriteriaSelected": "No criteria selected yet."
+    },
+    "criterion": {
+        "listTitle": "Criterion library",
+        "add": "Add Criterion",
+        "addTitle": "Add Criterion",
+        "editTitle": "Edit Criterion",
+        "stepDetails": "Criterion Details",
+        "stepScoring": "Scoring Options",
+        "detailsTitle": "Criterion Details",
+        "scoringTitle": "Scoring Options",
+        "scoringHelp": "Define how each point value is awarded for {name}.",
+        "allowedRange": "Allowed range: {min} to {max}",
+        "rangeInvalid": "Set a valid point range in step 1 first.",
+        "optionCount": "{count} options",
+        "optionNumber": "Scoring option {number}",
+        "addOption": "Add Scoring Option",
+        "removeOption": "Remove scoring option",
+        "maxOptionsReached": "All {count} possible values from {min} to {max} already have a scoring option."
+    },
+    "selection": {
+        "selectedOrder": "Selected order",
+        "selectedCount": "{count} selected",
+        "reorderHint": "Reorder below",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "remove": "Remove from list"
+    },
+    "errors": {
+        "required": "This field is required.",
+        "integer": "Enter a whole number.",
+        "maxBelowMin": "Maximum points must be greater than or equal to minimum points.",
+        "duplicateCode": "This code is already used.",
+        "defaultOutOfRange": "Default points must be between the minimum and maximum points.",
+        "pointsOutOfRange": "Points must be within the criterion's minimum and maximum.",
+        "duplicatePoints": "Another scoring option already uses this point value.",
+        "noScoringOptions": "Add at least one scoring option.",
+        "selectRubric": "Select at least one rubric.",
+        "selectCriterion": "Select at least one criterion."
+    },
+    "confirm": {
+        "title": "Delete record",
+        "deleteAssessment": "Delete the assessment \"{name}\"? Its rubrics are kept.",
+        "deleteRubric": "Delete the rubric \"{name}\"? It is removed from every assessment; its criteria are kept.",
+        "deleteCriterion": "Delete the criterion \"{name}\"? It is removed from every rubric that uses it.",
+        "usedBy": "This record is currently used by {count} other record(s)."
+    },
+    "messages": {
+        "saved": "Saved",
+        "deleted": "Deleted",
+        "assessmentSaved": "Assessment \"{name}\" was saved.",
+        "rubricSaved": "Rubric \"{name}\" was saved.",
+        "criterionSaved": "Criterion \"{name}\" was saved.",
+        "recordDeleted": "\"{name}\" was deleted."
+    }
+}

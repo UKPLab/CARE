@@ -1,0 +1,131 @@
+{
+    "title": "Évaluations",
+    "recordCount": "{count} enregistrements",
+    "prototypeNote": "Prototype avec des données d'exemple locales. Les modifications ne sont pas enregistrées dans CARE.",
+    "tabs": {
+        "assessments": "Évaluations",
+        "rubrics": "Grilles",
+        "criteria": "Critères"
+    },
+    "actions": {
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "save": "Enregistrer",
+        "next": "Suivant"
+    },
+    "fields": {
+        "id": "ID",
+        "name": "Nom",
+        "assessmentName": "Nom de l'évaluation",
+        "code": "Code",
+        "description": "Description",
+        "version": "Version",
+        "rubrics": "Grilles",
+        "criteria": "Critères",
+        "points": "Points",
+        "minPoints": "Points minimum",
+        "maxPoints": "Points maximum",
+        "calculation": "Méthode de calcul",
+        "defaultPoints": "Points par défaut",
+        "defaultPointsHelp": "Score de départ ; les scores des critères y sont ajoutés.",
+        "isBonus": "Grille bonus",
+        "gradingFunction": "Fonction de notation",
+        "expertLevel": "Niveau d'expertise",
+        "subjective": "Évaluation subjective",
+        "scoringDescription": "Description de l'attribution des points"
+    },
+    "calculation": {
+        "sum": "Somme",
+        "min": "Somme plafonnée",
+        "max": "Base + ajustements"
+    },
+    "gradingFunction": {
+        "auto_grading": "Notation automatique",
+        "manual_grading": "Notation manuelle",
+        "check_latex_metadata": "Vérifier les métadonnées LaTeX",
+        "check_latex_template": "Vérifier le modèle LaTeX",
+        "check_pdf_pages": "Vérifier le nombre de pages du PDF"
+    },
+    "expertLevel": {
+        "0": "0 — Débutant",
+        "1": "1 — Intermédiaire",
+        "2": "2 — Expert"
+    },
+    "assessment": {
+        "listTitle": "Définitions d'évaluation",
+        "add": "Ajouter une évaluation",
+        "addTitle": "Ajouter une évaluation",
+        "editTitle": "Modifier l'évaluation",
+        "stepDetails": "Détails de l'évaluation",
+        "stepRubrics": "Sélection et ordre des grilles",
+        "detailsTitle": "Détails de l'évaluation",
+        "rubricsTitle": "Sélection et ordre des grilles",
+        "rubricsHelp": "Utilisez le tableau pour ajouter des grilles existantes et les classer dans l'ordre voulu.",
+        "noRubricsSelected": "Aucune grille sélectionnée."
+    },
+    "rubric": {
+        "listTitle": "Bibliothèque de grilles",
+        "add": "Ajouter une grille",
+        "addTitle": "Ajouter une grille",
+        "editTitle": "Modifier la grille",
+        "stepDetails": "Détails de la grille",
+        "stepCriteria": "Sélection et ordre des critères",
+        "detailsTitle": "Détails de la grille",
+        "criteriaTitle": "Sélection et ordre des critères",
+        "criteriaHelp": "Utilisez le tableau pour ajouter des critères existants et les classer dans l'ordre voulu.",
+        "noCriteriaSelected": "Aucun critère sélectionné."
+    },
+    "criterion": {
+        "listTitle": "Bibliothèque de critères",
+        "add": "Ajouter un critère",
+        "addTitle": "Ajouter un critère",
+        "editTitle": "Modifier le critère",
+        "stepDetails": "Détails du critère",
+        "stepScoring": "Options de notation",
+        "detailsTitle": "Détails du critère",
+        "scoringTitle": "Options de notation",
+        "scoringHelp": "Définissez comment chaque valeur de points est attribuée pour {name}.",
+        "allowedRange": "Plage autorisée : {min} à {max}",
+        "rangeInvalid": "Définissez d'abord une plage de points valide à l'étape 1.",
+        "optionCount": "{count} options",
+        "optionNumber": "Option de notation {number}",
+        "addOption": "Ajouter une option de notation",
+        "removeOption": "Supprimer l'option de notation",
+        "maxOptionsReached": "Les {count} valeurs possibles de {min} à {max} ont déjà une option de notation."
+    },
+    "selection": {
+        "selectedOrder": "Ordre sélectionné",
+        "selectedCount": "{count} sélectionné(s)",
+        "reorderHint": "Ordre à modifier ci-dessous",
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "remove": "Retirer de la liste"
+    },
+    "errors": {
+        "required": "Ce champ est obligatoire.",
+        "integer": "Saisissez un nombre entier.",
+        "maxBelowMin": "Le maximum doit être supérieur ou égal au minimum.",
+        "duplicateCode": "Ce code est déjà utilisé.",
+        "defaultOutOfRange": "Les points par défaut doivent être compris entre le minimum et le maximum.",
+        "pointsOutOfRange": "Les points doivent être compris entre le minimum et le maximum du critère.",
+        "duplicatePoints": "Une autre option de notation utilise déjà cette valeur.",
+        "noScoringOptions": "Ajoutez au moins une option de notation.",
+        "selectRubric": "Sélectionnez au moins une grille.",
+        "selectCriterion": "Sélectionnez au moins un critère."
+    },
+    "confirm": {
+        "title": "Supprimer l'enregistrement",
+        "deleteAssessment": "Supprimer l'évaluation « {name} » ? Ses grilles sont conservées.",
+        "deleteRubric": "Supprimer la grille « {name} » ? Elle est retirée de toutes les évaluations ; ses critères sont conservés.",
+        "deleteCriterion": "Supprimer le critère « {name} » ? Il est retiré de toutes les grilles qui l'utilisent.",
+        "usedBy": "Cet enregistrement est actuellement utilisé par {count} autre(s) enregistrement(s)."
+    },
+    "messages": {
+        "saved": "Enregistré",
+        "deleted": "Supprimé",
+        "assessmentSaved": "L'évaluation « {name} » a été enregistrée.",
+        "rubricSaved": "La grille « {name} » a été enregistrée.",
+        "criterionSaved": "Le critère « {name} » a été enregistré.",
+        "recordDeleted": "« {name} » a été supprimé."
+    }
+}

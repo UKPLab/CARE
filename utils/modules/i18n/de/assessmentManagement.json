@@ -1,0 +1,131 @@
+{
+    "title": "Bewertungen",
+    "recordCount": "{count} Einträge",
+    "prototypeNote": "Prototyp mit lokalen Beispieldaten. Änderungen werden nicht in CARE gespeichert.",
+    "tabs": {
+        "assessments": "Bewertungen",
+        "rubrics": "Rubriken",
+        "criteria": "Kriterien"
+    },
+    "actions": {
+        "edit": "Bearbeiten",
+        "delete": "Löschen",
+        "save": "Speichern",
+        "next": "Weiter"
+    },
+    "fields": {
+        "id": "ID",
+        "name": "Name",
+        "assessmentName": "Name der Bewertung",
+        "code": "Code",
+        "description": "Beschreibung",
+        "version": "Version",
+        "rubrics": "Rubriken",
+        "criteria": "Kriterien",
+        "points": "Punkte",
+        "minPoints": "Minimale Punktzahl",
+        "maxPoints": "Maximale Punktzahl",
+        "calculation": "Berechnungsmethode",
+        "defaultPoints": "Standardpunkte",
+        "defaultPointsHelp": "Startwert; die Kriterienpunkte werden dazu addiert.",
+        "isBonus": "Bonus-Rubrik",
+        "gradingFunction": "Bewertungsfunktion",
+        "expertLevel": "Expertenlevel",
+        "subjective": "Subjektive Bewertung",
+        "scoringDescription": "Beschreibung der Punktevergabe"
+    },
+    "calculation": {
+        "sum": "Summe",
+        "min": "Begrenzte Summe",
+        "max": "Basis + Anpassungen"
+    },
+    "gradingFunction": {
+        "auto_grading": "Automatische Bewertung",
+        "manual_grading": "Manuelle Bewertung",
+        "check_latex_metadata": "LaTeX-Metadaten prüfen",
+        "check_latex_template": "LaTeX-Vorlage prüfen",
+        "check_pdf_pages": "PDF-Seitenzahl prüfen"
+    },
+    "expertLevel": {
+        "0": "0 — Anfänger",
+        "1": "1 — Fortgeschritten",
+        "2": "2 — Experte"
+    },
+    "assessment": {
+        "listTitle": "Bewertungsdefinitionen",
+        "add": "Bewertung hinzufügen",
+        "addTitle": "Bewertung hinzufügen",
+        "editTitle": "Bewertung bearbeiten",
+        "stepDetails": "Details der Bewertung",
+        "stepRubrics": "Rubriken auswählen & ordnen",
+        "detailsTitle": "Details der Bewertung",
+        "rubricsTitle": "Rubriken auswählen & ordnen",
+        "rubricsHelp": "Wählen Sie vorhandene Rubriken in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
+        "noRubricsSelected": "Noch keine Rubriken ausgewählt."
+    },
+    "rubric": {
+        "listTitle": "Rubrikenbibliothek",
+        "add": "Rubrik hinzufügen",
+        "addTitle": "Rubrik hinzufügen",
+        "editTitle": "Rubrik bearbeiten",
+        "stepDetails": "Details der Rubrik",
+        "stepCriteria": "Kriterien auswählen & ordnen",
+        "detailsTitle": "Details der Rubrik",
+        "criteriaTitle": "Kriterien auswählen & ordnen",
+        "criteriaHelp": "Wählen Sie vorhandene Kriterien in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
+        "noCriteriaSelected": "Noch keine Kriterien ausgewählt."
+    },
+    "criterion": {
+        "listTitle": "Kriterienbibliothek",
+        "add": "Kriterium hinzufügen",
+        "addTitle": "Kriterium hinzufügen",
+        "editTitle": "Kriterium bearbeiten",
+        "stepDetails": "Details des Kriteriums",
+        "stepScoring": "Punkteoptionen",
+        "detailsTitle": "Details des Kriteriums",
+        "scoringTitle": "Punkteoptionen",
+        "scoringHelp": "Legen Sie fest, wie die einzelnen Punktwerte für {name} vergeben werden.",
+        "allowedRange": "Zulässiger Bereich: {min} bis {max}",
+        "rangeInvalid": "Legen Sie zuerst in Schritt 1 einen gültigen Punktebereich fest.",
+        "optionCount": "{count} Optionen",
+        "optionNumber": "Punkteoption {number}",
+        "addOption": "Punkteoption hinzufügen",
+        "removeOption": "Punkteoption entfernen",
+        "maxOptionsReached": "Alle {count} möglichen Werte von {min} bis {max} haben bereits eine Punkteoption."
+    },
+    "selection": {
+        "selectedOrder": "Ausgewählte Reihenfolge",
+        "selectedCount": "{count} ausgewählt",
+        "reorderHint": "Reihenfolge unten ändern",
+        "moveUp": "Nach oben",
+        "moveDown": "Nach unten",
+        "remove": "Aus der Liste entfernen"
+    },
+    "errors": {
+        "required": "Dieses Feld ist erforderlich.",
+        "integer": "Geben Sie eine ganze Zahl ein.",
+        "maxBelowMin": "Die maximale Punktzahl muss größer oder gleich der minimalen sein.",
+        "duplicateCode": "Dieser Code wird bereits verwendet.",
+        "defaultOutOfRange": "Die Standardpunkte müssen zwischen minimaler und maximaler Punktzahl liegen.",
+        "pointsOutOfRange": "Die Punkte müssen zwischen Minimum und Maximum des Kriteriums liegen.",
+        "duplicatePoints": "Dieser Punktwert wird bereits von einer anderen Option verwendet.",
+        "noScoringOptions": "Fügen Sie mindestens eine Punkteoption hinzu.",
+        "selectRubric": "Wählen Sie mindestens eine Rubrik aus.",
+        "selectCriterion": "Wählen Sie mindestens ein Kriterium aus."
+    },
+    "confirm": {
+        "title": "Eintrag löschen",
+        "deleteAssessment": "Bewertung \"{name}\" löschen? Die zugehörigen Rubriken bleiben erhalten.",
+        "deleteRubric": "Rubrik \"{name}\" löschen? Sie wird aus allen Bewertungen entfernt; die Kriterien bleiben erhalten.",
+        "deleteCriterion": "Kriterium \"{name}\" löschen? Es wird aus allen Rubriken entfernt, die es verwenden.",
+        "usedBy": "Dieser Eintrag wird derzeit von {count} anderen Einträgen verwendet."
+    },
+    "messages": {
+        "saved": "Gespeichert",
+        "deleted": "Gelöscht",
+        "assessmentSaved": "Bewertung \"{name}\" wurde gespeichert.",
+        "rubricSaved": "Rubrik \"{name}\" wurde gespeichert.",
+        "criterionSaved": "Kriterium \"{name}\" wurde gespeichert.",
+        "recordDeleted": "\"{name}\" wurde gelöscht."
+    }
+}
