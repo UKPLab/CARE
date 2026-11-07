@@ -106,6 +106,15 @@ export default {
     },
     parentModal: {
       default: () => null
+    },
+    studySessionId: {
+      default: () => null
+    },
+    currentStudyStep: {
+      default: () => null
+    },
+    studyStepId: {
+      default: () => null
     }
   },
   provide() {
@@ -165,6 +174,14 @@ export default {
     };
   },
   computed: {
+    // Study IDs for the stats events; empty outside a study
+    studyContext() {
+      return {
+        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+      };
+    },
     sizeClass() {
       if (this.size === 'md') {
         return ''; // Default size, no additional class needed
@@ -188,6 +205,10 @@ export default {
     }
   },
   beforeUnmount() {
+    // A modal removed while open never gets Bootstrap's hidden event, so log its hide here
+    if (this.isShown) {
+      this.logHide();
+    }
     if (this.$refs.Modal) {
       this.$refs.Modal.removeEventListener('hidden.bs.modal', this.hideEvent);
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
@@ -227,10 +248,16 @@ export default {
     hideEvent() {
       this.isShown = false;
       this.$emit('hide');
+      this.logHide();
+    },
+    /**
+     * Logs that the modal was hidden, if the user accepted statistics.
+     */
+    logHide() {
       if (this.acceptStats) {
         this.$socket.emit('stats', {
           action: 'hideModal',
-          data: {name: this.name, props: this.props}
+          data: {name: this.name, props: this.props, ...this.studyContext}
         });
       }
     },
@@ -240,7 +267,7 @@ export default {
       if (this.acceptStats) {
         this.$socket.emit('stats', {
           action: 'showModal',
-          data: {name: this.name, props: this.props}
+          data: {name: this.name, props: this.props, ...this.studyContext}
         });
       }
       if (this.hideWaiting) {
