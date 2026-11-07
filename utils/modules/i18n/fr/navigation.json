@@ -8,7 +8,8 @@
         "hideSidebar": "Masquer la barre latérale",
         "showSidebar": "Afficher la barre latérale",
         "moreActions": "Plus d'actions",
-        "sidebarSection": "Section de la barre latérale"
+        "sidebarSection": "Section de la barre latérale",
+        "currentStepTab": "{title} (étape actuelle)"
     },
     "topbar": {
         "goBack": "Retour...",
