@@ -13,6 +13,15 @@
           class="col border mh-100 justify-content-center p-3"
           style="overflow-y: scroll; position: relative;"
         >
+          <div v-if="saveFailed" class="alert alert-danger" role="alert">
+            {{ $t('errors.editor.saveRecovery') }}
+            <BasicButton class="btn-outline-danger" :disabled="saveInFlight || recovering" @click="recoverSavedContent">
+              {{ $t('errors.editor.reloadSaved') }}
+            </BasicButton>
+          </div>
+          <BasicButton v-if="failedDraft" class="btn-outline-secondary" @click="downloadFailedDraft">
+            {{ $t('errors.editor.downloadDraft') }}
+          </BasicButton>
           <!-- Read-Only Toolbar Bar -->
           <div
             v-if="!toolbarVisible && finalReadOnly"
@@ -47,6 +56,7 @@ import {dbToDelta, deltaToDb} from "editor-delta-conversion";
 import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument, resolveApiMessage} from "@/assets/utils.js";
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 
 const Delta = Quill.import('delta');
 
@@ -54,6 +64,7 @@ export default {
   name: "EditorView",
   components: {
     LoadIcon,
+    BasicButton,
   },
   fetch_data: ["document_edit"],
   subscribeTable: ["document_data"],
@@ -109,6 +120,17 @@ export default {
       firstVersion: null,
       feedbackLoaded: false,
       pendingFeedbackText: '',
+      saveInFlight: null,
+      saveTimer: null,
+      saveFailed: false,
+      recovering: false,
+      failedDraft: '',
+      recoveryRevision: 0,
+      recoverySelection: null,
+      recoveryTimer: null,
+      recoveryRequest: 0,
+      disposed: false,
+      contextVersion: 0,
     };
   },
   computed: {
@@ -219,6 +241,9 @@ export default {
     },
   },
   watch: {
+    documentId() { this.invalidateSaveContext(); },
+    studySessionId() { this.invalidateSaveContext(); },
+    studyStepId() { this.invalidateSaveContext(); },
     unappliedEdits: {
       handler(newEdits) {
         if (newEdits.length > 0) {
@@ -236,7 +261,7 @@ export default {
     
     finalReadOnly: {
       handler(newReadOnly) {
-        this.editor.getEditor().enable(!newReadOnly);
+        this.editor.getEditor().enable(!newReadOnly && !this.saveFailed);
         const toolbar = this.editor.getEditor().getModule("toolbar");
         if (toolbar && toolbar.container) {
           if (newReadOnly) {
@@ -290,6 +315,7 @@ export default {
       }, 500);
     }
     this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
+    const initialVersion = this.contextVersion;
     this.$socket.emit("documentGet",
       {
         documentId: this.documentId,
@@ -297,6 +323,7 @@ export default {
         studyStepId: this.studyStepId
       },
       (res) => {
+        if (this.disposed || initialVersion !== this.contextVersion) return;
         if (res.success) {
           this.initializeEditorWithContent(res['data']['deltas']);
 
@@ -334,11 +361,17 @@ export default {
         }
       });
     },
+    disconnect() {
+      if (this.saveInFlight || this.deltaBuffer.length) this.pauseFailedSave();
+    },
     documentError(error) {
       this.handleDocumentError(error);
     }
   },
   unmounted() {
+    this.disposed = true;
+    clearTimeout(this.saveTimer);
+    clearTimeout(this.recoveryTimer);
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);
     this.eventBus.off('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
@@ -369,42 +402,79 @@ export default {
      * @returns {Promise<void>}
      */
     flushPendingEdits() {
-      if (this.debouncedProcessDelta) {
-        this.debouncedProcessDelta.cancel();
-      }
-      if (!this.editor || this.deltaBuffer.length === 0) {
-        return Promise.resolve();
-      }
-      const quill = this.editor.getEditor();
-      const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-      const dbOps = deltaToDb(combinedDelta.ops);
-      if (dbOps.length === 0) {
-        this.deltaBuffer = [];
-        return Promise.resolve();
-      }
-      const backup = quill.getContents();
-      return new Promise((resolve) => {
-        this.$socket.emit(
-          "documentEdit",
-          {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId || null,
-            studyStepId: this.studyStepId || null,
-            ops: dbOps,
-          },
-          (res) => {
-            if (!res.success) {
-              quill.setContents(backup);
-              this.eventBus.emit("toast", {
-                title: this.$t("errors.editor.previousEditFailed"),
-                message: resolveApiMessage(res),
-                variant: "danger",
-              });
-            }
-            this.deltaBuffer = [];
-            resolve();
-          }
-        );
+      this.debouncedProcessDelta?.cancel();
+      return Promise.resolve(this.saveInFlight).then(() => {
+        if (this.saveFailed || !this.deltaBuffer.length) return;
+        return Promise.resolve(this.processDelta()).then(() => this.flushPendingEdits());
+      });
+    },
+    /** Stop callbacks and buffered positions from crossing document contexts. */
+    invalidateSaveContext() {
+      this.contextVersion++;
+      this.recoveryRequest++;
+      clearTimeout(this.recoveryTimer);
+      this.recovering = false;
+      this.debouncedProcessDelta?.cancel();
+      this.deltaBuffer = [];
+      this.saveFailed = true;
+      this.editor?.getEditor().enable(false);
+    },
+    /** Keep the visible draft, but never send positions based on a failed edit. */
+    pauseFailedSave() {
+      this.saveFailed = true;
+      this.debouncedProcessDelta?.cancel();
+      this.deltaBuffer = [];
+      this.recoverySelection = this.editor.getEditor().getSelection() || this.recoverySelection;
+      this.failedDraft = this.editor.getEditor().root.innerHTML;
+      this.editor.getEditor().enable(false);
+    },
+    /** Export the unconfirmed draft without replaying possibly committed operations. */
+    downloadFailedDraft() {
+      downloadDocument(this.failedDraft, `${this.documentHash || this.documentId}.html`, "text/html");
+    },
+    /** Replace the paused draft with saved content only after the write has settled. */
+    recoverSavedContent() {
+      if (this.saveInFlight || this.recovering || this.disposed) return;
+      this.recovering = true;
+      const version = this.contextVersion;
+      const revision = this.recoveryRevision;
+      const request = ++this.recoveryRequest;
+      this.recoveryTimer = setTimeout(() => {
+        this.recoveryRequest++;
+        this.recovering = false;
+      }, 10000);
+      this.$socket.emit("documentGet", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+      }, async (res) => {
+        if (this.disposed || version !== this.contextVersion || request !== this.recoveryRequest) return;
+        clearTimeout(this.recoveryTimer);
+        this.recovering = false;
+        if (!res.success) { this.handleDocumentError(res.error); return; }
+        // A concurrent broadcast can straddle the snapshot. Fetch again instead
+        // of applying an operation which the snapshot may already contain.
+        if (revision !== this.recoveryRevision) { this.recoverSavedContent(); return; }
+        const quill = this.editor.getEditor();
+        const selection = this.recoverySelection;
+        const contents = new Delta(res.data.deltas);
+        const change = quill.getContents().diff(contents);
+        quill.setContents(contents, "api");
+        quill.history.clear();
+        if (selection) {
+          const start = change.transformPosition(selection.index);
+          const end = change.transformPosition(selection.index + selection.length);
+          quill.setSelection(start, end - start, "silent");
+        }
+        // The snapshot includes these persisted edits. Let the store watchers
+        // settle while paused so they cannot apply them for a second time.
+        this.$store.commit("table/document_edit/applyEdits", this.unappliedEdits.map(edit => edit.id));
+        await this.$nextTick();
+        if (this.disposed || version !== this.contextVersion || request !== this.recoveryRequest) return;
+        if (revision !== this.recoveryRevision) { this.recoverSavedContent(); return; }
+        this.saveFailed = false;
+        quill.enable(!this.finalReadOnly);
+        this.publishEditorContent();
       });
     },
     isEditorEmpty() {
@@ -425,7 +495,7 @@ export default {
       }
     },
     addText(text) {
-      if (!text || !this.editor) {
+      if (this.saveFailed || !text || !this.editor) {
         return;
       }
       this.editor.getEditor().insertText(0, text, "user");
@@ -439,7 +509,7 @@ export default {
       this.editor.getEditor().updateContents(delta, "api");
     },
     insertTextAtCursor(text) {
-      if (this.editor) {
+      if (this.editor && !this.saveFailed) {
         const quill = this.editor.getEditor();
         const range = quill.getSelection();
         if (range) {
@@ -502,48 +572,63 @@ export default {
       }
     },
     handleTextChange(delta, oldContents, source) {
-      if (source === "user") {
+      if (source === "user" && !this.saveFailed) {
         this.deltaBuffer.push(delta);
         this.debouncedProcessDelta();
 
         this.emitContentForPlaceholders();
       }
     },
+    /** Send one batch at a time; later typing remains buffered until acknowledgement. */
     processDelta() {
-      const quill = this.editor.getEditor();
-      if (this.deltaBuffer.length > 0) {
-        let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        let dbOps = deltaToDb(combinedDelta.ops);        
-        if (dbOps.length > 0) {
-          const backup = quill.getContents();
-
-          this.$socket.emit("documentEdit", {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId || null,
-            studyStepId: this.studyStepId || null,
-            ops: dbOps
-          }, (res) => {
-            if (!res.success) {
-              quill.setContents(backup);
-              this.eventBus.emit("toast", {
-                title: this.$t('errors.editor.previousEditFailed'),
-                message: resolveApiMessage(res),
-                variant: "danger",
-              });
-            }
-          });
+      if (this.saveFailed || this.saveInFlight || !this.deltaBuffer.length) return this.saveInFlight;
+      const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
+      this.deltaBuffer = [];
+      const ops = deltaToDb(combinedDelta.ops);
+      if (!ops.length) return;
+      const version = this.contextVersion;
+      let finish;
+      const pending = new Promise(resolve => { finish = resolve; });
+      this.saveInFlight = pending;
+      this.saveTimer = setTimeout(() => {
+        if (!this.disposed && version === this.contextVersion) this.pauseFailedSave();
+      }, 10000);
+      this.$socket.emit("documentEdit", {
+        documentId: this.documentId,
+        studySessionId: this.studySessionId || null,
+        studyStepId: this.studyStepId || null,
+        ops,
+      }, (res) => {
+        clearTimeout(this.saveTimer);
+        this.saveInFlight = null;
+        if (version === this.contextVersion) {
+          if (!res?.success) {
+            if (!this.disposed) this.pauseFailedSave();
+            this.deltaBuffer = [];
+            this.eventBus.emit("toast", {
+              title: this.$t('errors.editor.previousEditFailed'),
+              message: resolveApiMessage(res),
+              variant: "danger",
+            });
+          } else if (!this.saveFailed) {
+            this.processDelta();
+          }
         }
-
-        let currentVersion = this.editor.getEditor().root.innerHTML;
-        let studyData = {
-          firstVersion: this.firstVersion,
-          currentVersion: currentVersion,
-        };
-        this.$emit("update:data", studyData);
-        this.deltaBuffer = [];
-      }
+        finish();
+      });
+      this.publishEditorContent();
+      return pending;
+    },
+    /** Keep study data and placeholder consumers in sync with displayed content. */
+    publishEditorContent() {
+      this.$emit("update:data", {
+        firstVersion: this.firstVersion,
+        currentVersion: this.editor.getEditor().root.innerHTML,
+      });
+      this.emitContentForPlaceholders();
     },
     processEdits(edits) {
+      if (this.saveFailed) { this.recoveryRevision++; return; }
       edits.forEach((edit) => {
               if (!(edit.sender === this.$socket.id)) {
               const delta = dbToDelta([edit]);
@@ -561,6 +646,7 @@ export default {
       this.emitContentForPlaceholders();
     },
     applyAdditionalEdits() {
+      if (this.saveFailed) { this.recoveryRevision++; return; }
       if (this.unappliedEdits.length > 0) {
         const delta = dbToDelta(this.unappliedEdits);
         this.editor.getEditor().updateContents(delta, "api");
