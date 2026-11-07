@@ -128,6 +128,7 @@ export default {
       recoveryRevision: 0,
       recoverySelection: null,
       recoveryTimer: null,
+      placeholderTimer: null,
       recoveryRequest: 0,
       disposed: false,
       contextVersion: 0,
@@ -310,7 +311,7 @@ export default {
       };
       this.eventBus.on("editorInsertText", this.insertTextHandler);
 
-      setTimeout(() => {
+      this.placeholderTimer = setTimeout(() => {
         this.emitContentForPlaceholders();
       }, 500);
     }
@@ -370,6 +371,8 @@ export default {
   },
   unmounted() {
     this.disposed = true;
+    clearTimeout(this.placeholderTimer);
+    this.editor?.getEditor().off('text-change', this.handleTextChange);
     clearTimeout(this.recoveryTimer);
     this.eventBus.off("editorSelectEdit", this.selectEditHandler);
     this.eventBus.off("editorInsertText", this.insertTextHandler);

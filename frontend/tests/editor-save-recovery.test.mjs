@@ -141,3 +141,28 @@ test('missing acknowledgement after unmount settles flush without sending depend
     assert.equal(c.deltaBuffer.length, 0);
   } finally { sandbox.setTimeout = original; }
 });
+
+test('selected range follows Quill diff across rollback and incoming insert', async () => {
+  const {c,quill,sent,type} = setup();
+  type(1,'FAIL'); quill.setSelection(0,6,'silent'); c.processDelta();
+  sent[0].callback({success:false});
+  const saved = new Delta().insert('XXab\n');
+  const change = quill.getContents().diff(saved);
+  assert.deepEqual(JSON.parse(JSON.stringify(change.ops)), [{insert:'XXa'},{delete:5}]);
+  c.processEdits([{sender:'other',insert:'XX'}]); c.recoverSavedContent();
+  await sent[1].callback({success:true,data:{deltas:saved}});
+  assert.equal(quill.getSelection().index,3); assert.equal(quill.getSelection().length,1);
+  assert.equal(quill.getText(),'XXab\n');
+});
+
+test('unmount cancels placeholder work and removes the Quill change handler', async () => {
+  const {c,quill} = setup();
+  let fired = false; c.placeholderTimer = setTimeout(() => {fired = true;}, 5);
+  const off = []; c.eventBus.off = (...args) => off.push(args);
+  quill.on('text-change',c.handleTextChange);
+  sandbox.component.unmounted.call(c);
+  await new Promise(resolve => setTimeout(resolve,15));
+  assert.equal(fired,false); assert.equal(c.disposed,true);
+  assert.equal(quill.emitter.listeners('text-change').includes(c.handleTextChange),false);
+  assert.deepEqual(off.map(args=>args[0]),['editorSelectEdit','editorInsertText','editorApplyGeneratedFeedback']);
+});
