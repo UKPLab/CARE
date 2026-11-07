@@ -42,6 +42,7 @@
         "ai_models": "Modèles d'IA",
         "ai_hooks": "Fonctions IA",
         "ai_budget": "Budget IA",
+        "assessments": "Évaluations",
         "triggers": "Déclencheurs",
         "trigger_logs": "Rapports des déclencheurs",
         "socket_profiler": "Profileur de sockets",
