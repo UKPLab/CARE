@@ -866,7 +866,11 @@ class DocumentSocket extends Socket {
         if (!session || !step || session.deleted || step.deleted ||
             session.studyId !== step.studyId || step.documentId !== documentId) deny();
         const study = await this.models.study.getById(session.studyId, query);
-        if (!study || study.deleted || study.closed ||
+        // Unfinished copied sessions remain available after closure or the study deadline (Study.studyClosed).
+        const continuation = session.parentStudySessionId != null && session.end === null;
+        if (!study || study.deleted ||
+            (!continuation && (study.closed || (!study.multipleSubmit && study.end &&
+                new Date(study.end).getTime() < Date.now()))) ||
             (session.end && !study.multipleSubmit) ||
             (study.timeLimit > 0 && session.start &&
                 Date.now() >= new Date(session.start).getTime() + study.timeLimit * 60000) ||

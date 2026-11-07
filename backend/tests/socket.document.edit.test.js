@@ -970,6 +970,35 @@ describe("documentEdit ordering (real sockets and database)", () => {
         }
     });
 
+    test.each([
+        ["closed copied session", true, true, false, true],
+        ["expired ordinary session", false, false, false, false],
+        ["expired copied session", false, true, false, true],
+        ["expired multiple-submit session", false, false, true, true],
+    ])("edit lifecycle follows the study policy: %s", async (_name, closed, copied, multipleSubmit, allowed) => {
+        const m = server.db.models;
+        const documentId = await createDocument();
+        const context = await createStudySession(documentId);
+        const session = await m.study_session.findByPk(context.id);
+        await m.study.update({closed: closed ? new Date() : null,
+            end: new Date(Date.now() - 60000), multipleSubmit},
+            {where: {id: session.studyId}, hooks: false});
+        if (copied) {
+            const parent = await m.study_session.create({studyId: session.studyId, userId: user.id,
+                hash: randomUUID(), end: new Date()}, {hooks: false});
+            await session.update({parentStudySessionId: parent.id, end: null}, {hooks: false});
+        }
+        const log = jest.spyOn(console, "log").mockImplementation(() => {});
+        try {
+            expect(await emitEdit({documentId, studySessionId: session.id, studyStepId: context.stepId,
+                ops: [insert("X", 1)]})).toMatchObject({success: allowed});
+            expect(await m.document_edit.count({where: {documentId, studySessionId: session.id}}))
+                .toBe(allowed ? 1 : 0);
+        } finally {
+            log.mockRestore();
+        }
+    });
+
     test("delayed transaction acquisition keeps reception order in the database", async () => {
         const documentId = await createDocument();
         const control = controlTransactions();
