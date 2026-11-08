@@ -267,12 +267,13 @@ export default {
         const slot = this.$slots[slotName];
         if (slot) {
           const vnodes = slot();
-          const firstVNode = vnodes[0];
+          let firstVNode = vnodes[0];
+          // Forwarded slots can add several fragment wrappers around the tab.
+          while (firstVNode && !firstVNode.props?.title && Array.isArray(firstVNode.children)) {
+            firstVNode = firstVNode.children[0];
+          }
           if (firstVNode) {
-            let props = firstVNode.props || {};
-            if (slotName === "additionalSidebars" || !props.title) {
-              props = vnodes[0].children[0].props || {};
-            }
+            const props = firstVNode.props || {};
             configs.tabs[slotName] = {
               title: props.title,
               icon: props.icon,
