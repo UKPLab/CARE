@@ -130,6 +130,7 @@ export default {
   },
   mixins: [aiRequestMixin],
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     acceptStats: {
       default: () => false,
     },
@@ -395,6 +396,7 @@ export default {
       this.$socket.emit("stats", {
         action,
         data: {
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
           studySessionId: this.studySessionId,
           studyStepId: this.studyStepId,
           documentId: this.documentId,

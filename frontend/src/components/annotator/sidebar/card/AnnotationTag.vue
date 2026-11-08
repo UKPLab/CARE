@@ -54,6 +54,8 @@ export default {
   name: "AnnotationTag",
   components: {SidebarButton},
   inject: {
+    documentId: {type: Number, required: true},
+    studyStepId: {type: Number, required: false, default: null},
     studySessionId: {
       type: Number,
       required: false,
@@ -189,7 +191,9 @@ export default {
       }
     },
     scrollTo(annotationId) {
-      this.eventBus.emit('pdfScroll', annotationId);
+      this.eventBus.emit('pdfScroll', {
+        annotationId, documentId: this.documentId, studyStepId: this.studyStepId, studySessionId: this.studySessionId,
+      });
     },
     toggleEditTag() {
       const editingTag = !this.editingTag;

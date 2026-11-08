@@ -223,7 +223,9 @@ export default {
     },
     /** Scrolls the viewer to the given annotation. @param {number} annotationId */
     jumpTo(annotationId) {
-      this.eventBus.emit("pdfScroll", annotationId);
+      this.eventBus.emit("pdfScroll", {
+        annotationId, documentId: this.documentId, studyStepId: this.studyStepId, studySessionId: this.studySessionId,
+      });
     },
   },
 };

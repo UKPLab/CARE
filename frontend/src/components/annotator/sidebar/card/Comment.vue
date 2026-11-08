@@ -203,6 +203,7 @@ export default {
   name: "CommentCard",
   components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration, BasicButton},
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     documentId: {
       type: Number,
       required: true,
@@ -569,6 +570,7 @@ export default {
         this.$socket.emit("stats", {
           action: "textPasted",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
@@ -591,6 +593,7 @@ export default {
       this.$socket.emit("stats", {
         action: "commentUpdated",
         data: {
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
           documentId: this.documentId,
           studySessionId: this.studySessionId,
           studyStepId: this.studyStepId,
@@ -616,6 +619,7 @@ export default {
         this.$socket.emit("stats", {
           action: "textCopied",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,

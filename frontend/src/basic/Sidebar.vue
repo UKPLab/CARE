@@ -178,7 +178,7 @@ export default {
       default: false
     },
     currentStudyStep: {
-      type: Number,
+      type: Object,
       required: false,
       default: null
     }
@@ -250,7 +250,11 @@ export default {
       isNarrow: false,
       visibleBeforeNarrow: false,
       activeSlotStartedAt: null,
-      activeSlotName: null
+      activeSlotName: null,
+      activeSlotContext: null,
+      logResize: debounce(function (data) {
+        if (this.acceptStats) this.$socket.emit("stats", {action: "sidebarResize", data});
+      }, 500),
     };
   },
   computed: {
@@ -353,6 +357,14 @@ export default {
     }
   },
   watch: {
+    currentStudyStep() {
+      this.logSidebarSlotDuration();
+      this.startSidebarSlotTimer();
+    },
+    studySessionId() {
+      this.logSidebarSlotDuration();
+      this.startSidebarSlotTimer();
+    },
     // Includes programmatic tab changes and the fallback when a tab becomes hidden.
     resolvedActiveSlot() {
       this.logSidebarSlotDuration();
@@ -401,6 +413,7 @@ export default {
 
   },
   beforeUnmount() {
+    this.logResize.flush();
     this.logSidebarSlotDuration();
     window.removeEventListener('resize', this.onResize);
   },
@@ -570,7 +583,11 @@ export default {
       }
 
       // Log resize event with debouncing
-      this.logResize();
+      this.logResize({
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        windowWidth: window.innerWidth, sidebarVisible: this.isSidebarVisible,
+      });
     },
     visibilityChange() {
       if (this.isSidebarVisible) {
@@ -583,6 +600,7 @@ export default {
         this.$socket.emit("stats", {
           action: "sidebar-visibility",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             isSidebarVisible: this.isSidebarVisible,
             documentId: this.documentId,
             studySessionId: this.studySessionId,
@@ -597,8 +615,13 @@ export default {
      * @returns {void}
      */
     startSidebarSlotTimer() {
+      if (this.activeSlotStartedAt !== null) return;
       this.activeSlotName = this.isShown && this.isSidebarVisible ? this.resolvedActiveSlot : null;
       this.activeSlotStartedAt = this.activeSlotName ? Date.now() : null;
+      this.activeSlotContext = this.activeSlotName ? {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      } : null;
     },
     /**
      * Logs time spent on the active sidebar slot.
@@ -608,36 +631,22 @@ export default {
     logSidebarSlotDuration() {
       const startedAt = this.activeSlotStartedAt;
       const slotName = this.activeSlotName;
+      const context = this.activeSlotContext;
       this.activeSlotStartedAt = null;
       this.activeSlotName = null;
+      this.activeSlotContext = null;
       if (!this.acceptStats || startedAt === null || !slotName) return;
       const durationMs = Date.now() - startedAt;
       if (durationMs <= 0) return;
       this.$socket.emit("stats", {
         action: "sidebarSlotDuration",
         data: {
+          ...context,
           slotName,
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
           durationMs,
         }
       });
     },
-    logResize: debounce(function () {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "sidebarResize",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              windowWidth: window.innerWidth,
-              sidebarVisible: this.isSidebarVisible
-            }
-          });
-        }
-      }, 500)
   },
 };
 </script>
