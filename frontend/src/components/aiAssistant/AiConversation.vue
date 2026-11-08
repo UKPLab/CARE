@@ -130,6 +130,7 @@ export default {
   },
   mixins: [aiRequestMixin],
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     acceptStats: {
       default: () => false,
     },
@@ -180,6 +181,7 @@ export default {
       streamFrame: null,
       conversationSnapshot: emptyConversationSnapshot(),
       newConversationSelected: false,
+      historyConversationSelected: false,
       selectedModelId: null,
       draft: "",
       quote: null,
@@ -244,6 +246,12 @@ export default {
     },
     studyStepId() {
       this.changeContext();
+    },
+    "currentStudyStep.id"(stepId) {
+      if (stepId === this.studyStepId && !this.activeRequest && !this.recoverableRequest) {
+        // Retained panes refresh on return, unless history was selected explicitly.
+        return this.loadConversation({conversationId: this.historyConversationSelected ? this.activeConversationId : null});
+      }
     },
   },
   sockets: {
@@ -366,6 +374,7 @@ export default {
       this.stopRecovery();
       this.conversationSnapshot = emptyConversationSnapshot();
       this.newConversationSelected = false;
+      this.historyConversationSelected = false;
       this.loadConversation();
     },
 
@@ -395,6 +404,7 @@ export default {
       this.$socket.emit("stats", {
         action,
         data: {
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
           studySessionId: this.studySessionId,
           studyStepId: this.studyStepId,
           documentId: this.documentId,
@@ -508,6 +518,7 @@ export default {
       this.requestFailureKey = "";
       this.selectedModelId = this.conversationSnapshot.defaultModelId || this.models[0]?.id || null;
       this.newConversationSelected = true;
+      this.historyConversationSelected = false;
       this.setConversationSnapshot({
         activeConversationId: null,
         includeContext,
@@ -534,6 +545,7 @@ export default {
         fromConversationId: this.activeConversationId,
         toConversationId: Number(conversationId),
       });
+      this.historyConversationSelected = true;
       this.loadConversation({conversationId});
     },
     /**

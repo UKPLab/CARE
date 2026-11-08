@@ -206,12 +206,28 @@ analyze usage timings.
 The most important action types include:
 
     * ``routeStep``: indicating the user navigated to a different route in the app, e.g. accessing a document
+    * ``windowFocusChange``: indicating that the CARE window lost (``focused: false``) or regained (``focused: true``)
+      focus, e.g. the user clicked into another application or browser tab. When focus returns, ``duration`` gives the
+      milliseconds spent outside the window (``null`` if the time of leaving is unknown). If no ``tabVisibilityChange``
+      with ``hidden: true`` falls in between, CARE stayed visible while the user worked in another window.
     * ``openModal``: indicating the user opened a modal of the type specified in the parameters
     * ``actionClick``: indicating the user clicked a button in a table with details of the button and table row
     * ``pdfPageVisibilityChange``: indicating that a page particular page was rendered or underendered on the user's screen.
       This is accompanied with a page number and the vertical offset of the page start to contextualize the next following action type.
     * ``annotatorScrollActivity``: indicating that a user scrolled within the PDF (provided in 500ms resolution) with a relative
       offset in the PDF.
+    * ``lookBackPanelVisibilityChange``: indicating that the annotations or the assessment of an earlier study step appeared in
+      or disappeared from the sidebar. This is accompanied with the earlier step, the kind of content, whether it is now
+      visible, and the step the user is on.
+    * ``studyPaneMouseChange`` and ``studyPaneClick``: indicating that the mouse entered or left the document of a study step,
+      or clicked in it, while an earlier step is shown next to or instead of the current one. The sidebar does not count
+      as the document. This is accompanied with the step of the document, the step the user is on, and for
+      ``studyPaneMouseChange`` whether the mouse is now inside. The time between inside and outside is how long the mouse was in
+      that document. Going to another window or browser tab also counts as outside.
+    * ``clickTopBarButton`` and ``clickCardButton``: indicating the user clicked a button. In a study, ``props.key`` says
+      which one: ``studyPane.strip`` (showing or hiding the workflow bar), ``studyPane.tab`` (a step in the workflow bar),
+      ``studyPane.split`` and ``studyPane.flip`` (opening and swapping a split view), ``studyNav.previous`` and
+      ``studyNav.next``, and ``studyInstructions.open`` (showing the study description again).
 
 **Filtering by study session and step**
 Events logged during a study carry the study IDs in ``data``:
@@ -222,7 +238,7 @@ Events logged during a study carry the study IDs in ``data``:
     * ``currentStudyStepId``: the step the study session was on at that time
 
 An event that happened outside a study, or where an ID is not known, does not contain that key. Mouse movements and
-tab changes carry ``studySessionId`` and ``currentStudyStepId``. Route changes (``routeStep``) into a study do not, as
+tab and window focus changes carry ``studySessionId`` and ``currentStudyStepId``. Route changes (``routeStep``) into a study do not, as
 they are logged before the study session is loaded.
 
 .. code-block:: python

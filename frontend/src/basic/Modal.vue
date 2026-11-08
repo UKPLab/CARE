@@ -101,6 +101,7 @@ import {v4 as uuid} from 'uuid';
 export default {
   name: 'BasicModal',
   inject: {
+    documentId: {type: Number, required: false, default: null},
     acceptStats: {
       default: () => false
     },
@@ -177,6 +178,7 @@ export default {
     // Study IDs for the stats events; empty outside a study
     studyContext() {
       return {
+        ...(this.documentId ? {documentId: this.documentId} : {}),
         ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
         ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
         ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),

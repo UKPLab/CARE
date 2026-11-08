@@ -106,6 +106,7 @@ export default {
   components: {AiAssistantRequest, BasicEditor, BasicSidebar, SidebarTemplate, DialogueConversationBody, DialogueHeader},
   mixins: [aiRequestMixin],
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     acceptStats: {
       default: () => false,
     },
@@ -289,6 +290,8 @@ export default {
       this.$socket.emit("stats", {
         action,
         data: {
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+          ...(this.documentId ? {documentId: this.documentId} : {}),
           studySessionId: this.studySessionId,
           studyStepId: this.studyStepId,
           ...(this.activeConversationId != null ? {conversationId: this.activeConversationId} : {}),
