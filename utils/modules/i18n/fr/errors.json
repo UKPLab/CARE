@@ -35,6 +35,20 @@
         "noCommentAccess": "Vous n'avez pas accès à ce commentaire",
         "noPreprocessSubmissionPermission": "Vous n'avez pas l'autorisation de prétraiter les travaux"
     },
+    "assessment": {
+        "accessDenied": "Vous n'avez pas accès au tableau de bord de gestion des évaluations.",
+        "fieldRequired": "{field} est obligatoire.",
+        "fieldInvalid": "{field} est invalide.",
+        "optionInvalid": "Option de notation {position} : {field} est invalide.",
+        "pointsRange": "Le minimum de points ne doit pas dépasser le maximum.",
+        "criterion": {
+            "notFound": "Critère introuvable.",
+            "groupNotFound": "Groupe de critères introuvable.",
+            "versionExists": "La version « {versionNumber} » existe déjà pour ce critère.",
+            "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de critères.",
+            "inUse": "La version {criterionId} du critère ne peut pas être supprimée : elle est utilisée par {count} version(s) de grille ({rubricIds})."
+        }
+    },
     "configuration": {
         "idRequiredNoPeriod": "L'ID de configuration est obligatoire",
         "contentRequiredNoPeriod": "Le contenu de la configuration est obligatoire",

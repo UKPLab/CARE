@@ -35,6 +35,20 @@
         "noCommentAccess": "You don't have access to this comment",
         "noPreprocessSubmissionPermission": "You do not have permission to preprocess submissions"
     },
+    "assessment": {
+        "accessDenied": "You do not have access to the Assessment Management Dashboard.",
+        "fieldRequired": "{field} is required.",
+        "fieldInvalid": "{field} is invalid.",
+        "optionInvalid": "Scoring option {position}: {field} is invalid.",
+        "pointsRange": "Minimum points must not be greater than maximum points.",
+        "criterion": {
+            "notFound": "Criterion not found.",
+            "groupNotFound": "Criterion group not found.",
+            "versionExists": "Version \"{versionNumber}\" already exists for this criterion.",
+            "copySourceMismatch": "The version to copy does not belong to this criterion group.",
+            "inUse": "Criterion version {criterionId} cannot be deleted: it is used by {count} rubric version(s) ({rubricIds})."
+        }
+    },
     "configuration": {
         "idRequiredNoPeriod": "Configuration ID is required",
         "contentRequiredNoPeriod": "Configuration content is required",

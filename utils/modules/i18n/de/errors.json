@@ -35,6 +35,20 @@
     "noPermissionToAccesData": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen",
     "noPreprocessSubmissionPermission": "Sie haben keine Berechtigung, Einreichungen vorzuverarbeiten"
   },
+  "assessment": {
+    "accessDenied": "Sie haben keinen Zugriff auf das Assessment-Management-Dashboard.",
+    "fieldRequired": "{field} ist erforderlich.",
+    "fieldInvalid": "{field} ist ungültig.",
+    "optionInvalid": "Bewertungsoption {position}: {field} ist ungültig.",
+    "pointsRange": "Die Mindestpunktzahl darf die Höchstpunktzahl nicht überschreiten.",
+    "criterion": {
+      "notFound": "Kriterium nicht gefunden.",
+      "groupNotFound": "Kriteriengruppe nicht gefunden.",
+      "versionExists": "Version \"{versionNumber}\" existiert für dieses Kriterium bereits.",
+      "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Kriteriengruppe.",
+      "inUse": "Kriterium-Version {criterionId} kann nicht gelöscht werden: Sie wird von {count} Rubrik-Version(en) verwendet ({rubricIds})."
+    }
+  },
   "configuration": {
     "idRequiredNoPeriod": "Konfigurations-ID ist erforderlich",
     "contentRequiredNoPeriod": "Konfigurationsinhalt ist erforderlich",
