@@ -1,0 +1,92 @@
+/* "..." menu shared by table row actions and study cards. */
+
+.row-actions-menu {
+  position: fixed;
+  z-index: 1080;
+  min-width: 13rem;
+  padding: 0.35rem;
+  translate: -100% 0;
+  transform-origin: top right;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: 12px;
+  box-shadow: var(--care-shadow-3);
+}
+
+.row-actions-menu--up {
+  translate: -100% -100%;
+  transform-origin: bottom right;
+}
+
+[data-bs-theme="dark"] .row-actions-menu {
+  background: color-mix(in srgb, var(--bs-body-bg) 92%, white);
+  border-color: var(--bs-border-color-translucent);
+}
+
+.row-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--bs-body-color);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.row-actions-menu-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.row-actions-menu-item svg {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+  transition: color 0.15s ease;
+}
+
+.row-actions-menu-item:hover,
+.row-actions-menu-item:focus-visible {
+  outline: none;
+  background: rgba(var(--bs-secondary-rgb), 0.12);
+  color: var(--bs-emphasis-color);
+}
+
+.row-actions-menu-item:hover svg,
+.row-actions-menu-item:focus-visible svg {
+  color: var(--bs-emphasis-color);
+}
+
+.row-actions-menu-item--danger,
+.row-actions-menu-item--danger svg,
+.row-actions-menu-item--danger:hover,
+.row-actions-menu-item--danger:focus-visible,
+.row-actions-menu-item--danger:hover svg,
+.row-actions-menu-item--danger:focus-visible svg {
+  color: var(--bs-danger);
+}
+
+.row-actions-menu-item--danger:hover,
+.row-actions-menu-item--danger:focus-visible {
+  background: rgba(var(--bs-danger-rgb), 0.1);
+}
+
+.row-actions-menu-divider {
+  height: 1px;
+  margin: 0.3rem 0.4rem;
+  background: var(--bs-border-color-translucent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row-actions-menu-item,
+  .row-actions-menu-item svg {
+    transition: none;
+  }
+}

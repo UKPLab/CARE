@@ -19,6 +19,20 @@ export function isDangerButton(button) {
 }
 
 /**
+ * Whether a focusout left both the open menu and the button that opened it.
+ * A move between those two stays open. Focus leaving the page (no next target) closes it.
+ * @param {FocusEvent} event
+ * @param {Element|null|undefined} menu
+ * @param {Element|null|undefined} trigger
+ * @returns {boolean}
+ */
+export function focusLeftMenu(event, menu, trigger) {
+  const next = event.relatedTarget || document.activeElement;
+  const stays = (node) => node && (next === node || node.contains(next));
+  return !(stays(menu) || stays(trigger));
+}
+
+/**
  * @param {Object[]} buttons
  * @param {Object} [layout]
  * @returns {{inline: Object[], menu: Object[]}}

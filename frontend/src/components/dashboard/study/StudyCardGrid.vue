@@ -36,7 +36,6 @@
       <StudyEmptyState
         :searching="searching"
         :search-text="searchText"
-        :filter-labels="filterLabels"
         :can-create="!!onCreate"
         @clear="clearSearch && clearSearch()"
         @create="onCreate && onCreate()"
@@ -134,6 +133,7 @@
               aria-haspopup="menu"
               :aria-expanded="menu.rowId === row.id"
               @click.stop="toggleMenu($event, row)"
+              @focusout="onMenuFocusOut($event, row)"
             >
               <LoadIcon
                 icon-name="three-dots"
@@ -147,14 +147,14 @@
 
     <!-- Teleported: the card clips its overflow for the rounded accent wash. -->
     <Teleport to="body">
-      <Transition name="sc-menu">
         <div
           v-if="menuRow"
           ref="menu"
-          class="study-card-menu"
-          :class="{ 'study-card-menu--up': menu.up }"
+          class="row-actions-menu"
+          :class="{ 'row-actions-menu--up': menu.up }"
           :style="{ top: menu.top + 'px', left: menu.left + 'px' }"
           role="menu"
+          @focusout="onMenuFocusOut"
           @keydown.esc.prevent="closeMenu(true)"
         >
           <template
@@ -163,14 +163,14 @@
           >
             <div
               v-if="isDanger(b) && index > 0 && !isDanger(actionLayout(menuRow).menu[index - 1])"
-              class="study-card-menu-divider"
+              class="row-actions-menu-divider"
               role="separator"
             />
             <button
               type="button"
               role="menuitem"
-              class="study-card-menu-item"
-              :class="{ 'study-card-menu-item--danger': isDanger(b) }"
+              class="row-actions-menu-item"
+              :class="{ 'row-actions-menu-item--danger': isDanger(b) }"
               @click="emitMenuAction(b)"
             >
               <LoadIcon
@@ -181,7 +181,6 @@
             </button>
           </template>
         </div>
-      </Transition>
     </Teleport>
   </div>
 </template>
@@ -196,6 +195,7 @@ import {
   relativeTimeFormatter,
   studyCardStatus,
 } from "./studyCardHelpers.js";
+import { focusLeftMenu, isDangerButton, splitRowActions } from "@/basic/table/helpers/rowActionsLayout.js";
 
 /** Icons kept in the card footer when the row has more actions than fit. */
 const INLINE_ACTION_ORDER = ["editStudy", "copyStudyLink", "inspectStudySessions", "showInformation"];
@@ -266,12 +266,6 @@ export default {
       required: false,
       default: "",
     },
-    /** Active filter chips, worded as in the search bar. */
-    filterLabels: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
     clearSearch: {
       type: Function,
       required: false,
@@ -312,6 +306,7 @@ export default {
     },
   },
   beforeUnmount() {
+    this.menu = { rowId: null, top: 0, left: 0, up: false, trigger: null };
     this.unbindMenuListeners();
   },
   methods: {
@@ -381,20 +376,11 @@ export default {
      */
     actionLayout(row) {
       const buttons = this.rowButtons(row).filter((b) => b.action !== "openStudy");
-      const ordered = [
-        ...buttons.filter((b) => !this.isDanger(b)),
-        ...buttons.filter((b) => this.isDanger(b)),
-      ];
-      if (ordered.length <= MAX_INLINE_ACTIONS + 1) {
-        return { inline: ordered, menu: [] };
-      }
-      const preferred = INLINE_ACTION_ORDER
-        .map((action) => ordered.find((b) => b.action === action))
-        .filter(Boolean);
-      const fill = ordered.filter((b) => !this.isDanger(b) && !preferred.includes(b)
-        && !MENU_ONLY_ACTIONS.includes(b.action));
-      const inline = [...preferred, ...fill].slice(0, MAX_INLINE_ACTIONS);
-      return { inline, menu: ordered.filter((b) => !inline.includes(b)) };
+      return splitRowActions(buttons, {
+        maxInline: MAX_INLINE_ACTIONS,
+        inline: INLINE_ACTION_ORDER,
+        menuOnly: MENU_ONLY_ACTIONS,
+      });
     },
     toggleMenu(event, row) {
       if (this.menu.rowId === row.id) {
@@ -414,6 +400,11 @@ export default {
       };
       this.bindMenuListeners();
       this.$nextTick(() => this.$refs.menu?.querySelector("button")?.focus({ preventScroll: true }));
+    },
+    onMenuFocusOut(event, row) {
+      if (row && this.menu.rowId !== row.id) return;
+      if (this.menu.rowId == null || !focusLeftMenu(event, this.$refs.menu, this.menu.trigger)) return;
+      this.closeMenu();
     },
     closeMenu(restoreFocus = false) {
       const trigger = this.menu.trigger;
@@ -445,9 +436,7 @@ export default {
       this._onMenuPointer = null;
       this._onMenuViewport = null;
     },
-    isDanger(button) {
-      return !!button?.options?.specifiers?.["btn-outline-danger"];
-    },
+    isDanger: isDangerButton,
     emitAction(button, row) {
       if (!button) return;
       const s = this.rowState(row) || {};
@@ -511,103 +500,6 @@ export default {
   background: color-mix(in srgb, var(--care-card-accent) 12%, transparent);
 }
 
-/* ---------- More-actions menu (teleported to body) ---------- */
-
-.study-card-menu {
-  position: fixed;
-  z-index: 1080;
-  min-width: 13rem;
-  padding: 0.35rem;
-  translate: -100% 0;
-  transform-origin: top right;
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color-translucent);
-  border-radius: 12px;
-  box-shadow: var(--care-shadow-3);
-}
-
-.study-card-menu--up {
-  translate: -100% -100%;
-  transform-origin: bottom right;
-}
-
-[data-bs-theme="dark"] .study-card-menu {
-  background: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(0, 0, 0, 0.3);
-}
-
-.study-card-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  width: 100%;
-  padding: 0.45rem 0.65rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  text-align: left;
-  white-space: nowrap;
-  color: var(--bs-body-color);
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-
-.study-card-menu-item :deep(svg) {
-  flex: 0 0 auto;
-  color: var(--bs-secondary-color);
-  transition: color 0.15s ease;
-}
-
-.study-card-menu-item:hover,
-.study-card-menu-item:focus-visible {
-  outline: none;
-  background: rgba(var(--bs-secondary-rgb), 0.12);
-  color: var(--bs-emphasis-color);
-}
-
-.study-card-menu-item:hover :deep(svg),
-.study-card-menu-item:focus-visible :deep(svg) {
-  color: var(--bs-emphasis-color);
-}
-
-.study-card-menu-item--danger,
-.study-card-menu-item--danger :deep(svg) {
-  color: var(--bs-danger);
-}
-
-.study-card-menu-item--danger:hover,
-.study-card-menu-item--danger:focus-visible {
-  color: var(--bs-danger);
-  background: rgba(var(--bs-danger-rgb), 0.1);
-}
-
-.study-card-menu-item--danger:hover :deep(svg),
-.study-card-menu-item--danger:focus-visible :deep(svg) {
-  color: var(--bs-danger);
-}
-
-.study-card-menu-divider {
-  height: 1px;
-  margin: 0.3rem 0.4rem;
-  background: var(--bs-border-color-translucent);
-}
-
-.sc-menu-enter-active {
-  transition: opacity 0.16s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.sc-menu-leave-active {
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-
-.sc-menu-enter-from,
-.sc-menu-leave-to {
-  opacity: 0;
-  transform: scale(0.94);
-}
-
 /* ---------- Empty ---------- */
 
 .study-cards-empty {
@@ -647,10 +539,7 @@ export default {
   .study-cards-progress::after {
     animation: none !important;
   }
-
-  .sc-menu-enter-active,
-  .sc-menu-leave-active {
-    transition: none;
-  }
 }
 </style>
+
+<style src="@/basic/table/row-actions-menu.css"></style>
