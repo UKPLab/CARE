@@ -1,5 +1,11 @@
 <template>
-  <nav class="dashboard-topnav" @keydown.esc="hoveredKey = null">
+  <nav
+    class="dashboard-topnav"
+    :class="{ 'has-more': hasMore }"
+    @keydown.esc="onNavEscape"
+    @focusout="onNavFocusOut"
+    @scroll="onNavScroll"
+  >
     <div
       v-for="group in groups"
       :key="group.key"
@@ -18,17 +24,15 @@
       >
         {{ groupLabel(group) }}
       </button>
-    </div>
-    <Teleport to="body">
       <div
-        v-if="openGroup"
+        v-if="hoveredKey === group.key"
         class="dashboard-topnav-menu"
         :style="menuStyle"
         @mouseenter="cancelClose"
         @mouseleave="scheduleClose"
       >
         <router-link
-          v-for="element in openGroup.elements"
+          v-for="element in group.elements"
           :key="element.id"
           class="dashboard-topnav-link"
           :to="'/dashboard/' + element.path"
@@ -43,7 +47,7 @@
           {{ elementLabel(element) }}
         </router-link>
       </div>
-    </Teleport>
+    </div>
   </nav>
 </template>
 
@@ -66,6 +70,7 @@ export default {
       hoveredKey: null,
       menuStyle: {},
       closeTimer: null,
+      hasMore: false,
     };
   },
 
@@ -99,10 +104,6 @@ export default {
         .filter(group => group.elements.length > 0);
     },
 
-    openGroup() {
-      return this.groups.find(group => group.key === this.hoveredKey) || null;
-    },
-
     activeGroup() {
       const path = this.$route.path.toLowerCase().replace(/\/$/, '');
       const currentPath = path === '/dashboard' ? '/dashboard/home' : path;
@@ -115,27 +116,53 @@ export default {
     $route() {
       this.hoveredKey = null;
     },
+    groups() {
+      this.$nextTick(this.updateOverflow);
+    },
   },
 
   mounted() {
     document.body.classList.add('sidebar-exists');
+    this.$nextTick(this.updateOverflow);
+    this.overflowObserver = new ResizeObserver(() => this.updateOverflow());
+    this.overflowObserver.observe(this.$el);
   },
 
   beforeUnmount() {
+    this.overflowObserver?.disconnect();
     document.body.classList.remove('sidebar-exists');
     this.cancelClose();
   },
 
   methods: {
+    /**
+     * @param {KeyboardEvent} event
+     * @returns {void}
+     */
+    onNavEscape(event) {
+      const button = event.target.closest(".dashboard-topnav > div")?.querySelector(".dashboard-topnav-group-btn");
+      // Focus the button before the links unmount. Focusing it afterwards
+      // runs its focus handler and opens the menu again.
+      button?.focus();
+      this.cancelClose();
+      this.hoveredKey = null;
+    },
+
+    onNavFocusOut(event) {
+      const next = event.relatedTarget;
+      if (next && this.$el.contains(next)) return;
+      this.cancelClose();
+      this.hoveredKey = null;
+    },
+
     showGroup(groupName, event) {
       this.cancelClose();
       this.hoveredKey = groupName;
       const button = event.currentTarget.querySelector(".dashboard-topnav-group-btn") || event.currentTarget;
-      const rect = button.getBoundingClientRect();
-      this.menuStyle = {
-        top: `${rect.bottom + 6}px`,
-        left: `${Math.min(rect.left, window.innerWidth - 280)}px`,
-      };
+      if (event.type === "focus") {
+        button.scrollIntoView({ inline: "nearest", block: "nearest" });
+      }
+      this.placeMenu(button.getBoundingClientRect());
     },
 
     scheduleClose() {
@@ -157,6 +184,47 @@ export default {
     elementLabel(element) {
       return navElementLabel(this.$t, this.$te, element);
     },
+
+    /**
+     * Keeps an open dropdown under its group button while the strip scrolls.
+     * Closes it once the button has scrolled out of view.
+     * @returns {void}
+     */
+    onNavScroll() {
+      this.updateOverflow();
+      if (!this.hoveredKey) return;
+      const index = this.groups.findIndex((group) => group.key === this.hoveredKey);
+      const button = this.$el.querySelectorAll(".dashboard-topnav-group-btn")[index];
+      const strip = this.$el.getBoundingClientRect();
+      const rect = button?.getBoundingClientRect();
+      if (!rect || rect.right <= strip.left || rect.left >= strip.right) {
+        this.hoveredKey = null;
+        return;
+      }
+      this.placeMenu(rect);
+    },
+
+    /**
+     * @param {DOMRect} rect
+     * @returns {void}
+     */
+    placeMenu(rect) {
+      this.menuStyle = {
+        top: `${rect.bottom + 6}px`,
+        left: `${Math.min(rect.left, window.innerWidth - 280)}px`,
+      };
+    },
+
+    /**
+     * Shows the right-edge fade while menu groups are hidden past the strip's end.
+     * @returns {void}
+     */
+    updateOverflow() {
+      const el = this.$el;
+      if (!el) return;
+      const leftover = el.scrollWidth - el.clientWidth - el.scrollLeft;
+      this.hasMore = leftover > 1;
+    },
   },
 };
 </script>
@@ -170,6 +238,18 @@ export default {
   flex: 1 1 auto;
   overflow-x: auto;
   scrollbar-width: none;
+  scroll-padding-inline: 0 24px;
+}
+
+.dashboard-topnav.has-more::after {
+  content: "";
+  position: sticky;
+  right: 0;
+  flex: 0 0 24px;
+  align-self: stretch;
+  margin-left: -24px;
+  background: linear-gradient(to right, transparent, var(--bs-body-bg));
+  pointer-events: none;
 }
 
 .dashboard-topnav-group-btn {
