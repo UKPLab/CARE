@@ -39,10 +39,8 @@ import "@fontsource-variable/inter/opsz.css";
 import "@fontsource-variable/jetbrains-mono/wght.css";
 import './assets/styles/global.css';
 import BootstrapVue3 from "bootstrap-vue-3";
-import {BToastPlugin} from 'bootstrap-vue-3'
 
 app.use(BootstrapVue3);
-app.use(BToastPlugin);
 
 // VNetworkGraph
 import VNetworkGraph from 'v-network-graph';
