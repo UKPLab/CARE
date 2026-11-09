@@ -2,13 +2,18 @@
   <div>
     <div ref="assessmentSection" class="assessment-section">
       <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="assessment-heading mb-0">{{ $t('assessment.title') }}</h2>
         <div class="d-flex align-items-center gap-2">
-          <h4 class="mb-0">{{ $t('assessment.title') }}</h4>
           <span
               v-if="configuration && configuration.rubrics && configuration.rubrics.length"
-              class="badge"
-              :class="(computedReadOnly || areAllCriteriaSaved) ? 'bg-success' : 'bg-secondary'"
+              class="badge d-inline-flex align-items-center gap-1"
+              :class="(computedReadOnly || areAllCriteriaSaved) ? 'text-bg-success' : 'bg-secondary'"
           >
+            <LoadIcon
+                v-if="computedReadOnly || areAllCriteriaSaved"
+                icon-name="check-lg"
+                :size="12"
+            />
             {{ $t('assessment.totalPoints', { points: totalPoints, maxPoints: totalMaxPoints }) }}
           </span>
           <span v-if="computedReadOnly" class="badge bg-secondary">{{ $t('common.readOnly') }}</span>
@@ -29,7 +34,7 @@
             <div
                 v-for="(rubric, groupIndex) in configuration.rubrics"
                 :key="rubric.name || groupIndex"
-                class="criteria-group-card card mb-2"
+                class="mb-2"
             >
               <AssessmentRubric
                   :rubric="rubric"
@@ -37,6 +42,8 @@
                   :is-expanded="!!expandedGroups[groupIndex]"
                   :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :assessment-state="assessmentState"
+                  :info-pinned="isPinned"
+                  :pinned-item="selectedCriterion"
                   :read-only="computedReadOnly"
                   :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
                   @toggle-group="toggleGroup"
@@ -65,6 +72,7 @@
         :is-pinned="isPinned"
         position="left"
         @close-requested="onInfoPanelCloseRequested"
+        @dismiss="dismissInfoPanel"
     />
   </div>
 </template>
@@ -78,6 +86,7 @@
  */
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import { buildScoresFromState, calculateAssessmentScore } from "assessment-score";
 import {
   ASSESSMENT_RESULT_KEY,
@@ -89,6 +98,7 @@ export default {
   components: {
     AssessmentRubric,
     FloatingInfoPanel,
+    LoadIcon,
   },
   subscribeTable: [
     {
@@ -322,10 +332,12 @@ export default {
   },
   mounted() {
     document.addEventListener("mousedown", this.handleClickOutsideInfoPanel);
+    document.addEventListener("keydown", this.handleInfoPanelKeydown);
     this.initialize();
   },
   beforeUnmount() {
     document.removeEventListener("mousedown", this.handleClickOutsideInfoPanel);
+    document.removeEventListener("keydown", this.handleInfoPanelKeydown);
   },
   methods: {
     defaultCriterionState() {
@@ -364,8 +376,13 @@ export default {
       });
       this.expandedGroups[groupIndex] = !this.expandedGroups[groupIndex];
     },
+    isSameInfoTarget(a, b) {
+      if (!a || !b) return false;
+      if (a === b) return true;
+      return a.name === b.name && Array.isArray(a.criteria) === Array.isArray(b.criteria);
+    },
     openInfoPanel(target) {
-      if (!target) return;
+      if (!target || this.isPinned) return;
       this.selectedCriterion = target;
       this.selectedElement = "#sidepane";
       this.showInfoPanel = true;
@@ -376,14 +393,25 @@ export default {
       this.selectedCriterion = null;
       this.selectedElement = null;
     },
+    dismissInfoPanel() {
+      this.isPinned = false;
+      this.showInfoPanel = false;
+      this.selectedCriterion = null;
+      this.selectedElement = null;
+    },
     toggleInfoPanelPin(target) {
-      if (this.isPinned) {
-        this.isPinned = false;
-        this.closeInfoPanel();
-      } else {
-        this.isPinned = true;
-        this.openInfoPanel(target);
+      if (!target) return;
+      if (this.isPinned && this.isSameInfoTarget(this.selectedCriterion, target)) {
+        this.dismissInfoPanel();
+        return;
       }
+      this.isPinned = true;
+      this.selectedCriterion = target;
+      this.selectedElement = "#sidepane";
+      this.showInfoPanel = true;
+    },
+    handleInfoPanelKeydown(event) {
+      if (event.key === "Escape" && this.showInfoPanel) this.dismissInfoPanel();
     },
     onInfoPanelCloseRequested() {
       this.closeInfoPanel();
@@ -642,81 +670,16 @@ export default {
   padding: 1rem;
 }
 
+.assessment-heading {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--bs-emphasis-color);
+}
+
 .assessment-content-container {
   padding-right: 5px;
 }
 
-/* Criteria Groups */
-.criteria-group-card {
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 8px;
-}
-
-/* Badges */
-.badge {
-  background-color: #6c757d !important;
-  color: white;
-  font-weight: 500;
-  font-size: 0.75rem;
-  padding: 4px 8px;
-}
-
-.badge.bg-success {
-  background-color: #28a745 !important;
-  color: white !important;
-}
-
-.badge.bg-secondary {
-  background-color: #6c757d !important;
-  color: white !important;
-}
-
-.assessment-text strong {
-  color: var(--bs-body-color, #333);
-  font-weight: 600;
-}
-
-.assessment-text p {
-  color: var(--bs-secondary-color, #666);
-  margin-top: 4px;
-}
-
-/* Buttons */
-.assessment-actions .btn {
-  font-size: 0.875rem;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.assessment-actions .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgb(var(--care-shadow-rgb) / 0.15);
-}
-
-.assessment-actions .d-flex {
-  gap: 8px;
-}
-
-.assessment-actions .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: white;
-}
-
-.assessment-actions .btn-success:hover {
-  background-color: #218838;
-  border-color: #1e7e34;
-}
-
-.assessment-actions .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: white;
-}
-
-.assessment-actions .btn-secondary:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
-}
 </style>

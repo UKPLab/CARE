@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="criterion-block">
     <div
         ref="criterionHeader"
         class="d-flex justify-content-between align-items-center py-2"
@@ -15,8 +15,8 @@
       <div class="d-flex align-items-center">
         <span class="criterion-icon me-2">
           <LoadIcon
-              :icon-name="isExpanded ? 'chevron-up' : 'chevron-down'"
-              :size="16"
+              :icon-name="isExpanded ? 'chevron-down' : 'chevron-right'"
+              :size="14"
           />
         </span>
         <span class="criterion-name">
@@ -25,24 +25,35 @@
       </div>
 
       <div class="d-flex align-items-center">
-        <!-- Info icon -->
         <span
             v-if="criterion.description || criterion.scoring"
-            class="info-icon me-2"
-            style="cursor: help;"
-            @click.stop="$emit('toggle-info-panel-pin', criterion)"
-            @mouseenter="$emit('open-info-panel', criterion)"
-            @mouseleave="$emit('close-info-panel')"
+            class="info-icon-wrap"
+            @click.stop
         >
-          <LoadIcon icon-name="info-circle" :size="14"/>
+          <BasicButton
+              class="info-icon"
+              :class="{ 'is-pressed': infoPressed }"
+              :aria-label="$t('assessment.criteria.infoAbout', { name: criterion.name })"
+              :aria-pressed="infoPressed"
+              :props="{ criterionName: criterion.name }"
+              @click="$emit('toggle-info-panel-pin', criterion)"
+              @mouseenter="$emit('open-info-panel', criterion)"
+              @mouseleave="$emit('close-info-panel')"
+          >
+            <LoadIcon icon-name="info-circle" :size="14"/>
+          </BasicButton>
         </span>
 
-        <!-- Score badge -->
         <span
-            class="badge"
-            :class="(readOnly || isSaved) ? 'bg-success' : 'bg-secondary'"
+            class="badge d-inline-flex align-items-center gap-1"
+            :class="(readOnly || isSaved) ? 'text-bg-success' : 'bg-secondary'"
         >
-          {{ displayScore }} P
+          <LoadIcon
+              v-if="readOnly || isSaved"
+              icon-name="check-lg"
+              :size="12"
+          />
+          {{ displayScore }}<template v-if="scoreMax != null">/{{ scoreMax }}</template>
         </span>
       </div>
     </div>
@@ -50,7 +61,7 @@
     <div
         v-if="isExpanded"
         :id="panelId"
-        class="criterion-assessment mt-2 px-3 pb-2"
+        class="criterion-assessment"
     >
       <div class="assessment-text">
         <strong>{{ $t('assessment.criteria.justification') }}</strong>
@@ -64,51 +75,60 @@
 
         <!-- Edit view -->
         <div v-else class="assessment-edit-form">
-          <div class="mb-3">
-            <textarea
-                ref="assessmentTextarea"
-                v-model="localAssessment"
-                class="form-control assessment-textarea"
-                :placeholder="$t('assessment.criteria.editPlaceholder')"
-                :rows="getTextareaRows(localAssessment)"
-                :disabled="readOnly"
-                @input="autoResizeTextarea"
-                @keydown.ctrl.enter.exact.prevent="saveEdit"
-                @keydown.meta.enter.exact.prevent="saveEdit"
-                @keydown.esc.exact.prevent="cancelEdit"
-            ></textarea>
-            <small class="text-muted assessment-hint">
-              {{ $t('assessment.criteria.keyboardHint', { mod: modifierKey }) }}
-            </small>
-          </div>
+          <textarea
+              ref="assessmentTextarea"
+              v-model="localAssessment"
+              class="form-control"
+              :placeholder="$t('assessment.criteria.editPlaceholder')"
+              :rows="getTextareaRows(localAssessment)"
+              :disabled="readOnly"
+              aria-keyshortcuts="Meta+Enter Control+Enter"
+              @input="autoResizeTextarea"
+              @keydown.ctrl.enter.exact.prevent="saveEdit"
+              @keydown.meta.enter.exact.prevent="saveEdit"
+              @keydown.esc.exact.prevent="cancelEdit"
+          ></textarea>
+        </div>
+
+        <div v-if="isEditing" class="criterion-actions-edit">
+          <BasicButton
+              v-if="!readOnly"
+              class="btn btn-link btn-sm"
+              :title="cancelShortcutTitle"
+              :text="$t('assessment.criteria.cancel')"
+              aria-keyshortcuts="Escape"
+              @click="cancelEdit"
+          />
+          <BasicButton
+              v-if="!readOnly"
+              class="btn btn-primary btn-sm"
+              :title="saveShortcutTitle"
+              :text="$t('assessment.criteria.saveEdit')"
+              aria-keyshortcuts="Meta+Enter Control+Enter"
+              @click="saveEdit"
+          />
         </div>
       </div>
 
       <!-- Actions -->
-      <div class="assessment-actions mt-3">
-        <!-- Normal actions -->
-        <div
-            v-if="!isEditing"
-            class="d-flex justify-content-between align-items-center"
-        >
-          <div>
-            <BasicButton
-                v-if="!readOnly"
-                ref="editButton"
-                class="btn-outline-primary btn-sm"
-                :title="$t('assessment.criteria.edit')"
-                text=""
-                icon="pen"
-                :props="{ criterionName: criterion.name }"
-                @click="startEdit"
-            />
-          </div>
+      <div v-if="!isEditing" class="assessment-actions">
+        <div class="criterion-actions">
+          <BasicButton
+              v-if="!readOnly"
+              ref="editButton"
+              class="btn btn-link btn-sm"
+              :title="$t('assessment.criteria.editJustification')"
+              :text="$t('assessment.criteria.editJustification')"
+              icon="pen"
+              :props="{ criterionName: criterion.name }"
+              @click="startEdit"
+          />
 
-          <div v-if="!readOnly" class="d-flex align-items-center gap-2">
+          <div v-if="!readOnly" class="criterion-actions-save">
             <select
                 ref="scoreSelect"
                 v-model.number="scoreProxy"
-                class="form-select form-select-sm score-dropdown"
+                class="form-select form-select-sm criterion-score"
                 :title="$t('assessment.criteria.changeScore')"
             >
               <option
@@ -121,36 +141,14 @@
             </select>
 
             <BasicButton
-                :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
+                :class="isSaved ? 'btn btn-outline-success btn-sm' : 'btn btn-primary btn-sm'"
                 :title="isSaved ? $t('assessment.criteria.saved') : $t('assessment.criteria.save')"
-                text=""
-                icon="floppy"
+                :text="isSaved ? $t('assessment.criteria.savedShort') : $t('assessment.criteria.saveEdit')"
+                :icon="isSaved ? 'check-lg' : 'floppy'"
                 :props="{ criterionName: criterion.name }"
                 @click="saveAssessment"
             />
           </div>
-        </div>
-
-        <!-- Editing actions -->
-        <div v-else class="d-flex gap-2">
-          <BasicButton
-              v-if="!readOnly"
-              class="btn-primary btn-sm"
-              :title="$t('assessment.criteria.saveEdit')"
-              text=""
-              icon="floppy"
-              :props="{ criterionName: criterion.name }"
-              @click="saveEdit"
-          />
-          <BasicButton
-              v-if="!readOnly"
-              class="btn-secondary btn-sm"
-              :title="$t('assessment.criteria.cancel')"
-              text=""
-              icon="x-lg"
-              :props="{ criterionName: criterion.name }"
-              @click="cancelEdit"
-          />
         </div>
       </div>
     </div>
@@ -188,6 +186,16 @@ export default {
       type: Boolean,
       default: false,
     },
+    infoPinned: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    pinnedItem: {
+      type: Object,
+      required: false,
+      default: null,
+    },
   },
   emits: [
     "update:modelValue",
@@ -223,6 +231,15 @@ export default {
       const s = this.state.currentScore;
       return typeof s === "number" ? s : 0;
     },
+    infoPressed() {
+      return this.infoPinned && this.pinnedItem === this.criterion;
+    },
+    scoreMax() {
+      const values = (this.criterion?.scoring || [])
+        .map((option) => Number(option.score ?? option.points))
+        .filter((value) => !Number.isNaN(value));
+      return values.length ? Math.max(...values) : null;
+    },
     isSaved() {
       return !!this.state.isSaved;
     },
@@ -237,6 +254,19 @@ export default {
       return /mac/i.test(platform)
           ? this.$t("assessment.criteria.modCmd")
           : this.$t("assessment.criteria.modCtrl");
+    },
+    /** True when the save tooltip should name the Command key. */
+    usesCommandKey() {
+      return this.modifierKey === this.$t("assessment.criteria.modCmd");
+    },
+    /** Tooltip that names the cancel shortcut. Esc is the key name in every language. */
+    cancelShortcutTitle() {
+      return `${this.$t("assessment.criteria.cancel")} (Esc)`;
+    },
+    /** Tooltip that names the save shortcut in full. */
+    saveShortcutTitle() {
+      const combo = this.usesCommandKey ? "⌘+Enter" : `${this.modifierKey}+Enter`;
+      return `${this.$t("assessment.criteria.saveEdit")} (${combo})`;
     },
     /**
      * Unique DOM id for this criterion's panel, used by aria-controls.
@@ -398,22 +428,27 @@ export default {
   transition: transform 0.2s ease;
 }
 
-.criterion-name {
-  font-weight: 400;
-  color: var(--bs-body-color, #333);
+.criterion-block {
+  margin-left: .5rem;
+  border-left: 2px solid var(--bs-border-color);
+  padding-left: .75rem;
 }
 
-/* Assessment Content */
+.criterion-name {
+  font-weight: 400;
+  font-size: .875rem;
+  color: var(--bs-body-color);
+}
+
 .criterion-assessment {
-  border-top: 1px solid var(--bs-border-color, #e9ecef);
-  margin-top: 0;
+  margin-top: .35rem;
 }
 
 .assessment-text {
-  background-color: var(--bs-body-bg, #fff);
-  padding: 12px;
-  border-radius: 6px;
-  border-left: 3px solid var(--care-primary);
+  background: var(--bs-tertiary-bg);
+  border-radius: var(--bs-border-radius);
+  border-left: 0;
+  padding: .6rem .75rem;
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -429,98 +464,83 @@ export default {
 }
 
 .assessment-edit-form {
-  margin-top: 12px;
+  margin-top: .5rem;
 }
 
-.assessment-hint {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.8rem;
+.criterion-actions,
+.criterion-actions-save,
+.criterion-actions-edit {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 }
 
-.assessment-textarea {
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  resize: vertical;
-  overflow: hidden;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+.criterion-actions {
+  flex-wrap: wrap;
+  justify-content: space-between;
+  margin-top: .75rem;
 }
 
-.assessment-textarea:focus {
-  border-color: var(--care-primary);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
-  outline: 0;
+.criterion-actions-save,
+.criterion-actions-edit {
+  flex-wrap: nowrap;
 }
 
-.assessment-textarea::placeholder {
-  color: var(--bs-secondary-color);
-  font-style: italic;
+.criterion-actions-edit {
+  justify-content: flex-end;
+  margin-top: .5rem;
 }
 
-/* Buttons */
-.assessment-actions .btn {
-  font-size: 0.875rem;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+.criterion-actions-edit :deep(.btn) {
+  flex-shrink: 0;
 }
 
-.assessment-actions .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgb(var(--care-shadow-rgb) / 0.15);
+.criterion-actions :deep(.btn),
+.criterion-actions-edit :deep(.btn),
+.criterion-score {
+  white-space: nowrap;
 }
 
-.assessment-actions .d-flex {
-  gap: 8px;
+.criterion-score {
+  width: auto;
+  min-width: 4.5rem;
 }
 
-.assessment-actions .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: white;
+.info-icon-wrap {
+  display: inline-flex;
 }
 
-.assessment-actions .btn-success:hover {
-  background-color: #218838;
-  border-color: #1e7e34;
-}
-
-.assessment-actions .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: white;
-}
-
-.assessment-actions .btn-secondary:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
-}
-
-/* Form Elements */
-.score-dropdown {
-  min-width: 80px;
-  font-size: 0.875rem;
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 4px;
-  padding: 4px 8px;
-  background-color: var(--bs-body-bg, white);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.score-dropdown:focus {
-  border-color: var(--care-primary);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
-  outline: 0;
-}
-
-/* Info icon */
 .info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
   color: var(--bs-secondary-color);
-  transition: color 0.2s ease;
 }
 
-.info-icon:hover {
+.info-icon:hover,
+.info-icon:focus-visible,
+.info-icon.is-pressed {
   color: var(--care-primary);
+}
+
+.info-icon.btn:hover:not(:disabled):not(.is-pressed),
+.info-icon.btn:focus-visible:not(.is-pressed) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.info-icon.btn.is-pressed:hover:not(:disabled),
+.info-icon.btn.is-pressed:focus-visible {
+  box-shadow: none;
+}
+
+.info-icon.is-pressed {
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
 }
 </style>

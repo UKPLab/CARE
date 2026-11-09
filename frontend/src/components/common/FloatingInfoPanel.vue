@@ -8,7 +8,22 @@
     @mouseleave="onMouseLeave"
   >
     <div class="info-panel-header">
-      <h6 class="mb-2">{{ translateMaybeKey(selectedItem.name) }}</h6>
+      <h6 class="mb-0">{{ translateMaybeKey(selectedItem.name) }}</h6>
+      <span class="d-flex align-items-center gap-1">
+        <LoadIcon
+            v-if="isPinned"
+            icon-name="pin-angle-fill"
+            :size="14"
+            aria-hidden="true"
+        />
+        <BasicButton
+            class="info-panel-close"
+            text=""
+            icon="x-lg"
+            :title="$t('common.close')"
+            @click="$emit('dismiss')"
+        />
+      </span>
     </div>
     <div class="info-panel-content">
       <div v-if="selectedItem.description" class="mb-3">
@@ -43,6 +58,8 @@
 
 <script>
 import { translateMaybeKey } from "@/assets/utils";
+import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * FloatingInfoPanel Component
@@ -54,6 +71,7 @@ import { translateMaybeKey } from "@/assets/utils";
  */
 export default {
   name: "FloatingInfoPanel",
+  components: { LoadIcon, BasicButton },
   
   props: {
     show: {
@@ -101,6 +119,7 @@ export default {
     'mouse-enter',
     'mouse-leave',
     'close-requested',
+    'dismiss',
     'update:selectedItem',
     'update:referenceElement',
     'update:show'
@@ -324,48 +343,49 @@ export default {
 
 <style scoped>
 .floating-info-panel {
-  background: var(--bs-body-bg, white);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgb(var(--care-shadow-rgb) / 0.15);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-lg);
+  box-shadow: var(--care-shadow-3);
   overflow-y: auto;
   font-size: 0.875rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-rgb), .35) transparent;
 }
 
 .info-panel-header {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  background: transparent;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 8px 8px 0 0;
-  position: relative;
+  border-bottom: 1px solid var(--bs-border-color);
 }
 
 .info-panel-header h6 {
   margin: 0;
-  color: var(--bs-body-color, #495057);
+  color: var(--bs-body-color);
   font-weight: 600;
-  padding-right: 30px; /* Make room for pin button */
 }
 
-.btn-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s;
+.info-panel-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+  color: var(--bs-secondary-color);
 }
 
-.btn-close:hover {
-  opacity: 1;
-}
-
-.btn-close.pinned {
-  opacity: 1;
+.info-panel-close:hover,
+.info-panel-close:focus-visible {
   color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
 }
 
 .info-panel-content {
@@ -380,6 +400,8 @@ export default {
 .scoring-list {
   max-height: 300px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-rgb), .35) transparent;
 }
 
 .scoring-item {
@@ -393,30 +415,6 @@ export default {
 
 .badge {
   font-size: 0.75rem;
-  min-width: 45px;
-  text-align: center;
-}
-
-/* Scrollbar styling */
-.floating-info-panel::-webkit-scrollbar,
-.scoring-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.floating-info-panel::-webkit-scrollbar-track,
-.scoring-list::-webkit-scrollbar-track {
-  background: var(--bs-tertiary-bg, #f1f1f1);
-  border-radius: 3px;
-}
-
-.floating-info-panel::-webkit-scrollbar-thumb,
-.scoring-list::-webkit-scrollbar-thumb {
-  background: var(--bs-secondary-color, #c1c1c1);
-  border-radius: 3px;
-}
-
-.floating-info-panel::-webkit-scrollbar-thumb:hover,
-.scoring-list::-webkit-scrollbar-thumb:hover {
-  background: var(--bs-body-color, #a8a8a8);
+  font-weight: 600;
 }
 </style>

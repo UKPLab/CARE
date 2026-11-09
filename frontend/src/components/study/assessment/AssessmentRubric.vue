@@ -22,35 +22,35 @@
         <span class="fw-bold">{{ rubric.name || $t("assessment.rubric.unnamedRubric") }}</span>
       </div>
 
-      <div class="d-flex align-items-center">
-        <!-- Rubric info icon -->
+      <div class="d-flex align-items-center gap-1">
         <span
             v-if="rubric.description"
-            class="info-icon me-2"
-            style="cursor: help;"
-            @click.stop="
-            $emit('toggle-info-panel-pin', {
-              group: rubric,
-              criterion: null,
-            })
-          "
-            @mouseenter="
-            $emit('open-info-panel', {
-              group: rubric,
-              criterion: null,
-            })
-          "
-            @mouseleave="$emit('close-info-panel')"
+            class="info-icon-wrap"
+            @click.stop
         >
-          <LoadIcon icon-name="info-circle" :size="14"/>
+          <BasicButton
+              class="info-icon"
+              :class="{ 'is-pressed': infoPressed(rubric) }"
+              :aria-label="$t('assessment.criteria.infoAbout', { name: rubric.name })"
+              :aria-pressed="infoPressed(rubric)"
+              :props="{ criterionName: rubric.name }"
+              @click="$emit('toggle-info-panel-pin', { group: rubric, criterion: null })"
+              @mouseenter="$emit('open-info-panel', { group: rubric, criterion: null })"
+              @mouseleave="$emit('close-info-panel')"
+          >
+            <LoadIcon icon-name="info-circle" :size="14"/>
+          </BasicButton>
         </span>
-
-        <!-- Rubric score badge -->
         <span
-            class="badge"
-            :class="readOnly || isGroupSaved ? 'bg-success' : 'bg-secondary'"
+            class="badge d-inline-flex align-items-center gap-1"
+            :class="readOnly || isGroupSaved ? 'text-bg-success' : 'bg-secondary'"
             :title="$t('assessment.rubric.scoreTitle', { score: groupScore, max: groupMax })"
         >
+          <LoadIcon
+              v-if="readOnly || isGroupSaved"
+              icon-name="check-lg"
+              :size="12"
+          />
           {{ $t("assessment.rubric.scoreBadge", { score: groupScore }) }}
         </span>
       </div>
@@ -67,6 +67,8 @@
           <AssessmentCriteria
               :ref="el => { if (el) criterionRefs[index] = el; }"
               :criterion="criterion"
+              :info-pinned="infoPinned"
+              :pinned-item="pinnedItem"
               :read-only="readOnly"
               :model-value="criterionState(criterion)"
               :is-expanded="expandedCriterionIndex === index"
@@ -110,12 +112,14 @@
  */
 import AssessmentCriteria from "@/components/study/assessment/AssessmentCriteria.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import {useId} from "vue";
 
 export default {
   name: "AssessmentRubric",
   components: {
     LoadIcon,
+    BasicButton,
     AssessmentCriteria,
   },
   props: {
@@ -130,6 +134,16 @@ export default {
     isExpanded: {
       type: Boolean,
       required: true,
+    },
+    infoPinned: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    pinnedItem: {
+      type: Object,
+      required: false,
+      default: null,
     },
     assessmentState: {
       type: Object,
@@ -207,6 +221,9 @@ export default {
     },
   },
   methods: {
+    infoPressed(item) {
+      return this.infoPinned && item === this.pinnedItem;
+    },
     criterionState(criterion) {
       return this.assessmentState[criterion.name] || {
         assessment: "",
@@ -260,5 +277,51 @@ export default {
 </script>
 
 <style scoped>
+.card > .card-header {
+  padding: .6rem .75rem;
+}
 
+.criteria-list {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.info-icon-wrap {
+  display: inline-flex;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bs-border-radius);
+  background: transparent;
+  color: var(--bs-secondary-color);
+}
+
+.info-icon:hover,
+.info-icon:focus-visible,
+.info-icon.is-pressed {
+  color: var(--care-primary);
+}
+
+.info-icon.btn:hover:not(:disabled):not(.is-pressed),
+.info-icon.btn:focus-visible:not(.is-pressed) {
+  background: transparent;
+  box-shadow: none;
+}
+
+.info-icon.btn.is-pressed:hover:not(:disabled),
+.info-icon.btn.is-pressed:focus-visible {
+  box-shadow: none;
+}
+
+.info-icon.is-pressed {
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+}
 </style>
