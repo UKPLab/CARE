@@ -148,6 +148,21 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Serializes pending-message checks and writes until the transaction ends.
+         * @param {number} userId - Authenticated owner id.
+         * @param {number|null} studySessionId - Session id.
+         * @param {Object} options - Database options.
+         * @param {Object} options.transaction - Transaction covering the check and writes.
+         * @returns {Promise<void>}
+         */
+        static async lockPendingRequests(userId, studySessionId, options) {
+            await sequelize.query(
+                "SELECT pg_advisory_xact_lock(:userId, :studySessionId)",
+                {replacements: {userId, studySessionId: studySessionId ?? 0}, transaction: options.transaction},
+            );
+        }
+
+        /**
          * Finds a pending response in an authenticated study session.
          * @param {number} userId - Authenticated owner id.
          * @param {number} studySessionId - Session id.

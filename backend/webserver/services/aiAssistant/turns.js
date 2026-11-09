@@ -23,6 +23,9 @@ const core = require("./core.js");
  * @returns {Promise<void>}
  */
 async function requireNoPendingMessage(service, userId, studySessionId, options = {}) {
+    await service.server.db.models["ai_message"].lockPendingRequests(
+        userId, studySessionId, options,
+    );
     const pending = await service.server.db.models["ai_message"].getPendingMessage(
         userId, studySessionId, options,
     );
