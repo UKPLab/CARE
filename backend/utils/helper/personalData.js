@@ -5,9 +5,11 @@
  *
  * @module utils/helper/personalData
  * @author Mohammad Elwan
+ * @author Mohammed Rawhani
  */
 
 const REDACTED = "[REDACTED]";
+const {escapeRegExp} = require("lodash");
 
 /** `\author`, `\matriculationno`, `\studentID`, and `\birthplace`, including `\newcommand{\name}{value}`. */
 const STUDENT_MACROS = /\\(author|matriculationno|studentID|birthplace)(\s*\})?\s*(?:\[[^\]]*\])?\s*\{([^{}]*)\}/g;
@@ -54,12 +56,13 @@ function replaceLatexMetadata(text, replacements = {}) {
  * Redacts student fields in a finished prompt.
  *
  * Macro arguments become `[REDACTED]`. Digits after a Matrikelnummer-style label do too.
- * A name in the PDF body is left as it is.
+ * Known full names and adjacent 7–8-digit student numbers are also redacted.
  *
  * @param {string} text - Prompt text.
+ * @param {string[]} [names=[]] - Known submission owners' full names (first and last together).
  * @returns {string} Text with those fields replaced.
  */
-function redactPersonalData(text) {
+function redactPersonalData(text, names = []) {
     if (typeof text !== "string" || text.length === 0) {
         return typeof text === "string" ? text : "";
     }
@@ -68,7 +71,23 @@ function redactPersonalData(text) {
         other: REDACTED,
     });
     LABELLED_STUDENT_ID.lastIndex = 0;
-    return withoutMacros.replace(LABELLED_STUDENT_ID, `$1$2${REDACTED}`);
+    const redacted = withoutMacros.replace(LABELLED_STUDENT_ID, `$1$2${REDACTED}`);
+    const knownNames = [...new Set(names.map(name => name.trim()).filter(Boolean))]
+        .sort((a, b) => b.length - a.length)
+        .map(name => name.split(/\s+/).map(escapeRegExp).join("\\s+"));
+    if (!knownNames.length) {
+        return redacted;
+    }
+    const word = "[\\p{L}\\p{M}\\p{N}_]";
+    const name = `(?<!${word})(?:${knownNames.join("|")})(?!${word})`;
+    // Keep separators while removing an immediately adjacent student number on either side.
+    const pattern = new RegExp(
+        `(?:(?<!${word})(\\d{7,8})(\\s*[():,\\-]?\\s*))?${name}`
+        + `(?:(\\s*[():,\\-]?\\s*)(\\d{7,8})(?!${word}))?`, "giu",
+    );
+    return redacted.replace(pattern, (match, before, beforeSeparator, afterSeparator, after) =>
+        (before ? REDACTED + beforeSeparator : "") + REDACTED + (after ? afterSeparator + REDACTED : ""),
+    );
 }
 
 module.exports = {

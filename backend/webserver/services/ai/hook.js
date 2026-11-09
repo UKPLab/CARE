@@ -199,7 +199,8 @@ async function resolveSubmissionId(service, input) {
  */
 async function resolveHookPrompt(service, hookId, rawValues = {}) {
     const hook = await loadEnabledHook(service, hookId);
-    const values = await resolveHookReferences(service, rawValues);
+    const names = [];
+    const values = await resolveHookReferences(service, rawValues, names);
     const promptText = await resolveTemplateWithValues(
         hook.templateId,
         values,
@@ -207,7 +208,7 @@ async function resolveHookPrompt(service, hookId, rawValues = {}) {
     );
     return {
         hook,
-        promptText: redactPersonalData(promptText),
+        promptText: redactPersonalData(promptText, names),
         resolvedValues: values,
     };
 }
@@ -219,9 +220,10 @@ async function resolveHookPrompt(service, hookId, rawValues = {}) {
  * @param {Object} service - AIService runtime with DB access.
  * @param {Object} service.server - CARE webserver instance (DB access).
  * @param {Object} input - The reference's `input` spec (carries `type` + ids).
+ * @param {string[]} names - Collects submission owner names for final prompt redaction.
  * @returns {Promise<*>} Resolved value for the placeholder.
  */
-async function resolveServiceInput(service, input) {
+async function resolveServiceInput(service, input, names) {
     if (!input || typeof input !== "object") return null;
     switch (input.type) {
         case "configuration": {
@@ -240,6 +242,14 @@ async function resolveServiceInput(service, input) {
             const { selectedFiles = [], pdfText, filePatterns = {} } = input;
             const submissionId = await resolveSubmissionId(service, input);
             if (!submissionId || !selectedFiles.length) return "";
+
+            const submission = await service.server.db.models["submission"].getById(submissionId);
+            if (submission?.userId) {
+                const owner = await service.server.db.models["user"].getById(submission.userId);
+                if (owner?.firstName?.trim() && owner?.lastName?.trim()) {
+                    names.push(`${owner.firstName.trim()} ${owner.lastName.trim()}`);
+                }
+            }
 
             // `{ pages, pageCount }` must stay intact so applyTextRangeLimit can slice pages.
             if (pdfText && typeof pdfText === "object" && Array.isArray(pdfText.pages)) {
@@ -304,13 +314,14 @@ async function resolveServiceInput(service, input) {
  * @param {Object} service - AIService runtime with DB access.
  * @param {Object} service.server - CARE webserver instance (DB access).
  * @param {Object} values - Map of placeholderKey → value or `{type:"serviceReplacement", input}`.
+ * @param {string[]} names - Collects submission owner names for final prompt redaction.
  * @returns {Promise<Object>} Map with references resolved to values.
  */
-async function resolveHookReferences(service, values) {
+async function resolveHookReferences(service, values, names) {
     const resolved = {};
     for (const [key, value] of Object.entries(values || {})) {
         if (value && typeof value === "object" && value.type === "serviceReplacement") {
-            resolved[key] = await resolveServiceInput(service, value.input);
+            resolved[key] = await resolveServiceInput(service, value.input, names);
         } else {
             resolved[key] = value;
         }

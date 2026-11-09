@@ -96,9 +96,38 @@ describe("redactPersonalData", () => {
         expect(out).not.toContain("2575892");
     });
 
-    test("leaves a name in ordinary sentences and an unlabelled number", () => {
+    test("leaves unknown names and unrelated numbers", () => {
         const prompt = "Hoai An Nguyen cites three papers on page 12.";
         expect(redactPersonalData(prompt)).toBe(prompt);
+    });
+
+    test.each([
+        ["Max Mustermann (2575892)", `${REDACTED} (${REDACTED})`],
+        ["Max Mustermann: 12345678", `${REDACTED}: ${REDACTED}`],
+        ["2575892 Max Mustermann", `${REDACTED} ${REDACTED}`],
+        ["Max\nMustermann\n2575892", `${REDACTED}\n${REDACTED}`],
+        ["Max discusses 3 methods in 2026", "Max discusses 3 methods in 2026"],
+        ["Max Mustermann 123456 and Max Mustermann 123456789", `${REDACTED} 123456 and ${REDACTED} 123456789`],
+        ["Max (2575892) cites Mustermann (12345678)", "Max (2575892) cites Mustermann (12345678)"],
+    ])("redacts full names and only adjacent student numbers: %s", (text, expected) => {
+        expect(redactPersonalData(text, ["Max Mustermann"])).toBe(expected);
+    });
+
+    test("matches complete names with accents, punctuation, and flexible whitespace", () => {
+        const text = "Éva O'Neil and Hoai\nAn Nguyen use Markov chains. Mark agrees.";
+        expect(redactPersonalData(text, ["Éva O'Neil", "Hoai An Nguyen", ""]))
+            .toBe(`${REDACTED} and ${REDACTED} use Markov chains. Mark agrees.`);
+    });
+
+    test("escapes name punctuation and keeps LaTeX redaction", () => {
+        const text = "\\author{Max Mustermann}\nA.B. Smith and AxB. Smith cite Max Mustermann.";
+        expect(redactPersonalData(text, ["Max Mustermann", "A.B. Smith"]))
+            .toBe(`\\author{${REDACTED}}\n${REDACTED} and AxB. Smith cite ${REDACTED}.`);
+    });
+
+    test("preserves ordinary words and citations matching only part of the owner's name", () => {
+        expect(redactPersonalData("May Smith (2575892) says this may support Smith (2026).", ["May Smith"]))
+            .toBe(`${REDACTED} (${REDACTED}) says this may support Smith (2026).`);
     });
 
     test("leaves a macro definition and an empty argument", () => {
