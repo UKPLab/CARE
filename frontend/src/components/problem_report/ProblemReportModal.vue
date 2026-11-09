@@ -96,22 +96,11 @@
       />
 
       </fieldset>
-      <section
-        class="border-top pt-3 mt-3"
-        :aria-labelledby="ids.details"
+      <FormCollapsible
+        :key="clientRequestId"
+        :title="$t('problemReport.details.title')"
+        :collapsed="!detailsExpanded"
       >
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-          <BasicButton
-            :id="ids.details"
-            class="btn btn-link text-start text-decoration-none fw-semibold p-0"
-            :icon="detailsExpanded ? 'chevron-up' : 'chevron-down'"
-            :text="$t('problemReport.details.title')"
-            :aria-expanded="detailsExpanded"
-            :aria-controls="`${ids.details}-content`"
-            @click="detailsExpanded = !detailsExpanded"
-          />
-        </div>
-        <div v-show="detailsExpanded" :id="`${ids.details}-content`">
         <p
           class="small text-body-secondary mb-2"
           aria-live="polite"
@@ -131,8 +120,7 @@
           :details-state="detailsState"
           :note="`${$t('problemReport.visibility.label')} ${$t('problemReport.visibility.text')}`"
         />
-        </div>
-      </section>
+      </FormCollapsible>
 
       <p class="small text-body-secondary border-top pt-2 mt-3 mb-0">
         <strong>{{ $t('problemReport.notice.label') }}</strong>
@@ -164,6 +152,7 @@ import { v4 as uuid } from "uuid";
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
+import FormCollapsible from "@/basic/form/Collapsible.vue";
 import ChoiceChips from "@/components/problem_report/ChoiceChips.vue";
 import AttachmentPicker from "@/components/problem_report/AttachmentPicker.vue";
 import ReportSummary from "@/components/problem_report/ReportSummary.vue";
@@ -199,7 +188,7 @@ const DESCRIPTION_INPUT_ID = "problemReportDescription";
  */
 export default {
   name: "ProblemReportModal",
-  components: { BasicModal, BasicButton, BasicForm, ChoiceChips, AttachmentPicker, ReportSummary },
+  components: { BasicModal, BasicButton, BasicForm, FormCollapsible, ChoiceChips, AttachmentPicker, ReportSummary },
   inject: {
     acceptStats: { default: () => false },
   },

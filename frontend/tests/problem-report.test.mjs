@@ -174,7 +174,7 @@ function createModal({ acceptStats = true, activityEnabled = true } = {}) {
     setInterval: (callback, interval) => { calls.timer = {callback, interval}; return 1; },
     clearInterval: () => { calls.timer = null; },
   };
-  for (const name of ['BasicModal', 'BasicButton', 'BasicForm', 'ChoiceChips', 'AttachmentPicker', 'ReportSummary']) context[name] = {};
+  for (const name of ['BasicModal', 'BasicButton', 'BasicForm', 'FormCollapsible', 'ChoiceChips', 'AttachmentPicker', 'ReportSummary']) context[name] = {};
   vm.createContext(context);
   vm.runInContext(script.replace(/^import .*;\r?$/gm, '').replace('export default', 'globalThis.component ='), context);
   const component = context.component;
