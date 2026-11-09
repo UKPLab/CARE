@@ -3,6 +3,7 @@
     ref="modal"
     name="ProblemReportModal"
     size="lg"
+    @hide="stopDetailsUpdates"
   >
     <template #title>
       {{ $t('problemReport.title') }}
@@ -100,22 +101,17 @@
         :aria-labelledby="ids.details"
       >
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-1">
-          <h6
-            :id="ids.details"
-            class="mb-0"
-          >
-            {{ $t('problemReport.details.title') }}
-          </h6>
           <BasicButton
-            class="btn btn-sm btn-outline-secondary"
-            icon="arrow-clockwise"
-            :text="$t('problemReport.details.refresh')"
-            :title="$t('problemReport.details.refreshTitle')"
-            :loading="preparing"
-            :disabled="submitting"
-            @click="refreshDetails"
+            :id="ids.details"
+            class="btn btn-link text-start text-decoration-none fw-semibold p-0"
+            :icon="detailsExpanded ? 'chevron-up' : 'chevron-down'"
+            :text="$t('problemReport.details.title')"
+            :aria-expanded="detailsExpanded"
+            :aria-controls="`${ids.details}-content`"
+            @click="detailsExpanded = !detailsExpanded"
           />
         </div>
+        <div v-show="detailsExpanded" :id="`${ids.details}-content`">
         <p
           class="small text-body-secondary mb-2"
           aria-live="polite"
@@ -135,6 +131,7 @@
           :details-state="detailsState"
           :note="`${$t('problemReport.visibility.label')} ${$t('problemReport.visibility.text')}`"
         />
+        </div>
       </section>
 
       <p class="small text-body-secondary border-top pt-2 mt-3 mb-0">
@@ -215,6 +212,8 @@ export default {
       // {payload, result, error, expiresAt}: the captured snapshot and the backend's normalized version
       details: null,
       detailsNotice: null,
+      detailsExpanded: false,
+      detailsUpdateTimer: null,
       prepareSequence: 0,
       preparing: false,
       clientRequestId: uuid(),
@@ -280,7 +279,7 @@ export default {
       };
     },
     detailsState() {
-      if (this.preparing || !this.details) {
+      if (!this.details) {
         return "loading";
       }
       return this.details.error ? "unavailable" : "ready";
@@ -301,10 +300,6 @@ export default {
       if (this.settings.activityEnabled) {
         parts.push(this.activityAllowed ? this.$t('problemReport.notice.activity') : this.$t('problemReport.notice.noActivity'));
       }
-      if (this.settings.databaseHealthEnabled !== false) {
-        parts.push(this.$t('problemReport.notice.databaseHealth'));
-      }
-      parts.push(this.$t('problemReport.notice.excluded'));
       return parts.join(" ");
     },
     previewAttachments() {
@@ -330,6 +325,7 @@ export default {
     },
   },
   beforeUnmount() {
+    this.stopDetailsUpdates();
     this.revokeAttachmentUrls();
   },
   methods: {
@@ -348,6 +344,7 @@ export default {
           if (!this.submitting) {
             this.detailsNotice = null;
             this.prepareDetails();
+            this.startDetailsUpdates();
           }
         } else {
           this.eventBus.emit("toast", {
@@ -400,9 +397,15 @@ export default {
         }
       });
     },
-    refreshDetails() {
-      this.detailsNotice = null;
-      this.prepareDetails();
+    startDetailsUpdates() {
+      this.stopDetailsUpdates();
+      this.detailsUpdateTimer = setInterval(() => {
+        if (!this.preparing && !this.submitting) this.prepareDetails();
+      }, Math.max(5000, Number(this.settings.detailsUpdateIntervalMs) || 5000));
+    },
+    stopDetailsUpdates() {
+      clearInterval(this.detailsUpdateTimer);
+      this.detailsUpdateTimer = null;
     },
     validate() {
       this.errors.problemTypes = this.form.problemTypes.length === 0
@@ -440,6 +443,7 @@ export default {
       if (this.details && this.details.expiresAt !== null && Date.now() >= this.details.expiresAt) {
         // The server no longer keeps the shown database snapshot: show fresh details before anything is saved
         this.detailsNotice = this.$t('problemReport.details.expired');
+        this.detailsExpanded = true;
         this.prepareDetails();
         return;
       }
@@ -471,6 +475,7 @@ export default {
         this.submitting = false;
         if (!error && response?.key === "errors.problemReport.detailsExpired") {
           this.detailsNotice = this.$t('problemReport.details.expired');
+          this.detailsExpanded = true;
           this.prepareDetails();
           return;
         }
@@ -505,6 +510,8 @@ export default {
       this.attachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
     },
     reset() {
+      this.stopDetailsUpdates();
+      this.detailsExpanded = false;
       this.revokeAttachmentUrls();
       this.attachments = [];
       this.form = this.emptyForm();

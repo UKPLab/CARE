@@ -112,6 +112,10 @@
         "databaseHealthMaxAgeMinutes": {
             "displayName": "Validité de l’état de la base de données (minutes)",
             "description": "L’état affiché dans le formulaire est enregistré si le signalement est envoyé dans ce délai ; sinon, les détails sont d’abord actualisés (240 au maximum)."
+        },
+        "detailsUpdateInterval": {
+            "displayName": "Intervalle de mise à jour des détails",
+            "description": "Millisecondes entre les mises à jour automatiques lorsque le formulaire est ouvert (5000–60000)."
         }
     }
 }

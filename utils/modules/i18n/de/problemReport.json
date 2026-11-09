@@ -66,11 +66,9 @@
     },
     "notice": {
         "label": "Was wir speichern:",
-        "text": "Ihre Beschreibung, die gewählten Optionen, Anhänge, die aktuelle Seite, der Zeitpunkt der Erfassung, CARE-Version, Browser, Betriebssystem, Fenstergröße und die letzten Diagnoseprotokolle, verknüpft mit Ihrem Konto.",
-        "activity": "Da Sie der Nutzungsstatistik zugestimmt haben, ist Ihre letzte Aktivität in CARE enthalten: Klicks (Elementtyp und Position), stichprobenartige Mauspositionen, Scrollen, Fensterfokus, Tab-Sichtbarkeit und Seitenwechsel.",
-        "noActivity": "Ihre letzte Aktivität (Klicks, Mausbewegungen) ist nicht enthalten, da Sie der Nutzungsstatistik nicht zugestimmt haben.",
-        "databaseHealth": "CARE speichert außerdem zusammengefasste Zustandswerte seiner Datenbank (Verbindungen, Sperren, Transaktionen, Cache), die auf dem Server gemessen werden.",
-        "excluded": "Eingegebener Text, Seiten- und Dokumentinhalte, Passwörter, Tokens, Cookies und Abfrageparameter werden nie gespeichert."
+        "text": "Ihr Bericht, Anhänge, Konto, Seite, Berichtszeit, Browser- und Gerätedetails sowie aktuelle Fehlerprotokolle.",
+        "activity": "Letzte Klicks, Mausbewegungen und Seitenaktivit?ten sind mit Ihrer Zustimmung enthalten.",
+        "noActivity": "Aktivit?tsdaten sind nicht enthalten."
     },
     "actions": {
         "submit": "Bericht senden"
@@ -100,13 +98,11 @@
     },
     "details": {
         "title": "Mit diesem Bericht gesendete Details",
-        "refresh": "Aktualisieren",
-        "refreshTitle": "Automatische Details neu erfassen",
         "loading": "Automatische Details werden erfasst…",
         "loadingShort": "Wird erfasst…",
         "unavailable": "Die automatischen Details konnten nicht geladen werden. Sie können trotzdem senden; sie werden dann beim Senden erfasst.",
         "collectedOnSubmit": "Wird beim Senden erfasst",
-        "capturedAt": "Erfasst am {time}, beim Öffnen oder letzten Aktualisieren dieses Formulars. Ihre Antworten erscheinen hier während der Eingabe. Genau das wird gespeichert.",
+        "capturedAt": "Zuletzt aktualisiert: {time}. Details und Protokolle werden automatisch aktualisiert.",
         "expired": "Diese Details wurden vor zu langer Zeit erfasst und wurden aktualisiert. Bitte prüfen Sie sie und senden Sie erneut."
     },
     "activityTypes": {

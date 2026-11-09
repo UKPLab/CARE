@@ -55,6 +55,7 @@ const DEFAULT_SETTINGS = {
     databaseHealthEnabled: true,
     databaseHealthTimeoutMs: 2000,
     databaseHealthMaxAgeMinutes: 60,
+    detailsUpdateIntervalMs: 5000,
 };
 
 const ATTACHMENT_NAME_MAX_LENGTH = 120;
@@ -481,6 +482,7 @@ async function loadReportSettings(getSetting) {
         "diagnostics.maxEntries", "diagnostics.maxAgeMinutes", "diagnostics.maxMessageLength",
         "activity.enabled", "activity.maxEntries", "activity.maxAgeMinutes", "activity.mouseSampleMs",
         "databaseHealth.enabled", "databaseHealth.timeoutMs", "databaseHealth.maxAgeMinutes",
+        "details.updateIntervalMs",
     ];
     const raw = {};
     for (const key of keys) {
@@ -518,6 +520,7 @@ async function loadReportSettings(getSetting) {
         databaseHealthEnabled: parseFlag(raw["databaseHealth.enabled"], defaults.databaseHealthEnabled),
         databaseHealthTimeoutMs: Math.floor(parseRange(raw["databaseHealth.timeoutMs"], defaults.databaseHealthTimeoutMs, HARD_LIMITS.databaseHealthMinTimeoutMs, HARD_LIMITS.databaseHealthMaxTimeoutMs)),
         databaseHealthMaxAgeMinutes: parseLimit(raw["databaseHealth.maxAgeMinutes"], defaults.databaseHealthMaxAgeMinutes, HARD_LIMITS.databaseHealthMaxAgeMinutes),
+        detailsUpdateIntervalMs: Math.floor(parseRange(raw["details.updateIntervalMs"], defaults.detailsUpdateIntervalMs, 5000, 60000)),
     };
 }
 

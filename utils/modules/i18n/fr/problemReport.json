@@ -66,11 +66,9 @@
     },
     "notice": {
         "label": "Ce que nous enregistrons :",
-        "text": "Votre description, les options choisies, les pièces jointes, la page actuelle, l’heure de collecte des détails, la version de CARE, le navigateur, le système d’exploitation, la taille de la fenêtre et les journaux de diagnostic récents, liés à votre compte.",
-        "activity": "Comme vous avez accepté les statistiques d’utilisation, votre activité récente dans CARE est incluse : clics (type d’élément et position), positions de souris échantillonnées, défilement, focus de la fenêtre, visibilité de l’onglet et changements de page.",
-        "noActivity": "Votre activité récente (clics, mouvements de souris) n’est pas incluse, car vous n’avez pas accepté les statistiques d’utilisation.",
-        "databaseHealth": "CARE enregistre aussi des compteurs agrégés sur l’état de sa base de données (connexions, verrous, transactions, cache), mesurés sur le serveur.",
-        "excluded": "Le texte saisi, le contenu des pages et des documents, les mots de passe, jetons, cookies et paramètres de requête ne sont jamais inclus."
+        "text": "Votre rapport, pièces jointes, compte, page, heure du rapport, informations du navigateur et de l’appareil et journaux d’erreurs récents.",
+        "activity": "Les clics, mouvements de souris et activités de page récents sont inclus avec votre accord.",
+        "noActivity": "Le suivi d’activité n’est pas inclus."
     },
     "actions": {
         "submit": "Envoyer le signalement"
@@ -100,13 +98,11 @@
     },
     "details": {
         "title": "Détails envoyés avec ce signalement",
-        "refresh": "Actualiser",
-        "refreshTitle": "Recueillir à nouveau les détails automatiques",
         "loading": "Collecte des détails automatiques…",
         "loadingShort": "Collecte…",
         "unavailable": "Les détails automatiques n’ont pas pu être chargés. Vous pouvez tout de même envoyer ; ils seront alors recueillis au moment de l’envoi.",
         "collectedOnSubmit": "Recueilli lors de l’envoi",
-        "capturedAt": "Recueillis le {time}, à l’ouverture ou à la dernière actualisation de ce formulaire. Vos réponses s’affichent ici pendant la saisie. C’est exactement ce qui sera enregistré.",
+        "capturedAt": "Dernière mise à jour : {time}. Les détails et journaux sont mis à jour automatiquement.",
         "expired": "Ces détails ont été recueillis il y a trop longtemps et ont été actualisés. Vérifiez-les puis envoyez à nouveau."
     },
     "activityTypes": {

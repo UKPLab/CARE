@@ -66,11 +66,9 @@
     },
     "notice": {
         "label": "What we save:",
-        "text": "Your description, selected options, attachments, the current page, the time the details were captured, CARE version, browser, operating system, window size and recent diagnostic logs, linked to your account.",
-        "activity": "Because you agreed to usage statistics, your recent activity in CARE is included: clicks (element type and position), sampled mouse positions, scrolling, window focus, tab visibility and page changes.",
-        "noActivity": "Your recent activity (clicks, mouse movements) is not included because you have not agreed to usage statistics.",
-        "databaseHealth": "CARE also saves aggregate health counters of its database (connections, locks, transactions, cache), measured on the server.",
-        "excluded": "Typed text, page and document contents, passwords, tokens, cookies and query strings are never included."
+        "text": "Your report, attachments, account, page, report time, browser/device details and recent error logs.",
+        "activity": "Recent clicks, mouse movements and page activity are included with your consent.",
+        "noActivity": "Activity tracking is not included."
     },
     "actions": {
         "submit": "Submit report"
@@ -100,13 +98,11 @@
     },
     "details": {
         "title": "Details sent with this report",
-        "refresh": "Refresh",
-        "refreshTitle": "Capture the automatic details again",
         "loading": "Collecting the automatic details…",
         "loadingShort": "Collecting…",
         "unavailable": "The automatic details could not be loaded. You can still submit; they are then collected at the moment you submit.",
         "collectedOnSubmit": "Collected when you submit",
-        "capturedAt": "Captured at {time}, when this form was opened or last refreshed. Your answers appear here as you type. This is what will be saved.",
+        "capturedAt": "Last updated: {time}. Details and logs update automatically.",
         "expired": "These details were captured too long ago and have been refreshed. Please check them and submit again."
     },
     "activityTypes": {

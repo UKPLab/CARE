@@ -171,6 +171,8 @@ function createModal({ acceptStats = true, activityEnabled = true } = {}) {
     URL: { revokeObjectURL() {} },
     Date,
     Promise,
+    setInterval: (callback, interval) => { calls.timer = {callback, interval}; return 1; },
+    clearInterval: () => { calls.timer = null; },
   };
   for (const name of ['BasicModal', 'BasicButton', 'BasicForm', 'ChoiceChips', 'AttachmentPicker', 'ReportSummary']) context[name] = {};
   vm.createContext(context);
@@ -211,6 +213,7 @@ function createModal({ acceptStats = true, activityEnabled = true } = {}) {
     activityMaxEntries: 50,
     activityMaxAgeMinutes: 10,
     databaseHealthEnabled: true,
+    detailsUpdateIntervalMs: 5000,
   };
   return instance;
 }
@@ -270,7 +273,7 @@ test('an older details response never replaces a newer one', () => {
   const modal = createModal();
   modal.prepareDetails();
   const first = last(modal, 'problemReportPrepare');
-  modal.refreshDetails();
+  modal.prepareDetails();
   const second = last(modal, 'problemReportPrepare');
   second.callback(null, prepared(second.payload));
   first.callback(null, { success: true, data: { ...prepared(first.payload).data, context: { page: '/stale' } } });
@@ -372,7 +375,7 @@ test('activity is not read without statistics consent', () => {
   consented.prepareDetails();
   assert.equal(consented.calls.activity, 1);
   assert.ok(consented.noticeText.includes('problemReport.notice.activity'));
-  assert.ok(consented.noticeText.includes('problemReport.notice.databaseHealth'));
+  assert.ok(!consented.noticeText.includes('problemReport.notice.databaseHealth'));
 });
 
 test('withdrawn consent immediately hides activity and excludes it from submission', () => {
@@ -400,4 +403,25 @@ test('a server-discarded snapshot refreshes details and keeps the draft', async 
   assert.equal(modal.description, 'Broken');
   assert.equal(modal.detailsNotice, 'problemReport.details.expired');
   assert.notEqual(last(modal, 'problemReportPrepare'), prepare);
+});
+
+test('details start collapsed and update automatically until the form closes', () => {
+  const modal = createModal();
+  assert.equal(modal.detailsExpanded, false);
+  modal.open();
+  last(modal, 'problemReportConfig').callback(null, {success: true, data: modal.effectiveSettings});
+  const prepare = last(modal, 'problemReportPrepare');
+  prepare.callback(null, prepared(prepare.payload));
+  const timer = modal.calls.timer;
+  assert.equal(timer.interval, 5000);
+  timer.callback();
+  assert.notEqual(last(modal, 'problemReportPrepare'), prepare);
+  assert.equal(modal.detailsState, 'ready', 'shown details stay visible while updating');
+  const pending = last(modal, 'problemReportPrepare');
+  pending.callback(null, prepared(pending.payload));
+  modal.submitting = true;
+  timer.callback();
+  assert.equal(last(modal, 'problemReportPrepare'), pending);
+  modal.stopDetailsUpdates();
+  assert.equal(modal.calls.timer, null);
 });
