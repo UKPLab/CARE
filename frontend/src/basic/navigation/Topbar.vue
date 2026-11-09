@@ -32,9 +32,9 @@
         <div id="topbarCenterPlaceholder"/>
         <ul
           id="topBarNavItems"
-          class="navbar-nav ms-auto mt-2 mt-lg-0"
+          class="navbar-nav flex-row align-items-center ms-auto"
         />
-        <ul class="navbar-nav">
+        <ul class="navbar-nav flex-row align-items-center">
           <li
             v-if="showRecordingIcon"
             class="nav-item me-3 d-flex align-items-center"
@@ -87,8 +87,8 @@
           <li class="nav-item dropdown">
             <div
               class="dropdown"
-              @click="toggleProfileDropdown()"
-              @focusout="toggleProfileDropdown()"
+              @click="toggleProfileDropdown($event)"
+              @focusout="toggleProfileDropdown($event)"
             >
               <button
                 id="dropdownMenuButton"
@@ -357,7 +357,7 @@ export default {
         event.preventDefault();
       }
     },
-    toggleProfileDropdown() {
+    toggleProfileDropdown(event) {
       const dropdown = document.getElementById('dropdown-show');
       // Clicks inside the menu that are not on an item (header, dividers, padding) keep it open
       if (event.type === 'click' && event.target.closest('#dropdown-show')
@@ -585,6 +585,12 @@ body.sidebar-exists #backButton {
 .project-box:hover {
   background-color: var(--care-primary);
   color: var(--care-on-primary);
+}
+
+@media (max-width: 575.98px) {
+  .project-box {
+    max-width: 8.5rem;
+  }
 }
 
 .recording-icon {
