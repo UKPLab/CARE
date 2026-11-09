@@ -90,6 +90,22 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
+     * Whether rows are soft-deleted via a `deleted` column. Models whose rows are hard-deleted
+     * (e.g. immutable assessment versions) set this to false: reads then skip the `deleted`
+     * filter and deleteById removes the row.
+     * @type {boolean}
+     */
+    static hasSoftDelete = true;
+
+    /**
+     * Soft-delete filter for read queries.
+     * @return {{deleted: boolean}|{}}
+     */
+    static notDeletedFilter() {
+        return this.hasSoftDelete ? {deleted: false} : {};
+    }
+
+    /**
      * Filter object by keys
      * @param {Object} obj
      * @param {Array} relevantFields
@@ -138,7 +154,7 @@ module.exports = class MetaModel extends Model {
                     });
                 } else {
                     return await this.findOne({
-                        where: {[key]: id, 'deleted': false},
+                        where: {[key]: id, ...this.notDeletedFilter()},
                         raw: true, ...options
                     })
                 }
@@ -201,7 +217,7 @@ module.exports = class MetaModel extends Model {
         try {
             options["raw"] = true;
             if (!options["where"]) {
-                options["where"] = {deleted: false};
+                options["where"] = this.notDeletedFilter();
             }
 
             return await this.findAll(options);
@@ -224,12 +240,12 @@ module.exports = class MetaModel extends Model {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
                     return await this.findAll({
-                        where: {[key]: {[Op.in]: values}, deleted: false, draft: false},
+                        where: {[key]: {[Op.in]: values}, ...this.notDeletedFilter(), draft: false},
                         raw: true
                     }, options);
                 } else {
                     return await this.findAll({
-                        where: {[key]: {[Op.in]: values}, deleted: false},
+                        where: {[key]: {[Op.in]: values}, ...this.notDeletedFilter()},
                         raw: true
                     }, options);
                 }
@@ -253,12 +269,12 @@ module.exports = class MetaModel extends Model {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
                     return await this.findAll({
-                        where: {[key]: value, deleted: false, draft: false},
+                        where: {[key]: value, ...this.notDeletedFilter(), draft: false},
                         raw: true
                     }, options);
                 } else {
                     return await this.findAll({
-                        where: {[key]: value, deleted: false},
+                        where: {[key]: value, ...this.notDeletedFilter()},
                         raw: true
                     }, options);
                 }
@@ -316,7 +332,8 @@ module.exports = class MetaModel extends Model {
     }
 
     /**
-     * Delete db entry by id
+     * Delete db entry by id. Models with `hasSoftDelete = false` are hard-deleted
+     * (database foreign keys decide whether the row may go).
      * @param {number} id
      * @param {Object} [options={}] - Optional Sequelize query options
      * @param {boolean} [options.force=false] - If true, permanently destroys the record instead of soft-deleting.
@@ -324,7 +341,7 @@ module.exports = class MetaModel extends Model {
      */
     static async deleteById(id, options = {}) {
         const { force = false, ...restOptions } = options;
-        if (force) {
+        if (force || !this.hasSoftDelete) {
             return await this.destroyById(id, restOptions);
         }
         return await this.updateById(id, {deleted: true}, restOptions);
