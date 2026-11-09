@@ -19,8 +19,18 @@
           <BasicEditor :model-value="terms" :read-only="true" />
         </div>
       </div>
+      <div v-if="combineResearchConsent" class="consent-item">
+        <label class="consent-label">
+          <input
+            v-model="acceptResearch"
+            class="consent-input"
+            type="checkbox"
+          />
+          {{ $t('auth.acceptResearch') }}
+        </label>
+      </div>
       <div
-        v-if="requestData"
+        v-if="requestData && !combineResearchConsent"
         class="consent-item"
       >
         <label class="consent-label">
@@ -33,7 +43,7 @@
         </label>
       </div>
       <div
-        v-if="requestStats"
+        v-if="requestStats && !combineResearchConsent"
         class="consent-item"
       >
         <label class="consent-label">
@@ -67,7 +77,7 @@
 /**
  * Show terms and consent options in a modal
  * The ToS must be agreed to by the user before they can proceed.
- * The other two options (behavior tracking and data donation) are optional
+ * Research permissions (behavior tracking and data donation) are optional
  * and can be removed from this modal by toggling the switches in the settings.
  * @author: Linyin Huang, Dennis Zyska
  */
@@ -90,6 +100,19 @@ export default {
     };
   },
   computed: {
+    combineResearchConsent() {
+      return this.$store.getters["settings/getValue"]("app.register.combineResearchConsent") === "true"
+          && this.requestData && this.requestStats;
+    },
+    acceptResearch: {
+      get() {
+        return this.acceptStats && this.acceptDataSharing;
+      },
+      set(accepted) {
+        this.acceptStats = accepted;
+        this.acceptDataSharing = accepted;
+      },
+    },
     requestStats() {
       return this.$store.getters["settings/getValue"]('app.register.requestStats') === "true";
     },
@@ -107,8 +130,8 @@ export default {
     },
   },
   mounted() {
-    this.acceptStats = this.acceptStatsDefault;
-    this.acceptDataSharing = this.acceptDataSharingDefault;
+    this.acceptStats = !this.combineResearchConsent && this.acceptStatsDefault;
+    this.acceptDataSharing = !this.combineResearchConsent && this.acceptDataSharingDefault;
   },
   methods: {
     open() {

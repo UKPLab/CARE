@@ -80,6 +80,7 @@ function registerRegistrationRoutes(server, helpers) {
                 email: data.email,
                 acceptTerms: data.acceptTerms,
                 acceptStats: data.acceptStats,
+                acceptDataSharing: data.acceptDataSharing,
                 acceptedAt: data.acceptedAt,
             };
             const newUser = await server.db.models['user'].add(userData, { transaction });

@@ -317,7 +317,8 @@ Consent and Terms
      platform.
 
    :Settings:
-     ``app.register.terms``, ``app.register.requestStats``, ``app.register.requestData``
+     ``app.register.terms``, ``app.register.requestStats``, ``app.register.requestData``,
+     ``app.register.combineResearchConsent``
 
    :Acceptance:
      - On first login a modal appears showing the platform terms and optional checkboxes for
@@ -325,6 +326,14 @@ Consent and Terms
        enabled).
      - I must accept the terms to proceed. The optional checkboxes are pre-set to their
        configured default values but I can change them.
+     - In Settings, under User Registration / Consent options, administrators can enable
+       "Combine research consent checkboxes" (off by default). When both permissions are
+       requested, registration, first-login consent, and Preferences show one optional
+       checkbox that saves both ``acceptStats`` and ``acceptDataSharing``. New consent
+       starts unchecked in combined mode, regardless of the separate defaults.
+     - Preferences shows an indeterminate checkbox for existing mixed permissions and
+       preserves those permissions until the participant changes the checkbox.
+     - Terms acceptance remains separate. This setting does not change export filtering.
      - After accepting, my preferences are saved and I am granted access to the app.
      - I can later update my consent preferences via the same modal accessible from my account
        menu.
