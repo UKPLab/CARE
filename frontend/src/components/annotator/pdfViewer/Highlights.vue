@@ -321,8 +321,10 @@ export default {
 
         const highlightEl = document.createElement('highlight');
         highlightEl.className = "care-highlight";
+        highlightEl.dataset.annotationId = String(annotation.id);
 
-        highlightEl.addEventListener('click', () => {
+        highlightEl.addEventListener('click', (event) => {
+          if (event.detail > 1) return;
           this.eventBus.emit('sidebarScroll', annotation.id);
         });
 
@@ -357,23 +359,17 @@ export default {
         return;
       }
 
-      /** @type {SVGElement|null} */
-      let svgHighlightLayer = canvasEl.parentElement.querySelector(
-        '.hypothesis-highlight-layer'
-      );
-
       const isCssBlendSupported = CSS.supports('mix-blend-mode', 'multiply');
 
+      // Above the text layer, which otherwise eats the click. The layer itself
+      // ignores hits so text outside a highlight can still be selected.
+      /** @type {SVGElement|null} */
+      let svgHighlightLayer = pageEl.querySelector(':scope > svg.highlight-layer');
+
       if (!svgHighlightLayer) {
-        // Create SVG layer. This must be in the same stacking context as
-        // the canvas so that CSS `mix-blend-mode` can be used to control how SVG
-        // content blends with the canvas below.
         svgHighlightLayer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svgHighlightLayer.setAttribute('class', 'highlight-layer');
-        canvasEl.parentElement.appendChild(svgHighlightLayer);
-
-        // Overlay SVG layer above canvas.
-        canvasEl.parentElement.style.position = 'relative';
+        pageEl.appendChild(svgHighlightLayer);
 
         const svgStyle = svgHighlightLayer.style;
         svgStyle.position = 'absolute';
@@ -381,6 +377,8 @@ export default {
         svgStyle.top = '0';
         svgStyle.width = '100%';
         svgStyle.height = '100%';
+        svgStyle.zIndex = '2';
+        svgStyle.pointerEvents = 'none';
 
         if (isCssBlendSupported) {
           // Use multiply blending so that highlights drawn on top of text darken it
@@ -414,6 +412,15 @@ export default {
         } else {
           rect.setAttribute('class', 'svg-highlight is-opaque');
         }
+        rect.dataset.annotationId = String(annotation.id);
+        rect.style.pointerEvents = 'auto';
+        rect.style.cursor = 'pointer';
+        rect.addEventListener('click', (event) => {
+          if (event.detail > 1) return;
+          event.preventDefault();
+          event.stopPropagation();
+          this.eventBus.emit('sidebarScroll', annotation.id);
+        });
 
         // Make the highlight in the text layer transparent.
         highlightEl.classList.add('is-transparent');
