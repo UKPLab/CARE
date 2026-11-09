@@ -121,8 +121,9 @@ async function listHookModels(service, hookId) {
     let hookModels;
     try {
         hookModels = await loadHookModels(service, hookId);
-    } catch (_error) {
+    } catch (error) {
         // A hook without models offers an empty picker instead of failing the whole chat.
+        service.logger.warn(`listHookModels failed hookId=${hookId}: ${error.message || error}`);
         return [];
     }
     const usable = await Promise.all(hookModels.map(async (hookModel) => {
