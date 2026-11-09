@@ -1,8 +1,10 @@
 <template>
+  <div class="pdf-toolbar-anchor">
   <div 
     ref="toolbar"
     class="pdf-toolbar" 
     :class="{ 'collapsed': !toolbarVisible }"
+    v-bind="$attrs"
   >  
     <template v-if="toolbarVisible">       
       <TopBarButton
@@ -37,6 +39,7 @@
       @click="toggleToolbar"
     />
   </div>
+  </div>
 </template>
 
 <script>
@@ -53,6 +56,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "PDFToolbar",
+  inheritAttrs: false,
   components: {
     TopBarButton,
     BasicForm,
@@ -133,13 +137,22 @@ export default {
 </script>
 
 <style scoped>
-.pdf-toolbar {
+.pdf-toolbar-anchor {
   position: sticky;
   top: 12px;
   z-index: 200;
-  width: fit-content;
-  margin-left: auto;
+  /* The chip floats over the page. A normal block would leave an empty
+     band, and a fixed pull-up shifts the page when the chip changes size. */
+  height: 0;
+  display: flex;
+  justify-content: flex-end;
   margin-right: 16px;
+  pointer-events: none;
+}
+
+.pdf-toolbar {
+  pointer-events: auto;
+  width: fit-content;
   background: var(--bs-body-bg, #fff);
   border: 1px solid var(--bs-border-color, #ddd);
   border-radius: 999px;
@@ -152,9 +165,7 @@ export default {
 }
 
 .pdf-toolbar.collapsed {
-  width: fit-content;
   padding: 4px;
-  margin-left: auto;
 }
 
 .pdf-toolbar :deep(.btn) {
