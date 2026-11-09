@@ -12,7 +12,7 @@ import {afterEach, test} from 'node:test'
 import {EventEmitter} from 'node:events'
 import {computed, createRenderer, h, nextTick, reactive} from 'vue'
 import {createStore} from 'vuex'
-import {annotatorRecordsForPrompt} from '../src/assets/annotations.js'
+import {annotatorRecordsForPrompt, annotatorRecordsForSkill} from '../src/assets/annotations.js'
 import * as serviceKeys from '../src/assets/serviceDocumentDataKeys.js'
 import subscribeTable from '../src/plugins/subscribeTable.js'
 import {createTable} from '../src/store/utils.js'
@@ -27,6 +27,7 @@ const AnnotatorOptions = loadOptions('components/annotator/Annotator.vue', {
 const NlpRequestOptions = loadOptions('basic/service/NlpRequest.vue', {
     ...serviceKeys,
     annotatorRecordsForPrompt,
+    annotatorRecordsForSkill,
     pdfjsLib: {GlobalWorkerOptions: {}},
     resolveApiMessage: () => 'failed',
     uuid: () => 'request-id',
@@ -76,7 +77,7 @@ async function settle() {
  * @param {boolean} [options.withRequest] Mount the later step's request together with the Annotator
  * @param {Function} [options.prepare] Runs with the store before anything is mounted
  */
-function mountStudy({flag, withRequest = false, requestDocumentId = DOC, prepare = noop} = {}) {
+function mountStudy({flag, withRequest = false, requestDocumentId = DOC, legacy = false, prepare = noop} = {}) {
     const store = createStore({
         modules: {
             auth: {namespaced: true, getters: {getUserId: () => 1}},
@@ -121,7 +122,8 @@ function mountStudy({flag, withRequest = false, requestDocumentId = DOC, prepare
             }),
             ui.showRequest ? h(NlpRequest, {
                 name: 'hook',
-                service: {hookId: 3, inputs: HOOK_INPUTS},
+                service: {...(legacy ? {} : {hookId: 3}), inputs: HOOK_INPUTS},
+                skill: 'contract_probe',
                 inputs: HOOK_INPUTS,
                 documentData: {},
                 documentId: requestDocumentId,
@@ -154,7 +156,7 @@ function mountStudy({flag, withRequest = false, requestDocumentId = DOC, prepare
     const dataRequests = () => socketCalls.filter(call => call.event === 'documentGetData')
 
     return {
-        ui, toasts, runHook, deliver, dataRequests, bus, unmount: () => {
+        ui, toasts, runHook, deliver, dataRequests, socketCalls, bus, unmount: () => {
             AnnotatorOptions.beforeUnmount.call(annotatorVm)
             NlpRequestOptions.beforeUnmount.call(requestVm)
         },
@@ -486,4 +488,34 @@ test('context changes cancel a waiting hook before any model call', async () => 
     await page.answerData()
     assert.equal(page.runHook.length, 0)
     assert.equal(page.request().status, 'failed')
+})
+
+for (const lost of [true, false]) test(`legacy skill recovers after ${lost ? 'lost acknowledgements' : 'server failures'}`, async t => {
+    t.mock.timers.enable({apis: ['setTimeout']})
+    const page = mountStudy({withRequest: true, legacy: true, requestDocumentId: DOC + 1})
+    await settle()
+    const sent = () => page.socketCalls.filter(call => call.event === 'serviceRequest')
+    assert.equal(sent().length, 0)
+    assert.equal(page.request().status, 'pending')
+    for (const delay of [500, 1000, 0]) {
+        if (lost) t.mock.timers.tick(10000)
+        else page.dataRequests().at(-1).ack({success: false})
+        if (delay) t.mock.timers.tick(delay)
+    }
+    await settle()
+    assert.equal(page.request().status, 'failed')
+    page.request().retryRequest()
+    page.request().retryRequest()
+    await settle()
+    assert.equal(page.dataRequests().length, 4)
+    assert.equal(page.request().status, 'pending')
+    assert.equal(sent().length, 0)
+    page.dataRequests()[0].ack({success: true})
+    await settle()
+    assert.equal(sent().length, 0)
+    await page.answerData({comments: [comment(2, SESSION, STEP, 'recovered')]})
+    assert.equal(sent().length, 1)
+    assert.equal(sent()[0].data.data.data['inlineComments[1]'][0].text, 'recovered')
+    assert.deepEqual(sent()[0].data.data.data['inlineComments[2]'], [])
+    assert.equal(sent()[0].data.data.data['inlineComments[1]'][0].tags, '[]')
 })

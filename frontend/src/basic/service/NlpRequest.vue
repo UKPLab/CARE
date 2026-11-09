@@ -78,6 +78,7 @@ export default {
       hookGeneration: 0,
       cancelReadiness: null,
       hookInFlight: false,
+      skillInFlight: false,
     };
   },
   computed: {
@@ -173,7 +174,7 @@ export default {
         clearTimeout(this.timeoutId);
         this.timeoutId = null;
       }
-      if (this.isHook && !this.hookInFlight && this.status !== "completed") {
+      if (!this.hookInFlight && !this.skillInFlight && this.status !== "completed") {
         const steps = new Set(Object.values(this.service.inputs || {})
           .filter(spec => spec?.type === "annotator")
           .map(spec => this.orderedStudySteps[spec.stepIndex]?.id)
@@ -224,19 +225,32 @@ export default {
           return null
       }
     },
-    sendRequest() {
+    async sendRequest() {
       if (this.isHook) {
-        this.sendHookRequest();
-        return;
+        return this.sendHookRequest();
       }
+      if (this.skillInFlight) return;
+      this.skillInFlight = true;
+      const generation = this.hookGeneration;
       this.status = 'pending';
 
       const basePayload = {};
       try {
+        const needsRecords = Object.values(this.service.inputs || {}).some(spec => {
+          if (spec?.type !== 'annotator') return false;
+          const step = this.orderedStudySteps[spec.stepIndex];
+          const data = this.studyData[step?.id]?.annotator;
+          return step && (data == null || data.loadError);
+        });
+        if (needsRecords) {
+          await this.waitForAnnotatorData();
+          if (generation !== this.hookGeneration) return;
+        }
         for (const input in this.service.inputs) {
           basePayload[input] = this.buildPayload(this.service.inputs[input]);
         }
       } catch (error) {
+        if (generation !== this.hookGeneration) return;
         this.eventBus.emit('toast', {
           title: this.$t('common.nlp.serviceRequest'),
           message: resolveApiMessage(error, 'nlp.hooks.requestFailed'),
@@ -244,6 +258,8 @@ export default {
         });
         this.status = 'failed';
         return;
+      } finally {
+        this.skillInFlight = false;
       }
 
       this.$socket.emit("serviceRequest", {

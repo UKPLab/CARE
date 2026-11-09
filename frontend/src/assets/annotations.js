@@ -209,7 +209,11 @@ export function annotatorRecordsForSkill(annotator, key) {
     ]);
     const pick = (record, keys) => Object.fromEntries(
         keys.filter(field => Object.hasOwn(record, field)).map(field => {
-            const value = record[field];
+            const raw = record[field];
+            if (field === 'tags' && Array.isArray(raw) && !raw.every(tag => typeof tag === 'string')) {
+                throw new Error('nlp.hooks.requestFailed');
+            }
+            const value = field === 'tags' && Array.isArray(raw) ? JSON.stringify(raw) : raw;
             const valid = value === null || (numericFields.has(field)
                 ? typeof value === 'number' && Number.isFinite(value)
                 : typeof value === 'string');

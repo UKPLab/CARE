@@ -32,7 +32,7 @@ async function outgoing(data, inputs = {annotations: mapping('annotations'), com
         eventBus: {emit: (...args) => toasts.push(args)},
         $socket: {emit: (event, payload) => sent.push({event, payload: JSON.parse(JSON.stringify(payload))})},
     }
-    request.sendRequest()
+    await request.sendRequest()
     clearTimeout(request.timeoutId)
     const broker = new NLPService({})
     broker.nlpSocket = {connected: true, emit: (event, payload) => external.push({event, payload: JSON.parse(JSON.stringify(payload))})}
@@ -56,8 +56,8 @@ test('loaded empty records reach the external broker as empty arrays', async () 
     assert.deepEqual(external[0].payload.data, {annotations: [], comments: []})
 })
 
-test('unloaded or unsupported mapped records fail visibly without an external request', async () => {
-    for (const data of [undefined, {}, {annotations: []}, {annotations: [{...annotation, selectors: {target: [{selector: [{type: 'Unknown'}]}]}}], comments: []}]) {
+test('incomplete or unsupported mapped records fail visibly without an external request', async () => {
+    for (const data of [{}, {annotations: []}, {annotations: [{...annotation, selectors: {target: [{selector: [{type: 'Unknown'}]}]}}], comments: []}]) {
         const result = await outgoing(data)
         assert.equal(result.request.status, 'failed')
         assert.equal(result.sent.length, 0)
@@ -106,4 +106,10 @@ test('nested values in allowed fields fail before an external request', async ()
     const result = await outgoing({annotations: [], comments: [{...comment, tags: {userId: 44}}]})
     assert.equal(result.request.status, 'failed')
     assert.equal(result.external.length, 0)
+})
+
+test('store-parsed comment tags retain the persisted skill format', () => {
+    assert.deepEqual(annotatorRecordsForSkill({comments: [{id: 3, tags: ['review', 'question']}]}, 'comments'),
+        [{id: 3, tags: '["review","question"]'}])
+    assert.throws(() => annotatorRecordsForSkill({comments: [{id: 3, tags: [{userId: 44}]}]}, 'comments'))
 })
