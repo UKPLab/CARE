@@ -29,7 +29,7 @@
           v-for="t in filteredTags"
           :key="t.name"
           class="adder-tag text-truncate"
-          :style="{ '--tag-color': `var(--bs-${t.colorCode})` }"
+          :style="{ '--tag-color': tagColorVar(t.colorCode) }"
           :title="t.description"
           :text="t.name"
           data-placement="top"
@@ -58,7 +58,7 @@
  */
 import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
 import {TextQuoteAnchor} from '@/assets/anchoring/types';
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, tagColorVar } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 export default {
@@ -99,6 +99,7 @@ export default {
       usageHistory: [],
       dragThreshold: 5,
       isDoubleClick: false,
+      retagAnnotationId: null,
       startX: 0, 
       startY: 0,
       isOverflowing: false,
@@ -214,6 +215,7 @@ export default {
     }
   },
   methods: {
+    tagColorVar,
     saveUsageHistory() {
       const key = "UH" + this.tagSetId;
       const payload = JSON.stringify(this.usageHistory);
@@ -249,8 +251,11 @@ export default {
       const scrollAmount = event.deltaY;
       adderContent.scrollLeft += scrollAmount;
     },
-    doubleClickHandler() {
+    doubleClickHandler(event) {
       this.isDoubleClick = true;
+      const node = event.target?.closest?.("highlight, .svg-highlight");
+      const annotationId = Number(node?.dataset?.annotationId);
+      this.retagAnnotationId = annotationId || null;
     },
     positionTracker(event) {
       //tracks the start position when the user presses down left click and possibly starts a selection
@@ -309,7 +314,26 @@ export default {
           this.usageHistory.pop()
         }
       }
-      
+
+      if (this.retagAnnotationId) {
+        const annotationId = this.retagAnnotationId;
+        this.retagAnnotationId = null;
+        this.$socket.emit("annotationUpdate", {
+          annotationId,
+          tagId: tag.id,
+        }, (res) => {
+          if (!res.success) {
+            this.eventBus.emit("toast", {
+              title: this.$t("errors.tags.tagUpdateFailed"),
+              message: resolveApiMessage(res),
+              variant: "danger",
+            });
+          }
+        });
+        this.isVisible = false;
+        document.getSelection()?.removeAllRanges();
+        return;
+      }
 
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
@@ -354,6 +378,20 @@ export default {
         this._onClearSelection();
         return;
       }
+
+      const existingHighlight = event.target?.closest?.("highlight, .svg-highlight");
+      if (existingHighlight && !(this.isDoubleClick && this.retagAnnotationId && this.canRetag(this.retagAnnotationId))) {
+        this.retagAnnotationId = null;
+        this._onClearSelection();
+        return;
+      }
+      if (this.isDoubleClick && this.retagAnnotationId && this.canRetag(this.retagAnnotationId)) {
+        document.getSelection()?.removeAllRanges();
+        this.selectedRanges = [];
+        this.show(event.clientX, event.clientY);
+        return;
+      }
+      this.retagAnnotationId = null;
 
       // get selection
       const selection = /** @type {Selection} */ (document.getSelection());
@@ -405,10 +443,15 @@ export default {
         range1.endOffset === range2.endOffset
       );
     },
+    canRetag(annotationId) {
+      const annotation = this.$store.getters["table/annotation/get"](annotationId);
+      return !!annotation && annotation.userId === this.userId;
+    },
     _onClearSelection() {
       this.isVisible = false;
       this.isExtended = false;
       this.selectedRanges = [];
+      this.retagAnnotationId = null;
     },
     show(x, y) {
       //reset the extended status of the adder and the searchTerm
@@ -567,11 +610,14 @@ export default {
   position: absolute;
   top: 0;
   left: 0;
-  padding: 6px;
-  background-color: var(--bs-body-bg, white);
+  padding: 4px;
+  background-color: var(--bs-tertiary-bg);
   white-space: nowrap;
   width: fit-content;
   max-width: 180px;
+}
+html[data-bs-theme="light"] #adder {
+  background-color: var(--bs-secondary-bg);
 }
 #adder.is-extended {
   max-width: 250px;
@@ -579,24 +625,28 @@ export default {
 .btn-group-vertical {
   width: 100%;
   max-width: inherit;
-  gap: 4px;
+  gap: 0;
+}
+#adder .btn-group-vertical > .btn {
+  margin-top: 0;
+  border: 0;
 }
 #adder .btn {
   max-width: inherit;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: none;
 }
 .adder-tag {
-  padding: 6px 10px;
+  padding: 7px 10px;
   border: 0;
   text-align: left;
   font-weight: 500;
   color: var(--bs-body-color);
-  background: color-mix(in srgb, var(--tag-color) 14%, transparent);
+  background: transparent;
 }
 .adder-tag:hover {
   color: var(--bs-body-color);
-  background: color-mix(in srgb, var(--tag-color) 26%, transparent);
+  background: color-mix(in srgb, var(--tag-color) 18%, transparent);
 }
 .adder-tag::before {
   content: "";
