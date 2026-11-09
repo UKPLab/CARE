@@ -2,7 +2,6 @@
   <TableEmptyState
     :searching="searching"
     :search-text="searchText"
-    :filter-labels="filterLabels"
     :texts="texts"
     :action-label="canCreate ? $t('studies.cards.empty.create') : ''"
     :compact="compact"
@@ -63,7 +62,6 @@ export default {
         searchHint: this.$t("studies.cards.empty.searchHint"),
         noDataTitle: this.$t("studies.cards.emptyTitle"),
         noDataHintCreate: this.$t("studies.cards.emptyHint"),
-        chatItems: this.$t("studies.cards.empty.chatStudies"),
       };
     },
   },

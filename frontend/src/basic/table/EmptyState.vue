@@ -378,12 +378,6 @@ export default {
       required: false,
       default: "",
     },
-    /** Active filter chips, worded as in the search bar. */
-    filterLabels: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
     /** Override pieces of the wording; keys as in common.emptyState. */
     texts: {
       type: Object,

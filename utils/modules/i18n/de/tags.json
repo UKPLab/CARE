@@ -52,6 +52,5 @@
         "publishConfirm": "Möchten Sie das Tag-Set wirklich veröffentlichen? Hinweis: Nach der Veröffentlichung können Sie das Tag-Set nicht mehr rückgängig machen!",
         "tagSetPublished": "Tag-Set veröffentlicht",
         "tagSetPublishedMessage": "Das Tag-Set wurde erfolgreich veröffentlicht"
-    },
-    "editMainTag": "Haupt-Tag bearbeiten"
+    }
 }

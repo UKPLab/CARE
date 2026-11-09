@@ -52,6 +52,5 @@
         "publishConfirm": "Voulez-vous vraiment publier cette liste d'étiquettes ? Remarque : une fois publiée, elle ne pourra plus être dépubliée !",
         "tagSetPublished": "Liste d'étiquettes publiée",
         "tagSetPublishedMessage": "La liste d'étiquettes a été publiée"
-    },
-    "editMainTag": "Modifier l'étiquette principale"
+    }
 }

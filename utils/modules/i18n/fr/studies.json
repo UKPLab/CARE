@@ -297,8 +297,7 @@
             "searchTitle": "Aucune étude ne correspond à",
             "filterTitle": "Aucune étude ne correspond à ces filtres",
             "searchHint": "Notre loupe est revenue bredouille. Essayez un mot plus court, vérifiez l'orthographe ou retirez un filtre.",
-            "create": "Créer une étude",
-            "chatStudies": "des études"
+            "create": "Créer une étude"
         },
         "emptyTitle": "Aucune étude pour l'instant",
         "emptyHint": "Créez votre première étude avec « Ajouter », ou modifiez la recherche."

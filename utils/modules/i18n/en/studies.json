@@ -300,8 +300,7 @@
       "searchTitle": "No studies match",
       "filterTitle": "No studies match these filters",
       "searchHint": "Our magnifying glass came back empty-handed. Try a shorter word, check the spelling, or remove a filter.",
-      "create": "Create a study",
-      "chatStudies": "studies"
+      "create": "Create a study"
     },
     "emptyTitle": "No studies here yet",
     "emptyHint": "Create your first study with \"Add\", or change the search to see more."
