@@ -454,7 +454,8 @@
       "notConfigured": "Für diesen Studienschritt ist kein KI-Chat eingerichtet.",
       "contextMissing": "Der KI-Chat-Kontext für diesen Studienschritt fehlt.",
       "contentRequired": "Bitte geben Sie eine Nachricht ein.",
-      "conversationTooLong": "Diese Unterhaltung ist zu lang geworden. Bitte starten Sie eine neue Unterhaltung, um fortzufahren."
+      "conversationTooLong": "Diese Unterhaltung ist zu lang geworden. Bitte starten Sie eine neue Unterhaltung, um fortzufahren.",
+      "quoteTooLarge": "Das ausgewählte Zitat ist zu groß. Bitte wählen Sie eine kürzere Textstelle aus."
     },
     "dialogue": {
       "notFound": "KI-Dialog nicht gefunden.",

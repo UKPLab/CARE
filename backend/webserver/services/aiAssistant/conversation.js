@@ -27,6 +27,7 @@ const CHAT = {
 // still fits inside the window.
 const CONTEXT_SOFT_RATIO = 0.65;
 const CONTEXT_HARD_RATIO = 0.85;
+const MAX_QUOTE_LENGTH = 20000;
 
 /**
  * Estimates a conversation's current token size from its stored model history.
@@ -69,12 +70,14 @@ function buildQuoteMetadata(context, quote) {
     if (!text) {
         return null;
     }
+    if (text.length > MAX_QUOTE_LENGTH) {
+        throw new TranslatableError("errors.ai.chat.quoteTooLarge");
+    }
     return {
         quote: {
             text,
             documentId: Number(quote.documentId) || context.studyStep.documentId || null,
             studyStepId: Number(quote.studyStepId) || context.studyStep.id,
-            selectors: quote.selectors || null,
         },
     };
 }
@@ -327,15 +330,6 @@ async function sendConversationMessage(service, client, data) {
         {hookId: context.hookId, aiModelId: data?.aiModelId},
     );
 
-    // Block an existing chat that would pass the hard fraction of the model window.
-    if (conversation && modelParams.contextWindowTokens) {
-        const historyTokens = await estimateConversationTokens(service, conversation.id);
-        const projectedTokens = historyTokens + helpers.estimateTokens(content);
-        if (projectedTokens > modelParams.contextWindowTokens * CONTEXT_HARD_RATIO) {
-            throw new TranslatableError("errors.ai.chat.conversationTooLong");
-        }
-    }
-
     let systemMessage = null;
     if (includeContext && !conversation) {
         const {promptText} = await core.resolveContextPrompt(
@@ -345,6 +339,17 @@ async function sendConversationMessage(service, client, data) {
             throw new TranslatableError("errors.ai.chat.contextMissing");
         }
         systemMessage = {studyStepId: context.studyStep.id, aiModelId: modelParams.aiModelId, content: promptText};
+    }
+
+    // Include everything sent to the model before persisting a new turn.
+    if (modelParams.contextWindowTokens) {
+        const historyTokens = conversation
+            ? await estimateConversationTokens(service, conversation.id)
+            : helpers.estimateTokens(systemMessage?.content);
+        const projectedTokens = historyTokens + helpers.estimateTokens(buildUserContent(content, userMetadata));
+        if (projectedTokens > modelParams.contextWindowTokens * CONTEXT_HARD_RATIO) {
+            throw new TranslatableError("errors.ai.chat.conversationTooLong");
+        }
     }
 
     const turn = await createConversationTurn(
