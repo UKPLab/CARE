@@ -155,6 +155,8 @@ Guest Login
      - A "Login as guest" button is visible on the login page.
      - Clicking it logs me in immediately without entering credentials.
      - I can see the dashboard with the rights and views assigned to the guest role.
+     - Home is a short guest start page (notice, starting points, open studies), not the
+       personal statistics, when the guest role has ``frontend.dashboard.home.guestView``.
 
      **Negative cases:**
 
@@ -386,6 +388,8 @@ User Registration
 
    :Acceptance:
      - A registration button or link is visible on the landing/login page.
+     - Registration is three steps: profile (username, and real name when requested),
+       login details (email and password), then agreements.
      - The registration form asks for a username, email address, and password.
      - If ``app.register.requestName`` is enabled, the form additionally asks for my real name.
      - If ``app.register.terms`` is enabled, I must accept the terms before my account is
@@ -629,7 +633,8 @@ Edit and Delete an Annotation
      correct mistakes or remove irrelevant highlights.
 
    :Acceptance:
-     - I can change the tag of an existing annotation I own from the sidebar.
+     - I can change the tag of an existing annotation I own from the sidebar, or by
+       double-clicking the highlight in the document.
      - I can delete an annotation I own from the sidebar. A confirmation is shown before
        deletion.
      - After deletion, the highlight is removed from the document and the annotation
@@ -1566,7 +1571,7 @@ Admin Settings
    :Story:
      I as an admin user want to access and modify the settings of the system in the frontend.
    :Acceptance:
-     As an admin, I can see the Settings component in the navigation sidebar. When I access this, I can see the list of settings, reload them from the server backend, make changes and save these on the server. The changes have immediate effect on the behavior of the application.
+     As an admin, I open Settings from the dashboard menu in the top bar. When I access this, I can see the list of settings, reload them from the server backend, make changes and save these on the server. The changes have immediate effect on the behavior of the application. Signed-in Home is an overview (tiles, resume links, recent documents), not the document list. My Sessions and Submissions are shown as cards.
 
 -----
 
@@ -1591,7 +1596,7 @@ Admin Logs
    :Story:
      As an admin user, I can see the server logs in the frontend.
    :Acceptance:
-     As an admin, I can see the Logs component in the navigation sidebar. When I access this, I can see the list of logs with meta information including timestamps.
+     As an admin, I open Logs from the dashboard menu in the top bar. When I access this, I can see the list of logs with meta information including timestamps.
 
 -----
 

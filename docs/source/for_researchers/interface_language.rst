@@ -83,6 +83,10 @@ New installations often assign this right to the **Guest** role, so guest accoun
 language. Other roles (e.g. teachers, reviewers) usually keep the switcher unless an administrator adds the
 same right to their role.
 
+The guest role also gets ``frontend.dashboard.home.guestView`` by default (migration
+``20261105120000-add-guest-home-right.js``). That right shows the short guest start page instead of the
+personal home statistics. It sits next to the language restriction: both are limits on the shared guest account.
+
 **How administrators change it**
 
 1. Open the **Users** area on the dashboard (admin access required).

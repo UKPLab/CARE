@@ -303,7 +303,7 @@ The following types are available:
 
 .. _form-type-datetime:
 
-`Datetime`: No specific options.
+`Datetime`: a date field, with an optional time. The popup is the calendar panel (``CalendarPanel.vue``).
 
 -----
 

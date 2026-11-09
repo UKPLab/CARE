@@ -6,7 +6,7 @@ They expose **placeholders** that can be targeted with Vue’s ``<Teleport>`` to
 
 There are three main classes:
 
-**TopBar** – The fixed application navbar (logo, back/home, project switcher, user menu).  
+**TopBar** – The fixed application navbar (logo, back/home, project switcher, user menu). The dashboard menu lives here, not in a side navigation.  
 It renders placeholder anchors that can be filled from anywhere:
 
 - ``#topbarCustomPlaceholder`` – left/primary action area  

@@ -557,9 +557,7 @@ This module provides timing utilities for countdowns. Provides emit events and s
 Toast
 -----
 
-To provide users feedback to their actions, consider using the `toast messaging <https://bootstrap-vue.org/docs/components/toast>`_
-functionality integrated in CARE. A toast message is a simple message prompted in the viewport of the user without
-obstructing their view and workflow.
+Toasts are the custom component ``basic/Toast.vue``, not bootstrap-vue toasts. A toast is a short message in the corner of the page. It does not block the rest of the screen. A ``delay`` of ``0`` or less keeps the toast open until the user dismisses it. Hovering a toast pauses its countdown.
 
 **Toasting in the Frontend**
 
