@@ -824,7 +824,7 @@ module.exports = class Socket {
             : "";
         let searchColumns = null;
         if (search) {
-            const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt);
+            const injects = await this.resolveQueryTableInjects(model, this.userId, this.rolesUpdatedAt, scope);
             searchColumns = typeof model.getQueryTableSearchColumns === "function"
                 ? await model.getQueryTableSearchColumns(injectCtx)
                 : null;
@@ -1101,15 +1101,17 @@ module.exports = class Socket {
      * @param {Object} model Sequelize model
      * @param {number} userId
      * @param {Date} rolesUpdatedAt
+     * @param {Object} [scope] queryTable scope from the client, when this read is one query
      * @returns {Promise<Array<Object>>}
      */
-    async resolveQueryTableInjects(model, userId, rolesUpdatedAt) {
+    async resolveQueryTableInjects(model, userId, rolesUpdatedAt, scope = null) {
         if (typeof model.getQueryTableInjects !== "function") {
             return [];
         }
         return model.getQueryTableInjects({
             userId,
             rolesUpdatedAt,
+            scope,
             hasAccess: (right) => this.hasAccess(right, userId, rolesUpdatedAt),
         });
     }
@@ -1121,14 +1123,15 @@ module.exports = class Socket {
      * @param {number} userId viewer
      * @param {Date} rolesUpdatedAt
      * @param {import("sequelize").Transaction} [transaction] share the caller's transaction; omit for a plain read
+     * @param {Object} [scope] queryTable scope from the client, when this read is one query
      * @returns {Promise<Object[]>}
      */
-    async enrichQueryTableItems(tableName, items, userId, rolesUpdatedAt, transaction = null) {
+    async enrichQueryTableItems(tableName, items, userId, rolesUpdatedAt, transaction = null, scope = null) {
         if (!items?.length) {
             return items || [];
         }
         const model = this.models[tableName];
-        const injects = await this.resolveQueryTableInjects(model, userId, rolesUpdatedAt);
+        const injects = await this.resolveQueryTableInjects(model, userId, rolesUpdatedAt, scope);
         if (!injects.length) {
             return items;
         }
@@ -1722,7 +1725,8 @@ module.exports = class Socket {
                     return;
                 }
                 const enrichedRows = await this.enrichQueryTableItems(
-                    tableName, project(filteredRows), userId, rolesUpdatedAt
+                    tableName, project(filteredRows), userId, rolesUpdatedAt,
+                    null, socket.queryTableScope?.[tableName] || null
                 );
                 // One Delta per row so bulk same-op (multi-delete) can animate / bump
                 // immediately for on-page and next-page rows without a Stale banner.

@@ -764,7 +764,8 @@ module.exports = (sequelize, DataTypes) => {
             // The viewer's own sessions ("My Sessions" cards). `where` replaces the default
             // deleted filter of a count inject, so it is repeated here.
             const viewerId = positiveInt(ctx.userId);
-            if (viewerId) {
+            // Only My Sessions reads these two counts. Other study lists skip them.
+            if (viewerId && ctx.scope?.mySessions) {
                 injects.push(
                     {
                         type: "count", table: "study_session", by: "studyId", as: "mySessions",

@@ -503,6 +503,10 @@ class AppSocket extends Socket {
      */
     async queryTable(data) {
         const {table, query = {}, filter = [], scope: scopeParams = null} = data || {};
+        if (this.socket) {
+            if (!this.socket.queryTableScope) this.socket.queryTableScope = {};
+            this.socket.queryTableScope[table] = scopeParams;
+        }
 
         // Row scope (ACL + client filter + search bar) is shared with query-scoped bulk actions.
         const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
@@ -635,7 +639,7 @@ class AppSocket extends Socket {
             }
             return row;
         });
-        items = await this.enrichQueryTableItems(table, items, this.userId, this.rolesUpdatedAt);
+        items = await this.enrichQueryTableItems(table, items, this.userId, this.rolesUpdatedAt, null, scopeParams);
         const startCursor = edges.length ? edges[0].cursor : null;
         const endCursor = edges.length ? edges[edges.length - 1].cursor : null;
 

@@ -33,6 +33,8 @@ available through the `server` object -- we address these options in the `Extend
    For the generic create/update entry point used by the frontend, see
    :ref:`AppDataUpdate Socket <appdataupdate-socket>`.
 
+``queryTable`` accepts a ``scope`` object for a list the client cannot express with a column filter. ``scope.mySessions`` (``{state: "active"}`` or ``{state: "closed"}``) is the My Sessions page: studies the viewer has joined.
+
 Creating a Socket
 -----------------
 Let's say we want to add a new socket called ``TestSocket`` to CARE. First, we add a new file ``test.js`` to the
