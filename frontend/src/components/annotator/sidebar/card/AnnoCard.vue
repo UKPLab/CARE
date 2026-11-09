@@ -333,6 +333,9 @@ export default {
           data: {
             commentId: this.commentId,
             state: newValue,
+            documentId: this.documentId,
+            ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+            ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
           }
         });
       }

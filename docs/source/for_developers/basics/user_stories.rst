@@ -963,6 +963,57 @@ Start a Study Session
 
 -----
 
+Look Back at an Earlier Step
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to look at an earlier step of my study session while I am in a
+     later one, so that I can use my earlier work without leaving my current step.
+
+   :Settings:
+     ``app.study.enabled``
+
+   :Acceptance:
+     - During a session, a workflow bar under the top bar shows every step with its number and
+       type. Finished steps have a tick and my current step is marked.
+     - I can hide the workflow bar and show it again with a button in the top bar.
+     - I can open an earlier step that "Previous" could reach. It is shown read-only, its label
+       has a lock, and the sidebar opens on its annotations or assessment.
+     - The sidebar only shows the tabs of the steps on screen.
+     - Clicking my current step in the workflow bar brings it back.
+     - Previous and Next show the name of the step they lead to, and a button in the top bar
+       shows the study description again.
+
+     **Negative cases:**
+
+     - Steps that the workflow does not allow going back to cannot be opened.
+     - I cannot change an earlier step's document, annotations or assessment.
+
+-----
+
+Compare an Earlier Step Side by Side
+-------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to see an earlier step next to my current step, so that I can
+     refer to it while I work.
+
+   :Settings:
+     ``app.study.enabled``
+
+   :Acceptance:
+     - I can show an earlier step side by side with my current step, or one above the other.
+     - I can swap the two documents and drag the line between them to share the room
+       differently.
+     - My current step stays editable, while the earlier step is read-only.
+     - Choosing the same split again closes it.
+
+-----
+
 Close a Study
 --------------
 

@@ -92,6 +92,9 @@ class DocumentSocket extends Socket {
 
     /**
      * Notes and comments with no study session, or from a closed study.
+     * Used by getData() when no study session is supplied, after document access is validated.
+     * Also see AnnotationSocket#getDownloadableAnnotations: PDF export additionally checks user roles.
+     * Review both methods when changing visibility; their policies are not yet unified.
      *
      * @param {number} documentId The ID of the document whose notes and comments are loaded.
      * @returns {Promise<Object>} A promise that resolves with annotations, comments, and allComments.

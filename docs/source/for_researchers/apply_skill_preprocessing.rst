@@ -56,7 +56,7 @@ For each skill input parameter, select a data source:
 - **Document**: A specific individual document
 - **Configuration**: A configuration of type ``assessment``
 
-..note::
+.. note::
 
    You can select only one table-based data source(submission or document) in total for all parameters.
 

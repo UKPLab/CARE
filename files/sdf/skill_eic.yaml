@@ -24,4 +24,4 @@ output:
       [ 0, 'id-X_v2_2@0', '', 'This sentence is added to provide more information. ', '', 'Add', 'Claim' ]
     ],
     classes: { 'labels': ['Sprachliche und formelle Änderungen', 'Semantische Änderungen', 'Andere Änderungen'], 'values': [1, 3, 9] }
-  }
+    }

@@ -600,6 +600,11 @@ export default {
             },
             (response) => {
               if (response && response.success) {
+                // Keep the loaded document data up to date, so an Assessment that is created again shows these answers
+                const documentData = this.studyData[this.studyStepId]?.data;
+                if (documentData) {
+                  documentData[this.assessmentDataKey] = value;
+                }
                 resolve(response);
               } else {
                 reject(response);

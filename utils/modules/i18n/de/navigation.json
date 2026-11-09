@@ -8,7 +8,8 @@
     "hideSidebar": "Seitenleiste ausblenden",
     "showSidebar": "Seitenleiste einblenden",
     "moreActions": "Weitere Aktionen",
-    "sidebarSection": "Seitenleistenbereich"
+    "sidebarSection": "Seitenleistenbereich",
+    "currentStepTab": "{title} (aktueller Schritt)"
   },
   "topbar": {
     "goBack": "Zurück...",
