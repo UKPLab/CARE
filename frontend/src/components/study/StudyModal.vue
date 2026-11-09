@@ -368,22 +368,33 @@ export default {
     close() {
       this.$refs.modal?.close();
     },
+    /**
+     * Starts a study session and reports the result of the server with a toast.
+     *
+     * The session update can reach the parent before the acknowledgement and unmount this modal, which also
+     * removes $t from it. So the toasts only rely on values captured here, while Vue clears the ref to the
+     * modal and ignores the emit of an unmounted component.
+     * @param {number|null} studyId The study to start a session for, null to start an existing session
+     * @param {number} studySessionId The existing session to start, 0 to start a new one
+     */
     startStudy(studyId = null, studySessionId) {
-
+      const eventBus = this.eventBus;
+      const startedToast = {
+        title: this.$t('studies.messages.studyStarted'),
+        message: this.$t('studies.messages.enjoy'),
+        variant: "success"
+      };
+      const errorTitle = this.$t('errors.studies.studyCannotStart');
       this.$socket.emit("studySessionStart",
           {studyId: studyId, studySessionId: studySessionId}, (response) => {
             if (response.success) {
               // Close before emitting: the parent may unmount this modal in response to "start".
               this.$refs.modal?.close();
               this.$emit("start", {studySessionId: response.data.id});
-              this.eventBus.emit('toast', {
-                title: this.$t('studies.messages.studyStarted'),
-                message: this.$t('studies.messages.enjoy'),
-                variant: "success"
-              });
+              eventBus.emit('toast', startedToast);
             } else {
-              this.eventBus.emit('toast', {
-                title: this.$t('errors.studies.studyCannotStart'),
+              eventBus.emit('toast', {
+                title: errorTitle,
                 message: resolveApiMessage(response),
                 variant: "danger"
               });
