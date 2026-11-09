@@ -12,8 +12,8 @@ const REDACTED = "[REDACTED]";
 /** `\author`, `\matriculationno`, `\studentID`, and `\birthplace`, including `\newcommand{\name}{value}`. */
 const STUDENT_MACROS = /\\(author|matriculationno|studentID|birthplace)(\s*\})?\s*(?:\[[^\]]*\])?\s*\{([^{}]*)\}/g;
 
-/** Digits after Matrikelnummer, Matrikelnr., Matrikel-Nr., Matr.-Nr., Student ID, or matriculation number. */
-const LABELLED_STUDENT_ID = /(Matrikelnummer|Matrikel-?Nr\.|Matr\.-Nr\.|Student\s+ID|matriculation number)(\s*[:.]?\s*)\d+/gi;
+/** Labelled student numbers, including abbreviated labels and digits separated by horizontal whitespace. */
+const LABELLED_STUDENT_ID = /\b(Matrikelnummer|Mat(?:rikel|r)?\.?[ \t]*-?[ \t]*Nr\.?|Student\s+(?:ID|number)|matriculation number)(\s*[:.]?\s*)\d+(?:[^\S\r\n]+\d+)*/gi;
 
 /**
  * Replaces the arguments of `\author`, `\matriculationno`, `\studentID`, and `\birthplace`.

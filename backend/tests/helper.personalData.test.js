@@ -52,6 +52,13 @@ describe("redactPersonalData", () => {
         ["Matr.-Nr.: 1234567", `Matr.-Nr.: ${REDACTED}`],
         ["Student ID: 9988776", `Student ID: ${REDACTED}`],
         ["matriculation number 42", `matriculation number ${REDACTED}`],
+        ["Matrikel Nr.: 2575892", `Matrikel Nr.: ${REDACTED}`],
+        ["Matr.Nr.: 2575892", `Matr.Nr.: ${REDACTED}`],
+        ["Mat.-Nr.: 2575892", `Mat.-Nr.: ${REDACTED}`],
+        ["MatNr: 2575892", `MatNr: ${REDACTED}`],
+        ["Student number: 2575892", `Student number: ${REDACTED}`],
+        ["Matrikelnummer: 2575 892", `Matrikelnummer: ${REDACTED}`],
+        ["Student ID: 2575\u00a0892", `Student ID: ${REDACTED}`],
     ])("redacts the labelled id form %s", (line, expected) => {
         const prompt = `Summarise this page.\n${line}\nScore the argument, not the student.`;
         const out = redactPersonalData(prompt);
@@ -60,6 +67,11 @@ describe("redactPersonalData", () => {
         expect(out).toContain("Summarise this page.");
         expect(out).toContain("Score the argument, not the student.");
         expect(out).not.toMatch(/\d/);
+    });
+
+    test("does not consume numbers on the next line", () => {
+        expect(redactPersonalData("MatNr: 2575 892\n2026 results"))
+            .toBe(`MatNr: ${REDACTED}\n2026 results`);
     });
 
     test("redacts studentID and birthplace macros", () => {
