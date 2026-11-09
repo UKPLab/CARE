@@ -408,6 +408,19 @@ export function isOwnListedDocument(doc, userId, projectId) {
  * @param userId current user
  * @returns {boolean}
  */
+const TAG_COLOR_CODES = ["info", "warning", "success", "danger"];
+
+/**
+ * Bootstrap colour token for a tag. Unknown values fall back to secondary
+ * so a stored colour cannot point the browser at an outside address.
+ * @param {string} colorCode
+ * @returns {string} CSS color, as a variable reference
+ */
+export function tagColorVar(colorCode) {
+    const color = TAG_COLOR_CODES.includes(colorCode) ? colorCode : "secondary";
+    return `var(--bs-${color})`;
+}
+
 export function isListedAssignment(assignment, userId) {
     return assignment.userId === userId || !assignment.disable;
 }

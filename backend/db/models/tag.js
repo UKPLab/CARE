@@ -69,7 +69,12 @@ module.exports = (sequelize, DataTypes) => {
     Tag.init({
         name: DataTypes.STRING,
         description: DataTypes.STRING,
-        colorCode: DataTypes.STRING,
+        colorCode: {
+            type: DataTypes.STRING,
+            validate: {
+                isIn: [["info", "warning", "success", "danger"]],
+            },
+        },
         userId: DataTypes.INTEGER,
         public: DataTypes.BOOLEAN,
         updatedAt: DataTypes.DATE,
