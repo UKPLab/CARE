@@ -113,6 +113,7 @@ export default {
     /** Closed-studies list: finished sessions can be inspected. */
     showClosed: {
       type: Boolean,
+      required: false,
       default: false,
     },
   },

@@ -213,16 +213,16 @@ export default {
   name: "CalendarPanel",
   props: {
     /** Selected day "YYYY-MM-DD" or null. */
-    selected: {type: String, default: null},
+    selected: {type: String, required: false, default: null},
     /** Selected time "HH:MM" or null. */
-    time: {type: String, default: null},
-    showTime: {type: Boolean, default: false},
+    time: {type: String, required: false, default: null},
+    showTime: {type: Boolean, required: false, default: false},
     /** "Today" shortcut in the footer. */
-    showToday: {type: Boolean, default: true},
+    showToday: {type: Boolean, required: false, default: true},
     /** Earliest / latest selectable day "YYYY-MM-DD". */
-    min: {type: String, default: null},
-    max: {type: String, default: null},
-    locale: {type: String, default: undefined},
+    min: {type: String, required: false, default: null},
+    max: {type: String, required: false, default: null},
+    locale: {type: String, required: false, default: undefined},
   },
   emits: ["select", "update:time"],
   data() {
@@ -410,6 +410,10 @@ export default {
         this.$refs.grid?.querySelector(`[data-ymd="${target}"]`)?.focus();
       });
     },
+    /**
+     * Write the hour and minute fields back onto the selected day.
+     * @returns {void}
+     */
     commitTime() {
       if (!this.selected) return;
       const hours = Math.min(23, Math.max(0, parseInt(this.hourText, 10) || 0));

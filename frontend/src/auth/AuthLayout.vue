@@ -64,6 +64,7 @@ export default {
     },
     aside: {
       type: Boolean,
+      required: false,
       default: false,
     },
   },

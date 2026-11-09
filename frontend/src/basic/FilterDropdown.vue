@@ -77,26 +77,31 @@ export default {
     /** Currently selected value. */
     modelValue: {
       type: [String, Number],
+      required: false,
       default: null,
     },
     /** Options as `{ value, label }`. */
     options: {
       type: Array,
+      required: false,
       default: () => [],
     },
     /** Text shown before the button. */
     label: {
       type: String,
+      required: false,
       default: "",
     },
     /** Bootstrap icon name without the `bi-` prefix. */
     icon: {
       type: String,
+      required: false,
       default: "",
     },
     /** Value that means "no filter". Defaults to the first option. */
     defaultValue: {
       type: [String, Number],
+      required: false,
       default: undefined,
     },
   },
@@ -181,6 +186,7 @@ export default {
       this.$emit("update:modelValue", option.value);
       this.close();
     },
+    /** Pin the menu to the button. @returns {void} */
     updatePosition() {
       const button = this.$refs.button;
       if (!button) return;
@@ -250,6 +256,11 @@ export default {
         this.open();
       }
     },
+    /**
+     * Arrow keys, Enter and Escape while the menu is open.
+     * @param {KeyboardEvent} event
+     * @returns {void}
+     */
     onMenuKeydown(event) {
       switch (event.key) {
         case "ArrowDown":

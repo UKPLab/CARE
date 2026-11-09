@@ -33,6 +33,12 @@ function isEnhanced(select) {
     && !select.hasAttribute("data-native-select");
 }
 
+/**
+ * One menu row for a native option.
+ * @param {HTMLOptionElement} option
+ * @param {number} index
+ * @returns {HTMLElement}
+ */
 function buildItem(option, index) {
   const li = document.createElement("li");
   li.className = "care-native-menu__option";
@@ -70,6 +76,7 @@ function setActive(index, scroll = true) {
   if (scroll) item.el.scrollIntoView({block: "nearest"});
 }
 
+/** Place the open menu under or above the select, inside the viewport. @returns {void} */
 function position() {
   if (!menu || !current) return;
   if (!current.isConnected) {
@@ -94,6 +101,11 @@ function position() {
   });
 }
 
+/**
+ * Choose the option at index and close the menu.
+ * @param {number} index
+ * @returns {void}
+ */
 function pick(index) {
   const item = items[index];
   if (!item || item.option.disabled || !current) return;

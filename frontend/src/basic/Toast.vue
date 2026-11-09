@@ -196,6 +196,11 @@ export default {
         this.armTimer(toast);
       }
     },
+    /**
+     * Start the auto-close countdown for one toast.
+     * @param {Object} toast
+     * @returns {void}
+     */
     armTimer(toast) {
       toast.startedAt = Date.now();
       this.timers.set(toast.id, setTimeout(() => this.dismiss(toast.id), toast.remainingMs));
@@ -233,6 +238,11 @@ export default {
       if (toast.pointerInside || toast.focusInside) this.pauseTimer(toast);
       else this.resumeTimer(toast);
     },
+    /**
+     * Freeze the countdown while the pointer or focus is on the toast.
+     * @param {Object} toast
+     * @returns {void}
+     */
     pauseTimer(toast) {
       if (toast.paused) return;
       const timer = this.timers.get(toast.id);
@@ -294,6 +304,11 @@ export default {
         el.addEventListener("transitionend", finish);
       });
     },
+    /**
+     * Close one toast and clear its timer.
+     * @param {number|string} id
+     * @returns {void}
+     */
     dismiss(id) {
       const timer = this.timers.get(id);
       if (timer) {

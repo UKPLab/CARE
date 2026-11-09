@@ -402,6 +402,7 @@ export default {
   props: {
     mood: {
       type: String,
+      required: false,
       default: "idle",
       validator: (value) => MASCOT_MOODS.includes(value),
     },

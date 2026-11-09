@@ -269,6 +269,7 @@ export default {
       const inPopup = this.$refs.popup?.contains(event.target);
       if (!inTrigger && !inPopup) this.close(false);
     },
+    /** Pin the calendar popup to the field. @returns {void} */
     updatePosition() {
       const trigger = this.$refs.trigger;
       if (!trigger) return;

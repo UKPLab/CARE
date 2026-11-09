@@ -63,16 +63,19 @@ export default {
     /** More content hidden on the left */
     left: {
       type: Boolean,
+      required: false,
       default: false,
     },
     /** More content hidden on the right */
     right: {
       type: Boolean,
+      required: false,
       default: false,
     },
     /** Overlay box in px relative to the frame: { top, left, width, height } */
     frame: {
       type: Object,
+      required: false,
       default: null,
     },
   },

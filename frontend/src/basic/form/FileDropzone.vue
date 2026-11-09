@@ -45,18 +45,22 @@ export default {
   props: {
     accept: {
       type: String,
+      required: false,
       default: "",
     },
     disabled: {
       type: Boolean,
+      required: false,
       default: false,
     },
     hint: {
       type: String,
+      required: false,
       default: "",
     },
     fileName: {
       type: String,
+      required: false,
       default: "",
     },
   },
