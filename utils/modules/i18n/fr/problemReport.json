@@ -100,9 +100,9 @@
         "title": "Détails envoyés avec ce signalement",
         "loading": "Collecte des détails automatiques…",
         "loadingShort": "Collecte…",
-        "unavailable": "Les détails automatiques n’ont pas pu être chargés. Vous pouvez tout de même envoyer ; ils seront alors recueillis au moment de l’envoi.",
+        "unavailable": "Certaines informations techniques sont indisponibles. Votre rapport peut tout de même être envoyé.",
         "collectedOnSubmit": "Recueilli lors de l’envoi",
-        "capturedAt": "Dernière mise à jour : {time}. Les détails et journaux sont mis à jour automatiquement.",
+        "capturedAt": "Collecté à {time}, au clic sur Signaler.",
         "expired": "Ces détails ont été recueillis il y a trop longtemps et ont été actualisés. Vérifiez-les puis envoyez à nouveau."
     },
     "activityTypes": {

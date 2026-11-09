@@ -112,10 +112,6 @@
     "databaseHealthMaxAgeMinutes": {
       "displayName": "Gültigkeit des Datenbankzustands (Minuten)",
       "description": "Der im Formular angezeigte Zustand wird gespeichert, wenn der Bericht innerhalb dieser Zeit gesendet wird; sonst werden die Details zuerst aktualisiert (höchstens 240)."
-    },
-    "detailsUpdateInterval": {
-      "displayName": "Aktualisierungsintervall der Berichtsdetails",
-      "description": "Millisekunden zwischen automatischen Aktualisierungen im geöffneten Berichtsformular (5000–60000)."
     }
   }
 }

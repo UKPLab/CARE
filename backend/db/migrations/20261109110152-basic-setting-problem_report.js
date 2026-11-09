@@ -1,9 +1,10 @@
 'use strict';
 
 /**
- * Settings for the topbar problem report popup. They are readable by every
- * user so the popup can render and pre-validate with the same values the
- * backend enforces. None of them hold secrets.
+ * Settings for the topbar problem report popup. Form, attachment, diagnostics and
+ * activity settings are readable by every user so the popup can render, sample and
+ * pre-validate with the same values the backend enforces (clamped to fixed safety
+ * caps). Database health settings are only needed on the server. None hold secrets.
  */
 
 const group = "settings.problemReport.group";
@@ -113,7 +114,70 @@ const settings = [
         type: "integer",
         displaySubsection: "settings.problemReport.diagnostics",
     },
-].map((setting) => ({...setting, displayGroup: group, onlyAdmin: false}));
+    {
+        key: "problemReport.activity.enabled",
+        displayName: "settings.problemReport.activityEnabled.displayName",
+        description: "settings.problemReport.activityEnabled.description",
+        value: "true",
+        type: "boolean",
+        displaySubsection: "settings.problemReport.activity",
+        onlyAdmin: false,
+    },
+    {
+        key: "problemReport.activity.maxEntries",
+        displayName: "settings.problemReport.activityMaxEntries.displayName",
+        description: "settings.problemReport.activityMaxEntries.description",
+        value: "100",
+        type: "integer",
+        displaySubsection: "settings.problemReport.activity",
+        onlyAdmin: false,
+    },
+    {
+        key: "problemReport.activity.maxAgeMinutes",
+        displayName: "settings.problemReport.activityMaxAgeMinutes.displayName",
+        description: "settings.problemReport.activityMaxAgeMinutes.description",
+        value: "10",
+        type: "integer",
+        displaySubsection: "settings.problemReport.activity",
+        onlyAdmin: false,
+    },
+    {
+        key: "problemReport.activity.mouseSampleMs",
+        displayName: "settings.problemReport.activityMouseSampleMs.displayName",
+        description: "settings.problemReport.activityMouseSampleMs.description",
+        value: "1000",
+        type: "integer",
+        displaySubsection: "settings.problemReport.activity",
+        onlyAdmin: false,
+    },
+    {
+        key: "problemReport.databaseHealth.enabled",
+        displayName: "settings.problemReport.databaseHealthEnabled.displayName",
+        description: "settings.problemReport.databaseHealthEnabled.description",
+        value: "true",
+        type: "boolean",
+        displaySubsection: "settings.problemReport.databaseHealth",
+        onlyAdmin: true,
+    },
+    {
+        key: "problemReport.databaseHealth.timeoutMs",
+        displayName: "settings.problemReport.databaseHealthTimeoutMs.displayName",
+        description: "settings.problemReport.databaseHealthTimeoutMs.description",
+        value: "2000",
+        type: "integer",
+        displaySubsection: "settings.problemReport.databaseHealth",
+        onlyAdmin: true,
+    },
+    {
+        key: "problemReport.databaseHealth.maxAgeMinutes",
+        displayName: "settings.problemReport.databaseHealthMaxAgeMinutes.displayName",
+        description: "settings.problemReport.databaseHealthMaxAgeMinutes.description",
+        value: "60",
+        type: "integer",
+        displaySubsection: "settings.problemReport.databaseHealth",
+        onlyAdmin: true,
+    },
+].map((setting) => ({onlyAdmin: false, ...setting, displayGroup: group}));
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {

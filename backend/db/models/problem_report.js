@@ -6,7 +6,7 @@ const {Op} = require("sequelize");
  * Problem report submitted from the topbar Report button.
  *
  * Deliberately not an autoTable: reports are read and written only through
- * ProblemReportSocket, which limits access to the reporter and administrators
+ * ProblemReportSocket, which lets every user submit, only administrators read,
  * and keeps generic appDataUpdate writes away from this table.
  *
  * @author Akash Gundapuneni

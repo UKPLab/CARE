@@ -5,10 +5,6 @@
       :options="fileOptions"
       @file-change="addFile"
     />
-    <p class="small text-body-secondary mt-1 mb-2">
-      {{ fileOptions.help }}
-      {{ settings.attachmentTypes.join(', ') }}
-    </p>
     <ul
       class="list-unstyled text-danger small mb-0"
       aria-live="polite"

@@ -112,10 +112,6 @@
     "databaseHealthMaxAgeMinutes": {
       "displayName": "Database health validity (minutes)",
       "description": "The snapshot shown in the form is saved when the report is submitted within this time; otherwise the details are refreshed first (at most 240)."
-    },
-    "detailsUpdateInterval": {
-      "displayName": "Report details update interval",
-      "description": "Milliseconds between automatic updates while the report form is open (5000?60000)."
     }
   }
 }

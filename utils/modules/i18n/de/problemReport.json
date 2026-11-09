@@ -100,9 +100,9 @@
         "title": "Mit diesem Bericht gesendete Details",
         "loading": "Automatische Details werden erfasst…",
         "loadingShort": "Wird erfasst…",
-        "unavailable": "Die automatischen Details konnten nicht geladen werden. Sie können trotzdem senden; sie werden dann beim Senden erfasst.",
+        "unavailable": "Einige technische Details sind nicht verfügbar. Ihr Bericht kann trotzdem gesendet werden.",
         "collectedOnSubmit": "Wird beim Senden erfasst",
-        "capturedAt": "Zuletzt aktualisiert: {time}. Details und Protokolle werden automatisch aktualisiert.",
+        "capturedAt": "Erfasst am {time}, als Sie auf Bericht geklickt haben.",
         "expired": "Diese Details wurden vor zu langer Zeit erfasst und wurden aktualisiert. Bitte prüfen Sie sie und senden Sie erneut."
     },
     "activityTypes": {

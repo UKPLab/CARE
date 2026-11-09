@@ -213,7 +213,6 @@ function createModal({ acceptStats = true, activityEnabled = true } = {}) {
     activityMaxEntries: 50,
     activityMaxAgeMinutes: 10,
     databaseHealthEnabled: true,
-    detailsUpdateIntervalMs: 5000,
   };
   return instance;
 }
@@ -405,23 +404,19 @@ test('a server-discarded snapshot refreshes details and keeps the draft', async 
   assert.notEqual(last(modal, 'problemReportPrepare'), prepare);
 });
 
-test('details start collapsed and update automatically until the form closes', () => {
+test('report details stay fixed at the moment Report is clicked, including retries', () => {
   const modal = createModal();
   assert.equal(modal.detailsExpanded, false);
   modal.open();
+  const captured = modal.capturedSnapshot;
+  assert.equal(modal.calls.activity, 1);
   last(modal, 'problemReportConfig').callback(null, {success: true, data: modal.effectiveSettings});
   const prepare = last(modal, 'problemReportPrepare');
+  assert.equal(prepare.payload.context, captured.context);
   prepare.callback(null, prepared(prepare.payload));
-  const timer = modal.calls.timer;
-  assert.equal(timer.interval, 5000);
-  timer.callback();
-  assert.notEqual(last(modal, 'problemReportPrepare'), prepare);
-  assert.equal(modal.detailsState, 'ready', 'shown details stay visible while updating');
-  const pending = last(modal, 'problemReportPrepare');
-  pending.callback(null, prepared(pending.payload));
-  modal.submitting = true;
-  timer.callback();
-  assert.equal(last(modal, 'problemReportPrepare'), pending);
-  modal.stopDetailsUpdates();
-  assert.equal(modal.calls.timer, null);
+  modal.prepareDetails();
+  assert.equal(modal.calls.activity, 1, 'activity is never re-collected while filling in the report');
+  assert.equal(last(modal, 'problemReportPrepare').payload.context, captured.context);
+  assert.equal(modal.submissionSnapshot().context, captured.context);
+  assert.equal(modal.calls.timer, undefined, 'no periodic update is scheduled');
 });

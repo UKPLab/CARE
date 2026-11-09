@@ -100,9 +100,9 @@
         "title": "Details sent with this report",
         "loading": "Collecting the automatic details…",
         "loadingShort": "Collecting…",
-        "unavailable": "The automatic details could not be loaded. You can still submit; they are then collected at the moment you submit.",
+        "unavailable": "Some technical details are unavailable. Your report can still be submitted.",
         "collectedOnSubmit": "Collected when you submit",
-        "capturedAt": "Last updated: {time}. Details and logs update automatically.",
+        "capturedAt": "Captured at {time}, when you clicked Report.",
         "expired": "These details were captured too long ago and have been refreshed. Please check them and submit again."
     },
     "activityTypes": {

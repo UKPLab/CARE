@@ -3,7 +3,6 @@
     ref="modal"
     name="ProblemReportModal"
     size="lg"
-    @hide="stopDetailsUpdates"
   >
     <template #title>
       {{ $t('problemReport.title') }}
@@ -202,7 +201,7 @@ export default {
       details: null,
       detailsNotice: null,
       detailsExpanded: false,
-      detailsUpdateTimer: null,
+      capturedSnapshot: null,
       prepareSequence: 0,
       preparing: false,
       clientRequestId: uuid(),
@@ -314,7 +313,6 @@ export default {
     },
   },
   beforeUnmount() {
-    this.stopDetailsUpdates();
     this.revokeAttachmentUrls();
   },
   methods: {
@@ -323,19 +321,22 @@ export default {
     },
     open() {
       if (this.loadingConfig) return;
+      // Details describe the moment Report was clicked; a kept draft keeps its original snapshot
+      const capturedNow = !this.capturedSnapshot;
+      if (capturedNow) this.capturedSnapshot = this.captureSnapshot();
       this.loadingConfig = true;
       this.$socket.timeout(15000).emit("problemReportConfig", {}, (error, response) => {
         this.loadingConfig = false;
         if (!error && response?.success) {
           this.effectiveSettings = response.data;
           this.$refs.modal.open();
-          // Details describe the moment the form is opened, also when a kept draft is reopened
           if (!this.submitting) {
             this.detailsNotice = null;
             this.prepareDetails();
-            this.startDetailsUpdates();
           }
         } else {
+          // The form never opened, so the next click captures its own moment
+          if (capturedNow) this.capturedSnapshot = null;
           this.eventBus.emit("toast", {
             title: this.$t('problemReport.messages.loadFailed'),
             message: error ? this.$t('problemReport.messages.timeout') : resolveApiMessage(response),
@@ -366,7 +367,8 @@ export default {
       }
       const sequence = ++this.prepareSequence;
       const formId = this.clientRequestId;
-      const payload = this.captureSnapshot();
+      if (!this.capturedSnapshot) this.capturedSnapshot = this.captureSnapshot();
+      const payload = this.capturedSnapshot;
       this.preparing = true;
       this.$socket.timeout(PREPARE_TIMEOUT_MS).emit("problemReportPrepare", { ...payload, clientRequestId: formId }, (error, response) => {
         if (sequence !== this.prepareSequence || formId !== this.clientRequestId) {
@@ -385,16 +387,6 @@ export default {
           this.details = { payload: null, result: null, error: true, expiresAt: null };
         }
       });
-    },
-    startDetailsUpdates() {
-      this.stopDetailsUpdates();
-      this.detailsUpdateTimer = setInterval(() => {
-        if (!this.preparing && !this.submitting) this.prepareDetails();
-      }, Math.max(5000, Number(this.settings.detailsUpdateIntervalMs) || 5000));
-    },
-    stopDetailsUpdates() {
-      clearInterval(this.detailsUpdateTimer);
-      this.detailsUpdateTimer = null;
     },
     validate() {
       this.errors.problemTypes = this.form.problemTypes.length === 0
@@ -418,7 +410,7 @@ export default {
      * (the status text says that details are then captured on submit).
      */
     submissionSnapshot() {
-      const snapshot = this.details && !this.details.error && this.details.payload ? this.details.payload : this.captureSnapshot();
+      const snapshot = this.details && !this.details.error && this.details.payload ? this.details.payload : this.capturedSnapshot || this.captureSnapshot();
       return {
         ...snapshot,
         activity: this.activityAllowed ? snapshot.activity : [],
@@ -499,7 +491,7 @@ export default {
       this.attachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
     },
     reset() {
-      this.stopDetailsUpdates();
+      this.capturedSnapshot = null;
       this.detailsExpanded = false;
       this.revokeAttachmentUrls();
       this.attachments = [];

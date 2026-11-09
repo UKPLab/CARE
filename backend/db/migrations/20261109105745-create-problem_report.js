@@ -2,7 +2,7 @@
 
 /**
  * Create the "problem_report" table for reports submitted from the topbar Report button.
- * Reports are private: only the reporter and administrators can read them.
+ * Reports are private: every user can submit, only administrators can read them.
  */
 
 /** @type {import('sequelize-cli').Migration} */
@@ -60,6 +60,16 @@ module.exports = {
             diagnostics: {
                 type: Sequelize.JSONB,
                 allowNull: false,
+            },
+            // {status: "included"|"noConsent"|"disabled", entries: [...]}; entries only with usage statistics consent
+            activity: {
+                type: Sequelize.JSONB,
+                allowNull: true,
+            },
+            // Aggregate counters of the CARE database captured on the server; null when turned off
+            databaseHealth: {
+                type: Sequelize.JSONB,
+                allowNull: true,
             },
             // Attachment metadata; file contents live under files/problem_reports
             attachments: {
