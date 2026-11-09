@@ -4,7 +4,7 @@
   "description": "Shared assessment score calculation for CARE frontend and backend",
   "main": "index.js",
   "scripts": {
-    "test:module": "cross-env NODE_ENV=test jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage --detectOpenHandles tests/assessment-score.test.js"
+    "test:module": "cross-env NODE_ENV=test jest --silent=false --forceExit --testTimeout=10000 --runInBand --collect-coverage --detectOpenHandles"
   },
   "license": "Apache-2.0",
   "devDependencies": {

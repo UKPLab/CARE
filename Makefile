@@ -70,9 +70,9 @@ test-rpc: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 
 .PHONY: test-modules
 test-modules: $(UTILS_MODULES_UPTODATE)
-	cd utils/modules/editor-delta-conversion && npm run test:module -- tests/editor-delta-conversion.test.js
-	cd utils/modules/assessment-score && npm run test:module -- tests/assessment-score.test.js
-	cd utils/modules/placeholder-tokens && npm run test:module -- tests/placeholder-tokens.test.js
+	cd utils/modules/editor-delta-conversion && npm run test:module
+	cd utils/modules/assessment-score && npm run test:module
+	cd utils/modules/placeholder-tokens && npm run test:module
 
 .PHONY: lint
 lint: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
