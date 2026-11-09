@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import HomeActivityGraph from "@/components/dashboard/HomeActivityGraph.vue";
+import HomeActivityGraph from "./HomeActivityGraph.vue";
 import { isListedAssignment } from "@/assets/utils";
 
 /**

@@ -170,6 +170,7 @@ export default {
     /** Number of weeks shown, ending with the current week. */
     weeks: {
       type: Number,
+      required: false,
       default: 12,
     },
   },
