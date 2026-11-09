@@ -572,5 +572,21 @@
     "common": {
         "resourceNotFound": "La ressource demandée n'existe pas ou a été supprimée.",
         "accessDenied": "Vous n'avez pas les droits nécessaires pour accéder à ces données."
+    },
+    "problemReport": {
+        "problemTypeRequired": "Sélectionnez au moins un type de problème.",
+        "descriptionRequired": "Décrivez ce qui s'est passé.",
+        "descriptionTooLong": "La description peut contenir au maximum {max} caractères.",
+        "invalidAttachment": "Une pièce jointe n'a pas pu être lue.",
+        "tooManyAttachments": "Vous pouvez joindre au maximum {max} fichiers.",
+        "attachmentTooLarge": "Chaque pièce jointe peut faire au maximum {maxMb} Mo.",
+        "attachmentsTooLarge": "L'ensemble des pièces jointes peut faire au maximum {maxMb} Mo.",
+        "unsupportedAttachmentType": "Ce type de fichier n'est pas autorisé. Joignez l'un des formats d'image ou de vidéo autorisés.",
+        "attachmentsDisabled": "Les pièces jointes sont désactivées pour les signalements de problème.",
+        "invalidRequest": "Le signalement n'a pas pu être envoyé. Rechargez la page et réessayez.",
+        "rateLimited": "Vous pouvez envoyer au maximum {max} signalements par heure. Veuillez réessayer plus tard.",
+        "noAccess": "Seuls les administrateurs peuvent consulter les signalements de problème.",
+        "attachmentNotFound": "La pièce jointe est introuvable.",
+        "disabled": "Les signalements de problème sont désactivés."
     }
 }

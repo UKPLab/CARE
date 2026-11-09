@@ -572,5 +572,21 @@
     "common": {
         "resourceNotFound": "The requested resource does not exist or has been deleted.",
         "accessDenied": "You do not have rights to access this data."
+    },
+    "problemReport": {
+        "problemTypeRequired": "Select at least one problem type.",
+        "descriptionRequired": "Describe what happened.",
+        "descriptionTooLong": "The description can have at most {max} characters.",
+        "invalidAttachment": "An attachment could not be read.",
+        "tooManyAttachments": "You can attach at most {max} files.",
+        "attachmentTooLarge": "Each attachment can be at most {maxMb} MB.",
+        "attachmentsTooLarge": "All attachments together can be at most {maxMb} MB.",
+        "unsupportedAttachmentType": "This file type is not allowed. Attach one of the allowed image or video formats.",
+        "attachmentsDisabled": "Attachments are turned off for problem reports.",
+        "invalidRequest": "The report could not be submitted. Reload the page and try again.",
+        "rateLimited": "You can submit at most {max} reports per hour. Please try again later.",
+        "noAccess": "Only administrators can view problem reports.",
+        "attachmentNotFound": "The attachment was not found.",
+        "disabled": "Problem reports are turned off."
     }
 }

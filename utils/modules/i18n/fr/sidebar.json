@@ -55,7 +55,8 @@
             "ai": "IA",
             "assignment": "Devoir",
             "triggers": "Déclencheurs"
-        }
+        },
+        "problem_reports": "Signalements de problème"
     },
     "textPlaceholderHelp": "Affiche une valeur unique issue d'une étape d'éditeur précédente ou de la sortie d'une compétence NLP. Utilisez-la pour afficher une donnée précise (champ de texte, nombre ou libellé) provenant d'une étape antérieure de votre processus.",
     "singleChartHelp": "Affiche un graphique construit à partir des libellés et des valeurs fournis par les étapes précédentes ou par des compétences NLP. Le graphique visualise automatiquement la structure de données configurée, ce qui facilite la présentation visuelle de données numériques ou catégorielles.",

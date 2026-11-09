@@ -29,6 +29,7 @@ import assignments from './assignments.json'
 import ai from './ai.json'
 import triggers from './triggers.json'
 import socketProfiler from './socketProfiler.json'
+import problemReport from './problemReport.json'
 
 export default {
   common,
@@ -61,5 +62,6 @@ export default {
   assignments,
   ai,
   triggers,
-  socketProfiler
+  socketProfiler,
+  problemReport
 }

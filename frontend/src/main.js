@@ -59,16 +59,18 @@ app.use(VNetworkGraph);
 // Server URL for hot reload
 import getServerURL from '@/assets/serverUrl.js';
 
+const socketConnection = SocketIO(getServerURL(),
+    {
+        path: '',
+        withCredentials: true,
+        reconnect: !0,
+        autoConnect: false
+    });
+
 const socketio = new VueSocketIO({
      
     debug: (process.env.NODE_ENV !== 'production'),
-    connection: SocketIO(getServerURL(),
-        {
-            path: '',
-            withCredentials: true,
-            reconnect: !0,
-            autoConnect: false
-        }),
+    connection: socketConnection,
     vuex: {
         store,
         actionPrefix: 'SOCKET_',
@@ -97,5 +99,10 @@ app.use(subscribeTable);
 import ai from "@/plugins/ai";
 
 app.use(ai);
+
+// Recent sanitized diagnostics attached to problem reports
+import { installDiagnostics } from "@/assets/diagnostics.js";
+
+installDiagnostics(app, socketConnection, router);
 
 router.isReady().then(() => app.mount('#app'));

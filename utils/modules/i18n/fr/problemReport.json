@@ -1,0 +1,96 @@
+{
+    "button": "Signaler un problème",
+    "title": "Signaler un problème",
+    "previewTitle": "Vérifier votre signalement",
+    "form": {
+        "problemType": "De quel type de problème s'agit-il ?",
+        "blocked": "Êtes-vous bloqué pour continuer ?",
+        "frequency": "À quelle fréquence cela se produit-il ?",
+        "description": "Que s'est-il passé ?",
+        "attachments": "Captures d'écran ou vidéos",
+        "optional": "(facultatif)",
+        "required": "(obligatoire)",
+        "yes": "Oui",
+        "no": "Non",
+        "attachmentsHint": "Images ou vidéos. Jusqu'à {count} fichiers, {fileMb} Mo chacun, {totalMb} Mo au total.",
+        "selectedAttachments": "Pièces jointes sélectionnées",
+        "remove": "Retirer",
+        "removeAttachment": "Retirer {name}"
+    },
+    "types": {
+        "error": "Erreur",
+        "wrongOrMissing": "Incorrect ou manquant",
+        "slowOrStuck": "Lent ou bloqué",
+        "otherOrSuggestion": "Autre ou suggestion"
+    },
+    "frequencies": {
+        "firstTime": "Première fois",
+        "sometimes": "Parfois",
+        "everyTime": "À chaque fois",
+        "notSure": "Je ne sais pas"
+    },
+    "diagnosticTypes": {
+        "error": "Erreur de script",
+        "unhandledRejection": "Erreur non gérée",
+        "vueError": "Erreur d'interface",
+        "failedOperation": "Opération échouée",
+        "connection": "Connexion",
+        "navigation": "Changement de page"
+    },
+    "summary": {
+        "problemTypes": "Type de problème",
+        "blocked": "Bloqué",
+        "frequency": "Fréquence",
+        "description": "Ce qui s'est passé",
+        "attachments": "Pièces jointes",
+        "none": "Aucune",
+        "notAnswered": "Sans réponse",
+        "unknown": "Inconnu",
+        "page": "Page",
+        "reportedAt": "Heure du signalement",
+        "version": "Version de CARE",
+        "build": "Build",
+        "browser": "Navigateur",
+        "os": "Système d'exploitation",
+        "diagnostics": "Journaux de diagnostic récents ({count})",
+        "noDiagnostics": "Aucun journal de diagnostic n'a été enregistré. Le signalement peut tout de même être envoyé.",
+        "technical": "Détails techniques",
+        "diagnosticEntry": "{time} · {type}"
+    },
+    "visibility": {
+        "label": "Qui peut voir ce signalement :",
+        "text": "Uniquement les administrateurs de CARE. Le signalement est enregistré de façon privée dans CARE et n'est publié nulle part."
+    },
+    "notice": {
+        "label": "Ce que nous enregistrons :",
+        "text": "Votre description, les options sélectionnées, les pièces jointes, la page actuelle, l'heure du signalement, la version de CARE, le navigateur, le système d'exploitation et les journaux de diagnostic récents, liés à votre compte. Les mots de passe, jetons, cookies et contenus de documents sont exclus."
+    },
+    "actions": {
+        "preview": "Aperçu de l'envoi",
+        "edit": "Modifier",
+        "submit": "Envoyer le signalement"
+    },
+    "messages": {
+        "previewFailed": "Aperçu indisponible",
+        "submitFailed": "Signalement non envoyé",
+        "timeout": "Le serveur n'a pas répondu. Votre signalement est toujours là ; veuillez réessayer.",
+        "submitted": "Signalement envoyé",
+        "submittedText": "Merci. Le signalement n°{id} a été envoyé aux administrateurs de CARE."
+    },
+    "admin": {
+        "title": "Signalements de problème",
+        "description": "Signalements envoyés avec le bouton de bogue de la barre supérieure. Seuls les administrateurs peuvent les voir.",
+        "columns": {
+            "id": "ID",
+            "reporter": "Auteur"
+        },
+        "view": "Voir le signalement",
+        "detailTitle": "Signalement de problème n°{id}",
+        "loadAttachment": "Afficher",
+        "loadAttachmentFor": "Afficher {name}",
+        "download": "Télécharger",
+        "loadFailed": "Signalements non chargés",
+        "attachmentFailed": "Pièce jointe non chargée",
+        "downloadFor": "Télécharger {name}"
+    }
+}

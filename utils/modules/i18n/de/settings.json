@@ -25,5 +25,63 @@
       "displayName": "Abfrageintervall der Trigger-Warteschlange (Minuten)",
       "description": "Legt fest, wie oft der Trigger-Warteschlangenprozess nach ausstehenden Aufträgen sucht. Neue Aufträge starten weiterhin sofort, wenn ein Ereignis ausgelöst wird. Erfordert einen Serverneustart."
     }
+  },
+  "problemReport": {
+    "group": "Problemberichte",
+    "form": "Berichtsformular",
+    "attachments": "Anhänge",
+    "diagnostics": "Diagnose",
+    "enabled": {
+      "displayName": "Problemberichte aktivieren",
+      "description": "Zeigt die Fehler-Schaltfläche in der oberen Leiste, damit Nutzende Probleme melden können."
+    },
+    "problemTypes": {
+      "displayName": "Problemarten",
+      "description": "Kommagetrennte Auswahl für die Pflichtfrage zur Problemart. Die Werte error, wrongOrMissing, slowOrStuck und otherOrSuggestion werden übersetzt; andere Werte werden wie eingegeben angezeigt."
+    },
+    "askBlocked": {
+      "displayName": "Fragen, ob Nutzende blockiert sind",
+      "description": "Zeigt die optionale Ja/Nein-Frage, ob Nutzende nicht weiterarbeiten können."
+    },
+    "frequencies": {
+      "displayName": "Auswahl zur Häufigkeit",
+      "description": "Kommagetrennte Auswahl für die optionale Frage zur Häufigkeit. Die Werte firstTime, sometimes, everyTime und notSure werden übersetzt; leer lassen, um die Frage auszublenden."
+    },
+    "descriptionMaxLength": {
+      "displayName": "Längenlimit der Beschreibung (Zeichen)",
+      "description": "Maximale Länge des Textes Was ist passiert? (höchstens 20000)."
+    },
+    "reportsPerHour": {
+      "displayName": "Berichte pro Nutzer*in und Stunde",
+      "description": "Wie viele Berichte eine Person innerhalb einer Stunde senden kann."
+    },
+    "attachmentsAllowedTypes": {
+      "displayName": "Erlaubte Anhangstypen",
+      "description": "Kommagetrennte MIME-Typen. Nur image/png, image/jpeg, image/gif, image/webp, video/mp4, video/webm und video/quicktime können aktiviert werden. Leer lassen, um Anhänge zu deaktivieren."
+    },
+    "attachmentsMaxCount": {
+      "displayName": "Anzahl der Anhänge",
+      "description": "Maximale Anzahl an Anhängen pro Bericht (höchstens 20)."
+    },
+    "attachmentsMaxFileSizeMb": {
+      "displayName": "Größenlimit pro Anhang (MB)",
+      "description": "Maximale Größe eines Anhangs in MB."
+    },
+    "attachmentsMaxTotalSizeMb": {
+      "displayName": "Gesamtgröße der Anhänge (MB)",
+      "description": "Maximale Größe aller Anhänge eines Berichts in MB (höchstens 90)."
+    },
+    "diagnosticsMaxEntries": {
+      "displayName": "Einträge im Diagnoseprotokoll",
+      "description": "Maximale Anzahl aktueller Diagnoseeinträge, die mit einem Bericht gespeichert werden (höchstens 200)."
+    },
+    "diagnosticsMaxAgeMinutes": {
+      "displayName": "Alter der Diagnoseeinträge (Minuten)",
+      "description": "Nur Diagnoseeinträge aus so vielen Minuten vor dem Bericht werden gespeichert."
+    },
+    "diagnosticsMaxMessageLength": {
+      "displayName": "Länge einer Diagnosemeldung (Zeichen)",
+      "description": "Maximale Länge einer Diagnosemeldung (höchstens 1000)."
+    }
   }
 }

@@ -31,6 +31,7 @@ const DELETE_MODELS = [
     'user_setting',
     'user_environment',
     'log',
+    'problem_report',
     'comment_state',
     'comment_vote',
     'user_role_matching',

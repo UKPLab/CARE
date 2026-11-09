@@ -83,6 +83,21 @@
               </div>
             </div>
           </li>
+          <li
+            v-if="problemReportEnabled"
+            class="nav-item me-2 d-flex align-items-center"
+          >
+            <BasicButton
+              id="problemReportButton"
+              class="btn btn-outline-secondary btn-sm problem-report-button"
+              icon="bug"
+              text=""
+              :title="$t('problemReport.button')"
+              :aria-label="$t('problemReport.button')"
+              aria-haspopup="dialog"
+              @click="$refs.problemReportModal.open()"
+            />
+          </li>
           <li class="nav-item dropdown">
             <div
               class="dropdown"
@@ -148,6 +163,10 @@
   <PasswordModal ref="passwordModal" />
   <PreferencesModal ref="preferencesModal" />
   <TwoFactorSettingsModal ref="twoFactorSettingsModal" />
+  <ProblemReportModal
+    v-if="problemReportEnabled"
+    ref="problemReportModal"
+  />
 </template>
 
 <script>
@@ -169,10 +188,13 @@ import getServerURL from "@/assets/serverUrl";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import PreferencesModal from "@/basic/modal/PreferencesModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
+import BasicButton from "@/basic/Button.vue";
+import ProblemReportModal from "@/components/problem_report/ProblemReportModal.vue";
+import { readReportSettings } from "@/assets/problemReport.js";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal},
+  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal, BasicButton, ProblemReportModal},
   data() {
     return {
       showProjectDropdown: false,
@@ -258,6 +280,10 @@ export default {
         return "Recording in progress — open Socket Profiler to stop";
       }
       return "You're being recorded for testing purposes";
+    },
+    // Hidden when the problem report settings are missing or the feature is disabled
+    problemReportEnabled() {
+      return readReportSettings(this.$store.getters["settings/getValue"]).enabled;
     },
     isDarkMode() {
       return resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")) === "dark";
@@ -377,6 +403,16 @@ export default {
   margin-top: 8px;
   right: 0;
   position: absolute;
+}
+
+.problem-report-button {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .display-username {

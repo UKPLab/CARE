@@ -55,7 +55,8 @@
             "ai": "AI",
             "assignment": "Assignment",
             "triggers": "Triggers"
-        }
+        },
+        "problem_reports": "Problem Reports"
     },
     "textPlaceholderHelp": "Displays a single value from a previous editor step or NLP skill output. Use this when you want to show a specific piece of data (like a text field, number, or label) from an earlier step in your workflow.",
     "singleChartHelp": "Displays a chart built from labels and values provided by previous steps or NLP skills. The chart will automatically visualize the data structure you've configured, making it easy to present numerical or categorical data visually.",

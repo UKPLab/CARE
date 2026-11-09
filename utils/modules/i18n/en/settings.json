@@ -25,5 +25,63 @@
       "displayName": "Trigger queue poll interval (minutes)",
       "description": "How often the trigger queue worker looks for pending jobs, in minutes. New jobs still start immediately when an event fires. Requires a server restart."
     }
+  },
+  "problemReport": {
+    "group": "Problem reports",
+    "form": "Report form",
+    "attachments": "Attachments",
+    "diagnostics": "Diagnostics",
+    "enabled": {
+      "displayName": "Enable problem reports",
+      "description": "Show the bug button in the top bar so users can report problems."
+    },
+    "problemTypes": {
+      "displayName": "Problem types",
+      "description": "Comma-separated choices for the required problem type question. The values error, wrongOrMissing, slowOrStuck and otherOrSuggestion are translated; other values are shown as entered."
+    },
+    "askBlocked": {
+      "displayName": "Ask if the user is blocked",
+      "description": "Show the optional Yes/No question whether the user is blocked from continuing."
+    },
+    "frequencies": {
+      "displayName": "Frequency choices",
+      "description": "Comma-separated choices for the optional frequency question. The values firstTime, sometimes, everyTime and notSure are translated; leave empty to hide the question."
+    },
+    "descriptionMaxLength": {
+      "displayName": "Description length limit (characters)",
+      "description": "Maximum length of the What happened? text (at most 20000)."
+    },
+    "reportsPerHour": {
+      "displayName": "Reports per user per hour",
+      "description": "How many reports one user can submit within an hour."
+    },
+    "attachmentsAllowedTypes": {
+      "displayName": "Allowed attachment types",
+      "description": "Comma-separated MIME types. Only image/png, image/jpeg, image/gif, image/webp, video/mp4, video/webm and video/quicktime can be enabled. Leave empty to turn off attachments."
+    },
+    "attachmentsMaxCount": {
+      "displayName": "Attachment limit",
+      "description": "Maximum number of attachments per report (at most 20)."
+    },
+    "attachmentsMaxFileSizeMb": {
+      "displayName": "Attachment size limit (MB)",
+      "description": "Maximum size of one attachment in MB."
+    },
+    "attachmentsMaxTotalSizeMb": {
+      "displayName": "Total attachment size limit (MB)",
+      "description": "Maximum size of all attachments of one report in MB (at most 90)."
+    },
+    "diagnosticsMaxEntries": {
+      "displayName": "Diagnostic log entries",
+      "description": "Maximum number of recent diagnostic log entries saved with a report (at most 200)."
+    },
+    "diagnosticsMaxAgeMinutes": {
+      "displayName": "Diagnostic log age (minutes)",
+      "description": "Only diagnostic log entries from this many minutes before the report are saved."
+    },
+    "diagnosticsMaxMessageLength": {
+      "displayName": "Diagnostic message length (characters)",
+      "description": "Maximum length of one diagnostic log message (at most 1000)."
+    }
   }
 }

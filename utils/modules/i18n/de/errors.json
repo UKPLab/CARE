@@ -572,5 +572,21 @@
   "common": {
     "resourceNotFound": "Die angeforderte Ressource existiert nicht oder wurde gelöscht.",
     "accessDenied": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen."
+  },
+  "problemReport": {
+    "problemTypeRequired": "Wählen Sie mindestens eine Problemart aus.",
+    "descriptionRequired": "Beschreiben Sie, was passiert ist.",
+    "descriptionTooLong": "Die Beschreibung darf höchstens {max} Zeichen lang sein.",
+    "invalidAttachment": "Ein Anhang konnte nicht gelesen werden.",
+    "tooManyAttachments": "Sie können höchstens {max} Dateien anhängen.",
+    "attachmentTooLarge": "Jeder Anhang darf höchstens {maxMb} MB groß sein.",
+    "attachmentsTooLarge": "Alle Anhänge zusammen dürfen höchstens {maxMb} MB groß sein.",
+    "unsupportedAttachmentType": "Dieser Dateityp ist nicht erlaubt. Hängen Sie eines der erlaubten Bild- oder Videoformate an.",
+    "attachmentsDisabled": "Anhänge sind für Problemberichte deaktiviert.",
+    "invalidRequest": "Der Bericht konnte nicht gesendet werden. Laden Sie die Seite neu und versuchen Sie es erneut.",
+    "rateLimited": "Sie können höchstens {max} Berichte pro Stunde senden. Bitte versuchen Sie es später erneut.",
+    "noAccess": "Nur Administratoren können Problemberichte ansehen.",
+    "attachmentNotFound": "Der Anhang wurde nicht gefunden.",
+    "disabled": "Problemberichte sind deaktiviert."
   }
 }

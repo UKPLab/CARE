@@ -1,0 +1,96 @@
+{
+    "button": "Problem melden",
+    "title": "Problem melden",
+    "previewTitle": "Bericht überprüfen",
+    "form": {
+        "problemType": "Um welche Art von Problem handelt es sich?",
+        "blocked": "Können Sie nicht weiterarbeiten?",
+        "frequency": "Wie oft passiert das?",
+        "description": "Was ist passiert?",
+        "attachments": "Screenshots oder Videos",
+        "optional": "(optional)",
+        "required": "(erforderlich)",
+        "yes": "Ja",
+        "no": "Nein",
+        "attachmentsHint": "Bilder oder Videos. Bis zu {count} Dateien, je {fileMb} MB, insgesamt {totalMb} MB.",
+        "selectedAttachments": "Ausgewählte Anhänge",
+        "remove": "Entfernen",
+        "removeAttachment": "{name} entfernen"
+    },
+    "types": {
+        "error": "Fehler",
+        "wrongOrMissing": "Falsch oder fehlend",
+        "slowOrStuck": "Langsam oder hängt",
+        "otherOrSuggestion": "Sonstiges oder Vorschlag"
+    },
+    "frequencies": {
+        "firstTime": "Zum ersten Mal",
+        "sometimes": "Manchmal",
+        "everyTime": "Jedes Mal",
+        "notSure": "Nicht sicher"
+    },
+    "diagnosticTypes": {
+        "error": "Skriptfehler",
+        "unhandledRejection": "Unbehandelter Fehler",
+        "vueError": "Oberflächenfehler",
+        "failedOperation": "Fehlgeschlagene Aktion",
+        "connection": "Verbindung",
+        "navigation": "Seitenwechsel"
+    },
+    "summary": {
+        "problemTypes": "Problemart",
+        "blocked": "Blockiert",
+        "frequency": "Häufigkeit",
+        "description": "Was ist passiert",
+        "attachments": "Anhänge",
+        "none": "Keine",
+        "notAnswered": "Nicht beantwortet",
+        "unknown": "Unbekannt",
+        "page": "Seite",
+        "reportedAt": "Zeitpunkt des Berichts",
+        "version": "CARE-Version",
+        "build": "Build",
+        "browser": "Browser",
+        "os": "Betriebssystem",
+        "diagnostics": "Aktuelle Diagnoseprotokolle ({count})",
+        "noDiagnostics": "Es wurden keine Diagnoseprotokolle aufgezeichnet. Der Bericht kann trotzdem gesendet werden.",
+        "technical": "Technische Details",
+        "diagnosticEntry": "{time} · {type}"
+    },
+    "visibility": {
+        "label": "Wer diesen Bericht sehen kann:",
+        "text": "Nur CARE-Administratoren. Der Bericht wird privat in CARE gespeichert und nirgendwo veröffentlicht."
+    },
+    "notice": {
+        "label": "Was wir speichern:",
+        "text": "Ihre Beschreibung, die ausgewählten Optionen, Anhänge, die aktuelle Seite, den Zeitpunkt des Berichts, die CARE-Version, den Browser, das Betriebssystem und aktuelle Diagnoseprotokolle, verknüpft mit Ihrem Konto. Passwörter, Tokens, Cookies und Dokumentinhalte werden nicht gespeichert."
+    },
+    "actions": {
+        "preview": "Vorschau anzeigen",
+        "edit": "Bearbeiten",
+        "submit": "Bericht senden"
+    },
+    "messages": {
+        "previewFailed": "Vorschau nicht verfügbar",
+        "submitFailed": "Bericht nicht gesendet",
+        "timeout": "Der Server hat nicht geantwortet. Ihr Bericht ist noch da; bitte versuchen Sie es erneut.",
+        "submitted": "Bericht gesendet",
+        "submittedText": "Vielen Dank. Bericht #{id} wurde an die CARE-Administratoren gesendet."
+    },
+    "admin": {
+        "title": "Problemberichte",
+        "description": "Berichte, die über die Fehler-Schaltfläche in der oberen Leiste gesendet wurden. Nur Administratoren können sie sehen.",
+        "columns": {
+            "id": "ID",
+            "reporter": "Gemeldet von"
+        },
+        "view": "Bericht ansehen",
+        "detailTitle": "Problembericht #{id}",
+        "loadAttachment": "Anzeigen",
+        "loadAttachmentFor": "{name} anzeigen",
+        "download": "Herunterladen",
+        "loadFailed": "Berichte nicht geladen",
+        "attachmentFailed": "Anhang nicht geladen",
+        "downloadFor": "{name} herunterladen"
+    }
+}

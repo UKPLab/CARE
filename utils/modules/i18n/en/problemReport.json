@@ -1,0 +1,96 @@
+{
+    "button": "Report a problem",
+    "title": "Report a problem",
+    "previewTitle": "Review your report",
+    "form": {
+        "problemType": "What kind of problem is it?",
+        "blocked": "Are you blocked from continuing?",
+        "frequency": "How often does this happen?",
+        "description": "What happened?",
+        "attachments": "Screenshots or videos",
+        "optional": "(optional)",
+        "required": "(required)",
+        "yes": "Yes",
+        "no": "No",
+        "attachmentsHint": "Images or videos. Up to {count} files, {fileMb} MB each, {totalMb} MB in total.",
+        "selectedAttachments": "Selected attachments",
+        "remove": "Remove",
+        "removeAttachment": "Remove {name}"
+    },
+    "types": {
+        "error": "Error",
+        "wrongOrMissing": "Wrong or missing",
+        "slowOrStuck": "Slow or stuck",
+        "otherOrSuggestion": "Other or suggestion"
+    },
+    "frequencies": {
+        "firstTime": "First time",
+        "sometimes": "Sometimes",
+        "everyTime": "Every time",
+        "notSure": "Not sure"
+    },
+    "diagnosticTypes": {
+        "error": "Script error",
+        "unhandledRejection": "Unhandled error",
+        "vueError": "Interface error",
+        "failedOperation": "Failed operation",
+        "connection": "Connection",
+        "navigation": "Page change"
+    },
+    "summary": {
+        "problemTypes": "Problem type",
+        "blocked": "Blocked from continuing",
+        "frequency": "How often",
+        "description": "What happened",
+        "attachments": "Attachments",
+        "none": "None",
+        "notAnswered": "Not answered",
+        "unknown": "Unknown",
+        "page": "Page",
+        "reportedAt": "Report time",
+        "version": "CARE version",
+        "build": "Build",
+        "browser": "Browser",
+        "os": "Operating system",
+        "diagnostics": "Recent diagnostic logs ({count})",
+        "noDiagnostics": "No diagnostic logs were recorded. The report can still be submitted.",
+        "technical": "Technical details",
+        "diagnosticEntry": "{time} · {type}"
+    },
+    "visibility": {
+        "label": "Who can see this report:",
+        "text": "Only CARE administrators. The report is stored privately in CARE and is not published anywhere."
+    },
+    "notice": {
+        "label": "What we save:",
+        "text": "Your description, selected options, attachments, current page, report time, CARE version, browser, operating system, and recent diagnostic logs, linked to your account. Passwords, tokens, cookies, and document contents are excluded."
+    },
+    "actions": {
+        "preview": "Preview submission",
+        "edit": "Edit",
+        "submit": "Submit report"
+    },
+    "messages": {
+        "previewFailed": "Preview not available",
+        "submitFailed": "Report not submitted",
+        "timeout": "The server did not respond. Your report is still here; please try again.",
+        "submitted": "Report submitted",
+        "submittedText": "Thank you. Report #{id} was sent to the CARE administrators."
+    },
+    "admin": {
+        "title": "Problem Reports",
+        "description": "Reports submitted with the bug button in the top bar. Only administrators can see them.",
+        "columns": {
+            "id": "ID",
+            "reporter": "Reporter"
+        },
+        "view": "View report",
+        "detailTitle": "Problem report #{id}",
+        "loadAttachment": "Show",
+        "loadAttachmentFor": "Show {name}",
+        "download": "Download",
+        "loadFailed": "Reports not loaded",
+        "attachmentFailed": "Attachment not loaded",
+        "downloadFor": "Download {name}"
+    }
+}

@@ -25,5 +25,63 @@
             "displayName": "Intervalle de vérification de la file des déclencheurs (minutes)",
             "description": "Fréquence, en minutes, à laquelle le service de la file des déclencheurs recherche des tâches en attente. Les nouvelles tâches démarrent quand même immédiatement lorsqu'un événement se produit. Nécessite un redémarrage du serveur."
         }
+    },
+    "problemReport": {
+        "group": "Signalements de problème",
+        "form": "Formulaire de signalement",
+        "attachments": "Pièces jointes",
+        "diagnostics": "Diagnostics",
+        "enabled": {
+            "displayName": "Activer les signalements de problème",
+            "description": "Affiche le bouton de bogue dans la barre supérieure pour que les utilisateurs puissent signaler des problèmes."
+        },
+        "problemTypes": {
+            "displayName": "Types de problème",
+            "description": "Choix séparés par des virgules pour la question obligatoire sur le type de problème. Les valeurs error, wrongOrMissing, slowOrStuck et otherOrSuggestion sont traduites ; les autres valeurs sont affichées telles quelles."
+        },
+        "askBlocked": {
+            "displayName": "Demander si l'utilisateur est bloqué",
+            "description": "Affiche la question facultative Oui/Non indiquant si l'utilisateur ne peut pas continuer."
+        },
+        "frequencies": {
+            "displayName": "Choix de fréquence",
+            "description": "Choix séparés par des virgules pour la question facultative sur la fréquence. Les valeurs firstTime, sometimes, everyTime et notSure sont traduites ; laissez vide pour masquer la question."
+        },
+        "descriptionMaxLength": {
+            "displayName": "Longueur maximale de la description (caractères)",
+            "description": "Longueur maximale du texte Que s'est-il passé ? (20000 au maximum)."
+        },
+        "reportsPerHour": {
+            "displayName": "Signalements par utilisateur et par heure",
+            "description": "Nombre de signalements qu'un utilisateur peut envoyer en une heure."
+        },
+        "attachmentsAllowedTypes": {
+            "displayName": "Types de pièces jointes autorisés",
+            "description": "Types MIME séparés par des virgules. Seuls image/png, image/jpeg, image/gif, image/webp, video/mp4, video/webm et video/quicktime peuvent être activés. Laissez vide pour désactiver les pièces jointes."
+        },
+        "attachmentsMaxCount": {
+            "displayName": "Nombre de pièces jointes",
+            "description": "Nombre maximal de pièces jointes par signalement (20 au maximum)."
+        },
+        "attachmentsMaxFileSizeMb": {
+            "displayName": "Taille maximale d'une pièce jointe (Mo)",
+            "description": "Taille maximale d'une pièce jointe en Mo."
+        },
+        "attachmentsMaxTotalSizeMb": {
+            "displayName": "Taille totale des pièces jointes (Mo)",
+            "description": "Taille maximale de toutes les pièces jointes d'un signalement en Mo (90 au maximum)."
+        },
+        "diagnosticsMaxEntries": {
+            "displayName": "Entrées du journal de diagnostic",
+            "description": "Nombre maximal d'entrées de diagnostic récentes enregistrées avec un signalement (200 au maximum)."
+        },
+        "diagnosticsMaxAgeMinutes": {
+            "displayName": "Ancienneté du journal de diagnostic (minutes)",
+            "description": "Seules les entrées de diagnostic des minutes précédant le signalement sont enregistrées."
+        },
+        "diagnosticsMaxMessageLength": {
+            "displayName": "Longueur d'un message de diagnostic (caractères)",
+            "description": "Longueur maximale d'un message de diagnostic (1000 au maximum)."
+        }
     }
 }
