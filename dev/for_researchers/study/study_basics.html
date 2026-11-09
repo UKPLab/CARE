@@ -77,9 +77,13 @@
 <li class="toctree-l3"><a class="reference internal" href="#placeholders">Placeholders</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#current-available-workflows">Current Available Workflows</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#peer-review-workflow"><strong>Peer Review Workflow</strong></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#peer-review-workflow-assessment"><strong>Peer Review Workflow (Assessment)</strong></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#peer-review-workflow-assessment-with-ai"><strong>Peer Review Workflow (Assessment with AI)</strong></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#annotation-workflow"><strong>Annotation Workflow</strong></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#review-assessment-workflow"><strong>Review Assessment Workflow</strong></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#revision-workflow"><strong>Revision Workflow</strong></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ruhr-uni-bochum-project"><strong>Ruhr-Uni Bochum Project</strong></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#ruhr-uni-bochum-project-control"><strong>Ruhr-Uni Bochum Project (Control)</strong></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#annotation-workflow"><strong>Annotation Workflow</strong></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#creating-a-study">Creating a Study</a><ul>
@@ -200,52 +204,219 @@ optionally powered by NLP skills.</p>
 </section>
 <section id="current-available-workflows">
 <span id="id2"></span><h2>Current Available Workflows<a class="headerlink" href="#current-available-workflows" title="Link to this heading"></a></h2>
-<p>The following predefined workflows are currently available in CARE.
-Each workflow is a template that specifies the order of steps a participant goes through.</p>
+<p>The following predefined workflows specify the order of tasks in a study.
+You select the documents, assessment configurations, and services when creating the study.
+For information on copying or customizing a workflow, see <a class="reference internal" href="../workflow_management.html"><span class="doc">Workflow Management</span></a>.</p>
 <p><strong>Step types</strong>:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">=</span> <span class="pre">Annotator</span></code> (highlight or comment on a PDF)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">=</span> <span class="pre">Editor</span></code> (revise or write text in the Quill editor)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">=</span> <span class="pre">Modal</span></code> (a read-only view with dynamically filled placeholders, often used for NLP results)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">1</span> <span class="pre">=</span> <span class="pre">Annotator</span></code>: read, highlight, or comment on a PDF.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">2</span> <span class="pre">=</span> <span class="pre">Editor</span></code>: write or revise text in the Quill editor.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">3</span> <span class="pre">=</span> <span class="pre">Modal</span></code>: read configured content, optionally including placeholders for service results.</p></li>
 </ul>
+<p>The state charts show the participant’s progress, including loading, service failures,
+and finish confirmation. They assume the participant has access to an open study.
+Study deadlines, changes to access, and continuation after a finished session are not shown.
+Open the SVG download to inspect a chart at full size without losing image quality.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Assessment workflows require an assessment configuration for the relevant step.
+<strong>Forced Assessment</strong> is disabled by default. When enabled, participants must save
+a score and justification for each named criterion before moving forward from that step.
+AI suggestions and scores copied from a previous step do not count as saved assessments
+until the participant saves them.</p>
+</div>
 <section id="peer-review-workflow">
 <h3><strong>Peer Review Workflow</strong><a class="headerlink" href="#peer-review-workflow" title="Link to this heading"></a></h3>
-<p><em>Based on the EiWA Project: participants review a PDF document and then write free text feedback.</em></p>
+<p><em>Based on the EiWA Project: participants annotate a PDF and write a free-text review.</em></p>
 <ul class="simple">
-<li><p><strong>Step 1 — Annotator:</strong> The participant reads and annotates a PDF.</p></li>
-<li><p><strong>Step 2 — Editor:</strong> The participant writes their review in the text editor. They can move back to this step to revise their feedback if needed. The editor is linked to the same document annotated in Step 1.</p></li>
+<li><p><strong>Step 1 - Annotator:</strong> Read and annotate the PDF.</p></li>
+<li><p><strong>Step 2 - Editor:</strong> Write the review in a separately selected editor document.
+Participants can return to Step 1 using <strong>Previous</strong>, then continue to Step 2.</p></li>
 </ul>
+<p>This workflow has no predefined assessment or AI service. After writing the review,
+participants select <strong>Finish</strong> and confirm submission.</p>
+<figure class="align-default" id="id3">
+<a class="reference internal image-reference" href="../../_images/chart.svg"><img alt="Peer Review Workflow state chart, from PDF annotation through review writing and finish confirmation." src="../../_images/chart.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Peer Review Workflow: annotation followed by review writing.</span><a class="headerlink" href="#id3" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/a02265c09b715f6393cd4317295826b7/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/6d37e8dfe718df1968ae150e6c42a179/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/4e7651b71bb3c620ec5f83e58e48a9c7/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
 </section>
 <hr class="docutils" />
-<section id="ruhr-uni-bochum-project">
-<h3><strong>Ruhr-Uni Bochum Project</strong><a class="headerlink" href="#ruhr-uni-bochum-project" title="Link to this heading"></a></h3>
-<p><em>Designed to study revision behavior over two editing rounds, with AI (NLP) feedback provided between them.</em></p>
+<section id="peer-review-workflow-assessment">
+<h3><strong>Peer Review Workflow (Assessment)</strong><a class="headerlink" href="#peer-review-workflow-assessment" title="Link to this heading"></a></h3>
+<p><em>Adds a structured assessment to the PDF annotation step.</em></p>
 <ul class="simple">
-<li><p><strong>Step 1 — Editor:</strong> The participant writes or revises the initial version of a text.</p></li>
-<li><p><strong>Step 2 — Modal:</strong> AI-generated feedback is shown in a modal window. This includes comparisons (via the <code class="docutils literal notranslate"><span class="pre">nlpEditComparison</span></code> skill).</p></li>
-<li><p><strong>Step 3 — Editor:</strong> The participant revises the text again, building on both their first version and the AI feedback.</p></li>
-<li><p><strong>Step 4 — Modal:</strong> A second round of AI feedback is shown, again highlighting differences or suggestions.</p></li>
+<li><p><strong>Step 1 - Annotator and assessment:</strong> Read and annotate the PDF, then enter scores
+and justifications using the selected assessment configuration.</p></li>
+<li><p><strong>Step 2 - Editor:</strong> Write a free-text review in a separately selected editor document.
+<strong>Previous</strong> returns to Step 1.</p></li>
 </ul>
-<p>For a detailed step-by-step example, see <a class="reference internal" href="study_with_nlp.html#ruhr-uni-bochum-project"><span class="std std-ref">Ruhr-Uni Bochum Project</span></a>.</p>
+<p>When <strong>Forced Assessment</strong> is enabled for Step 1, all criteria must be saved before
+<strong>Next</strong> opens the editor. Step 2 has no predefined assessment or AI service.</p>
+<figure class="align-default" id="id4">
+<a class="reference internal image-reference" href="../../_images/chart1.svg"><img alt="Peer Review Workflow with Assessment state chart, including the assessment condition before review writing." src="../../_images/chart1.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Peer Review Workflow (Assessment): assess the PDF before writing the review.</span><a class="headerlink" href="#id4" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/a88bbae7d8a83067b02a46ab2d0417a9/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/c0ecbf2a66254c1530322e3fc89f06bc/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/29a440fb061c7fe5d9ee651d78eb25b0/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
 </section>
 <hr class="docutils" />
-<section id="ruhr-uni-bochum-project-control">
-<h3><strong>Ruhr-Uni Bochum Project (Control)</strong><a class="headerlink" href="#ruhr-uni-bochum-project-control" title="Link to this heading"></a></h3>
-<p><em>Same setup as the Ruhr-Uni Bochum Project, but without AI (NLP) feedback. Used as a control condition in experiments.</em></p>
+<section id="peer-review-workflow-assessment-with-ai">
+<h3><strong>Peer Review Workflow (Assessment with AI)</strong><a class="headerlink" href="#peer-review-workflow-assessment-with-ai" title="Link to this heading"></a></h3>
+<p><em>Adds AI support to structured assessment and review writing.</em></p>
 <ul class="simple">
-<li><p><strong>Step 1 — Editor:</strong> Participant writes or revises the text.</p></li>
-<li><p><strong>Step 2 — Modal:</strong> A modal view is shown, but without any AI feedback.</p></li>
-<li><p><strong>Step 3 — Editor:</strong> Participant revises the text again.</p></li>
-<li><p><strong>Step 4 — Modal:</strong> Another empty modal view is shown, serving as a placeholder instead of NLP results.</p></li>
+<li><p><strong>Step 1 - Annotator and assessment:</strong> The configured <code class="docutils literal notranslate"><span class="pre">nlpAssessment</span></code> service
+provides support for assessing the PDF. Participants review its output, annotate
+the PDF, and save their own assessment.</p></li>
+<li><p><strong>Step 2 - Editor:</strong> The configured <code class="docutils literal notranslate"><span class="pre">textualFeedback</span></code> service supports review writing.
+<strong>Previous</strong> returns to Step 1. This step reuses the document selected for Step 1.</p></li>
 </ul>
+<p>Select the skills or AI hooks, input mappings, and output handling during study setup.
+If a service fails or times out, participants can retry it or skip service support.
+Skipping a service does not waive the assessment condition when <strong>Forced Assessment</strong> is enabled.
+For more information about AI configuration, see <a class="reference internal" href="../ai_features.html"><span class="doc">Using AI Features</span></a>.</p>
+<figure class="align-default" id="id5">
+<a class="reference internal image-reference" href="../../_images/chart2.svg"><img alt="AI-assisted peer review state chart, including assessment and feedback requests with retry and skip paths." src="../../_images/chart2.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Peer Review Workflow (Assessment with AI): service support at both steps.</span><a class="headerlink" href="#id5" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/9a04e5b2667fc48c6d961864b7446f38/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/8fc59df52b567f0aaeec52f9ef529c53/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/acbfacbe7aa2773a4ffe3361d51a0a93/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
 </section>
 <hr class="docutils" />
 <section id="annotation-workflow">
 <h3><strong>Annotation Workflow</strong><a class="headerlink" href="#annotation-workflow" title="Link to this heading"></a></h3>
-<p><em>A minimal workflow for pure annotation tasks.</em></p>
+<p><em>A single-step workflow for PDF annotation tasks.</em></p>
 <ul class="simple">
-<li><p><strong>Step 1 — Annotator:</strong> Participant highlights and comments on a PDF. This is the only step in the workflow.</p></li>
+<li><p><strong>Step 1 - Annotator:</strong> Read, highlight, and comment on the PDF, then select <strong>Finish</strong>
+and confirm submission.</p></li>
 </ul>
+<p>There is no second step, backward navigation, predefined assessment, or predefined AI service.</p>
+<figure class="align-default" id="id6">
+<a class="reference internal image-reference" href="../../_images/chart3.svg"><img alt="Annotation Workflow state chart, showing one annotation step followed by finish confirmation." src="../../_images/chart3.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Annotation Workflow: one PDF annotation step.</span><a class="headerlink" href="#id6" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/4f6c580f0cceaa4880053ccdd4c85a64/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/7d97c5947e890067c82f80d39d10ec37/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/75cdf47a0e02b0ea499975bf90070441/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
+</section>
+<hr class="docutils" />
+<section id="review-assessment-workflow">
+<h3><strong>Review Assessment Workflow</strong><a class="headerlink" href="#review-assessment-workflow" title="Link to this heading"></a></h3>
+<p><em>Supports assessment of an existing review or submitted study session.</em></p>
+<ul class="simple">
+<li><p><strong>Step 1 - Annotator, read-only:</strong> Inspect the source PDF and its visible annotations
+without changing them. <strong>Show All Document Annotations</strong> controls whether default
+document annotations are included.</p></li>
+<li><p><strong>Step 2 - Editor, read-only, with assessment:</strong> Inspect the review content and save
+scores and justifications in the assessment sidebar. The editor content remains read-only.
+<strong>Previous</strong> returns to Step 1.</p></li>
+</ul>
+<p>The second step is linked to Step 1. Select its assessment configuration during study setup.
+When <strong>Forced Assessment</strong> is enabled for Step 2, all criteria must be saved before <strong>Finish</strong>.</p>
+<figure class="align-default" id="id7">
+<a class="reference internal image-reference" href="../../_images/chart4.svg"><img alt="Review Assessment Workflow state chart, showing read-only inspection followed by an editable assessment." src="../../_images/chart4.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Review Assessment Workflow: inspect existing content and assess it.</span><a class="headerlink" href="#id7" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/b61c505dcc96e42718aef5280441bdbf/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/052ac3d95b29b6910973837af96e5a1d/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/ba0afd9c6d6cc60f75c5976faa826f3a/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
+</section>
+<hr class="docutils" />
+<section id="revision-workflow">
+<h3><strong>Revision Workflow</strong><a class="headerlink" href="#revision-workflow" title="Link to this heading"></a></h3>
+<p><em>Supports review of a previous submission followed by assessment of a revised submission.</em></p>
+<ul class="simple">
+<li><p><strong>Step 1 - Annotator and assessment, read-only:</strong> Inspect the previous document,
+annotations, and assessment without changing them.</p></li>
+<li><p><strong>Step 2 - Annotator and assessment:</strong> Annotate the revised document and save a new
+assessment. Scores from Step 1 can prefill this assessment, but remain unsaved until
+the participant saves them. <strong>Previous</strong> returns to Step 1.</p></li>
+</ul>
+<p>Select a document and assessment configuration for each step. Step 2 does not automatically
+reuse the first document. When <strong>Forced Assessment</strong> is enabled for Step 2, all criteria
+must be saved before <strong>Finish</strong>. The chart assumes the default optional assessment in
+read-only Step 1.</p>
+<figure class="align-default" id="id8">
+<a class="reference internal image-reference" href="../../_images/chart5.svg"><img alt="Revision Workflow state chart, from read-only inspection of prior work to annotation and assessment of revised work." src="../../_images/chart5.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Revision Workflow: compare prior work with a separately selected revision.</span><a class="headerlink" href="#id8" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/0da6fd26ca7f6ebff336c3f9e9e62895/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/ae5e2d459f8f49613ff5dab053ed520d/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/293276390c2da198df84f2b32f92c769/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
+</section>
+<hr class="docutils" />
+<section id="ruhr-uni-bochum-project">
+<h3><strong>Ruhr-Uni Bochum Project</strong><a class="headerlink" href="#ruhr-uni-bochum-project" title="Link to this heading"></a></h3>
+<p><em>Studies revision behavior over two editing rounds with AI-supported feedback between them.</em></p>
+<ul class="simple">
+<li><p><strong>Step 1 - Editor:</strong> Write or revise the initial text.</p></li>
+<li><p><strong>Step 2 - Modal:</strong> Run the configured <code class="docutils literal notranslate"><span class="pre">nlpEditComparison</span></code> service and display the
+prepared modal content.</p></li>
+<li><p><strong>Step 3 - Editor:</strong> Revise the text again using the document and edits from Step 1.</p></li>
+<li><p><strong>Step 4 - Modal:</strong> Run <code class="docutils literal notranslate"><span class="pre">nlpEditComparison</span></code> again and display the final modal content,
+then select <strong>Finish</strong> and confirm submission.</p></li>
+</ul>
+<p>Backward navigation is disabled for every step. Configure the service inputs, output handling,
+and modal placeholders to display comparisons or feedback. A successful service request alone
+does not determine what the modal displays. Failed or timed-out requests can be retried or skipped.</p>
+<p>For a detailed setup example, see <a class="reference internal" href="study_with_nlp.html#ruhr-uni-bochum-project"><span class="std std-ref">Ruhr-Uni Bochum Project</span></a>.</p>
+<figure class="align-default" id="id9">
+<a class="reference internal image-reference" href="../../_images/chart6.svg"><img alt="Ruhr-Uni Bochum Project state chart, showing two editing rounds and two comparison services with retry and skip paths." src="../../_images/chart6.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Ruhr-Uni Bochum Project: two revisions with configured service support.</span><a class="headerlink" href="#id9" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/1ae5e3c96d2e7986f1c7e28edd0097bb/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/78085ec54db971ef5ffe18d6151a409a/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/d6a6a524a2fe811e6a67bddc0cf3beb4/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
+</section>
+<hr class="docutils" />
+<section id="ruhr-uni-bochum-project-control">
+<h3><strong>Ruhr-Uni Bochum Project (Control)</strong><a class="headerlink" href="#ruhr-uni-bochum-project-control" title="Link to this heading"></a></h3>
+<p><em>Uses the same four-step structure as the Ruhr-Uni Bochum Project without predefined AI services.</em></p>
+<ul class="simple">
+<li><p><strong>Step 1 - Editor:</strong> Write or revise the initial text.</p></li>
+<li><p><strong>Step 2 - Modal:</strong> Read the prepared modal content without an automatic AI request.</p></li>
+<li><p><strong>Step 3 - Editor:</strong> Revise the text again using the document and edits from Step 1.</p></li>
+<li><p><strong>Step 4 - Modal:</strong> Read the final prepared modal content, then select <strong>Finish</strong>
+and confirm submission.</p></li>
+</ul>
+<p>Backward navigation is disabled for every step. The modals can contain instructions or other
+prepared content. They are not necessarily empty. This workflow provides a control condition
+without the predefined comparison services.</p>
+<figure class="align-default" id="id10">
+<a class="reference internal image-reference" href="../../_images/chart7.svg"><img alt="Ruhr-Uni Bochum Project control state chart, showing two editor and two modal steps without AI requests." src="../../_images/chart7.svg" style="width: 100%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Ruhr-Uni Bochum Project (Control): two revisions without predefined service support.</span><a class="headerlink" href="#id10" title="Link to this image"></a></p>
+</figcaption>
+</figure>
+<p><a class="reference download internal" download="" href="../../_downloads/c65d9fadc3edbf45f1f16c045991c687/chart.svg"><code class="xref download docutils literal notranslate"><span class="pre">SVG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/092ea2a8fab0914d09e9580392565d49/chart.png"><code class="xref download docutils literal notranslate"><span class="pre">PNG</span></code></a>,
+<a class="reference download internal" download="" href="../../_downloads/ed3e5235ab9a05ba8a7e4b3fad3cefef/chart.mmd"><code class="xref download docutils literal notranslate"><span class="pre">Mermaid</span> <span class="pre">source</span></code></a></p>
 </section>
 </section>
 <section id="creating-a-study">
