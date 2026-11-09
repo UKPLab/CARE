@@ -191,6 +191,9 @@ export default {
       if (this.$slots.additionalSidebars) {
         return 'additionalSidebars';
       }
+      if (this.$slots.aiConversation) {
+        return 'aiConversation';
+      }
       return null;
     },
     showTemplateConfigurator() {

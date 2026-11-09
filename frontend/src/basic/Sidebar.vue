@@ -422,15 +422,20 @@ export default {
     /**
      * Switches to the tab that holds the given element, e.g. the card of a clicked annotation
      * @param {HTMLElement} element - an element inside one of the tabs
+     * @param {boolean} expand - whether to open a collapsed sidebar
      * @returns {boolean} whether another tab is shown now
      */
-    showTabOf(element) {
+    showTabOf(element, expand = false) {
       const slotName = element?.closest("[data-sidebar-slot]")?.dataset.sidebarSlot;
-      if (!slotName || slotName === this.resolvedActiveSlot) {
+      if (!slotName) {
         return false;
       }
+      const previousSlot = this.resolvedActiveSlot;
       this.changeView(slotName);
-      return this.resolvedActiveSlot === slotName;
+      if (expand && this.resolvedActiveSlot === slotName && !this.isSidebarVisible) {
+        this.toggleSidebar();
+      }
+      return previousSlot !== this.resolvedActiveSlot && this.resolvedActiveSlot === slotName;
     },
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;

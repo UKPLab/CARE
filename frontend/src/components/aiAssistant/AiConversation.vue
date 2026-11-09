@@ -130,6 +130,7 @@ export default {
   },
   mixins: [aiRequestMixin],
   inject: {
+    showSidebarTabOf: {default: () => () => false},
     currentStudyStep: {type: Object, required: false, default: null},
     acceptStats: {
       default: () => false,
@@ -599,6 +600,7 @@ export default {
           sourceDocumentId: documentId,
           length: quoteText.length,
         });
+        this.showSidebarTabOf(this.$el, true);
         this.focusComposer();
       }
     },
