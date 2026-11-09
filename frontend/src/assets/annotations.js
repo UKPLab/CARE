@@ -141,3 +141,93 @@ export function getAnnotationPreview(store, annotation, maxLength = 100) {
         commentText: truncate(comment?.text),
     };
 }
+
+/**
+ * Reduces the annotator data of a study step to the fields a model prompt may contain. Store records
+ * also hold author and study fields, which must not reach a model provider. Comments use the
+ * same fields as the backend `~inlineComments~` value in templatePromptValues.js.
+ *
+ * @param {{annotations?: Object[], comments?: Object[]}} [annotator] Data the Annotator passes on to the study
+ * @param {string} key The mapped field, "annotations" or "comments"
+ * @returns {Object[]|null} The reduced records, or null when the field does not exist
+ */
+export function annotatorRecordsForPrompt(annotator, key) {
+    const annotations = annotator?.annotations;
+    if (key === "annotations" && annotations) {
+        return annotations.map(({id, text, tagId, createdAt}) => ({
+            id,
+            quote: text || "",
+            tagId: tagId ?? null,
+            createdAt: createdAt || null,
+        }));
+    }
+    if (key === "comments" && annotator?.comments) {
+        return annotator.comments.map(({id, text, annotationId, createdAt}) => ({
+            id,
+            comment: text || "",
+            quote: annotations?.find(annotation => annotation.id === annotationId)?.text || "",
+            annotationId: annotationId || null,
+            createdAt: createdAt || null,
+        }));
+    }
+    return null;
+}
+
+/**
+ * Serializes study annotator inputs for NLP skills, retaining persisted content and location
+ * field names rather than the hook prompt format. Runtime anchors and author/study metadata
+ * are deliberately excluded. Unknown or unloaded inputs fail before a request is emitted.
+ *
+ * @param {Object} annotator Published annotator data
+ * @param {string} key Supported input field: annotations or comments
+ * @returns {Object[]} Skill records
+ * @throws {Error} When the mapped records or selector type are unavailable or unsupported
+ */
+export function annotatorRecordsForSkill(annotator, key) {
+    const fields = {
+        annotations: ['id', 'text', 'tagId', 'createdAt', 'updatedAt'],
+        comments: ['id', 'text', 'annotationId', 'parentCommentId', 'tags', 'createdAt', 'updatedAt'],
+    };
+    const selectorFields = {
+        TextQuoteSelector: ['type', 'exact', 'prefix', 'suffix'],
+        TextPositionSelector: ['type', 'start', 'end'],
+        PagePositionSelector: ['type', 'number'],
+        RangeSelector: ['type', 'startContainer', 'startOffset', 'endContainer', 'endOffset'],
+    };
+    if (!Object.hasOwn(fields, key) || !Array.isArray(annotator?.[key])) {
+        throw new Error('nlp.hooks.requestFailed');
+    }
+    const numericFields = new Set([
+        'id', 'tagId', 'annotationId', 'parentCommentId', 'start', 'end', 'number', 'startOffset', 'endOffset',
+    ]);
+    const pick = (record, keys) => Object.fromEntries(
+        keys.filter(field => Object.hasOwn(record, field)).map(field => {
+            const raw = record[field];
+            if (field === 'tags' && Array.isArray(raw) && !raw.every(tag => typeof tag === 'string')) {
+                throw new Error('nlp.hooks.requestFailed');
+            }
+            const value = field === 'tags' && Array.isArray(raw) ? JSON.stringify(raw) : raw;
+            const valid = value === null || (numericFields.has(field)
+                ? typeof value === 'number' && Number.isFinite(value)
+                : typeof value === 'string');
+            if (!valid) {
+                throw new Error('nlp.hooks.requestFailed');
+            }
+            return [field, value];
+        })
+    );
+    return annotator[key].map(record => {
+        const result = pick(record, fields[key]);
+        if (key === 'annotations' && record.selectors != null) {
+            result.selectors = {target: record.selectors.target.map(target => ({
+                selector: target.selector.map(selector => {
+                    if (!Object.hasOwn(selectorFields, selector.type)) {
+                        throw new Error('nlp.hooks.requestFailed');
+                    }
+                    return pick(selector, selectorFields[selector.type]);
+                }),
+            }))};
+        }
+        return result;
+    });
+}

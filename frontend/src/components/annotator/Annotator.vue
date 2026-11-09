@@ -209,6 +209,10 @@ export default {
     return {
       pdf: null,
       downloading: false,
+      recordsLoaded: false,
+      recordsStatus: "unread",
+      recordsRequestId: 0,
+      recordsTimer: null,
       assessmentViewActive: true,
       maxSidebarWidth: 600,
       minSidebarWidth: 250,
@@ -241,14 +245,13 @@ export default {
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
-      const data = this.$store.getters['table/user_environment/getAll'].filter(
+      return this.$store.getters['table/user_environment/getAll'].find(
           e => e.userId === this.userId &&
               e.documentId === this.documentId &&
               e.studySessionId === this.studySessionId &&
               e.studyStepId === this.studyStepId &&
               e.key === "scroll"
-      );
-      return data[0] || null;
+      ) || null;
     },
     anchors() {
       return [].concat(
@@ -284,8 +287,8 @@ export default {
           }
       ).map(session => session.id);
     },
-    annotations() {
-      const annotations = this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
+    documentAnnotations() {
+      return this.$store.getters["table/annotation/getByKey"]('documentId', this.documentId).sort((a, b) => {
         const a_noanchor = a.anchors === null || a.anchors.length === 0;
         const b_noanchor = b.anchors === null || b.anchors.length === 0;
 
@@ -295,33 +298,21 @@ export default {
 
         return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
       });
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return annotations.filter(annotation =>
-            !this.openSessionIds.includes(annotation.studySessionId)
-        );
-      } else {
-        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
-            annotation.studySessionId === this.studySessionId
-        ) : annotations.filter(annotation =>
-            annotation.studySessionId === null && annotation.studyStepId === null
-        );
-      }
+    },
+    annotations() {
+      return this.documentAnnotations.filter(this.isInCurrentView);
+    },
+    documentComments() {
+      return this.$store.getters["table/comment/getFiltered"](c => c.documentId === this.documentId);
     },
     comments() {
-      const comments = this.$store.getters["table/comment/getFiltered"](c =>
-          c.documentId === this.documentId
-      );
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return comments.filter(comment =>
-            !this.openSessionIds.includes(comment.studySessionId)
-        );
-      } else {
-        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
-            comment.studySessionId === this.studySessionId
-        ) : comments.filter(comment =>
-            comment.studySessionId === null && comment.studyStepId === null
-        );
-      }
+      return this.documentComments.filter(this.isInCurrentView);
+    },
+    downloadableAnnotations() {
+      return this.documentAnnotations.filter(annotation => annotation.studySessionId === this.studySessionId);
+    },
+    downloadableComments() {
+      return this.documentComments.filter(comment => comment.studySessionId === this.studySessionId);
     },
     sidebarButtons() {
       const buttons = [];
@@ -349,7 +340,7 @@ export default {
 
       // Download Button
       if (this.studySessionId && this.studySessionId !== 0) {
-        const canDownload = this.annotations.length + this.comments.length > 0 &&
+        const canDownload = this.downloadableAnnotations.length + this.downloadableComments.length > 0 &&
             !this.downloading &&
             (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
         buttons.push({
@@ -371,36 +362,19 @@ export default {
         await this.scrollToSavedValue(newVal.value, 1000);
       }
     },
+    documentId() { this.loadRecords(); },
     studySessionId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
+        this.loadRecords();
       }
     },
     studyStepId(newVal, oldVal) {
       if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
+        this.loadRecords();
       }
     },
-    annotations: {
-      handler() {
-        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
-      },
-      deep: true
-    },
-    comments: {
-      handler() {
-        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
-      },
-      deep: true
-    }
+    annotations: {handler: 'emitStudyData', deep: true},
+    comments: {handler: 'emitStudyData', deep: true}
   },
   mounted() {
     // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
@@ -421,6 +395,9 @@ export default {
       }
     });
 
+    this.eventBus.on("annotatorRetryLoad", this.retryRecords);
+    this.$socket.on("connect", this.recoverRecords);
+
     // init component
     this.load();
 
@@ -435,33 +412,25 @@ export default {
 
   },
   beforeUnmount() {
+    this.eventBus.off("annotatorRetryLoad", this.retryRecords);
+    this.$socket.off("connect", this.recoverRecords);
+    ++this.recordsRequestId;
+    clearTimeout(this.recordsTimer);
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
 
     const currentPage = this.getCurrentPageNumber();
     const payload = JSON.stringify({page: currentPage, value: this.$refs.viewer.scrollTop});
-    if (!this.savedScroll) {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          userId: this.userId,
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          key: "scroll",
-          value: payload
-        }
-      });
-    } else {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          id: this.savedScroll.id,
-          value: payload
-        }
-      });
-    }
+    const data = this.savedScroll ? {id: this.savedScroll.id, value: payload} : {
+      userId: this.userId,
+      documentId: this.documentId,
+      studySessionId: this.studySessionId,
+      studyStepId: this.studyStepId,
+      key: "scroll",
+      value: payload
+    };
+    this.$socket.emit("appDataUpdate", {table: "user_environment", data});
   },
   methods: {
     // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
@@ -646,11 +615,7 @@ export default {
       return new Promise(resolve => setTimeout(resolve, ms));
     },
     load() {
-      this.$socket.emit("documentGetData", {
-        documentId: this.documentId,
-        studySessionId: this.studySessionId,
-        studyStepId: this.studyStepId
-      });
+      this.loadRecords();
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
@@ -672,25 +637,95 @@ export default {
         });
       }
     },
+    /**
+     * Requests the records of the current view. The backend acknowledges after sending the annotation
+     * and comment refreshes, and table subscriptions can deliver rows at any time before that. So only
+     * the acknowledgement of the latest request tells that an empty list means there are no records.
+     */
+    retryRecords(context) {
+      if (this.recordsStatus === "error" &&
+          context.documentId === this.documentId &&
+          context.studySessionId === this.studySessionId &&
+          context.studyStepId === this.studyStepId) this.loadRecords();
+    },
+    recoverRecords() {
+      if (this.recordsStatus !== "ready") this.loadRecords();
+    },
+    loadRecords() {
+      const requestId = ++this.recordsRequestId;
+      clearTimeout(this.recordsTimer);
+      this.recordsLoaded = false;
+      this.recordsStatus = "loading";
+      this.$emit('update:data', null);
+      let attempt = 0;
+      const fetch = () => {
+        if (requestId !== this.recordsRequestId) return;
+        const currentAttempt = ++attempt;
+        let settled = false;
+        const failed = () => {
+          if (settled || requestId !== this.recordsRequestId || currentAttempt !== attempt) return;
+          settled = true;
+          clearTimeout(this.recordsTimer);
+          if (attempt < 3) {
+            this.recordsTimer = setTimeout(fetch, 500 * attempt);
+          } else {
+            ++attempt;
+            this.recordsStatus = "error";
+            this.$emit('update:data', {loadError: true});
+          }
+        };
+        this.recordsTimer = setTimeout(failed, 10000);
+        this.$socket.emit("documentGetData", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId
+        }, (res) => {
+          if (settled || requestId !== this.recordsRequestId || currentAttempt !== attempt) return;
+          if (!res?.success) { failed(); return; }
+          settled = true;
+          clearTimeout(this.recordsTimer);
+          this.recordsLoaded = true;
+          this.recordsStatus = "ready";
+          this.emitStudyData();
+        });
+      };
+      fetch();
+    },
+    /**
+     * Passes the records of the current view on to the study, once they are loaded.
+     */
+    emitStudyData() {
+      if (this.recordsLoaded) {
+        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
+      }
+    },
+    /**
+     * Checks whether a record belongs to the current view. In a study session this matches the
+     * records shown by the sidebar and the PDF highlights.
+     *
+     * @param {Object} record an annotation or comment
+     * @returns {boolean}
+     */
+    isInCurrentView(record) {
+      if (this.studySessionId === null && !this.downloadBeforeStudyClosingAllowed) {
+        return !this.openSessionIds.includes(record.studySessionId);
+      }
+      if (!this.studySessionId) {
+        return record.studySessionId === this.studySessionId;
+      }
+      return (this.showDefaultAllAnnotations && record.studySessionId === null && record.studyStepId === null) ||
+          (record.studySessionId === this.studySessionId && record.studyStepId === this.studyStepId);
+    },
     downloadAnnotations() {
 
       const attributesToDelete = [
-        "draft",
-        "anonymous",
-        "createdAt",
-        "updatedAt",
-        "deleted",
-        "deletedAt",
-        "documentId",
-        "studySessionId",
-        "studyStepId",
-        "userId"
+        "draft", "anonymous", "createdAt", "updatedAt", "deleted", "deletedAt",
+        "documentId", "studySessionId", "studyStepId", "userId"
       ];
-      const annotations = this.annotations
-          .filter(a => a.studySessionId === this.studySessionId)
-          .map(a => {
-            return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-          });
+      const withoutMetadata = record => Object.fromEntries(
+          Object.entries(record).filter(([key]) => !attributesToDelete.includes(key))
+      );
+      const annotations = this.downloadableAnnotations.map(withoutMetadata);
       // change tagId to tagName
       annotations.forEach(a => {
         if (a.tagId) {
@@ -700,9 +735,7 @@ export default {
         }
       });
 
-      const comments = this.comments.map(c => {
-        return Object.fromEntries(Object.entries(c).filter(([key]) => !attributesToDelete.includes(key)));
-      });
+      const comments = this.downloadableComments.map(withoutMetadata);
 
       const content = mergeAnnotationsAndComments(annotations, comments);
 
