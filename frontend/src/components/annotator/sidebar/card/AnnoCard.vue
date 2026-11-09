@@ -5,20 +5,19 @@
       :collapsed="collapsed"
   >
     <template #header>
-      <div 
-        class="row" 
+      <div
+        class="anno-card-head"
         :class="{ 'header-hoverable': collapsed && !editedByMyself }"
-        :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
+        :style="{ cursor: collapsed ? 'pointer' : 'default' }"
         @click="handleHeaderClick"
       >
         <!-- Mouse-only shortcut to open the card; the chevron below is the single keyboard and
              screen-reader control, so buttons are never nested inside each other -->
-        <div class="col" style="display: flex; align-items: center;">
-          <div 
+        <div class="anno-card-who">
+          <div
             v-if="!editedByMyself"
             :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
-            class="card-focusable care-focus-ring"
-            style="display: inline-flex; margin-right: 8px;"
+            class="card-focusable care-focus-ring anno-card-toggle"
             role="button"
             tabindex="0"
             :aria-expanded="!collapsed"
@@ -28,12 +27,12 @@
           >
             <LoadIcon
               :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
-              :size="18"
-              :style="{ cursor: 'pointer' }"
+              :size="14"
               class="check-icon"
             />
           </div>
-          {{ comment.creator_name }}
+          <span class="anno-card-avatar" aria-hidden="true">{{ authorInitial }}</span>
+          <span class="anno-card-name">{{ comment.creator_name }}</span>
           <Collaboration
             ref="collab"
             :target-id="commentId"
@@ -42,12 +41,18 @@
             @collab-status="toEditMode"
           />
         </div>
-        <div class="col text-end">
-          <span v-if="annotation">
-            {{ formatLocalizedDate(annotation.updatedAt) }}
+        <div class="anno-card-date">
+          <span
+            v-if="annotation"
+            :title="fullDate(annotation.updatedAt)"
+          >
+            {{ cardDate(annotation.updatedAt) }}
           </span>
-          <span v-else>
-            {{ formatLocalizedDate(comment.updatedAt) }}
+          <span
+            v-else
+            :title="fullDate(comment.updatedAt)"
+          >
+            {{ cardDate(comment.updatedAt) }}
           </span>
         </div>
       </div>
@@ -97,9 +102,20 @@
           </div>
           <div
               v-else
-              class="row"
+              class="anno-card-bar"
           >
-            <div class="col text-end">
+          <BasicButton
+              v-if="numberReplies > 0"
+              ref="repliesToggle"
+              class="btn btn-sm btn-link"
+              :icon="showReplies ? 'eye-slash' : 'eye'"
+              :aria-expanded="showReplies ? 'true' : 'false'"
+              :text="showReplies ? $t('common.hideReplies') : $t('common.showReplies')"
+              @click="showReplies = !showReplies; maxComments = defaultNumComments"
+          />
+          <CardActions
+              ref="actions"
+          >
               <SidebarButton
                   v-if="settingResponse && !readOnly"
                   :loading="false"
@@ -117,10 +133,11 @@
               <SidebarButton
                   v-if="comment.userId === userId && !readOnly"
                   ref="editButton"
+                  class="anno-action-group-start"
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
-                  :title="$t('common.edit')"
+                  :title="comment.text != null && comment.text.length > 0 ? $t('annotator.card.editComment') : $t('annotator.card.addComment')"
                   @click="edit"
               />
               <SidebarButton
@@ -128,34 +145,19 @@
                 :loading="false"
                 :props="$props"
                 icon="tag"
-                :title="$t('tags.editMainTag')"
+                :title="$t('annotator.card.changeTag')"
                 @click="$refs.annotationTag.toggleEditTag()"
             />
               <SidebarButton
                   v-if="comment.userId === userId && !readOnly"
+                  class="anno-action-danger"
                   :loading="false"
                   :props="$props"
                   icon="trash3"
                   :title="$t('common.delete')"
                   @click="moveFocusToNextCard(); remove()"
               />
-            </div>
-            <!-- Last in the footer, so keyboard users reach it after the actions and can skip the thread -->
-            <div class="col-auto text-end">
-              <BasicButton
-                  v-if="numberReplies > 0"
-                  ref="repliesToggle"
-                  class="btn btn-light btn-sm"
-                  :aria-expanded="showReplies ? 'true' : 'false'"
-                  data-placement="top"
-                  data-toggle="tooltip"
-                  :title="$t('common.reply')"
-                  :text="showReplies
-                    ? $t('common.hideRepliesCount', { count: numberReplies })
-                    : $t('common.showReplies', { count: numberReplies })"
-                  @click="showReplies = !showReplies; maxComments = defaultNumComments"
-              />
-            </div>
+          </CardActions>
           </div>
         </div>
       </template>
@@ -180,11 +182,12 @@ import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, formatLocalizedDate, formatLocalizedDateTime, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 import AnnotationTag from "./AnnotationTag.vue";
 import AnnotationSummarize from "./AnnotationSummarize.vue";
 import AnnotationReplies from "./AnnotationReplies.vue";
+import CardActions from "./CardActions.vue";
 
 /** Annotation elements
  *
@@ -196,7 +199,7 @@ import AnnotationReplies from "./AnnotationReplies.vue";
 export default {
   name: "AnnoCard",
   subscribeTable: ['tag', 'tag_set', 'comment_state'],
-  components: {VoteButtons, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton, AnnotationTag, AnnotationSummarize, AnnotationReplies},
+  components: {VoteButtons, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton, AnnotationTag, AnnotationSummarize, AnnotationReplies, CardActions},
   inject: {
     documentId: {
       type: Number,
@@ -274,6 +277,10 @@ export default {
     comment() {
       return this.$store.getters['table/comment/get'](this.commentId);
     },
+    authorInitial() {
+      const name = (this.comment?.creator_name || "").trim();
+      return name ? name.charAt(0).toUpperCase() : "?";
+    },
   },
   watch: {
     editedByMyself(newVal) {
@@ -281,7 +288,7 @@ export default {
       // Runs before the editor closes: if the keyboard was in this card, land on the Edit button again
       if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
         this.$nextTick(() => {
-          if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+          if (this.$refs.actions) this.$refs.actions.focusTrigger();
         });
       }
     },
@@ -348,6 +355,12 @@ export default {
   },
   methods: {
     formatLocalizedDate,
+    cardDate(value) {
+      return formatLocalizedDate(value, { day: "numeric", month: "short", year: "numeric" });
+    },
+    fullDate(value) {
+      return formatLocalizedDateTime(value);
+    },
     shakeIt() {
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);
@@ -477,69 +490,13 @@ export default {
 }
 </script>
 
-<style>
-.replies {
-  font-size: smaller;
-  color: var(--bs-secondary-color, #929292);
-}
-
-@keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-o-keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-moz-keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-webkit-keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.fading {
-  -webkit-animation: flickerAnimation 2s infinite;
-  -moz-animation: flickerAnimation 2s infinite;
-  -o-animation: flickerAnimation 2s infinite;
-  animation: flickerAnimation 2s infinite;
+<style scoped>
+.card-focusable:focus-visible {
+  border-radius: 4px;
 }
 
 .check-icon:hover {
-  color: var(--care-primary) !important;
+  color: var(--care-primary);
 }
 
 .header-hoverable {
@@ -547,19 +504,62 @@ export default {
 }
 
 .header-hoverable:hover {
-  background-color: var(--bs-secondary-bg, #e9ecef) !important;
+  background-color: var(--bs-secondary-bg);
   border-radius: 4px;
 }
 
-.card-header {
-  font-size: smaller;
-  color: var(--bs-secondary-color, #929292);
-  transition: background-color 0.2s ease;
+.anno-card-head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 }
-</style>
 
-<style scoped>
-.card-focusable:focus-visible {
-  border-radius: 4px;
+.anno-card-who {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.anno-card-toggle {
+  display: inline-flex;
+  flex: none;
+}
+
+.anno-card-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-size: .75rem;
+  font-weight: 600;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+.anno-card-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.anno-card-date {
+  flex: none;
+  font-size: .75rem;
+  color: var(--bs-secondary-color);
+}
+
+.anno-card-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .25rem;
 }
 </style>

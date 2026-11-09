@@ -12,7 +12,22 @@
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
         <div v-if="sidebarConfigs" class="sidebar-header">
-          <ul class="nav nav-tabs flex-grow-1">
+          <h2
+            v-if="isSingleConfig"
+            class="sidebar-section-title"
+          >
+            <LoadIcon
+              v-if="activeSlotConfig && activeSlotConfig.icon"
+              :icon-name="activeSlotConfig.icon"
+              :size="16"
+              color="var(--bs-secondary-color)"
+            />
+            {{ activeSlotConfig && activeSlotConfig.title }}
+          </h2>
+          <ul
+            v-else
+            class="nav nav-tabs"
+          >
             <li
                 v-for="(config, slotName) in sidebarConfigs.tabs"
                 :key="slotName"
@@ -42,13 +57,15 @@
           </ul>
 
           <!-- Right side - action buttons (general + active slot) -->
-          <div class="sidebar-buttons ms-2">
+          <div class="sidebar-buttons ms-auto">
             <template v-if="combinedButtons.length > 0">
               <TopBarButton
                   v-for="button in visibleButtons"
                   :key="button.action"
                   :title="button.title"
                   class="btn btn-sm sidebar-action-button"
+                  :class="{ 'sidebar-nlp-on': button.nlpOn }"
+                  :aria-pressed="button.id === 'toggle-nlp' ? button.nlpOn : undefined"
                   :disabled="button.disabled"
                   @click="handleButtonAction(button.action, button)"
               >
@@ -575,7 +592,7 @@ export default {
 }
 
 #sidepane {
-  background-color: var(--bs-tertiary-bg, #f6f7f9);
+  background-color: var(--bs-body-bg);
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -588,6 +605,10 @@ export default {
 }
 
 /* ===== HEADER SECTION ===== */
+.sidebar-section-title { display: flex; align-items: center; gap: .5rem; margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; color: var(--bs-emphasis-color); }
+.sidebar-nlp-on { background: color-mix(in srgb, var(--care-primary) 14%, transparent); }
+.nav-tabs { flex: 0 0 auto; }
+
 .sidebar-header {
   display: flex;
   align-items: stretch;

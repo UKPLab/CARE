@@ -1,36 +1,34 @@
 <template>
   <div
       v-if="showReplies"
-      class="d-grid gap-1 my-2"
+      class="anno-replies"
   >
-    <span
+    <div
         v-for="c in displayedComments"
         :key="c.id"
+        class="anno-reply"
     >
       <Comment
           :comment-id="c.id"
           :level="1"
       />
-    </span>
-    <div class="btn-group">
+    </div>
+    <div
+      v-if="showExtenderButton || numChildComments > defaultNumComments"
+      class="anno-reply-more"
+    >
       <BasicButton
       v-if="showExtenderButton"
       ref="showMore"
-      class="btn btn-light btn-sm"
+      class="btn btn-sm btn-link"
       :text="$t('common.showMore')"
       @click="$emit('update:maxComments', maxComments + 5)"
       />
       <BasicButton
       v-if="!showExtenderButton && numChildComments > defaultNumComments"
-      class="btn btn-light btn-sm"
+      class="btn btn-sm btn-link"
       :text="$t('common.showLess')"
       @click="showLess"
-      />
-      <BasicButton
-      v-if="numChildComments > 0"
-      class="btn btn-light btn-sm"
-      :text="$t('common.hideReplies')"
-      @click="$emit('update:maxComments', defaultNumComments); $emit('update:showReplies', !showReplies)"
       />
     </div>
 
@@ -116,3 +114,25 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.anno-replies {
+  display: flex;
+  flex-direction: column;
+  gap: .65rem;
+  margin-top: .35rem;
+}
+
+.anno-reply {
+  border: 0;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--care-primary) 8%, transparent);
+  padding: .55rem .7rem;
+}
+
+.anno-reply-more {
+  display: flex;
+  justify-content: flex-end;
+  gap: .35rem;
+}
+</style>

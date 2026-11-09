@@ -38,7 +38,6 @@
                 <AnnotationSidebar
                   ref="sidebar"
                   @new-anno-card="changeSideBarView"
-                  @scroll-to-comment="scrollToComment"
                 />
               </template>
             </SidebarTemplate>
@@ -318,7 +317,8 @@ export default {
           id: 'toggle-nlp',
           icon: 'robot',
           title: this.nlpActive ? this.$t('annotator.deactivateNlpSupport') : this.$t('annotator.activateNlpSupport'),
-          color: this.nlpActive ? 'var(--care-nlp-active)' : 'var(--care-nlp-idle)',
+          color: this.nlpActive ? 'var(--care-nlp-active)' : null,
+          nlpOn: this.nlpActive,
           action: 'toggleNlp'
         });
       }
@@ -440,10 +440,6 @@ export default {
     }
   },
   methods: {
-    scrollToComment(offset) {
-      this.$refs.basicSidebar.scrollTo(offset);
-    },
-
     changeSideBarView() {
       if (this.$refs.basicSidebar) {
         this.$refs.basicSidebar.changeView('annotations');

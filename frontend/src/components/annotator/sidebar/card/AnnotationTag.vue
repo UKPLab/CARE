@@ -3,14 +3,8 @@
     <select
         ref="tagSelect"
         v-model="selectedTag"
-        class="form-select form-select-md"
-        :style="{
-          display: 'inline-block',
-          borderLeft: '4px solid #' + color,
-          height: '38px',
-          fontSize: 'small',
-          fontStyle: 'italic'
-        }"
+        class="form-select form-select-md anno-tag-select"
+        :style="{ borderLeftColor: tagColorCss }"
     >
       <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
         {{ tag.name }}
@@ -26,20 +20,21 @@
   </div>
   <div
       v-else-if="annotationId && !editingTag"
-      :style="'border-color:#' + color"
+      :style="{ '--tag-color': tagColorCss }"
       :title="tagName"
-      class="blockquote card-text annoBlockquote"
+      class="anno-quote"
       data-placement="top"
       data-toogle="tooltip"
       @click="scrollTo(annotationId)"
   >
-    <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
+    <span class="anno-quote-pill">{{ tagName }}</span>
+    <span class="anno-quote-text">{{ truncatedText(annotation.text) }}</span>
   </div>
 </template>
 
 <script>
 import SidebarButton from "./Button.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage, tagColorVar } from "@/assets/utils";
 
 /** Annotation tag view/edit
  *
@@ -123,6 +118,13 @@ export default {
       if (this.annotationId)
         return this.getColor(this.annotation.tagId);
       return null;
+    },
+    tagColorCss() {
+      const tag = this.annotationId && this.annotation
+        ? this.$store.getters['table/tag/get'](this.annotation.tagId)
+        : null;
+      if (tag?.colorCode) return tagColorVar(tag.colorCode);
+      return this.color ? `#${this.color}` : "var(--bs-primary)";
     },
     tagName() {
       if (this.annotationId) {
@@ -245,7 +247,39 @@ export default {
   cursor: pointer;
 }
 
-.annoBlockquote:hover {
-  color: var(--bs-body-color, #000000);
+.anno-quote {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .35rem;
+  padding: .55rem .7rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--tag-color, var(--bs-primary));
+  background: color-mix(in srgb, var(--tag-color, var(--bs-primary)) 16%, transparent);
+  cursor: pointer;
+}
+
+.anno-quote-pill {
+  font-size: .7rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: .12rem .45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tag-color, var(--bs-primary)) 28%, transparent);
+  color: var(--bs-body-color);
+}
+
+.anno-quote-text {
+  font-size: .8125rem;
+  font-style: normal;
+  color: var(--bs-body-color);
+}
+
+.anno-tag-select {
+  height: 38px;
+  border-radius: 8px;
+  border-left-width: 4px;
+  border-left-style: solid;
+  font-size: small;
 }
 </style>

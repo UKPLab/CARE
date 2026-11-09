@@ -19,6 +19,10 @@
     "annotationsViewOnly": "Les annotations sont en lecture seule",
     "card": {
         "markedCheckedClickToUncheck": "Marqué comme vérifié - Cliquez pour annuler",
-        "clickToMarkChecked": "Cliquez pour marquer comme vérifié"
+        "clickToMarkChecked": "Cliquez pour marquer comme vérifié",
+        "editComment": "Modifier le commentaire",
+        "addComment": "Ajouter un commentaire",
+        "changeTag": "Changer l'étiquette",
+        "editReply": "Modifier la réponse"
     }
 }

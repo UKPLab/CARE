@@ -76,7 +76,7 @@
 
     <li v-if="!componentReadOnly" id="addPageNote" role="none">
       <BasicButton
-        class="btn btn-light"
+        class="anno-doc-note"
         icon="plus-lg"
         :text="$t('annotator.documentNote')"
         @click="createDocumentComment"
@@ -90,6 +90,7 @@ import SideCard from "./card/Card.vue";
 import AnnoCard from "./card/AnnoCard.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import { scrollElement } from "@/assets/anchoring/scroll";
 import BasicButton from "@/basic/Button.vue";
 
 /** Sidebar component of the Annotator
@@ -148,7 +149,7 @@ export default {
       default: () => []
     },
   },
-  emits: ['copy', 'add-edit', 'new-anno-card', 'scroll-to-comment'],
+  emits: ['copy', 'add-edit', 'new-anno-card'],
   data() {
     return {
       width: 400,
@@ -289,7 +290,10 @@ export default {
   mounted() {
     this.originalWidth = this.width;
     this.eventBus.on('sidebarScroll', (annotationId) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
+      const wanted = Number(annotationId);
+      const comment = (this.$store.getters["table/comment/getByKey"]("annotationId", wanted) || [])
+        .find(comm => comm.parentCommentId === null)
+        || (this.$store.getters["table/comment/getByKey"]("annotationId", annotationId) || [])
         .find(comm => comm.parentCommentId === null);
       // in case the comment might not be loaded yet
       if (!comment) {
@@ -366,13 +370,28 @@ export default {
       }
     },
     async sidebarScrollTo(commentId) {
-      this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
-
-      //await scrollElement(scrollContainer, document.getElementById('comment-' + commentId).offsetTop - 52.5);
+      const card = document.getElementById('comment-' + commentId);
+      if (!card) return;
+      const scroller = this.scrollParent(card);
+      if (scroller) {
+        const top = card.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+        await scrollElement(scroller, Math.max(0, top - 12));
+      }
 
       if (this.$refs["annocard" + commentId]) {
         this.$refs["annocard" + commentId][0].putFocus();
       }
+    },
+    scrollParent(element) {
+      let node = element.parentElement;
+      while (node) {
+        const overflow = getComputedStyle(node).overflowY;
+        if ((overflow === "auto" || overflow === "scroll") && node.scrollHeight > node.clientHeight) {
+          return node;
+        }
+        node = node.parentElement;
+      }
+      return null;
     },
     createDocumentComment() {
       this.$socket.emit('commentUpdate', {
@@ -411,13 +430,16 @@ export default {
 }
 
 #addPageNote {
-  padding-top: 1rem;
-  text-align: center;
+  padding: .75rem .75rem 0;
 }
 
-#addPageNote .btn {
-  border: none;
-  color: var(--bs-secondary-color, #575757);
+#addPageNote .anno-doc-note {
+  width: 100%;
+  border: 1px dashed color-mix(in srgb, var(--bs-secondary-color) 42%, var(--bs-border-color));
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bs-secondary-color);
+  padding: .55rem .75rem;
 }
 
 .readonly-notice {

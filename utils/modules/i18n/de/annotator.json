@@ -19,6 +19,10 @@
     "annotationsViewOnly": "Annotationen können nur angezeigt werden",
     "card": {
         "markedCheckedClickToUncheck": "Als geprüft markiert - Klicken zum Abwählen",
-        "clickToMarkChecked": "Klicken, um als geprüft zu markieren"
+        "clickToMarkChecked": "Klicken, um als geprüft zu markieren",
+        "editComment": "Kommentar bearbeiten",
+        "addComment": "Kommentar hinzufügen",
+        "changeTag": "Tag ändern",
+        "editReply": "Antwort bearbeiten"
     }
 }

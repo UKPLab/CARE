@@ -19,6 +19,10 @@
     "annotationsViewOnly": "Annotations are view-only",
     "card": {
         "markedCheckedClickToUncheck": "Marked as checked - Click to uncheck",
-        "clickToMarkChecked": "Click to mark as checked"
+        "clickToMarkChecked": "Click to mark as checked",
+        "editComment": "Edit comment",
+        "addComment": "Add comment",
+        "changeTag": "Change tag",
+        "editReply": "Edit reply"
     }
 }

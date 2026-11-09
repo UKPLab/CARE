@@ -1,43 +1,82 @@
 <template>
   <div
     v-if="level >= 1"
-    class="mb-1"
+    class="anno-reply-head"
   >
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col">
-          <LoadIcon
-            :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
-            :size="12"
-            @click="collapseComment = !collapseComment; maxComments = defaultNumComments"
-          />
-
-          {{ comment.creator_name }}
-          <Collaboration
-            ref="collab"
-            :document-id="documentId"
-            :target-id="commentId"
-            target-type="comment"
-            @collab-status="toEditMode"
-          />
-        </div>
-        <div class="col text-end">
-          {{ formatLocalizedDate(comment.updatedAt) }}
-        </div>
+    <div class="anno-reply-who">
+      <div
+        class="card-focusable care-focus-ring anno-card-toggle"
+        role="button"
+        tabindex="0"
+        :aria-expanded="!collapseComment"
+        @click="collapseComment = !collapseComment; maxComments = defaultNumComments"
+        @keydown.enter.exact.prevent="collapseComment = !collapseComment; maxComments = defaultNumComments"
+        @keydown.space.exact.prevent="collapseComment = !collapseComment; maxComments = defaultNumComments"
+      >
+        <LoadIcon
+          :icon-name="(collapseComment) ? 'chevron-right' : 'chevron-down'"
+          :size="14"
+          class="check-icon"
+        />
       </div>
+      <span class="anno-reply-avatar" aria-hidden="true">{{ authorInitial }}</span>
+      <span class="anno-reply-name">{{ comment.creator_name }}</span>
+      <Collaboration
+        ref="collab"
+        :document-id="documentId"
+        :target-id="commentId"
+        target-type="comment"
+        @collab-status="toEditMode"
+      />
     </div>
+    <span
+      class="anno-reply-date"
+      :title="fullDate(comment.updatedAt)"
+    >{{ cardDate(comment.updatedAt) }}</span>
+    <CardActions
+      v-if="!editedByMyself"
+      ref="actions"
+      placement="bottom"
+    >
+      <SidebarButton
+        v-if="settingResponse && !readOnly"
+        :loading="false"
+        :props="$props"
+        icon="reply"
+        :title="$t('common.reply')"
+        @click="reply(); maxComments = numChildComments+1"
+      />
+      <VoteButtons :comment="comment"/>
+      <SidebarButton
+        v-if="comment.userId === userId && !readOnly"
+        ref="editButton"
+        :loading="false"
+        :props="$props"
+        icon="pencil-square"
+        :title="$t('annotator.card.editReply')"
+        @click="editComment"
+      />
+      <SidebarButton
+        v-if="(comment.userId === userId || myBotRequest) && !readOnly"
+        class="anno-action-danger"
+        :loading="false"
+        :props="$props"
+        icon="trash3"
+        :title="$t('common.delete')"
+        @click="moveFocusToNextCard(); remove()"
+      />
+    </CardActions>
   </div>
   <div
     v-if="!collapseComment"
     ref="commentBody"
-    :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
-    class="comment card-text blockquote pb-1"
+    class="comment card-text"
   >
     <div v-if="edit || editedByMyself">
       <textarea
         ref="textarea"
         v-model="comment.text"
-        class="form-control"
+        class="form-control anno-note"
         :placeholder="$t('components.comment.enterText')"
         @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
         @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
@@ -45,10 +84,16 @@
         @paste="onPaste"
       />
     </div>
-    <div v-else-if="comment.text != null && comment.text.length > 0">
+    <div
+      v-else-if="comment.text != null && comment.text.length > 0"
+      :class="{ 'anno-comment-body': level === 0 }"
+    >
       {{ comment.text }}
     </div>
-    <div v-else>
+    <div
+      v-else
+      class="anno-comment-empty"
+    >
       <i>{{ $t('components.comment.noComment')}}</i>
     </div>
     <div
@@ -78,10 +123,11 @@
     <TagSelector
       v-if="comment"
       v-model="comment.tags"
+      class="anno-tags"
       :disabled="!edit"
       :is-editor="comment.userId === userId"
     />
-    <div v-if="level >= 1">
+    <div v-if="level >= 1 && editedByMyself">
       <div class="ms-auto">
         <div
           v-if="editedByMyself"
@@ -107,44 +153,9 @@
             />
           </div>
         </div>
-        <div
-          v-else
-          class="row"
-        >
-          <div
-            class="col text-end"
-          >
-            <SidebarButton
-              v-if="settingResponse && !readOnly"
-              :loading="false"
-              :props="$props"
-              icon="reply"
-              :title="$t('common.reply')"
-              @click="reply(); maxComments = numChildComments+1"
-            />
-            <VoteButtons :comment="comment"/>
-            <SidebarButton
-              v-if="comment.userId === userId && !readOnly"
-              ref="editButton"
-              :loading="false"
-              :props="$props"
-              icon="pencil-square"
-              :title="$t('common.edit')"
-              @click="editComment"
-            />
-            <SidebarButton
-              v-if="(comment.userId === userId || myBotRequest) && !readOnly"
-              :loading="false"
-              :props="$props"
-              icon="trash3"
-              :title="$t('common.delete')"
-              @click="moveFocusToNextCard(); remove()"
-            />
-          </div>
-        </div>
       </div>
     </div>
-    <span v-if="level >= 1">
+    <span v-if="level >= 1 && (displayedComments.length > 0 || showExtenderButton || numChildComments > defaultNumComments)">
       <span
         v-for="c in displayedComments"
         :key="c.id"
@@ -155,25 +166,22 @@
           :level="level + 1"
         />
     </span>
-    <div class="btn-group">
+    <div
+      v-if="showExtenderButton || numChildComments > defaultNumComments"
+      class="anno-reply-more"
+    >
       <BasicButton
         v-if="showExtenderButton"
         ref="showMore"
-        class="btn btn-light btn-sm"
+        class="btn btn-sm btn-link"
         :text="$t('common.showMore')"
         @click="maxComments+=5"
       />
       <BasicButton
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
-        class="btn btn-light btn-sm"
+        class="btn btn-sm btn-link"
         :text="$t('common.showLess')"
         @click="showLess"
-      />
-      <BasicButton
-        v-if="maxComments > defaultNumComments"
-        class="btn btn-light btn-sm"
-        :text="$t('common.hideReplies')"
-        @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
       />
     </div>
     
@@ -188,8 +196,9 @@ import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
-import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, formatLocalizedDate, formatLocalizedDateTime, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
+import CardActions from "./CardActions.vue";
 
 /**
  * Comment card in the sidebar
@@ -200,7 +209,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "CommentCard",
-  components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration, BasicButton},
+  components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration, BasicButton, CardActions},
   inject: {
     documentId: {
       type: Number,
@@ -266,6 +275,10 @@ export default {
     },
     comment() {
       return this.$store.getters["table/comment/get"](this.commentId);
+    },
+    authorInitial() {
+      const name = (this.comment?.creator_name || "").trim();
+      return name ? name.charAt(0).toUpperCase() : "?";
     },
     skills() {
       return this.$store.getters["service/getSkills"]("NLPService");
@@ -365,7 +378,7 @@ export default {
           this.$nextTick(() => {
             // Back to the button that opened the editor; Edit is replaced while editing, so use the new one
             if (opener && opener.isConnected) opener.focus();
-            else if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+            else if (this.$refs.actions) this.$refs.actions.focusTrigger();
           });
         }
       }
@@ -409,6 +422,12 @@ export default {
   },
   methods: {
     formatLocalizedDate,
+    cardDate(value) {
+      return formatLocalizedDate(value, { day: "numeric", month: "short", year: "numeric" });
+    },
+    fullDate(value) {
+      return formatLocalizedDateTime(value);
+    },
     save() {
       if (this.commentId && this.comment) {
         this.$socket.emit('commentUpdate', {
@@ -574,21 +593,81 @@ export default {
 
 <style scoped>
 .comment {
-  color: var(--bs-secondary-color, #666666);
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  margin: 0;
+  color: var(--bs-body-color);
   font-style: normal;
 }
 
-.blockquote {
-  padding-right: 0;
-
+.anno-note {
+  border-radius: 8px;
 }
 
-.blockquoteSub {
-  margin-left: 4px;
+.anno-comment-body {
+  padding: .55rem .7rem;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  background: var(--bs-tertiary-bg);
 }
 
-.blockquoteMain {
-  margin-left: 0
+.anno-comment-empty {
+  color: var(--bs-secondary-color);
+  font-size: .8125rem;
+}
+
+.anno-reply-more {
+  display: flex;
+  gap: .35rem;
+}
+
+.anno-tags {
+  margin: 0;
+}
+
+.anno-reply-head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .5rem;
+}
+
+.anno-reply-who {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.anno-reply-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  font-size: .7rem;
+  font-weight: 600;
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+.anno-reply-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.anno-reply-date {
+  flex: none;
+  font-size: .75rem;
+  color: var(--bs-secondary-color);
 }
 
 </style>

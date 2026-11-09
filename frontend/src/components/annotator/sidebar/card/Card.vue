@@ -12,10 +12,10 @@
         <slot name="header"/>
       </div>
     </div>
-    <div v-if="!collapsed" class="card-body p-1">
+    <div v-if="!collapsed" class="card-body">
       <div
           v-if="!loading"
-          class="d-grid gap-1 my-2"
+          class="anno-card-stack"
       >
         <slot name="body"/>
       </div>
@@ -36,7 +36,7 @@
     </div>
     <div
         v-if="!loading && hasThreadSlot && !collapsed"
-        class="card-body p-1"
+        class="anno-thread"
     >
       <slot name="thread"/>
     </div>
@@ -170,34 +170,57 @@ export default {
 
 .card {
   padding: 12px 14px 10px;
-  border: 0;
   border-radius: 12px;
-  box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / .06), 0 1px 3px rgb(var(--care-shadow-rgb) / .08);
+  font-size: .875rem;
 }
 
 .card-body {
-  font-size: 0.875rem;
   color: var(--bs-body-color);
+}
+
+.card > .card-header,
+.card > .card-body,
+.card > .card-footer {
+  padding: 0;
+  background: transparent;
+  border: 0;
 }
 
 .card-header {
-  font-size: 0.8125rem;
+  font-size: .8125rem;
   color: var(--bs-body-color);
-  background: transparent;
-  border-bottom: 0;
 }
 
-.card-footer {
+.anno-thread {
+  margin-top: .75rem;
+}
+
+.card-header .container-fluid,
+.card-footer .container {
+  width: auto;
+  max-width: none;
+  margin: 0;
   padding: 0;
 }
 
+.anno-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  margin-top: .85rem;
+}
+
+.card-footer {
+  margin-top: .75rem;
+  padding-top: .5rem;
+  border-top: 1px solid var(--bs-border-color-translucent);
+}
+
 #footer-controls {
-  padding: 4px;
+  padding: 0;
 }
 
 #footer-controls .btn {
   border: none;
 }
-
-
 </style>
