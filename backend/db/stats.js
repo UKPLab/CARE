@@ -314,4 +314,177 @@ function stop(logger) {
 	}
 }
 
-module.exports = { start, stop, snapshot };
+/**
+ * Aggregate counters of the current database only. Unlike snapshot() it reads no
+ * query text, client addresses, process ids, user or database names, and does not
+ * look at other databases on the same server.
+ *
+ * @private
+ */
+const CURRENT_DATABASE_HEALTH_QUERY = `
+	WITH activity AS (
+		SELECT pid, state, wait_event_type, query_start, xact_start
+		FROM pg_stat_activity
+		WHERE datname = current_database() AND pid <> pg_backend_pid()
+	), locks AS (
+		SELECT l.mode, l.granted
+		FROM pg_locks l
+		JOIN activity a ON a.pid = l.pid
+	)
+	SELECT
+		(SELECT COUNT(*) FROM activity) AS connections_total,
+		(SELECT COUNT(*) FROM activity WHERE state = 'active') AS connections_active,
+		(SELECT COUNT(*) FROM activity WHERE state = 'idle') AS connections_idle,
+		(SELECT COUNT(*) FROM activity WHERE state LIKE 'idle in transaction%') AS connections_idle_in_transaction,
+		(SELECT COUNT(*) FROM activity WHERE wait_event_type = 'Lock') AS connections_waiting_on_lock,
+		(SELECT COALESCE(ROUND(EXTRACT(EPOCH FROM MAX(now() - query_start)) * 1000), 0) FROM activity WHERE state = 'active') AS longest_active_query_ms,
+		(SELECT COALESCE(ROUND(EXTRACT(EPOCH FROM MAX(now() - xact_start)) * 1000), 0) FROM activity) AS longest_transaction_ms,
+		(SELECT COUNT(*) FROM locks) AS locks_total,
+		(SELECT COUNT(*) FROM locks WHERE NOT granted) AS locks_waiting,
+		(SELECT COALESCE(json_object_agg(mode, n), '{}'::json) FROM (SELECT mode, COUNT(*) AS n FROM locks GROUP BY mode) m) AS locks_by_mode,
+		d.xact_commit, d.xact_rollback, d.blks_hit, d.blks_read, d.deadlocks, d.conflicts, d.temp_files, d.temp_bytes, d.stats_reset
+	FROM pg_stat_database d
+	WHERE d.datname = current_database();`;
+
+const POOL_FIELDS = ['max', 'min', 'size', 'available', 'using', 'waiting'];
+const LOCK_MODE_PATTERN = /^[A-Za-z]{1,40}Lock$/;
+
+/**
+ * @private
+ * @param {*} value Count from PostgreSQL (bigint values arrive as strings)
+ * @returns {number|null}
+ */
+function toCount(value) {
+	const number = Number(value);
+	return value === null || value === undefined || !Number.isFinite(number) ? null : number;
+}
+
+/**
+ * @private
+ * @param {*} pool Output of getSequelizePoolStats for one pool
+ * @returns {Object|null} Numeric pool fields only
+ */
+function numericPool(pool) {
+	if (!pool || typeof pool !== 'object') return null;
+	const out = {};
+	POOL_FIELDS.forEach((field) => {
+		if (Number.isFinite(pool[field])) out[field] = pool[field];
+	});
+	return Object.keys(out).length ? out : null;
+}
+
+/**
+ * Sequelize pool usage with numeric fields only (replication pools are reduced to their first pool).
+ *
+ * @private
+ * @param {import('sequelize').Sequelize} sequelize
+ * @returns {Object|null}
+ */
+function poolUsage(sequelize) {
+	const pool = getSequelizePoolStats(sequelize);
+	if (pool && (pool.read || pool.write)) {
+		const first = (value) => numericPool(Array.isArray(value) ? value[0] : value);
+		return {read: first(pool.read), write: first(pool.write)};
+	}
+	return numericPool(pool);
+}
+
+/**
+ * @private
+ * @param {Object} row Row of CURRENT_DATABASE_HEALTH_QUERY
+ * @returns {Object} Health counters
+ */
+function healthFromRow(row) {
+	const commits = toCount(row.xact_commit);
+	const rollbacks = toCount(row.xact_rollback);
+	const hit = toCount(row.blks_hit);
+	const read = toCount(row.blks_read);
+	const percent = (part, total) => (total > 0 ? Math.round((part / total) * 10000) / 100 : null);
+	const byMode = {};
+	Object.entries(row.locks_by_mode && typeof row.locks_by_mode === 'object' ? row.locks_by_mode : {})
+		.filter(([mode]) => LOCK_MODE_PATTERN.test(mode))
+		.forEach(([mode, count]) => {
+			byMode[mode] = toCount(count);
+		});
+	const statsReset = row.stats_reset ? new Date(row.stats_reset) : null;
+	return {
+		connections: {
+			total: toCount(row.connections_total),
+			active: toCount(row.connections_active),
+			idle: toCount(row.connections_idle),
+			idleInTransaction: toCount(row.connections_idle_in_transaction),
+			waitingOnLock: toCount(row.connections_waiting_on_lock),
+		},
+		longestActiveQueryMs: toCount(row.longest_active_query_ms),
+		longestTransactionMs: toCount(row.longest_transaction_ms),
+		locks: {total: toCount(row.locks_total), waiting: toCount(row.locks_waiting), byMode},
+		transactions: {
+			commits,
+			rollbacks,
+			rollbackPct: commits !== null && rollbacks !== null ? percent(rollbacks, commits + rollbacks) : null,
+		},
+		cache: {
+			blocksHit: hit,
+			blocksRead: read,
+			hitPct: hit !== null && read !== null ? percent(hit, hit + read) : null,
+		},
+		deadlocks: toCount(row.deadlocks),
+		conflicts: toCount(row.conflicts),
+		tempFiles: toCount(row.temp_files),
+		tempBytes: toCount(row.temp_bytes),
+		countersSince: statsReset && !Number.isNaN(statsReset.getTime()) ? statsReset.toISOString() : null,
+	};
+}
+
+/**
+ * Best-effort health snapshot of the current CARE database for problem reports.
+ *
+ * Returns only aggregate numbers (see CURRENT_DATABASE_HEALTH_QUERY) and the
+ * Sequelize pool usage, which is read from memory and is therefore included even
+ * when the database does not answer (an exhausted pool is a typical reason).
+ * The query runs with a statement timeout and the call resolves within
+ * about timeoutMs. Never throws and never returns database error messages.
+ *
+ * @param {import('sequelize').Sequelize} sequelize - Postgres-dialect Sequelize instance
+ * @param {Object} [options]
+ * @param {number} [options.timeoutMs=2000] - Upper bound for the query in ms
+ * @param {object} [options.logger] - Logger for failures (logs the error code only)
+ * @returns {Promise<Object>} { status: "ok"|"unavailable", reason?, capturedAt, pool, ...counters }
+ */
+async function currentDatabaseHealth(sequelize, { timeoutMs = 2000, logger = null } = {}) {
+	const capturedAt = new Date().toISOString();
+	const timeout = Math.max(1, Math.floor(timeoutMs));
+	let timer = null;
+	const query = sequelize.transaction(async (transaction) => {
+		await sequelize.query("SELECT set_config('statement_timeout', :timeout, true)", {
+			replacements: { timeout: String(timeout) },
+			transaction,
+		});
+		const [rows] = await sequelize.query(CURRENT_DATABASE_HEALTH_QUERY, { transaction });
+		return rows && rows[0];
+	});
+	const timedOut = new Promise((resolve) => {
+		timer = setTimeout(() => resolve('timeout'), timeout + 250);
+	});
+	try {
+		const row = await Promise.race([query, timedOut]);
+		if (row === 'timeout') {
+			// The query keeps its own statement timeout; ignore its late result
+			query.catch(() => {});
+			return { status: 'unavailable', reason: 'timeout', capturedAt, pool: poolUsage(sequelize) };
+		}
+		if (!row) {
+			return { status: 'unavailable', reason: 'error', capturedAt, pool: poolUsage(sequelize) };
+		}
+		return { status: 'ok', capturedAt, pool: poolUsage(sequelize), ...healthFromRow(row) };
+	} catch (e) {
+		// '57014' is PostgreSQL's query_canceled (statement timeout)
+		const code = e && (e.original?.code || e.parent?.code || e.code);
+		if (logger) logger.warn(`Database health snapshot failed (code ${typeof code === 'string' ? code.slice(0, 10) : 'unknown'})`);
+		return { status: 'unavailable', reason: code === '57014' ? 'timeout' : 'error', capturedAt, pool: poolUsage(sequelize) };
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
+module.exports = { start, stop, snapshot, currentDatabaseHealth };

@@ -5,10 +5,13 @@ const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const {
     loadReportSettings,
+    normalizeDetails,
     normalizeReport,
     validateAttachments,
     validateClientRequestId,
 } = require("../../utils/helper/problemReport.js");
+const {databaseHealthCache} = require("../../utils/helper/problemReportHealthCache.js");
+const {currentDatabaseHealth} = require("../../db/stats.js");
 
 const ATTACHMENT_PATH = path.join(__dirname, "..", "..", "..", "files", "problem_reports");
 const ATTACHMENT_ID_PATTERN = /^[0-9a-f]{32}$/;
@@ -19,6 +22,12 @@ const MAX_PAGE_SIZE = 100;
  *
  * Reports are private to CARE: every user can submit, only administrators can
  * list reports and download their attachments.
+ *
+ * The form is a single step: when it opens, problemReportPrepare returns the
+ * automatic details (context, diagnostics, activity) exactly as they will be
+ * saved, together with a database health snapshot taken on the server. The
+ * client sends the same snapshot again on submit, and the server saves the
+ * database snapshot it captured for that form.
  *
  * @author Akash Gundapuneni
  * @type {ProblemReportSocket}
@@ -43,25 +52,106 @@ class ProblemReportSocket extends Socket {
     }
 
     /**
-     * Return the report exactly as it would be saved, so the preview matches the stored data.
+     * Effective report settings for the form.
      *
-     * @socketEvent problemReportPreview
-     * @param {Object} data Report payload (see normalizeReport); attachments are not sent here
+     * @socketEvent problemReportConfig
+     * @param {Object} data Unused
      * @param {Object} options Additional configuration parameters
-     * @returns {Promise<Object>} Normalized and sanitized report fields
-     * @throws {TranslatableError} When required fields are missing or invalid, or reports are disabled
+     * @returns {Promise<Object>} See loadReportSettings, plus attachment limits in MB
+     * @throws {TranslatableError} When problem reports are disabled
      */
-    async previewReport(data, options) {
-        return normalizeReport(data, await this.getEnabledReportSettings());
-    }
-
-    async getReportConfig() {
-        const config = await this.getEnabledReportSettings();
+    async getReportConfig(data, options) {
+        // eslint-disable-next-line no-unused-vars
+        const {databaseHealthTimeoutMs, ...config} = await this.getEnabledReportSettings();
         return {
             ...config,
             maxFileSizeMb: config.attachmentsMaxFileBytes / (1024 * 1024),
             maxTotalSizeMb: config.attachmentsMaxTotalBytes / (1024 * 1024),
         };
+    }
+
+    /**
+     * Whether the user currently agrees to usage statistics, read from the database
+     * so a withdrawal applies even before the session copy is refreshed.
+     *
+     * @param {Object} [user] User row, when the caller already loaded it
+     * @returns {Promise<boolean>}
+     */
+    async hasStatsConsent(user) {
+        const row = user === undefined ? await this.models["user"].getById(this.userId) : user;
+        return !!(row && row.acceptStats === true);
+    }
+
+    /**
+     * Capture a database health snapshot of the current CARE database (best effort, bounded by the timeout).
+     *
+     * @param {Object} config Report settings
+     * @returns {Promise<Object>}
+     */
+    async captureDatabaseHealth(config) {
+        return await currentDatabaseHealth(this.server.db.sequelize, {
+            timeoutMs: config.databaseHealthTimeoutMs,
+            logger: this.logger,
+        });
+    }
+
+    /**
+     * Return the automatic details of a report exactly as they will be saved, and
+     * capture the database health snapshot that is saved with this form's report.
+     *
+     * @socketEvent problemReportPrepare
+     * @param {Object} data
+     * @param {string} data.clientRequestId Client-generated id of the opened form
+     * @param {Object} [data.context] Page, capture time, version, build, browser, OS, viewport size
+     * @param {Object[]} [data.diagnostics] Recent diagnostic events
+     * @param {Object[]} [data.activity] Recent activity (kept only with usage statistics consent)
+     * @param {Object} options Additional configuration parameters
+     * @returns {Promise<Object>} Normalized details, databaseHealth (or null when turned off) and
+     *   databaseHealthExpiresInMs: how long the snapshot can still be saved with the report
+     * @throws {TranslatableError} When the form id is invalid or reports are disabled
+     */
+    async prepareDetails(data, options) {
+        const config = await this.getEnabledReportSettings();
+        const clientRequestId = validateClientRequestId(data && data.clientRequestId);
+        const details = normalizeDetails(data, config, {consented: await this.hasStatsConsent()});
+        if (!config.databaseHealthEnabled) {
+            return {...details, databaseHealth: null, databaseHealthExpiresInMs: null};
+        }
+        const cached = await databaseHealthCache.capture(
+            this.userId,
+            clientRequestId,
+            () => this.captureDatabaseHealth(config),
+            config.databaseHealthMaxAgeMinutes * 60 * 1000
+        );
+        return {
+            ...details,
+            databaseHealth: cached.snapshot,
+            databaseHealthExpiresInMs: Math.max(0, cached.expiresAt - Date.now()),
+        };
+    }
+
+    /**
+     * The database snapshot to save with a report: the one shown in this form while it is
+     * still valid, otherwise a new one captured now (its capturedAt says when).
+     *
+     * @param {string} clientRequestId Form id
+     * @param {Object} config Report settings
+     * @returns {Promise<Object|null>} null when database health is turned off
+     */
+    async databaseHealthForSubmit(clientRequestId, config, expectedCapturedAt) {
+        if (!config.databaseHealthEnabled) {
+            return null;
+        }
+        const cached = databaseHealthCache.get(this.userId, clientRequestId);
+        if (expectedCapturedAt !== undefined && (!cached || cached.snapshot.capturedAt !== expectedCapturedAt)) {
+            throw new TranslatableError("errors.problemReport.detailsExpired");
+        }
+        if (cached) return cached.snapshot;
+        const captured = await databaseHealthCache.capture(
+            this.userId, clientRequestId, () => this.captureDatabaseHealth(config),
+            config.databaseHealthMaxAgeMinutes * 60 * 1000
+        );
+        return captured.snapshot;
     }
 
     /**
@@ -76,33 +166,57 @@ class ProblemReportSocket extends Socket {
      * @param {boolean|null} [data.blocked] Whether the user is blocked
      * @param {string|null} [data.frequency] How often the problem happens
      * @param {string} data.description What happened
-     * @param {Object} [data.context] Page, report time, version, build, browser, OS
+     * @param {Object} [data.context] Page, capture time, version, build, browser, OS, viewport size
      * @param {Object[]} [data.diagnostics] Recent diagnostic events
+     * @param {Object[]} [data.activity] Recent activity (kept only with usage statistics consent)
      * @param {{name: string, file: Buffer}[]} [data.attachments] Images or videos
      * @param {Object} options Socket options; this handler owns its database transaction
      * @returns {Promise<{id: number, duplicate: boolean}>}
      * @throws {TranslatableError} On invalid input or when the rate limit is reached
      */
     async submitReport(data, options) {
+        const config = await this.getEnabledReportSettings();
+        const clientRequestId = validateClientRequestId(data && data.clientRequestId);
+        const existing = await this.models["problem_report"].getByClientRequestId(this.userId, clientRequestId);
+        if (existing) {
+            return {id: existing.id, duplicate: true};
+        }
+        // Reject malformed reports before doing any database health queries.
+        normalizeReport(data, config);
+        // Read before the transaction, so a slow database snapshot never holds the user lock
+        const databaseHealth = await this.databaseHealthForSubmit(clientRequestId, config, data.databaseHealthCapturedAt);
         const written = [];
+        let result;
         try {
-            return await this.server.db.sequelize.transaction(async (transaction) => {
-                return await this.saveReport(data, {transaction}, written);
+            result = await this.server.db.sequelize.transaction(async (transaction) => {
+                return await this.saveReport(data, {transaction, config, clientRequestId, databaseHealth}, written);
             });
         } catch (err) {
             written.forEach((file) => fs.rmSync(file, {force: true}));
             throw err;
         }
+        databaseHealthCache.delete(this.userId, clientRequestId);
+        return result;
     }
 
-    /** Persist under the user's row lock; the caller cleans up files if the transaction fails. */
+    /**
+     * Persist under the user's row lock; the caller cleans up files if the transaction fails.
+     *
+     * @param {Object} data Report payload
+     * @param {Object} options
+     * @param {Object} options.transaction Managed transaction
+     * @param {Object} options.config Report settings
+     * @param {string} options.clientRequestId Validated form id
+     * @param {Object|null} options.databaseHealth Server-side database snapshot
+     * @param {string[]} written Collects written attachment paths for cleanup
+     * @returns {Promise<{id: number, duplicate: boolean}>}
+     */
     async saveReport(data, options, written) {
-        const config = await this.getEnabledReportSettings();
-        const clientRequestId = validateClientRequestId(data && data.clientRequestId);
+        const {config, clientRequestId} = options;
         const model = this.models["problem_report"];
 
         // Serialize reports from the same user so retries and rate checks see committed rows.
-        await this.models["user"].findByPk(this.userId, {
+        const user = await this.models["user"].findByPk(this.userId, {
             transaction: options.transaction,
             lock: options.transaction.LOCK.UPDATE,
         });
@@ -117,7 +231,8 @@ class ProblemReportSocket extends Socket {
             throw new TranslatableError("errors.problemReport.rateLimited", {max: config.reportsPerHour});
         }
 
-        const report = normalizeReport(data, config);
+        // Consent comes from the locked user row, so a withdrawal before submit drops the activity
+        const report = normalizeReport(data, config, {consented: await this.hasStatsConsent(user)});
         const attachments = validateAttachments(data.attachments, config);
 
         if (attachments.length > 0) {
@@ -141,6 +256,7 @@ class ProblemReportSocket extends Socket {
             ...report,
             userId: this.userId,
             clientRequestId,
+            databaseHealth: options.databaseHealth,
             attachments: storedAttachments,
         }, {transaction: options.transaction});
 
@@ -205,7 +321,7 @@ class ProblemReportSocket extends Socket {
 
     init() {
         this.createSocket("problemReportConfig", this.getReportConfig, {}, false);
-        this.createSocket("problemReportPreview", this.previewReport, {}, false);
+        this.createSocket("problemReportPrepare", this.prepareDetails, {}, false);
         this.createSocket("problemReportSubmit", this.submitReport, {}, false);
         this.createSocket("problemReportGetAll", this.getAllReports, {}, false);
         this.createSocket("problemReportAttachmentGet", this.getAttachment, {}, false);

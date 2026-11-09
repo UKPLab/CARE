@@ -82,6 +82,36 @@
     "diagnosticsMaxMessageLength": {
       "displayName": "Länge einer Diagnosemeldung (Zeichen)",
       "description": "Maximale Länge einer Diagnosemeldung (höchstens 1000)."
+    },
+    "activity": "Letzte Aktivität",
+    "databaseHealth": "Datenbankzustand",
+    "activityEnabled": {
+      "displayName": "Letzte Aktivität einbeziehen",
+      "description": "Letzte Klicks (Elementtyp und Position), stichprobenartige Mauspositionen, Scrollen, Fensterfokus, Tab-Sichtbarkeit und Seitenwechsel an Berichte anhängen. Nur bei Personen, die der Nutzungsstatistik zugestimmt haben; eingegebener Text, Element-IDs, Klassen und Seiteninhalte werden nie gespeichert."
+    },
+    "activityMaxEntries": {
+      "displayName": "Aktivitätseinträge",
+      "description": "Höchstzahl der mit einem Bericht gespeicherten Aktivitätseinträge (höchstens 500)."
+    },
+    "activityMaxAgeMinutes": {
+      "displayName": "Alter der Aktivität (Minuten)",
+      "description": "Nur Aktivität aus so vielen Minuten vor dem Erfassen der Details wird gespeichert (höchstens 60)."
+    },
+    "activityMouseSampleMs": {
+      "displayName": "Abtastintervall für Maus und Scrollen (ms)",
+      "description": "Pro Intervall wird höchstens eine Mausposition und eine Scrollposition aufgezeichnet (200 bis 60000)."
+    },
+    "databaseHealthEnabled": {
+      "displayName": "Datenbankzustand einbeziehen",
+      "description": "Zusammengefasste Zählerwerte der CARE-Datenbank (Verbindungen, Sperren, Transaktionen, Cache) speichern, die beim Öffnen des Formulars auf dem Server erfasst werden. Abfragetexte, Adressen und andere Datenbanken werden nie gespeichert."
+    },
+    "databaseHealthTimeoutMs": {
+      "displayName": "Zeitlimit für den Datenbankzustand (ms)",
+      "description": "Höchstdauer für die Erfassung des Datenbankzustands (100 bis 5000). Berichte werden auch ohne ihn gespeichert."
+    },
+    "databaseHealthMaxAgeMinutes": {
+      "displayName": "Gültigkeit des Datenbankzustands (Minuten)",
+      "description": "Der im Formular angezeigte Zustand wird gespeichert, wenn der Bericht innerhalb dieser Zeit gesendet wird; sonst werden die Details zuerst aktualisiert (höchstens 240)."
     }
   }
 }

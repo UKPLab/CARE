@@ -4,6 +4,7 @@ const {
     sanitizeText,
     loadReportSettings,
     normalizeReport,
+    normalizeDetails,
     validateAttachments,
     validateClientRequestId,
 } = require("../utils/helper/problemReport.js");
@@ -157,7 +158,7 @@ describe("problem report normalization", () => {
 
     test("an implausible client report time is replaced by server time", async () => {
         const now = new Date();
-        const report = normalizeReport(validReport({context: {reportedAt: "1999-01-01T00:00:00Z"}}), await settingsWith(), now);
+        const report = normalizeReport(validReport({context: {reportedAt: "1999-01-01T00:00:00Z"}}), await settingsWith(), {now});
         expect(report.context.reportedAt).toBe(now.toISOString());
     });
 
@@ -165,6 +166,117 @@ describe("problem report normalization", () => {
         expect(sanitizeText("a\u0000b\nc", 100)).toBe("a b c");
         expect(sanitizeText("x".repeat(10), 5)).toHaveLength(5);
         expect(sanitizeText(42, 5)).toBeNull();
+    });
+});
+
+describe("problem report activity trail", () => {
+    const captured = new Date("2026-11-09T12:00:00Z");
+    const at = (secondsAgo) => new Date(captured.getTime() - secondsAgo * 1000).toISOString();
+    const details = (activity, config, consented = true) => normalizeDetails(
+        {context: {reportedAt: captured.toISOString()}, activity},
+        config,
+        {consented, now: captured}
+    );
+
+    test("activity settings are clamped to the fixed safety caps", async () => {
+        const config = await settingsWith({
+            "activity.maxEntries": "100000",
+            "activity.maxAgeMinutes": "100000",
+            "activity.mouseSampleMs": "1",
+            "databaseHealth.timeoutMs": "999999",
+            "databaseHealth.maxAgeMinutes": "99999",
+        });
+        expect(config.activityMaxEntries).toBe(HARD_LIMITS.activityMaxEntries);
+        expect(config.activityMaxAgeMinutes).toBe(HARD_LIMITS.activityMaxAgeMinutes);
+        expect(config.activityMouseSampleMs).toBe(HARD_LIMITS.activityMinSampleMs);
+        expect(config.databaseHealthTimeoutMs).toBe(HARD_LIMITS.databaseHealthMaxTimeoutMs);
+        expect(config.databaseHealthMaxAgeMinutes).toBe(HARD_LIMITS.databaseHealthMaxAgeMinutes);
+        const defaults = await settingsWith();
+        expect(defaults.activityEnabled).toBe(true);
+        expect(defaults.databaseHealthEnabled).toBe(true);
+    });
+
+    test("activity is dropped without statistics consent or when turned off", async () => {
+        const activity = [{type: "click", time: at(5), x: 1, y: 2}];
+        expect(details(activity, await settingsWith(), false).activity).toEqual({status: "noConsent", entries: []});
+        expect(details(activity, await settingsWith({"activity.enabled": "false"})).activity).toEqual({status: "disabled", entries: []});
+        // Consent cannot be claimed by the client payload
+        expect(normalizeDetails({context: {reportedAt: captured.toISOString()}, activity, consented: true, acceptStats: true},
+            await settingsWith(), {now: captured}).activity.status).toBe("noConsent");
+    });
+
+    test("keeps only structural element metadata and paths without query strings", async () => {
+        const secret = "Private draft text";
+        const {activity} = details([{
+            type: "click",
+            time: at(5),
+            x: 10.6,
+            y: -4,
+            path: "/document/abc?token=secret#frag",
+            text: secret,
+            value: secret,
+            element: {
+                tag: "input",
+                role: "textbox",
+                inputType: "text",
+                id: "user-" + secret,
+                className: secret,
+                name: secret,
+                ancestors: ["form", "div", "Bad Tag", secret],
+            },
+        }, {
+            type: "keydown",
+            time: at(4),
+            key: "a",
+        }, {
+            type: "click",
+            time: at(3),
+            element: {tag: "button", role: secret},
+        }], await settingsWith());
+
+        expect(activity.status).toBe("included");
+        expect(activity.entries).toHaveLength(2);
+        const [first, second] = activity.entries;
+        expect(first).toEqual({
+            type: "click",
+            time: at(5),
+            x: 11,
+            y: 0,
+            path: "/document/abc",
+            element: {tag: "input", role: "textbox", inputType: "text", ancestors: ["form", "div"]},
+        });
+        expect(second.element).toEqual({tag: "button"});
+        expect(JSON.stringify(activity)).not.toContain(secret);
+        expect(JSON.stringify(activity)).not.toContain("token");
+    });
+
+    test("applies the configured count and age, measured from the capture time", async () => {
+        const config = await settingsWith({"activity.maxEntries": "2", "activity.maxAgeMinutes": "1"});
+        const {activity} = details([
+            {type: "mouseMove", time: at(120), x: 1, y: 1},
+            {type: "scroll", time: at(50), scrollX: 0, scrollY: 10},
+            {type: "windowFocus", time: at(40), focused: false},
+            {type: "visibility", time: at(30), hidden: true},
+            {type: "navigation", time: new Date(captured.getTime() + 5000).toISOString(), path: "/later"},
+        ], config);
+        expect(activity.entries.map((entry) => entry.type)).toEqual(["windowFocus", "visibility"]);
+        expect(activity.entries[0].focused).toBe(false);
+        expect(activity.entries[1].hidden).toBe(true);
+    });
+
+    test("details are deterministic, so the shown details equal the saved ones", async () => {
+        const config = await settingsWith();
+        const payload = {
+            context: {page: "/dashboard", reportedAt: at(60), viewportWidth: 1280.4, viewportHeight: "x"},
+            diagnostics: [{type: "navigation", time: at(70), path: "/dashboard?x=1"}],
+            activity: [{type: "click", time: at(65), x: 3, y: 4}],
+        };
+        const shown = normalizeDetails(payload, config, {consented: true, now: captured});
+        const later = new Date(captured.getTime() + 10 * 60 * 1000);
+        const saved = normalizeReport({...payload, problemTypes: ["error"], description: "x"}, config, {consented: true, now: later});
+        expect({context: saved.context, diagnostics: saved.diagnostics, activity: saved.activity}).toEqual(shown);
+        expect(shown.context.viewportWidth).toBe(1280);
+        expect(shown.context.viewportHeight).toBeNull();
     });
 });
 

@@ -49,6 +49,7 @@ import getServerURL from "@/assets/serverUrl";
 import ConsentModal from "@/auth/ConsentModal.vue";
 import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BehaviorLogger from "@/assets/behaviorLogger";
+import { clearActivity, recordActivity } from "@/assets/activityTrail.js";
 import {computed} from "vue";
 import { i18n } from "@/main.js";
 import {
@@ -210,7 +211,15 @@ export default {
     },
     mouseDebounceTime() {
       return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);
-    }
+    },
+    // Recent activity for problem reports; only recorded while the behavior logger runs (statistics consent)
+    activityTrailEnabled() {
+      const getValue = this.$store.getters["settings/getValue"];
+      return getValue("problemReport.enabled") === "true" && getValue("problemReport.activity.enabled") === "true";
+    },
+    activitySampleMs() {
+      return parseInt(this.$store.getters["settings/getValue"]("problemReport.activity.mouseSampleMs"), 10);
+    },
   },
   watch: {
     "$store.state.settings": {
@@ -268,9 +277,18 @@ export default {
     acceptStats(accepted) {
       if (accepted && this.loaded.settings) {
         this.initializeBehaviorLogger();
-      } else if (this.behaviorLogger) {
-        this.behaviorLogger.destroy();
-        this.behaviorLogger = null;
+      } else {
+        // Withdrawn consent also drops the activity already kept for problem reports
+        clearActivity();
+        if (this.behaviorLogger) {
+          this.behaviorLogger.destroy();
+          this.behaviorLogger = null;
+        }
+      }
+    },
+    activityTrailEnabled(enabled) {
+      if (!enabled) {
+        clearActivity();
       }
     },
     // Initialize logger after settings are loaded because we access the settings table
@@ -296,6 +314,7 @@ export default {
     if (this.behaviorLogger) {
       this.behaviorLogger.destroy();
     }
+    clearActivity();
   },
   methods: {
     initTheme() {
@@ -337,6 +356,11 @@ export default {
       if (this.acceptStats && !this.behaviorLogger) {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime, {
           getContext: () => this.statsContext,
+          onActivity: (type, event) => {
+            if (this.activityTrailEnabled) {
+              recordActivity(type, event, this.activitySampleMs);
+            }
+          },
         });
         this.behaviorLogger.init();
         // The $route watcher ran before the logger existed, so log the page the logger starts on

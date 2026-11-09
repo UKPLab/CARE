@@ -574,6 +574,7 @@
     "accessDenied": "Sie haben keine Berechtigung, auf diese Daten zuzugreifen."
   },
   "problemReport": {
+    "detailsExpired": "Die erfassten Details sind abgelaufen. Bitte die aktualisierten Details pr?fen und erneut senden.",
     "problemTypeRequired": "Wählen Sie mindestens eine Problemart aus.",
     "descriptionRequired": "Beschreiben Sie, was passiert ist.",
     "descriptionTooLong": "Die Beschreibung darf höchstens {max} Zeichen lang sein.",

@@ -1,9 +1,11 @@
 /**
  * Validation and sanitization for problem reports (see ProblemReportSocket).
  *
- * The server is the single source of truth for what gets stored: the frontend
- * preview calls normalizeReport() through the problemReportPreview socket, so
- * the preview shows exactly what problemReportSubmit later saves.
+ * The server is the single source of truth for what gets stored: when the report
+ * form opens, the problemReportPrepare socket runs the automatic details through
+ * normalizeDetails(), and problemReportSubmit runs the same, unchanged client
+ * snapshot through normalizeReport(), so the details shown below the form are
+ * exactly what is saved.
  *
  * @author Akash Gundapuneni
  */
@@ -21,6 +23,14 @@ const HARD_LIMITS = {
     diagnosticsMaxEntries: 200,
     diagnosticsMaxMessageLength: 1000,
     diagnosticsMaxAgeMinutes: 24 * 60,
+    activityMaxEntries: 500,
+    activityMaxAgeMinutes: 60,
+    // Mouse and scroll samples are never taken more often than this
+    activityMinSampleMs: 200,
+    activityMaxSampleMs: 60 * 1000,
+    databaseHealthMinTimeoutMs: 100,
+    databaseHealthMaxTimeoutMs: 5000,
+    databaseHealthMaxAgeMinutes: 4 * 60,
     choices: 12,
 };
 
@@ -38,6 +48,13 @@ const DEFAULT_SETTINGS = {
     diagnosticsMaxEntries: 50,
     diagnosticsMaxAgeMinutes: 30,
     diagnosticsMaxMessageLength: 300,
+    activityEnabled: true,
+    activityMaxEntries: 100,
+    activityMaxAgeMinutes: 10,
+    activityMouseSampleMs: 1000,
+    databaseHealthEnabled: true,
+    databaseHealthTimeoutMs: 2000,
+    databaseHealthMaxAgeMinutes: 60,
 };
 
 const ATTACHMENT_NAME_MAX_LENGTH = 120;
@@ -56,6 +73,28 @@ const DIAGNOSTIC_ID_FIELDS = {
 const DIAGNOSTIC_INT_FIELDS = ["line", "column"];
 
 const CONTEXT_TEXT_FIELDS = {routeName: 80, version: 120, build: 40, browser: 80, os: 80};
+const CONTEXT_INT_FIELDS = {viewportWidth: 100000, viewportHeight: 100000};
+
+/**
+ * Recent activity (clicks, sampled mouse positions, scrolling, window focus,
+ * tab visibility, page changes). Only structural metadata is kept: element tag
+ * names, a fixed list of ARIA roles and input types, coordinates and paths.
+ * Ids, classes, names, text, typed values and query strings are never accepted.
+ */
+const ACTIVITY_TYPES = ["click", "mouseMove", "scroll", "windowFocus", "visibility", "navigation"];
+const ACTIVITY_COORDINATE_MAX = 10000000;
+const ELEMENT_TAG_PATTERN = /^[a-z][a-z0-9-]{0,31}$/;
+const ELEMENT_ANCESTORS_MAX = 8;
+const ELEMENT_ROLES = [
+    "button", "link", "menuitem", "menuitemcheckbox", "menuitemradio", "option", "tab", "checkbox", "radio",
+    "switch", "textbox", "combobox", "listbox", "slider", "spinbutton", "dialog", "navigation", "toolbar",
+    "row", "gridcell", "cell", "columnheader", "treeitem", "img", "presentation",
+];
+const ELEMENT_INPUT_TYPES = [
+    "button", "checkbox", "color", "date", "datetime-local", "email", "file", "hidden", "image", "month", "number",
+    "password", "radio", "range", "reset", "search", "submit", "tel", "text", "time", "url", "week",
+];
+const ACTIVITY_STATUS = {included: "included", noConsent: "noConsent", disabled: "disabled"};
 const PAGE_MAX_LENGTH = 300;
 const CLIENT_REQUEST_ID_PATTERN = /^[A-Za-z0-9-]{8,64}$/;
 // Client report time is kept only when it is close to server time
@@ -231,6 +270,122 @@ function sanitizeDiagnostics(diagnostics, config, reportedAt) {
 }
 
 /**
+ * @param {*} value Untrusted number
+ * @param {number} max Upper bound
+ * @returns {number|null} Rounded number within [0, max], or null when invalid
+ */
+function sanitizeInt(value, max) {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        return null;
+    }
+    return Math.min(Math.max(Math.round(value), 0), max);
+}
+
+/**
+ * Keep only structural element metadata: tag names, an allow-listed ARIA role and input type.
+ *
+ * @param {*} element Untrusted element description
+ * @returns {Object|null}
+ */
+function sanitizeElement(element) {
+    if (!element || typeof element !== "object" || typeof element.tag !== "string" || !ELEMENT_TAG_PATTERN.test(element.tag)) {
+        return null;
+    }
+    const result = {tag: element.tag};
+    if (ELEMENT_ROLES.includes(element.role)) {
+        result.role = element.role;
+    }
+    if (result.tag === "input" && ELEMENT_INPUT_TYPES.includes(element.inputType)) {
+        result.inputType = element.inputType;
+    }
+    if (Array.isArray(element.ancestors)) {
+        const ancestors = element.ancestors
+            .slice(0, ELEMENT_ANCESTORS_MAX)
+            .filter((tag) => typeof tag === "string" && ELEMENT_TAG_PATTERN.test(tag));
+        if (ancestors.length > 0) {
+            result.ancestors = ancestors;
+        }
+    }
+    return result;
+}
+
+/**
+ * Keep only the allow-listed fields of one activity event.
+ *
+ * @param {*} entry Untrusted activity entry
+ * @returns {Object|null} Sanitized entry, or null when the type or time is invalid
+ */
+function sanitizeActivityEntry(entry) {
+    if (!entry || typeof entry !== "object" || !ACTIVITY_TYPES.includes(entry.type)) {
+        return null;
+    }
+    const time = sanitizeTime(entry.time);
+    if (!time) {
+        return null;
+    }
+    const result = {type: entry.type, time};
+    for (const field of ["x", "y", "scrollX", "scrollY"]) {
+        const value = sanitizeInt(entry[field], ACTIVITY_COORDINATE_MAX);
+        if (value !== null) {
+            result[field] = value;
+        }
+    }
+    if (entry.type === "click" || entry.type === "scroll") {
+        const element = sanitizeElement(entry.element);
+        if (element) {
+            result.element = element;
+        }
+    }
+    if (entry.type === "windowFocus" && typeof entry.focused === "boolean") {
+        result.focused = entry.focused;
+    }
+    if (entry.type === "visibility" && typeof entry.hidden === "boolean") {
+        result.hidden = entry.hidden;
+    }
+    if (entry.type === "click" || entry.type === "navigation") {
+        const path = sanitizePath(entry.path);
+        if (path) {
+            result.path = path;
+        }
+    }
+    return result;
+}
+
+/**
+ * Sanitize the recent activity trail. Activity is only kept when the feature is
+ * enabled and the user agrees to usage statistics (acceptStats, read on the server).
+ *
+ * @param {*} activity Untrusted activity list
+ * @param {Object} config Report settings (see loadReportSettings)
+ * @param {string} reportedAt ISO time the details were captured; the age limit is measured from it
+ * @param {boolean} consented Whether the user currently agrees to usage statistics
+ * @returns {{status: string, entries: Object[]}}
+ */
+function sanitizeActivity(activity, config, reportedAt, consented) {
+    if (!config.activityEnabled) {
+        return {status: ACTIVITY_STATUS.disabled, entries: []};
+    }
+    if (!consented) {
+        return {status: ACTIVITY_STATUS.noConsent, entries: []};
+    }
+    if (!Array.isArray(activity)) {
+        return {status: ACTIVITY_STATUS.included, entries: []};
+    }
+    const captured = new Date(reportedAt).getTime();
+    const oldest = captured - config.activityMaxAgeMinutes * 60 * 1000;
+    const entries = activity
+        .slice(-HARD_LIMITS.activityMaxEntries)
+        .map(sanitizeActivityEntry)
+        .filter((entry) => {
+            const time = entry && new Date(entry.time).getTime();
+            // Events after the capture time cannot belong to this snapshot
+            return entry && time >= oldest && time <= captured;
+        })
+        .slice(-config.activityMaxEntries);
+    return {status: ACTIVITY_STATUS.included, entries};
+}
+
+/**
  * Sanitize the automatic context (page, report time, version, build, browser, OS).
  *
  * @param {*} context Untrusted context
@@ -242,6 +397,9 @@ function sanitizeContext(context, now = new Date()) {
     const result = {page: sanitizePath(source.page)};
     for (const [field, maxLength] of Object.entries(CONTEXT_TEXT_FIELDS)) {
         result[field] = sanitizeText(source[field], maxLength);
+    }
+    for (const [field, max] of Object.entries(CONTEXT_INT_FIELDS)) {
+        result[field] = sanitizeInt(source[field], max);
     }
     const reportedAt = sanitizeTime(source.reportedAt);
     const withinSkew = reportedAt && Math.abs(new Date(reportedAt).getTime() - now.getTime()) <= MAX_CLOCK_SKEW_MS;
@@ -291,6 +449,17 @@ function parseLimit(value, fallback, max) {
 
 /**
  * @param {*} value Setting value
+ * @param {number} fallback Used when the value is not a positive number
+ * @param {number} min Fixed lower bound
+ * @param {number} max Fixed upper bound
+ * @returns {number}
+ */
+function parseRange(value, fallback, min, max) {
+    return Math.max(parseLimit(value, fallback, max), min);
+}
+
+/**
+ * @param {*} value Setting value
  * @param {boolean} fallback Used when the setting is missing
  * @returns {boolean}
  */
@@ -310,6 +479,8 @@ async function loadReportSettings(getSetting) {
         "enabled", "problemTypes", "askBlocked", "frequencies", "description.maxLength", "reportsPerHour",
         "attachments.allowedTypes", "attachments.maxCount", "attachments.maxFileSizeMb", "attachments.maxTotalSizeMb",
         "diagnostics.maxEntries", "diagnostics.maxAgeMinutes", "diagnostics.maxMessageLength",
+        "activity.enabled", "activity.maxEntries", "activity.maxAgeMinutes", "activity.mouseSampleMs",
+        "databaseHealth.enabled", "databaseHealth.timeoutMs", "databaseHealth.maxAgeMinutes",
     ];
     const raw = {};
     for (const key of keys) {
@@ -340,6 +511,35 @@ async function loadReportSettings(getSetting) {
         diagnosticsMaxEntries: Math.floor(parseLimit(raw["diagnostics.maxEntries"], defaults.diagnosticsMaxEntries, HARD_LIMITS.diagnosticsMaxEntries)),
         diagnosticsMaxAgeMinutes: parseLimit(raw["diagnostics.maxAgeMinutes"], defaults.diagnosticsMaxAgeMinutes, HARD_LIMITS.diagnosticsMaxAgeMinutes),
         diagnosticsMaxMessageLength: Math.floor(parseLimit(raw["diagnostics.maxMessageLength"], defaults.diagnosticsMaxMessageLength, HARD_LIMITS.diagnosticsMaxMessageLength)),
+        activityEnabled: parseFlag(raw["activity.enabled"], defaults.activityEnabled),
+        activityMaxEntries: Math.floor(parseLimit(raw["activity.maxEntries"], defaults.activityMaxEntries, HARD_LIMITS.activityMaxEntries)),
+        activityMaxAgeMinutes: parseLimit(raw["activity.maxAgeMinutes"], defaults.activityMaxAgeMinutes, HARD_LIMITS.activityMaxAgeMinutes),
+        activityMouseSampleMs: Math.floor(parseRange(raw["activity.mouseSampleMs"], defaults.activityMouseSampleMs, HARD_LIMITS.activityMinSampleMs, HARD_LIMITS.activityMaxSampleMs)),
+        databaseHealthEnabled: parseFlag(raw["databaseHealth.enabled"], defaults.databaseHealthEnabled),
+        databaseHealthTimeoutMs: Math.floor(parseRange(raw["databaseHealth.timeoutMs"], defaults.databaseHealthTimeoutMs, HARD_LIMITS.databaseHealthMinTimeoutMs, HARD_LIMITS.databaseHealthMaxTimeoutMs)),
+        databaseHealthMaxAgeMinutes: parseLimit(raw["databaseHealth.maxAgeMinutes"], defaults.databaseHealthMaxAgeMinutes, HARD_LIMITS.databaseHealthMaxAgeMinutes),
+    };
+}
+
+/**
+ * Normalize the automatic details of a report: context, diagnostics and activity.
+ * The result depends only on the client snapshot (ages are measured from its capture
+ * time), so the details shown when the form opens match the details saved on submit.
+ *
+ * @param {Object} data Untrusted payload with context, diagnostics and activity
+ * @param {Object} config Report settings (see loadReportSettings)
+ * @param {Object} options
+ * @param {boolean} options.consented Whether the user currently agrees to usage statistics
+ * @param {Date} [options.now] Server time
+ * @returns {{context: Object, diagnostics: Object[], activity: {status: string, entries: Object[]}}}
+ */
+function normalizeDetails(data, config, {consented = false, now = new Date()} = {}) {
+    const payload = data && typeof data === "object" ? data : {};
+    const context = sanitizeContext(payload.context, now);
+    return {
+        context,
+        diagnostics: sanitizeDiagnostics(payload.diagnostics, config, context.reportedAt),
+        activity: sanitizeActivity(payload.activity, config, context.reportedAt, consented === true),
     };
 }
 
@@ -349,11 +549,13 @@ async function loadReportSettings(getSetting) {
  *
  * @param {Object} data Untrusted report payload
  * @param {Object} config Report settings (see loadReportSettings)
- * @param {Date} [now] Server time
- * @returns {{problemTypes: string[], blocked: boolean|null, frequency: string|null, description: string, context: Object, diagnostics: Object[]}}
+ * @param {Object} options
+ * @param {boolean} options.consented Whether the user currently agrees to usage statistics
+ * @param {Date} [options.now] Server time
+ * @returns {{problemTypes: string[], blocked: boolean|null, frequency: string|null, description: string, context: Object, diagnostics: Object[], activity: Object}}
  * @throws {TranslatableError} When required fields are missing or invalid
  */
-function normalizeReport(data, config, now = new Date()) {
+function normalizeReport(data, config, {consented = false, now = new Date()} = {}) {
     const payload = data && typeof data === "object" ? data : {};
 
     const problemTypes = Array.isArray(payload.problemTypes)
@@ -371,14 +573,12 @@ function normalizeReport(data, config, now = new Date()) {
         throw new TranslatableError("errors.problemReport.descriptionTooLong", {max: config.descriptionMaxLength});
     }
 
-    const context = sanitizeContext(payload.context, now);
     return {
         problemTypes,
         blocked: config.askBlocked && typeof payload.blocked === "boolean" ? payload.blocked : null,
         frequency: config.frequencies.includes(payload.frequency) ? payload.frequency : null,
         description,
-        context,
-        diagnostics: sanitizeDiagnostics(payload.diagnostics, config, context.reportedAt),
+        ...normalizeDetails(payload, config, {consented, now}),
     };
 }
 
@@ -451,7 +651,9 @@ module.exports = {
     sanitizeText,
     sanitizeDiagnostics,
     sanitizeContext,
+    sanitizeActivity,
     loadReportSettings,
+    normalizeDetails,
     normalizeReport,
     validateAttachments,
     validateClientRequestId,

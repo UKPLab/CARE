@@ -33,6 +33,15 @@ const DIAGNOSTIC_TYPE_KEYS = {
     navigation: "problemReport.diagnosticTypes.navigation",
 };
 
+const ACTIVITY_TYPE_KEYS = {
+    click: "problemReport.activityTypes.click",
+    mouseMove: "problemReport.activityTypes.mouseMove",
+    scroll: "problemReport.activityTypes.scroll",
+    windowFocus: "problemReport.activityTypes.windowFocus",
+    visibility: "problemReport.activityTypes.visibility",
+    navigation: "problemReport.activityTypes.navigation",
+};
+
 /**
  * Translated label for a configured choice value.
  *
@@ -53,6 +62,60 @@ export function choiceLabel(t, kind, value) {
  */
 export function diagnosticTypeLabel(t, type) {
     return DIAGNOSTIC_TYPE_KEYS[type] ? t(DIAGNOSTIC_TYPE_KEYS[type]) : type;
+}
+
+/**
+ * @param {Function} t vue-i18n translate function
+ * @param {string} type Activity event type
+ * @returns {string}
+ */
+export function activityTypeLabel(t, type) {
+    return ACTIVITY_TYPE_KEYS[type] ? t(ACTIVITY_TYPE_KEYS[type]) : type;
+}
+
+/**
+ * One-line description of a stored activity entry (structural metadata only).
+ *
+ * @param {Function} t vue-i18n translate function
+ * @param {Object} entry Sanitized activity entry
+ * @returns {string}
+ */
+export function describeActivity(t, entry) {
+    const parts = [];
+    if (entry.element) {
+        const element = entry.element;
+        let text = element.tag;
+        if (element.role) text += ` role=${element.role}`;
+        if (element.inputType) text += ` type=${element.inputType}`;
+        if (element.ancestors && element.ancestors.length > 0) text += ` (in ${element.ancestors.join(" › ")})`;
+        parts.push(text);
+    }
+    if (entry.x !== undefined && entry.y !== undefined) parts.push(`x ${entry.x}, y ${entry.y}`);
+    if (entry.scrollX !== undefined || entry.scrollY !== undefined) {
+        parts.push(t("problemReport.activity.scrollPosition", { x: entry.scrollX ?? 0, y: entry.scrollY ?? 0 }));
+    }
+    if (entry.focused !== undefined) parts.push(t(entry.focused ? "problemReport.activity.focused" : "problemReport.activity.blurred"));
+    if (entry.hidden !== undefined) parts.push(t(entry.hidden ? "problemReport.activity.hidden" : "problemReport.activity.visible"));
+    if (entry.path) parts.push(entry.path);
+    return parts.join(" · ");
+}
+
+/**
+ * The user's answers as the backend saves them (trimmed description, configured choices only).
+ * Used to show the answers below the form while the user types.
+ *
+ * @param {Object} form {problemTypes, blocked, frequency}
+ * @param {string} description Description text
+ * @param {Object} settings Effective report settings
+ * @returns {{problemTypes: string[], blocked: boolean|null, frequency: string|null, description: string}}
+ */
+export function normalizeAnswers(form, description, settings) {
+    return {
+        problemTypes: settings.problemTypes.filter((type) => (form.problemTypes || []).includes(type)),
+        blocked: settings.askBlocked && typeof form.blocked === "boolean" ? form.blocked : null,
+        frequency: settings.frequencies.includes(form.frequency) ? form.frequency : null,
+        description: typeof description === "string" ? description.trim() : "",
+    };
 }
 
 /**
@@ -97,6 +160,9 @@ export function readReportSettings(getValue) {
         attachmentsMaxTotalBytes: maxTotalSizeMb ? maxTotalSizeMb * mb : null,
         maxFileSizeMb,
         maxTotalSizeMb,
+        activityEnabled: String(getValue("problemReport.activity.enabled")) === "true",
+        activityMaxEntries: parsePositive(getValue("problemReport.activity.maxEntries")),
+        activityMaxAgeMinutes: parsePositive(getValue("problemReport.activity.maxAgeMinutes")),
     };
 }
 
@@ -132,7 +198,7 @@ export function describeUserAgent(userAgent) {
 }
 
 /**
- * Automatic report context: page, report time, CARE version/build, browser and OS.
+ * Automatic report context: page, capture time, CARE version/build, browser, OS and viewport size.
  *
  * @param {Object} route Current vue-router route
  * @returns {Object}
@@ -144,6 +210,8 @@ export function buildReportContext(route) {
         reportedAt: new Date().toISOString(),
         version: typeof APP_VERSION !== "undefined" ? APP_VERSION : null,
         build: import.meta.env.MODE,
+        viewportWidth: window.innerWidth,
+        viewportHeight: window.innerHeight,
         ...describeUserAgent(navigator.userAgent),
     };
 }

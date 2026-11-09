@@ -83,6 +83,8 @@ module.exports = (sequelize, DataTypes) => {
         description: DataTypes.TEXT,
         context: DataTypes.JSONB,
         diagnostics: DataTypes.JSONB,
+        activity: DataTypes.JSONB,
+        databaseHealth: DataTypes.JSONB,
         attachments: DataTypes.JSONB,
         deleted: DataTypes.BOOLEAN,
         deletedAt: DataTypes.DATE,

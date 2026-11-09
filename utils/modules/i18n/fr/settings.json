@@ -82,6 +82,36 @@
         "diagnosticsMaxMessageLength": {
             "displayName": "Longueur d'un message de diagnostic (caractères)",
             "description": "Longueur maximale d'un message de diagnostic (1000 au maximum)."
+        },
+        "activity": "Activité récente",
+        "databaseHealth": "État de la base de données",
+        "activityEnabled": {
+            "displayName": "Inclure l’activité récente",
+            "description": "Joindre aux signalements les clics récents (type d’élément et position), des positions de souris échantillonnées, le défilement, le focus de la fenêtre, la visibilité de l’onglet et les changements de page. Uniquement pour les personnes ayant accepté les statistiques d’utilisation ; le texte saisi, les identifiants et classes d’éléments et le contenu des pages ne sont jamais inclus."
+        },
+        "activityMaxEntries": {
+            "displayName": "Entrées d’activité",
+            "description": "Nombre maximal d’entrées d’activité enregistrées avec un signalement (500 au maximum)."
+        },
+        "activityMaxAgeMinutes": {
+            "displayName": "Ancienneté de l’activité (minutes)",
+            "description": "Seule l’activité des minutes précédant la collecte des détails est enregistrée (60 au maximum)."
+        },
+        "activityMouseSampleMs": {
+            "displayName": "Échantillonnage souris et défilement (ms)",
+            "description": "Au plus une position de souris et une position de défilement sont enregistrées par intervalle (200 à 60000)."
+        },
+        "databaseHealthEnabled": {
+            "displayName": "Inclure l’état de la base de données",
+            "description": "Enregistrer des compteurs agrégés de la base de données CARE (connexions, verrous, transactions, cache), recueillis sur le serveur à l’ouverture du formulaire. Les textes de requête, adresses et autres bases de données ne sont jamais inclus."
+        },
+        "databaseHealthTimeoutMs": {
+            "displayName": "Délai pour l’état de la base de données (ms)",
+            "description": "Durée maximale de la collecte de l’état de la base de données (100 à 5000). Les signalements sont enregistrés même s’il n’est pas disponible."
+        },
+        "databaseHealthMaxAgeMinutes": {
+            "displayName": "Validité de l’état de la base de données (minutes)",
+            "description": "L’état affiché dans le formulaire est enregistré si le signalement est envoyé dans ce délai ; sinon, les détails sont d’abord actualisés (240 au maximum)."
         }
     }
 }

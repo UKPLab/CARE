@@ -82,6 +82,36 @@
     "diagnosticsMaxMessageLength": {
       "displayName": "Diagnostic message length (characters)",
       "description": "Maximum length of one diagnostic log message (at most 1000)."
+    },
+    "activity": "Recent activity",
+    "databaseHealth": "Database health",
+    "activityEnabled": {
+      "displayName": "Include recent activity",
+      "description": "Attach recent clicks (element type and position), sampled mouse positions, scrolling, window focus, tab visibility and page changes to reports. Only for users who agreed to usage statistics; typed text, element ids, classes and page contents are never included."
+    },
+    "activityMaxEntries": {
+      "displayName": "Activity entries",
+      "description": "Maximum number of recent activity entries saved with a report (at most 500)."
+    },
+    "activityMaxAgeMinutes": {
+      "displayName": "Activity age (minutes)",
+      "description": "Only activity from this many minutes before the details are captured is saved (at most 60)."
+    },
+    "activityMouseSampleMs": {
+      "displayName": "Mouse and scroll sampling (ms)",
+      "description": "At most one mouse position and one scroll position are recorded per interval (200 to 60000)."
+    },
+    "databaseHealthEnabled": {
+      "displayName": "Include database health",
+      "description": "Save aggregate counters of the CARE database (connections, locks, transactions, cache), captured on the server when the report form opens. Query texts, addresses and other databases are never included."
+    },
+    "databaseHealthTimeoutMs": {
+      "displayName": "Database health timeout (ms)",
+      "description": "Maximum time for the database health snapshot (100 to 5000). Reports are still saved when it is not available."
+    },
+    "databaseHealthMaxAgeMinutes": {
+      "displayName": "Database health validity (minutes)",
+      "description": "The snapshot shown in the form is saved when the report is submitted within this time; otherwise the details are refreshed first (at most 240)."
     }
   }
 }

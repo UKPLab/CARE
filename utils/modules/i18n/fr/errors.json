@@ -574,6 +574,7 @@
         "accessDenied": "Vous n'avez pas les droits nécessaires pour accéder à ces données."
     },
     "problemReport": {
+    "detailsExpired": "Les informations collect?es ont expir?. V?rifiez les informations actualis?es et envoyez ? nouveau.",
         "problemTypeRequired": "Sélectionnez au moins un type de problème.",
         "descriptionRequired": "Décrivez ce qui s'est passé.",
         "descriptionTooLong": "La description peut contenir au maximum {max} caractères.",

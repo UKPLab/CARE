@@ -1,7 +1,6 @@
 {
     "button": "Signaler un problème",
     "title": "Signaler un problème",
-    "previewTitle": "Vérifier votre signalement",
     "form": {
         "problemType": "De quel type de problème s'agit-il ?",
         "blocked": "Êtes-vous bloqué pour continuer ?",
@@ -47,7 +46,7 @@
         "notAnswered": "Sans réponse",
         "unknown": "Inconnu",
         "page": "Page",
-        "reportedAt": "Heure du signalement",
+        "reportedAt": "Détails recueillis",
         "version": "Version de CARE",
         "build": "Build",
         "browser": "Navigateur",
@@ -55,7 +54,11 @@
         "diagnostics": "Journaux de diagnostic récents ({count})",
         "noDiagnostics": "Aucun journal de diagnostic n'a été enregistré. Le signalement peut tout de même être envoyé.",
         "technical": "Détails techniques",
-        "diagnosticEntry": "{time} · {type}"
+        "submittedAt": "Envoyé",
+        "viewport": "Taille de la fenêtre",
+        "activity": "Activité récente ({count})",
+        "databaseHealth": "État de la base de données CARE",
+        "entry": "{time} · {type}"
     },
     "visibility": {
         "label": "Qui peut voir ce signalement :",
@@ -63,19 +66,21 @@
     },
     "notice": {
         "label": "Ce que nous enregistrons :",
-        "text": "Votre description, les options sélectionnées, les pièces jointes, la page actuelle, l'heure du signalement, la version de CARE, le navigateur, le système d'exploitation et les journaux de diagnostic récents, liés à votre compte. Les mots de passe, jetons, cookies et contenus de documents sont exclus."
+        "text": "Votre description, les options choisies, les pièces jointes, la page actuelle, l’heure de collecte des détails, la version de CARE, le navigateur, le système d’exploitation, la taille de la fenêtre et les journaux de diagnostic récents, liés à votre compte.",
+        "activity": "Comme vous avez accepté les statistiques d’utilisation, votre activité récente dans CARE est incluse : clics (type d’élément et position), positions de souris échantillonnées, défilement, focus de la fenêtre, visibilité de l’onglet et changements de page.",
+        "noActivity": "Votre activité récente (clics, mouvements de souris) n’est pas incluse, car vous n’avez pas accepté les statistiques d’utilisation.",
+        "databaseHealth": "CARE enregistre aussi des compteurs agrégés sur l’état de sa base de données (connexions, verrous, transactions, cache), mesurés sur le serveur.",
+        "excluded": "Le texte saisi, le contenu des pages et des documents, les mots de passe, jetons, cookies et paramètres de requête ne sont jamais inclus."
     },
     "actions": {
-        "preview": "Aperçu de l'envoi",
-        "edit": "Modifier",
         "submit": "Envoyer le signalement"
     },
     "messages": {
-        "previewFailed": "Aperçu indisponible",
         "submitFailed": "Signalement non envoyé",
         "timeout": "Le serveur n'a pas répondu. Votre signalement est toujours là ; veuillez réessayer.",
         "submitted": "Signalement envoyé",
-        "submittedText": "Merci. Le signalement n°{id} a été envoyé aux administrateurs de CARE."
+        "submittedText": "Merci. Le signalement n°{id} a été envoyé aux administrateurs de CARE.",
+        "loadFailed": "Formulaire de signalement indisponible"
     },
     "admin": {
         "title": "Signalements de problème",
@@ -92,5 +97,62 @@
         "loadFailed": "Signalements non chargés",
         "attachmentFailed": "Pièce jointe non chargée",
         "downloadFor": "Télécharger {name}"
+    },
+    "details": {
+        "title": "Détails envoyés avec ce signalement",
+        "refresh": "Actualiser",
+        "refreshTitle": "Recueillir à nouveau les détails automatiques",
+        "loading": "Collecte des détails automatiques…",
+        "loadingShort": "Collecte…",
+        "unavailable": "Les détails automatiques n’ont pas pu être chargés. Vous pouvez tout de même envoyer ; ils seront alors recueillis au moment de l’envoi.",
+        "collectedOnSubmit": "Recueilli lors de l’envoi",
+        "capturedAt": "Recueillis le {time}, à l’ouverture ou à la dernière actualisation de ce formulaire. Vos réponses s’affichent ici pendant la saisie. C’est exactement ce qui sera enregistré.",
+        "expired": "Ces détails ont été recueillis il y a trop longtemps et ont été actualisés. Vérifiez-les puis envoyez à nouveau."
+    },
+    "activityTypes": {
+        "click": "Clic",
+        "mouseMove": "Position de la souris",
+        "scroll": "Défilement",
+        "windowFocus": "Focus de la fenêtre",
+        "visibility": "Visibilité de l’onglet",
+        "navigation": "Changement de page"
+    },
+    "activity": {
+        "scrollPosition": "défilé jusqu’à {x}, {y}",
+        "focused": "fenêtre active",
+        "blurred": "fenêtre quittée",
+        "hidden": "onglet masqué",
+        "visible": "onglet visible",
+        "noConsent": "Non inclus : vous n’avez pas accepté les statistiques d’utilisation. Vous pouvez modifier cela dans vos préférences.",
+        "disabled": "Non inclus : la collecte de l’activité est désactivée.",
+        "none": "Aucune activité n’a été enregistrée peu avant la collecte des détails.",
+        "notCollected": "Non recueilli pour ce signalement."
+    },
+    "databaseHealth": {
+        "capturedAt": "Recueilli",
+        "status": "Statut",
+        "ok": "Disponible",
+        "timeout": "Non disponible (délai dépassé)",
+        "unavailable": "Non disponible",
+        "pool": "Pool de connexions du serveur CARE",
+        "poolValue": "{using} utilisées, {available} libres, {size} ouvertes sur {max}, {waiting} en attente",
+        "connections": "Connexions à la base de données CARE",
+        "connectionsValue": "{total} au total, {active} actives, {idle} inactives, {idleInTransaction} inactives dans une transaction, {waitingOnLock} en attente d’un verrou",
+        "longestQuery": "Requête en cours la plus longue",
+        "longestTransaction": "Transaction ouverte la plus longue",
+        "milliseconds": "{ms} ms",
+        "locks": "Verrous",
+        "locksValue": "{total} détenus, {waiting} en attente",
+        "lockModes": "Verrous par mode",
+        "transactions": "Transactions",
+        "transactionsValue": "{commits} validées, {rollbacks} annulées ({rollbackPct} %)",
+        "cache": "Cache",
+        "cacheValue": "{hitPct} % de succès ({hits} succès, {reads} lectures disque)",
+        "problems": "Interblocages, conflits, fichiers temporaires",
+        "problemsValue": "{deadlocks} interblocages, {conflicts} conflits, {tempFiles} fichiers temporaires ({tempBytes} octets)",
+        "countersSince": "Compteurs depuis",
+        "countersSinceUnknown": "Début des statistiques de la base de données",
+        "disabled": "Non inclus : la collecte de l’état de la base de données est désactivée.",
+        "notCollected": "Non recueilli pour ce signalement."
     }
 }

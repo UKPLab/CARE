@@ -574,6 +574,7 @@
         "accessDenied": "You do not have rights to access this data."
     },
     "problemReport": {
+    "detailsExpired": "The collected details have expired. Review the refreshed details and submit again.",
         "problemTypeRequired": "Select at least one problem type.",
         "descriptionRequired": "Describe what happened.",
         "descriptionTooLong": "The description can have at most {max} characters.",

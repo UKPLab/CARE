@@ -16,6 +16,7 @@
       <ReportSummary
         :report="report"
         :attachments="attachments"
+        :submitted-at="report.createdAt ? String(report.createdAt) : ''"
       >
         <template #attachment-actions="{ attachment }">
           <BasicButton

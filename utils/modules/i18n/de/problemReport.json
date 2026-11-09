@@ -1,7 +1,6 @@
 {
     "button": "Problem melden",
     "title": "Problem melden",
-    "previewTitle": "Bericht überprüfen",
     "form": {
         "problemType": "Um welche Art von Problem handelt es sich?",
         "blocked": "Können Sie nicht weiterarbeiten?",
@@ -47,7 +46,7 @@
         "notAnswered": "Nicht beantwortet",
         "unknown": "Unbekannt",
         "page": "Seite",
-        "reportedAt": "Zeitpunkt des Berichts",
+        "reportedAt": "Details erfasst",
         "version": "CARE-Version",
         "build": "Build",
         "browser": "Browser",
@@ -55,7 +54,11 @@
         "diagnostics": "Aktuelle Diagnoseprotokolle ({count})",
         "noDiagnostics": "Es wurden keine Diagnoseprotokolle aufgezeichnet. Der Bericht kann trotzdem gesendet werden.",
         "technical": "Technische Details",
-        "diagnosticEntry": "{time} · {type}"
+        "submittedAt": "Gesendet",
+        "viewport": "Fenstergröße",
+        "activity": "Letzte Aktivität ({count})",
+        "databaseHealth": "Zustand der CARE-Datenbank",
+        "entry": "{time} · {type}"
     },
     "visibility": {
         "label": "Wer diesen Bericht sehen kann:",
@@ -63,19 +66,21 @@
     },
     "notice": {
         "label": "Was wir speichern:",
-        "text": "Ihre Beschreibung, die ausgewählten Optionen, Anhänge, die aktuelle Seite, den Zeitpunkt des Berichts, die CARE-Version, den Browser, das Betriebssystem und aktuelle Diagnoseprotokolle, verknüpft mit Ihrem Konto. Passwörter, Tokens, Cookies und Dokumentinhalte werden nicht gespeichert."
+        "text": "Ihre Beschreibung, die gewählten Optionen, Anhänge, die aktuelle Seite, der Zeitpunkt der Erfassung, CARE-Version, Browser, Betriebssystem, Fenstergröße und die letzten Diagnoseprotokolle, verknüpft mit Ihrem Konto.",
+        "activity": "Da Sie der Nutzungsstatistik zugestimmt haben, ist Ihre letzte Aktivität in CARE enthalten: Klicks (Elementtyp und Position), stichprobenartige Mauspositionen, Scrollen, Fensterfokus, Tab-Sichtbarkeit und Seitenwechsel.",
+        "noActivity": "Ihre letzte Aktivität (Klicks, Mausbewegungen) ist nicht enthalten, da Sie der Nutzungsstatistik nicht zugestimmt haben.",
+        "databaseHealth": "CARE speichert außerdem zusammengefasste Zustandswerte seiner Datenbank (Verbindungen, Sperren, Transaktionen, Cache), die auf dem Server gemessen werden.",
+        "excluded": "Eingegebener Text, Seiten- und Dokumentinhalte, Passwörter, Tokens, Cookies und Abfrageparameter werden nie gespeichert."
     },
     "actions": {
-        "preview": "Vorschau anzeigen",
-        "edit": "Bearbeiten",
         "submit": "Bericht senden"
     },
     "messages": {
-        "previewFailed": "Vorschau nicht verfügbar",
         "submitFailed": "Bericht nicht gesendet",
         "timeout": "Der Server hat nicht geantwortet. Ihr Bericht ist noch da; bitte versuchen Sie es erneut.",
         "submitted": "Bericht gesendet",
-        "submittedText": "Vielen Dank. Bericht #{id} wurde an die CARE-Administratoren gesendet."
+        "submittedText": "Vielen Dank. Bericht #{id} wurde an die CARE-Administratoren gesendet.",
+        "loadFailed": "Berichtsformular nicht verfügbar"
     },
     "admin": {
         "title": "Problemberichte",
@@ -92,5 +97,62 @@
         "loadFailed": "Berichte nicht geladen",
         "attachmentFailed": "Anhang nicht geladen",
         "downloadFor": "{name} herunterladen"
+    },
+    "details": {
+        "title": "Mit diesem Bericht gesendete Details",
+        "refresh": "Aktualisieren",
+        "refreshTitle": "Automatische Details neu erfassen",
+        "loading": "Automatische Details werden erfasst…",
+        "loadingShort": "Wird erfasst…",
+        "unavailable": "Die automatischen Details konnten nicht geladen werden. Sie können trotzdem senden; sie werden dann beim Senden erfasst.",
+        "collectedOnSubmit": "Wird beim Senden erfasst",
+        "capturedAt": "Erfasst am {time}, beim Öffnen oder letzten Aktualisieren dieses Formulars. Ihre Antworten erscheinen hier während der Eingabe. Genau das wird gespeichert.",
+        "expired": "Diese Details wurden vor zu langer Zeit erfasst und wurden aktualisiert. Bitte prüfen Sie sie und senden Sie erneut."
+    },
+    "activityTypes": {
+        "click": "Klick",
+        "mouseMove": "Mausposition",
+        "scroll": "Scrollen",
+        "windowFocus": "Fensterfokus",
+        "visibility": "Tab-Sichtbarkeit",
+        "navigation": "Seitenwechsel"
+    },
+    "activity": {
+        "scrollPosition": "gescrollt zu {x}, {y}",
+        "focused": "Fenster aktiv",
+        "blurred": "Fenster verlassen",
+        "hidden": "Tab ausgeblendet",
+        "visible": "Tab sichtbar",
+        "noConsent": "Nicht enthalten: Sie haben der Nutzungsstatistik nicht zugestimmt. Sie können das in Ihren Einstellungen ändern.",
+        "disabled": "Nicht enthalten: Die Aktivitätserfassung ist ausgeschaltet.",
+        "none": "Kurz vor dem Erfassen der Details wurde keine Aktivität aufgezeichnet.",
+        "notCollected": "Für diesen Bericht nicht erfasst."
+    },
+    "databaseHealth": {
+        "capturedAt": "Erfasst",
+        "status": "Status",
+        "ok": "Verfügbar",
+        "timeout": "Nicht verfügbar (Zeitüberschreitung)",
+        "unavailable": "Nicht verfügbar",
+        "pool": "Verbindungspool des CARE-Servers",
+        "poolValue": "{using} in Benutzung, {available} frei, {size} offen von {max}, {waiting} wartend",
+        "connections": "Verbindungen zur CARE-Datenbank",
+        "connectionsValue": "{total} insgesamt, {active} aktiv, {idle} untätig, {idleInTransaction} untätig in einer Transaktion, {waitingOnLock} warten auf eine Sperre",
+        "longestQuery": "Längste laufende Abfrage",
+        "longestTransaction": "Längste offene Transaktion",
+        "milliseconds": "{ms} ms",
+        "locks": "Sperren",
+        "locksValue": "{total} gehalten, {waiting} wartend",
+        "lockModes": "Sperren nach Modus",
+        "transactions": "Transaktionen",
+        "transactionsValue": "{commits} bestätigt, {rollbacks} zurückgesetzt ({rollbackPct} %)",
+        "cache": "Cache",
+        "cacheValue": "{hitPct} % Trefferquote ({hits} Treffer, {reads} Lesezugriffe auf die Festplatte)",
+        "problems": "Deadlocks, Konflikte, temporäre Dateien",
+        "problemsValue": "{deadlocks} Deadlocks, {conflicts} Konflikte, {tempFiles} temporäre Dateien ({tempBytes} Bytes)",
+        "countersSince": "Zähler seit",
+        "countersSinceUnknown": "Beginn der Datenbankstatistik",
+        "disabled": "Nicht enthalten: Die Erfassung des Datenbankzustands ist ausgeschaltet.",
+        "notCollected": "Für diesen Bericht nicht erfasst."
     }
 }

@@ -7,6 +7,8 @@
  * - Route changes
  * - Specific key down events (currently only cmd/ctrl + f to detect search start)
  * - Window focus and blur events (time spent outside the window, and search end)
+ * Optionally (options.onActivity) the same events, plus sampled scrolling, are passed to a local
+ * callback, which feeds the recent activity trail of problem reports (see activityTrail.js).
  * @author: Timo Imhof
  */
 
@@ -21,6 +23,8 @@ import debounce from "lodash.debounce";
  * @param {Object} options - Configuration options for the logger. Currently only contains a debounce time.
  * @param {Array} [options.clickAllowList=[]] - A list of objects that should be logged when clicked.
  * @param {Function} [options.getContext] - Returns the current study context (e.g. studySessionId), added to every event.
+ * @param {Function} [options.onActivity] - Called locally with (type, eventOrData) for clicks, mouse moves, scrolling,
+ *   window focus, tab visibility and page changes. Nothing is sent to the backend through it.
  */
 class BehaviorLogger {
     constructor(socket, mouseDebounceTime, options = {}) {
@@ -29,6 +33,7 @@ class BehaviorLogger {
         this.options = {
             clickAllowList: [],
             getContext: () => ({}),
+            onActivity: null,
             ...options
         };
 
@@ -50,6 +55,21 @@ class BehaviorLogger {
         this.handleKeyDown = this.handleKeyDown.bind(this);
         this.handleWindowFocus = this.handleWindowFocus.bind(this);
         this.handleWindowBlur = this.handleWindowBlur.bind(this);
+        this.handleScroll = this.handleScroll.bind(this);
+    }
+
+    /**
+     * Pass an event to the optional local activity callback. Errors there never affect statistics logging.
+     * @param {string} type Activity type
+     * @param {Object} eventOrData DOM event or plain data
+     */
+    notifyActivity(type, eventOrData) {
+        if (typeof this.options.onActivity !== 'function') return;
+        try {
+            this.options.onActivity(type, eventOrData);
+        } catch (_error) {
+            // The activity trail is best effort
+        }
     }
 
     /**
@@ -63,6 +83,10 @@ class BehaviorLogger {
         document.addEventListener('keydown', this.handleKeyDown);
         window.addEventListener('focus', this.handleWindowFocus);
         window.addEventListener('blur', this.handleWindowBlur);
+        if (typeof this.options.onActivity === 'function') {
+            // Capture phase: scroll events do not bubble, and scrollable panels matter as much as the window
+            document.addEventListener('scroll', this.handleScroll, {capture: true, passive: true});
+        }
 
         // Log device info on initialization
         this.logDeviceInfo();
@@ -79,6 +103,7 @@ class BehaviorLogger {
         document.removeEventListener('keydown', this.handleKeyDown);
         window.removeEventListener('focus', this.handleWindowFocus);
         window.removeEventListener('blur', this.handleWindowBlur);
+        document.removeEventListener('scroll', this.handleScroll, {capture: true});
         // Drop a mouse move that is still waiting for the debounce, so nothing is sent after consent is withdrawn
         this.reportMouseMove.cancel();
     }
@@ -149,6 +174,7 @@ class BehaviorLogger {
      * If a search is active, the search is assumed to be complete and reported to the backend.
      */
     handleWindowFocus() {
+        this.notifyActivity("windowFocus", {focused: true});
         this.emit("windowFocusChange", {
             focused: true,
             duration: this.blurStartTime ? Date.now() - this.blurStartTime : null,
@@ -169,6 +195,7 @@ class BehaviorLogger {
      */
     handleWindowBlur() {
         this.blurStartTime = Date.now();
+        this.notifyActivity("windowFocus", {focused: false});
         this.emit("windowFocusChange", {
             focused: false,
         });
@@ -211,7 +238,16 @@ class BehaviorLogger {
      * @param event The mouse move event object.
      */
     handleMouseMove(event) {
+        this.notifyActivity("mouseMove", event);
         this.reportMouseMove(event, this.options.getContext());
+    }
+
+    /**
+     * Handles a scroll event of the page or a scrollable element. Only passed to the local activity callback.
+     * @param event The scroll event object.
+     */
+    handleScroll(event) {
+        this.notifyActivity("scroll", event);
     }
 
     /**
@@ -236,6 +272,7 @@ class BehaviorLogger {
      */
     reportClick(event) {
         const target = event.target;
+        this.notifyActivity("click", event);
 
         // Check if the clicked element is in the clickAllowList
         // Necessary to avoid double logging of certain elements for which dedicated event listeners are already set
@@ -259,6 +296,7 @@ class BehaviorLogger {
      * This event is triggered when the user switches tabs or minimizes the browser window.
      */
     reportTabVisibilityChange() {
+        this.notifyActivity("visibility", {hidden: document.hidden});
         this.emit("tabVisibilityChange", {
             hidden: document.hidden,
         });
@@ -270,6 +308,7 @@ class BehaviorLogger {
      * @param to The route object representing the new route.
      */
     reportRouteChange(from, to) {
+        this.notifyActivity("navigation", {path: to.path});
         this.emit("routeStep", {
             from: from?.fullPath ?? null,
             to: to.fullPath,

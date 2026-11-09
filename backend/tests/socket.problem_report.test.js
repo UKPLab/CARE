@@ -39,6 +39,14 @@ const report = (overrides = {}) => ({
         errorId: randomUUID(),
         message: "failed with password=hunter2",
     }],
+    activity: [{
+        type: "click",
+        time: new Date().toISOString(),
+        x: 120,
+        y: 40,
+        path: "/document/abc?token=secret-reset-token",
+        element: {tag: "button", id: "private-id", className: "private-class", text: "Private draft"},
+    }],
     ...overrides,
 });
 
@@ -63,15 +71,28 @@ describe("Test Websockets - Problem reports", () => {
         await model.update({value}, {where: {key}});
     };
 
+    let guestUser;
+
+    /**
+     * Change the guest's usage statistics consent in the database (restored after the tests).
+     * @param {boolean} acceptStats
+     * @returns {Promise<void>}
+     */
+    const setGuestConsent = async (acceptStats) => {
+        await server.db.models["user"].update({acceptStats}, {where: {id: guestUser.id}});
+    };
+
     beforeAll(async () => {
         server = new Server();
         server.start(PORT);
         guest = await getSocketClient(server, PORT, process.env.GUEST_EMAIL, process.env.GUEST_PWD);
         admin = await getSocketClient(server, PORT, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
         await setSetting("problemReport.reportsPerHour", "1000");
+        guestUser = await server.db.models["user"].findOne({where: {email: process.env.GUEST_EMAIL}, raw: true});
     });
 
     afterAll(async () => {
+        await setGuestConsent(guestUser.acceptStats);
         for (const [key, value] of Object.entries(originalSettings)) {
             await server.db.models["setting"].update({value}, {where: {key}});
         }
@@ -86,14 +107,96 @@ describe("Test Websockets - Problem reports", () => {
         server.stop();
     });
 
-    test("preview returns the sanitized report without saving it", async () => {
+    test("prepare returns the sanitized details and a server database snapshot without saving, even for an empty form", async () => {
         const before = await server.db.models["problem_report"].count();
-        const response = await request(guest, "problemReportPreview", report());
+        const {clientRequestId, context, diagnostics} = report();
+        const response = await request(guest, "problemReportPrepare", {clientRequestId, context, diagnostics});
         expect(response.success).toBe(true);
         expect(response.data.context.page).toBe("/document/abc");
         expect(response.data.diagnostics[0].message).toBe("failed with password=[redacted]");
-        expect(response.data.problemTypes).toEqual(["error", "slowOrStuck"]);
+        expect(response.data).not.toHaveProperty("problemTypes");
+        expect(["ok", "unavailable"]).toContain(response.data.databaseHealth.status);
+        expect(response.data.databaseHealth.pool).toBeDefined();
+        expect(response.data.databaseHealthExpiresInMs).toBeGreaterThan(0);
+        const text = JSON.stringify(response.data.databaseHealth);
+        expect(text).not.toMatch(/SELECT|client_addr|datname|"pid"/i);
         expect(await server.db.models["problem_report"].count()).toBe(before);
+
+        const invalid = await request(guest, "problemReportPrepare", {context});
+        expect(invalid.key).toBe("errors.problemReport.invalidRequest");
+    });
+
+    test("submit saves the database snapshot shown in the form, never one sent by the client", async () => {
+        const payload = report();
+        const prepared = await request(guest, "problemReportPrepare", payload);
+        const spoofed = {status: "ok", connections: {total: 999999}, query: "SELECT secret"};
+        const submitted = await request(guest, "problemReportSubmit", {...payload, databaseHealth: spoofed});
+        expect(submitted.success).toBe(true);
+        createdIds.push(submitted.data.id);
+        const stored = await server.db.models["problem_report"].getById(submitted.data.id);
+        expect(stored.databaseHealth).toEqual(prepared.data.databaseHealth);
+        expect(JSON.stringify(stored.databaseHealth)).not.toContain("999999");
+        // The automatic details are stored exactly as shown
+        expect(stored.context).toEqual(prepared.data.context);
+        expect(stored.diagnostics).toEqual(prepared.data.diagnostics);
+        expect(stored.activity).toEqual(prepared.data.activity);
+    });
+
+    test("activity is kept only while the user agrees to usage statistics, checked on the server", async () => {
+        await setGuestConsent(true);
+        const consented = report();
+        const prepared = await request(guest, "problemReportPrepare", consented);
+        expect(prepared.data.activity.status).toBe("included");
+        expect(prepared.data.activity.entries[0]).toEqual({
+            type: "click",
+            time: consented.activity[0].time,
+            x: 120,
+            y: 40,
+            path: "/document/abc",
+            element: {tag: "button"},
+        });
+        const saved = await request(guest, "problemReportSubmit", consented);
+        createdIds.push(saved.data.id);
+        const stored = await server.db.models["problem_report"].getById(saved.data.id);
+        expect(stored.activity.entries).toHaveLength(1);
+        expect(JSON.stringify(stored.activity)).not.toMatch(/private|Private draft|token/);
+
+        // Consent withdrawn after the form was opened: the activity is dropped on submit
+        const withdrawn = report();
+        await request(guest, "problemReportPrepare", withdrawn);
+        await setGuestConsent(false);
+        const dropped = await request(guest, "problemReportSubmit", withdrawn);
+        createdIds.push(dropped.data.id);
+        const storedWithout = await server.db.models["problem_report"].getById(dropped.data.id);
+        expect(storedWithout.activity).toEqual({status: "noConsent", entries: []});
+
+        const notConsented = await request(guest, "problemReportPrepare", {...report(), acceptStats: true});
+        expect(notConsented.data.activity).toEqual({status: "noConsent", entries: []});
+    });
+
+    test("database health and activity can be turned off in the settings", async () => {
+        await setGuestConsent(true);
+        await setSetting("problemReport.databaseHealth.enabled", "false");
+        await setSetting("problemReport.activity.enabled", "false");
+        try {
+            const payload = report();
+            const prepared = await request(guest, "problemReportPrepare", payload);
+            expect(prepared.data.databaseHealth).toBeNull();
+            expect(prepared.data.databaseHealthExpiresInMs).toBeNull();
+            expect(prepared.data.activity).toEqual({status: "disabled", entries: []});
+            const saved = await request(guest, "problemReportSubmit", payload);
+            createdIds.push(saved.data.id);
+            const stored = await server.db.models["problem_report"].getById(saved.data.id);
+            expect(stored.databaseHealth).toBeNull();
+            expect(stored.activity.status).toBe("disabled");
+
+            const config = await request(guest, "problemReportConfig", {});
+            expect(config.data.databaseHealthEnabled).toBe(false);
+            expect(config.data).not.toHaveProperty("databaseHealthTimeoutMs");
+        } finally {
+            await setSetting("problemReport.databaseHealth.enabled", "true");
+            await setSetting("problemReport.activity.enabled", "true");
+        }
     });
 
     test("submit saves the report with attachment, and a repeated submit returns the same report", async () => {
@@ -204,7 +307,7 @@ describe("Test Websockets - Problem reports", () => {
 
     test("disabled reports cannot be previewed or submitted", async () => {
         await setSetting("problemReport.enabled", "false");
-        const preview = await request(guest, "problemReportPreview", report());
+        const preview = await request(guest, "problemReportPrepare", report());
         const submit = await request(guest, "problemReportSubmit", report());
         await setSetting("problemReport.enabled", "true");
         expect(preview.key).toBe("errors.problemReport.disabled");

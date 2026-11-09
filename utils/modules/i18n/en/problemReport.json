@@ -1,7 +1,6 @@
 {
     "button": "Report a problem",
     "title": "Report a problem",
-    "previewTitle": "Review your report",
     "form": {
         "problemType": "What kind of problem is it?",
         "blocked": "Are you blocked from continuing?",
@@ -47,7 +46,7 @@
         "notAnswered": "Not answered",
         "unknown": "Unknown",
         "page": "Page",
-        "reportedAt": "Report time",
+        "reportedAt": "Details captured",
         "version": "CARE version",
         "build": "Build",
         "browser": "Browser",
@@ -55,7 +54,11 @@
         "diagnostics": "Recent diagnostic logs ({count})",
         "noDiagnostics": "No diagnostic logs were recorded. The report can still be submitted.",
         "technical": "Technical details",
-        "diagnosticEntry": "{time} · {type}"
+        "submittedAt": "Submitted",
+        "viewport": "Window size",
+        "activity": "Recent activity ({count})",
+        "databaseHealth": "CARE database health",
+        "entry": "{time} · {type}"
     },
     "visibility": {
         "label": "Who can see this report:",
@@ -63,19 +66,21 @@
     },
     "notice": {
         "label": "What we save:",
-        "text": "Your description, selected options, attachments, current page, report time, CARE version, browser, operating system, and recent diagnostic logs, linked to your account. Passwords, tokens, cookies, and document contents are excluded."
+        "text": "Your description, selected options, attachments, the current page, the time the details were captured, CARE version, browser, operating system, window size and recent diagnostic logs, linked to your account.",
+        "activity": "Because you agreed to usage statistics, your recent activity in CARE is included: clicks (element type and position), sampled mouse positions, scrolling, window focus, tab visibility and page changes.",
+        "noActivity": "Your recent activity (clicks, mouse movements) is not included because you have not agreed to usage statistics.",
+        "databaseHealth": "CARE also saves aggregate health counters of its database (connections, locks, transactions, cache), measured on the server.",
+        "excluded": "Typed text, page and document contents, passwords, tokens, cookies and query strings are never included."
     },
     "actions": {
-        "preview": "Preview submission",
-        "edit": "Edit",
         "submit": "Submit report"
     },
     "messages": {
-        "previewFailed": "Preview not available",
         "submitFailed": "Report not submitted",
         "timeout": "The server did not respond. Your report is still here; please try again.",
         "submitted": "Report submitted",
-        "submittedText": "Thank you. Report #{id} was sent to the CARE administrators."
+        "submittedText": "Thank you. Report #{id} was sent to the CARE administrators.",
+        "loadFailed": "Report form not available"
     },
     "admin": {
         "title": "Problem Reports",
@@ -92,5 +97,62 @@
         "loadFailed": "Reports not loaded",
         "attachmentFailed": "Attachment not loaded",
         "downloadFor": "Download {name}"
+    },
+    "details": {
+        "title": "Details sent with this report",
+        "refresh": "Refresh",
+        "refreshTitle": "Capture the automatic details again",
+        "loading": "Collecting the automatic details…",
+        "loadingShort": "Collecting…",
+        "unavailable": "The automatic details could not be loaded. You can still submit; they are then collected at the moment you submit.",
+        "collectedOnSubmit": "Collected when you submit",
+        "capturedAt": "Captured at {time}, when this form was opened or last refreshed. Your answers appear here as you type. This is what will be saved.",
+        "expired": "These details were captured too long ago and have been refreshed. Please check them and submit again."
+    },
+    "activityTypes": {
+        "click": "Click",
+        "mouseMove": "Mouse position",
+        "scroll": "Scroll",
+        "windowFocus": "Window focus",
+        "visibility": "Tab visibility",
+        "navigation": "Page change"
+    },
+    "activity": {
+        "scrollPosition": "scrolled to {x}, {y}",
+        "focused": "window focused",
+        "blurred": "window left",
+        "hidden": "tab hidden",
+        "visible": "tab visible",
+        "noConsent": "Not included: you have not agreed to usage statistics. You can change this in your preferences.",
+        "disabled": "Not included: activity collection is turned off.",
+        "none": "No activity was recorded shortly before the details were captured.",
+        "notCollected": "Not collected for this report."
+    },
+    "databaseHealth": {
+        "capturedAt": "Captured",
+        "status": "Status",
+        "ok": "Available",
+        "timeout": "Not available (timed out)",
+        "unavailable": "Not available",
+        "pool": "CARE server connection pool",
+        "poolValue": "{using} in use, {available} free, {size} open of {max}, {waiting} waiting",
+        "connections": "Connections to the CARE database",
+        "connectionsValue": "{total} in total, {active} active, {idle} idle, {idleInTransaction} idle in a transaction, {waitingOnLock} waiting for a lock",
+        "longestQuery": "Longest running query",
+        "longestTransaction": "Longest open transaction",
+        "milliseconds": "{ms} ms",
+        "locks": "Locks",
+        "locksValue": "{total} held, {waiting} waiting",
+        "lockModes": "Locks by mode",
+        "transactions": "Transactions",
+        "transactionsValue": "{commits} committed, {rollbacks} rolled back ({rollbackPct} %)",
+        "cache": "Cache",
+        "cacheValue": "{hitPct} % hit rate ({hits} hits, {reads} disk reads)",
+        "problems": "Deadlocks, conflicts, temporary files",
+        "problemsValue": "{deadlocks} deadlocks, {conflicts} conflicts, {tempFiles} temporary files ({tempBytes} bytes)",
+        "countersSince": "Counters since",
+        "countersSinceUnknown": "Start of the database statistics",
+        "disabled": "Not included: database health collection is turned off.",
+        "notCollected": "Not collected for this report."
     }
 }
