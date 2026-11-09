@@ -381,18 +381,11 @@ export default {
     async askAi() {
       const text = this.selectedRanges.map((range) => range.toString()).join(" ").trim();
       if (!text) return;
-      const root = document.getElementById('pdfContainer-' + this.documentId);
-      const rangeSelectors = root
-        ? await Promise.all(this.selectedRanges.map(range => this.describe(root, range)))
-        : [];
       const quote = {
         text,
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId,
-        selectors: {
-          target: rangeSelectors.map(selector => ({selector})),
-        },
       };
       this.eventBus.emit("aiChatQuote", quote);
       this.eventBus.emit("toast", {

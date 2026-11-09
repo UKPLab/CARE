@@ -18,14 +18,14 @@
         role="alert"
     >
       <span>{{ $t('ai.chat.contextNearLimit') }}</span>
-      <button
-          type="button"
+      <BasicButton
           class="btn btn-sm btn-outline-secondary ms-2"
+          :title="$t('ai.chat.newConversation')"
           :disabled="isBusy"
           @click="startNewConversation()"
       >
         {{ $t('ai.chat.newConversation') }}
-      </button>
+      </BasicButton>
     </div>
 
     <div v-if="loadFailed" class="alert alert-danger m-2" role="alert">
@@ -585,15 +585,14 @@ export default {
      * @param {string} payload.text - Selected text.
      * @param {number} payload.studyStepId - Originating study step.
      * @param {number} payload.documentId - Originating document.
-     * @param {Object} payload.selectors - Anchoring selectors for the selected text.
      * @returns {void}
      */
-    onQuote({text, studyStepId, documentId, selectors}) {
+    onQuote({text, studyStepId, documentId}) {
       if (Number(studyStepId) !== Number(this.studyStepId)) {
         return;
       }
       const quoteText = (text || "").trim();
-      this.quote = quoteText ? {text: quoteText, studyStepId, documentId, selectors} : null;
+      this.quote = quoteText ? {text: quoteText, studyStepId, documentId} : null;
       if (this.quote) {
         this.logChatEvent("aiChatQuoteCreate", {
           sourceStudyStepId: studyStepId,

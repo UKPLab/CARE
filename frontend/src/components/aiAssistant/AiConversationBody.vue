@@ -4,10 +4,7 @@
         v-if="loading"
         class="conversation-state text-center text-muted"
     >
-      <div class="spinner-border spinner-border-sm mb-2" role="status">
-        <span class="visually-hidden">{{ loadingText || $t('common.loading') }}</span>
-      </div>
-      <div>{{ loadingText || $t('common.loading') }}</div>
+      <BasicLoading :text="loadingText" :size="2" text-class="text-muted" />
     </div>
 
     <div
@@ -33,6 +30,7 @@
 <script>
 import BasicIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicLoading from "@/basic/Loading.vue";
 
 /**
  * Scrollable message body shell shared by AI conversation surfaces.
@@ -44,7 +42,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "AiConversationBody",
-  components: {BasicIcon, BasicButton},
+  components: {BasicIcon, BasicButton, BasicLoading},
   data() {
     return {followingLatest: true};
   },
