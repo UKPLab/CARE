@@ -398,14 +398,6 @@ html .ql-snow a {
   color: var(--bs-link-color);
 }
 
-/* --- Toasts --- */
-
-/* bootstrap-vue-3 hardcodes light toast colours, so the close button must not be
-   inverted to white the way Bootstrap does for dark backgrounds. */
-[data-bs-theme="dark"] .b-toast .btn-close {
-  filter: none;
-}
-
 /* --- PDF viewer --- */
 
 /* A black drop shadow is invisible on dark, so define the edge with a border. */
@@ -481,7 +473,16 @@ html .care-focus-ring:focus-visible {
     "Helvetica Neue", Roboto, sans-serif;
   --bs-font-monospace: "JetBrains Mono Variable", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
     "Courier New", monospace;
+}
 
+/* Keeps 1rem at 15px after the W3 stylesheet was removed. Bootstrap reboot
+   already sets box-sizing and body margin. */
+html {
+  font-size: 15px;
+  overflow-x: clip;
+}
+
+:root {
   /* ----- Shadows -----
      Light shadows are tinted navy to match the blue-grey canvas, so they read
      as depth rather than as grey smudges. For a one-off shadow use
@@ -911,6 +912,13 @@ html .badge.bg-secondary {
   color: var(--bs-body-color);
 }
 
+/* Running sessions. bg-primary on a badge is restyled to grey above. */
+html .badge.badge-care-primary {
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent) !important;
+  color: var(--care-primary);
+  border: 1px solid color-mix(in srgb, var(--care-primary) 22%, transparent);
+}
+
 html .modal-content {
   border: 0;
   border-radius: var(--bs-border-radius-xl);
@@ -1115,8 +1123,14 @@ html .btn-link {
   text-decoration: none;
 }
 
-html .btn-link:hover {
-  text-decoration: underline;
+html .btn-link:hover,
+html .btn-link:focus-visible {
+  text-decoration: none;
+  background-color: color-mix(in srgb, var(--care-primary) 10%, transparent);
+}
+
+html .btn-link:active {
+  background-color: color-mix(in srgb, var(--care-primary) 16%, transparent);
 }
 
 html .modal-title {
@@ -1137,12 +1151,6 @@ html .modal-footer .btn-group > .btn {
 /* A card inside a card (settings sections, wizard summary) stays flat. */
 html .card .card {
   box-shadow: none;
-}
-
-html .b-toast .toast {
-  border: 0;
-  border-radius: var(--bs-border-radius-lg);
-  box-shadow: var(--care-shadow-3);
 }
 
 html .dropdown-menu {
