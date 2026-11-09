@@ -646,12 +646,8 @@ function validateClientRequestId(value) {
 
 module.exports = {
     HARD_LIMITS,
-    DEFAULT_SETTINGS,
     detectAttachmentType,
     sanitizeText,
-    sanitizeDiagnostics,
-    sanitizeContext,
-    sanitizeActivity,
     loadReportSettings,
     normalizeDetails,
     normalizeReport,

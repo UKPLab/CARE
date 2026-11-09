@@ -16,9 +16,9 @@
  */
 
 // Fixed safety bounds; the configured (smaller) limits are applied when reading and again on the server
-export const HARD_MAX_ENTRIES = 500;
-export const HARD_MAX_AGE_MINUTES = 60;
-export const MIN_SAMPLE_MS = 200;
+const HARD_MAX_ENTRIES = 500;
+const HARD_MAX_AGE_MINUTES = 60;
+const MIN_SAMPLE_MS = 200;
 const ANCESTORS_MAX = 6;
 
 const ROLES = new Set([
@@ -113,7 +113,7 @@ function takeSample(type, now, sampleMs) {
  * @param {number} now Current time in ms
  * @returns {Object|null} Entry, or null when skipped
  */
-export function toActivityEntry(type, event, sampleMs, now = Date.now()) {
+function toActivityEntry(type, event, sampleMs, now = Date.now()) {
     const base = {type, time: new Date(now).toISOString()};
     switch (type) {
         case "click":

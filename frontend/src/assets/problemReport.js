@@ -172,7 +172,7 @@ export function readReportSettings(getValue) {
  * @param {string} userAgent navigator.userAgent
  * @returns {{browser: string|null, os: string|null}}
  */
-export function describeUserAgent(userAgent) {
+function describeUserAgent(userAgent) {
     const ua = userAgent || "";
     const browsers = [
         ["Edge", /Edg(?:e|A|iOS)?\/(\d+)/],

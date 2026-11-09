@@ -160,11 +160,12 @@ import { getActivity } from "@/assets/activityTrail.js";
 import { buildReportContext, choiceLabel, normalizeAnswers, readReportSettings } from "@/assets/problemReport.js";
 import { resolveApiMessage } from "@/assets/utils";
 
+const CONFIG_TIMEOUT_MS = 15 * 1000;
 // Large video uploads can take a while; without a timeout a lost connection would leave the form waiting
 const SUBMIT_TIMEOUT_MS = 5 * 60 * 1000;
 // The database snapshot is bounded on the server (a few seconds); this covers slow connections
 const PREPARE_TIMEOUT_MS = 30 * 1000;
-// Refresh a little before the server stops accepting the shown database snapshot
+// Re-check a little before the server stops accepting the shown database snapshot
 const EXPIRY_MARGIN_MS = 30 * 1000;
 // BasicForm uses the field key as the textarea name
 const DESCRIPTION_INPUT_ID = "problemReportDescription";
@@ -175,13 +176,13 @@ const DESCRIPTION_INPUT_ID = "problemReportDescription";
  * The form stays at the top; below it, the report is shown as it will be saved.
  * The user's answers update there while typing. The automatic details (page,
  * versions, recent diagnostics, recent activity with statistics consent, and a
- * database health snapshot taken on the server) are captured once when the form
- * opens and checked by the backend (problemReportPrepare), so they are visible
- * before anything is filled in. Submit sends that same captured snapshot; the
- * server saves the database snapshot it took for this form. "Refresh" captures
- * the details again. Older responses never overwrite newer ones, Submit waits
- * while details are loading, and one client request id per report keeps retries
- * idempotent. The form keeps its values after errors.
+ * database health status taken on the server) are captured once, when Report is
+ * clicked, and checked by the backend (problemReportPrepare). They stay fixed
+ * while the form is filled in; Submit sends that same snapshot and the server
+ * saves the database snapshot it took for this form. Older responses never
+ * overwrite newer ones, Submit waits while details are loading, and one client
+ * request id per report keeps retries idempotent. The form keeps its values
+ * after errors.
  *
  * @author Akash Gundapuneni
  */
@@ -263,7 +264,7 @@ export default {
         activity: this.activityAllowed
           ? result.activity || null
           : { status: this.settings.activityEnabled ? "noConsent" : "disabled", entries: [] },
-        databaseHealth: result.databaseHealth === undefined ? undefined : result.databaseHealth,
+        databaseHealth: result.databaseHealth,
       };
     },
     detailsState() {
@@ -325,7 +326,7 @@ export default {
       const capturedNow = !this.capturedSnapshot;
       if (capturedNow) this.capturedSnapshot = this.captureSnapshot();
       this.loadingConfig = true;
-      this.$socket.timeout(15000).emit("problemReportConfig", {}, (error, response) => {
+      this.$socket.timeout(CONFIG_TIMEOUT_MS).emit("problemReportConfig", {}, (error, response) => {
         this.loadingConfig = false;
         if (!error && response?.success) {
           this.effectiveSettings = response.data;
@@ -406,11 +407,10 @@ export default {
       this.$refs.descriptionForm?.$el.querySelector(`textarea[name="${DESCRIPTION_INPUT_ID}"]`)?.focus();
     },
     /**
-     * The automatic details to send: the shown snapshot, or a new one when none could be shown
-     * (the status text says that details are then captured on submit).
+     * The automatic details to send: the snapshot captured when Report was clicked.
      */
     submissionSnapshot() {
-      const snapshot = this.details && !this.details.error && this.details.payload ? this.details.payload : this.capturedSnapshot || this.captureSnapshot();
+      const snapshot = this.capturedSnapshot || this.captureSnapshot();
       return {
         ...snapshot,
         activity: this.activityAllowed ? snapshot.activity : [],

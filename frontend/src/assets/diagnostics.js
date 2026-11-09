@@ -46,7 +46,7 @@ function fileName(url) {
  * @param {Object} entry Event with a type and optional metadata fields
  * @returns {void}
  */
-export function recordDiagnostic(entry) {
+function recordDiagnostic(entry) {
     const cleaned = Object.fromEntries(
         Object.entries({...entry, time: new Date().toISOString()})
             .map(([key, value]) => [key, typeof value === "number" ? value : boundedText(value)])
