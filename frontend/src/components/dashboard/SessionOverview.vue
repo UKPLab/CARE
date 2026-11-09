@@ -81,8 +81,8 @@ export default {
               Finished: this.$t('common.finished'),
             },
             classMapping: {
-              Running: "bg-success",
-              Finished: "bg-danger",
+              Running: "badge-care-primary",
+              Finished: "bg-success",
             }
           }
         },
