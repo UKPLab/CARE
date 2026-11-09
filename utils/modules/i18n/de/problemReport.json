@@ -149,6 +149,8 @@
         "countersSince": "Zähler seit",
         "countersSinceUnknown": "Beginn der Datenbankstatistik",
         "disabled": "Nicht enthalten: Die Erfassung des Datenbankzustands ist ausgeschaltet.",
-        "notCollected": "Für diesen Bericht nicht erfasst."
+        "notCollected": "Für diesen Bericht nicht erfasst.",
+        "details": "Details",
+        "adminOnly": "Werden mit Ihrem Bericht nur für Administratoren gespeichert."
     }
 }

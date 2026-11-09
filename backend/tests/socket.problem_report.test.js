@@ -116,7 +116,11 @@ describe("Test Websockets - Problem reports", () => {
         expect(response.data.diagnostics[0].message).toBe("failed with password=[redacted]");
         expect(response.data).not.toHaveProperty("problemTypes");
         expect(["ok", "unavailable"]).toContain(response.data.databaseHealth.status);
-        expect(response.data.databaseHealth.pool).toBeDefined();
+        // Capacity and load figures stay on the server
+        expect(response.data.databaseHealth.restricted).toBe(true);
+        for (const field of ["pool", "connections", "locks", "deadlocks", "transactions", "cache"]) {
+            expect(response.data.databaseHealth).not.toHaveProperty(field);
+        }
         expect(response.data.databaseHealthExpiresInMs).toBeGreaterThan(0);
         const text = JSON.stringify(response.data.databaseHealth);
         expect(text).not.toMatch(/SELECT|client_addr|datname|"pid"/i);
@@ -134,7 +138,10 @@ describe("Test Websockets - Problem reports", () => {
         expect(submitted.success).toBe(true);
         createdIds.push(submitted.data.id);
         const stored = await server.db.models["problem_report"].getById(submitted.data.id);
-        expect(stored.databaseHealth).toEqual(prepared.data.databaseHealth);
+        expect(stored.databaseHealth.capturedAt).toBe(prepared.data.databaseHealth.capturedAt);
+        expect(stored.databaseHealth.status).toBe(prepared.data.databaseHealth.status);
+        expect(stored.databaseHealth).toHaveProperty("pool");
+        expect(stored.databaseHealth).not.toHaveProperty("restricted");
         expect(JSON.stringify(stored.databaseHealth)).not.toContain("999999");
         // The automatic details are stored exactly as shown
         expect(stored.context).toEqual(prepared.data.context);

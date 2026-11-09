@@ -10,7 +10,7 @@ const {
     validateAttachments,
     validateClientRequestId,
 } = require("../../utils/helper/problemReport.js");
-const {databaseHealthCache} = require("../../utils/helper/problemReportHealthCache.js");
+const {databaseHealthCache, publicDatabaseHealth} = require("../../utils/helper/problemReportHealthCache.js");
 const {currentDatabaseHealth} = require("../../db/stats.js");
 
 const ATTACHMENT_PATH = path.join(__dirname, "..", "..", "..", "files", "problem_reports");
@@ -27,7 +27,8 @@ const MAX_PAGE_SIZE = 100;
  * automatic details (context, diagnostics, activity) exactly as they will be
  * saved, together with a database health snapshot taken on the server. The
  * client sends the same snapshot again on submit, and the server saves the
- * database snapshot it captured for that form.
+ * database snapshot it captured for that form. The reporting user only sees the
+ * snapshot's status and capture time; the counters are for administrators.
  *
  * @author Akash Gundapuneni
  * @type {ProblemReportSocket}
@@ -106,7 +107,8 @@ class ProblemReportSocket extends Socket {
      * @param {Object[]} [data.diagnostics] Recent diagnostic events
      * @param {Object[]} [data.activity] Recent activity (kept only with usage statistics consent)
      * @param {Object} options Additional configuration parameters
-     * @returns {Promise<Object>} Normalized details, databaseHealth (or null when turned off) and
+     * @returns {Promise<Object>} Normalized details, databaseHealth (status and capture time only; null when
+ *   turned off) and
      *   databaseHealthExpiresInMs: how long the snapshot can still be saved with the report
      * @throws {TranslatableError} When the form id is invalid or reports are disabled
      */
@@ -125,7 +127,8 @@ class ProblemReportSocket extends Socket {
         );
         return {
             ...details,
-            databaseHealth: cached.snapshot,
+            // Only status and capture time; the full snapshot is saved for administrators
+            databaseHealth: publicDatabaseHealth(cached.snapshot),
             databaseHealthExpiresInMs: Math.max(0, cached.expiresAt - Date.now()),
         };
     }

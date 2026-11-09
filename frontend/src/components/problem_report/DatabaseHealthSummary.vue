@@ -8,6 +8,8 @@ import BasicDetails from "@/basic/Details.vue";
 /**
  * Database health snapshot of a problem report: aggregate counters of the CARE
  * database and the CARE server's connection pool, captured on the server.
+ * The reporting user only receives status and capture time ("restricted");
+ * administrators see the full snapshot saved with the report.
  *
  * @param {Object} health Snapshot from the backend (status "ok" or "unavailable")
  *
@@ -37,8 +39,11 @@ export default {
           type: "badge",
           class: health.status === "ok" ? "text-bg-success" : "text-bg-warning",
         },
-        { key: "pool", label: t('problemReport.databaseHealth.pool'), value: this.poolText(health.pool) },
       ];
+      if (health.restricted) {
+        return items.concat([{ key: "adminOnly", label: t('problemReport.databaseHealth.details'), value: t('problemReport.databaseHealth.adminOnly') }]);
+      }
+      items.push({ key: "pool", label: t('problemReport.databaseHealth.pool'), value: this.poolText(health.pool) });
       if (health.status !== "ok") {
         return items;
       }

@@ -149,6 +149,8 @@
         "countersSince": "Compteurs depuis",
         "countersSinceUnknown": "Début des statistiques de la base de données",
         "disabled": "Non inclus : la collecte de l’état de la base de données est désactivée.",
-        "notCollected": "Non recueilli pour ce signalement."
+        "notCollected": "Non recueilli pour ce signalement.",
+        "details": "Détails",
+        "adminOnly": "Enregistrés avec votre rapport, visibles uniquement par les administrateurs."
     }
 }

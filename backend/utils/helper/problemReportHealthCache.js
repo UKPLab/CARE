@@ -105,4 +105,21 @@ class DatabaseHealthCache {
     }
 }
 
-module.exports = {DatabaseHealthCache, databaseHealthCache: new DatabaseHealthCache()};
+/**
+ * The part of a database health snapshot the reporting user may see.
+ *
+ * Pool usage, connection and lock counts, deadlocks and the other counters describe
+ * the server's capacity and load, so they are saved with the report for
+ * administrators but never sent to the reporting browser.
+ *
+ * @param {Object|null} snapshot Full snapshot (see currentDatabaseHealth)
+ * @returns {{status: string, reason?: string, capturedAt: string, restricted: true}|null}
+ */
+function publicDatabaseHealth(snapshot) {
+    if (!snapshot) return null;
+    const view = {status: snapshot.status, capturedAt: snapshot.capturedAt, restricted: true};
+    if (snapshot.reason) view.reason = snapshot.reason;
+    return view;
+}
+
+module.exports = {DatabaseHealthCache, databaseHealthCache: new DatabaseHealthCache(), publicDatabaseHealth};

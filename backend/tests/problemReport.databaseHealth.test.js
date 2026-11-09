@@ -1,5 +1,5 @@
 const {currentDatabaseHealth} = require("../db/stats.js");
-const {DatabaseHealthCache} = require("../utils/helper/problemReportHealthCache.js");
+const {DatabaseHealthCache, publicDatabaseHealth} = require("../utils/helper/problemReportHealthCache.js");
 
 const SECRET = "SELECT * FROM document WHERE text = 'private draft'";
 
@@ -146,5 +146,19 @@ describe("database health cache", () => {
         expect(third.expiresAt).toBeLessThanOrEqual(first.expiresAt);
         await cache.capture(2, "a", capture, 60000);
         expect(calls).toBe(2);
+    });
+});
+
+describe("publicDatabaseHealth", () => {
+    test("the reporting user only gets status and capture time, never capacity or load figures", async () => {
+        const full = await currentDatabaseHealth(fakeSequelize(async (sql) => (sql.includes("set_config") ? [[]] : [[{
+            connections_total: "4", locks_total: "3", deadlocks: "2", xact_commit: "10", xact_rollback: "1",
+            blks_hit: "9", blks_read: "1", locks_by_mode: {AccessShareLock: 3},
+        }]])), {timeoutMs: 1000});
+        expect(full.pool).toBeDefined();
+        expect(publicDatabaseHealth(full)).toEqual({status: "ok", capturedAt: full.capturedAt, restricted: true});
+        expect(publicDatabaseHealth({status: "unavailable", reason: "timeout", capturedAt: "t", pool: {max: 5}}))
+            .toEqual({status: "unavailable", reason: "timeout", capturedAt: "t", restricted: true});
+        expect(publicDatabaseHealth(null)).toBeNull();
     });
 });

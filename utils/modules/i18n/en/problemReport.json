@@ -149,6 +149,8 @@
         "countersSince": "Counters since",
         "countersSinceUnknown": "Start of the database statistics",
         "disabled": "Not included: database health collection is turned off.",
-        "notCollected": "Not collected for this report."
+        "notCollected": "Not collected for this report.",
+        "details": "Details",
+        "adminOnly": "Saved with your report for administrators only."
     }
 }
