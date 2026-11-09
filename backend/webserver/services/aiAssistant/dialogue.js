@@ -45,6 +45,8 @@ const DIALOGUE_SERVICES = {
     anchor: "dialogueAnchor",
 };
 
+const MAX_ANSWER_LENGTH = 20000;
+
 /**
  * Finds the latest Dialogue conversation in a study session.
  *
@@ -388,6 +390,12 @@ async function sendDialogueAnswer(service, client, data) {
     if (!skipped && !answerText) {
         throw new TranslatableError("errors.ai.dialogue.answerRequired");
     }
+    const answerValue = skipped ? null : data?.answerValue ?? answerText;
+    const answerValueLength = typeof answerValue === "string"
+        ? answerValue.length : JSON.stringify(answerValue).length;
+    if (answerText.length > MAX_ANSWER_LENGTH || answerValueLength > MAX_ANSWER_LENGTH) {
+        throw new TranslatableError("errors.ai.dialogue.answerTooLong", {limit: MAX_ANSWER_LENGTH});
+    }
 
     const conversation = data?.conversationId
         ? await core.loadOwnedConversation(
@@ -405,7 +413,7 @@ async function sendDialogueAnswer(service, client, data) {
         conversation,
         {
             questionId: data?.questionId,
-            answer: {answerText, answerValue: skipped ? null : data?.answerValue ?? answerText, skipped},
+            answer: {answerText, answerValue, skipped},
             systemMessage,
             requestId,
         },

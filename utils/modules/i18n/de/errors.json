@@ -468,6 +468,7 @@
       "contextMissing": "Der Dialogkontext für diesen Studienschritt fehlt.",
       "skipNotAllowed": "In diesem Dialog können keine Fragen übersprungen werden.",
       "answerRequired": "Bitte geben Sie eine Antwort ein.",
+      "answerTooLong": "Ihre Antwort ist zu lang. Bitte kürzen Sie sie auf höchstens {limit} Zeichen.",
       "complete": "Dieser Dialog ist bereits abgeschlossen.",
       "questionInactive": "Diese Frage ist nicht mehr aktiv."
     },

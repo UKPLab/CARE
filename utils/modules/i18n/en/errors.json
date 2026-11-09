@@ -468,6 +468,7 @@
             "contextMissing": "Dialogue context is missing for this study step.",
             "skipNotAllowed": "This dialogue does not allow skipping questions.",
             "answerRequired": "Please enter an answer.",
+            "answerTooLong": "Your answer is too long. Please shorten it to at most {limit} characters.",
             "complete": "This dialogue is already complete.",
             "questionInactive": "This question is no longer active."
         },
