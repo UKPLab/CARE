@@ -137,16 +137,10 @@ export default {
 </script>
 
 <style scoped>
+/* Positioned by .pdf-toolbar-slot in Annotator.vue, outside the scroller. */
 .pdf-toolbar-anchor {
-  position: sticky;
-  top: 12px;
-  z-index: 200;
-  /* The chip floats over the page. A normal block would leave an empty
-     band, and a fixed pull-up shifts the page when the chip changes size. */
-  height: 0;
   display: flex;
   justify-content: flex-end;
-  margin-right: 16px;
   pointer-events: none;
 }
 

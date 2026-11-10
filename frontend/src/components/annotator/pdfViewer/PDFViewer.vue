@@ -9,18 +9,24 @@
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
-    <!-- Toolbar -->
-    <PDFToolbar
-      :id="'pdfToolbar-' + documentId"
-      v-model="toolbarVisible"
-      :zoom-form-data="zoomFormData"
-      :pdf-dark-mode="pdfDarkMode"
-      @toggle-pdf-theme="togglePdfTheme"
-      @update:zoom-form-data="zoomFormData = $event"
-      @zoom-in="zoomIn"
-      @zoom-out="zoomOut"
-      @reset="resetZoom"
-    />
+    <!-- Toolbar: rendered outside the scrolling column (slot lives in Annotator.vue),
+         otherwise it scrolls sideways with zoomed pages. -->
+    <Teleport
+      :to="'#pdfToolbarSlot-' + documentId"
+      defer
+    >
+      <PDFToolbar
+        :id="'pdfToolbar-' + documentId"
+        v-model="toolbarVisible"
+        :zoom-form-data="zoomFormData"
+        :pdf-dark-mode="pdfDarkMode"
+        @toggle-pdf-theme="togglePdfTheme"
+        @update:zoom-form-data="zoomFormData = $event"
+        @zoom-in="zoomIn"
+        @zoom-out="zoomOut"
+        @reset="resetZoom"
+      />
+    </Teleport>
 
     <PDFPage
       v-for="page in pdf.pageCount"

@@ -7,18 +7,25 @@
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="d-flex flex-grow-1 overflow-hidden top-padding">
-        <div
-            :id="'viewerContainer-' + documentId"
-            ref="viewer"
-            class="annotator-viewer flex-grow-1 border mh-100 justify-content-center p-3"
-        >
-          <PDFViewer
-              ref="pdfViewer"
-              class="rounded border border-1 shadow-sm"
-              style="margin:auto"
-              @copy="onCopy"
-          />
+        <div class="annotator-viewer-frame flex-grow-1">
+          <div
+              :id="'viewerContainer-' + documentId"
+              ref="viewer"
+              class="annotator-viewer flex-grow-1 border mh-100 justify-content-center p-3"
+          >
+            <PDFViewer
+                ref="pdfViewer"
+                class="rounded border border-1 shadow-sm"
+                style="margin:auto"
+                @copy="onCopy"
+            />
 
+          </div>
+          <!-- Outside the scroller, so the zoom toolbar stays put on horizontal scroll. -->
+          <div
+              :id="'pdfToolbarSlot-' + documentId"
+              class="pdf-toolbar-slot"
+          />
         </div>
         <BasicSidebar
             v-if="!sidebarDisabled"
@@ -698,10 +705,26 @@ export default {
 
 <style scoped>
 
+.annotator-viewer-frame {
+  position: relative;
+  display: flex;
+  /* auto would freeze this column at the widened page width. */
+  min-width: 0;
+}
+
 .annotator-viewer {
   /* auto would freeze this column at the widened page width. */
   min-width: 0;
   overflow-y: scroll;
+}
+
+/* Same spot as before: viewer border + scrollbar + p-3 + page border + 16px gap. */
+.pdf-toolbar-slot {
+  position: absolute;
+  top: 16px;
+  right: 48px;
+  z-index: 200;
+  pointer-events: none;
 }
 
 .sidebar-highlight {
