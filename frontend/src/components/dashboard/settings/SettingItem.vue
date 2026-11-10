@@ -119,13 +119,11 @@
         </select>
       </template>
       <input
-        v-else-if="isPgStatsNumber"
+        v-else-if="setting.type === 'integer'"
         :id="'set-' + setting.key"
         :value="setting.value"
         class="form-control"
         type="number"
-        min="1"
-        :max="setting.key.endsWith('intervalSeconds') ? 2147483 : 36500"
         step="1"
         :disabled="disabled"
         @input="$emit('update:value', $event.target.value)"
@@ -170,9 +168,6 @@ export default {
   },
   emits: ["update:value"],
   computed: {
-    isPgStatsNumber() {
-      return ['system.pgStats.intervalSeconds', 'system.pgStats.retentionDays'].includes(this.setting?.key);
-    },
     user() {
       return this.$store.getters["auth/getUser"];
     },

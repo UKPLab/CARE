@@ -10,7 +10,13 @@ function escapeCsv(value) {
     return `"${text.replace(/"/g, '""')}"`;
 }
 
-/** One writer per process; the configured path supplies the directory and filename stem. */
+/**
+ * Create a serialized CSV writer with daily UTC rotation and optional retention.
+ * Use one writer per process for a given directory and filename stem.
+ *
+ * @param {string} basePath - CSV path supplying the directory and filename stem
+ * @returns {{write: Function, cleanup: Function, drain: Function}} Queued write, cleanup and drain operations
+ */
 function createCsvStore(basePath) {
     const parsed = path.parse(path.resolve(basePath));
     const prefix = parsed.name + '-';

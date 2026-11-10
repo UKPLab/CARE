@@ -233,79 +233,97 @@ async function snapshot(sequelize, logger = null) {
 	return result;
 }
 
-/** Start once; refresh() applies committed admin settings without a restart. */
+/**
+ * Start statistics collection once and apply saved admin settings.
+ * Later committed settings changes can be applied with refresh().
+ *
+ * @param {import('sequelize').Sequelize} sequelize - PostgreSQL connection and settings models
+ * @param {object} logger - Logger with an error method for collection and cleanup failures
+ * @param {object} [options={}] - Scheduler options
+ * @param {number} [options.intervalMs=100000] - Fallback interval, overridden by PG_STATS_INTERVAL_MS
+ * @returns {Promise<void>|undefined} Initial collection completion, or undefined if already started
+ */
 function start(sequelize, logger, options = {}) {
-    if (scheduler) return;
-    const requested = Number(process.env.PG_STATS_INTERVAL_MS || options.intervalMs || 100000);
-    const fallback = Number.isInteger(requested) && requested > 0 && requested <= 2147483647 ? requested : 100000;
-    const state = {
-        sequelize, logger, fallback, timer: null, cleanupTimer: null, collecting: null,
-        config: { intervalMs: fallback, autoDelete: false, retentionDays: 30 },
-        store: createCsvStore(process.env.PG_STATS_CSV_PATH || 'logs/pg-performance.csv'),
-        refreshQueue: Promise.resolve(),
-    };
-    scheduler = state;
-    state.collect = () => {
-        if (scheduler !== state || state.collecting) return;
-        state.collecting = (async () => {
-            try {
-                const intervalMs = state.config.intervalMs;
-                const snap = await snapshot(sequelize, logger);
-                await state.store.write(snap, intervalMs);
-            } catch (error) {
-                logger.error('pg_stat_activity scheduler error: ' + error.message);
-            }
-        })().finally(() => { state.collecting = null; });
-        return state.collecting;
-    };
-    state.cleanup = () => state.store.cleanup(state.config, logger).catch(error => {
-        logger.error('pg_stats cleanup error: ' + error.message);
-    });
-    const scheduleCleanup = () => {
-        const now = Date.now();
-        const nextMidnight = Math.floor(now / 86400000) * 86400000 + 86400000;
-        state.cleanupTimer = setTimeout(async () => {
-            await state.cleanup();
-            if (scheduler === state) scheduleCleanup();
-        }, nextMidnight - now);
-    };
-    scheduleCleanup();
-    return refresh().then(() => state.collect());
+	if (scheduler) return;
+	const requested = Number(process.env.PG_STATS_INTERVAL_MS || options.intervalMs || 100000);
+	const fallback = Number.isInteger(requested) && requested > 0 && requested <= 2147483647 ? requested : 100000;
+	const state = {
+		sequelize, logger, fallback, timer: null, cleanupTimer: null, collecting: null,
+		config: { intervalMs: fallback, autoDelete: false, retentionDays: 30 },
+		store: createCsvStore(process.env.PG_STATS_CSV_PATH || 'logs/pg-performance.csv'),
+		refreshQueue: Promise.resolve(),
+	};
+	scheduler = state;
+	state.collect = () => {
+		if (scheduler !== state || state.collecting) return;
+		state.collecting = (async () => {
+			try {
+				const intervalMs = state.config.intervalMs;
+				const snap = await snapshot(sequelize, logger);
+				await state.store.write(snap, intervalMs);
+			} catch (error) {
+				logger.error('pg_stat_activity scheduler error: ' + error.message);
+			}
+		})().finally(() => { state.collecting = null; });
+		return state.collecting;
+	};
+	state.cleanup = () => state.store.cleanup(state.config, logger).catch(error => {
+		logger.error('pg_stats cleanup error: ' + error.message);
+	});
+	const scheduleCleanup = () => {
+		const now = Date.now();
+		const nextMidnight = Math.floor(now / 86400000) * 86400000 + 86400000;
+		state.cleanupTimer = setTimeout(async () => {
+			await state.cleanup();
+			if (scheduler === state) scheduleCleanup();
+		}, nextMidnight - now);
+	};
+	scheduleCleanup();
+	return refresh().then(() => state.collect());
 }
 
-/** Reload only after settings transactions commit. Keep collection running on read failures. */
+/**
+ * Reload settings after their transaction commits and reschedule collection.
+ * Read failures keep collection running and disable automatic deletion.
+ *
+ * @returns {Promise<void>} Completion of the queued settings refresh and cleanup
+ */
 function refresh() {
-    const state = scheduler;
-    if (!state) return Promise.resolve();
-    state.refreshQueue = state.refreshQueue.then(async () => {
-        try {
-            const config = await loadSettings(state.sequelize, state.fallback);
-            if (scheduler !== state) return;
-            Object.assign(state.config, config);
-        } catch (error) {
-            state.logger.error('pg_stats settings error: ' + error.message);
-            // Fail closed: a settings read failure must never enable deletion.
-            state.config.autoDelete = false;
-        }
-        if (scheduler !== state) return;
-        clearInterval(state.timer);
-        state.timer = setInterval(state.collect, state.config.intervalMs);
-        await state.cleanup();
-    });
-    return state.refreshQueue;
+	const state = scheduler;
+	if (!state) return Promise.resolve();
+	state.refreshQueue = state.refreshQueue.then(async () => {
+		try {
+			const config = await loadSettings(state.sequelize, state.fallback);
+			if (scheduler !== state) return;
+			Object.assign(state.config, config);
+		} catch (error) {
+			state.logger.error('pg_stats settings error: ' + error.message);
+			// Fail closed: a settings read failure must never enable deletion.
+			state.config.autoDelete = false;
+		}
+		if (scheduler !== state) return;
+		clearInterval(state.timer);
+		state.timer = setInterval(state.collect, state.config.intervalMs);
+		await state.cleanup();
+	});
+	return state.refreshQueue;
 }
 
-/** Stop scheduling and wait for the current collection and queued file operations. */
+/**
+ * Stop scheduling and wait for the current collection and queued file operations.
+ *
+ * @returns {Promise<void>} Completion of scheduler shutdown and pending file operations
+ */
 async function stop() {
-    const state = scheduler;
-    if (!state) return;
-    scheduler = null;
-    state.config.autoDelete = false;
-    clearInterval(state.timer);
-    clearTimeout(state.cleanupTimer);
-    await state.refreshQueue;
-    await state.collecting;
-    await state.store.drain();
+	const state = scheduler;
+	if (!state) return;
+	scheduler = null;
+	state.config.autoDelete = false;
+	clearInterval(state.timer);
+	clearTimeout(state.cleanupTimer);
+	await state.refreshQueue;
+	await state.collecting;
+	await state.store.drain();
 }
 
 module.exports = { start, stop, snapshot, refresh };
