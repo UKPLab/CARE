@@ -9,7 +9,7 @@
         v-for="toast in toasts"
         :key="toast.id"
         class="care-toast"
-        :class="[`care-toast--${toast.kind}`, { 'is-paused': toast.paused }]"
+        :class="[`care-toast--${toast.kind}`, { 'is-paused': toast.paused, 'care-toast--no-title': !toast.title }]"
         :role="toast.kind === 'danger' || toast.kind === 'warning' ? 'alert' : 'status'"
         :style="{ '--care-toast-duration': `${toast.delay}ms` }"
         @mouseenter="onPointerEnter(toast)"
@@ -23,56 +23,68 @@
           <!-- success: circle + drawn check mark -->
           <svg v-if="toast.kind === 'success'" viewBox="0 0 52 52">
             <circle class="ring" cx="26" cy="26" r="23" />
-            <path class="mark" d="M15 27 l7.5 7.5 L37.5 19" />
+            <path class="glyph" d="M15 27 l7.5 7.5 L37.5 19" />
           </svg>
           <!-- danger: circle + drawn cross, then shake -->
           <svg v-else-if="toast.kind === 'danger'" viewBox="0 0 52 52">
             <circle class="ring" cx="26" cy="26" r="23" />
-            <path class="mark" d="M18 18 L34 34" />
-            <path class="mark mark--2" d="M34 18 L18 34" />
+            <path class="glyph" d="M18 18 L34 34" />
+            <path class="glyph glyph--2" d="M34 18 L18 34" />
           </svg>
           <!-- warning: triangle + exclamation, then wiggle -->
           <svg v-else-if="toast.kind === 'warning'" viewBox="0 0 52 52">
             <path class="ring" d="M26 5 L48 45 H4 Z" stroke-linejoin="round" />
-            <path class="mark" d="M26 19 V31" />
+            <path class="glyph" d="M26 19 V31" />
             <circle class="dot" cx="26" cy="38" r="2.2" />
           </svg>
           <!-- info / everything else: circle + "i", pop -->
           <svg v-else viewBox="0 0 52 52">
             <circle class="ring" cx="26" cy="26" r="23" />
             <circle class="dot" cx="26" cy="16.5" r="2.4" />
-            <path class="mark" d="M26 23 V37" />
+            <path class="glyph" d="M26 23 V37" />
           </svg>
         </div>
 
-        <div class="care-toast__content">
-          <div
-            v-if="toast.title"
-            :ref="(el) => { if (!toast.body) this.setClipEl(toast.id, el); }"
-            class="care-toast__title"
-            :class="{
-              'is-clamped': toast.overflows && !toast.expanded && !toast.body,
-              'is-expanded': toast.overflows && toast.expanded && !toast.body,
-            }"
-          >{{ toast.title }}</div>
-          <div
-            v-if="toast.body"
-            :ref="(el) => this.setClipEl(toast.id, el)"
-            class="care-toast__body"
-            :class="{
-              'is-clamped': toast.overflows && !toast.expanded,
-              'is-expanded': toast.overflows && toast.expanded,
-            }"
-          >{{ toast.body }}</div>
-          <button
-            v-if="toast.overflows && !toast.expanded"
-            type="button"
-            class="care-toast__more"
-            @click="expandToast(toast)"
-          >
-            {{ $t('common.showMore') }}
-          </button>
+        <!-- Grid layout: icon + title + close in the header row, body and "show more" below at full width. -->
+        <div
+          v-if="toast.title"
+          :ref="(el) => { if (!toast.hasBody) this.setClipEl(toast.id, el); }"
+          class="care-toast__title"
+          :class="{
+            'is-clamped': toast.overflows && !toast.expanded && !toast.hasBody,
+            'is-expanded': toast.overflows && toast.expanded && !toast.hasBody,
+          }"
+        >{{ toast.title }}</div>
+        <div
+          v-if="toast.hasBody"
+          :ref="(el) => this.setClipEl(toast.id, el)"
+          class="care-toast__body"
+          :class="{
+            'has-list': toast.items.length > 0,
+            'is-clamped': toast.overflows && !toast.expanded,
+            'is-expanded': toast.overflows && toast.expanded,
+          }"
+        >
+          <div v-if="toast.body" class="care-toast__text">{{ toast.body }}</div>
+          <!-- Enumerations (e.g. missing criteria): one entry per line. -->
+          <template v-if="toast.items.length">
+            <div v-if="toast.itemsTitle" class="care-toast__list-title">{{ toast.itemsTitle }}</div>
+            <ul class="care-toast__list">
+              <li
+                v-for="(item, index) in toast.items"
+                :key="index"
+              >{{ item }}</li>
+            </ul>
+          </template>
         </div>
+        <button
+          v-if="toast.overflows && !toast.expanded"
+          type="button"
+          class="care-toast__more"
+          @click="expandToast(toast)"
+        >
+          {{ $t('common.showMore') }}
+        </button>
 
         <button
           type="button"
@@ -107,6 +119,8 @@
  *  title: "Example",
  *  variant: 'info', // 'primary', 'secondary', 'success', 'danger', 'warning', 'info', 'light', 'dark'
  *  delay: 5000, //in ms, 0 or less keeps the toast until it is closed manually
+ *  items: ["Criterion A", "Criterion B"], // optional, shown as a list with one entry per line
+ *  itemsTitle: "Still open ({count}):", // optional heading above the list (text or i18n key, gets {count})
  *  }
  *
  * Toasts disappear automatically. While the pointer or keyboard focus is on a toast
@@ -120,6 +134,8 @@
 const MAX_TOASTS = 5;
 // About three lines in the toast column. Longer copy stays collapsed.
 const COLLAPSE_CHARS = 140;
+// Lists longer than this stay collapsed until "show more".
+const COLLAPSE_ITEMS = 4;
 
 export default {
   name: "BasicToast",
@@ -169,12 +185,23 @@ export default {
         ? this.resolveText(data.key, data.params || {})
         : this.resolveText(data.message, data.params || {});
 
+      const items = Array.isArray(data.items)
+        // Items are display labels (e.g. criterion names), not i18n keys.
+        ? data.items.filter((item) => item !== null && item !== undefined && item !== "").map(String)
+        : [];
+      const itemsTitle = items.length
+        ? this.resolveText(data.itemsTitle, { count: items.length, ...(data.itemsTitleParams || {}) })
+        : "";
+
       const delay = Number.isFinite(Number(data.delay)) ? Number(data.delay) : 5000;
       const text = `${title || ""}\n${body || ""}`.trim();
       const toast = {
         id: ++this.toastCount,
         title,
         body,
+        items,
+        itemsTitle,
+        hasBody: Boolean(body) || items.length > 0,
         kind: this.resolveKind(data.variant),
         delay: delay > 0 ? delay : 0,
         remainingMs: delay > 0 ? delay : 0,
@@ -182,7 +209,9 @@ export default {
         pointerInside: false,
         focusInside: false,
         dismissed: false,
-        overflows: text.length > COLLAPSE_CHARS || text.split(/\n/).length > 3,
+        overflows: text.length > COLLAPSE_CHARS
+          || text.split(/\n/).length > 3
+          || items.length > COLLAPSE_ITEMS,
         expanded: false,
       };
 
@@ -341,11 +370,17 @@ export default {
 .care-toast {
   --care-toast-color: var(--bs-info);
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
+  /* Header row: icon, title, close. Body and "show more" span the full width below. */
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "icon title close"
+    "body body  body"
+    "more more  more";
+  align-items: center;
+  column-gap: 10px;
   width: 100%;
-  padding: 12px 12px 14px 18px;
+  padding: 12px 12px 14px 14px;
   overflow: hidden;
   color: var(--bs-body-color);
   /* Soft tint from the left instead of a hard coloured border */
@@ -365,7 +400,6 @@ export default {
   --_toast-wash: transparent;
   --_toast-border: color-mix(in srgb, var(--care-toast-color) 28%, var(--bs-border-color));
   --_toast-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / .08), 0 6px 16px -6px rgb(var(--care-shadow-rgb) / .16);
-  --_toast-bar-glow: none;
   --_toast-blur: none;
 }
 
@@ -374,34 +408,23 @@ export default {
   --_toast-shadow: 0 1px 2px rgb(0 0 0 / .45), 0 6px 16px -6px rgb(0 0 0 / .55);
 }
 
-/* Inset rounded accent bar with a soft glow */
-.care-toast::before {
-  content: "";
-  position: absolute;
-  top: 10px;
-  bottom: 10px;
-  left: 6px;
-  width: 3px;
-  border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    var(--care-toast-color),
-    color-mix(in srgb, var(--care-toast-color) 45%, transparent)
-  );
-  box-shadow: var(--_toast-bar-glow);
-}
-
 .care-toast--success { --care-toast-color: var(--bs-success); }
 .care-toast--danger  { --care-toast-color: var(--bs-danger); }
 .care-toast--warning { --care-toast-color: var(--bs-warning); }
 .care-toast--info    { --care-toast-color: var(--bs-info); }
 
 /* ---------- Icon ---------- */
+/* Without a title the message takes the title's place next to the icon. */
+.care-toast--no-title {
+  grid-template-areas:
+    "icon body close"
+    ".    more .";
+}
+
 .care-toast__icon {
-  flex: 0 0 28px;
-  width: 28px;
-  height: 28px;
-  margin-top: 1px;
+  grid-area: icon;
+  width: 24px;
+  height: 24px;
   color: var(--care-toast-color);
 }
 
@@ -422,13 +445,14 @@ export default {
   animation: care-draw 500ms var(--care-ease, ease-out) forwards;
 }
 
-.care-toast__icon .mark {
+/* Not "mark": Bootstrap's .mark sets a dark text colour, and currentColor would pick it up. */
+.care-toast__icon .glyph {
   stroke-dasharray: 40;
   stroke-dashoffset: 40;
   animation: care-draw 320ms ease-out 420ms forwards;
 }
 
-.care-toast__icon .mark--2 {
+.care-toast__icon .glyph--2 {
   animation-delay: 560ms;
 }
 
@@ -463,20 +487,17 @@ export default {
 }
 
 /* ---------- Text ---------- */
-.care-toast__content {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding-top: 2px;
-}
-
 .care-toast__title {
+  grid-area: title;
+  min-width: 0;
   font-weight: 600;
   font-size: .95rem;
   line-height: 1.3;
 }
 
 .care-toast__body {
-  margin-top: 2px;
+  grid-area: body;
+  min-width: 0;
   font-size: .875rem;
   line-height: 1.4;
   color: var(--bs-secondary-color);
@@ -504,17 +525,64 @@ export default {
   max-height: calc(1.4em * 3.85);
 }
 
+/* Room for the sentence, the list heading and the first few entries. */
+.care-toast__body.has-list.is-clamped {
+  max-height: calc(1.4em * 7.85);
+}
+
+/* ---------- List (e.g. missing criteria) ---------- */
+.care-toast__text + .care-toast__list-title,
+.care-toast__text + .care-toast__list {
+  margin-top: 8px;
+}
+
+.care-toast__list-title {
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.care-toast__list {
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.care-toast__list li {
+  position: relative;
+  padding: 1px 0 1px 14px;
+}
+
+/* Small dot in the toast colour instead of the default bullet. */
+.care-toast__list li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: calc(.7em - 2px);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--care-toast-color);
+}
+
 .care-toast__title.is-expanded,
 .care-toast__body.is-expanded {
   max-height: 30vh;
   overflow-y: auto;
+  /* Setting scrollbar-width switches off overlay scrollbars, so the bar gets
+     its own column. The gutter and padding keep the text clear of the thumb. */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-rgb), .35) transparent;
+  scrollbar-gutter: stable;
+  padding-right: 6px;
 }
 
 .care-toast__title + .care-toast__body {
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .care-toast__more {
+  grid-area: more;
+  justify-self: start;
   display: inline-flex;
   margin-top: 6px;
   padding: 0;
@@ -539,7 +607,7 @@ export default {
 
 /* ---------- Close ---------- */
 .care-toast__close {
-  flex: 0 0 auto;
+  grid-area: close;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -676,7 +744,7 @@ export default {
 
   .care-toast__icon svg,
   .care-toast__icon .ring,
-  .care-toast__icon .mark,
+  .care-toast__icon .glyph,
   .care-toast__icon .dot {
     animation: none !important;
     stroke-dashoffset: 0;

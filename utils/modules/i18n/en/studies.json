@@ -94,9 +94,10 @@
     "studySessionErrorTitle": "Study Session Error",
     "cannotFinishSession": "Cannot finish session",
     "cannotGoNext": "Cannot go to the next step",
-    "assessmentIncomplete": "The study cannot be finished until every assessment criterion is saved. Still open: {criteria}.",
+    "assessmentIncomplete": "The study cannot be finished until every assessment criterion is saved.",
     "assessmentIncompleteGeneric": "The study cannot be finished until the assessment in the sidebar is complete.",
-    "assessmentIncompleteNext": "You cannot go to the next step until every assessment criterion is saved. Still open: {criteria}.",
+    "assessmentIncompleteNext": "You cannot go to the next step until every assessment criterion is saved.",
+    "assessmentStillOpen": "Still open ({count}):",
     "assessmentIncompleteNextGeneric": "You cannot go to the next step until the assessment in the sidebar is complete.",
     "studyClosedAutoTerminated": "The study has been closed. Sessions are automatically terminated when a study is closed."
   },

@@ -647,11 +647,16 @@ export default {
       const isNext = action === "next";
       const title = this.$t(isNext ? "studies.messages.cannotGoNext" : "studies.messages.cannotFinishSession");
       const message = missing.length
-          ? this.$t(isNext ? "studies.messages.assessmentIncompleteNext" : "studies.messages.assessmentIncomplete", { criteria: missing.join(", ") })
+          ? this.$t(isNext ? "studies.messages.assessmentIncompleteNext" : "studies.messages.assessmentIncomplete")
           : this.$t(isNext ? "studies.messages.assessmentIncompleteNextGeneric" : "studies.messages.assessmentIncompleteGeneric");
+      // Missing criteria go into the toast as a list, one per line.
       this.eventBus.emit("toast", {
         title,
         message,
+        items: missing,
+        itemsTitle: missing.length
+            ? this.$t("studies.messages.assessmentStillOpen", { count: missing.length })
+            : "",
         variant: "warning",
       });
       return true;
