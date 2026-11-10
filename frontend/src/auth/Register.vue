@@ -179,10 +179,8 @@
                   </div>
                 </div>
               </div>
-            </template>
 
-            <div v-else class="d-grid gap-2 pt-1">
-              <div class="form-check">
+              <div class="form-check mt-2">
                 <input
                     id="acceptTerms"
                     v-model="formData['acceptTerms']"
@@ -201,6 +199,11 @@
                   {{ $t('errors.validation.auth.acceptTermsRequired') }}
                 </div>
               </div>
+            </template>
+
+            <div v-else class="d-grid gap-2 pt-1">
+              <p class="mb-0">{{ $t('auth.registerImprove.intro') }}</p>
+              <p class="register-optional-note mb-1">{{ $t('auth.registerImprove.optional') }}</p>
               <div v-if="config['requestStats']" class="form-check">
                 <input
                     id="acceptStats"
@@ -258,8 +261,8 @@
  *  Registration component
  *
  *  This component provides a mask to enter user information and register a user
- *  on the server. The fields are split into steps (profile, login details,
- *  agreements); each step is validated before the next one is shown.
+ *  on the server. The fields are split into steps (profile, login details with
+ *  the terms, optional opt-ins); each step is validated before the next one is shown.
  *
  *  @Author: Dennis Zyska, Carly Gettinger, Linyin Huang
  */
@@ -311,7 +314,7 @@ export default {
       };
     },
     steps() {
-      return [
+      const steps = [
         {
           id: "profile",
           title: this.$t("auth.registerSteps.profile"),
@@ -321,16 +324,20 @@ export default {
         {
           id: "credentials",
           title: this.$t("auth.registerSteps.credentials"),
-          fields: ["email", "password"],
-          valid: this.validEmail && this.validPassword,
-        },
-        {
-          id: "consent",
-          title: this.$t("auth.registerSteps.consent"),
-          fields: ["acceptTerms"],
-          valid: this.validTerms,
+          fields: ["email", "password", "acceptTerms"],
+          valid: this.validEmail && this.validPassword && this.validTerms,
         },
       ];
+      // The optional opt-ins get their own step only if at least one of them is requested
+      if (this.config.requestStats || this.config.requestData) {
+        steps.push({
+          id: "improve",
+          title: this.$t("auth.registerSteps.improve"),
+          fields: [],
+          valid: true,
+        });
+      }
+      return steps;
     },
     activeStep() {
       return this.steps[this.currentStep];
@@ -339,12 +346,12 @@ export default {
       return this.currentStep === this.steps.length - 1;
     },
     /**
-     * Covers the eyes while the password is typed, peeks while it is shown,
-     * reads a stack of documents on the agreements step and approves them once the terms are accepted.
+     * Covers the eyes while the password is typed, peeks while it is shown and approves once
+     * the terms are accepted. On the optional step it reads, and approves any opt-in.
      */
     mascotMood() {
-      if (this.activeStep.id === "consent") {
-        return this.formData.acceptTerms ? "approve" : "read";
+      if (this.activeStep.id === "improve") {
+        return this.formData.acceptStats || this.formData.acceptDataSharing ? "approve" : "read";
       }
       if (this.activeStep.id === "credentials") {
         if (this.showPassword) {
@@ -352,6 +359,9 @@ export default {
         }
         if (this.passwordFocused) {
           return "cover";
+        }
+        if (this.formData.acceptTerms) {
+          return "approve";
         }
       }
       return this.mascotWaving ? "wave" : "idle";
@@ -626,6 +636,11 @@ export default {
 
 .register-step.is-after {
   transform: translateX(32px);
+}
+
+.register-optional-note {
+  font-size: .85rem;
+  color: var(--bs-secondary-color);
 }
 
 .register-actions {
