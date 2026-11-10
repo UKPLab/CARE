@@ -31,7 +31,9 @@
           :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
-          :active-side-bar="defaultActiveSidebar"
+          :active-side-bar="activeSidebar || defaultActiveSidebar"
+          :is-tab-shown="isSidebarTabShown"
+          :is-tab-current="isSidebarTabCurrent"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
@@ -88,6 +90,7 @@ import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
 import { emailTemplateTypes } from "@/assets/templateTypes";
 import { resolveApiMessage } from "@/assets/utils";
+import {isCurrentStepTab, isLookBackTabShown, lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "EditorView",
@@ -106,6 +109,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       readOnly: computed(() => this.readOnlyOverwrite),
       templateId: computed(() => this.templateId),
     }
@@ -153,6 +157,7 @@ export default {
       required: false,
       default: null,
     },
+    ...lookBackPaneProps,
     withoutHistory: {
       type: Boolean,
       required: false,
@@ -185,6 +190,9 @@ export default {
       }
       if (this.$slots.additionalSidebars) {
         return 'additionalSidebars';
+      }
+      if (this.$slots.aiConversation) {
+        return 'aiConversation';
       }
       return null;
     },
@@ -235,6 +243,9 @@ export default {
       return emailTemplateTypes.includes(this.template.type) || this.template.type === 8;
     },
     readOnlyOverwrite() {
+      if (this.forceReadOnly) {
+        return true;
+      }
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
@@ -271,6 +282,13 @@ export default {
     },
   },
   methods: {
+    // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
+    isSidebarTabShown(slotName) {
+      return isLookBackTabShown(slotName, this.lookBackTabs, this.shownLookBackStepId, this.ownTabsHidden);
+    },
+    isSidebarTabCurrent(slotName) {
+      return isCurrentStepTab(slotName, this.lookBackTabs);
+    },
     addText(text) {
       if (this.templateId) {
         this.$refs.templateEditor?.addText(text);

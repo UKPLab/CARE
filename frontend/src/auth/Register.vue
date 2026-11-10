@@ -160,8 +160,16 @@
                 </label>
               </div>
             </div>
+            <div v-if="combineResearchConsent" class="form-group row my-2">
+              <div class="col-md-6 offset-md-4">
+                <label>
+                  <input v-model="acceptResearch" name="acceptResearch" type="checkbox">
+                  {{ $t('auth.acceptResearch') }}
+                </label>
+              </div>
+            </div>
             <div
-                v-if="config['requestStats']"
+                v-if="config['requestStats'] && !combineResearchConsent"
                 class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
@@ -175,7 +183,7 @@
               </div>
             </div>
             <div
-                v-if="config['requestData']"
+                v-if="config['requestData'] && !combineResearchConsent"
                 class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
@@ -239,6 +247,19 @@ export default {
     }
   },
   computed: {
+    combineResearchConsent() {
+      return window.config["app.register.combineResearchConsent"] === "true"
+          && this.config.requestData && this.config.requestStats;
+    },
+    acceptResearch: {
+      get() {
+        return this.formData.acceptStats && this.formData.acceptDataSharing;
+      },
+      set(accepted) {
+        this.formData.acceptStats = accepted;
+        this.formData.acceptDataSharing = accepted;
+      },
+    },
     config() {
       return {
         requestName: JSON.parse(window.config["app.register.requestName"]),
@@ -281,10 +302,10 @@ export default {
       return;
     }
     // Sets initial values for acceptStats and acceptDataSharing
-    if (this.config.requestStats) {
+    if (this.config.requestStats && !this.combineResearchConsent) {
       this.formData.acceptStats = this.config.isTrackingAgreed;
     }
-    if (this.config.requestData) {
+    if (this.config.requestData && !this.combineResearchConsent) {
       this.formData.acceptDataSharing = this.config.isDataShared;
     }
   },

@@ -15,6 +15,12 @@ export default {
       required: false,
       default: "",
     },
+    // A number shown on the tab button, e.g. the study step's number in the workflow
+    number: {
+      type: Number,
+      required: false,
+      default: null,
+    },
     buttons: {
       type: Array,
       required: false,

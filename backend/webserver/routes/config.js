@@ -20,6 +20,7 @@ module.exports = function (server) {
             "app.config.copyright": await server.db.models['setting'].get("app.config.copyright"),
             "app.register.enabled": await server.db.models['setting'].get("app.register.enabled"),
             "app.register.requestName": await server.db.models['setting'].get("app.register.requestName"),
+            "app.register.combineResearchConsent": await server.db.models['setting'].get("app.register.combineResearchConsent"),
             "app.register.requestStats": await server.db.models['setting'].get("app.register.requestStats"),
             "app.register.terms": await server.db.models['setting'].get("app.register.terms"),
             "app.register.acceptStats.default": await server.db.models['setting'].get("app.register.acceptStats.default"),

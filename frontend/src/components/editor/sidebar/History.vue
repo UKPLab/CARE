@@ -76,6 +76,7 @@ import { formatLocalizedDateTime, formatLocalizedTime } from "@/assets/utils";
 export default {
   name: "SidebarHistory",
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     studySessionId: {
       type: Number,
       required: false,
@@ -205,6 +206,7 @@ export default {
         this.$socket.emit("stats", {
           action: "editorHistorySelect",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,

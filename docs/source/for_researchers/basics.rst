@@ -25,7 +25,7 @@ Please check out the details of hosting the CARE server described in the
 .. note::
 
     For running internal pilot studies, running an NGINX server along with CARE is not strictly necessary, but this is highly recommended
-    when opening the tool to a network, adn especially when making it accessible to the internet. Please also configure
+    when opening the tool to a network, and especially when making it accessible to the internet. Please also configure
     your firewall to ensure high levels of security (opening only essential ports etc.). Also, you should urgently change the
     password of the admin user in the ``.env.main`` file.
 

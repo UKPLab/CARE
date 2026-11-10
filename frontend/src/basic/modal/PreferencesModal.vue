@@ -25,8 +25,19 @@
         class="preferences-section"
       >
         <h6 class="section-title">{{ $t("auth.updateConsent") }}</h6>
+        <div v-if="combineResearchConsent" class="consent-item">
+          <label class="consent-label">
+            <input
+              v-model="acceptResearch"
+              class="consent-input"
+              type="checkbox"
+              :indeterminate="acceptStats !== acceptDataSharing"
+            />
+            {{ $t("auth.acceptResearch") }}
+          </label>
+        </div>
         <div
-          v-if="requestData"
+          v-if="requestData && !combineResearchConsent"
           class="consent-item"
         >
           <label class="consent-label">
@@ -39,7 +50,7 @@
           </label>
         </div>
         <div
-          v-if="requestStats"
+          v-if="requestStats && !combineResearchConsent"
           class="consent-item"
         >
           <label class="consent-label">
@@ -98,6 +109,19 @@ export default {
     };
   },
   computed: {
+    combineResearchConsent() {
+      return this.$store.getters["settings/getValue"]("app.register.combineResearchConsent") === "true"
+          && this.requestData && this.requestStats;
+    },
+    acceptResearch: {
+      get() {
+        return this.acceptStats && this.acceptDataSharing;
+      },
+      set(accepted) {
+        this.acceptStats = accepted;
+        this.acceptDataSharing = accepted;
+      },
+    },
     user() {
       return this.$store.getters["auth/getUser"];
     },
