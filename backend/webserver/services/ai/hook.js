@@ -186,6 +186,46 @@ async function resolveSubmissionId(service, input) {
 }
 
 /**
+ * Checks whether the calling client may read a submission through a hook placeholder.
+ *
+ * Allowed: the submission owner, an admin, or a user with a study session on a study
+ * whose step document is that submission.
+ *
+ * @param {Object} service - AIService runtime with DB access.
+ * @param {Object} client - Authenticated RPC client (`userId`, `isAdmin()`).
+ * @param {Object} submission - Loaded submission row.
+ * @returns {Promise<boolean>} True when access is allowed.
+ */
+async function canAccessSubmission(service, client, submission) {
+    const userId = Number(client?.userId);
+    if (!submission || !Number.isInteger(userId) || userId <= 0) return false;
+    if (Number(submission.userId) === userId) return true;
+    if (typeof client.isAdmin === "function" && await client.isAdmin()) return true;
+
+    const models = service.server.db.models;
+    const sessions = await models["study_session"].findAll({
+        where: {userId, deleted: false},
+        attributes: ["studyId"],
+        raw: true,
+    });
+    const studyIds = [...new Set(sessions.map((session) => session.studyId).filter(Boolean))];
+    if (!studyIds.length) return false;
+    const steps = await models["study_step"].findAll({
+        where: {studyId: studyIds, deleted: false},
+        attributes: ["documentId"],
+        raw: true,
+    });
+    const documentIds = [...new Set(steps.map((step) => step.documentId).filter(Boolean))];
+    if (!documentIds.length) return false;
+    const linked = await models["document"].findOne({
+        where: {id: documentIds, submissionId: submission.id, deleted: false},
+        attributes: ["id"],
+        raw: true,
+    });
+    return !!linked;
+}
+
+/**
  * Fills an enabled hook's prompt and redacts student fields in it.
  *
  * `redactPersonalData` runs on the finished prompt here, after every placeholder is filled.
@@ -195,12 +235,13 @@ async function resolveSubmissionId(service, input) {
  * @param {Object} service - AIService runtime with DB access.
  * @param {number} hookId - Target `ai_hook` primary key.
  * @param {Object} [rawValues={}] - Placeholder values from the caller.
+ * @param {Object|null} [accessClient=null] - Client whose access to submission placeholders is checked. `null` skips the check (trusted internal callers).
  * @returns {Promise<{hook: Object, promptText: string, resolvedValues: Object}>} Filled prompt. `promptText` is redacted. `resolvedValues` is not.
  */
-async function resolveHookPrompt(service, hookId, rawValues = {}) {
+async function resolveHookPrompt(service, hookId, rawValues = {}, accessClient = null) {
     const hook = await loadEnabledHook(service, hookId);
     const names = [];
-    const values = await resolveHookReferences(service, rawValues, names);
+    const values = await resolveHookReferences(service, rawValues, names, accessClient);
     const promptText = await resolveTemplateWithValues(
         hook.templateId,
         values,
@@ -221,9 +262,10 @@ async function resolveHookPrompt(service, hookId, rawValues = {}) {
  * @param {Object} service.server - CARE webserver instance (DB access).
  * @param {Object} input - The reference's `input` spec (carries `type` + ids).
  * @param {string[]} names - Collects submission owner names for final prompt redaction.
+ * @param {Object|null} [accessClient=null] - Client to check submission access for. `null` skips the check.
  * @returns {Promise<*>} Resolved value for the placeholder.
  */
-async function resolveServiceInput(service, input, names) {
+async function resolveServiceInput(service, input, names, accessClient = null) {
     if (!input || typeof input !== "object") return null;
     switch (input.type) {
         case "configuration": {
@@ -244,6 +286,9 @@ async function resolveServiceInput(service, input, names) {
             if (!submissionId || !selectedFiles.length) return "";
 
             const submission = await service.server.db.models["submission"].getById(submissionId);
+            if (accessClient && !await canAccessSubmission(service, accessClient, submission)) {
+                return "";
+            }
             if (submission?.userId) {
                 const owner = await service.server.db.models["user"].getById(submission.userId);
                 if (owner?.firstName?.trim() && owner?.lastName?.trim()) {
@@ -315,13 +360,14 @@ async function resolveServiceInput(service, input, names) {
  * @param {Object} service.server - CARE webserver instance (DB access).
  * @param {Object} values - Map of placeholderKey → value or `{type:"serviceReplacement", input}`.
  * @param {string[]} names - Collects submission owner names for final prompt redaction.
+ * @param {Object|null} [accessClient=null] - Client to check submission access for. `null` skips the check.
  * @returns {Promise<Object>} Map with references resolved to values.
  */
-async function resolveHookReferences(service, values, names) {
+async function resolveHookReferences(service, values, names, accessClient = null) {
     const resolved = {};
     for (const [key, value] of Object.entries(values || {})) {
         if (value && typeof value === "object" && value.type === "serviceReplacement") {
-            resolved[key] = await resolveServiceInput(service, value.input, names);
+            resolved[key] = await resolveServiceInput(service, value.input, names, accessClient);
         } else {
             resolved[key] = value;
         }
@@ -343,10 +389,12 @@ const NULL_HOOK_OUTPUT = Object.freeze({ choices: [], output: null });
  * @param {Object} service - AIService runtime.
  * @param {Object} client - Authenticated RPC client triggering the hook.
  * @param {Object} data - Hook execution payload (hookId, values, studySessionId, studyStepId, documentId).
+ * @param {Object} [options] - Execution options.
+ * @param {boolean} [options.enforceAccess=false] - Check the client's access to submission placeholders. Set for RPC callers; trusted internal callers (triggers) leave it off.
  * @returns {Promise<{choices: unknown[], output: string|null}>} Provider choices plus first-choice content (text or JSON string), or null on study soft-skip.
  * @throws {Error} If the hook id is invalid, or (for non-study callers) hook/model/credential is unavailable.
  */
-async function runHook(service, client, data) {
+async function runHook(service, client, data, options = {}) {
     const hookId = Number(data?.hookId);
     if (!Number.isInteger(hookId) || hookId <= 0) {
         throw new TranslatableError("errors.ai.hook.invalidId");
@@ -358,7 +406,9 @@ async function runHook(service, client, data) {
         // not that it has no model. resolveHookPrompt loads this hook again when it builds the prompt.
         await loadEnabledHook(service, hookId);
         const hookModels = await loadHookModels(service, hookId);
-        const {hook, promptText} = await resolveHookPrompt(service, hookId, rawValues);
+        const {hook, promptText} = await resolveHookPrompt(
+            service, hookId, rawValues, options?.enforceAccess ? client : null
+        );
 
         let lastError;
         for (const [index, hookModel] of hookModels.entries()) {

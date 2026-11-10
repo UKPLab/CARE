@@ -48,10 +48,11 @@ module.exports = class AIService extends Service {
      *
      * @param {*} client Authenticated client context.
      * @param {*} data Hook execution payload.
+     * @param {Object} [options] Execution options (`enforceAccess` checks submission placeholders for RPC callers).
      * @returns {Promise<*>}
      */
-    async runHook(client, data) {
-        return await hook.runHook(this, client, data);
+    async runHook(client, data, options = {}) {
+        return await hook.runHook(this, client, data, options);
     }
 
     /**
@@ -65,7 +66,7 @@ module.exports = class AIService extends Service {
     async command(client, command, data) {
         const handlers = {
             chatCompletion: () => chat.chatCompletion(this, client, data),
-            runHook: () => this.runHook(client, data),
+            runHook: () => this.runHook(client, data, {enforceAccess: true}),
             abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
