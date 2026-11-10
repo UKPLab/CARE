@@ -45,6 +45,13 @@
 import { homeShared } from "./homeShared";
 
 /**
+ * Rows in this panel. Together with HomeDeadlines (also 3) the right column
+ * stays about as tall as the 6-row Continue panel on the left, so neither
+ * side is stretched into blank space. "View all" leads to the full list.
+ */
+const SESSIONS_LIMIT = 3;
+
+/**
  * The viewer's open sessions, soonest deadline first.
  */
 export default {
@@ -70,7 +77,7 @@ export default {
           };
         })
         .sort((a, b) => a.deadlineAt - b.deadlineAt)
-        .slice(0, 6);
+        .slice(0, SESSIONS_LIMIT);
     },
   },
   methods: {

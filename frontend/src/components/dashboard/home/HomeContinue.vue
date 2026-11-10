@@ -27,6 +27,36 @@
       </span>
     </router-link>
 
+    <!-- Few recent items (typical for a regular user): offer starting points instead of blank space. -->
+    <template v-if="startItems.length > 0">
+      <h3 class="home-start-head">{{ $t('dashboard.home.startSomething') }}</h3>
+      <router-link
+        v-for="item in startItems"
+        :key="item.key"
+        class="home-session"
+        :to="item.to"
+      >
+        <span
+          class="home-kind-icon"
+          :class="'home-kind-icon--' + item.kind"
+        >
+          <LoadIcon
+            :icon-name="item.icon"
+            :size="15"
+          />
+        </span>
+        <span class="home-session-main">
+          <b>{{ item.title }}</b>
+          <small>{{ item.detail }}</small>
+        </span>
+        <LoadIcon
+          class="home-chevron"
+          icon-name="chevron-right"
+          :size="13"
+        />
+      </router-link>
+    </template>
+
     <!-- Last 7 days: one cell per day, shade by number of events. -->
     <footer class="home-week">
       <div class="home-week-head">
@@ -59,10 +89,13 @@ import LoadIcon from "@/basic/Icon.vue";
 import { formatLocalizedDate, getTimeDiffString } from "@/assets/utils";
 import { homeShared } from "./homeShared";
 
-const HOME_DOCUMENT_LIMIT = 8;
+const CONTINUE_LIMIT = 6;
+/** Below this many recent items the panel also shows the "start something new" links. */
+const START_LINKS_BELOW = 4;
 
 /**
- * Continue list and the 7-day activity strip.
+ * Continue list (one row per document or study), start links when the list
+ * is short, and the 7-day activity strip.
  */
 export default {
   name: "HomeContinue",
@@ -75,20 +108,44 @@ export default {
     openSessions: { type: Array, required: true },
     /** Signed-in user, used to count that user's sessions in the week strip. */
     userId: { type: Number, required: true },
+    /** The viewer may open the studies dashboard. */
+    canSeeStudies: { type: Boolean, required: true },
     /** Current time, so "edited" lines and the week strip stay current. */
     now: { type: Number, required: true },
   },
   computed: {
     continueItems() {
-      const sessions = this.openSessions.map((session) => ({
-        at: new Date(session.updatedAt || session.start || session.createdAt).getTime(),
-        item: {
-          ...this.sessionLink(session),
-          kind: "session",
-          icon: "clipboard2-pulse",
-          kindLabel: this.$t("dashboard.home.kindSession"),
-        },
-      }));
+      // A study can have many open sessions of the same user (multiple submit).
+      // Show the study once, linked to its most recently used session.
+      const byStudy = new Map();
+      this.openSessions.forEach((session) => {
+        const at = new Date(session.updatedAt || session.start || session.createdAt).getTime();
+        const entry = byStudy.get(session.studyId);
+        if (!entry) {
+          byStudy.set(session.studyId, { at, session, count: 1 });
+          return;
+        }
+        entry.count += 1;
+        if (at > entry.at) {
+          entry.at = at;
+          entry.session = session;
+        }
+      });
+      const sessions = [...byStudy.values()].map(({ at, session, count }) => {
+        const link = this.sessionLink(session);
+        return {
+          at,
+          item: {
+            ...link,
+            detail: count > 1
+              ? `${link.detail} · ${this.$t("dashboard.home.openSessionsCount", { count })}`
+              : link.detail,
+            kind: "session",
+            icon: "clipboard2-pulse",
+            kindLabel: this.$t("dashboard.home.kindSession"),
+          },
+        };
+      });
       const documents = this.documents.map((doc) => {
         const kind = this.documentKind(doc);
         return {
@@ -108,8 +165,32 @@ export default {
       });
       return [...sessions, ...documents]
         .sort((a, b) => (b.at || 0) - (a.at || 0))
-        .slice(0, HOME_DOCUMENT_LIMIT)
+        .slice(0, CONTINUE_LIMIT)
         .map((entry) => entry.item);
+    },
+    startItems() {
+      if (this.continueItems.length >= START_LINKS_BELOW) {
+        return [];
+      }
+      const items = [{
+        key: "documents",
+        title: this.$t("sidebar.nav.documents"),
+        detail: this.$t("dashboard.home.startDocumentsDetail"),
+        to: "/dashboard/documents",
+        kind: "text",
+        icon: "file-earmark-text",
+      }];
+      if (this.canSeeStudies) {
+        items.push({
+          key: "studies",
+          title: this.$t("dashboard.home.openStudies"),
+          detail: this.$t("dashboard.home.startStudiesDetail"),
+          to: "/dashboard/studies",
+          kind: "session",
+          icon: "clipboard2-pulse",
+        });
+      }
+      return items;
     },
     /**
      * Last 7 days ending today. Counts the user's own events: documents
@@ -187,6 +268,20 @@ export default {
 
 .home-panel--stack > .home-session:last-of-type {
   margin-bottom: 12px;
+}
+
+/* Small caption above the start links, same style as the week strip heading. */
+.home-start-head {
+  margin: 12px 0 4px;
+  color: var(--bs-secondary-color);
+  font-size: .75rem;
+  font-weight: 650;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+.home-panel--stack > .home-empty + .home-start-head {
+  margin-top: 16px;
 }
 
 .home-week-head {

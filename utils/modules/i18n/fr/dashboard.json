@@ -589,6 +589,15 @@
         "started": "Commencée il y a {when}",
         "noOpenSessions": "Aucune session ouverte",
         "nothingToResume": "Rien à reprendre pour le moment",
+        "openSessionsCount": "{count} sessions ouvertes",
+        "startSomething": "Commencer quelque chose de nouveau",
+        "startDocumentsDetail": "Importer un document ou en créer un nouveau",
+        "startStudiesDetail": "Participer à une étude ouverte",
+        "links": {
+            "title": "Liens CARE",
+            "docs": "Documentation",
+            "website": "Site web"
+        },
         "viewAll": "Tout voir",
         "activitySummary": "Sur les {weeks} dernières semaines : {parts}",
         "activityCount": "{count} {description}",

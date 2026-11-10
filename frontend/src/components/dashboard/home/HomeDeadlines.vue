@@ -42,6 +42,9 @@
 import { formatLocalizedDateTime, getTimeDiffString } from "@/assets/utils";
 import { homeShared } from "./homeShared";
 
+/** Rows in this panel; sized together with HomeSessions, see SESSIONS_LIMIT there. */
+const DEADLINES_LIMIT = 3;
+
 /**
  * Open studies with an end date still ahead, soonest first.
  */
@@ -67,7 +70,7 @@ export default {
       return this.openStudies.filter((study) => !study.end).length;
     },
     deadlineItems() {
-      return this.upcomingStudies.slice(0, 5).map((study) => {
+      return this.upcomingStudies.slice(0, DEADLINES_LIMIT).map((study) => {
         const end = new Date(study.end).getTime();
         return {
           key: `study-${study.id}`,

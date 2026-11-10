@@ -589,6 +589,15 @@
         "started": "Started {when} ago",
         "noOpenSessions": "No open sessions",
         "nothingToResume": "Nothing to resume yet",
+        "openSessionsCount": "{count} open sessions",
+        "startSomething": "Start something new",
+        "startDocumentsDetail": "Upload a document or create a new one",
+        "startStudiesDetail": "Join a study open to you",
+        "links": {
+            "title": "CARE links",
+            "docs": "Documentation",
+            "website": "Website"
+        },
         "viewAll": "View all",
         "activitySummary": "In the last {weeks} weeks: {parts}",
         "activityCount": "{count} {description}",

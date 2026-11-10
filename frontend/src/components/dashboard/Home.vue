@@ -6,7 +6,7 @@
     :now="now"
   />
 
-  <div v-else class="home mb-3">
+  <div v-else class="home home--with-footer">
     <HomeCountTiles
       :documents="documents"
       :open-sessions="openSessions"
@@ -23,21 +23,24 @@
           :documents="documents"
           :open-sessions="openSessions"
           :user-id="userId"
+          :can-see-studies="canSeeStudies"
           :now="now"
         />
       </div>
       <div class="col-lg-6 d-flex flex-column gap-3 home-stack">
-        <HomeSessions
-          :open-sessions="openSessions"
-          :now="now"
-        />
         <HomeDeadlines
           v-if="canSeeStudies"
           :open-studies="openStudies"
           :now="now"
         />
+        <HomeSessions
+          :open-sessions="openSessions"
+          :now="now"
+        />
       </div>
     </div>
+
+    <HomeLinks class="home-footer-slot" />
   </div>
 </template>
 
@@ -48,6 +51,7 @@ import HomeCountTiles from "./home/HomeCountTiles.vue";
 import HomeContinue from "./home/HomeContinue.vue";
 import HomeSessions from "./home/HomeSessions.vue";
 import HomeDeadlines from "./home/HomeDeadlines.vue";
+import HomeLinks from "./home/HomeLinks.vue";
 
 /**
  * Dashboard home. Resume links come from the viewer's own documents
@@ -57,7 +61,7 @@ import HomeDeadlines from "./home/HomeDeadlines.vue";
  */
 export default {
   name: "DashboardHome",
-  components: { HomeGuest, HomeCountTiles, HomeContinue, HomeSessions, HomeDeadlines },
+  components: { HomeGuest, HomeCountTiles, HomeContinue, HomeSessions, HomeDeadlines, HomeLinks },
   data() {
     return {
       // Ticks once a minute so deadline countdowns stay current.
@@ -144,6 +148,20 @@ export default {
 
 .home .row > [class*="col"] {
   min-width: 0;
+}
+
+/* At least as tall as the dashboard scroll area (#viewerContainer), so the
+   footer sits at the bottom of the page when the panels are short and after
+   them when the page scrolls. */
+.home--with-footer {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.home-footer-slot {
+  margin-top: auto;
+  padding-top: 24px;
 }
 
 /* Stacked panels keep their own height. The last one fills the rest of the column. */
