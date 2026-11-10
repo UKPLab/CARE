@@ -5,49 +5,7 @@
         :title="$t('studies.title')"
     >
       <template #headerElements>
-        <div class="dashboard-header-actions">
-          <BasicButton
-              class="btn-secondary btn-sm"
-              :title="$t('studies.savedTemplates')"
-              :text="$t('studies.savedTemplates')"
-              icon="folder"
-              @click="openSavedTemplates"
-          />
-          <BasicButton
-              v-if="canManageStudies"
-              class="btn-secondary btn-sm"
-              :title="$t('studies.manageStudies')"
-              :text="$t('studies.manageStudies')"
-              icon="gear-fill"
-              @click="manageStudies"
-          />
-           <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('submission.publishAssessment.title')"
-            :text="$t('submission.publishAssessment.title')"
-            icon="clipboard-data"
-            @click="openPublishAssessment"
-          />
-          <BasicButton
-              v-if="canAddBulkAssignments"
-              class="btn-secondary btn-sm"
-              :title="$t('studies.addBulkAssignments')"
-              :text="$t('studies.addBulkAssignments')"
-              icon="stack"
-              @click="addBulkAssignment"
-          />
-          <BasicButton
-              v-if="isAdmin"
-              class="btn-secondary btn-sm"
-              :title="$t('studies.addSingleAssignment')"
-              :text="$t('studies.addSingleAssignment')"
-              icon="plus-square"
-              @click="addSingleAssignment"
-          />
-          <span
-              class="dashboard-header-sep"
-              aria-hidden="true"
-          />
+        <HeaderActions :actions="headerActions">
           <BasicButton
               class="btn-primary btn-sm"
               :title="$t('common.add')"
@@ -55,7 +13,7 @@
               icon="plus"
               @click="add"
           />
-        </div>
+        </HeaderActions>
       </template>
       <template #body>
         <BackendTable
@@ -164,6 +122,7 @@ import BackendTable from "@/basic/BackendTable.vue";
 import StudyModal from "@/components/dashboard/coordinator/Study.vue";
 import StudySessionModal from "@/components/dashboard/study/StudySessionModal.vue";
 import BasicButton from "@/basic/Button.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignmentModal from "@/components/dashboard/study/AssignmentModal.vue";
 import InformationModal from "@/basic/modal/InformationModal.vue";
@@ -195,6 +154,7 @@ export default {
     StudyModal,
     StudySessionModal,
     BasicButton,
+    HeaderActions,
     ConfirmModal,
     AssignmentModal,
     InformationModal,
@@ -253,6 +213,19 @@ export default {
     }
   },
   computed: {
+    /**
+     * Secondary header buttons. The ones that do not fit next to the title
+     * collapse into the "..." menu (HeaderActions); "Add" always stays visible.
+     */
+    headerActions() {
+      return [
+        {key: "savedTemplates", text: this.$t('studies.savedTemplates'), icon: "folder", onClick: this.openSavedTemplates},
+        this.canManageStudies && {key: "manageStudies", text: this.$t('studies.manageStudies'), icon: "gear-fill", onClick: this.manageStudies},
+        {key: "publishAssessment", text: this.$t('submission.publishAssessment.title'), icon: "clipboard-data", onClick: this.openPublishAssessment},
+        this.canAddBulkAssignments && {key: "addBulkAssignments", text: this.$t('studies.addBulkAssignments'), icon: "stack", onClick: this.addBulkAssignment},
+        this.isAdmin && {key: "addSingleAssignment", text: this.$t('studies.addSingleAssignment'), icon: "plus-square", onClick: this.addSingleAssignment},
+      ].filter(Boolean);
+    },
     /**
      * Filter tokens offered by the table search bar. Mirrors study.getQueryTableFilterColumns —
      * the backend drops anything it does not know, so a key added here needs the model too.

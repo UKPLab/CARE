@@ -10,60 +10,7 @@
       @action="chooseAction"
   >
     <template #headerActions>
-      <div class="dashboard-header-actions">
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.liveSessions')"
-            :text="$t('users.liveSessions')"
-            icon="people-fill"
-            @click="openSessionDetailsModal()"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.downloadUsers')"
-            :text="$t('users.downloadUsers')"
-            icon="download"
-            @click="downloadUsers"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.rights.managementTitle')"
-            :text="$t('users.rights.managementTitle')"
-            icon="shield-lock"
-            @click="openRightsManagementModal"
-        />
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('users.roleManagement.button')"
-          :text="$t('users.roleManagement.button')"
-          icon="person-plus"
-          @click="$refs.roleManagementModal.open()"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.uploadPassword')"
-            :text="$t('users.uploadPassword')"
-            icon="key"
-            @click="openUploadModal"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.importCsv')"
-            :text="$t('users.importCsv')"
-            icon="filetype-csv"
-            @click="openImportModal('csv')"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.importViaMoodle')"
-            :text="$t('users.importViaMoodle')"
-            icon="box-arrow-in-down"
-            @click="openImportModal('moodle')"
-        />
-        <span
-            class="dashboard-header-sep"
-            aria-hidden="true"
-        />
+      <HeaderActions :actions="headerActions">
         <BasicButton
             class="btn-primary btn-sm"
             :title="$t('users.addUser')"
@@ -71,7 +18,7 @@
             icon="person-plus"
             @click="openUserAddModal"
         />
-      </div>
+      </HeaderActions>
     </template>
   </DashboardListPage>
   <DetailsModal
@@ -125,6 +72,7 @@ import PasswordModal from "@/basic/modal/PasswordModal.vue";
 import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
@@ -138,6 +86,7 @@ export default {
   subscribeTable: ["user"],
   components: {
     DashboardListPage,
+    HeaderActions,
     DetailsModal,
     PasswordModal,
     RightsModal,
@@ -181,6 +130,18 @@ export default {
     };
   },
   computed: {
+    /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      return [
+        {key: "liveSessions", text: this.$t('users.liveSessions'), icon: "people-fill", onClick: () => this.openSessionDetailsModal()},
+        {key: "downloadUsers", text: this.$t('users.downloadUsers'), icon: "download", onClick: () => this.downloadUsers()},
+        {key: "rightsManagement", text: this.$t('users.rights.managementTitle'), icon: "shield-lock", onClick: () => this.openRightsManagementModal()},
+        {key: "roleManagement", text: this.$t('users.roleManagement.button'), icon: "person-plus", onClick: () => this.$refs.roleManagementModal.open()},
+        {key: "uploadPassword", text: this.$t('users.uploadPassword'), icon: "key", onClick: () => this.openUploadModal()},
+        {key: "importCsv", text: this.$t('users.importCsv'), icon: "filetype-csv", onClick: () => this.openImportModal('csv')},
+        {key: "importMoodle", text: this.$t('users.importViaMoodle'), icon: "box-arrow-in-down", onClick: () => this.openImportModal('moodle')},
+      ];
+    },
     /** Same as the header create button; offered while the table is empty. */
     emptyAction() {
       return {

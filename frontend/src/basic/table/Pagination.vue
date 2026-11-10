@@ -1,9 +1,9 @@
 <template>
-  <div class="container ">
-    <div class="row justify-content-md-end align-items-center">
+  <div class="container">
+    <div class="table-pagination">
       <div
         v-if="totalItems > 0"
-        class="col-md-auto"
+        class="table-pagination-item"
       >
         <span class="text-muted">
           {{ rangeText }}
@@ -11,8 +11,8 @@
       </div>
       <div
         v-if="itemsPerPageListSelect.length > 0"
-        class="col-md-auto">
-        <div class="input-group">
+        class="table-pagination-item">
+        <div class="input-group page-size">
           <span
             class="input-group-text"
             :title="$t('common.itemsPerPage')">
@@ -39,7 +39,7 @@
       </div>
       <div
         v-if="showNavigation"
-        class="col-md-auto"
+        class="table-pagination-item"
       >
         <nav :aria-label="$t('common.pagination')">
           <ul class="pagination mb-0">
@@ -261,6 +261,35 @@ export default {
 </script>
 
 <style scoped>
+/* One right-aligned row: range text, page size, page buttons. On narrow screens the
+   items wrap but keep their natural width (no full-width select). */
+.table-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem 1.5rem;
+}
+
+.table-pagination-item {
+  flex: none;
+  max-width: 100%;
+}
+
+.page-size {
+  flex-wrap: nowrap;
+  width: auto;
+}
+
+.page-size > .form-select {
+  flex: none;
+  width: auto;
+}
+
+.pagination {
+  flex-wrap: wrap;
+}
+
 /* Separate rounded page buttons on the table surface. Surface and border follow the
    table theming variables (see table.css), so a themed page needs no overrides here. */
 .pagination {

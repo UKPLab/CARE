@@ -672,6 +672,17 @@ html .dashboard-page > .card-header {
   padding: 1.15rem 1.35rem 0.4rem;
 }
 
+/* Set by HeaderActions.vue while its buttons fit next to the title: keep one line,
+   so the header never jumps to two rows between resize frames. */
+html .dashboard-page > .card-header.has-header-actions {
+  flex-wrap: nowrap;
+}
+
+html .dashboard-page > .card-header.has-header-actions > .card-title {
+  flex: none;
+  white-space: nowrap;
+}
+
 html .dashboard-page > .card-header .card-title {
   margin: 0;
   font-size: 1.35rem;

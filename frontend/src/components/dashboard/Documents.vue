@@ -9,26 +9,15 @@
     @action="action"
   >
     <template #headerActions>
-      <BasicButton
-          v-if="showCreateButton"
-          class="btn-secondary btn-sm"
-          :title="$t('documents.createDocument')"
-          :text="$t('documents.createDocument')"
-          icon="file-earmark-plus"
-          @click="$refs.createModal.open()"
-      />
-      <span
-          v-if="showCreateButton"
-          class="dashboard-header-sep"
-          aria-hidden="true"
-      />
-      <BasicButton
-          class="btn-primary btn-sm"
-          :title="$t('documents.addDocument')"
-          :text="$t('documents.uploadDocument')"
-          icon="upload"
-          @click="$refs.uploadModal.open()"
-      />
+      <HeaderActions :actions="headerActions">
+        <BasicButton
+            class="btn-primary btn-sm"
+            :title="$t('documents.addDocument')"
+            :text="$t('documents.uploadDocument')"
+            icon="upload"
+            @click="$refs.uploadModal.open()"
+        />
+      </HeaderActions>
     </template>
     <template #afterTable>
       <EditorDownload ref="editorDownload"/>
@@ -52,6 +41,7 @@ import EditModal from "./documents/EditModal.vue";
 import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { isOwnListedDocument } from "@/assets/utils";
@@ -71,6 +61,7 @@ export default {
   components: {
     UploadModal,
     DashboardListPage,
+    HeaderActions,
     BasicButton,
     PublishModal,
     ConfirmModal,
@@ -85,6 +76,13 @@ export default {
     };
   },
   computed: {
+    /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      if (!this.showCreateButton) return [];
+      return [
+        {key: "createDocument", text: this.$t('documents.createDocument'), icon: "file-earmark-plus", onClick: () => this.$refs.createModal.open()},
+      ];
+    },
     /** Same as the header create button; offered while the table is empty. */
     emptyAction() {
       return {

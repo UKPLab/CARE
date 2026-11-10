@@ -4,20 +4,7 @@
     :title="$t('users.title')"
   >
     <template #headerElements>
-      <div class="dashboard-header-actions">
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.stats.exportCsv')"
-            icon="cloud-arrow-down"
-            @click="downloadBehaviourData('csv')"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.stats.exportJson')"
-            icon="cloud-arrow-down"
-            @click="downloadBehaviourData('json')"
-        />
-      </div>
+      <HeaderActions :actions="headerActions" />
     </template>
     <template #body>
       <BasicTable
@@ -49,6 +36,7 @@
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import {downloadObjectsAs, formatLocalizedDate} from "@/assets/utils";
 
 /**
@@ -65,7 +53,7 @@ import {downloadObjectsAs, formatLocalizedDate} from "@/assets/utils";
  */
 export default {
   name: "UserStatistics",
-  components: {BasicTable, BasicButton, Card},
+  components: {BasicTable, BasicButton, Card, HeaderActions},
   subscribeTable: ["user"],
   props: {
     'admin': {
@@ -101,6 +89,13 @@ export default {
     }
   },
   computed: {
+    /** Header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      return [
+        {key: "exportCsv", text: this.$t('users.stats.exportCsv'), icon: "cloud-arrow-down", onClick: () => this.downloadBehaviourData('csv')},
+        {key: "exportJson", text: this.$t('users.stats.exportJson'), icon: "cloud-arrow-down", onClick: () => this.downloadBehaviourData('json')},
+      ];
+    },
     userTableColumns() {
       return [
         {name: this.$t('users.stats.columns.user'), key: "userName", sortable: true},

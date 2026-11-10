@@ -9,20 +9,7 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="dashboard-header-actions">
-        <template v-if="isAdmin">
-          <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('dashboard.projects.assignTooltip')"
-            :text="$t('dashboard.projects.assignButton')"
-            icon="people-fill"
-            @click="$refs.assignProjectModal.open()"
-          />
-          <span
-            class="dashboard-header-sep"
-            aria-hidden="true"
-          />
-        </template>
+      <HeaderActions :actions="headerActions">
         <BasicButton
           class="btn-primary btn-sm"
           :title="$t('dashboard.projects.createTooltip')"
@@ -30,7 +17,7 @@
           icon="plus"
           @click="$refs.projectModal.open(0)"
         />
-      </div>
+      </HeaderActions>
     </template>
   </DashboardListPage>
   <ProjectModal ref="projectModal"/>
@@ -47,6 +34,7 @@ import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
@@ -64,6 +52,7 @@ export default {
   components: {
     ExportModal,
     DashboardListPage,
+    HeaderActions,
     BasicButton,
     ProjectModal,
     ConfirmModal,
@@ -75,6 +64,13 @@ export default {
     };
   },
   computed: {
+    /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      if (!this.isAdmin) return [];
+      return [
+        {key: "assign", text: this.$t('dashboard.projects.assignButton'), title: this.$t('dashboard.projects.assignTooltip'), icon: "people-fill", onClick: () => this.$refs.assignProjectModal.open()},
+      ];
+    },
     /** Same as the header create button; offered while the table is empty. */
     emptyAction() {
       return {

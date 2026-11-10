@@ -10,7 +10,11 @@
  *
  * Destructive actions (btn-outline-danger) always come last and are never inline
  * while there is a menu.
+ *
+ * On compact screens (viewport.compact, < 768px) every action goes into the menu,
+ * so the Manage column is a single "..." button.
  */
+import { viewport } from "@/assets/viewport.js";
 
 export const DEFAULT_MAX_INLINE = 3;
 
@@ -46,6 +50,9 @@ export function splitRowActions(buttons, layout) {
     ...buttons.filter((b) => !isDangerButton(b)),
     ...buttons.filter((b) => isDangerButton(b)),
   ];
+  if (viewport.compact) {
+    return { inline: [], menu: ordered };
+  }
   if (ordered.length <= maxInline + 1) {
     return { inline: ordered, menu: [] };
   }
@@ -67,6 +74,7 @@ export function splitRowActions(buttons, layout) {
  * @returns {number}
  */
 export function rowActionSlots(buttonCount, layout) {
+  if (viewport.compact) return buttonCount > 0 ? 1 : 0;
   const maxInline = layout?.maxInline ?? DEFAULT_MAX_INLINE;
   return buttonCount > maxInline + 1 ? maxInline + 1 : buttonCount;
 }

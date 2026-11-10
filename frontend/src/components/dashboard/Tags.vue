@@ -9,32 +9,14 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="dashboard-header-actions">
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('common.import')"
-          :text="$t('common.import')"
-          icon="upload"
-          @click="$refs.importFormatModal.open('tag_set')"
-        />
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('modals.importExport.wiring.tags.exportAllTooltip')"
-          :text="$t('common.exportAll')"
-          icon="download"
-          @click="$refs.exportFormatModal.open(null, 'tag_set', 'tag', null, { key: 'tags' })"
-        />
-        <span
-          class="dashboard-header-sep"
-          aria-hidden="true"
-        />
+      <HeaderActions :actions="headerActions">
         <BasicButton
           class="btn-primary btn-sm"
           :title="$t('tags.addNewTagSet')"
           icon="plus"
           @click="$refs.tagSetModal.open(0)"
         />
-      </div>
+      </HeaderActions>
     </template>
   </DashboardListPage>
   <TagSetModal
@@ -61,6 +43,7 @@ import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import {mapGetters} from "vuex";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import {dashboardRowAction, DASHBOARD_BADGES, confirmSoftDelete} from "@/basic/dashboard/actions.js";
 import {DEFAULT_DASHBOARD_TABLE_OPTIONS} from "@/basic/dashboard/constants.js";
 import { resolveApiMessage } from "@/assets/utils";
@@ -68,7 +51,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   name: "DashboardTags",
   subscribeTable: ["tag_set", "tag"],
-  components: {ConfirmModal, DashboardListPage, BasicButton, TagSetModal, ExportFormatModal, ImportFormatModal},
+  components: {ConfirmModal, DashboardListPage, HeaderActions, BasicButton, TagSetModal, ExportFormatModal, ImportFormatModal},
   props: {
     'admin': {
       type: Boolean,
@@ -82,6 +65,13 @@ export default {
     }
   },
   computed: {
+    /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      return [
+        {key: "import", text: this.$t('common.import'), icon: "upload", onClick: () => this.$refs.importFormatModal.open('tag_set')},
+        {key: "exportAll", text: this.$t('common.exportAll'), title: this.$t('modals.importExport.wiring.tags.exportAllTooltip'), icon: "download", onClick: () => this.$refs.exportFormatModal.open(null, 'tag_set', 'tag', null, { key: 'tags' })},
+      ];
+    },
     /** Same as the header create button; offered while the table is empty. */
     emptyAction() {
       return {

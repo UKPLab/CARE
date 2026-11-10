@@ -48,6 +48,59 @@
         </router-link>
       </div>
     </div>
+
+    <!-- Phones: the same groups and pages as a drawer under the top bar, opened by
+         the burger button in Topbar.vue. Teleported so the strip's overflow and the
+         navbar's stacking context cannot clip it. -->
+    <Teleport to="body">
+      <Transition name="dashboard-drawer">
+        <div
+          v-if="mobileOpen"
+          class="dashboard-drawer-backdrop"
+          :style="{ top: drawerTop + 'px' }"
+          @click="$emit('close')"
+        >
+          <aside
+            id="dashboardDrawer"
+            ref="drawer"
+            class="dashboard-drawer"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="$t('navigation.topbar.openMenu')"
+            @click.stop
+            @keydown.esc.prevent="closeDrawer"
+          >
+            <section
+              v-for="group in groups"
+              :key="group.key"
+              class="dashboard-drawer-group"
+            >
+              <h6
+                class="dashboard-drawer-group-label"
+                :class="{ active: activeGroup === group.key }"
+              >
+                {{ groupLabel(group) }}
+              </h6>
+              <router-link
+                v-for="element in group.elements"
+                :key="element.id"
+                class="dashboard-drawer-link"
+                :to="'/dashboard/' + element.path"
+                @click="$emit('close')"
+              >
+                <LoadIcon
+                  v-if="element.icon"
+                  class="dashboard-drawer-link-icon"
+                  :icon-name="element.icon"
+                  :size="16"
+                />
+                <span>{{ elementLabel(element) }}</span>
+              </router-link>
+            </section>
+          </aside>
+        </div>
+      </Transition>
+    </Teleport>
   </nav>
 </template>
 
@@ -59,11 +112,23 @@
  */
 import LoadIcon from "@/basic/Icon.vue";
 import { navElementLabel, navGroupLabel } from "./helpers/navLabels.js";
+import { COMPACT_QUERY } from "@/assets/viewport.js";
 
 export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
   components: { LoadIcon },
+
+  props: {
+    /** Phone drawer open (burger button in Topbar.vue). */
+    mobileOpen: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+  },
+
+  emits: ["close"],
 
   data() {
     return {
@@ -71,6 +136,7 @@ export default {
       menuStyle: {},
       closeTimer: null,
       hasMore: false,
+      drawerTop: 56,
     };
   },
 
@@ -116,6 +182,24 @@ export default {
     $route() {
       this.hoveredKey = null;
     },
+    mobileOpen(open) {
+      if (open) {
+        // Drawer starts right under the top bar, whatever its height is.
+        this.drawerTop = Math.round(this.$el.closest(".navbar")?.getBoundingClientRect().bottom || 56);
+        this._returnFocus = document.activeElement;
+        document.body.classList.add("dashboard-drawer-open");
+        document.addEventListener("keydown", this.onDrawerKeydown);
+        window.addEventListener("resize", this.onDrawerResize);
+        this.$nextTick(() => {
+          const links = this.$refs.drawer?.querySelectorAll(".dashboard-drawer-link");
+          const current = this.$refs.drawer?.querySelector(".dashboard-drawer-link.router-link-active");
+          (current || links?.[0])?.focus({ preventScroll: true });
+          current?.scrollIntoView({ block: "nearest" });
+        });
+      } else {
+        this.releaseDrawer();
+      }
+    },
     groups() {
       this.$nextTick(this.updateOverflow);
     },
@@ -132,9 +216,35 @@ export default {
     this.overflowObserver?.disconnect();
     document.body.classList.remove('sidebar-exists');
     this.cancelClose();
+    this.releaseDrawer();
   },
 
   methods: {
+    closeDrawer() {
+      this.$emit("close");
+    },
+
+    /** Esc anywhere closes the drawer (focus may be on the burger, not in the drawer). */
+    onDrawerKeydown(event) {
+      if (event.key === "Escape") this.closeDrawer();
+    },
+
+    /** Back to a wide screen: the strip is visible again, the drawer is not needed. */
+    onDrawerResize() {
+      if (!window.matchMedia(COMPACT_QUERY).matches) this.closeDrawer();
+    },
+
+    releaseDrawer() {
+      document.body.classList.remove("dashboard-drawer-open");
+      document.removeEventListener("keydown", this.onDrawerKeydown);
+      window.removeEventListener("resize", this.onDrawerResize);
+      const target = this._returnFocus;
+      this._returnFocus = null;
+      if (target && document.contains(target) && this.$refs.drawer?.contains(document.activeElement)) {
+        target.focus?.({ preventScroll: true });
+      }
+    },
+
     /**
      * @param {KeyboardEvent} event
      * @returns {void}
@@ -383,5 +493,141 @@ export default {
 
 @keyframes dashboard-topnav-in {
   from { opacity: 0; transform: translateY(-4px); }
+}
+
+/* ===== Phones (< 768px, COMPACT_QUERY in assets/viewport.js) =====
+   The strip is hidden; the burger in Topbar.vue opens the drawer below. */
+@media (max-width: 767.98px) {
+  .dashboard-topnav {
+    display: none;
+  }
+}
+
+body.dashboard-drawer-open {
+  overflow: hidden;
+}
+
+.dashboard-drawer-backdrop {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1029; /* under the fixed navbar (1030), so the burger stays clickable */
+  background: rgb(var(--care-shadow-rgb) / 0.28);
+  backdrop-filter: blur(2px);
+}
+
+[data-bs-theme="dark"] .dashboard-drawer-backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+.dashboard-drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  width: min(300px, 86vw);
+  padding: 0.9rem 0.6rem 1.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--bs-body-bg);
+  border-right: 1px solid var(--bs-border-color-translucent);
+  box-shadow: var(--care-shadow-3);
+}
+
+[data-bs-theme="dark"] .dashboard-drawer {
+  background: color-mix(in srgb, var(--bs-body-bg) 95%, #ffffff 5%);
+}
+
+.dashboard-drawer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-drawer-group-label {
+  margin: 0 0 0.2rem;
+  padding: 0 0.65rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+.dashboard-drawer-group-label.active {
+  color: var(--care-primary);
+}
+
+.dashboard-drawer-link {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 40px;
+  padding: 0.45rem 0.65rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--bs-body-color);
+  text-decoration: none;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
+}
+
+.dashboard-drawer-link-icon {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+}
+
+.dashboard-drawer-link:hover {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+.dashboard-drawer-link.router-link-active {
+  background: color-mix(in srgb, var(--care-primary) 14%, transparent);
+  color: var(--care-primary);
+  font-weight: 600;
+}
+
+.dashboard-drawer-link.router-link-active .dashboard-drawer-link-icon {
+  color: inherit;
+}
+
+.dashboard-drawer-link:focus-visible {
+  outline: none;
+  box-shadow: var(--care-focus-ring);
+}
+
+/* Backdrop fades, panel slides in from the left. */
+.dashboard-drawer-enter-active,
+.dashboard-drawer-leave-active {
+  transition: opacity 200ms var(--care-ease, ease);
+}
+
+.dashboard-drawer-enter-active .dashboard-drawer,
+.dashboard-drawer-leave-active .dashboard-drawer {
+  transition: transform 240ms var(--care-ease, ease);
+}
+
+.dashboard-drawer-enter-from,
+.dashboard-drawer-leave-to {
+  opacity: 0;
+}
+
+.dashboard-drawer-enter-from .dashboard-drawer,
+.dashboard-drawer-leave-to .dashboard-drawer {
+  transform: translateX(-100%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-drawer-enter-active,
+  .dashboard-drawer-leave-active,
+  .dashboard-drawer-enter-active .dashboard-drawer,
+  .dashboard-drawer-leave-active .dashboard-drawer {
+    transition: none;
+  }
 }
 </style>

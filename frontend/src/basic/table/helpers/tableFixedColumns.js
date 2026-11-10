@@ -18,6 +18,13 @@
  */
 
 import debounce from "lodash.debounce";
+import { viewport } from "@/assets/viewport.js";
+
+/*
+ * On compact screens (viewport.compact, < 768px) nothing is pinned: sticky columns
+ * would take most of a phone's width and leave no room to read the table. The
+ * header row stays sticky at the top (table.css); only the horizontal pinning goes.
+ */
 
 /** Default width when a column has neither an explicit width nor a rendered header. */
 const DEFAULT_COLUMN_WIDTH = 150;
@@ -95,7 +102,7 @@ export const tableFixedColumnsMethods = {
     this.debouncedComputeFixedColumns?.cancel();
   },
   getManageColumnClass() {
-    if (!this.shouldFixManageColumn) return null;
+    if (viewport.compact || !this.shouldFixManageColumn) return null;
 
     return {
       "table-fixed": true,
@@ -104,11 +111,11 @@ export const tableFixedColumnsMethods = {
     };
   },
   getFixedColumnStyle(column) {
-    if (!column?.key || !column?.fixed) return null;
+    if (viewport.compact || !column?.key || !column?.fixed) return null;
     return this.fixedColumnStyles[column.key] || null;
   },
   getFixedColumnClass(column, index) {
-    if (!column?.fixed) return null;
+    if (viewport.compact || !column?.fixed) return null;
 
     const { lastLeft, firstRight } = this.fixedColumnIndices;
     const isLastLeft = column.fixed === "left" && index === lastLeft;
@@ -137,8 +144,8 @@ export const tableFixedColumnsMethods = {
       this.hasHorizontalOverflow = hasOverflow;
     }
 
-    // Early return if no fixed columns needed
-    if (!this.hasFixedColumns && !this.shouldFixManageColumn) {
+    // Early return if no fixed columns needed (or the screen is too narrow to pin any)
+    if (viewport.compact || (!this.hasFixedColumns && !this.shouldFixManageColumn)) {
       this.fixedColumnStyles = {};
       this.manageColumnStyle = {};
       return;

@@ -15,6 +15,8 @@
     "projectTitle": "Projekt: {name}",
     "signedInAs": "Angemeldet als {username}",
     "lightMode": "Heller Modus",
-    "darkMode": "Dunkler Modus"
+    "darkMode": "Dunkler Modus",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen"
   }
 }

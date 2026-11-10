@@ -8,48 +8,7 @@
       :title="$t('settings.title')"
     >
       <template #headerElements>
-        <div class="dashboard-header-actions">
-
-          <BasicButton
-              class="btn-secondary btn-sm"
-              :text="$t('settings.changeUserSettings')"
-              :title="$t('settings.changeUserSettings')"
-              icon="sliders"
-              :disabled="!settings || !settings.length"
-              @click="$refs.changeUserSettingsModal.open()"
-          />
-
-          <BasicButton
-              class="btn-secondary btn-sm"
-              :text="$t('settings.exportJson')"
-              :title="$t('settings.exportJson')"
-              icon="download"
-              :disabled="!settings || !settings.length"
-              @click="exportSettings"
-          />
-
-          <BasicButton
-              class="btn-secondary btn-sm"
-              :text="$t('settings.importJson')"
-              :title="$t('settings.importJson')"
-              icon="upload"
-              :disabled="!settings || !settings.length"
-              @click="openUploadModal"
-          />
-
-          <BasicButton
-              class="btn-secondary btn-sm"
-              :text="$t('common.reload')"
-              :title="$t('common.reload')"
-              icon="arrow-clockwise"
-              @click="load"
-          />
-
-          <span
-              class="dashboard-header-sep"
-              aria-hidden="true"
-          />
-
+        <HeaderActions :actions="headerActions">
           <BasicButton
               class="btn-sm"
               :class="hasUnsavedChanges ? 'btn-warning' : 'btn-primary'"
@@ -58,8 +17,7 @@
               icon="floppy"
               @click="save"
           />
-
-        </div>
+        </HeaderActions>
       </template>
 
       <template #body>
@@ -200,6 +158,7 @@ import {downloadObjectsAs, resolveApiMessage, translateMaybeKey} from "@/assets/
 import {onBeforeRouteUpdate} from "vue-router";
 import ChangeUserSettingsModal from "@/components/dashboard/settings/ChangeUserSettingsModal.vue";
 import FileDropzone from "@/basic/form/FileDropzone.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 
 /**
  * Order of subsections within each section (for display).
@@ -238,6 +197,7 @@ export default {
     Modal,
     ChangeUserSettingsModal,
     FileDropzone,
+    HeaderActions,
   },
   data() {
     return {
@@ -254,6 +214,16 @@ export default {
     };
   },
   computed: {
+    /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      const noSettings = !this.settings || !this.settings.length;
+      return [
+        {key: "changeUserSettings", text: this.$t('settings.changeUserSettings'), icon: "sliders", disabled: noSettings, onClick: () => this.$refs.changeUserSettingsModal.open()},
+        {key: "exportJson", text: this.$t('settings.exportJson'), icon: "download", disabled: noSettings, onClick: this.exportSettings},
+        {key: "importJson", text: this.$t('settings.importJson'), icon: "upload", disabled: noSettings, onClick: this.openUploadModal},
+        {key: "reload", text: this.$t('common.reload'), icon: "arrow-clockwise", onClick: () => this.load()},
+      ];
+    },
     displaySettings() {
       if (!this.settings) return [];
       return this.settings.filter((s) => !s.key.startsWith("app.setup."));
@@ -321,6 +291,13 @@ export default {
     },
   },
   watch: {
+    // On narrow screens the section tabs scroll sideways: keep the chosen one visible.
+    activeSection() {
+      this.$nextTick(() => {
+        this.$el?.querySelector?.(".settings-nav-btn.active")
+          ?.scrollIntoView({inline: "nearest", block: "nearest"});
+      });
+    },
     sectionLayout: {
       immediate: true,
       handler(sections) {
@@ -627,19 +604,41 @@ export default {
   color: var(--care-primary);
 }
 
+/* Narrow screens: the sections become one horizontally scrollable row of tabs
+   instead of several wrapped lines. */
 @media (max-width: 800px) {
   .settings-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
   }
 
   .settings-nav {
     position: static;
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin: 0 -0.25rem;
+    padding: 0 0.25rem 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    border-bottom: 1px solid var(--dash-border, var(--bs-border-color));
+    /* Fade at the edges hints that the row scrolls. */
+    mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
+  }
+
+  .settings-nav::-webkit-scrollbar {
+    display: none;
   }
 
   .settings-nav-btn.btn {
+    flex: none;
     width: auto;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    scroll-snap-align: start;
   }
 }
 

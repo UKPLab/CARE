@@ -17,6 +17,24 @@
             name="arrow-left"
           />
         </button>
+        <!-- Phones: the dashboard menu strip is replaced by this button and a drawer. -->
+        <button
+          v-if="isInDashboard && viewport.compact"
+          type="button"
+          class="btn topbar-burger"
+          :class="{ 'is-open': mobileNavOpen }"
+          :title="mobileNavOpen ? $t('navigation.topbar.closeMenu') : $t('navigation.topbar.openMenu')"
+          :aria-label="mobileNavOpen ? $t('navigation.topbar.closeMenu') : $t('navigation.topbar.openMenu')"
+          :aria-expanded="mobileNavOpen ? 'true' : 'false'"
+          aria-controls="dashboardDrawer"
+          @click.stop="mobileNavOpen = !mobileNavOpen"
+        >
+          <span class="topbar-burger-lines" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        </button>
         <a
           class="navbar-brand"
           @click="toHome()"
@@ -26,7 +44,11 @@
             :height="30"
           />
         </a>
-        <DashboardNav v-if="isInDashboard" />
+        <DashboardNav
+          v-if="isInDashboard"
+          :mobile-open="mobileNavOpen && viewport.compact"
+          @close="mobileNavOpen = false"
+        />
 
         <div id="topbarCustomPlaceholder"/>
         <div id="topbarCenterPlaceholder"/>
@@ -181,6 +203,7 @@
 
 import LoadIcon from "@/basic/Icon.vue";
 import { applyTheme, resolveTheme, returnToDashboard } from "@/assets/utils";
+import { viewport } from "@/assets/viewport.js";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
@@ -196,6 +219,9 @@ export default {
     return {
       version: APP_VERSION,
       showProjectDropdown: false,
+      mobileNavOpen: false,
+      // Shared reactive flag (< 768px): burger + drawer on phones, menu strip on desktop.
+      viewport,
       now: Date.now(),
       tickHandle: null,
     }
@@ -281,6 +307,16 @@ export default {
     },
     isDarkMode() {
       return resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")) === "dark";
+    },
+  },
+  watch: {
+    // Any navigation (a drawer link, back button, logo) closes the phone menu.
+    $route() {
+      this.mobileNavOpen = false;
+    },
+    // Back on a wide screen: desktop has only the top bar strip, no drawer.
+    "viewport.compact"(compact) {
+      if (!compact) this.mobileNavOpen = false;
     },
   },
   mounted() {
@@ -390,6 +426,82 @@ export default {
 
 #wrapper > .navbar > .container-fluid {
   flex-wrap: nowrap;
+}
+
+/* ----- Burger (phones, dashboard routes) -----
+   Three lines that turn into a cross while the drawer is open. Hidden from 768px up,
+   where the menu strip (DashboardNav) is shown instead. Same width as COMPACT_QUERY
+   in assets/viewport.js. */
+/* #wrapper: must beat Bootstrap's .btn { display: inline-block }, which loads later. */
+#wrapper .topbar-burger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  margin-right: 0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  color: var(--bs-body-color);
+  background: transparent;
+}
+
+.topbar-burger:hover,
+.topbar-burger.is-open {
+  background: var(--bs-secondary-bg);
+}
+
+.topbar-burger-lines {
+  position: relative;
+  display: block;
+  width: 18px;
+  height: 14px;
+}
+
+.topbar-burger-lines > span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 220ms var(--care-ease, ease), opacity 160ms ease, top 220ms var(--care-ease, ease);
+}
+
+.topbar-burger-lines > span:nth-child(1) { top: 0; }
+.topbar-burger-lines > span:nth-child(2) { top: 6px; }
+.topbar-burger-lines > span:nth-child(3) { top: 12px; }
+
+.topbar-burger.is-open .topbar-burger-lines > span:nth-child(1) {
+  top: 6px;
+  transform: rotate(45deg);
+}
+
+.topbar-burger.is-open .topbar-burger-lines > span:nth-child(2) {
+  opacity: 0;
+}
+
+.topbar-burger.is-open .topbar-burger-lines > span:nth-child(3) {
+  top: 6px;
+  transform: rotate(-45deg);
+}
+
+@media (max-width: 767.98px) {
+  #wrapper .topbar-burger {
+    display: inline-flex;
+  }
+
+  #wrapper .navbar-brand {
+    margin-right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-burger-lines > span {
+    transition: none;
+  }
 }
 
 /* In light mode the bar sits on the blue-grey canvas: a soft shadow and a faint

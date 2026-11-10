@@ -9,38 +9,15 @@
       @action="action"
     >
       <template #headerActions>
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('templates.dashboard.browsePublicTemplates')"
-          :text="$t('templates.dashboard.publicTemplates')"
-          icon="globe"
-          @click="$refs.publicTemplatesModal.open()"
-        />
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('modals.importExport.wiring.templates.importTooltip')"
-          :text="$t('common.import')"
-          icon="upload"
-          @click="$refs.importFormatModal.open('template', null, { socket: { name: 'templateImport' } })"
-        />
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
-          :text="$t('common.exportAll')"
-          icon="download"
-          @click="openExport(null)"
-        />
-        <span
-          class="dashboard-header-sep"
-          aria-hidden="true"
-        />
-        <BasicButton
-          class="btn-primary btn-sm"
-          :title="$t('templates.dashboard.addNewTemplate')"
-          :text="$t('templates.dashboard.addTemplate')"
-          icon="plus"
-          @click="$refs.templateModal.open(0)"
-        />
+        <HeaderActions :actions="headerActions">
+          <BasicButton
+            class="btn-primary btn-sm"
+            :title="$t('templates.dashboard.addNewTemplate')"
+            :text="$t('templates.dashboard.addTemplate')"
+            icon="plus"
+            @click="$refs.templateModal.open(0)"
+          />
+        </HeaderActions>
       </template>
     </DashboardListPage>
     <TemplateModal ref="templateModal" />
@@ -68,6 +45,7 @@
   import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
   import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+  import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
   import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
   import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
   import { emailTemplateTypes } from "@/assets/templateTypes";
@@ -86,6 +64,7 @@
     subscribeTable: ["template"],
     components: {
       DashboardListPage,
+      HeaderActions,
       BasicButton,
       TemplateModal,
       PublishModal,
@@ -103,6 +82,14 @@
       };
     },
     computed: {
+      /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+      headerActions() {
+        return [
+          {key: "publicTemplates", text: this.$t('templates.dashboard.publicTemplates'), title: this.$t('templates.dashboard.browsePublicTemplates'), icon: "globe", onClick: () => this.$refs.publicTemplatesModal.open()},
+          {key: "import", text: this.$t('common.import'), title: this.$t('modals.importExport.wiring.templates.importTooltip'), icon: "upload", onClick: () => this.$refs.importFormatModal.open('template', null, { socket: { name: 'templateImport' } })},
+          {key: "exportAll", text: this.$t('common.exportAll'), title: this.$t('modals.importExport.wiring.templates.exportAllTooltip'), icon: "download", onClick: () => this.openExport(null)},
+        ];
+      },
       /** Same as the header create button; offered while the table is empty. */
       emptyAction() {
         return {

@@ -9,18 +9,7 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="dashboard-header-actions">
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :text="$t('socketProfiler.actions.import')"
-          :title="$t('socketProfiler.actions.importTooltip')"
-          icon="upload"
-          @click="openImportModal"
-        />
-        <span
-          class="dashboard-header-sep"
-          aria-hidden="true"
-        />
+      <HeaderActions :actions="headerActions">
         <BasicButton
           class="btn-danger btn-sm"
           :text="$t('socketProfiler.actions.stopRecording')"
@@ -36,7 +25,7 @@
           icon="record-circle"
           @click="openStartModal"
         />
-      </div>
+      </HeaderActions>
     </template>
   </DashboardListPage>
   <StartRecordingModal ref="startRecordingModal" />
@@ -48,6 +37,7 @@
 
 <script>
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import BasicButton from "@/basic/Button.vue";
 import RecordingModal from "./socketprofiler/RecordingModal.vue";
 import StartRecordingModal from "./socketprofiler/StartRecordingModal.vue";
@@ -67,6 +57,7 @@ export default {
   ],
   components: {
     DashboardListPage,
+    HeaderActions,
     BasicButton,
     RecordingModal,
     StartRecordingModal,
@@ -80,6 +71,12 @@ export default {
     };
   },
   computed: {
+    /** Secondary header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      return [
+        {key: "import", text: this.$t('socketProfiler.actions.import'), title: this.$t('socketProfiler.actions.importTooltip'), icon: "upload", onClick: () => this.openImportModal()},
+      ];
+    },
     /** Same as the header create button; offered while the table is empty. */
     emptyAction() {
       return {

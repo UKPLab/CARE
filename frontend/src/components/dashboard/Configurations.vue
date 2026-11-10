@@ -9,26 +9,7 @@
       @action="action"
   >
     <template #headerActions>
-      <div class="dashboard-header-actions">
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :text="$t('basic.configuration.uploadButton')"
-            :title="$t('basic.configuration.uploadTooltip')"
-            icon="upload"
-            @click="$refs.importFormatModal.open('configuration', null, {
-              socket:{
-                name: 'configurationAdd',
-              }
-            })"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :text="$t('common.exportAll')"
-            :title="$t('modals.importExport.wiring.configuration.exportAllTooltip')"
-            icon="download"
-            @click="$refs.exportFormatModal.open(null, 'configuration')"
-        />
-      </div>
+      <HeaderActions :actions="headerActions" />
     </template>
   </DashboardListPage>
 
@@ -90,6 +71,7 @@ import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import HeaderActions from "@/basic/dashboard/HeaderActions.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import {Editor} from "@/components/editor/editorStore.js";
 import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
@@ -107,6 +89,7 @@ export default {
   components: {
     DashboardListPage,
     BasicButton,
+    HeaderActions,
     ExportFormatModal,
     ImportFormatModal,
     ConfirmModal,
@@ -123,6 +106,13 @@ export default {
     };
   },
   computed: {
+    /** Header buttons; collapse into "..." when the header is too narrow. */
+    headerActions() {
+      return [
+        {key: "upload", text: this.$t('basic.configuration.uploadButton'), title: this.$t('basic.configuration.uploadTooltip'), icon: "upload", onClick: () => this.$refs.importFormatModal.open('configuration', null, { socket: { name: 'configurationAdd' } })},
+        {key: "exportAll", text: this.$t('common.exportAll'), title: this.$t('modals.importExport.wiring.configuration.exportAllTooltip'), icon: "download", onClick: () => this.$refs.exportFormatModal.open(null, 'configuration')},
+      ];
+    },
     /** Same as the header create button; offered while the table is empty. */
     emptyAction() {
       return {
