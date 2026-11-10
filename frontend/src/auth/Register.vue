@@ -1,5 +1,5 @@
 <template>
-  <AuthLayout :title="$t('auth.register')" aside>
+  <AuthLayout :title="$t('auth.register')" intro>
     <template #above-card>
       <ScientistMascot :mood="mascotMood"/>
     </template>
@@ -561,8 +561,8 @@ export default {
 
 .password-toggle:hover,
 .password-toggle:focus-visible {
-  color: var(--bs-primary);
-  background: rgba(var(--bs-primary-rgb), .08);
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 8%, transparent);
 }
 
 .register-progress {
@@ -585,9 +585,10 @@ export default {
   transition: background-color .3s ease;
 }
 
+/* --care-primary follows the theme: blue in light, accent in dark */
 .register-progress-track li.is-done,
 .register-progress-track li.is-active {
-  background: var(--bs-primary);
+  background: var(--care-primary);
 }
 
 .register-progress-label {

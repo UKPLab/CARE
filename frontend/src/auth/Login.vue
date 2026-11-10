@@ -1,5 +1,5 @@
 <template>
-  <AuthLayout :title="$t('auth.login')" aside>
+  <AuthLayout :title="$t('auth.login')">
     <template #header-action>
       <a
         v-if="showRegisterButton"
@@ -112,7 +112,10 @@
         </div>
       </div>
     </form>
-    <template #footer>
+    <template
+        v-if="showDocs || showFeedback || showProject || showVersion"
+        #card-footer
+    >
       <div
           v-if="showDocs || showFeedback || showProject"
       >
@@ -136,9 +139,6 @@
             :href="linkProject"
             target="_blank"
         >{{ $t('navigation.projectPage') }}</a></span>
-      </div>
-      <div>
-        {{ copyright }}
       </div>
       <div v-if="showVersion">
         {{ $t('common.appVersion') }}: {{ version }}
@@ -190,9 +190,6 @@ export default {
     }
   },
   computed: {
-    copyright() {
-      return window.config['app.config.copyright'];
-    },
     showGuestLogin() {
       return window.config['app.login.guest'] === 'true';
     },

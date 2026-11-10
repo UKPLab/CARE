@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    <HomeLinks class="home-footer-slot" />
+    <AppFooter class="home-footer-slot" />
   </div>
 </template>
 
@@ -51,7 +51,7 @@ import HomeCountTiles from "./home/HomeCountTiles.vue";
 import HomeContinue from "./home/HomeContinue.vue";
 import HomeSessions from "./home/HomeSessions.vue";
 import HomeDeadlines from "./home/HomeDeadlines.vue";
-import HomeLinks from "./home/HomeLinks.vue";
+import AppFooter from "@/basic/navigation/AppFooter.vue";
 
 /**
  * Dashboard home. Resume links come from the viewer's own documents
@@ -61,7 +61,7 @@ import HomeLinks from "./home/HomeLinks.vue";
  */
 export default {
   name: "DashboardHome",
-  components: { HomeGuest, HomeCountTiles, HomeContinue, HomeSessions, HomeDeadlines, HomeLinks },
+  components: { HomeGuest, HomeCountTiles, HomeContinue, HomeSessions, HomeDeadlines, AppFooter },
   data() {
     return {
       // Ticks once a minute so deadline countdowns stay current.

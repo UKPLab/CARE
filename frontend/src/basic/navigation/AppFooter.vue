@@ -1,13 +1,13 @@
 <template>
-  <footer class="home-footer">
+  <footer class="app-footer">
     <nav
-      class="home-footer-icons"
+      class="app-footer-icons"
       :aria-label="$t('dashboard.home.links.title')"
     >
       <a
         v-for="link in links"
         :key="link.key"
-        class="home-footer-icon"
+        class="app-footer-icon"
         :href="link.href"
         :title="link.title"
         :aria-label="link.title"
@@ -19,7 +19,7 @@
              (mask), so they show the footer background in light and dark theme. -->
         <svg
           v-if="link.key === 'docs'"
-          class="home-footer-docs"
+          class="app-footer-docs"
           width="28"
           height="28"
           viewBox="0 0 28 28"
@@ -76,7 +76,7 @@
     </nav>
     <div
       v-if="copyright"
-      class="home-footer-copy"
+      class="app-footer-copy"
     >
       {{ copyright }}
     </div>
@@ -87,17 +87,18 @@
 import LoadIcon from "@/basic/Icon.vue";
 
 /**
- * Quiet footer under the Home panels: project links as plain icons and the
- * copyright line from the login page (setting app.config.copyright).
+ * Quiet page footer: project links as plain icons and the copyright line
+ * (setting app.config.copyright). Used under the dashboard Home panels and
+ * at the bottom of the signed-out pages (AuthLayout).
  */
 export default {
-  name: "HomeLinks",
+  name: "AppFooter",
   components: { LoadIcon },
   computed: {
     /** Unique mask ids for the docs icon, in case the footer is on the page twice. */
     docsIds() {
       const uid = this.$.uid;
-      return {page: `home-docs-page-${uid}`, label: `home-docs-label-${uid}`};
+      return {page: `app-footer-docs-page-${uid}`, label: `app-footer-docs-label-${uid}`};
     },
     copyright() {
       return window.config?.["app.config.copyright"] || "";
@@ -110,7 +111,7 @@ export default {
           key: "docs",
           title: this.$t("dashboard.home.links.docs"),
           href: "https://txaitd.ukp.informatik.tu-darmstadt.de/docs/",
-          // Drawn inline in the template (page with "DOCS"), see .home-footer-docs
+          // Drawn inline in the template (page with "DOCS"), see .app-footer-docs
           icon: null,
         },
         {
@@ -126,7 +127,7 @@ export default {
 </script>
 
 <style scoped>
-.home-footer {
+.app-footer {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -135,13 +136,13 @@ export default {
   color: var(--bs-secondary-color);
 }
 
-.home-footer-icons {
+.app-footer-icons {
   display: flex;
   gap: 8px;
 }
 
 /* Plain muted icons, no frame; only the colour changes on hover. */
-.home-footer-icon {
+.app-footer-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -153,24 +154,24 @@ export default {
   transition: color .12s ease, opacity .12s ease;
 }
 
-.home-footer-icon:hover,
-.home-footer-icon:focus-visible {
+.app-footer-icon:hover,
+.app-footer-icon:focus-visible {
   color: var(--care-primary);
   opacity: 1;
 }
 
-[data-bs-theme="dark"] .home-footer-icon:hover,
-[data-bs-theme="dark"] .home-footer-icon:focus-visible {
+[data-bs-theme="dark"] .app-footer-icon:hover,
+[data-bs-theme="dark"] .app-footer-icon:focus-visible {
   color: var(--care-accent);
 }
 
 /* Keep the label crisp and unselectable at icon size */
-.home-footer-docs {
+.app-footer-docs {
   overflow: visible;
   user-select: none;
 }
 
-.home-footer-copy {
+.app-footer-copy {
   font-size: .75rem;
 }
 </style>

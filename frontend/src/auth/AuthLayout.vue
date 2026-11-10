@@ -1,93 +1,175 @@
 <template>
-  <main class="auth-page" :class="{ 'auth-page--split': aside }">
+  <main class="auth-page" :style="clockStyle">
+    <!-- Desk objects around the centered box -->
+    <div class="auth-scene" aria-hidden="true">
+      <span class="auth-blob auth-blob--bubble"></span>
+      <span class="auth-blob auth-blob--book"></span>
+      <span class="auth-blob auth-blob--pen"></span>
+      <span class="auth-blob auth-blob--note"></span>
+      <span class="auth-spark auth-spark--1"></span>
+      <span class="auth-spark auth-spark--2"></span>
+      <span class="auth-spark auth-spark--3"></span>
+    </div>
+
     <div class="auth-stage">
-      <div v-if="aside" class="auth-float" aria-hidden="true">
-        <span class="auth-blob auth-blob--bubble"></span>
-        <span class="auth-blob auth-blob--book"></span>
-        <span class="auth-blob auth-blob--pen"></span>
-      </div>
       <div class="auth-shell">
-        <div class="auth-logo">
-          <LogoSvg :height="56" />
-        </div>
-        <div class="auth-card-wrap" :class="{ 'auth-card-wrap--above': $slots['above-card'] }">
+        <div class="auth-card-wrap">
           <div v-if="$slots['above-card']" class="auth-above-card">
             <slot name="above-card" />
           </div>
           <div class="card auth-card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <h1 class="card-title">
-                {{ title }}
-              </h1>
-              <slot name="header-action" />
+            <div class="auth-card-main">
+              <LogoSvg class="auth-mobile-logo" :height="44" />
+              <div class="card-header d-flex justify-content-between align-items-center">
+                <h1 class="card-title">
+                  {{ title }}
+                </h1>
+                <slot name="header-action" />
+              </div>
+              <div class="card-body">
+                <slot />
+              </div>
+              <!-- Always rendered: fills the space under the form, its content sits at the bottom -->
+              <div class="auth-card-foot">
+                <slot name="card-footer" />
+              </div>
             </div>
-            <div class="card-body">
-              <slot />
+            <div class="auth-card-brand" :class="{ 'auth-card-brand--intro': intro }">
+              <span class="auth-brand-glow auth-brand-glow--primary" aria-hidden="true"></span>
+              <span class="auth-brand-glow auth-brand-glow--accent" aria-hidden="true"></span>
+              <span class="auth-brand-ring" aria-hidden="true"></span>
+              <!-- Same element in both modes: the page switch morphs it from the big
+                   centered logo to the small one in the corner and back -->
+              <LogoSvg
+                class="auth-brand-logo"
+                aria-hidden="true"
+                :width="intro ? null : 240"
+                :height="intro ? 38 : null"
+              />
+              <div v-if="intro" class="auth-intro">
+                <h2 class="auth-intro-title">{{ $t('auth.registerIntro.title') }}</h2>
+                <p class="auth-intro-subtitle">{{ $t('auth.registerIntro.subtitle') }}</p>
+                <ol class="auth-intro-steps">
+                  <li
+                    v-for="(step, index) in introSteps"
+                    :key="step.key"
+                    class="auth-intro-step"
+                    :style="{ '--i': index }"
+                  >
+                    <span class="auth-intro-icon" aria-hidden="true">
+                      <i class="bi" :class="step.icon"></i>
+                    </span>
+                    <span class="auth-intro-text">
+                      <strong>{{ $t(`auth.registerIntro.steps.${step.key}.title`) }}</strong>
+                      <span>{{ $t(`auth.registerIntro.steps.${step.key}.text`) }}</span>
+                    </span>
+                  </li>
+                </ol>
+              </div>
             </div>
           </div>
         </div>
-        <footer
-          v-if="$slots.footer"
-          class="auth-footer"
-        >
-          <slot name="footer" />
-        </footer>
       </div>
     </div>
-    <aside v-if="aside" class="auth-aside">
-      <LogoSvg class="auth-mark" :width="260" :height="122" />
-    </aside>
+
+    <AppFooter class="auth-page-footer" />
   </main>
 </template>
 
 <script>
 /**
- * Shared frame for the signed-out pages: logo, one narrow card, and an optional footer.
+ * Shared frame for the signed-out pages: one wide box in the middle of the page
+ * (form on the left, logo with dot grid and glow on the right), desk objects
+ * around it and the app footer at the bottom of the page.
  * Field rows written as label/col-md-* pairs are stacked so pages keep their markup.
+ *
+ * With `intro` the right half shows a short platform intro instead of the big logo.
+ * On a page switch the logo morphs between both places (see auth-brand-logo below).
  *
  * @slot default - Card body
  * @slot header-action - Link or button next to the title
- * @slot above-card - Decoration that sits on the top edge of the card, partly behind it
- * @slot footer - Content under the card
+ * @slot above-card - Decoration that sits on the top edge of the form half, partly behind it
+ * @slot card-footer - Small links and notes at the very bottom of the form half (e.g. docs, feedback, version)
  *
  * @author Mohammad Sherif
  */
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
+import AppFooter from "@/basic/navigation/AppFooter.vue";
 
 export default {
   name: "AuthLayout",
-  components: { LogoSvg },
+  components: { LogoSvg, AppFooter },
   props: {
     title: {
       type: String,
       required: true,
     },
-    aside: {
+    /** Right half shows a short platform intro (register) instead of the big logo */
+    intro: {
       type: Boolean,
       required: false,
       default: false,
     },
+  },
+  data() {
+    return {
+      /**
+       * Every auth page mounts its own layout, so the decoration animations would restart
+       * at zero on each page switch and the objects would jump. A negative delay of the time
+       * since page load puts all of them on one shared timeline: the new page continues
+       * exactly where the old one was.
+       */
+      clockStyle: { "--auth-clock": `${-(performance.now() / 1000).toFixed(3)}s` },
+      /** The core workflow of the platform, shown in the intro. Kept generic on purpose. */
+      introSteps: [
+        { key: "read", icon: "bi-book" },
+        { key: "annotate", icon: "bi-highlighter" },
+        { key: "write", icon: "bi-pencil-square" },
+        { key: "assess", icon: "bi-clipboard-check" },
+      ],
+    };
   },
 };
 </script>
 
 <style scoped>
 .auth-page {
+  --auth-glow-warm: color-mix(in srgb, #ffd966 55%, transparent);
+  /* Share of the box taken by the form half (columns 1fr : 1.05fr) */
+  --auth-form-share: 48.78%;
+  position: relative;
+  display: grid;
+  grid-template-rows: 1fr auto;
   height: 100vh;
+  overflow-x: hidden;
   overflow-y: auto;
+  background:
+    radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--care-primary) 7%, transparent), transparent 60%),
+    var(--bs-tertiary-bg);
+}
+
+html[data-bs-theme="dark"] .auth-page {
+  --auth-glow-warm: rgba(var(--care-violet-rgb), .32);
+}
+
+/* The box top sits at the same place on every page, whatever the page puts above
+   (mascot) or below (links) the box, so switching pages never moves it. The top
+   offset centers the 540px box on tall screens and always leaves room for the
+   above-card slot (124px tall, 14px of it behind the box). */
+.auth-stage {
+  position: relative;
+  z-index: 1;
   display: grid;
   justify-items: center;
   align-content: start;
-  padding: 8vh 16px 32px;
-  background: var(--bs-tertiary-bg);
+  padding: max(120px, calc(50vh - 300px)) 24px 24px;
 }
 
 .auth-shell {
-  width: 100%;
-  max-width: 400px;
   display: grid;
-  gap: 20px;
-  justify-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 980px;
 }
 
 .auth-card-wrap {
@@ -95,15 +177,13 @@ export default {
   width: 100%;
 }
 
-/* Room for the above-card slot (124px tall, 14px of it behind the card) */
-.auth-card-wrap--above {
-  margin-top: 110px;
-}
 
+
+/* Centered over the form half */
 .auth-above-card {
   position: absolute;
   left: 0;
-  right: 0;
+  right: calc(100% - var(--auth-form-share));
   bottom: calc(100% - 14px);
   z-index: 0;
   display: flex;
@@ -123,25 +203,71 @@ html[data-auth-direction="back"] .auth-above-card {
 .auth-card {
   position: relative;
   z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
   width: 100%;
+  min-height: 540px;
+  overflow: hidden;
+  border-radius: 22px;
+  border-color: color-mix(in srgb, var(--care-primary) 12%, var(--bs-border-color));
+  /* --care-primary follows the theme: blue glow in light, accent in dark */
+  box-shadow:
+    var(--care-shadow-3),
+    0 40px 80px -40px color-mix(in srgb, var(--care-primary) 35%, transparent);
   view-transition-name: auth-card;
 }
 
+html[data-bs-theme="dark"] .auth-card {
+  box-shadow:
+    var(--care-shadow-3),
+    0 40px 80px -40px color-mix(in srgb, var(--care-primary) 16%, transparent);
+}
+
 /* Named separately so the frame snapshot holds only background, border and shadow */
-.auth-card > .card-header {
+.auth-card-main > .card-header {
   view-transition-name: auth-card-header;
 }
 
-.auth-card > .card-body {
+.auth-card-main > .card-body {
   view-transition-name: auth-card-body;
 }
 
+/* Header pinned to the top of the half, so the title and the header action stay in
+   the same place on every page whatever the body height. .auth-card-foot takes the
+   rest and puts its content at the very bottom. */
+.auth-card-main {
+  display: flex;
+  flex-direction: column;
+  padding: 52px 52px 22px;
+}
+
+.auth-card-foot {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 2px;
+  padding-top: 24px;
+  font-size: .75rem;
+  text-align: center;
+  color: var(--bs-secondary-color);
+}
+
+.auth-card .card-header {
+  padding: 0 0 20px;
+  background: transparent;
+  border-bottom: 0;
+}
+
 .auth-card .card-title {
-  font-size: 1.15rem;
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -.01em;
 }
 
 .auth-card .card-body {
-  padding: 4px 20px 20px;
+  padding: 0;
 }
 
 .auth-card :deep([class*="col-md-"]) {
@@ -157,71 +283,270 @@ html[data-auth-direction="back"] .auth-above-card {
   font-weight: 500;
 }
 
-.auth-footer {
-  font-size: .75rem;
-  text-align: center;
+.auth-card :deep(.form-control) {
+  padding: .6rem .85rem;
+  border-radius: 10px;
+}
+
+.auth-card :deep(.btn-primary) {
+  padding-block: .6rem;
+  border-radius: 10px;
+}
+
+/* LogoSvg sets display inline, so the hide needs !important */
+.auth-mobile-logo {
+  display: none !important;
+}
+
+/* ---------- Right half: dot grid, two soft glows and a slow ring behind the logo ---------- */
+
+.auth-card-brand {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-left: 1px solid var(--bs-border-color);
+  background:
+    linear-gradient(155deg, color-mix(in srgb, var(--care-primary) 7%, var(--bs-body-bg)), var(--bs-body-bg) 65%);
+}
+
+.auth-card-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--care-primary) 45%, transparent) 1.1px, transparent 1.2px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(circle at 50% 50%, #000 0%, transparent 72%);
+}
+
+.auth-brand-glow {
+  position: absolute;
+  z-index: -1;
+  border-radius: 50%;
+  filter: blur(46px);
+  animation: auth-glow-drift 14s ease-in-out infinite alternate;
+  animation-delay: var(--auth-clock, 0s);
+}
+
+.auth-brand-glow--primary {
+  width: 340px;
+  height: 340px;
+  top: calc(50% - 210px);
+  left: calc(50% - 200px);
+  background: color-mix(in srgb, var(--care-primary) 30%, transparent);
+}
+
+.auth-brand-glow--accent {
+  width: 240px;
+  height: 240px;
+  top: calc(50% - 40px);
+  left: calc(50% - 20px);
+  background: var(--auth-glow-warm);
+  animation-duration: 18s;
+  animation-direction: alternate-reverse;
+}
+
+.auth-brand-ring {
+  position: absolute;
+  z-index: -1;
+  top: calc(50% - 165px);
+  left: calc(50% - 165px);
+  width: 330px;
+  height: 330px;
+  border-radius: 50%;
+  border: 1px dashed color-mix(in srgb, var(--care-primary) 28%, transparent);
+  animation: auth-ring-spin 60s linear infinite;
+  animation-delay: var(--auth-clock, 0s);
+}
+
+.auth-brand-ring::after {
+  content: "";
+  position: absolute;
+  inset: -46px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--care-primary) 12%, transparent);
+}
+
+/* Small dot that travels on the dashed ring */
+.auth-brand-ring::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: calc(50% - 5px);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--care-primary);
+  box-shadow: 0 0 12px 2px color-mix(in srgb, var(--care-primary) 55%, transparent);
+}
+
+.auth-brand-logo {
+  position: relative;
+  max-width: 70%;
+  height: auto;
+  filter: drop-shadow(0 18px 24px rgb(var(--care-shadow-rgb) / .16));
+}
+
+html[data-bs-theme="dark"] .auth-brand-logo {
+  filter: drop-shadow(0 18px 28px rgb(0 0 0 / .5));
+}
+
+/* Own layer on page switches: the browser morphs it between the big centered
+   logo (login) and the small one in the corner (register intro). */
+.auth-brand-logo {
+  view-transition-name: auth-brand-logo;
+}
+
+/* ---------- Intro mode (register): logo in the corner, platform intro below ---------- */
+
+.auth-card-brand--intro {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 40px 44px 36px;
+}
+
+/* Explicit size: the logo keeps the aspect of the big one, so the morph is a clean scale */
+.auth-card-brand--intro .auth-brand-logo {
+  align-self: flex-start;
+  width: 81px;
+  height: 38px;
+  max-width: none;
+  filter: drop-shadow(0 6px 10px rgb(var(--care-shadow-rgb) / .14));
+}
+
+/* The ring around the big logo widens into a ripple behind the intro... */
+.auth-card-brand--intro .auth-brand-ring {
+  animation:
+    auth-ring-spin 60s linear infinite,
+    auth-ring-expand 1.1s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: var(--auth-clock, 0s), 0s;
+}
+
+/* ...and closes around the logo again when going back to the login */
+html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .auth-brand-ring {
+  animation:
+    auth-ring-spin 60s linear infinite,
+    auth-ring-settle .55s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: var(--auth-clock, 0s), 0s;
+}
+
+.auth-intro {
+  margin-block: auto;
+  padding-top: 28px;
+  view-transition-name: auth-brand-intro;
+}
+
+.auth-intro-title {
+  margin: 0 0 10px;
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -.02em;
+  /* Slow light sweep through the headline */
+  background: linear-gradient(
+    100deg,
+    var(--bs-emphasis-color) 0%,
+    var(--bs-emphasis-color) 30%,
+    var(--care-primary) 50%,
+    rgb(var(--care-violet-rgb)) 62%,
+    var(--bs-emphasis-color) 80%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation:
+    auth-intro-in .8s cubic-bezier(.22, 1, .36, 1) both,
+    auth-title-shine 7s ease-in-out infinite alternate;
+  animation-delay: .18s, var(--auth-clock, 0s);
+}
+
+.auth-intro-subtitle {
+  margin: 0 0 28px;
+  font-size: .98rem;
+  color: var(--bs-secondary-color);
+  animation: auth-intro-in .8s .28s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+/* Workflow: four steps with icon, name and one line of text */
+.auth-intro-steps {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.auth-intro-step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  animation: auth-intro-in .7s cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(.4s + var(--i) * .1s);
+}
+
+.auth-intro-icon {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--care-primary) 22%, var(--bs-border-color));
+  background: var(--bs-body-bg);
+  color: var(--care-primary);
+  font-size: 1.05rem;
+  box-shadow: 0 6px 14px -8px rgb(var(--care-shadow-rgb) / .35);
+}
+
+.auth-intro-text {
+  display: grid;
+  line-height: 1.3;
+}
+
+.auth-intro-text strong {
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--bs-emphasis-color);
+}
+
+.auth-intro-text span {
+  font-size: .8rem;
   color: var(--bs-secondary-color);
 }
 
-.auth-page--split {
-  display: grid;
-  grid-template-columns: minmax(520px, 560px) 1fr;
-  align-content: start;
-  align-items: start;
-  justify-items: stretch;
-  height: 100vh;
-  padding: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
+/* ---------- Desk objects outside the box ---------- */
 
-.auth-page--split .auth-logo {
-  display: none;
-}
-
-.auth-stage {
-  width: 100%;
-  display: grid;
-  justify-items: center;
-}
-
-.auth-page--split .auth-stage {
-  position: relative;
-  align-content: center;
-  min-height: 100vh;
-  overflow: visible;
-  border-right: 1px solid var(--bs-border-color);
-  background: var(--bs-tertiary-bg);
-}
-
-.auth-page--split .auth-shell {
-  position: relative;
-  z-index: 1;
-  align-self: center;
-  align-content: center;
-  max-width: 400px;
-  height: auto;
-  padding: 48px 28px;
-  overflow: visible;
-}
-
-.auth-float {
+.auth-scene {
   position: absolute;
   inset: 0;
   z-index: 0;
-  pointer-events: none;
   overflow: hidden;
+  pointer-events: none;
+  /* Own layer in the page switch: shown live, no cross-fade with the old screenshot */
+  view-transition-name: auth-scene;
 }
 
 .auth-blob {
   position: absolute;
   background: color-mix(in srgb, var(--bs-primary) 34%, #fff);
   box-shadow: 0 16px 28px -10px rgba(var(--bs-primary-rgb), .35), 0 4px 10px -4px rgb(var(--care-shadow-rgb) / .16);
+  animation: auth-float 9s ease-in-out infinite alternate;
+  animation-delay: var(--auth-clock, 0s);
 }
 
+/* Speech bubble */
 .auth-blob--bubble {
-  top: 36px;
-  left: 18px;
+  top: 9vh;
+  left: 5vw;
   width: 156px;
   height: 104px;
   border-radius: 32px;
@@ -240,13 +565,15 @@ html[data-auth-direction="back"] .auth-above-card {
   transform: rotate(32deg);
 }
 
+/* Notebook */
 .auth-blob--book {
-  left: 28px;
-  bottom: 40px;
+  bottom: 14vh;
+  left: 8vw;
   width: 86px;
   height: 112px;
   border-radius: 3px 14px 14px 3px;
   transform: rotate(-8deg);
+  animation-delay: calc(var(--auth-clock, 0s) - 3s);
 }
 
 .auth-blob--book::before {
@@ -272,14 +599,16 @@ html[data-auth-direction="back"] .auth-above-card {
   border-radius: 2px;
 }
 
+/* Pen */
 .auth-blob--pen {
-  top: 48px;
-  right: 26px;
+  top: 10vh;
+  right: 8vw;
   width: 16px;
   height: 118px;
   border-radius: 8px;
   transform: rotate(32deg);
   background: color-mix(in srgb, var(--bs-primary) 48%, #fff);
+  animation-delay: calc(var(--auth-clock, 0s) - 5s);
 }
 
 .auth-blob--pen::before {
@@ -304,36 +633,77 @@ html[data-auth-direction="back"] .auth-above-card {
   background: color-mix(in srgb, var(--bs-primary) 78%, #1e3a5f);
 }
 
-.auth-page--split .auth-card {
-  box-shadow: var(--care-shadow-3);
+/* Sticky note with a folded corner and three lines */
+.auth-blob--note {
+  right: 6vw;
+  bottom: 12vh;
+  width: 104px;
+  height: 104px;
+  border-radius: 6px 6px 22px 6px;
+  transform: rotate(7deg);
+  background: color-mix(in srgb, #ffd966 70%, #fff);
+  box-shadow: 0 16px 28px -10px rgba(204, 160, 30, .4), 0 4px 10px -4px rgb(var(--care-shadow-rgb) / .16);
+  animation-delay: calc(var(--auth-clock, 0s) - 7s);
 }
 
-.auth-aside {
-  position: sticky;
-  top: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--care-primary) 14%, transparent), transparent 34%),
-    var(--bs-body-bg);
-}
-
-.auth-aside::before {
+.auth-blob--note::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--care-primary) 45%, transparent) 1.1px, transparent 1.2px);
-  background-size: 22px 22px;
-  mask-image: radial-gradient(circle at 50% 46%, #000 0%, transparent 68%);
+  top: 24px;
+  left: 16px;
+  right: 18px;
+  height: 6px;
+  border-radius: 2px;
+  background: color-mix(in srgb, #c9a227 45%, #fff);
+  box-shadow:
+    0 16px 0 color-mix(in srgb, #c9a227 45%, #fff),
+    0 32px 0 color-mix(in srgb, #c9a227 45%, #fff);
 }
 
-.auth-mark {
-  position: relative;
-  filter: drop-shadow(0 18px 24px rgb(var(--care-shadow-rgb) / .14));
+.auth-blob--note::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px 0 22px 0;
+  background: color-mix(in srgb, #c9a227 40%, #fff);
 }
+
+/* Four-point sparkles */
+.auth-spark {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  background: color-mix(in srgb, var(--care-primary) 55%, #fff);
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  animation: auth-twinkle 4s ease-in-out infinite;
+  animation-delay: var(--auth-clock, 0s);
+}
+
+.auth-spark--1 {
+  top: 30vh;
+  left: 16vw;
+}
+
+.auth-spark--2 {
+  top: 6vh;
+  left: 52vw;
+  width: 12px;
+  height: 12px;
+  animation-delay: calc(var(--auth-clock, 0s) - 1.3s);
+}
+
+.auth-spark--3 {
+  right: 17vw;
+  bottom: 30vh;
+  width: 14px;
+  height: 14px;
+  animation-delay: calc(var(--auth-clock, 0s) - 2.6s);
+}
+
+/* ---------- Dark theme ---------- */
 
 html[data-bs-theme="dark"] .auth-blob {
   background: color-mix(in srgb, var(--care-accent) 32%, var(--bs-body-bg));
@@ -357,48 +727,172 @@ html[data-bs-theme="dark"] .auth-blob--pen::before {
   border-top-color: color-mix(in srgb, var(--care-accent) 70%, #3a3424);
 }
 
-html[data-bs-theme="dark"] .auth-mark {
-  filter: drop-shadow(0 18px 28px rgb(0 0 0 / .45));
+html[data-bs-theme="dark"] .auth-blob--note {
+  background: color-mix(in srgb, var(--care-accent) 45%, var(--bs-body-bg));
 }
 
-html[data-bs-theme="dark"] .auth-aside {
-  background:
-    radial-gradient(circle at 50% 46%, color-mix(in srgb, var(--care-accent) 18%, transparent), transparent 42%),
-    var(--bs-body-bg);
+html[data-bs-theme="dark"] .auth-blob--note::before,
+html[data-bs-theme="dark"] .auth-blob--note::after {
+  background: color-mix(in srgb, var(--care-accent) 70%, var(--bs-body-bg));
 }
 
-html[data-bs-theme="dark"] .auth-aside::before {
-  background-image: radial-gradient(circle, color-mix(in srgb, var(--care-accent) 55%, transparent) 1.1px, transparent 1.2px);
+html[data-bs-theme="dark"] .auth-blob--note::before {
+  box-shadow:
+    0 16px 0 color-mix(in srgb, var(--care-accent) 70%, var(--bs-body-bg)),
+    0 32px 0 color-mix(in srgb, var(--care-accent) 70%, var(--bs-body-bg));
 }
 
+html[data-bs-theme="dark"] .auth-spark {
+  background: color-mix(in srgb, var(--care-accent) 70%, transparent);
+}
 
-@media (max-width: 900px) {
-  .auth-page--split {
-    display: grid;
+/* ---------- Footer ---------- */
+
+.auth-page-footer {
+  position: relative;
+  z-index: 1;
+  padding: 8px 16px 16px;
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes auth-float {
+  to {
+    translate: 0 -14px;
+  }
+}
+
+@keyframes auth-twinkle {
+  0%, 100% {
+    opacity: .35;
+    scale: .8;
+  }
+  50% {
+    opacity: 1;
+    scale: 1.1;
+  }
+}
+
+@keyframes auth-glow-drift {
+  to {
+    translate: 30px 24px;
+    scale: 1.12;
+  }
+}
+
+@keyframes auth-ring-spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes auth-ring-expand {
+  from {
+    scale: 1;
+    opacity: 1;
+  }
+  to {
+    scale: 2.15;
+    opacity: .45;
+  }
+}
+
+@keyframes auth-ring-settle {
+  from {
+    scale: 2.15;
+    opacity: .45;
+  }
+  to {
+    scale: 1;
+    opacity: 1;
+  }
+}
+
+@keyframes auth-intro-in {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    filter: blur(6px);
+  }
+}
+
+@keyframes auth-title-shine {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-blob,
+  .auth-spark,
+  .auth-brand-glow,
+  .auth-brand-ring,
+  .auth-card-brand--intro .auth-brand-ring,
+  .auth-intro-title,
+  .auth-intro-subtitle,
+  .auth-intro-step {
+    animation: none !important;
+  }
+
+  .auth-card-brand--intro .auth-brand-ring {
+    scale: 2.15;
+    opacity: .45;
+  }
+}
+
+/* ---------- Smaller screens ---------- */
+
+/* Less room next to the box: objects move to the corners */
+@media (max-width: 1240px) {
+  .auth-blob--bubble,
+  .auth-blob--pen {
+    top: 2vh;
+  }
+
+  .auth-blob--book,
+  .auth-blob--note {
+    bottom: 2vh;
+  }
+}
+
+/* Phones: no room for two halves, the form stays in the box with a small logo on top */
+@media (max-width: 760px) {
+  .auth-stage {
+    padding: 120px 16px 16px;
+  }
+
+  .auth-shell {
+    max-width: 440px;
+  }
+
+  .auth-card {
     grid-template-columns: 1fr;
-    height: auto;
-    padding: 8vh 16px 32px;
-    overflow-y: auto;
+    min-height: 0;
+    border-radius: 16px;
   }
 
-  .auth-page--split .auth-logo {
-    display: inline-block;
+  .auth-card-main {
+    padding: 28px 24px;
   }
 
-  .auth-page--split .auth-shell {
-    height: auto;
-    max-height: none;
-    padding: 0;
+  .auth-card .card-title {
+    font-size: 1.3rem;
   }
 
-  .auth-page--split .auth-stage {
-    height: auto;
-    border-right: 0;
-    overflow: visible;
+  .auth-above-card {
+    right: 0;
   }
 
-  .auth-float,
-  .auth-aside {
+  .auth-mobile-logo {
+    display: block !important;
+    margin: 0 auto 20px;
+  }
+
+  .auth-card-brand,
+  .auth-scene {
     display: none;
   }
 }
@@ -431,6 +925,49 @@ html[data-auth-direction="back"] {
 
 ::view-transition-old(auth-card) {
   display: none;
+}
+
+/* Decoration around the box: same place and phase on both pages, so only the live
+   new state is shown and nothing moves or fades during the switch. */
+::view-transition-old(auth-scene) {
+  display: none;
+}
+
+::view-transition-new(auth-scene),
+::view-transition-group(auth-scene) {
+  animation: none;
+}
+
+/* auth-brand-logo: big centered logo (login) <-> small logo in the corner (register).
+   Both snapshots have the same aspect, so the morph reads as one logo flying and scaling. */
+::view-transition-group(auth-brand-logo) {
+  animation-duration: .75s;
+  animation-timing-function: cubic-bezier(.65, 0, .2, 1);
+}
+
+::view-transition-old(auth-brand-logo),
+::view-transition-new(auth-brand-logo) {
+  height: 100%;
+  animation-duration: .75s;
+}
+
+/* auth-brand-intro: arriving, the intro is shown live and its parts come in one after
+   another (animations in the scoped styles). Leaving, it fades out softly while the
+   logo flies back to the center. */
+::view-transition-new(auth-brand-intro) {
+  animation: none;
+}
+
+::view-transition-old(auth-brand-intro) {
+  animation: auth-intro-out .35s cubic-bezier(.4, 0, 1, 1) both;
+}
+
+@keyframes auth-intro-out {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
 }
 
 ::view-transition-new(auth-card) {
