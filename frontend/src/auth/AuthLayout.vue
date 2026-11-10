@@ -539,8 +539,6 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   position: absolute;
   background: color-mix(in srgb, var(--bs-primary) 34%, #fff);
   box-shadow: 0 16px 28px -10px rgba(var(--bs-primary-rgb), .35), 0 4px 10px -4px rgb(var(--care-shadow-rgb) / .16);
-  animation: auth-float 9s ease-in-out infinite alternate;
-  animation-delay: var(--auth-clock, 0s);
 }
 
 /* Speech bubble */
@@ -573,7 +571,6 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   height: 112px;
   border-radius: 3px 14px 14px 3px;
   transform: rotate(-8deg);
-  animation-delay: calc(var(--auth-clock, 0s) - 3s);
 }
 
 .auth-blob--book::before {
@@ -608,7 +605,6 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   border-radius: 8px;
   transform: rotate(32deg);
   background: color-mix(in srgb, var(--bs-primary) 48%, #fff);
-  animation-delay: calc(var(--auth-clock, 0s) - 5s);
 }
 
 .auth-blob--pen::before {
@@ -643,7 +639,6 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   transform: rotate(7deg);
   background: color-mix(in srgb, #ffd966 70%, #fff);
   box-shadow: 0 16px 28px -10px rgba(204, 160, 30, .4), 0 4px 10px -4px rgb(var(--care-shadow-rgb) / .16);
-  animation-delay: calc(var(--auth-clock, 0s) - 7s);
 }
 
 .auth-blob--note::before {
@@ -678,8 +673,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   height: 18px;
   background: color-mix(in srgb, var(--care-primary) 55%, #fff);
   clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
-  animation: auth-twinkle 4s ease-in-out infinite;
-  animation-delay: var(--auth-clock, 0s);
+  opacity: .7;
 }
 
 .auth-spark--1 {
@@ -692,7 +686,6 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   left: 52vw;
   width: 12px;
   height: 12px;
-  animation-delay: calc(var(--auth-clock, 0s) - 1.3s);
 }
 
 .auth-spark--3 {
@@ -700,7 +693,6 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   bottom: 30vh;
   width: 14px;
   height: 14px;
-  animation-delay: calc(var(--auth-clock, 0s) - 2.6s);
 }
 
 /* ---------- Dark theme ---------- */
@@ -756,23 +748,6 @@ html[data-bs-theme="dark"] .auth-spark {
 
 /* ---------- Motion ---------- */
 
-@keyframes auth-float {
-  to {
-    translate: 0 -14px;
-  }
-}
-
-@keyframes auth-twinkle {
-  0%, 100% {
-    opacity: .35;
-    scale: .8;
-  }
-  50% {
-    opacity: 1;
-    scale: 1.1;
-  }
-}
-
 @keyframes auth-glow-drift {
   to {
     translate: 30px 24px;
@@ -826,8 +801,6 @@ html[data-bs-theme="dark"] .auth-spark {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-blob,
-  .auth-spark,
   .auth-brand-glow,
   .auth-brand-ring,
   .auth-card-brand--intro .auth-brand-ring,
