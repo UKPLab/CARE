@@ -172,6 +172,7 @@ export default {
       closeRequestHandled: false,
       hideWaiting: false,
       isShown: false,
+      pendingTransition: null,
     };
   },
   computed: {
@@ -199,6 +200,8 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
+    this.$refs.Modal.addEventListener('show.bs.modal', this.transitionStartEvent);
+    this.$refs.Modal.addEventListener('hide.bs.modal', this.transitionStartEvent);
     this.$refs.Modal.addEventListener('hidden.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('shown.bs.modal', this.showEvent);
 
@@ -212,16 +215,13 @@ export default {
       this.logHide();
     }
     if (this.$refs.Modal) {
+      this.$refs.Modal.removeEventListener('show.bs.modal', this.transitionStartEvent);
+      this.$refs.Modal.removeEventListener('hide.bs.modal', this.transitionStartEvent);
       this.$refs.Modal.removeEventListener('hidden.bs.modal', this.hideEvent);
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
     }
     if (this.modal) {
-      try {
-        this.modal.dispose();
-      } catch (e) {
-        // Ignore errors during dispose - the modal may already be in an invalid state
-        console.error('[BasicModal] Error during modal dispose:', e.message);
-      }
+      this.disposeModal();
     }
     this.resumeParentModal();
   },
@@ -247,8 +247,60 @@ export default {
     stopProgress() {
       this.progress = false;
     },
+    /**
+     * Remembers which Bootstrap transition is running, as Bootstrap only reports its end through events.
+     * Also covers transitions Bootstrap starts on its own, e.g. on the Escape key.
+     * @param {Event} event The show.bs.modal or hide.bs.modal event
+     */
+    transitionStartEvent(event) {
+      this.pendingTransition = event.type.split('.')[0];
+    },
+    /**
+     * Disposes the Bootstrap modal of the unmounting component.
+     *
+     * Bootstrap's queued transition callbacks read the fields dispose() clears, and only its hide path removes
+     * the backdrop and the scroll lock from the body. So a modal in use has to reach hidden before it is disposed.
+     * By then the component is gone, so the callbacks below only use captured values.
+     */
+    disposeModal() {
+      const modal = this.modal;
+      const element = this.$refs.Modal;
+      const dispose = () => {
+        // A static backdrop transition has up to two callbacks left on the dialog, finish them now.
+        const dialog = element.querySelector('.modal-dialog');
+        dialog.dispatchEvent(new Event('transitionend'));
+        dialog.dispatchEvent(new Event('transitionend'));
+        modal.dispose();
+        // Bootstrap appends the element to the body again if it finishes opening after Vue removed it.
+        element.remove();
+      };
+
+      if (!this.isShown && !this.pendingTransition) {
+        dispose();
+        return;
+      }
+
+      // Without the fade class, the steps still to come run at once and the removed modal is never painted again.
+      element.classList.remove('fade');
+      if (this.pendingTransition === 'show') {
+        // Only listen for hidden from here on, the hidden event of an earlier close can arrive during this opening.
+        element.addEventListener('shown.bs.modal', () => {
+          element.addEventListener('hidden.bs.modal', dispose, {once: true});
+          modal.hide();
+        }, {once: true});
+        return;
+      }
+      element.addEventListener('hidden.bs.modal', dispose, {once: true});
+      if (!this.pendingTransition) {
+        modal.hide();
+      }
+    },
     hideEvent() {
       this.isShown = false;
+      // Bootstrap allows reopening while the backdrop of a close fades out, that opening is still running.
+      if (this.pendingTransition === 'hide') {
+        this.pendingTransition = null;
+      }
       this.$emit('hide');
       this.logHide();
     },
@@ -265,6 +317,7 @@ export default {
     },
     showEvent() {
       this.isShown = true;
+      this.pendingTransition = null;
       this.$emit('show');
       if (this.acceptStats) {
         this.$socket.emit('stats', {

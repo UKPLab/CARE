@@ -5,14 +5,7 @@
  * @author Mélissa Loew
  */
 
-const TAG_COLORS = {
-    success: "009933",
-    danger: "e05f5f",
-    info: "5fe0df",
-    dark: "c8c8c8",
-    warning: "eed042",
-    secondary: "4290ee",
-};
+import { TAG_COLORS } from "tag-colors";
 
 /**
  * Returns the hex color (without "#") for a tag.
