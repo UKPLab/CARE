@@ -47,6 +47,15 @@
             "versionExists": "La version « {versionNumber} » existe déjà pour ce critère.",
             "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de critères.",
             "inUse": "La version {criterionId} du critère ne peut pas être supprimée : elle est utilisée par {count} version(s) de grille ({rubricIds})."
+        },
+        "rubric": {
+            "notFound": "Grille introuvable.",
+            "groupNotFound": "Groupe de grilles introuvable.",
+            "versionExists": "La version « {versionNumber} » existe déjà pour cette grille.",
+            "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de grilles.",
+            "duplicateCriterion": "La version {criterionId} du critère est sélectionnée plusieurs fois.",
+            "criteriaNotFound": "Version(s) de critère introuvable(s) : {criterionIds}.",
+            "inUse": "La version {rubricId} de la grille ne peut pas être supprimée : elle est utilisée par {count} version(s) d'évaluation ({assessmentIds})."
         }
     },
     "configuration": {

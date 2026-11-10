@@ -47,6 +47,15 @@
             "versionExists": "Version \"{versionNumber}\" already exists for this criterion.",
             "copySourceMismatch": "The version to copy does not belong to this criterion group.",
             "inUse": "Criterion version {criterionId} cannot be deleted: it is used by {count} rubric version(s) ({rubricIds})."
+        },
+        "rubric": {
+            "notFound": "Rubric not found.",
+            "groupNotFound": "Rubric group not found.",
+            "versionExists": "Version \"{versionNumber}\" already exists for this rubric.",
+            "copySourceMismatch": "The version to copy does not belong to this rubric group.",
+            "duplicateCriterion": "Criterion version {criterionId} is selected more than once.",
+            "criteriaNotFound": "Criterion version(s) not found: {criterionIds}.",
+            "inUse": "Rubric version {rubricId} cannot be deleted: it is used by {count} assessment version(s) ({assessmentIds})."
         }
     },
     "configuration": {

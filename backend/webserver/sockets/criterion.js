@@ -4,23 +4,10 @@ const {UniqueConstraintError, ForeignKeyConstraintError} = require("sequelize");
 const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
-
-/** Right that opens the Assessment Management Dashboard (migration 20261031120000-add-assessments-nav). */
-const DASHBOARD_RIGHT = "frontend.dashboard.assessments.view";
-
-/** varchar(255) columns */
-const MAX_STRING = 255;
-
-const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
-const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
-
-/** @returns {boolean} finite number, or a plain decimal string (NUMERIC values come back from pg as strings) */
-const isNumeric = (value) =>
-    (typeof value === "number" && Number.isFinite(value))
-    || (typeof value === "string" && /^-?\d+(\.\d+)?$/.test(value.trim()));
-
-/** NUMERIC column value (string from pg) → JSON number; null stays null. */
-const toNumber = (value) => (value === null || value === undefined ? null : Number(value));
+const {
+    DASHBOARD_RIGHT, has, isObject, isNumeric, readVersionNumber, readText, readOptionalText, readNumber, assertPointsRange,
+    loadCriteria,
+} = require("../../utils/helper/assessmentVersions.js");
 
 /**
  * Socket handlers for criteria (`criterion`) and their scoring options (`criterion_scoring_option`).
@@ -53,29 +40,7 @@ class CriterionSocket extends Socket {
      * @returns {Promise<Object[]>}
      */
     async loadCriteria(where, options = {}) {
-        const {criterion, criterion_scoring_option: scoringOption} = this.models;
-        const rows = await criterion.findAll({
-            where,
-            include: [{model: scoringOption, as: "scoringOptions"}],
-            order: [
-                ["criterionGroupId", "ASC"],
-                ["id", "ASC"],
-                [{model: scoringOption, as: "scoringOptions"}, "position", "ASC"],
-            ],
-            transaction: options.transaction,
-        });
-        return rows.map((row) => {
-            const plain = row.get({plain: true});
-            return {
-                ...plain,
-                minPoints: toNumber(plain.minPoints),
-                maxPoints: toNumber(plain.maxPoints),
-                scoringOptions: plain.scoringOptions.map((option) => ({
-                    ...option,
-                    points: toNumber(option.points),
-                })),
-            };
-        });
+        return await loadCriteria(this.models, where, options);
     }
 
     /**
@@ -86,86 +51,34 @@ class CriterionSocket extends Socket {
      * @throws {TranslatableError}
      */
     validateCriterion(source) {
-        const required = (field) => new TranslatableError("errors.assessment.fieldRequired", {field});
-        const invalid = (field) => new TranslatableError("errors.assessment.fieldInvalid", {field});
-
-        const text = (field, {allowEmpty = false} = {}) => {
-            const value = source[field];
-            if (value === undefined || value === null) {
-                throw required(field);
-            }
-            if (typeof value !== "string" || value.length > MAX_STRING && field !== "description") {
-                throw invalid(field);
-            }
-            if (!allowEmpty && value.trim() === "") {
-                throw required(field);
-            }
-            return value;
-        };
-
-        let versionNumber = source.versionNumber;
-        if (typeof versionNumber === "number" && Number.isFinite(versionNumber)) {
-            versionNumber = String(versionNumber);
-        }
-        if (versionNumber === undefined || versionNumber === null) {
-            throw required("versionNumber");
-        }
-        if (typeof versionNumber !== "string" || versionNumber.trim().length > MAX_STRING) {
-            throw invalid("versionNumber");
-        }
-        versionNumber = versionNumber.trim();
-        if (versionNumber === "") {
-            throw required("versionNumber");
-        }
-
         const fields = {
-            versionNumber,
-            name: text("name"),
-            description: text("description", {allowEmpty: true}),
-            minPoints: null,
-            maxPoints: null,
-            function: null,
+            versionNumber: readVersionNumber(source),
+            name: readText(source, "name"),
+            description: readText(source, "description", {allowEmpty: true, maxLength: Infinity}),
+            minPoints: readNumber(source, "minPoints"),
+            maxPoints: readNumber(source, "maxPoints"),
+            function: readOptionalText(source, "function"),
             subjective: source.subjective,
             expertLevel: source.expertLevel,
         };
 
         if (source.subjective === undefined || source.subjective === null) {
-            throw required("subjective");
+            throw new TranslatableError("errors.assessment.fieldRequired", {field: "subjective"});
         }
         if (typeof source.subjective !== "boolean") {
-            throw invalid("subjective");
+            throw new TranslatableError("errors.assessment.fieldInvalid", {field: "subjective"});
         }
         if (source.expertLevel === undefined || source.expertLevel === null) {
-            throw required("expertLevel");
+            throw new TranslatableError("errors.assessment.fieldRequired", {field: "expertLevel"});
         }
         if (!Number.isInteger(source.expertLevel)) {
-            throw invalid("expertLevel");
+            throw new TranslatableError("errors.assessment.fieldInvalid", {field: "expertLevel"});
         }
-
-        for (const field of ["minPoints", "maxPoints"]) {
-            const value = source[field];
-            if (value !== undefined && value !== null) {
-                if (!isNumeric(value)) {
-                    throw invalid(field);
-                }
-                fields[field] = typeof value === "string" ? value.trim() : value;
-            }
-        }
-        if (fields.minPoints !== null && fields.maxPoints !== null
-            && Number(fields.minPoints) > Number(fields.maxPoints)) {
-            throw new TranslatableError("errors.assessment.pointsRange");
-        }
-
-        if (source.function !== undefined && source.function !== null) {
-            if (typeof source.function !== "string" || source.function.length > MAX_STRING) {
-                throw invalid("function");
-            }
-            fields.function = source.function;
-        }
+        assertPointsRange(fields.minPoints, fields.maxPoints);
 
         const rawOptions = source.scoringOptions === undefined ? [] : source.scoringOptions;
         if (!Array.isArray(rawOptions)) {
-            throw invalid("scoringOptions");
+            throw new TranslatableError("errors.assessment.fieldInvalid", {field: "scoringOptions"});
         }
         // The order of the array is the order of the options; positions are 1-based like the data
         // imported from the configurations.

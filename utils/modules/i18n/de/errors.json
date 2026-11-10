@@ -47,6 +47,15 @@
       "versionExists": "Version \"{versionNumber}\" existiert für dieses Kriterium bereits.",
       "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Kriteriengruppe.",
       "inUse": "Kriterium-Version {criterionId} kann nicht gelöscht werden: Sie wird von {count} Rubrik-Version(en) verwendet ({rubricIds})."
+    },
+    "rubric": {
+      "notFound": "Rubrik nicht gefunden.",
+      "groupNotFound": "Rubrikgruppe nicht gefunden.",
+      "versionExists": "Version \"{versionNumber}\" existiert für diese Rubrik bereits.",
+      "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Rubrikgruppe.",
+      "duplicateCriterion": "Kriterium-Version {criterionId} wurde mehrfach ausgewählt.",
+      "criteriaNotFound": "Kriterium-Version(en) nicht gefunden: {criterionIds}.",
+      "inUse": "Rubrik-Version {rubricId} kann nicht gelöscht werden: Sie wird von {count} Assessment-Version(en) verwendet ({assessmentIds})."
     }
   },
   "configuration": {
