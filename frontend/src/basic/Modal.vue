@@ -188,17 +188,15 @@ export default {
     }
   },
   beforeUnmount() {
-    if (this.$refs.Modal) {
-      this.$refs.Modal.removeEventListener('hidden.bs.modal', this.hideEvent);
-      this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
+    const el = this.$refs.Modal;
+    if (el) {
+      el.removeEventListener('hidden.bs.modal', this.hideEvent);
+      el.removeEventListener('shown.bs.modal', this.showEvent);
     }
-    if (this.modal) {
-      try {
-        this.modal.dispose();
-      } catch (e) {
-        // Ignore errors during dispose - the modal may already be in an invalid state
-        console.error('[BasicModal] Error during modal dispose:', e.message);
-      }
+    const modal = this.modal;
+    this.modal = null;
+    if (modal) {
+      this.disposeWhenIdle(modal, el);
     }
     this.resumeParentModal();
   },
@@ -210,6 +208,66 @@ export default {
     }
   },
   methods: {
+    /**
+     * Dispose the Bootstrap modal only once it is fully closed.
+     *
+     * Closing and navigating in one click (e.g. "Start study") unmounts the component
+     * while the fade-out still runs. Bootstrap's pending transition callback then
+     * touches `this._element.style`, which dispose() has already set to null:
+     * "can't access property 'style', this._element is null". So while the modal is
+     * open or animating, close it first and dispose on `hidden.bs.modal`.
+     * The detached element is still a valid node for those callbacks.
+     *
+     * @param {Modal} modal - Bootstrap modal instance
+     * @param {HTMLElement|null} el - its element
+     */
+    disposeWhenIdle(modal, el) {
+      const dispose = () => {
+        try {
+          modal.dispose();
+        } catch (e) {
+          console.error('[BasicModal] Error during modal dispose:', e.message);
+        }
+      };
+
+      // Private Bootstrap 5 state; fall back to the CSS class if it ever changes.
+      const transitioning = !!modal._isTransitioning;
+      const shown = modal._isShown ?? el?.classList.contains('show');
+      if (!el || (!shown && !transitioning)) {
+        dispose();
+        return;
+      }
+
+      let finished = false;
+      let fallback = null;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        clearTimeout(fallback);
+        el.removeEventListener('hidden.bs.modal', finish);
+        el.removeEventListener('shown.bs.modal', hideAfterShow);
+        dispose();
+        // Unmounted while open: make sure no backdrop or scroll lock is left behind,
+        // unless another modal is still open.
+        if (!document.querySelector('.modal.show')) {
+          document.querySelectorAll('.modal-backdrop').forEach((b) => b.remove());
+          document.body.classList.remove('modal-open');
+          document.body.style.removeProperty('overflow');
+          document.body.style.removeProperty('padding-right');
+        }
+      };
+      // Still opening: Bootstrap ignores hide() during a transition, so hide once shown.
+      const hideAfterShow = () => modal.hide();
+
+      el.addEventListener('hidden.bs.modal', finish);
+      if (shown && transitioning) {
+        el.addEventListener('shown.bs.modal', hideAfterShow, {once: true});
+      } else if (shown) {
+        modal.hide();
+      }
+      // Transitions take ~300ms; never keep the instance around for long.
+      fallback = setTimeout(finish, 1500);
+    },
     getProgressId() {
       this.progressId = uuid();
       return this.progressId;
@@ -258,7 +316,7 @@ export default {
       this.waiting = false;
       this.progress = false;
       this.suspendParentModal();
-      this.modal.show();
+      this.modal?.show();
     },
     handleCloseClick() {
       this.closeRequestHandled = false;
@@ -277,7 +335,7 @@ export default {
     },
     hide() {
       if (this.isShown) {
-        this.modal.hide();
+        this.modal?.hide();
       } else {
         this.hideWaiting = true;
       }
