@@ -641,12 +641,15 @@ html .dashboard-page {
   --dash-ghost-hover: rgba(255, 255, 255, 0.85);
   --dash-panel-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06), 0 1px 3px rgb(var(--care-shadow-rgb) / 0.07);
   --dash-shadow: var(--care-shadow-1);
+  /* Solid base colour under the gradient. Sticky headers (Settings) paint it
+     so rows scrolling underneath stay hidden. */
+  --dash-surface: var(--care-page-surface, #f2f5fa);
   border: 1px solid var(--dash-border);
   border-radius: 16px;
   background:
     radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
     radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
-    var(--care-page-surface, #f2f5fa);
+    var(--dash-surface);
   box-shadow: var(--dash-shadow);
 }
 
@@ -656,10 +659,11 @@ html[data-bs-theme="dark"] .dashboard-page {
   --dash-ghost-hover: rgba(255, 255, 255, 0.07);
   --dash-panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
   --dash-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  --dash-surface: color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
   background:
     radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
     radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.09), transparent 60%),
-    color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
+    var(--dash-surface);
 }
 
 html .dashboard-page > .card-header {
@@ -684,9 +688,30 @@ html .dashboard-page > .card-header .card-title {
   background: transparent;
 }
 
+/* Header button row, same on every dashboard (reference: Studies):
+   ghost .btn-secondary buttons first, then <span class="dashboard-header-sep">,
+   then the filled main action(s) (.btn-primary, or .btn-warning/.btn-danger).
+   Wrap the buttons in .dashboard-header-actions (or put them straight into the
+   slot); do not use .btn-group gap-*, its !important gap breaks the spacing. */
 html .dashboard-page .card-header-actions,
+html .dashboard-page .dashboard-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
 html .dashboard-page .card-header-actions .btn-group {
   gap: 0.25rem;
+}
+
+html .dashboard-page .dashboard-header-sep {
+  flex: none;
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.35rem;
+  background: var(--dash-border);
 }
 
 html .dashboard-page .card-header-actions .btn {
@@ -703,9 +728,13 @@ html .dashboard-page .card-header-actions .btn-group > .btn {
   border-radius: 8px !important;
 }
 
-html .dashboard-page .card-header-actions .btn-primary {
+/* Filled header actions share the primary button's weight and width. */
+html .dashboard-page .card-header-actions :is(.btn-primary, .btn-warning, .btn-danger, .btn-success) {
   padding-inline: 0.85rem;
   font-weight: 600;
+}
+
+html .dashboard-page .card-header-actions .btn-primary {
   box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 6px 16px -6px rgba(var(--bs-primary-rgb), 0.55);
 }
 

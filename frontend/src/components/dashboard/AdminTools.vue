@@ -1,6 +1,9 @@
 <template>
   <div>
-    <Card :title="$t('dashboard.adminTools.title')">
+    <Card
+      class="dashboard-page"
+      :title="$t('dashboard.adminTools.title')"
+    >
       <template #body>
         <p class="text-muted mb-3">
           {{ $t('dashboard.adminTools.description') }}

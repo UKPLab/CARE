@@ -19,15 +19,17 @@
       <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
         <span class="visually-hidden">{{ $t('common.loading') }}</span>
       </div>
-      <div class="btn-group gap-2 ms-3">
-        <BasicButton
-            class="btn-primary btn-sm"
-            :title="$t('common.refresh')"
-            :text="$t('common.refresh')"
-            icon="arrow-clockwise"
-            @click="load"
-        />
-      </div>
+      <span
+        class="dashboard-header-sep"
+        aria-hidden="true"
+      />
+      <BasicButton
+          class="btn-primary btn-sm"
+          :title="$t('common.refresh')"
+          :text="$t('common.refresh')"
+          icon="arrow-clockwise"
+          @click="load"
+      />
     </template>
   </DashboardListPage>
   <NlpSkillModal ref="nlpSkillModal"/>

@@ -9,13 +9,17 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="btn-group gap-2">
+      <div class="dashboard-header-actions">
         <BasicButton
-          class="btn-primary btn-sm"
-          :text="$t('socketProfiler.actions.startRecording')"
-          :title="$t('socketProfiler.actions.startRecording')"
-          icon="record-circle"
-          @click="openStartModal"
+          class="btn-secondary btn-sm"
+          :text="$t('socketProfiler.actions.import')"
+          :title="$t('socketProfiler.actions.importTooltip')"
+          icon="upload"
+          @click="openImportModal"
+        />
+        <span
+          class="dashboard-header-sep"
+          aria-hidden="true"
         />
         <BasicButton
           class="btn-danger btn-sm"
@@ -26,11 +30,11 @@
           @click="stopActiveRecording"
         />
         <BasicButton
-          class="btn-secondary btn-sm"
-          :text="$t('socketProfiler.actions.import')"
-          :title="$t('socketProfiler.actions.importTooltip')"
-          icon="upload"
-          @click="openImportModal"
+          class="btn-primary btn-sm"
+          :text="$t('socketProfiler.actions.startRecording')"
+          :title="$t('socketProfiler.actions.startRecording')"
+          icon="record-circle"
+          @click="openStartModal"
         />
       </div>
     </template>

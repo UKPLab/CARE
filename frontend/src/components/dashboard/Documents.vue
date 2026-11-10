@@ -11,11 +11,16 @@
     <template #headerActions>
       <BasicButton
           v-if="showCreateButton"
-          class="btn-outline-secondary btn-sm"
+          class="btn-secondary btn-sm"
           :title="$t('documents.createDocument')"
           :text="$t('documents.createDocument')"
           icon="file-earmark-plus"
           @click="$refs.createModal.open()"
+      />
+      <span
+          v-if="showCreateButton"
+          class="dashboard-header-sep"
+          aria-hidden="true"
       />
       <BasicButton
           class="btn-primary btn-sm"

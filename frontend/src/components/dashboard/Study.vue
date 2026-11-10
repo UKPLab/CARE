@@ -5,7 +5,7 @@
         :title="$t('studies.title')"
     >
       <template #headerElements>
-        <div class="study-header-actions">
+        <div class="dashboard-header-actions">
           <BasicButton
               class="btn-secondary btn-sm"
               :title="$t('studies.savedTemplates')"
@@ -45,7 +45,7 @@
               @click="addSingleAssignment"
           />
           <span
-              class="study-header-sep"
+              class="dashboard-header-sep"
               aria-hidden="true"
           />
           <BasicButton
@@ -755,27 +755,13 @@ export default {
 <style scoped>
 /* ======================================================================
    Studies dashboard: only what this page adds.
-   - Page shell, title and header buttons (ghost secondary, one filled
-     primary): .dashboard-page in global.css.
+   - Page shell, title and header buttons (ghost secondary, separator, one
+     filled primary): .dashboard-page, .dashboard-header-actions and
+     .dashboard-header-sep in global.css.
    - Cards: StudyCardGrid.vue, which renders each study as a StatusCard
      (basic/dashboard/card/StatusCard.vue, shared with My Sessions and Submissions).
    - Table, search and pagination: the shared basic/table components.
    ====================================================================== */
-
-.study-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.25rem;
-}
-
-.study-header-sep {
-  width: 1px;
-  height: 1.25rem;
-  margin: 0 0.35rem;
-  background: var(--dash-border);
-}
 
 /* ---------- Table view: panel on the tinted page ----------
    Table, search bar, pagination, badges and row actions are styled by the shared

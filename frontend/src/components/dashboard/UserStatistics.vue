@@ -4,15 +4,15 @@
     :title="$t('users.title')"
   >
     <template #headerElements>
-      <div class="btn-group gap-2">
+      <div class="dashboard-header-actions">
         <BasicButton
-            class="btn btn-sm btn-secondary"
+            class="btn-secondary btn-sm"
             :title="$t('users.stats.exportCsv')"
             icon="cloud-arrow-down"
             @click="downloadBehaviourData('csv')"
         />
         <BasicButton
-            class="btn btn-sm btn-secondary"
+            class="btn-secondary btn-sm"
             :title="$t('users.stats.exportJson')"
             icon="cloud-arrow-down"
             @click="downloadBehaviourData('json')"

@@ -9,7 +9,7 @@
       @action="action"
   >
     <template #headerActions>
-      <div class="btn-group gap-2">
+      <div class="dashboard-header-actions">
         <BasicButton
             class="btn-secondary btn-sm"
             :text="$t('basic.configuration.uploadButton')"

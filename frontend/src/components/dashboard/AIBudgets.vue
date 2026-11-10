@@ -1,5 +1,8 @@
 <template>
-  <BasicCard :title="$t('ai.budgets.title')">
+  <BasicCard
+    class="dashboard-page"
+    :title="$t('ai.budgets.title')"
+  >
     <template #body>
       <ul class="nav nav-tabs mb-3">
         <li v-for="tab in tabs" :key="tab.key" class="nav-item">

@@ -1,6 +1,9 @@
 <template>
   <div>
-    <Card :title="$t('ai.log.summaryTitle')" class="mb-3">
+    <Card
+      class="dashboard-page mb-3"
+      :title="$t('ai.log.summaryTitle')"
+    >
       <template #body>
         <div class="row g-3">
           <div class="col-12 col-md-6 col-xl-3">
@@ -31,7 +34,10 @@
       </template>
     </Card>
 
-    <Card :title="$t('ai.log.requestsTitle')">
+    <Card
+      class="dashboard-page"
+      :title="$t('ai.log.requestsTitle')"
+    >
       <template #body>
         <BasicTable
           :columns="columns"
@@ -156,11 +162,13 @@ export default {
 </script>
 
 <style scoped>
+/* Panels on the tinted .dashboard-page shell use its panel colours. */
 .metric-card {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.5rem;
+  border: 1px solid var(--dash-border);
+  border-radius: 12px;
   padding: 0.9rem 1rem;
-  background: var(--bs-body-bg);
+  background: var(--dash-panel);
+  box-shadow: var(--dash-panel-shadow);
   min-height: 86px;
   display: flex;
   flex-direction: column;

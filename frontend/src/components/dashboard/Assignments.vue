@@ -9,7 +9,7 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="btn-group gap-2">
+      <div class="dashboard-header-actions">
         <BasicButton
           class="btn-primary btn-sm"
           :text="$t('assignments.dashboard.buttons.addAssignment')"

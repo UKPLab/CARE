@@ -9,22 +9,27 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="btn-group gap-2">
-      <BasicButton
-        class="btn-primary btn-sm"
-        :title="$t('dashboard.projects.createTooltip')"
-        :text="$t('common.create')"
-        icon="plus"
-        @click="$refs.projectModal.open(0)"
-      />
-      <BasicButton
-        v-if="isAdmin"
-        class="btn-secondary btn-sm"
-        :title="$t('dashboard.projects.assignTooltip')"
-        :text="$t('dashboard.projects.assignButton')"
-        icon="people-fill"
-        @click="$refs.assignProjectModal.open()"
-      />
+      <div class="dashboard-header-actions">
+        <template v-if="isAdmin">
+          <BasicButton
+            class="btn-secondary btn-sm"
+            :title="$t('dashboard.projects.assignTooltip')"
+            :text="$t('dashboard.projects.assignButton')"
+            icon="people-fill"
+            @click="$refs.assignProjectModal.open()"
+          />
+          <span
+            class="dashboard-header-sep"
+            aria-hidden="true"
+          />
+        </template>
+        <BasicButton
+          class="btn-primary btn-sm"
+          :title="$t('dashboard.projects.createTooltip')"
+          :text="$t('common.create')"
+          icon="plus"
+          @click="$refs.projectModal.open(0)"
+        />
       </div>
     </template>
   </DashboardListPage>

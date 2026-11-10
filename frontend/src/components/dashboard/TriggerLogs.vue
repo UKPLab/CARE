@@ -1,5 +1,8 @@
 <template>
-  <Card :title="$t('triggers.logs.title')">
+  <Card
+    class="dashboard-page"
+    :title="$t('triggers.logs.title')"
+  >
     <template #body>
       <BasicTable
         :columns="columns"

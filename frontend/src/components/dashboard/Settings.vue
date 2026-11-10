@@ -3,12 +3,12 @@
     <!-- Leaves the viewport once the page scrolls, which marks the sticky header as "stuck" -->
     <div ref="stickySentinel" class="settings-sticky-sentinel" aria-hidden="true"></div>
     <Card
-      class="settings-card"
+      class="settings-card dashboard-page"
       :class="{ 'is-header-stuck': isHeaderStuck }"
       :title="$t('settings.title')"
     >
       <template #headerElements>
-        <div class="btn-group gap-2">
+        <div class="dashboard-header-actions">
 
           <BasicButton
               class="btn-secondary btn-sm"
@@ -43,6 +43,11 @@
               :title="$t('common.reload')"
               icon="arrow-clockwise"
               @click="load"
+          />
+
+          <span
+              class="dashboard-header-sep"
+              aria-hidden="true"
           />
 
           <BasicButton
@@ -563,13 +568,16 @@ export default {
      Stick above the padding and paint over the strip so rows cannot show through. */
   top: -1rem;
   z-index: 5;
-  background: var(--bs-body-bg);
-  border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
+  /* Transparent at rest so the shared .dashboard-page gradient shows behind the
+     title, like on every other dashboard. Solid only while stuck over content. */
+  background: transparent;
+  border-radius: 16px 16px 0 0;
   transition: box-shadow 160ms var(--care-ease, ease),
               border-color 160ms var(--care-ease, ease);
 }
 
 .settings-card.is-header-stuck > :deep(.card-header) {
+  background: var(--dash-surface);
   border-radius: 0;
   border-bottom-color: var(--care-primary, var(--bs-primary));
   box-shadow: inset 0 -1px 0 var(--care-primary, var(--bs-primary));
@@ -582,7 +590,7 @@ export default {
   right: 0;
   bottom: 100%;
   height: 2rem;
-  background: var(--bs-body-bg);
+  background: var(--dash-surface);
 }
 
 .settings-layout {

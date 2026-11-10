@@ -10,7 +10,7 @@
       @action="chooseAction"
   >
     <template #headerActions>
-      <div class="btn-group gap-2 flex-wrap">
+      <div class="dashboard-header-actions">
         <BasicButton
             class="btn-secondary btn-sm"
             :title="$t('users.liveSessions')"
@@ -59,6 +59,10 @@
             :text="$t('users.importViaMoodle')"
             icon="box-arrow-in-down"
             @click="openImportModal('moodle')"
+        />
+        <span
+            class="dashboard-header-sep"
+            aria-hidden="true"
         />
         <BasicButton
             class="btn-primary btn-sm"

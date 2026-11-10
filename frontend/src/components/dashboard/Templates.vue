@@ -10,25 +10,29 @@
     >
       <template #headerActions>
         <BasicButton
-          class="btn-secondary btn-sm me-2"
+          class="btn-secondary btn-sm"
           :title="$t('templates.dashboard.browsePublicTemplates')"
           :text="$t('templates.dashboard.publicTemplates')"
           icon="globe"
           @click="$refs.publicTemplatesModal.open()"
         />
         <BasicButton
-          class="btn-secondary btn-sm me-2"
+          class="btn-secondary btn-sm"
           :title="$t('modals.importExport.wiring.templates.importTooltip')"
           :text="$t('common.import')"
           icon="upload"
           @click="$refs.importFormatModal.open('template', null, { socket: { name: 'templateImport' } })"
         />
         <BasicButton
-          class="btn-secondary btn-sm me-2"
+          class="btn-secondary btn-sm"
           :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
           :text="$t('common.exportAll')"
           icon="download"
           @click="openExport(null)"
+        />
+        <span
+          class="dashboard-header-sep"
+          aria-hidden="true"
         />
         <BasicButton
           class="btn-primary btn-sm"

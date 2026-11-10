@@ -9,7 +9,7 @@
     @action="action"
   >
     <template #headerActions>
-      <div class="btn-group gap-2">
+      <div class="dashboard-header-actions">
         <BasicButton
           class="btn-secondary btn-sm"
           :title="$t('common.import')"
@@ -23,6 +23,10 @@
           :text="$t('common.exportAll')"
           icon="download"
           @click="$refs.exportFormatModal.open(null, 'tag_set', 'tag', null, { key: 'tags' })"
+        />
+        <span
+          class="dashboard-header-sep"
+          aria-hidden="true"
         />
         <BasicButton
           class="btn-primary btn-sm"
