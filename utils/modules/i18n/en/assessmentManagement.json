@@ -11,7 +11,10 @@
         "edit": "Edit",
         "delete": "Delete",
         "save": "Save",
-        "next": "Next"
+        "next": "Next",
+        "view": "View",
+        "newVersion": "Create new version",
+        "retry": "Retry"
     },
     "fields": {
         "id": "ID",
@@ -32,7 +35,9 @@
         "gradingFunction": "Grading function",
         "expertLevel": "Expert level",
         "subjective": "Subjective evaluation",
-        "scoringDescription": "Scoring description"
+        "scoringDescription": "Scoring description",
+        "group": "Group",
+        "createdAt": "Created at"
     },
     "calculation": {
         "sum": "Sum",
@@ -44,12 +49,8 @@
         "manual_grading": "Manual grading",
         "check_latex_metadata": "Check LaTeX metadata",
         "check_latex_template": "Check LaTeX template",
-        "check_pdf_pages": "Check PDF page count"
-    },
-    "expertLevel": {
-        "0": "0 — Beginner",
-        "1": "1 — Intermediate",
-        "2": "2 — Expert"
+        "check_pdf_pages": "Check PDF page count",
+        "none": "None"
     },
     "assessment": {
         "listTitle": "Assessment definitions",
@@ -79,19 +80,25 @@
         "listTitle": "Criterion library",
         "add": "Add Criterion",
         "addTitle": "Add Criterion",
-        "editTitle": "Edit Criterion",
         "stepDetails": "Criterion Details",
         "stepScoring": "Scoring Options",
         "detailsTitle": "Criterion Details",
         "scoringTitle": "Scoring Options",
         "scoringHelp": "Define how each point value is awarded for {name}.",
-        "allowedRange": "Allowed range: {min} to {max}",
-        "rangeInvalid": "Set a valid point range in step 1 first.",
         "optionCount": "{count} options",
         "optionNumber": "Scoring option {number}",
         "addOption": "Add Scoring Option",
         "removeOption": "Remove scoring option",
-        "maxOptionsReached": "All {count} possible values from {min} to {max} already have a scoring option."
+        "viewTitle": "View Criterion — v{version}",
+        "versionTitle": "Create New Criterion Version",
+        "create": "Create Criterion",
+        "createVersion": "Create New Version",
+        "versionNotice": "You are creating a new version of \"{name}\" (currently version {version}). Version {version} stays unchanged and rubrics that use it are not affected. Enter a new version number.",
+        "groupInfo": "Criterion group {group}. This version is shown read-only.",
+        "noOptions": "No scoring options.",
+        "empty": "No criteria yet. Add the first one.",
+        "versionPlaceholder": "e.g. 1.1 or 2",
+        "versionMustBeNew": "Version number must be new."
     },
     "selection": {
         "selectedOrder": "Selected order",
@@ -107,17 +114,22 @@
         "maxBelowMin": "Maximum points must be greater than or equal to minimum points.",
         "duplicateCode": "This code is already used.",
         "defaultOutOfRange": "Default points must be between the minimum and maximum points.",
-        "pointsOutOfRange": "Points must be within the criterion's minimum and maximum.",
-        "duplicatePoints": "Another scoring option already uses this point value.",
-        "noScoringOptions": "Add at least one scoring option.",
         "selectRubric": "Select at least one rubric.",
-        "selectCriterion": "Select at least one criterion."
+        "selectCriterion": "Select at least one criterion.",
+        "number": "Enter a number.",
+        "tooLong": "Use at most 255 characters.",
+        "versionTaken": "This version number is already used by this criterion.",
+        "versionFormat": "Use numbers separated by dots, for example 1, 1.1 or 2.0.3.",
+        "pointsBetween": "Points must be between {min} and {max}.",
+        "pointsAtLeast": "Points must be at least {min}.",
+        "pointsAtMost": "Points must be at most {max}.",
+        "integerRange": "Enter a whole number that fits the database (-2147483648 to 2147483647)."
     },
     "confirm": {
         "title": "Delete record",
         "deleteAssessment": "Delete the assessment \"{name}\"? Its rubrics are kept.",
         "deleteRubric": "Delete the rubric \"{name}\"? It is removed from every assessment; its criteria are kept.",
-        "deleteCriterion": "Delete the criterion \"{name}\"? It is removed from every rubric that uses it.",
+        "deleteCriterion": "Delete version \"{version}\" of the criterion \"{name}\"? Only this version is deleted, other versions stay. It cannot be deleted while a rubric uses it.",
         "usedBy": "This record is currently used by {count} other record(s)."
     },
     "messages": {
@@ -125,7 +137,14 @@
         "deleted": "Deleted",
         "assessmentSaved": "Assessment \"{name}\" was saved.",
         "rubricSaved": "Rubric \"{name}\" was saved.",
-        "criterionSaved": "Criterion \"{name}\" was saved.",
-        "recordDeleted": "\"{name}\" was deleted."
+        "recordDeleted": "\"{name}\" was deleted.",
+        "loading": "Loading…",
+        "error": "Error",
+        "deleteFailed": "Delete failed",
+        "notConnected": "Not connected to the server. Check the connection and try again.",
+        "timeout": "The server did not answer in time. Try again.",
+        "criterionCreated": "Criterion \"{name}\" (version {version}) was created.",
+        "criterionVersionCreated": "Version {version} of the criterion \"{name}\" was created.",
+        "criterionDeleted": "Version {version} of the criterion \"{name}\" was deleted."
     }
 }

@@ -14,6 +14,14 @@ const DASHBOARD_RIGHT = "frontend.dashboard.assessments.view";
 /** varchar(255) columns */
 const MAX_STRING = 255;
 
+/**
+ * Format of a version number entered for a new criterion, rubric or assessment version (or a new version
+ * of one): numbers separated by single dots, e.g. 1, 1.1 or 2.0.3. The same rule is checked in the
+ * frontend (criterionForm.js). It is only checked on input: stored versions of any other form, for
+ * example imported ones, are never validated, so they stay readable and can be copied into a new version.
+ */
+const VERSION_PATTERN = /^\d+(\.\d+)*$/;
+
 const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 
@@ -29,7 +37,8 @@ const required = (field) => new TranslatableError("errors.assessment.fieldRequir
 const invalid = (field) => new TranslatableError("errors.assessment.fieldInvalid", {field});
 
 /**
- * Manually entered version number: string or number, trimmed, not empty, at most 255 characters.
+ * Manually entered version number: string or number, trimmed, not empty, at most 255 characters and
+ * numbers separated by dots (`VERSION_PATTERN`).
  * @param {Object} source
  * @returns {string}
  * @throws {TranslatableError}
@@ -48,6 +57,9 @@ function readVersionNumber(source) {
     value = value.trim();
     if (value === "") {
         throw required("versionNumber");
+    }
+    if (!VERSION_PATTERN.test(value)) {
+        throw new TranslatableError("errors.assessment.versionFormat");
     }
     return value;
 }
@@ -197,6 +209,7 @@ async function loadRubrics(models, where, options = {}) {
 module.exports = {
     DASHBOARD_RIGHT,
     MAX_STRING,
+    VERSION_PATTERN,
     has,
     isObject,
     isNumeric,

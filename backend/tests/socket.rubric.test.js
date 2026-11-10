@@ -122,11 +122,11 @@ describe("Test Websockets - Rubric", () => {
     describe("create rubric", () => {
         test("creates the rubric with generated ids and ordered criterion associations", async () => {
             const [a, b, c] = await criteria(3);
-            const data = await create({versionNumber: "v1", criterionIds: [c.id, a.id, b.id]});
+            const data = await create({versionNumber: "1.0.1", criterionIds: [c.id, a.id, b.id]});
 
             expect(Number.isInteger(data.id)).toBe(true);
             expect(Number.isInteger(data.rubricGroupId)).toBe(true);
-            expect(data).toMatchObject({versionNumber: "v1", minPoints: 0, maxPoints: 4, calculation: "sum", defaultPoints: null, isBonus: false});
+            expect(data).toMatchObject({versionNumber: "1.0.1", minPoints: 0, maxPoints: 4, calculation: "sum", defaultPoints: null, isBonus: false});
             // array order is kept (not sorted by id), positions start at 1
             expect(data.criteria.map((l) => [l.criterionId, l.criterionPositionInRubric])).toEqual([[c.id, 1], [a.id, 2], [b.id, 3]]);
             // each occurrence has its own association id, the same as the database row
@@ -169,8 +169,8 @@ describe("Test Websockets - Rubric", () => {
     describe("retrieve rubrics", () => {
         test("rubricGetAll returns every version with ordered criteria, association ids and numeric values", async () => {
             const [a, b] = await criteria(2);
-            const first = await create({versionNumber: "a", criterionIds: [a.id, b.id]});
-            const second = (await addVersion({copyFromId: first.id, versionNumber: "b", criterionIds: [b.id, a.id]})).data;
+            const first = await create({versionNumber: "1", criterionIds: [a.id, b.id]});
+            const second = (await addVersion({copyFromId: first.id, versionNumber: "2", criterionIds: [b.id, a.id]})).data;
 
             const response = await call(admin, "rubricGetAll");
             expect(response.success).toBe(true);
@@ -494,6 +494,42 @@ describe("Test Websockets - Rubric", () => {
             const response = await call(admin, "rubricCreate", base({name, maxPoints: `1${"0".repeat(200000)}`}));
             expect(response.success).toBe(false);
             expect(await countByName(name)).toBe(0);
+        });
+    });
+
+    describe("version number format", () => {
+        test.each([["1"], ["1.1"], ["1.1.1"], ["2.0.3"], [" 3.1 "]])("create accepts version %p", async (versionNumber) => {
+            expect((await create({versionNumber})).versionNumber).toBe(versionNumber.trim());
+        });
+
+        test.each([["abc"], ["v1"], ["1.a"], ["1.2-beta"], ["1."], [".1"], ["1..2"], ["-1"], ["1,2"]])(
+            "create rejects version %p and stores nothing", async (versionNumber) => {
+                const name = next();
+                const response = await call(admin, "rubricCreate", base({name, versionNumber}));
+                expect(response).toMatchObject({success: false, key: "errors.assessment.versionFormat"});
+                expect(await countByName(name)).toBe(0);
+            });
+
+        test("a new version needs the format too, and the uniqueness rule still applies", async () => {
+            const v1 = await create({versionNumber: "1"});
+            for (const versionNumber of ["v2", "2.", "2-beta"]) {
+                expect(await addVersion({copyFromId: v1.id, versionNumber}))
+                    .toMatchObject({success: false, key: "errors.assessment.versionFormat"});
+            }
+            expect(await addVersion({copyFromId: v1.id, versionNumber: "1"}))
+                .toMatchObject({success: false, key: "errors.assessment.rubric.versionExists"});
+            expect((await addVersion({copyFromId: v1.id, versionNumber: "1.1"})).success).toBe(true);
+            expect(await db.models.rubric.count({where: {rubricGroupId: v1.rubricGroupId}})).toBe(2);
+        });
+
+        test("a stored version that does not match the format stays readable, listed and copyable", async () => {
+            const old = await db.models.rubric.create({versionNumber: "v1-beta", name: next(), description: "", minPoints: 0, maxPoints: 4});
+            created.rubric.push(old.id);
+            expect((await call(admin, "rubricGet", {rubricId: old.id})).data.versionNumber).toBe("v1-beta");
+            expect((await call(admin, "rubricGetAll")).data.find((r) => r.id === old.id).versionNumber).toBe("v1-beta");
+            const copy = await addVersion({copyFromId: old.id, versionNumber: "2"});
+            expect(copy).toMatchObject({success: true, data: {rubricGroupId: old.rubricGroupId, versionNumber: "2"}});
+            expect((await call(admin, "rubricGet", {rubricId: old.id})).data.versionNumber).toBe("v1-beta");
         });
     });
 

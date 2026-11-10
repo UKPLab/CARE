@@ -28,13 +28,6 @@ export const GRADING_FUNCTIONS = Object.freeze([
   { value: "check_pdf_pages", labelKey: "assessmentManagement.gradingFunction.check_pdf_pages" },
 ]);
 
-/** Expert levels used by the configurations (0 = beginner … 2 = expert). */
-export const EXPERT_LEVELS = Object.freeze([
-  { value: 0, labelKey: "assessmentManagement.expertLevel.0" },
-  { value: 1, labelKey: "assessmentManagement.expertLevel.1" },
-  { value: 2, labelKey: "assessmentManagement.expertLevel.2" },
-]);
-
 /**
  * Whether a calculation method needs the defaultPoints field.
  *

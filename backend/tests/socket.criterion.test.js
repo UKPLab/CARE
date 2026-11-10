@@ -115,13 +115,13 @@ describe("Test Websockets - Criterion", () => {
     describe("create criterion", () => {
         test("creates the criterion with a generated id, a generated group id and ordered options", async () => {
             const data = await create({
-                versionNumber: "v1", function: "auto_grading", subjective: true, expertLevel: 2,
+                versionNumber: "1.0.1", minPoints: -1, maxPoints: 3, function: "auto_grading", subjective: true, expertLevel: 2,
                 scoringOptions: [{points: 3, description: "third"}, {points: -1, description: "first"}, {points: 0.5, description: "mid"}],
             });
 
             expect(Number.isInteger(data.id)).toBe(true);
             expect(Number.isInteger(data.criterionGroupId)).toBe(true);
-            expect(data).toMatchObject({versionNumber: "v1", function: "auto_grading", subjective: true, expertLevel: 2, minPoints: 0, maxPoints: 2});
+            expect(data).toMatchObject({versionNumber: "1.0.1", function: "auto_grading", subjective: true, expertLevel: 2, minPoints: -1, maxPoints: 3});
             // array order is kept, not sorted by points
             expect(data.scoringOptions.map((o) => [o.position, o.points, o.description]))
                 .toEqual([[1, 3, "third"], [2, -1, "first"], [3, 0.5, "mid"]]);
@@ -150,8 +150,8 @@ describe("Test Websockets - Criterion", () => {
 
     describe("retrieve criteria", () => {
         test("criterionGetAll returns every version with ordered options and numeric values", async () => {
-            const first = await create({versionNumber: "a"});
-            const second = (await addVersion({criterionGroupId: first.criterionGroupId, versionNumber: "b", copyFromId: first.id})).data;
+            const first = await create({versionNumber: "1"});
+            const second = (await addVersion({criterionGroupId: first.criterionGroupId, versionNumber: "2", copyFromId: first.id})).data;
 
             const response = await call(admin, "criterionGetAll");
             expect(response.success).toBe(true);
@@ -166,10 +166,10 @@ describe("Test Websockets - Criterion", () => {
         });
 
         test("criterionGet returns one version by id", async () => {
-            const row = await create({versionNumber: "x"});
+            const row = await create({versionNumber: "7"});
             const response = await call(admin, "criterionGet", {criterionId: row.id});
             expect(response.success).toBe(true);
-            expect(response.data).toMatchObject({id: row.id, versionNumber: "x"});
+            expect(response.data).toMatchObject({id: row.id, versionNumber: "7"});
             expect(response.data.scoringOptions).toHaveLength(3);
         });
 
@@ -183,7 +183,7 @@ describe("Test Websockets - Criterion", () => {
         test("adds a version to the group without touching earlier versions", async () => {
             const v1 = await create({versionNumber: "1"});
             const response = await addVersion({
-                criterionGroupId: v1.criterionGroupId, versionNumber: "2", copyFromId: v1.id, name: "renamed",
+                criterionGroupId: v1.criterionGroupId, versionNumber: "2", copyFromId: v1.id, name: "renamed", maxPoints: 10,
                 scoringOptions: [{points: 9, description: "new"}],
             });
             expect(response.success).toBe(true);
@@ -386,7 +386,7 @@ describe("Test Websockets - Criterion", () => {
         });
 
         test("min equal to max is allowed", async () => {
-            expect((await create({minPoints: 2, maxPoints: 2})).minPoints).toBe(2);
+            expect((await create({minPoints: 2, maxPoints: 2, scoringOptions: [{points: 2, description: "only"}]})).minPoints).toBe(2);
         });
 
         test("an invalid second option leaves no criterion and no option behind (single transaction)", async () => {
@@ -405,10 +405,113 @@ describe("Test Websockets - Criterion", () => {
             // while inserting the second option, after the criterion row was already written
             const name = next();
             const response = await call(admin, "criterionCreate", base({
-                name, scoringOptions: [{points: 1, description: "ok"}, {points: `1${"0".repeat(200000)}`, description: "huge"}],
+                name, minPoints: null, maxPoints: null, scoringOptions: [{points: 1, description: "ok"}, {points: `1${"0".repeat(200000)}`, description: "huge"}],
             }));
             expect(response.success).toBe(false);
             expect(await countByName(name)).toBe(0);
+        });
+    });
+
+    describe("version number format", () => {
+        test.each([["1"], ["1.1"], ["1.1.1"], ["2.0.3"], ["10.20.30.40"], [" 3.1 "]])("create accepts version %p", async (versionNumber) => {
+            const row = await create({versionNumber});
+            expect(row.versionNumber).toBe(versionNumber.trim());
+        });
+
+        test("a number is accepted and stored as text", async () => {
+            expect((await create({versionNumber: 2})).versionNumber).toBe("2");
+        });
+
+        test.each([["abc"], ["v1"], ["1.a"], ["1.2-beta"], ["1."], [".1"], ["1..2"], ["1 .2"], ["1,2"], ["-1"], ["1.2.3."], ["١.١"]])(
+            "create rejects version %p and stores nothing", async (versionNumber) => {
+                const name = next();
+                const response = await call(admin, "criterionCreate", base({name, versionNumber}));
+                expect(response).toMatchObject({success: false, key: "errors.assessment.versionFormat"});
+                expect(await countByName(name)).toBe(0);
+            });
+
+        test("a new version needs the format too, and the uniqueness rule still applies", async () => {
+            const v1 = await create({versionNumber: "1"});
+            for (const versionNumber of ["v2", "2.", "2-beta"]) {
+                expect(await addVersion({copyFromId: v1.id, versionNumber}))
+                    .toMatchObject({success: false, key: "errors.assessment.versionFormat"});
+            }
+            expect(await addVersion({copyFromId: v1.id, versionNumber: "1"}))
+                .toMatchObject({success: false, key: "errors.assessment.criterion.versionExists"});
+            expect((await addVersion({copyFromId: v1.id, versionNumber: "1.1"})).success).toBe(true);
+            expect(await db.models.criterion.count({where: {criterionGroupId: v1.criterionGroupId}})).toBe(2);
+        });
+
+        test("a stored version that does not match the format stays readable, listed and copyable", async () => {
+            // e.g. imported data: written straight to the table, validation only runs on input
+            const old = await db.models.criterion.create({versionNumber: "v1-beta", name: next(), description: "", subjective: false, expertLevel: 1, minPoints: 0, maxPoints: 2});
+            created.criterion.push(old.id);
+            expect((await call(admin, "criterionGet", {criterionId: old.id})).data.versionNumber).toBe("v1-beta");
+            expect((await call(admin, "criterionGetAll")).data.find((c) => c.id === old.id).versionNumber).toBe("v1-beta");
+            const copy = await addVersion({copyFromId: old.id, versionNumber: "2"});
+            expect(copy).toMatchObject({success: true, data: {criterionGroupId: old.criterionGroupId, versionNumber: "2"}});
+            expect((await call(admin, "criterionGet", {criterionId: old.id})).data.versionNumber).toBe("v1-beta");
+        });
+    });
+
+    describe("scoring options within the criterion range", () => {
+        const options = (...points) => points.map((p) => ({points: p, description: String(p)}));
+        const rejected = async (data, key, params) => {
+            const name = next();
+            const response = await call(admin, "criterionCreate", base({name, ...data}));
+            expect(response).toMatchObject({success: false, key, params});
+            expect(await countByName(name)).toBe(0);
+        };
+
+        test("points at the bounds and inside them are accepted, negative and decimal values included", async () => {
+            const row = await create({minPoints: -2, maxPoints: 3.5, scoringOptions: options(-2, -0.25, 0, 1.75, 3.5)});
+            expect(row.scoringOptions.map((o) => o.points)).toEqual([-2, -0.25, 0, 1.75, 3.5]);
+            expect((await create({minPoints: 2, maxPoints: 2, scoringOptions: options(2)})).scoringOptions).toHaveLength(1);
+            expect((await create({minPoints: "-1.5", maxPoints: "1.5", scoringOptions: options("-1.5", "1.5")})).scoringOptions).toHaveLength(2);
+        });
+
+        test("points below the minimum or above the maximum are rejected with the option position and the bound", async () => {
+            await rejected({minPoints: 0, maxPoints: 4, scoringOptions: options(1, -0.01)}, "errors.assessment.optionBelowMin", {position: 2, min: 0});
+            await rejected({minPoints: 0, maxPoints: 4, scoringOptions: options(4, 4.01, 9)}, "errors.assessment.optionAboveMax", {position: 2, max: 4});
+            await rejected({minPoints: -3, maxPoints: -1, scoringOptions: options(-3, 0)}, "errors.assessment.optionAboveMax", {position: 2, max: -1});
+            await rejected({minPoints: "0.5", maxPoints: "1", scoringOptions: options("0.49")}, "errors.assessment.optionBelowMin", {position: 1, min: 0.5});
+        });
+
+        test("with one bound only that bound is enforced", async () => {
+            expect((await create({minPoints: 1, maxPoints: null, scoringOptions: options(1, 500)})).scoringOptions).toHaveLength(2);
+            await rejected({minPoints: 1, maxPoints: null, scoringOptions: options(0.99)}, "errors.assessment.optionBelowMin", {position: 1, min: 1});
+            expect((await create({minPoints: null, maxPoints: -5, scoringOptions: options(-5, -1000)})).scoringOptions).toHaveLength(2);
+            await rejected({minPoints: null, maxPoints: -5, scoringOptions: options(-4.9)}, "errors.assessment.optionAboveMax", {position: 1, max: -5});
+        });
+
+        test("without bounds any number is accepted", async () => {
+            const row = await create({minPoints: null, maxPoints: null, scoringOptions: options(-1e6, 0.001, 1e6)});
+            expect(row.scoringOptions.map((o) => o.points)).toEqual([-1e6, 0.001, 1e6]);
+        });
+
+        test("a new version is checked against its own bounds, copied options included", async () => {
+            const v1 = await create({minPoints: 0, maxPoints: 4, scoringOptions: options(0, 2, 4)});
+            // narrowing the range makes the copied option 4 invalid; nothing is clamped or dropped
+            expect(await addVersion({copyFromId: v1.id, versionNumber: "2", maxPoints: 3}))
+                .toMatchObject({success: false, key: "errors.assessment.optionAboveMax", params: {position: 3, max: 3}});
+            expect(await addVersion({copyFromId: v1.id, versionNumber: "2", maxPoints: 3, scoringOptions: options(0, 2, 3)}))
+                .toMatchObject({success: true});
+            expect(await addVersion({copyFromId: v1.id, versionNumber: "3", maxPoints: null})).toMatchObject({success: true});
+            expect(await db.models.criterion.count({where: {criterionGroupId: v1.criterionGroupId}})).toBe(3);
+            expect((await call(admin, "criterionGet", {criterionId: v1.id})).data).toEqual(v1);
+        });
+
+        test("a stored version whose options lie outside its bounds stays readable", async () => {
+            const old = await db.sequelize.transaction(async (transaction) => {
+                const row = await db.models.criterion.create({versionNumber: "1", name: next(), description: "", subjective: false, expertLevel: 1, minPoints: 0, maxPoints: 2}, {transaction});
+                await db.models.criterion_scoring_option.create({criterionId: row.id, points: 9, description: "legacy", position: 1}, {transaction});
+                return row;
+            });
+            created.criterion.push(old.id);
+            expect((await call(admin, "criterionGet", {criterionId: old.id})).data.scoringOptions.map((o) => o.points)).toEqual([9]);
+            // copying it as it is is refused until the options or the bounds are fixed
+            expect(await addVersion({copyFromId: old.id, versionNumber: "2"})).toMatchObject({success: false, key: "errors.assessment.optionAboveMax"});
+            expect(await addVersion({copyFromId: old.id, versionNumber: "2", maxPoints: 10})).toMatchObject({success: true});
         });
     });
 

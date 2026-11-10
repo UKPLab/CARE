@@ -185,11 +185,11 @@ describe("Test Websockets - Assessment", () => {
     describe("create assessment", () => {
         test("creates the assessment with generated ids and ordered rubric associations", async () => {
             const [a, b, c] = await rubrics(3);
-            const data = await create({versionNumber: "v1", rubricIds: [c.id, a.id, b.id]});
+            const data = await create({versionNumber: "1.0.1", rubricIds: [c.id, a.id, b.id]});
 
             expect(Number.isInteger(data.id)).toBe(true);
             expect(Number.isInteger(data.assessmentGroupId)).toBe(true);
-            expect(data).toMatchObject({versionNumber: "v1", description: "An assessment"});
+            expect(data).toMatchObject({versionNumber: "1.0.1", description: "An assessment"});
             expect(data.createdAt).toBeDefined();
             // array order is kept (not sorted by id), positions start at 1
             expect(data.rubrics.map((l) => [l.rubricId, l.rubricPositionInAssessment])).toEqual([[c.id, 1], [a.id, 2], [b.id, 3]]);
@@ -236,8 +236,8 @@ describe("Test Websockets - Assessment", () => {
 
         test("assessmentGetAll returns every version, historical ones included, in order", async () => {
             const [a, b] = await rubrics(2);
-            const first = await create({versionNumber: "a", rubricIds: [a.id, b.id]});
-            const second = (await addVersion({copyFromId: first.id, versionNumber: "b", rubricIds: [b.id, a.id]})).data;
+            const first = await create({versionNumber: "1", rubricIds: [a.id, b.id]});
+            const second = (await addVersion({copyFromId: first.id, versionNumber: "2", rubricIds: [b.id, a.id]})).data;
 
             const response = await call(admin, "assessmentGetAll");
             expect(response.success).toBe(true);
@@ -802,6 +802,42 @@ describe("Test Websockets - Assessment", () => {
                 spy.mockRestore();
             }
             expect((await call(admin, "assessmentGet", {assessmentId: row.id})).data).toEqual(row);
+        });
+    });
+
+    describe("version number format", () => {
+        test.each([["1"], ["1.1"], ["1.1.1"], ["2.0.3"], [" 3.1 "]])("create accepts version %p", async (versionNumber) => {
+            expect((await create({versionNumber})).versionNumber).toBe(versionNumber.trim());
+        });
+
+        test.each([["abc"], ["v1"], ["1.a"], ["1.2-beta"], ["1."], [".1"], ["1..2"], ["-1"], ["1,2"]])(
+            "create rejects version %p and stores nothing", async (versionNumber) => {
+                const name = next();
+                const response = await call(admin, "assessmentCreate", base({name, versionNumber}));
+                expect(response).toMatchObject({success: false, key: "errors.assessment.versionFormat"});
+                expect(await countByName(name)).toBe(0);
+            });
+
+        test("a new version needs the format too, and the uniqueness rule still applies", async () => {
+            const v1 = await create({versionNumber: "1"});
+            for (const versionNumber of ["v2", "2.", "2-beta"]) {
+                expect(await addVersion({copyFromId: v1.id, versionNumber}))
+                    .toMatchObject({success: false, key: "errors.assessment.versionFormat"});
+            }
+            expect(await addVersion({copyFromId: v1.id, versionNumber: "1"}))
+                .toMatchObject({success: false, key: "errors.assessment.assessment.versionExists"});
+            expect((await addVersion({copyFromId: v1.id, versionNumber: "1.1"})).success).toBe(true);
+            expect(await db.models.assessment.count({where: {assessmentGroupId: v1.assessmentGroupId}})).toBe(2);
+        });
+
+        test("a stored version that does not match the format stays readable, listed and copyable", async () => {
+            const old = await db.models.assessment.create({versionNumber: "v1-beta", name: next(), description: ""});
+            created.assessment.push(old.id);
+            expect((await call(admin, "assessmentGet", {assessmentId: old.id})).data.versionNumber).toBe("v1-beta");
+            expect((await call(admin, "assessmentGetAll")).data.find((r) => r.id === old.id).versionNumber).toBe("v1-beta");
+            const copy = await addVersion({copyFromId: old.id, versionNumber: "2"});
+            expect(copy).toMatchObject({success: true, data: {assessmentGroupId: old.assessmentGroupId, versionNumber: "2"}});
+            expect((await call(admin, "assessmentGet", {assessmentId: old.id})).data.versionNumber).toBe("v1-beta");
         });
     });
 

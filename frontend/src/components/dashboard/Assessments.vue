@@ -23,11 +23,18 @@
         :add-label="current.addLabel"
         :columns="current.columns"
         :data="current.rows"
-        :buttons="rowButtons"
+        :buttons="current.buttons"
+        :loading="Boolean(current.loading)"
+        :error="current.error || ''"
+        :empty-text="current.emptyText || ''"
         @add="openModal(null)"
         @action="onAction"
+        @retry="loadCriteria()"
       />
-      <p class="text-muted small mt-3 mb-0">
+      <p
+        v-if="activeTab !== 'criteria'"
+        class="text-muted small mt-3 mb-0"
+      >
         {{ $t("assessmentManagement.prototypeNote") }}
       </p>
     </template>
@@ -35,41 +42,46 @@
 
   <AssessmentModal ref="assessmentModal" />
   <RubricModal ref="rubricModal" />
-  <CriterionModal ref="criterionModal" />
+  <CriterionModal
+    ref="criterionModal"
+    :criteria="criteria"
+    @saved="loadCriteria({ force: true })"
+  />
   <ConfirmModal ref="confirmModal" />
 </template>
 
 <script>
 /**
- * Assessment management dashboard (prototype): assessments, rubrics and criteria
- * in three tabs, each with a two-step add/edit modal.
+ * Assessment management dashboard: assessments, rubrics and criteria in three tabs.
  *
- * All data comes from the local mock store (assessments/assessmentMockStore.js);
- * nothing is saved to the database yet.
+ * The Criteria tab is backed by the database through the criterion* socket events: every criterion
+ * version is listed (historical ones too), a version can be viewed, copied into a new version or deleted
+ * while no rubric uses it. The Assessments and Rubrics tabs still use the local mock store
+ * (assessments/assessmentMockStore.js); nothing they do is saved yet.
  *
  * @author Eyad Mohamed
  */
 import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 import AssessmentTablePanel from "@/components/dashboard/assessments/AssessmentTablePanel.vue";
 import AssessmentModal from "@/components/dashboard/assessments/AssessmentModal.vue";
 import RubricModal from "@/components/dashboard/assessments/RubricModal.vue";
 import CriterionModal from "@/components/dashboard/assessments/CriterionModal.vue";
 import { CALCULATION_METHODS } from "@/components/dashboard/assessments/assessmentConstants.js";
+import criteriaBackendMixin from "@/components/dashboard/assessments/criteriaBackendMixin.js";
 import {
   assessmentState,
   deleteAssessment,
   deleteRubric,
-  deleteCriterion,
   assessmentsUsingRubric,
-  rubricsUsingCriterion,
 } from "@/components/dashboard/assessments/assessmentMockStore.js";
 
 export default {
   name: "DashboardAssessments",
   components: { BasicCard, BasicButton, ConfirmModal, AssessmentTablePanel, AssessmentModal, RubricModal, CriterionModal },
+  mixins: [criteriaBackendMixin],
   data() {
     return {
       activeTab: "assessments",
@@ -89,11 +101,18 @@ export default {
         };
       });
     },
-    criterionRows() {
-      return assessmentState.criteria.map((c) => ({
-        ...c,
-        rubricCount: rubricsUsingCriterion(c.id).length,
-      }));
+    mockRowButtons() {
+      return [
+        dashboardRowAction("edit", { title: this.$t("assessmentManagement.actions.edit"), action: "edit" }),
+        dashboardRowAction("delete", { title: this.$t("assessmentManagement.actions.delete"), action: "delete" }),
+      ];
+    },
+    criterionButtons() {
+      return [
+        dashboardRowAction("view", { title: this.$t("assessmentManagement.actions.view"), action: "view" }),
+        dashboardRowButton("plus-square", { title: this.$t("assessmentManagement.actions.newVersion"), action: "newVersion" }),
+        dashboardRowAction("delete", { title: this.$t("assessmentManagement.actions.delete"), action: "delete" }),
+      ];
     },
     tabs() {
       const idColumn = { name: this.$t("assessmentManagement.fields.id"), key: "id", sortable: true };
@@ -106,6 +125,7 @@ export default {
           panelTitle: this.$t("assessmentManagement.assessment.listTitle"),
           addLabel: this.$t("assessmentManagement.assessment.add"),
           rows: this.assessmentRows,
+          buttons: this.mockRowButtons,
           columns: [
             idColumn,
             nameColumn,
@@ -120,6 +140,7 @@ export default {
           panelTitle: this.$t("assessmentManagement.rubric.listTitle"),
           addLabel: this.$t("assessmentManagement.rubric.add"),
           rows: this.rubricRows,
+          buttons: this.mockRowButtons,
           columns: [
             idColumn,
             codeColumn,
@@ -133,14 +154,19 @@ export default {
           label: this.$t("assessmentManagement.tabs.criteria"),
           panelTitle: this.$t("assessmentManagement.criterion.listTitle"),
           addLabel: this.$t("assessmentManagement.criterion.add"),
-          rows: this.criterionRows,
+          rows: this.criteria,
+          buttons: this.criterionButtons,
+          loading: this.criteriaLoading,
+          error: this.criteriaError,
+          emptyText: this.$t("assessmentManagement.criterion.empty"),
           columns: [
             idColumn,
-            codeColumn,
+            { name: this.$t("assessmentManagement.fields.group"), key: "criterionGroupId", sortable: true },
             nameColumn,
+            { name: this.$t("assessmentManagement.fields.version"), key: "versionNumber", sortable: true },
             { name: this.$t("assessmentManagement.fields.minPoints"), key: "minPoints", sortable: true },
             { name: this.$t("assessmentManagement.fields.maxPoints"), key: "maxPoints", sortable: true },
-            { name: this.$t("assessmentManagement.fields.rubrics"), key: "rubricCount", sortable: true },
+            { name: this.$t("assessmentManagement.fields.createdAt"), key: "createdAt", type: "datetime", sortable: true },
           ],
         },
       ];
@@ -148,46 +174,51 @@ export default {
     current() {
       return this.tabs.find((t) => t.key === this.activeTab);
     },
-    rowButtons() {
-      return [
-        dashboardRowAction("edit", { title: this.$t("assessmentManagement.actions.edit"), action: "edit" }),
-        dashboardRowAction("delete", { title: this.$t("assessmentManagement.actions.delete"), action: "delete" }),
-      ];
-    },
   },
   methods: {
     modalRef() {
       return {
         assessments: this.$refs.assessmentModal,
         rubrics: this.$refs.rubricModal,
-        criteria: this.$refs.criterionModal,
       }[this.activeTab];
     },
-    /** Rows carry derived display fields; the modals work on the stored record. */
+    /** Prototype tabs: rows carry derived fields, the modals work on the stored record. */
     storedRecord(row) {
-      // Tab keys match the collection names in the store
       return assessmentState[this.activeTab].find((r) => r.id === row.id);
     },
     openModal(row) {
+      if (this.activeTab === "criteria") {
+        this.$refs.criterionModal.openCreate();
+        return;
+      }
       this.modalRef().open(row ? this.storedRecord(row) : null);
     },
     onAction(data) {
-      if (data.action === "edit") {
+      if (this.activeTab === "criteria") {
+        this.onCriterionAction(data);
+      } else if (data.action === "edit") {
         this.openModal(data.params);
       } else if (data.action === "delete") {
         this.confirmDelete(data.params);
+      }
+    },
+    onCriterionAction({ action, params }) {
+      if (action === "view") {
+        this.$refs.criterionModal.openView(params.id);
+      } else if (action === "newVersion") {
+        this.$refs.criterionModal.openNewVersion(params.id);
+      } else if (action === "delete") {
+        this.confirmCriterionDelete(params);
       }
     },
     confirmDelete(row) {
       const messages = {
         assessments: () => this.$t("assessmentManagement.confirm.deleteAssessment", { name: row.name }),
         rubrics: () => this.$t("assessmentManagement.confirm.deleteRubric", { name: row.name }),
-        criteria: () => this.$t("assessmentManagement.confirm.deleteCriterion", { name: row.name }),
       };
       const warnings = {
         assessments: () => null,
         rubrics: () => this.usageWarning(assessmentsUsingRubric(row.id).length),
-        criteria: () => this.usageWarning(rubricsUsingCriterion(row.id).length),
       };
       const tab = this.activeTab;
       this.$refs.confirmModal.open(
@@ -198,7 +229,7 @@ export default {
           if (!confirmed) {
             return;
           }
-          ({ assessments: deleteAssessment, rubrics: deleteRubric, criteria: deleteCriterion })[tab](row.id);
+          ({ assessments: deleteAssessment, rubrics: deleteRubric })[tab](row.id);
           this.eventBus.emit("toast", {
             title: this.$t("assessmentManagement.messages.deleted"),
             message: this.$t("assessmentManagement.messages.recordDeleted", { name: row.name }),

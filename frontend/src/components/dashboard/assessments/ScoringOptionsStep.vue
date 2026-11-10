@@ -5,11 +5,16 @@
   <p class="text-muted small mb-2">
     {{ $t("assessmentManagement.criterion.scoringHelp", { name: criterionName }) }}
   </p>
-  <div class="d-flex justify-content-between text-muted small mb-2">
-    <span v-if="rangeValid">{{ $t("assessmentManagement.criterion.allowedRange", { min, max }) }}</span>
-    <span v-else>{{ $t("assessmentManagement.criterion.rangeInvalid") }}</span>
+  <div class="d-flex justify-content-end text-muted small mb-2">
     <span>{{ $t("assessmentManagement.criterion.optionCount", { count: modelValue.length }) }}</span>
   </div>
+
+  <p
+    v-if="modelValue.length === 0"
+    class="text-muted fst-italic"
+  >
+    {{ $t("assessmentManagement.criterion.noOptions") }}
+  </p>
 
   <div
     v-for="(option, index) in modelValue"
@@ -19,12 +24,31 @@
     <div class="card-body py-2">
       <div class="d-flex justify-content-between align-items-center mb-2">
         <strong>{{ $t("assessmentManagement.criterion.optionNumber", { number: index + 1 }) }}</strong>
-        <BasicButton
-          class="btn btn-sm btn-outline-danger"
-          icon="trash"
-          :title="$t('assessmentManagement.criterion.removeOption')"
-          @click="$emit('remove', option.uid)"
-        />
+        <span
+          v-if="!readonly"
+          class="btn-group"
+        >
+          <BasicButton
+            class="btn btn-sm btn-outline-secondary"
+            icon="arrow-up"
+            :title="$t('assessmentManagement.selection.moveUp')"
+            :disabled="index === 0"
+            @click="$emit('move', { uid: option.uid, direction: -1 })"
+          />
+          <BasicButton
+            class="btn btn-sm btn-outline-secondary"
+            icon="arrow-down"
+            :title="$t('assessmentManagement.selection.moveDown')"
+            :disabled="index === modelValue.length - 1"
+            @click="$emit('move', { uid: option.uid, direction: 1 })"
+          />
+          <BasicButton
+            class="btn btn-sm btn-outline-danger"
+            icon="trash"
+            :title="$t('assessmentManagement.criterion.removeOption')"
+            @click="$emit('remove', option.uid)"
+          />
+        </span>
       </div>
       <AssessmentFormField
         :field-id="`option-points-${option.uid}`"
@@ -35,10 +59,13 @@
         <input
           :id="`option-points-${option.uid}`"
           type="number"
-          step="1"
+          step="any"
+          :min="bounds.min ?? undefined"
+          :max="bounds.max ?? undefined"
           class="form-control"
           :class="{ 'is-invalid': errorFor(option.uid, 'points') }"
           :value="option.points"
+          :disabled="readonly"
           @input="update(option.uid, 'points', parsePoints($event.target.value))"
           @blur="touch(option.uid, 'points')"
         />
@@ -46,84 +73,62 @@
       <AssessmentFormField
         :field-id="`option-description-${option.uid}`"
         :label="$t('assessmentManagement.fields.scoringDescription')"
-        required
-        :error="errorFor(option.uid, 'description')"
       >
         <textarea
           :id="`option-description-${option.uid}`"
           rows="2"
           class="form-control"
-          :class="{ 'is-invalid': errorFor(option.uid, 'description') }"
           :value="option.description"
+          :disabled="readonly"
           @input="update(option.uid, 'description', $event.target.value)"
-          @blur="touch(option.uid, 'description')"
         />
       </AssessmentFormField>
     </div>
   </div>
 
-  <div
-    v-if="errors.list"
-    class="invalid-feedback d-block mb-2"
-  >
-    {{ $t(`assessmentManagement.errors.${errors.list}`) }}
-  </div>
-
   <BasicButton
+    v-if="!readonly"
     class="btn btn-outline-secondary w-100"
     icon="plus-lg"
     :text="$t('assessmentManagement.criterion.addOption')"
-    :disabled="!canAdd"
     @click="$emit('add')"
   />
-  <div
-    v-if="rangeValid && !canAdd"
-    class="form-text"
-  >
-    {{ $t("assessmentManagement.criterion.maxOptionsReached", { count: possibleCount, min, max }) }}
-  </div>
 </template>
 
 <script>
 /**
- * Step 2 of the criterion modal: edit the scoring options (points + description).
+ * Step 2 of the criterion modal: the scoring options (points + description) in the order the user sets.
  *
- * Adding is disabled once every integer value in [min, max] has an option.
- * Options are not required to cover every value.
+ * Points may be negative or decimal and need not be unique or inside the criterion range; the list may be
+ * empty. With `readonly` the options are only displayed (no inputs, add, remove or reorder).
  *
  * @author Eyad Mohamed
  */
 import BasicButton from "@/basic/Button.vue";
 import AssessmentFormField from "@/components/dashboard/assessments/AssessmentFormField.vue";
-import {
-  isValidRange,
-  possibleValueCount,
-  parsePoints,
-} from "@/components/dashboard/assessments/assessmentValidation.js";
+import { parsePoints } from "@/components/dashboard/assessments/assessmentValidation.js";
+import { pointBounds } from "@/components/dashboard/assessments/criterionForm.js";
 
 export default {
   name: "ScoringOptionsStep",
   components: { BasicButton, AssessmentFormField },
   props: {
     modelValue: { type: Array, required: true },
-    min: { type: [Number, String], required: true },
-    max: { type: [Number, String], required: true },
     criterionName: { type: String, required: true },
+    /** Option uid → field → error key, from validateOptionList */
     errors: { type: Object, required: true },
+    /** Criterion minimum and maximum points from step 1 (empty: no bound); only used to word the range error */
+    min: { type: [Number, String], default: "" },
+    max: { type: [Number, String], default: "" },
+    readonly: { type: Boolean, default: false },
   },
-  emits: ["update:modelValue", "add", "remove"],
+  emits: ["update:modelValue", "add", "remove", "move"],
   data() {
     return { touched: {} };
   },
   computed: {
-    rangeValid() {
-      return isValidRange(this.min, this.max);
-    },
-    possibleCount() {
-      return possibleValueCount(this.min, this.max);
-    },
-    canAdd() {
-      return this.rangeValid && this.modelValue.length < this.possibleCount;
+    bounds() {
+      return pointBounds(this.min, this.max);
     },
   },
   methods: {
@@ -137,13 +142,17 @@ export default {
     touch(uid, field) {
       this.touched = { ...this.touched, [`${uid}-${field}`]: true };
     },
-    /** Empty-field errors wait for the first blur; value errors show right away. */
+    /**
+     * An empty field waits for its first blur; any other problem (not a number, outside the range) shows
+     * right away, with the allowed range in the message. A read-only version shows no errors: it is only
+     * displayed, whatever it contains.
+     */
     errorFor(uid, field) {
-      const key = this.errors.byOption[uid]?.[field];
-      if (!key || (key === "required" && !this.touched[`${uid}-${field}`])) {
+      const key = this.errors[uid]?.[field];
+      if (this.readonly || !key || (key === "required" && !this.touched[`${uid}-${field}`])) {
         return "";
       }
-      return this.$t(`assessmentManagement.errors.${key}`);
+      return this.$t(`assessmentManagement.errors.${key}`, { min: this.bounds.min, max: this.bounds.max });
     },
   },
 };

@@ -11,7 +11,10 @@
         "edit": "Modifier",
         "delete": "Supprimer",
         "save": "Enregistrer",
-        "next": "Suivant"
+        "next": "Suivant",
+        "view": "Afficher",
+        "newVersion": "Créer une nouvelle version",
+        "retry": "Réessayer"
     },
     "fields": {
         "id": "ID",
@@ -32,7 +35,9 @@
         "gradingFunction": "Fonction de notation",
         "expertLevel": "Niveau d'expertise",
         "subjective": "Évaluation subjective",
-        "scoringDescription": "Description de l'attribution des points"
+        "scoringDescription": "Description de l'attribution des points",
+        "group": "Groupe",
+        "createdAt": "Créé le"
     },
     "calculation": {
         "sum": "Somme",
@@ -44,12 +49,8 @@
         "manual_grading": "Notation manuelle",
         "check_latex_metadata": "Vérifier les métadonnées LaTeX",
         "check_latex_template": "Vérifier le modèle LaTeX",
-        "check_pdf_pages": "Vérifier le nombre de pages du PDF"
-    },
-    "expertLevel": {
-        "0": "0 — Débutant",
-        "1": "1 — Intermédiaire",
-        "2": "2 — Expert"
+        "check_pdf_pages": "Vérifier le nombre de pages du PDF",
+        "none": "Aucune"
     },
     "assessment": {
         "listTitle": "Définitions d'évaluation",
@@ -79,19 +80,25 @@
         "listTitle": "Bibliothèque de critères",
         "add": "Ajouter un critère",
         "addTitle": "Ajouter un critère",
-        "editTitle": "Modifier le critère",
         "stepDetails": "Détails du critère",
         "stepScoring": "Options de notation",
         "detailsTitle": "Détails du critère",
         "scoringTitle": "Options de notation",
         "scoringHelp": "Définissez comment chaque valeur de points est attribuée pour {name}.",
-        "allowedRange": "Plage autorisée : {min} à {max}",
-        "rangeInvalid": "Définissez d'abord une plage de points valide à l'étape 1.",
         "optionCount": "{count} options",
         "optionNumber": "Option de notation {number}",
         "addOption": "Ajouter une option de notation",
         "removeOption": "Supprimer l'option de notation",
-        "maxOptionsReached": "Les {count} valeurs possibles de {min} à {max} ont déjà une option de notation."
+        "viewTitle": "Afficher le critère — v{version}",
+        "versionTitle": "Créer une nouvelle version du critère",
+        "create": "Créer le critère",
+        "createVersion": "Créer la nouvelle version",
+        "versionNotice": "Vous créez une nouvelle version de « {name} » (actuellement la version {version}). La version {version} reste inchangée et les grilles qui l'utilisent ne sont pas affectées. Saisissez un nouveau numéro de version.",
+        "groupInfo": "Groupe de critères {group}. Cette version est affichée en lecture seule.",
+        "noOptions": "Aucune option de notation.",
+        "empty": "Aucun critère pour l'instant. Ajoutez le premier.",
+        "versionPlaceholder": "p. ex. 1.1 ou 2",
+        "versionMustBeNew": "Le numéro de version doit être nouveau."
     },
     "selection": {
         "selectedOrder": "Ordre sélectionné",
@@ -107,17 +114,22 @@
         "maxBelowMin": "Le maximum doit être supérieur ou égal au minimum.",
         "duplicateCode": "Ce code est déjà utilisé.",
         "defaultOutOfRange": "Les points par défaut doivent être compris entre le minimum et le maximum.",
-        "pointsOutOfRange": "Les points doivent être compris entre le minimum et le maximum du critère.",
-        "duplicatePoints": "Une autre option de notation utilise déjà cette valeur.",
-        "noScoringOptions": "Ajoutez au moins une option de notation.",
         "selectRubric": "Sélectionnez au moins une grille.",
-        "selectCriterion": "Sélectionnez au moins un critère."
+        "selectCriterion": "Sélectionnez au moins un critère.",
+        "number": "Saisissez un nombre.",
+        "tooLong": "Utilisez 255 caractères au maximum.",
+        "versionTaken": "Ce numéro de version est déjà utilisé pour ce critère.",
+        "versionFormat": "Utilisez des nombres séparés par des points, par exemple 1, 1.1 ou 2.0.3.",
+        "pointsBetween": "Les points doivent être compris entre {min} et {max}.",
+        "pointsAtLeast": "Les points doivent être d'au moins {min}.",
+        "pointsAtMost": "Les points ne doivent pas dépasser {max}.",
+        "integerRange": "Saisissez un nombre entier que la base de données peut stocker (-2147483648 à 2147483647)."
     },
     "confirm": {
         "title": "Supprimer l'enregistrement",
         "deleteAssessment": "Supprimer l'évaluation « {name} » ? Ses grilles sont conservées.",
         "deleteRubric": "Supprimer la grille « {name} » ? Elle est retirée de toutes les évaluations ; ses critères sont conservés.",
-        "deleteCriterion": "Supprimer le critère « {name} » ? Il est retiré de toutes les grilles qui l'utilisent.",
+        "deleteCriterion": "Supprimer la version « {version} » du critère « {name} » ? Seule cette version est supprimée, les autres restent. Elle ne peut pas être supprimée tant qu'une grille l'utilise.",
         "usedBy": "Cet enregistrement est actuellement utilisé par {count} autre(s) enregistrement(s)."
     },
     "messages": {
@@ -125,7 +137,14 @@
         "deleted": "Supprimé",
         "assessmentSaved": "L'évaluation « {name} » a été enregistrée.",
         "rubricSaved": "La grille « {name} » a été enregistrée.",
-        "criterionSaved": "Le critère « {name} » a été enregistré.",
-        "recordDeleted": "« {name} » a été supprimé."
+        "recordDeleted": "« {name} » a été supprimé.",
+        "loading": "Chargement…",
+        "error": "Erreur",
+        "deleteFailed": "Échec de la suppression",
+        "notConnected": "Pas de connexion au serveur. Vérifiez la connexion et réessayez.",
+        "timeout": "Le serveur n'a pas répondu à temps. Réessayez.",
+        "criterionCreated": "Le critère « {name} » (version {version}) a été créé.",
+        "criterionVersionCreated": "La version {version} du critère « {name} » a été créée.",
+        "criterionDeleted": "La version {version} du critère « {name} » a été supprimée."
     }
 }

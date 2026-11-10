@@ -11,7 +11,10 @@
         "edit": "Bearbeiten",
         "delete": "Löschen",
         "save": "Speichern",
-        "next": "Weiter"
+        "next": "Weiter",
+        "view": "Ansehen",
+        "newVersion": "Neue Version erstellen",
+        "retry": "Erneut versuchen"
     },
     "fields": {
         "id": "ID",
@@ -32,7 +35,9 @@
         "gradingFunction": "Bewertungsfunktion",
         "expertLevel": "Expertenlevel",
         "subjective": "Subjektive Bewertung",
-        "scoringDescription": "Beschreibung der Punktevergabe"
+        "scoringDescription": "Beschreibung der Punktevergabe",
+        "group": "Gruppe",
+        "createdAt": "Erstellt am"
     },
     "calculation": {
         "sum": "Summe",
@@ -44,12 +49,8 @@
         "manual_grading": "Manuelle Bewertung",
         "check_latex_metadata": "LaTeX-Metadaten prüfen",
         "check_latex_template": "LaTeX-Vorlage prüfen",
-        "check_pdf_pages": "PDF-Seitenzahl prüfen"
-    },
-    "expertLevel": {
-        "0": "0 — Anfänger",
-        "1": "1 — Fortgeschritten",
-        "2": "2 — Experte"
+        "check_pdf_pages": "PDF-Seitenzahl prüfen",
+        "none": "Keine"
     },
     "assessment": {
         "listTitle": "Bewertungsdefinitionen",
@@ -79,19 +80,25 @@
         "listTitle": "Kriterienbibliothek",
         "add": "Kriterium hinzufügen",
         "addTitle": "Kriterium hinzufügen",
-        "editTitle": "Kriterium bearbeiten",
         "stepDetails": "Details des Kriteriums",
         "stepScoring": "Punkteoptionen",
         "detailsTitle": "Details des Kriteriums",
         "scoringTitle": "Punkteoptionen",
         "scoringHelp": "Legen Sie fest, wie die einzelnen Punktwerte für {name} vergeben werden.",
-        "allowedRange": "Zulässiger Bereich: {min} bis {max}",
-        "rangeInvalid": "Legen Sie zuerst in Schritt 1 einen gültigen Punktebereich fest.",
         "optionCount": "{count} Optionen",
         "optionNumber": "Punkteoption {number}",
         "addOption": "Punkteoption hinzufügen",
         "removeOption": "Punkteoption entfernen",
-        "maxOptionsReached": "Alle {count} möglichen Werte von {min} bis {max} haben bereits eine Punkteoption."
+        "viewTitle": "Kriterium ansehen — v{version}",
+        "versionTitle": "Neue Kriteriumsversion erstellen",
+        "create": "Kriterium erstellen",
+        "createVersion": "Neue Version erstellen",
+        "versionNotice": "Sie erstellen eine neue Version von „{name}“ (aktuell Version {version}). Version {version} bleibt unverändert, Rubriken, die sie verwenden, sind nicht betroffen. Geben Sie eine neue Versionsnummer ein.",
+        "groupInfo": "Kriteriengruppe {group}. Diese Version wird schreibgeschützt angezeigt.",
+        "noOptions": "Keine Bewertungsoptionen.",
+        "empty": "Noch keine Kriterien. Fügen Sie das erste hinzu.",
+        "versionPlaceholder": "z. B. 1.1 oder 2",
+        "versionMustBeNew": "Die Versionsnummer muss neu sein."
     },
     "selection": {
         "selectedOrder": "Ausgewählte Reihenfolge",
@@ -107,17 +114,22 @@
         "maxBelowMin": "Die maximale Punktzahl muss größer oder gleich der minimalen sein.",
         "duplicateCode": "Dieser Code wird bereits verwendet.",
         "defaultOutOfRange": "Die Standardpunkte müssen zwischen minimaler und maximaler Punktzahl liegen.",
-        "pointsOutOfRange": "Die Punkte müssen zwischen Minimum und Maximum des Kriteriums liegen.",
-        "duplicatePoints": "Dieser Punktwert wird bereits von einer anderen Option verwendet.",
-        "noScoringOptions": "Fügen Sie mindestens eine Punkteoption hinzu.",
         "selectRubric": "Wählen Sie mindestens eine Rubrik aus.",
-        "selectCriterion": "Wählen Sie mindestens ein Kriterium aus."
+        "selectCriterion": "Wählen Sie mindestens ein Kriterium aus.",
+        "number": "Geben Sie eine Zahl ein.",
+        "tooLong": "Verwenden Sie höchstens 255 Zeichen.",
+        "versionTaken": "Diese Versionsnummer wird für dieses Kriterium bereits verwendet.",
+        "versionFormat": "Verwenden Sie durch Punkte getrennte Zahlen, zum Beispiel 1, 1.1 oder 2.0.3.",
+        "pointsBetween": "Die Punkte müssen zwischen {min} und {max} liegen.",
+        "pointsAtLeast": "Die Punkte müssen mindestens {min} betragen.",
+        "pointsAtMost": "Die Punkte dürfen höchstens {max} betragen.",
+        "integerRange": "Geben Sie eine ganze Zahl ein, die in die Datenbank passt (-2147483648 bis 2147483647)."
     },
     "confirm": {
         "title": "Eintrag löschen",
         "deleteAssessment": "Bewertung \"{name}\" löschen? Die zugehörigen Rubriken bleiben erhalten.",
         "deleteRubric": "Rubrik \"{name}\" löschen? Sie wird aus allen Bewertungen entfernt; die Kriterien bleiben erhalten.",
-        "deleteCriterion": "Kriterium \"{name}\" löschen? Es wird aus allen Rubriken entfernt, die es verwenden.",
+        "deleteCriterion": "Version „{version}“ des Kriteriums „{name}“ löschen? Nur diese Version wird gelöscht, andere Versionen bleiben erhalten. Sie kann nicht gelöscht werden, solange eine Rubrik sie verwendet.",
         "usedBy": "Dieser Eintrag wird derzeit von {count} anderen Einträgen verwendet."
     },
     "messages": {
@@ -125,7 +137,14 @@
         "deleted": "Gelöscht",
         "assessmentSaved": "Bewertung \"{name}\" wurde gespeichert.",
         "rubricSaved": "Rubrik \"{name}\" wurde gespeichert.",
-        "criterionSaved": "Kriterium \"{name}\" wurde gespeichert.",
-        "recordDeleted": "\"{name}\" wurde gelöscht."
+        "recordDeleted": "\"{name}\" wurde gelöscht.",
+        "loading": "Wird geladen…",
+        "error": "Fehler",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "notConnected": "Keine Verbindung zum Server. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+        "timeout": "Der Server hat nicht rechtzeitig geantwortet. Versuchen Sie es erneut.",
+        "criterionCreated": "Kriterium „{name}“ (Version {version}) wurde erstellt.",
+        "criterionVersionCreated": "Version {version} des Kriteriums „{name}“ wurde erstellt.",
+        "criterionDeleted": "Version {version} des Kriteriums „{name}“ wurde gelöscht."
     }
 }

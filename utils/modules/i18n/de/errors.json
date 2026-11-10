@@ -41,6 +41,9 @@
     "fieldInvalid": "{field} ist ungültig.",
     "optionInvalid": "Bewertungsoption {position}: {field} ist ungültig.",
     "pointsRange": "Die Mindestpunktzahl darf die Höchstpunktzahl nicht überschreiten.",
+    "versionFormat": "Die Versionsnummer muss aus durch Punkte getrennten Zahlen bestehen, zum Beispiel 1, 1.1 oder 2.0.3.",
+    "optionBelowMin": "Bewertungsoption {position}: Die Punkte dürfen den Mindestwert des Kriteriums von {min} nicht unterschreiten.",
+    "optionAboveMax": "Bewertungsoption {position}: Die Punkte dürfen den Höchstwert des Kriteriums von {max} nicht überschreiten.",
     "criterion": {
       "notFound": "Kriterium nicht gefunden.",
       "groupNotFound": "Kriteriengruppe nicht gefunden.",

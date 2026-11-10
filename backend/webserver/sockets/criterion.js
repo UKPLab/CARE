@@ -101,7 +101,32 @@ class CriterionSocket extends Socket {
             };
         });
 
+        this.assertOptionsInRange(scoringOptions, fields.minPoints, fields.maxPoints);
+
         return {fields, scoringOptions};
+    }
+
+    /**
+     * Every option's points must lie within the criterion's bounds: `minPoints <= points` when a minimum is
+     * set, `points <= maxPoints` when a maximum is set, anything when neither is. Entered values are never
+     * adjusted, an option outside the range is rejected.
+     * @param {{points: number|string}[]} scoringOptions options in request order
+     * @param {number|string|null} minPoints
+     * @param {number|string|null} maxPoints
+     * @throws {TranslatableError} optionBelowMin / optionAboveMax with the 1-based position of the option
+     */
+    assertOptionsInRange(scoringOptions, minPoints, maxPoints) {
+        const low = minPoints === null ? null : Number(minPoints);
+        const high = maxPoints === null ? null : Number(maxPoints);
+        scoringOptions.forEach(({points}, index) => {
+            const value = Number(points);
+            if (low !== null && value < low) {
+                throw new TranslatableError("errors.assessment.optionBelowMin", {position: index + 1, min: low});
+            }
+            if (high !== null && value > high) {
+                throw new TranslatableError("errors.assessment.optionAboveMax", {position: index + 1, max: high});
+            }
+        });
     }
 
     /**

@@ -41,6 +41,9 @@
         "fieldInvalid": "{field} is invalid.",
         "optionInvalid": "Scoring option {position}: {field} is invalid.",
         "pointsRange": "Minimum points must not be greater than maximum points.",
+        "versionFormat": "Version number must be numbers separated by dots, for example 1, 1.1 or 2.0.3.",
+        "optionBelowMin": "Scoring option {position}: points must not be below the criterion's minimum of {min}.",
+        "optionAboveMax": "Scoring option {position}: points must not be above the criterion's maximum of {max}.",
         "criterion": {
             "notFound": "Criterion not found.",
             "groupNotFound": "Criterion group not found.",

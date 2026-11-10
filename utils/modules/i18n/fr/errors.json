@@ -41,6 +41,9 @@
         "fieldInvalid": "{field} est invalide.",
         "optionInvalid": "Option de notation {position} : {field} est invalide.",
         "pointsRange": "Le minimum de points ne doit pas dépasser le maximum.",
+        "versionFormat": "Le numéro de version doit être composé de nombres séparés par des points, par exemple 1, 1.1 ou 2.0.3.",
+        "optionBelowMin": "Option de notation {position} : les points ne doivent pas être inférieurs au minimum du critère ({min}).",
+        "optionAboveMax": "Option de notation {position} : les points ne doivent pas dépasser le maximum du critère ({max}).",
         "criterion": {
             "notFound": "Critère introuvable.",
             "groupNotFound": "Groupe de critères introuvable.",

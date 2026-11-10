@@ -3,8 +3,8 @@
  *
  * Every function returns an object mapping a field name to an i18n key
  * (relative to `assessmentManagement.errors`); an empty object means valid.
- * Cross-field rules (min/max, duplicate codes, scoring range) live here so the
- * modals only decide when to show the messages.
+ * Cross-field rules (min/max, duplicate codes) live here so the modals only decide when to show the
+ * messages. The criterion form has its own checks in criterionForm.js (versioned, backend-backed).
  *
  * @author Eyad Mohamed
  */
@@ -37,28 +37,6 @@ export function visibleErrors(errors, touched, $t) {
       .filter(([field]) => touched[field])
       .map(([field, key]) => [field, $t(`assessmentManagement.errors.${key}`)])
   );
-}
-
-/**
- * Whether the given points range is usable.
- *
- * @param {number|string} min - Minimum points
- * @param {number|string} max - Maximum points
- * @returns {boolean}
- */
-export function isValidRange(min, max) {
-  return isInteger(min) && isInteger(max) && min <= max;
-}
-
-/**
- * Number of distinct integer point values inside a range.
- *
- * @param {number|string} min - Minimum points
- * @param {number|string} max - Maximum points
- * @returns {number} 0 if the range is invalid
- */
-export function possibleValueCount(min, max) {
-  return isValidRange(min, max) ? max - min + 1 : 0;
 }
 
 /**
@@ -127,53 +105,4 @@ export function validateRubricDetails(form, rubrics, selfId) {
     }
   }
   return errors;
-}
-
-/**
- * Validate criterion step 1.
- *
- * @param {Object} form - Criterion form values
- * @param {Array} criteria - All criteria (for the unique code check)
- * @param {number|null} selfId - Id of the criterion being edited
- * @returns {Object} Errors keyed by field
- */
-export function validateCriterionDetails(form, criteria, selfId) {
-  const errors = validatePointRange(form);
-  if (isBlank(form.name)) errors.name = "required";
-  if (isBlank(form.code)) errors.code = "required";
-  else if (isDuplicateCode(form.code, criteria, selfId)) errors.code = "duplicateCode";
-  return errors;
-}
-
-/**
- * Validate the scoring options of a criterion.
- *
- * @param {Array<{uid: number, points: number|string, description: string}>} options - Scoring options
- * @param {number} min - Criterion minimum points
- * @param {number} max - Criterion maximum points
- * @returns {{list: string|null, byOption: Object<number, {points?: string, description?: string}>}}
- *   `list` is a list-level error key, `byOption` maps option uid to field errors
- */
-export function validateScoringOptions(options, min, max) {
-  const byOption = {};
-  const rangeKnown = isValidRange(min, max);
-  const seen = new Map();
-
-  options.forEach((option) => {
-    const errors = {};
-    if (isBlank(option.points)) errors.points = "required";
-    else if (!isInteger(option.points)) errors.points = "integer";
-    else if (rangeKnown && (option.points < min || option.points > max)) errors.points = "pointsOutOfRange";
-    else if (seen.has(option.points)) {
-      errors.points = "duplicatePoints";
-      // Flag the first holder too so both rows show the problem
-      byOption[seen.get(option.points)] = { ...byOption[seen.get(option.points)], points: "duplicatePoints" };
-    } else {
-      seen.set(option.points, option.uid);
-    }
-    if (isBlank(option.description)) errors.description = "required";
-    if (Object.keys(errors).length) byOption[option.uid] = { ...byOption[option.uid], ...errors };
-  });
-
-  return { list: options.length === 0 ? "noScoringOptions" : null, byOption };
 }
