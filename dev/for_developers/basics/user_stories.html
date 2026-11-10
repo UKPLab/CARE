@@ -158,6 +158,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#ai-and-automation">AI and Automation</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#manage-ai-credentials-and-models">Manage AI Credentials and Models</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#configure-and-monitor-ai-use">Configure and Monitor AI Use</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#use-ai-assistance-in-a-study">Use AI Assistance in a Study</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#automate-events-with-triggers">Automate Events with Triggers</a></li>
 </ul>
 </li>
@@ -588,7 +589,8 @@ on first login, so that I can make an informed choice about my data before using
 platform.</p>
 </dd>
 <dt class="field-even">Settings<span class="colon">:</span></dt>
-<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">app.register.terms</span></code>, <code class="docutils literal notranslate"><span class="pre">app.register.requestStats</span></code>, <code class="docutils literal notranslate"><span class="pre">app.register.requestData</span></code></p>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">app.register.terms</span></code>, <code class="docutils literal notranslate"><span class="pre">app.register.requestStats</span></code>, <code class="docutils literal notranslate"><span class="pre">app.register.requestData</span></code>,
+<code class="docutils literal notranslate"><span class="pre">app.register.combineResearchConsent</span></code></p>
 </dd>
 <dt class="field-odd">Acceptance<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
@@ -597,6 +599,14 @@ behaviour statistics and data sharing (shown only if the respective settings are
 enabled).</p></li>
 <li><p>I must accept the terms to proceed. The optional checkboxes are pre-set to their
 configured default values but I can change them.</p></li>
+<li><p>In Settings, under User Registration / Consent options, administrators can enable
+“Combine research consent checkboxes” (off by default). When both permissions are
+requested, registration, first-login consent, and Preferences show one optional
+checkbox that saves both <code class="docutils literal notranslate"><span class="pre">acceptStats</span></code> and <code class="docutils literal notranslate"><span class="pre">acceptDataSharing</span></code>. New consent
+starts unchecked in combined mode, regardless of the separate defaults.</p></li>
+<li><p>Preferences shows an indeterminate checkbox for existing mixed permissions and
+preserves those permissions until the participant changes the checkbox.</p></li>
+<li><p>Terms acceptance remains separate. This setting does not change export filtering.</p></li>
 <li><p>After accepting, my preferences are saved and I am granted access to the app.</p></li>
 <li><p>I can later update my consent preferences via the same modal accessible from my account
 menu.</p></li>
@@ -1980,7 +1990,39 @@ usage, so that model calls are controlled and auditable.</p>
 type.</p></li>
 <li><p>I can manage cost limits for models, hooks, studies, and study steps.</p></li>
 <li><p>The AI log shows request status, token usage, and cost.</p></li>
+<li><p>Authorized offline and context-length failures are recorded without invented
+token usage or cost. Existing access, spending, and pending-request checks apply.</p></li>
+<li><p>With statistics consent, Dialogue records question copies, paste lengths, and
+aggregate answer composition totals with question and follow-up identifiers.
+Copied text is not added to these statistics.</p></li>
 <li><p>A hook cannot be saved without a prompt template and at least one model.</p></li>
+</ul>
+</dd>
+</dl>
+</div>
+</section>
+<hr class="docutils" />
+<section id="use-ai-assistance-in-a-study">
+<h3>Use AI Assistance in a Study<a class="headerlink" href="#use-ai-assistance-in-a-study" title="Link to this heading"></a></h3>
+<div class="user-story docutils container">
+<dl class="field-list simple">
+<dt class="field-odd">Story<span class="colon">:</span></dt>
+<dd class="field-odd"><p>As a <strong>Participant</strong>, I want Chat and Dialogue to recover predictably, so that
+I can continue my study without losing an answer or submitting it twice.</p>
+</dd>
+<dt class="field-even">Acceptance<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p>Assessment and Feedback hooks receive the configured annotation or comment
+input key when that data is available.</p></li>
+<li><p>Reopening a Chat restores its last completed answer’s available model and the
+corresponding context warning. A new conversation uses the default model.</p></li>
+<li><p>A context-length rejection preserves my draft and offers a new conversation.</p></li>
+<li><p>A Chat loading timeout retries once automatically, then offers manual Retry.
+Recovery preserves my draft and does not submit a message.</p></li>
+<li><p>Stopping Dialogue settles the cancelled request so Retry can run immediately
+with the saved answer. An answered stopped turn has no editable Submit field.</p></li>
+<li><p>Streaming Chat responses preserve my position when I scroll up. Jump to latest
+returns to the newest content and resumes following the response.</p></li>
 </ul>
 </dd>
 </dl>

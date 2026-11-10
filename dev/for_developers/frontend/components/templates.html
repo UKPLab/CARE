@@ -321,6 +321,9 @@ AI hook runtime: <code class="docutils literal notranslate"><span class="pre">ba
 <code class="docutils literal notranslate"><span class="pre">placeholder</span></code> row when set (sample text only; rows may be empty until examples are added).
 <code class="docutils literal notranslate"><span class="pre">templateResolve</span></code> uses <code class="docutils literal notranslate"><span class="pre">buildPromptPlaceholderValues</span></code> in <code class="docutils literal notranslate"><span class="pre">backend/utils/helper/templatePromptValues.js</span></code> for real values from
 <code class="docutils literal notranslate"><span class="pre">context</span></code> and the database. AI hooks instead pass a value map from the frontend input mapping.
+<code class="docutils literal notranslate"><span class="pre">resolveHookPrompt</span></code> then runs <code class="docutils literal notranslate"><span class="pre">redactPersonalData</span></code> (<code class="docutils literal notranslate"><span class="pre">backend/utils/helper/personalData.js</span></code>)
+on that finished prompt. Chat, dialogue, study-step hooks, and triggers all send this string
+to the model. The call is the one place those strings are cleaned.
 Many placeholders need <code class="docutils literal notranslate"><span class="pre">documentId</span></code>, <code class="docutils literal notranslate"><span class="pre">studySessionId</span></code>, and <code class="docutils literal notranslate"><span class="pre">studyStepId</span></code>;
 if they are missing, those tokens resolve to an empty string.</p>
 <p><code class="docutils literal notranslate"><span class="pre">~nlpAssessmentSuggestion~</span></code> is the NLP draft assessment for the current step (same <code class="docutils literal notranslate"><span class="pre">document_data</span></code> as the
