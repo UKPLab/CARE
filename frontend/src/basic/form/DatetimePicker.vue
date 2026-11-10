@@ -13,11 +13,15 @@
           :selected="date"
           :time="time"
           :show-time="!dateOnly"
+          :zone="dateOnly ? null : zone"
+          :presets="timePresets"
           :min="minDate"
           :max="maxDate"
           :locale="localeCode"
           @select="onSelectDate"
           @update:time="onSelectTime"
+          @update:presets="onUpdatePresets"
+          @update:zone="onSelectZone"
         />
       </div>
 
@@ -45,6 +49,14 @@
             class="care-dp-trigger__text"
             :class="{ 'is-placeholder': !date }"
           >{{ displayText }}</span>
+          <span
+            v-if="date && !dateOnly"
+            class="care-dp-trigger__zone"
+            :class="{ 'is-custom': !zone.isDevice }"
+            :title="[zone.name, zone.label].filter(Boolean).join(' · ')"
+          >
+            <template v-if="!zone.isDevice">{{ zone.city }} · </template>{{ zone.offset }}
+          </span>
         </button>
         <button
           v-if="date"
@@ -79,11 +91,15 @@
               :selected="date"
               :time="time"
               :show-time="!dateOnly"
+              :zone="dateOnly ? null : zone"
+              :presets="timePresets"
               :min="minDate"
               :max="maxDate"
               :locale="localeCode"
               @select="onSelectDate"
               @update:time="onSelectTime"
+              @update:presets="onUpdatePresets"
+              @update:zone="onSelectZone"
             >
               <template #footer>
                 <button
@@ -107,16 +123,31 @@
 import FormElement from "@/basic/form/Element.vue"
 import CalendarPanel from "@/basic/form/CalendarPanel.vue";
 import { formatLocalizedDate, formatLocalizedDateTime, translateMaybeKey } from "@/assets/utils";
-
-const pad = (n) => String(n).padStart(2, "0");
+import {datetimePrefs, setPreferredTimeZone, setTimePresets} from "@/basic/form/datetimePrefs";
+import {
+  dayOffsets,
+  deviceTimeZone,
+  dstInfo,
+  formatOffset,
+  splitZoneId,
+  zonedParts,
+  zonedToUtc,
+  zoneName,
+} from "@/basic/form/timeZone";
 
 /**
  * Date (and optional time) picker.
  *
  * Value is an ISO string (or null). Props:
- * - `dateOnly`: no time row, time is always 00:00
+ * - `dateOnly`: no time row, time is always 00:00 in the device zone
  * - `inline`: render the calendar directly instead of a field with a popup (used by the table search)
  * Optional `options.min` / `options.max` ("YYYY-MM-DD") limit the selectable days.
+ *
+ * Times are wall-clock times in the user's chosen time zone (device zone by default; the choice
+ * and the quick-time buttons are kept in localStorage, see datetimePrefs). The zone and its UTC
+ * offset for the selected day are shown, so summer/winter time is visible. Times skipped by a
+ * clock change (e.g. 02:30 on the spring-forward day) are moved to a real time and the user is
+ * told. Repeated times on the fall-back day resolve to the first occurrence (the offset shows which).
  */
 export default {
   name: "DatetimePicker",
@@ -146,6 +177,8 @@ export default {
     return {
       date: null, // "YYYY-MM-DD"
       time: null, // "HH:MM"
+      adjustedFrom: null, // "HH:MM" the user asked for when it fell into a clock-change gap
+      keepWallClock: false, // set while this picker itself changes the zone
       isOpen: false,
       popupStyle: {},
       teleportTarget: "body",
@@ -165,27 +198,84 @@ export default {
     maxDate() {
       return this.options.max || null;
     },
-    /** Selected moment as a Date (local time), or null. */
-    currentDate() {
+    /** Zone the fields are in: the user's choice, else the device. Date-only always uses the device. */
+    timeZoneId() {
+      return (!this.dateOnly && datetimePrefs.timeZone) || deviceTimeZone();
+    },
+    timePresets() {
+      return datetimePrefs.timePresets;
+    },
+    /** Selected moment as a timestamp, or null. */
+    currentTs() {
       if (!this.date) return null;
-      return new Date(`${this.date}T${this.time || "00:00"}`);
+      const ts = zonedToUtc(this.timeZoneId, this.date, this.time || "00:00");
+      return Number.isNaN(ts) ? null : ts;
+    },
+    currentDate() {
+      return this.currentTs === null ? null : new Date(this.currentTs);
     },
     /** Selected moment as an ISO string (what the parent receives), or null. */
     currentIso() {
-      const date = this.currentDate;
-      return date && !Number.isNaN(date.getTime()) ? date.toISOString() : null;
+      return this.currentDate ? this.currentDate.toISOString() : null;
     },
     displayText() {
       if (!this.currentDate) return this.$t("common.datePicker.placeholder");
       return this.dateOnly
         ? formatLocalizedDate(this.currentDate, {dateStyle: "medium"})
-        : formatLocalizedDateTime(this.currentDate, {dateStyle: "medium", timeStyle: "short"});
+        : formatLocalizedDateTime(this.currentDate, {dateStyle: "medium", timeStyle: "short", timeZone: this.timeZoneId});
+    },
+    /** Time zone facts for the selected moment (or now): name, offset, summer/winter time, notices. */
+    zone() {
+      const id = this.timeZoneId;
+      const at = this.currentTs ?? Date.now();
+      const {offset, observesDst, isDst} = dstInfo(id, at);
+
+      let notice = "";
+      if (this.date) {
+        const {before, after} = dayOffsets(id, this.date);
+        if (this.adjustedFrom) {
+          notice = this.$t("common.datePicker.timeAdjusted", {requested: this.adjustedFrom, actual: this.time});
+        } else if (before !== after) {
+          notice = this.$t("common.datePicker.clockChange", {from: formatOffset(before), to: formatOffset(after)});
+        }
+      }
+
+      return {
+        id,
+        label: id.replace(/_/g, " "),
+        city: id === "UTC" ? "UTC" : splitZoneId(id).city,
+        name: zoneName(id, at, this.localeCode),
+        offset: formatOffset(offset),
+        observesDst,
+        isDst,
+        isDevice: id === deviceTimeZone(),
+        at,
+        notice,
+      };
     },
   },
   watch: {
     modelValue() {
       // Ignore the echo of our own emit
       if (this.modelValue !== this.currentIso) {
+        this.applyValue(this.modelValue);
+      }
+    },
+    /**
+     * Zone picked in this picker: keep the typed wall-clock time ("14:00 in New York") and emit the
+     * new moment. Zone changed in another picker (shared setting): keep the saved moment and only
+     * show it in the new zone.
+     */
+    timeZoneId() {
+      if (!this.date) {
+        this.keepWallClock = false;
+        return;
+      }
+      if (this.keepWallClock) {
+        this.keepWallClock = false;
+        this.normalize();
+        this.emitValue();
+      } else {
         this.applyValue(this.modelValue);
       }
     },
@@ -200,33 +290,81 @@ export default {
   methods: {
     translateMaybeKey,
     applyValue(value) {
-      const parsed = value ? new Date(value) : null;
-      if (!parsed || Number.isNaN(parsed.getTime())) {
+      const ts = value ? Date.parse(value) : NaN;
+      this.adjustedFrom = null;
+      if (Number.isNaN(ts)) {
         this.date = null;
         this.time = null;
         return;
       }
-      this.date = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
-      this.time = this.dateOnly ? "00:00" : `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`;
+      const {ymd, hm} = zonedParts(this.timeZoneId, ts);
+      this.date = ymd;
+      this.time = this.dateOnly ? "00:00" : hm;
     },
     emitValue() {
       this.$emit("update:modelValue", this.currentIso);
     },
+    /**
+     * Keep date/time in sync with the moment that is actually emitted. A wall-clock time inside a
+     * spring-forward gap does not exist; it is moved forward by the gap, so the fields would
+     * otherwise show 02:30 while 03:30 is saved.
+     * @param {number|null} previousTs Moment before this edit, to keep stepping backwards going backwards.
+     * @returns {void}
+     */
+    normalize(previousTs = null) {
+      const actual = this.currentTs;
+      if (this.dateOnly || actual === null) return;
+      const zone = this.timeZoneId;
+      const real = zonedParts(zone, actual);
+      if (real.ymd === this.date && real.hm === this.time) {
+        this.adjustedFrom = null;
+        return;
+      }
+      const requested = this.time;
+      let fixed = actual;
+      // Stepping down from 03:00 to 02:55 should land at 01:55, not jump forward to 03:55
+      if (previousTs !== null) {
+        const previous = zonedParts(zone, previousTs);
+        if (previous.ymd === this.date && requested < previous.hm && actual > previousTs) {
+          const {before, after} = dayOffsets(zone, this.date);
+          fixed = actual - (after - before) * 60000;
+        }
+      }
+      const result = zonedParts(zone, fixed);
+      this.date = result.ymd;
+      this.time = result.hm;
+      this.adjustedFrom = requested;
+    },
     onSelectDate(ymd) {
       this.date = ymd;
       if (this.time === null) this.time = "00:00";
+      this.normalize();
       this.emitValue();
       // Date-only popups are done after one click; with a time row the popup stays open
       if (this.dateOnly && !this.inline) this.close();
     },
     onSelectTime(value) {
       if (!this.date) return;
+      const previous = this.currentTs;
       this.time = value;
+      this.normalize(previous);
       this.emitValue();
+    },
+    /** @param {string|null} zone Picked zone id, null = device. */
+    onSelectZone(zone) {
+      const before = this.timeZoneId;
+      this.keepWallClock = true;
+      setPreferredTimeZone(zone);
+      // Same zone again: the watcher will not run, so do not leave the flag set
+      if (this.timeZoneId === before) this.keepWallClock = false;
+    },
+    onUpdatePresets(list) {
+      setTimePresets(list);
     },
     clear() {
       this.date = null;
       this.time = null;
+      this.adjustedFrom = null;
       this.emitValue();
       this.validate();
     },
@@ -275,7 +413,7 @@ export default {
       if (!trigger) return;
       const rect = trigger.getBoundingClientRect();
       const width = Math.min(320, window.innerWidth - 16);
-      const height = this.$refs.popup?.offsetHeight || (this.dateOnly ? 360 : 470);
+      const height = this.$refs.popup?.offsetHeight || (this.dateOnly ? 360 : 530);
       const spaceBelow = window.innerHeight - rect.bottom - 8;
       const spaceAbove = rect.top - 8;
       const openUp = spaceBelow < height && spaceAbove > spaceBelow;
@@ -349,6 +487,26 @@ export default {
 
 .care-dp-trigger__text.is-placeholder {
   color: var(--bs-secondary-color);
+}
+
+.care-dp-trigger__zone {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: .05rem .45rem;
+  font-size: .72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .01em;
+  white-space: nowrap;
+  color: var(--bs-secondary-color);
+  background: var(--bs-tertiary-bg);
+  border-radius: var(--bs-border-radius-pill, 999px);
+}
+
+/* Not the device zone: make it hard to miss */
+.care-dp-trigger__zone.is-custom {
+  color: var(--care-primary, var(--bs-primary));
+  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 12%, transparent);
 }
 
 .care-dp-trigger__clear {

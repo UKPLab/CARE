@@ -107,7 +107,38 @@
         "selectYear": "Choose year",
         "hour": "Hour",
         "minute": "Minute",
-        "time": "Time"
+        "time": "Time",
+        "timeZone": "Time zone",
+        "summerTime": "Summer time",
+        "winterTime": "Winter time",
+        "clockChange": "Clocks change on this day ({from} → {to})",
+        "timeAdjusted": "{requested} does not exist on this day because of the clock change. Set to {actual}.",
+        "presets": {
+            "edit": "Edit quick times",
+            "title": "Quick times",
+            "hint": "Drag or use the arrows to change the order",
+            "drag": "Drag to reorder",
+            "timeLabel": "Quick time {n}",
+            "sort": "Sort ascending",
+            "moveUp": "Move up",
+            "moveDown": "Move down",
+            "remove": "Remove",
+            "empty": "No quick times yet",
+            "add": "Add time",
+            "reset": "Reset to default",
+            "invalid": "Use HH:MM, e.g. 14:00",
+            "duplicate": "This time is already in the list"
+        },
+        "zones": {
+            "change": "Change time zone",
+            "hint": "Times you pick are in this zone",
+            "search": "City, region or UTC offset",
+            "device": "This device",
+            "custom": "Changed",
+            "suggested": "Suggested",
+            "all": "All time zones",
+            "results": "Results"
+        }
     },
     "na": "N/A",
     "time": {

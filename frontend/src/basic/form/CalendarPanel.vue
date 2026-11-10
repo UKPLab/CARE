@@ -1,5 +1,7 @@
 <template>
   <div class="care-cal">
+    <!-- Main view; the quick-time editor and the zone list replace it in place -->
+    <template v-if="view === 'calendar'">
     <div class="care-cal__head">
       <button
         type="button"
@@ -168,7 +170,7 @@
       </div>
       <div class="care-cal__chips">
         <button
-          v-for="preset in timePresets"
+          v-for="preset in presets"
           :key="preset"
           type="button"
           class="care-cal__chip"
@@ -178,6 +180,61 @@
         >
           {{ preset }}
         </button>
+        <button
+          ref="editPresets"
+          type="button"
+          class="care-cal__chip care-cal__chip--edit"
+          :title="$t('common.datePicker.presets.edit')"
+          :aria-label="$t('common.datePicker.presets.edit')"
+          @click="openView('presets')"
+        >
+          <i class="bi bi-pencil" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+
+    <div v-if="showTime && zone" class="care-cal__zone-wrap">
+      <button
+        ref="zoneButton"
+        type="button"
+        class="care-cal__zone"
+        :class="{ 'is-custom': !zone.isDevice }"
+        :title="$t('common.datePicker.zones.change')"
+        :aria-label="`${$t('common.datePicker.zones.change')}: ${[zone.name, zone.label, zone.offset].filter(Boolean).join(', ')}`"
+        @click="openView('zones')"
+      >
+        <i class="bi bi-globe2 care-cal__zone-icon" aria-hidden="true"></i>
+        <span class="care-cal__zone-text">
+          <span class="care-cal__zone-name">{{ zone.name || zone.label }}</span>
+          <span class="care-cal__zone-meta">
+            {{ [
+              zone.name ? zone.label : '',
+              zone.observesDst ? (zone.isDst ? $t('common.datePicker.summerTime') : $t('common.datePicker.winterTime')) : '',
+              zone.isDevice ? '' : $t('common.datePicker.zones.custom'),
+            ].filter(Boolean).join(' · ') }}
+          </span>
+        </span>
+        <span
+          class="care-cal__zone-offset"
+          :class="{ 'is-summer': zone.observesDst && zone.isDst, 'is-winter': zone.observesDst && !zone.isDst }"
+        >
+          <i
+            v-if="zone.observesDst"
+            :class="zone.isDst ? 'bi bi-sun' : 'bi bi-snow'"
+            aria-hidden="true"
+          ></i>
+          {{ zone.offset }}
+          <i class="bi bi-chevron-expand care-cal__zone-caret" aria-hidden="true"></i>
+        </span>
+      </button>
+
+      <div
+        v-if="zone.notice"
+        class="care-cal__zone-note"
+        role="status"
+      >
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+        <span>{{ zone.notice }}</span>
       </div>
     </div>
 
@@ -193,14 +250,38 @@
       </button>
       <slot name="footer" />
     </div>
+    </template>
+
+    <TimePresetsEditor
+      v-else-if="view === 'presets'"
+      :model-value="presets"
+      @update:model-value="$emit('update:presets', $event)"
+      @back="closeView('editPresets')"
+    />
+
+    <TimeZoneSelect
+      v-else-if="view === 'zones' && zone"
+      :model-value="zone.isDevice ? null : zone.id"
+      :at="zone.at"
+      @update:model-value="$emit('update:zone', $event)"
+      @back="closeView('zoneButton')"
+    />
   </div>
 </template>
 
 <script>
+import TimePresetsEditor from "@/basic/form/TimePresetsEditor.vue";
+import TimeZoneSelect from "@/basic/form/TimeZoneSelect.vue";
+import {DEFAULT_TIME_PRESETS} from "@/basic/form/datetimePrefs";
+import {zonedParts} from "@/basic/form/timeZone";
+
 /**
  * Month calendar (Monday first) with an optional time row. Used by DatetimePicker, either inline
  * (table search) or inside a popup (forms). It only edits two plain strings and holds no value:
- * `selected` is "YYYY-MM-DD", `time` is "HH:MM".
+ * `selected` is "YYYY-MM-DD", `time` is "HH:MM" (wall clock in `zone`).
+ *
+ * The pencil after the quick times opens their editor, the zone row opens the zone list. Both
+ * replace the calendar in place and only emit; the parent stores the result.
  */
 const pad = (n) => String(n).padStart(2, "0");
 const toYmd = (date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -211,12 +292,21 @@ const fromYmd = (ymd) => {
 
 export default {
   name: "CalendarPanel",
+  components: {TimePresetsEditor, TimeZoneSelect},
   props: {
     /** Selected day "YYYY-MM-DD" or null. */
     selected: {type: String, required: false, default: null},
     /** Selected time "HH:MM" or null. */
     time: {type: String, required: false, default: null},
     showTime: {type: Boolean, required: false, default: false},
+    /**
+     * Time zone shown under the time row:
+     * {id, label, name, offset, observesDst, isDst, isDevice, at, notice}.
+     * Computed by DatetimePicker for the selected day, so the offset follows summer/winter time.
+     */
+    zone: {type: Object, required: false, default: null},
+    /** Quick-time buttons "HH:MM" in display order. */
+    presets: {type: Array, required: false, default: () => [...DEFAULT_TIME_PRESETS]},
     /** "Today" shortcut in the footer. */
     showToday: {type: Boolean, required: false, default: true},
     /** Earliest / latest selectable day "YYYY-MM-DD". */
@@ -224,7 +314,7 @@ export default {
     max: {type: String, required: false, default: null},
     locale: {type: String, required: false, default: undefined},
   },
-  emits: ["select", "update:time"],
+  emits: ["select", "update:time", "update:presets", "update:zone"],
   data() {
     const base = this.selected ? fromYmd(this.selected) : new Date();
     return {
@@ -234,11 +324,19 @@ export default {
       yearPageStart: base.getFullYear() - 4,
       hourText: "",
       minuteText: "",
-      timePresets: ["00:00", "09:00", "12:00", "18:00", "23:59"],
+      view: "calendar", // "calendar" | "presets" | "zones"
     };
   },
   computed: {
+    /** Today in the shown zone (it can already be tomorrow in Tokyo). */
     todayYmd() {
+      if (this.zone?.id) {
+        try {
+          return zonedParts(this.zone.id, Date.now()).ymd;
+        } catch {
+          // fall through to the device date
+        }
+      }
       return toYmd(new Date());
     },
     monthLabel() {
@@ -342,6 +440,14 @@ export default {
     },
   },
   methods: {
+    openView(view) {
+      this.view = view;
+    },
+    /** Back to the calendar, focus on the button that opened the sub-view. */
+    closeView(focusRef) {
+      this.view = "calendar";
+      this.$nextTick(() => this.$refs[focusRef]?.focus({preventScroll: true}));
+    },
     /** Arrows: one month in the day view, one year in the month view, a page of 12 in the year view. */
     shiftView(delta) {
       if (this.mode === "years") {
@@ -716,6 +822,140 @@ export default {
   cursor: not-allowed;
 }
 
+.care-cal__chip--edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  padding: .15rem 0;
+  border-style: dashed;
+}
+
+.care-cal__chip--edit:hover {
+  color: var(--care-primary, var(--bs-primary));
+  border-color: var(--care-primary, var(--bs-primary));
+  border-style: solid;
+}
+
+/* ---------- Time zone ---------- */
+.care-cal__zone-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-top: .6rem;
+}
+
+.care-cal__zone {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  min-width: 0;
+  padding: .45rem .6rem;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: var(--bs-tertiary-bg);
+  border: 1px solid transparent;
+  border-radius: var(--bs-border-radius, .5rem);
+  cursor: pointer;
+  transition: background-color var(--care-dur-fast, 120ms) ease, border-color var(--care-dur-fast, 120ms) ease;
+}
+
+.care-cal__zone:hover {
+  border-color: var(--bs-border-color);
+}
+
+.care-cal__zone:hover .care-cal__zone-offset,
+.care-cal__zone.is-custom .care-cal__zone-offset {
+  color: var(--care-primary, var(--bs-primary));
+  border-color: var(--care-primary, var(--bs-primary));
+}
+
+.care-cal__zone:focus-visible {
+  outline: none;
+  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+}
+
+.care-cal__zone-caret {
+  margin-left: -.1rem;
+  font-size: .65rem;
+  opacity: .7;
+}
+
+.care-cal__zone-icon {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+}
+
+.care-cal__zone-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.care-cal__zone-name,
+.care-cal__zone-meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.care-cal__zone-name {
+  font-size: .8rem;
+  font-weight: 600;
+  color: var(--bs-body-color);
+}
+
+.care-cal__zone-meta {
+  font-size: .7rem;
+  color: var(--bs-secondary-color);
+}
+
+.care-cal__zone-offset {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: .3rem;
+  padding: .15rem .5rem;
+  font-size: .75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--bs-body-color);
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius-pill, 999px);
+}
+
+.care-cal__zone-offset.is-summer i {
+  color: #e8a10c;
+}
+
+.care-cal__zone-offset.is-winter i {
+  color: #3a8bd6;
+}
+
+.care-cal__zone-note {
+  display: flex;
+  align-items: flex-start;
+  gap: .45rem;
+  padding: .4rem .6rem;
+  font-size: .75rem;
+  line-height: 1.35;
+  color: var(--bs-body-color);
+  background: color-mix(in srgb, var(--bs-warning, #ffc107) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bs-warning, #ffc107) 40%, transparent);
+  border-radius: var(--bs-border-radius, .5rem);
+}
+
+.care-cal__zone-note i {
+  margin-top: .05rem;
+  color: var(--bs-warning-text-emphasis, #997404);
+}
+
 /* ---------- Footer ---------- */
 .care-cal__foot {
   display: flex;
@@ -751,8 +991,111 @@ export default {
   .care-cal__pick-item,
   .care-cal__day,
   .care-cal__chip,
-  .care-cal__time {
+  .care-cal__time,
+  .care-cal__zone {
     transition: none;
   }
+}
+</style>
+
+<!-- Shared by the sub-views (TimePresetsEditor, TimeZoneSelect); not scoped so both can use it -->
+<style>
+.care-sub__head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+
+.care-sub__back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: .8rem;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.care-sub__back:hover {
+  color: var(--bs-body-color);
+  background: var(--bs-secondary-bg);
+}
+
+.care-sub__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.care-sub__title {
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.care-sub__hint {
+  font-size: .72rem;
+  color: var(--bs-secondary-color);
+}
+
+.care-sub__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.care-sub__link {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .6rem;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  border: 0;
+  border-radius: var(--bs-border-radius-sm, .375rem);
+  cursor: pointer;
+}
+
+.care-sub__link:hover:not(:disabled) {
+  color: var(--bs-body-color);
+  background: var(--bs-tertiary-bg);
+}
+
+.care-sub__link:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.care-sub__done {
+  padding: .3rem .9rem;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--care-on-primary, #fff);
+  background: var(--care-primary, var(--bs-primary));
+  border: 0;
+  border-radius: var(--bs-border-radius-pill, 999px);
+  cursor: pointer;
+}
+
+.care-sub__done:hover {
+  filter: brightness(1.08);
+}
+
+.care-sub__back:focus-visible,
+.care-sub__link:focus-visible,
+.care-sub__done:focus-visible {
+  outline: none;
+  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
 }
 </style>

@@ -107,7 +107,38 @@
         "selectYear": "Choisir l'année",
         "hour": "Heure",
         "minute": "Minute",
-        "time": "Heure"
+        "time": "Heure",
+        "timeZone": "Fuseau horaire",
+        "summerTime": "Heure d'été",
+        "winterTime": "Heure d'hiver",
+        "clockChange": "Changement d'heure ce jour-là ({from} → {to})",
+        "timeAdjusted": "{requested} n'existe pas ce jour-là à cause du changement d'heure. Réglé sur {actual}.",
+        "presets": {
+            "edit": "Modifier les heures rapides",
+            "title": "Heures rapides",
+            "hint": "Faites glisser ou utilisez les flèches pour changer l'ordre",
+            "drag": "Glisser pour réordonner",
+            "timeLabel": "Heure rapide {n}",
+            "sort": "Trier par ordre croissant",
+            "moveUp": "Monter",
+            "moveDown": "Descendre",
+            "remove": "Supprimer",
+            "empty": "Aucune heure rapide",
+            "add": "Ajouter une heure",
+            "reset": "Rétablir par défaut",
+            "invalid": "Format HH:MM, p. ex. 14:00",
+            "duplicate": "Cette heure est déjà dans la liste"
+        },
+        "zones": {
+            "change": "Changer de fuseau horaire",
+            "hint": "Les heures choisies sont dans ce fuseau",
+            "search": "Ville, région ou décalage UTC",
+            "device": "Cet appareil",
+            "custom": "Modifié",
+            "suggested": "Suggestions",
+            "all": "Tous les fuseaux horaires",
+            "results": "Résultats"
+        }
     },
     "na": "N/D",
     "time": {

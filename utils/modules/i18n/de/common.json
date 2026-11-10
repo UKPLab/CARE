@@ -107,7 +107,38 @@
         "selectYear": "Jahr wählen",
         "hour": "Stunde",
         "minute": "Minute",
-        "time": "Uhrzeit"
+        "time": "Uhrzeit",
+        "timeZone": "Zeitzone",
+        "summerTime": "Sommerzeit",
+        "winterTime": "Winterzeit",
+        "clockChange": "An diesem Tag wird die Uhr umgestellt ({from} → {to})",
+        "timeAdjusted": "{requested} gibt es an diesem Tag wegen der Zeitumstellung nicht. Auf {actual} gesetzt.",
+        "presets": {
+            "edit": "Schnellzeiten bearbeiten",
+            "title": "Schnellzeiten",
+            "hint": "Zum Sortieren ziehen oder die Pfeile nutzen",
+            "drag": "Zum Sortieren ziehen",
+            "timeLabel": "Schnellzeit {n}",
+            "sort": "Aufsteigend sortieren",
+            "moveUp": "Nach oben",
+            "moveDown": "Nach unten",
+            "remove": "Entfernen",
+            "empty": "Noch keine Schnellzeiten",
+            "add": "Uhrzeit hinzufügen",
+            "reset": "Standard wiederherstellen",
+            "invalid": "Format HH:MM, z. B. 14:00",
+            "duplicate": "Diese Uhrzeit ist schon in der Liste"
+        },
+        "zones": {
+            "change": "Zeitzone ändern",
+            "hint": "Gewählte Uhrzeiten gelten in dieser Zone",
+            "search": "Stadt, Region oder UTC-Versatz",
+            "device": "Dieses Gerät",
+            "custom": "Geändert",
+            "suggested": "Vorschläge",
+            "all": "Alle Zeitzonen",
+            "results": "Ergebnisse"
+        }
     },
     "na": "k.A.",
     "time": {
