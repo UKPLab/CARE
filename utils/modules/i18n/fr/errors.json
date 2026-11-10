@@ -56,6 +56,16 @@
             "duplicateCriterion": "La version {criterionId} du critère est sélectionnée plusieurs fois.",
             "criteriaNotFound": "Version(s) de critère introuvable(s) : {criterionIds}.",
             "inUse": "La version {rubricId} de la grille ne peut pas être supprimée : elle est utilisée par {count} version(s) d'évaluation ({assessmentIds})."
+        },
+        "assessment": {
+            "deleteDisabled": "La suppression des versions d'évaluation est temporairement désactivée.",
+            "notFound": "Évaluation introuvable.",
+            "groupNotFound": "Groupe d'évaluations introuvable.",
+            "versionExists": "La version « {versionNumber} » existe déjà pour cette évaluation.",
+            "copySourceMismatch": "La version à copier n'appartient pas à ce groupe d'évaluations.",
+            "duplicateRubric": "La version {rubricId} de la grille est sélectionnée plusieurs fois.",
+            "rubricsNotFound": "Version(s) de grille introuvable(s) : {rubricIds}.",
+            "inUse": "La version {assessmentId} de l'évaluation ne peut pas être supprimée : elle est référencée {count} fois. Étapes d'étude : {studySteps} ; étapes de modèles d'étude : {templateSteps} ; déclencheurs : {triggers} ; actions de déclencheur : {triggerActions} ; exécutions en attente : {queuedRuns}."
         }
     },
     "configuration": {

@@ -5,8 +5,8 @@ const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
 const {
-    DASHBOARD_RIGHT, has, isObject, toNumber, readVersionNumber, readText, readOptionalText, readNumber,
-    assertPointsRange, loadCriteria,
+    DASHBOARD_RIGHT, has, isObject, readVersionNumber, readText, readOptionalText, readNumber,
+    assertPointsRange, loadRubrics,
 } = require("../../utils/helper/assessmentVersions.js");
 
 /**
@@ -34,39 +34,13 @@ class RubricSocket extends Socket {
     }
 
     /**
-     * Rubric versions with their criteria ordered by `criterionPositionInRubric`, API shape (plain numbers).
-     * Each association is `{id, rubricId, criterionId, criterionPositionInRubric, criterion}`; `id` is the
-     * criterion association id and `criterion` the full criterion version with its ordered scoring options.
+     * Rubric versions with their ordered criteria (see `loadRubrics` in the shared helper).
      * @param {Object} where Sequelize where for `rubric`
      * @param {Object} [options] Sequelize options (transaction)
      * @returns {Promise<Object[]>}
      */
     async loadRubrics(where, options = {}) {
-        const {rubric, rubric_criterion: rubricCriterion} = this.models;
-        const rows = await rubric.findAll({
-            where,
-            include: [{model: rubricCriterion, as: "rubricCriteria"}],
-            order: [
-                ["rubricGroupId", "ASC"],
-                ["id", "ASC"],
-                [{model: rubricCriterion, as: "rubricCriteria"}, "criterionPositionInRubric", "ASC"],
-            ],
-            transaction: options.transaction,
-        });
-        const plainRows = rows.map((row) => row.get({plain: true}));
-
-        // criteria are loaded separately: a deeper include would exceed PostgreSQL's 63 character alias limit
-        const criterionIds = [...new Set(plainRows.flatMap((row) => row.rubricCriteria.map((link) => link.criterionId)))];
-        const criteria = criterionIds.length ? await loadCriteria(this.models, {id: criterionIds}, options) : [];
-        const criterionById = new Map(criteria.map((criterion) => [criterion.id, criterion]));
-
-        return plainRows.map(({rubricCriteria, ...plain}) => ({
-            ...plain,
-            minPoints: toNumber(plain.minPoints),
-            maxPoints: toNumber(plain.maxPoints),
-            defaultPoints: toNumber(plain.defaultPoints),
-            criteria: rubricCriteria.map((link) => ({...link, criterion: criterionById.get(link.criterionId)})),
-        }));
+        return await loadRubrics(this.models, where, options);
     }
 
     /**

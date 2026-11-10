@@ -56,6 +56,16 @@
             "duplicateCriterion": "Criterion version {criterionId} is selected more than once.",
             "criteriaNotFound": "Criterion version(s) not found: {criterionIds}.",
             "inUse": "Rubric version {rubricId} cannot be deleted: it is used by {count} assessment version(s) ({assessmentIds})."
+        },
+        "assessment": {
+            "deleteDisabled": "Deleting assessment versions is temporarily disabled.",
+            "notFound": "Assessment not found.",
+            "groupNotFound": "Assessment group not found.",
+            "versionExists": "Version \"{versionNumber}\" already exists for this assessment.",
+            "copySourceMismatch": "The version to copy does not belong to this assessment group.",
+            "duplicateRubric": "Rubric version {rubricId} is selected more than once.",
+            "rubricsNotFound": "Rubric version(s) not found: {rubricIds}.",
+            "inUse": "Assessment version {assessmentId} cannot be deleted: it is referenced {count} time(s). Study steps: {studySteps}; study template steps: {templateSteps}; triggers: {triggers}; trigger actions: {triggerActions}; pending trigger runs: {queuedRuns}."
         }
     },
     "configuration": {

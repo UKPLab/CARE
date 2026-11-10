@@ -56,6 +56,16 @@
       "duplicateCriterion": "Kriterium-Version {criterionId} wurde mehrfach ausgewählt.",
       "criteriaNotFound": "Kriterium-Version(en) nicht gefunden: {criterionIds}.",
       "inUse": "Rubrik-Version {rubricId} kann nicht gelöscht werden: Sie wird von {count} Assessment-Version(en) verwendet ({assessmentIds})."
+    },
+    "assessment": {
+      "deleteDisabled": "Das Löschen von Assessment-Versionen ist vorübergehend deaktiviert.",
+      "notFound": "Assessment nicht gefunden.",
+      "groupNotFound": "Assessment-Gruppe nicht gefunden.",
+      "versionExists": "Version \"{versionNumber}\" existiert für dieses Assessment bereits.",
+      "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Assessment-Gruppe.",
+      "duplicateRubric": "Rubrik-Version {rubricId} wurde mehrfach ausgewählt.",
+      "rubricsNotFound": "Rubrik-Version(en) nicht gefunden: {rubricIds}.",
+      "inUse": "Assessment-Version {assessmentId} kann nicht gelöscht werden: Sie wird {count}-mal referenziert. Studienschritte: {studySteps}; Schritte von Studienvorlagen: {templateSteps}; Trigger: {triggers}; Trigger-Aktionen: {triggerActions}; ausstehende Trigger-Läufe: {queuedRuns}."
     }
   },
   "configuration": {

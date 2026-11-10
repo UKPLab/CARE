@@ -156,6 +156,44 @@ async function loadCriteria(models, where, options = {}) {
     return rows.map(formatCriterion);
 }
 
+/**
+ * Rubric versions with their criteria ordered by `criterionPositionInRubric`, API shape (plain numbers).
+ * Each association is `{id, rubricId, criterionId, criterionPositionInRubric, criterion}`; `id` is the
+ * criterion association id and `criterion` the full criterion version with its ordered scoring options.
+ * Three queries however many rubrics: rubrics with their links, then all criteria with their options
+ * (a deeper include would exceed PostgreSQL's 63 character alias limit).
+ * @param {Object} models Sequelize models
+ * @param {Object} where Sequelize where for `rubric`
+ * @param {Object} [options] Sequelize options (transaction)
+ * @returns {Promise<Object[]>}
+ */
+async function loadRubrics(models, where, options = {}) {
+    const {rubric, rubric_criterion: rubricCriterion} = models;
+    const rows = await rubric.findAll({
+        where,
+        include: [{model: rubricCriterion, as: "rubricCriteria"}],
+        order: [
+            ["rubricGroupId", "ASC"],
+            ["id", "ASC"],
+            [{model: rubricCriterion, as: "rubricCriteria"}, "criterionPositionInRubric", "ASC"],
+        ],
+        transaction: options.transaction,
+    });
+    const plainRows = rows.map((row) => row.get({plain: true}));
+
+    const criterionIds = [...new Set(plainRows.flatMap((row) => row.rubricCriteria.map((link) => link.criterionId)))];
+    const criteria = criterionIds.length ? await loadCriteria(models, {id: criterionIds}, options) : [];
+    const criterionById = new Map(criteria.map((criterion) => [criterion.id, criterion]));
+
+    return plainRows.map(({rubricCriteria, ...plain}) => ({
+        ...plain,
+        minPoints: toNumber(plain.minPoints),
+        maxPoints: toNumber(plain.maxPoints),
+        defaultPoints: toNumber(plain.defaultPoints),
+        criteria: rubricCriteria.map((link) => ({...link, criterion: criterionById.get(link.criterionId)})),
+    }));
+}
+
 module.exports = {
     DASHBOARD_RIGHT,
     MAX_STRING,
@@ -169,4 +207,5 @@ module.exports = {
     readNumber,
     assertPointsRange,
     loadCriteria,
+    loadRubrics,
 };
