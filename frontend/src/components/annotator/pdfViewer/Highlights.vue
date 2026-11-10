@@ -162,7 +162,9 @@ export default {
     handleScrolling(annotationId) {
       const isRecentlyUpdated = this.isRecentlyUpdated(annotationId);
       if (isRecentlyUpdated) {
-        this.eventBus.emit('pdfScroll', annotationId);
+        this.eventBus.emit('pdfScroll', {
+          annotationId, documentId: this.documentId, studyStepId: this.studyStepId, studySessionId: this.studySessionId,
+        });
       }
     },
     isRecentlyUpdated(annotationId) {

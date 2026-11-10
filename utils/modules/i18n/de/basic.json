@@ -13,7 +13,8 @@
         "uploadTooltip": "Neue Konfigurationsdatei hochladen",
         "types": {
             "assessment": "Bewertung",
-            "validation": "Validierung"
+            "validation": "Validierung",
+            "dialoguePlan": "Dialogplan"
         },
         "fields": {
             "name": {

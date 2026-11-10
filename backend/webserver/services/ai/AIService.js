@@ -10,7 +10,7 @@ const hook = require("./hook");
  * Implementation is split across `./ai/` modules and shared backend AI helpers.
  *
  * @extends Service
- * @author Akash Gundapuneni, Mohamed Rawhani
+ * @author Akash Gundapuneni, Mohammed Rawhani
  */
 module.exports = class AIService extends Service {
     /**
@@ -32,14 +32,27 @@ module.exports = class AIService extends Service {
     }
 
     /**
+     * Fails requests a previous server run left in progress, so they no longer block sessions.
+     */
+    async init() {
+        try {
+            const count = await this.server.db.models["ai_log"].failInProgressLogs();
+            this.logger.info(`Failed ${count} AI requests left in progress`);
+        } catch (error) {
+            this.logger.error("Failed to release in-progress AI requests: " + error.message);
+        }
+    }
+
+    /**
      * Runs an AI hook for RPC clients and internal trigger jobs.
      *
      * @param {*} client Authenticated client context.
      * @param {*} data Hook execution payload.
+     * @param {Object} [options] Execution options (`enforceAccess` checks submission placeholders for RPC callers).
      * @returns {Promise<*>}
      */
-    async runHook(client, data) {
-        return await hook.runHook(this, client, data);
+    async runHook(client, data, options = {}) {
+        return await hook.runHook(this, client, data, options);
     }
 
     /**
@@ -53,7 +66,7 @@ module.exports = class AIService extends Service {
     async command(client, command, data) {
         const handlers = {
             chatCompletion: () => chat.chatCompletion(this, client, data),
-            runHook: () => this.runHook(client, data),
+            runHook: () => this.runHook(client, data, {enforceAccess: true}),
             abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
             getStatus: () => chat.getStatus(this),
             testModel: () => chat.testModel(this, client, data),
@@ -64,5 +77,29 @@ module.exports = class AIService extends Service {
             return handlers[command]();
         }
         return super.command(client, command, data);
+    }
+
+    /**
+     * Runs an internal AI action for other backend services.
+     *
+     * @param {string} action Internal action name.
+     * @param {Object} client Authenticated service client.
+     * @param {Object} [data] Action payload.
+     * @param {Object} [options] Internal action options.
+     * @returns {Promise<*>}
+     */
+    async call(action, client, data = {}, options = {}) {
+        const actions = {
+            chatCompletion: () => chat.chatCompletion(this, client, data, options.log, options.onDelta),
+            abortChatCompletion: () => chat.abortChatCompletion(this, client, data),
+            loadHook: () => hook.loadEnabledHook(this, data?.hookId),
+            resolveHookModel: () => hook.resolveSelectedHookModel(this, data?.hookId, data?.aiModelId),
+            listHookModels: () => hook.listHookModels(this, data?.hookId),
+            resolveHookPrompt: () => hook.resolveHookPrompt(this, data?.hookId, data?.values),
+        };
+        if (!actions[action]) {
+            throw new Error(`Unknown AI action: ${action}`);
+        }
+        return actions[action]();
     }
 };

@@ -178,7 +178,7 @@ export default {
       default: false
     },
     currentStudyStep: {
-      type: Number,
+      type: Object,
       required: false,
       default: null
     }
@@ -248,7 +248,13 @@ export default {
       sidebarContainerDom: undefined,
       originalWidth: undefined,
       isNarrow: false,
-      visibleBeforeNarrow: false
+      visibleBeforeNarrow: false,
+      activeSlotStartedAt: null,
+      activeSlotName: null,
+      activeSlotContext: null,
+      logResize: debounce(function (data) {
+        if (this.acceptStats) this.$socket.emit("stats", {action: "sidebarResize", data});
+      }, 500),
     };
   },
   computed: {
@@ -261,12 +267,13 @@ export default {
         const slot = this.$slots[slotName];
         if (slot) {
           const vnodes = slot();
-          const firstVNode = vnodes[0];
+          let firstVNode = vnodes[0];
+          // Forwarded slots can add several fragment wrappers around the tab.
+          while (firstVNode && !firstVNode.props?.title && Array.isArray(firstVNode.children)) {
+            firstVNode = firstVNode.children[0];
+          }
           if (firstVNode) {
-            let props = firstVNode.props || {};
-            if (slotName === "additionalSidebars" || !props.title) {
-              props = vnodes[0].children[0].props || {};
-            }
+            const props = firstVNode.props || {};
             configs.tabs[slotName] = {
               title: props.title,
               icon: props.icon,
@@ -351,6 +358,23 @@ export default {
     }
   },
   watch: {
+    currentStudyStep() {
+      this.logSidebarSlotDuration();
+      this.startSidebarSlotTimer();
+    },
+    studySessionId() {
+      this.logSidebarSlotDuration();
+      this.startSidebarSlotTimer();
+    },
+    // Includes programmatic tab changes and the fallback when a tab becomes hidden.
+    resolvedActiveSlot() {
+      this.logSidebarSlotDuration();
+      this.startSidebarSlotTimer();
+    },
+    isShown() {
+      this.logSidebarSlotDuration();
+      this.startSidebarSlotTimer();
+    },
     // A new tab to open, for example when a study shows another step, switches to it
     activeSideBar(newSlot) {
       if (newSlot) {
@@ -390,21 +414,28 @@ export default {
 
   },
   beforeUnmount() {
+    this.logResize.flush();
+    this.logSidebarSlotDuration();
     window.removeEventListener('resize', this.onResize);
   },
   methods: {
     /**
      * Switches to the tab that holds the given element, e.g. the card of a clicked annotation
      * @param {HTMLElement} element - an element inside one of the tabs
+     * @param {boolean} expand - whether to open a collapsed sidebar
      * @returns {boolean} whether another tab is shown now
      */
-    showTabOf(element) {
+    showTabOf(element, expand = false) {
       const slotName = element?.closest("[data-sidebar-slot]")?.dataset.sidebarSlot;
-      if (!slotName || slotName === this.resolvedActiveSlot) {
+      if (!slotName) {
         return false;
       }
+      const previousSlot = this.resolvedActiveSlot;
       this.changeView(slotName);
-      return this.resolvedActiveSlot === slotName;
+      if (expand && this.resolvedActiveSlot === slotName && !this.isSidebarVisible) {
+        this.toggleSidebar();
+      }
+      return previousSlot !== this.resolvedActiveSlot && this.resolvedActiveSlot === slotName;
     },
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
@@ -558,14 +589,24 @@ export default {
       }
 
       // Log resize event with debouncing
-      this.logResize();
+      this.logResize({
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        windowWidth: window.innerWidth, sidebarVisible: this.isSidebarVisible,
+      });
     },
     visibilityChange() {
+      if (this.isSidebarVisible) {
+        this.startSidebarSlotTimer();
+      } else {
+        this.logSidebarSlotDuration();
+      }
       this.$emit('sidebar-visibility-change', this.isSidebarVisible);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
           action: "sidebar-visibility",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             isSidebarVisible: this.isSidebarVisible,
             documentId: this.documentId,
             studySessionId: this.studySessionId,
@@ -574,20 +615,44 @@ export default {
         });
       }
     },
-    logResize: debounce(function () {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "sidebarResize",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              windowWidth: window.innerWidth,
-              sidebarVisible: this.isSidebarVisible
-            }
-          });
+    /**
+     * Starts measuring time spent on the active sidebar slot.
+     *
+     * @returns {void}
+     */
+    startSidebarSlotTimer() {
+      if (this.activeSlotStartedAt !== null) return;
+      this.activeSlotName = this.isShown && this.isSidebarVisible ? this.resolvedActiveSlot : null;
+      this.activeSlotStartedAt = this.activeSlotName ? Date.now() : null;
+      this.activeSlotContext = this.activeSlotName ? {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      } : null;
+    },
+    /**
+     * Logs time spent on the active sidebar slot.
+     *
+     * @returns {void}
+     */
+    logSidebarSlotDuration() {
+      const startedAt = this.activeSlotStartedAt;
+      const slotName = this.activeSlotName;
+      const context = this.activeSlotContext;
+      this.activeSlotStartedAt = null;
+      this.activeSlotName = null;
+      this.activeSlotContext = null;
+      if (!this.acceptStats || startedAt === null || !slotName) return;
+      const durationMs = Date.now() - startedAt;
+      if (durationMs <= 0) return;
+      this.$socket.emit("stats", {
+        action: "sidebarSlotDuration",
+        data: {
+          ...context,
+          slotName,
+          durationMs,
         }
-      }, 500)
+      });
+    },
   },
 };
 </script>

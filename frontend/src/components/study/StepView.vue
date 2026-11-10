@@ -24,6 +24,9 @@
     <template v-for="tab in tabs" :key="tab.key" #[tab.key]>
       <LookBackTab v-bind="tab" :label="labels[tab.step.id]"/>
     </template>
+    <template v-for="(slot, slotName) in $slots" :key="slotName" #[slotName]>
+      <slot :name="slotName"/>
+    </template>
   </component>
 </template>
 
