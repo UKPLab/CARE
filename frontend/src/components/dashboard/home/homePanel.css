@@ -114,15 +114,25 @@
   background: var(--bs-secondary-bg);
 }
 
-.home-due--overdue,
+/* Red is kept for the last 24 hours only. It is a tint of --bs-danger over the
+   panel, so it stays calm in both themes (text mixes toward the emphasis colour). */
 .home-due--urgent {
-  color: var(--bs-danger-text-emphasis);
-  background: var(--bs-danger-bg-subtle);
+  color: color-mix(in srgb, var(--bs-danger) 78%, var(--bs-emphasis-color));
+  background: color-mix(in srgb, var(--bs-danger) 11%, transparent);
 }
 
+/* Up to 3 days left: soft amber. */
 .home-due--soon {
   color: var(--bs-warning-text-emphasis);
-  background: var(--bs-warning-bg-subtle);
+  background: color-mix(in srgb, var(--bs-warning) 16%, transparent);
+}
+
+/* Already over: nothing to act on in time, so a quiet outlined chip, no alarm colour. */
+.home-due--overdue {
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--bs-border-color);
 }
 
 .home-due--feature {

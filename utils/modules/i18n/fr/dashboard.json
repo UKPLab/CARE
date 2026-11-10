@@ -611,7 +611,7 @@
         "activitySubmissions": "devoirs créés",
         "activitySubmitted": "travaux déposés",
         "dueIn": "Échéance dans {when}",
-        "overdue": "En retard de {when}",
+        "overdue": "Terminée il y a {when}",
         "noDeadline": "Sans échéance",
         "deadlineStudy": "L'étude se termine le {date}",
         "deadlineTimeLimit": "La limite de temps se termine le {date}",

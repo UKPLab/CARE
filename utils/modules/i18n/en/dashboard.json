@@ -611,7 +611,7 @@
         "activitySubmissions": "assignments created",
         "activitySubmitted": "submissions uploaded",
         "dueIn": "Due in {when}",
-        "overdue": "Overdue by {when}",
+        "overdue": "Ended {when} ago",
         "noDeadline": "No deadline",
         "deadlineStudy": "Study closes {date}",
         "deadlineTimeLimit": "Time limit ends {date}",
