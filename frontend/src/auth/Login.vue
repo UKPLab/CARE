@@ -113,32 +113,14 @@
       </div>
     </form>
     <template
-        v-if="showDocs || showFeedback || showProject || showVersion"
+        v-if="showFeedback || showVersion"
         #card-footer
     >
-      <div
-          v-if="showDocs || showFeedback || showProject"
-      >
-        <span v-if="showDocs"><a
-            :href="linkDocs"
-            target="_blank"
-        >{{ $t('navigation.documentation') }}</a></span>
-        <span
-            v-if="showFeedback && showDocs"
-            class="mx-1"
-        >&#x2022;</span>
-        <span v-if="showFeedback"><a
+      <div v-if="showFeedback">
+        <a
             :href="linkFeedback"
             target="_blank"
-        >{{ $t('navigation.feedback') }}</a></span>
-        <span
-            v-if="showProject && (showDocs || showFeedback)"
-            class="mx-1"
-        >&#x2022;</span>
-        <span v-if="showProject"><a
-            :href="linkProject"
-            target="_blank"
-        >{{ $t('navigation.projectPage') }}</a></span>
+        >{{ $t('navigation.feedback') }}</a>
       </div>
       <div v-if="showVersion">
         {{ $t('common.appVersion') }}: {{ version }}
@@ -193,23 +175,11 @@ export default {
     showGuestLogin() {
       return window.config['app.login.guest'] === 'true';
     },
-    linkDocs() {
-      return window.config['app.landing.linkDocs'];
-    },
-    showDocs() {
-      return window.config['app.landing.showDocs'] === 'true' && this.linkDocs !== '';
-    },
     linkFeedback() {
       return window.config['app.landing.linkFeedback'];
     },
     showFeedback() {
       return window.config['app.landing.showFeedback'] === 'true' && this.linkFeedback !== '';
-    },
-    linkProject() {
-      return window.config['app.landing.linkProject'];
-    },
-    showProject() {
-      return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
     },
     showForgotPassword() {
       return window.config['app.login.forgotPassword'] === 'true';
