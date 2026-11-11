@@ -28,12 +28,12 @@
               </div>
             <div
               v-show="previewMode && templateSupportsPlaceholderPreview"
-              class="template-example-preview-panel border rounded bg-body-tertiary"
+              class="template-example-preview-panel"
             >
-              <div class="alert alert-info mb-0 rounded-0 py-2 small template-preview-banner">
-                {{ $t("templates.editor.viewMode.previewHelp") }}
-              </div>
-              <div class="ql-snow template-preview-scroll p-3">
+              <div class="ql-snow template-preview-scroll">
+                <p class="template-preview-note">
+                  {{ $t("templates.editor.viewMode.previewHelp") }}
+                </p>
                 <div
                   class="ql-editor template-example-preview-inner"
                   v-html="previewDisplayHtml"
@@ -389,18 +389,25 @@
 
   .template-viewport--preview .template-editor-surface {
     flex: 0 0 auto;
+    width: 100%;
+    /* The language and preview menus drop over the document. The surface
+       has to sit above it, and must not clip those menus. */
     position: relative;
-    z-index: 2;
+    z-index: 5;
     overflow: visible;
   }
 
   .template-example-preview-panel {
     display: flex;
     flex-direction: column;
+    width: 100%;
     min-height: 0;
     overflow: hidden;
-    position: relative;
-    z-index: 1;
+    border: 1px solid var(--bs-border-color);
+    border-top: 0;
+    border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
   }
 
   .template-viewport--preview .template-example-preview-panel {
@@ -410,6 +417,10 @@
   .template-editor-surface .ql-toolbar {
     position: relative;
     z-index: 2;
+  }
+
+  .template-viewport--preview .template-editor-surface .ql-toolbar {
+    z-index: 6;
   }
 
   .template-editor-container {
@@ -424,8 +435,11 @@
     min-height: 0;
   }
 
-  .template-preview-banner {
-    flex-shrink: 0;
+  .template-preview-note {
+    margin: 0;
+    padding: 12px 15px 0;
+    color: var(--bs-secondary-color);
+    font-size: .875rem;
   }
 
   .template-preview-scroll {
@@ -441,6 +455,12 @@
   </style>
 
   <style>
+  .template-viewport--preview .ql-toolbar.ql-snow {
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
+  }
+
   .ql-toolbar .ql-languageSelector {
     min-width: 100px;
     background-color: var(--bs-tertiary-bg, #f5f5f5);
@@ -465,6 +485,18 @@
   .ql-toolbar .ql-templateViewMode .ql-picker-label svg {
     width: 14px;
     height: 14px;
+  }
+
+  .template-viewport--preview .ql-toolbar .ql-picker.ql-expanded {
+    z-index: 7;
+  }
+
+  .template-viewport--preview .ql-toolbar .ql-picker-options {
+    z-index: 8;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    box-shadow: var(--care-shadow-2);
   }
 
   .ql-toolbar .ql-languageSelector.ql-expanded,
