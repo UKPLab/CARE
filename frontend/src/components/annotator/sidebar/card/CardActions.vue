@@ -19,7 +19,7 @@
       ref="menu"
       class="anno-actions-menu"
       role="menu"
-      @click="open = false"
+      @click="closeMenu"
     >
       <slot />
     </div>
@@ -28,6 +28,9 @@
 
 <script>
 import BasicButton from "@/basic/Button.vue";
+
+// One card menu at a time. Table row menus are a different component.
+let openAnnoMenu = null;
 
 /**
  * "..." menu for a sidebar card. The slot keeps the existing action buttons.
@@ -49,7 +52,7 @@ export default {
     };
   },
   beforeUnmount() {
-    this.unbindMenuListeners();
+    this.closeMenu();
   },
   methods: {
     focusTrigger() {
@@ -67,12 +70,21 @@ export default {
       document.removeEventListener("click", this.onDocumentClick);
       document.removeEventListener("keydown", this.onKeydown);
     },
+    closeMenu() {
+      this.open = false;
+      this.unbindMenuListeners();
+      if (openAnnoMenu === this) openAnnoMenu = null;
+    },
     toggle() {
-      this.open = !this.open;
-      if (!this.open) {
-        this.unbindMenuListeners();
+      if (this.open) {
+        this.closeMenu();
         return;
       }
+      if (openAnnoMenu && openAnnoMenu !== this) {
+        openAnnoMenu.closeMenu();
+      }
+      this.open = true;
+      openAnnoMenu = this;
       this.bindMenuListeners();
       this.$nextTick(() => {
         const trigger = this.$refs.trigger?.$el;
@@ -90,13 +102,11 @@ export default {
     onDocumentClick(event) {
       if (!this.open) return;
       if (this.$el.contains(event.target)) return;
-      this.open = false;
-      this.unbindMenuListeners();
+      this.closeMenu();
     },
     onKeydown(event) {
       if (!this.open || event.key !== "Escape") return;
-      this.open = false;
-      this.unbindMenuListeners();
+      this.closeMenu();
     },
   },
 };
@@ -157,27 +167,6 @@ export default {
 
 .anno-actions-menu :deep(button:hover) {
   background: var(--bs-tertiary-bg);
-}
-
-.anno-actions-menu :deep(.anno-action-group-start),
-.anno-actions-menu :deep(.anno-action-danger) {
-  margin-top: .45rem;
-}
-
-.anno-actions-menu :deep(.anno-action-group-start)::before,
-.anno-actions-menu :deep(.anno-action-danger)::before {
-  content: "";
-  position: absolute;
-  left: .5rem;
-  right: .5rem;
-  top: -.25rem;
-  height: 1px;
-  background: var(--bs-border-color-translucent);
-  pointer-events: none;
-}
-
-.anno-actions-menu :deep(button:first-child)::before {
-  content: none;
 }
 
 .anno-actions-menu :deep(.anno-action-danger) {
