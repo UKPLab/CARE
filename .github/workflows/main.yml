@@ -26,22 +26,28 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install module dependencies
+      - name: Install unit test dependencies
         run: |
-          for module in editor-delta-conversion assessment-score placeholder-tokens; do
-            npm install --prefix "utils/modules/$module" --ignore-scripts --no-audit --no-fund
+          for package in utils/modules/editor-delta-conversion utils/modules/assessment-score utils/modules/placeholder-tokens frontend backend; do
+            npm install --prefix "$package" --ignore-scripts --no-audit --no-fund
           done
-      - name: Run module unit tests
+      - name: Run unit tests
         run: |
           for module in editor-delta-conversion assessment-score placeholder-tokens; do
             npm run test:module --prefix "utils/modules/$module" -- --ci --json --outputFile=coverage/test-results.json
           done
+          npm run test:unit:ci --prefix frontend
+          npm run test:unit:ci --prefix backend
       - name: Upload unit test reports
+        # where would these generated reports upload to? 
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unit-test-reports
-          path: utils/modules/*/coverage/
+          path: |
+            utils/modules/*/coverage/
+            frontend/coverage/unit/
+            backend/coverage/unit/
 
   build:
     runs-on: ubuntu-latest

@@ -21,8 +21,9 @@ help:
 	@echo "make dev-frontend     		 		Run frontend in development mode"
 	@echo "make dev-build-frontend   		 	Build frontend in development mode"
 	@echo "make build-frontend                  Build frontend in production mode"
-	@echo "make test							Run unit tests (backend only)"
+	@echo "make test							Run backend tests (resets test database)"
 	@echo "make test-modules                    Run unit tests for specific modules"
+	@echo "make test-unit                       Run unit tests and frontend regression tests"
 	@echo "make db             		 			Init (migrating) the database"
 	@echo "make init           		  			Init (migrating) the database and install npm packages in all utils/modules subdirectories"
 	@echo "make build           		  		Create a dockerized production build including frontend, backend, nlp, services"
@@ -73,6 +74,11 @@ test-modules: $(UTILS_MODULES_UPTODATE)
 	cd utils/modules/editor-delta-conversion && npm run test:module
 	cd utils/modules/assessment-score && npm run test:module
 	cd utils/modules/placeholder-tokens && npm run test:module
+
+.PHONY: test-unit
+test-unit: test-modules frontend/node_modules/.uptodate backend/node_modules/.uptodate
+	cd frontend && npm run test:unit
+	cd backend && npm run test:unit
 
 .PHONY: lint
 lint: frontend/node_modules/.uptodate backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)

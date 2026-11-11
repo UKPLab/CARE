@@ -19,6 +19,7 @@ logs/
 # ignore build files
 dist/
 frontend/node_modules
+frontend/coverage
 node_modules
 package-lock.json
 version.json

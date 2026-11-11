@@ -11,9 +11,11 @@
     "frontend-dev-build": "vite build --mode development",
     "frontend-build": "vite build",
     "frontend-lint": "npm run test:ui-rules && eslint src",
+    "test:unit": "cd tests && node --test",
+    "pretest:unit:ci": "node -e \"require('node:fs').mkdirSync('coverage/unit', { recursive: true })\"",
+    "test:unit:ci": "cd tests && node --test --experimental-test-coverage --test-reporter=spec --test-reporter=junit --test-reporter=lcov --test-reporter-destination=stdout --test-reporter-destination=../coverage/unit/test-results.xml --test-reporter-destination=../coverage/unit/lcov.info",
     "test:ui-rules": "node --test eslint-rules/*.test.js",
-    "frontend-i18n-check": "node scripts/check-i18n-keys.mjs",
-    "test:unit": "node --test tests/*.test.js"
+    "frontend-i18n-check": "node scripts/check-i18n-keys.mjs"
   },
   "dependencies": {
     "@pgrabovets/json-view": "^2.8.1",
