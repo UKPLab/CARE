@@ -266,9 +266,12 @@ export default {
         if (!otherGroups[group]) otherGroups[group] = [];
         otherGroups[group].push(s);
       }
-      for (const [groupTitle, settingsInGroup] of Object.entries(otherGroups).sort((a, b) =>
-        translateMaybeKey(a[0]).localeCompare(translateMaybeKey(b[0]))
-      )) {
+      const otherGroupsSorted = Object.entries(otherGroups).sort((a, b) => {
+        if (a[0] === "Other") return 1;
+        if (b[0] === "Other") return -1;
+        return translateMaybeKey(a[0]).localeCompare(translateMaybeKey(b[0]));
+      });
+      for (const [groupTitle, settingsInGroup] of otherGroupsSorted) {
         sections.push({
           title: groupTitle,
           subsections: this.buildSubsections(groupTitle.toLowerCase(), settingsInGroup),
