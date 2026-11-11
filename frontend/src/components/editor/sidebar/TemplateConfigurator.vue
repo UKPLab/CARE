@@ -28,12 +28,7 @@
         {{ $t("templates.placeholders.options.notIncludedHelp") }}
       </div>
   
-      <div class="card mb-4 configurator">
-        <div class="card-header bg-body">
-          <h3 class="card-title mb-0">{{ $t("sidebar.placeholders") }}</h3>
-        </div>
-        <div class="card-body p-0">
-          <ul class="list-group list-group-flush">
+      <ul class="list-group list-group-flush configurator">
             <li
               v-for="placeholder in availablePlaceholders"
               :key="placeholder.id"
@@ -47,10 +42,23 @@
                   <div class="d-flex flex-column flex-grow-1">
                     <div class="d-flex align-items-center">
                       <h5 class="mb-0 me-1">{{ translateMaybeKey(placeholder.label) }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
-                      <FormHelp
+                      <span
                         v-if="placeholder.description"
-                        :help="getPlaceholderHelp(placeholder)"
-                      />
+                        class="info-icon-wrap"
+                        @click.stop
+                      >
+                        <BasicButton
+                          class="info-icon"
+                          :class="{ 'is-pressed': isInfoPressed(placeholder) }"
+                          :aria-pressed="isInfoPressed(placeholder)"
+                          :aria-label="translateMaybeKey(placeholder.label)"
+                          @click="toggleInfo(placeholder)"
+                          @mouseenter="openInfo(placeholder)"
+                          @mouseleave="closeInfo"
+                        >
+                          <LoadIcon icon-name="info-circle" :size="14" />
+                        </BasicButton>
+                      </span>
                     </div>
                     <p
                       v-if="placeholder.description"
@@ -133,16 +141,25 @@
                 </div>
               </div>
             </li>
-          </ul>
-        </div>
-      </div>
+      </ul>
+      <FloatingInfoPanel
+        ref="infoPanel"
+        :show="showInfo"
+        :selected-item="infoItem"
+        reference-element="#sidepane"
+        :is-pinned="infoPinned"
+        position="left"
+        @close-requested="closeInfo"
+        @dismiss="dismissInfo"
+      />
     </div>
   </template>
   
   <script>
-  import FormHelp from "@/basic/form/Help.vue";
   import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
   import BasicButton from "@/basic/Button.vue";
+  import LoadIcon from "@/basic/Icon.vue";
+  import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
   import {
     countPlaceholdersByKey,
     formatDuplicatePlaceholderToken,
@@ -167,7 +184,8 @@
   export default {
     name: "TemplateConfigurator",
     components: {
-      FormHelp,
+      LoadIcon,
+      FloatingInfoPanel,
       BasicButton,
     },
     inject: {
@@ -197,6 +215,9 @@
         optionApplyWarnings: [],
         pendingOptionRowsByKey: {},
         lastEditorContent: "",
+        showInfo: false,
+        infoPinned: false,
+        infoItem: null,
       };
     },
     computed: {
@@ -240,6 +261,8 @@
       },
     },
     mounted() {
+      document.addEventListener("mousedown", this.onInfoPointerDown);
+      document.addEventListener("keydown", this.onInfoKeydown);
       // Initialize placeholder counts
       this.initializePlaceholderCounts();
       
@@ -282,9 +305,55 @@
 
     },
     unmounted() {
+      document.removeEventListener("mousedown", this.onInfoPointerDown);
+      document.removeEventListener("keydown", this.onInfoKeydown);
       this.eventBus.off("editorContentUpdated", this.editorContentHandler);
     },
     methods: {
+      infoTarget(placeholder) {
+        return {
+          id: placeholder.id,
+          name: translateMaybeKey(placeholder.label),
+          description: this.getPlaceholderHelp(placeholder),
+        };
+      },
+      isInfoPressed(placeholder) {
+        return this.showInfo && this.infoItem?.id === placeholder.id;
+      },
+      openInfo(placeholder) {
+        if (this.infoPinned) return;
+        this.infoItem = this.infoTarget(placeholder);
+        this.showInfo = true;
+      },
+      closeInfo() {
+        if (this.infoPinned) return;
+        this.showInfo = false;
+        this.infoItem = null;
+      },
+      dismissInfo() {
+        this.infoPinned = false;
+        this.showInfo = false;
+        this.infoItem = null;
+      },
+      toggleInfo(placeholder) {
+        if (this.infoPinned && this.infoItem?.id === placeholder.id) {
+          this.dismissInfo();
+          return;
+        }
+        this.infoPinned = true;
+        this.infoItem = this.infoTarget(placeholder);
+        this.showInfo = true;
+      },
+      onInfoKeydown(event) {
+        if (event.key === "Escape" && this.showInfo) this.dismissInfo();
+      },
+      onInfoPointerDown(event) {
+        if (!this.showInfo) return;
+        const panel = this.$refs.infoPanel?.$el;
+        if (panel && panel.contains(event.target)) return;
+        if (event.target.closest(".info-icon")) return;
+        this.dismissInfo();
+      },
       /**
        * Whether this placeholder has a non-empty `placeholderOptions` list from the database.
        *
@@ -607,6 +676,35 @@
   </script>
   
   <style scoped>
+  .info-icon-wrap {
+    display: inline-flex;
+  }
+
+  .info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--bs-border-radius);
+    background: transparent;
+    color: var(--bs-secondary-color);
+  }
+
+  .info-icon:hover,
+  .info-icon:focus-visible,
+  .info-icon.is-pressed {
+    color: var(--care-primary);
+  }
+
+  .info-icon.btn:hover:not(:disabled),
+  .info-icon.btn:focus-visible {
+    background: transparent;
+    box-shadow: none;
+  }
+
   .option-select {
     max-width: 11rem;
   }
