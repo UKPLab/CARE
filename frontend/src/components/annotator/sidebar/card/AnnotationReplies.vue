@@ -21,7 +21,7 @@
       v-if="showExtenderButton"
       ref="showMore"
       class="btn btn-sm btn-link"
-      :text="$t('common.showMore')"
+      :text="$t('common.showMoreCount', { count: numChildComments - maxComments })"
       @click="$emit('update:maxComments', maxComments + 5)"
       />
       <BasicButton

@@ -81,24 +81,23 @@
         <div class="ms-auto">
           <div
               v-if="editedByMyself"
-              class="row"
+              class="d-flex justify-content-end align-items-center gap-2"
+              @click.stop
           >
-            <div class="col text-end">
-              <SidebarButton
-                  :loading="false"
-                  :props="$props"
-                  icon="floppy"
-                  :title="$t('common.save')"
-                  @click="save"
-              />
-              <SidebarButton
-                  :loading="false"
-                  :props="$props"
-                  icon="x-square"
-                  :title="$t('common.cancel')"
-                  @click="cancel"
-              />
-            </div>
+            <BasicButton
+                class="btn btn-link btn-sm"
+                :text="$t('common.cancel')"
+                :title="$t('common.cancel')"
+                aria-keyshortcuts="Escape"
+                @click="cancel"
+            />
+            <BasicButton
+                class="btn btn-primary btn-sm"
+                :text="$t('common.save')"
+                :title="$t('components.comment.saveCommand')"
+                aria-keyshortcuts="Meta+Enter Control+Enter"
+                @click="save"
+            />
           </div>
           <div
               v-else
@@ -110,20 +109,23 @@
               class="btn btn-sm btn-link"
               :icon="showReplies ? 'eye-slash' : 'eye'"
               :aria-expanded="showReplies ? 'true' : 'false'"
-              :text="showReplies ? $t('common.hideReplies') : $t('common.showReplies')"
+              :text="showReplies ? $t('common.hideReplies', { count: numberReplies }) : $t('common.showReplies', { count: numberReplies })"
               @click="showReplies = !showReplies; maxComments = defaultNumComments"
           />
+          <div
+              v-if="settingResponse && !readOnly"
+              @click.stop
+          >
+            <BasicButton
+                class="btn btn-sm btn-link"
+                icon="reply"
+                :text="$t('common.reply')"
+                @click="$refs.main_comment.reply(); $refs.replies.expandForNewReply()"
+            />
+          </div>
           <CardActions
               ref="actions"
           >
-              <SidebarButton
-                  v-if="settingResponse && !readOnly"
-                  :loading="false"
-                  :props="$props"
-                  icon="reply"
-                  :title="$t('common.reply')"
-                  @click="$refs.main_comment.reply(); $refs.replies.expandForNewReply()"
-              />
               <AnnotationSummarize
                   :annotation-id="annotationId"
                   :comment-id="commentId"
@@ -133,7 +135,6 @@
               <SidebarButton
                   v-if="comment.userId === userId && !readOnly"
                   ref="editButton"
-                  class="anno-action-group-start"
                   :loading="false"
                   :props="$props"
                   icon="pencil-square"
@@ -380,6 +381,9 @@ export default {
       this.collapsed = !this.collapsed;
     },
     save() {
+      if (this.$refs.main_comment && this.$refs.main_comment.acceptText() === false) {
+        return;
+      }
       if (this.annotationId && this.annotation) {
         this.$socket.emit('annotationUpdate', {
           "annotationId": this.annotation.id,
