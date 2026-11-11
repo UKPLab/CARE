@@ -33,19 +33,25 @@
       class="anno-reply-date"
       :title="fullDate(comment.updatedAt)"
     >{{ cardDate(comment.updatedAt) }}</span>
-    <CardActions
+    <div
       v-if="!editedByMyself"
-      ref="actions"
-      placement="bottom"
+      class="d-flex align-items-center gap-1"
     >
-      <SidebarButton
+      <div
         v-if="settingResponse && !readOnly"
-        :loading="false"
-        :props="$props"
-        icon="reply"
-        :title="$t('common.reply')"
-        @click="reply(); maxComments = numChildComments+1"
-      />
+        @click.stop
+      >
+        <BasicButton
+          class="btn btn-sm btn-link"
+          icon="reply"
+          :text="$t('common.reply')"
+          @click="reply(); maxComments = numChildComments + 1"
+        />
+      </div>
+      <CardActions
+        ref="actions"
+        placement="bottom"
+      >
       <VoteButtons :comment="comment"/>
       <SidebarButton
         v-if="comment.userId === userId && !readOnly"
@@ -65,7 +71,8 @@
         :title="$t('common.delete')"
         @click="moveFocusToNextCard(); remove()"
       />
-    </CardActions>
+      </CardActions>
+    </div>
   </div>
   <div
     v-if="!collapseComment"
@@ -82,7 +89,14 @@
         @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
         @keydown.esc.exact.prevent="cancelOnEscape"
         @paste="onPaste"
+        @input="textError = false"
       />
+      <div
+        v-if="textError"
+        class="feedback-invalid invalid"
+      >
+        {{ $t('errors.element.fieldRequired') }}
+      </div>
     </div>
     <div
       v-else-if="comment.text != null && comment.text.length > 0"
@@ -127,33 +141,25 @@
       :disabled="!edit"
       :is-editor="comment.userId === userId"
     />
-    <div v-if="level >= 1 && editedByMyself">
-      <div class="ms-auto">
-        <div
-          v-if="editedByMyself"
-          class="row"
-        >
-          <div
-            v-if="!readOnly"
-            class="col text-end"
-          >
-            <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="floppy"
-              :title="$t('components.comment.saveCommand')"
-              @click="save"
-            />
-            <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="x-square"
-              :title="$t('common.cancel')"
-              @click="cancel"
-            />
-          </div>
-        </div>
-      </div>
+    <div
+      v-if="level >= 1 && editedByMyself && !readOnly"
+      class="d-flex justify-content-end align-items-center gap-2"
+      @click.stop
+    >
+      <BasicButton
+        class="btn btn-link btn-sm"
+        :text="$t('common.cancel')"
+        :title="$t('common.cancel')"
+        aria-keyshortcuts="Escape"
+        @click="cancel"
+      />
+      <BasicButton
+        class="btn btn-primary btn-sm"
+        :text="$t('common.save')"
+        :title="$t('components.comment.saveCommand')"
+        aria-keyshortcuts="Meta+Enter Control+Enter"
+        @click="save"
+      />
     </div>
     <span v-if="level >= 1 && (displayedComments.length > 0 || showExtenderButton || numChildComments > defaultNumComments)">
       <span
@@ -174,7 +180,7 @@
         v-if="showExtenderButton"
         ref="showMore"
         class="btn btn-sm btn-link"
-        :text="$t('common.showMore')"
+        :text="$t('common.showMoreCount', { count: numChildComments - maxComments })"
         @click="maxComments+=5"
       />
       <BasicButton
@@ -265,8 +271,10 @@ export default {
       editMode: false,
       collapseComment: true,
       listeningToFocus: false,
+      pendingEdit: false,
       maxComments: 1,
       returnFocusEl: null,
+      textError: false,
     }
   },
   computed: {
@@ -322,6 +330,13 @@ export default {
     showExtenderButton() {
       return this.numChildComments > this.maxComments;
     },
+    // Annotation comments may be empty. Replies and document notes need text.
+    requiresText() {
+      const comment = this.comment;
+      if (!comment) return false;
+      if (this.level >= 1 || comment.parentCommentId) return true;
+      return !comment.annotationId;
+    },
     nlp_active() {
       const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" && conf && "sentiment_classification" in conf;
@@ -362,6 +377,13 @@ export default {
         this.requestNlpFeedback();
       }
     },
+    collapseComment(collapsed) {
+      if (!collapsed || !this.pendingEdit || !this.comment) return;
+      if (!(this.requiresText && !this.hasCommentText())) return;
+      this.pendingEdit = false;
+      if (this.comment.draft) this.remove();
+      else this.restoreComment();
+    },
     openedTextarea(newVal) {
       if (newVal) {
         // Remember what opened the editor (e.g. the Reply button) to return focus there
@@ -384,6 +406,8 @@ export default {
       }
     },
     editedByMyself(newVal) {
+      if (newVal) this.pendingEdit = true;
+      if (!newVal) this.textError = false;
       if (newVal && !this.listeningToFocus) {
         this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
         this.listeningToFocus = true;
@@ -402,22 +426,16 @@ export default {
     }
 
     if (this.editedByMyself) {
+      this.pendingEdit = true;
       this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
       this.listeningToFocus = true;
     }
     this.maxComments = this.defaultNumComments;
   },
   unmounted() {
-    if (this.editedByMyself) {
-      if (this.level === 0) {
-        this.saveCard();
-      } else {
-        this.save();
-      }
-
-      if (this.listeningToFocus) {
-        this.unlistenOnActive({id: this.commentId, level: this.level});
-      }
+    this.leaveEdit();
+    if (this.listeningToFocus) {
+      this.unlistenOnActive({id: this.commentId, level: this.level});
     }
   },
   methods: {
@@ -428,7 +446,42 @@ export default {
     fullDate(value) {
       return formatLocalizedDateTime(value);
     },
+    /**
+     * Replies and document notes need text. Returns false and shows the field error when they do not.
+     * @returns {boolean}
+     */
+    acceptText() {
+      if (!this.requiresText || this.hasCommentText()) {
+        this.textError = false;
+        return true;
+      }
+      this.textError = true;
+      return false;
+    },
+    hasCommentText() {
+      const text = this.comment && this.comment.text;
+      return typeof text === "string" && text.trim().length > 0;
+    },
+    /**
+     * The editor is closing. An empty required draft is deleted.
+     * A saved note with its text cleared is reloaded. Anything with text is saved.
+     * @returns {void}
+     */
+    leaveEdit() {
+      if (!this.pendingEdit || !this.comment) return;
+      this.pendingEdit = false;
+      if (this.requiresText && !this.hasCommentText()) {
+        if (this.comment.draft) this.remove();
+        else this.restoreComment();
+        return;
+      }
+      this.save();
+    },
     save() {
+      if (!this.acceptText()) {
+        return false;
+      }
+      this.pendingEdit = false;
       if (this.commentId && this.comment) {
         this.$socket.emit('commentUpdate', {
           "commentId": this.commentId,
@@ -463,6 +516,7 @@ export default {
       }
     },
     cancel() {
+      this.pendingEdit = false;
       if (this.comment.draft) {
         this.remove();
       } else {
@@ -487,18 +541,30 @@ export default {
      * Cancels the edit from the keyboard, mirroring the mouse Cancel button.
      * The card's main comment (level 0) is cancelled by the parent card,
      * the same route saveCard uses; replies cancel themselves.
-     * Drafts are ignored so a single key press cannot delete a new comment.
+     * An empty draft is removed, the same as Cancel.
      * @returns {void}
      */
     cancelOnEscape() {
-      if (this.comment.draft) {
-        return;
-      }
+      this.pendingEdit = false;
       if (this.level === 0) {
         this.$emit("cancelCard");
       } else {
         this.cancel();
       }
+    },
+    restoreComment() {
+      if (!this.comment?.id) return;
+      this.$socket.emit('commentGet', {
+        "commentId": this.comment.id,
+      }, (res) => {
+        if (!res.success) {
+          this.eventBus.emit("toast", {
+            title: this.$t('errors.annotator.commentsNotRetrieved'),
+            message: resolveApiMessage(res),
+            variant: "danger",
+          });
+        }
+      });
     },
     remove() {
       this.$socket.emit('commentUpdate', {
