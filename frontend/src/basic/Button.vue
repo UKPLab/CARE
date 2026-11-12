@@ -117,18 +117,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.btn {
-  transition: box-shadow 0.2s ease-in-out;
-}
-
-.btn:hover:not(:disabled) {
-  box-shadow: 0 2px 8px rgb(var(--care-shadow-rgb) / 0.15);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-</style>
