@@ -84,7 +84,7 @@
                     class="btn btn-sm sidebar-action-button dropdown-toggle"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
-                    :title="$t('navigation.sidebar.moreActions')"
+                    :title="$t('common.moreActions')"
                 >
                   <LoadIcon
                       icon-name="three-dots-vertical"
@@ -621,23 +621,23 @@ export default {
 .sidebar-header .nav-tabs {
   border-bottom: none;
   margin-bottom: 0;
-  background: var(--bs-tertiary-bg, #f2f2f2);
-  border-radius: 8px;
+  background: var(--bs-tertiary-bg);
+  border-radius: var(--care-radius-md);
   padding: 3px;
   gap: 2px;
 }
 
 .sidebar-header .nav-tabs .nav-link {
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   padding: 6px 10px;
   color: var(--bs-body-color, #495057);
-  transition: background-color 120ms ease, color 120ms ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
 }
 
 .sidebar-header .nav-tabs .nav-link:hover {
   border-color: transparent;
-  background-color: var(--bs-secondary-bg, #e9ecef);
+  background-color: var(--bs-secondary-bg);
 }
 
 .sidebar-header .nav-tabs .nav-link.active {
@@ -671,8 +671,8 @@ export default {
 /* ===== BUTTON STYLES ===== */
 .sidebar-action-button {
   position: relative;
-  border-radius: 8px !important;
-  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  border-radius: var(--care-radius-md) !important;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease), border-color var(--care-dur-fast) var(--care-ease);
 }
 
 .sidebar-action-button:hover {

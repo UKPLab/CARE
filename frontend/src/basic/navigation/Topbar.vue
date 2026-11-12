@@ -18,23 +18,24 @@
           />
         </button>
         <!-- Phones: the dashboard menu strip is replaced by this button and a drawer. -->
-        <button
+        <!-- BasicButton's click event has no DOM event, so the native click is stopped in capture -->
+        <BasicButton
           v-if="isInDashboard && viewport.compact"
-          type="button"
-          class="btn topbar-burger"
+          class="btn-icon topbar-burger"
           :class="{ 'is-open': mobileNavOpen }"
           :title="mobileNavOpen ? $t('navigation.topbar.closeMenu') : $t('navigation.topbar.openMenu')"
           :aria-label="mobileNavOpen ? $t('navigation.topbar.closeMenu') : $t('navigation.topbar.openMenu')"
           :aria-expanded="mobileNavOpen ? 'true' : 'false'"
           aria-controls="dashboardDrawer"
-          @click.stop="mobileNavOpen = !mobileNavOpen"
+          @click.capture.stop
+          @click="mobileNavOpen = !mobileNavOpen"
         >
           <span class="topbar-burger-lines" aria-hidden="true">
             <span />
             <span />
             <span />
           </span>
-        </button>
+        </BasicButton>
         <a
           class="navbar-brand"
           @click="toHome()"
@@ -139,7 +140,7 @@
                   href="#"
                   @click="$refs.preferencesModal.open()"
                 >
-                  <i class="bi bi-sliders" aria-hidden="true" />
+                  <LoadIcon icon-name="sliders" :size="14" />
                   {{ $t('auth.preferences.title') }}
                 </a>
                 <a
@@ -147,7 +148,7 @@
                   href="#"
                   @click="$refs.twoFactorSettingsModal.open()"
                 >
-                  <i class="bi bi-shield-lock" aria-hidden="true" />
+                  <LoadIcon icon-name="shield-lock" :size="14" />
                   {{ $t('auth.twoFactor.configure') }}
                 </a>
                 <a
@@ -155,7 +156,7 @@
                   href="#"
                   @click="$refs.passwordModal.open(userId)"
                 >
-                  <i class="bi bi-key" aria-hidden="true" />
+                  <LoadIcon icon-name="key" :size="14" />
                   {{ $t('auth.changePassword') }}
                 </a>
                 <a
@@ -163,7 +164,7 @@
                   href="#"
                   @click.prevent="toggleTheme()"
                 >
-                  <i :class="isDarkMode ? 'bi bi-sun' : 'bi bi-moon-stars'" aria-hidden="true" />
+                  <LoadIcon :icon-name="isDarkMode ? 'sun' : 'moon-stars'" :size="14" />
                   {{ isDarkMode ? $t('navigation.topbar.lightMode') : $t('navigation.topbar.darkMode') }}
                 </a>
                 <div class="dropdown-divider" />
@@ -172,7 +173,7 @@
                   href="#"
                   @click="logout()"
                 >
-                  <i class="bi bi-box-arrow-right" aria-hidden="true" />
+                  <LoadIcon icon-name="box-arrow-right" :size="14" />
                   {{ $t('auth.logout') }}
                 </a>
                 <div v-if="isAdmin" class="profile-menu-version" tabindex="-1">
@@ -202,6 +203,7 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import { applyTheme, resolveTheme, returnToDashboard } from "@/assets/utils";
 import { viewport } from "@/assets/viewport.js";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
@@ -214,7 +216,7 @@ import DashboardNav from "@/components/dashboard/navigation/Sidebar.vue";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal, DashboardNav},
+  components: {LoadIcon, BasicButton, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal, DashboardNav},
   data() {
     return {
       version: APP_VERSION,
@@ -422,7 +424,7 @@ export default {
 
 </script>
 
-<style>
+<style scoped>
 
 #wrapper > .navbar > .container-fluid {
   flex-wrap: nowrap;
@@ -434,23 +436,12 @@ export default {
    in assets/viewport.js. */
 /* #wrapper: must beat Bootstrap's .btn { display: inline-block }, which loads later. */
 #wrapper .topbar-burger {
+  --bs-btn-color: var(--bs-body-color);
   display: none;
-  align-items: center;
-  justify-content: center;
   flex: none;
   width: 38px;
   height: 38px;
   margin-right: 0.35rem;
-  padding: 0;
-  border: 0;
-  border-radius: 10px;
-  color: var(--bs-body-color);
-  background: transparent;
-}
-
-.topbar-burger:hover,
-.topbar-burger.is-open {
-  background: var(--bs-secondary-bg);
 }
 
 .topbar-burger-lines {
@@ -467,7 +458,7 @@ export default {
   height: 2px;
   border-radius: 2px;
   background: currentColor;
-  transition: transform 220ms var(--care-ease, ease), opacity 160ms ease, top 220ms var(--care-ease, ease);
+  transition: transform 220ms var(--care-ease), opacity 160ms ease, top 220ms var(--care-ease);
 }
 
 .topbar-burger-lines > span:nth-child(1) { top: 0; }
@@ -540,9 +531,9 @@ export default {
   min-width: 240px;
   padding: .375rem;
   border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg, .75rem);
-  transition: opacity 140ms var(--care-ease, ease),
-              transform 140ms var(--care-ease, ease),
+  border-radius: var(--care-radius-lg);
+  transition: opacity 140ms var(--care-ease),
+              transform 140ms var(--care-ease),
               visibility 0s linear 140ms;
 }
 
@@ -560,20 +551,19 @@ export default {
   gap: .65rem;
   padding: .5rem .65rem;
   font-size: .9rem;
-  border-radius: var(--bs-border-radius-sm, .375rem);
+  border-radius: var(--care-radius-sm);
 }
 
-#dropdown-show .dropdown-item i {
+#dropdown-show .dropdown-item :deep(svg) {
   flex: 0 0 auto;
   width: 1.1rem;
-  text-align: center;
   color: var(--bs-secondary-color);
 }
 
 /* Icons follow the item colour on hover / active (accent background) */
-#dropdown-show .dropdown-item:hover i,
-#dropdown-show .dropdown-item:focus-visible i,
-#dropdown-show .dropdown-item:active i {
+#dropdown-show .dropdown-item:hover :deep(svg),
+#dropdown-show .dropdown-item:focus-visible :deep(svg),
+#dropdown-show .dropdown-item:active :deep(svg) {
   color: inherit;
 }
 
@@ -643,12 +633,12 @@ export default {
 /* Logout is the destructive-ish action: red on hover instead of the accent */
 #dropdown-show .profile-menu-logout:hover,
 #dropdown-show .profile-menu-logout:focus-visible {
-  color: var(--bs-danger-text-emphasis, #dc3545);
-  background: color-mix(in srgb, var(--bs-danger) 12%, transparent);
+  color: var(--bs-danger-text-emphasis);
+  background: var(--care-hover-danger);
 }
 
-#dropdown-show .profile-menu-logout:hover i,
-#dropdown-show .profile-menu-logout:focus-visible i {
+#dropdown-show .profile-menu-logout:hover :deep(svg),
+#dropdown-show .profile-menu-logout:focus-visible :deep(svg) {
   color: inherit;
 }
 
@@ -676,7 +666,7 @@ body.sidebar-exists #backButton {
   padding: 0 12px;
   border: 1px solid color-mix(in srgb, var(--care-primary) 45%, transparent);
   color: var(--care-primary);
-  border-radius: 999px;
+  border-radius: var(--care-radius-pill);
   font-size: .875rem;
   font-weight: 500;
   max-width: 200px;
