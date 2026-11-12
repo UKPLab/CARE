@@ -149,7 +149,7 @@ The dictionary contains the following keys:
 - ``small`` – compact rows  
 - ``pagination`` – enable pagination (``false`` or number)  
 - ``emptyAction`` – button shown in the empty state  
-- ``rowActions`` – how many row buttons stay inline before the rest move into a "…" menu (``maxInline``, ``inline``, ``menuOnly``)  
+- ``rowActions`` – how many row buttons stay inline before the rest move into a "…" menu (``maxInline``, ``inline``, ``menuOnly``); the menu is the :ref:`PopupMenu <basic-popupmenu>` base component  
 - ``cardMode`` – render rows as cards instead of a table  
 
 Slots: ``#cards`` replaces the table body with cards, ``#empty`` replaces the empty state.

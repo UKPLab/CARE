@@ -85,6 +85,70 @@ consistent across CARE.
       - None
       - Object
 
+For a button that shows only an icon, add the shared ``btn-icon`` class (see :doc:`../styling`).
+
+.. _basic-popupmenu:
+
+PopupMenu
+---------
+The popup menu is the "…" button with a list of actions, used for table rows, study cards, dashboard
+headers and annotation cards. It positions itself next to the button, flips when there is no room, and
+closes on an outside click, scroll, resize, Escape or Tab. Arrow keys move between the actions.
+Only one popup menu is open at a time.
+
+.. code-block:: html
+
+    <BasicPopupMenu
+        :items="[
+            { key: 'edit', label: $t('common.edit'), icon: 'pencil' },
+            { key: 'delete', label: $t('common.delete'), icon: 'trash', danger: true },
+        ]"
+        @select="onAction"
+    />
+
+.. code-block:: javascript
+
+    import BasicPopupMenu from '@/basic/PopupMenu.vue';
+
+.. list-table:: PopupMenu properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+    * - items
+      - Menu entries ``{ key, label, icon?, danger?, disabled? }``; danger entries go last, after a divider
+      - ``[]``
+      - Array
+    * - icon
+      - Icon of the trigger button
+      - ``three-dots``
+      - String
+    * - title
+      - Tooltip and accessible label of the trigger
+      - "More actions"
+      - String
+    * - triggerClass
+      - Classes of the trigger button (replaces ``btn-icon``)
+      - ``btn-icon``
+      - String
+    * - menuClass
+      - Class of the menu box, to give one menu its own look (replaces the default look)
+      - ``popup-menu``
+      - String
+    * - placement
+      - Preferred side: ``bottom`` or ``top``
+      - ``bottom``
+      - String
+    * - teleport
+      - Move the menu to ``<body>`` so a scrolling or clipping parent cannot cut it off
+      - ``true``
+      - Boolean
+
+The ``select`` event returns the clicked item. The ``trigger`` slot (``{ open, toggle }``) replaces the
+default button; the default slot can hold custom menu content instead of ``items``.
+
 .. _form-section:
 
 Form

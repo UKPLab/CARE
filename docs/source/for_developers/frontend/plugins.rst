@@ -72,3 +72,14 @@ Advanced subscription with filters and injects (e.g., in ``SingleAssignmentModal
        }
      }
    }
+
+SelectEnhancer Plugin
+---------------------
+
+The **SelectEnhancer Plugin** (``selectEnhancer.js``, registered in ``main.js``) replaces the
+browser-drawn list of every native ``<select>`` with a CARE-styled popup, so selects look the same in
+every browser and theme. The ``<select>`` element itself stays in place: its value, ``v-model`` and
+``change`` events work as before, so no component needs to opt in.
+
+The popup reuses the keyboard handling and positioning of ``basic/form/helpers/listbox.js``, shared with
+the form Select and ``FilterDropdown.vue``. Its look is the ``.care-native-menu`` section in ``global.css``.
