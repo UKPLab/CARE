@@ -33,7 +33,7 @@ available through the `server` object -- we address these options in the `Extend
    For the generic create/update entry point used by the frontend, see
    :ref:`AppDataUpdate Socket <appdataupdate-socket>`.
 
-``queryTable`` accepts a ``scope`` object for a list the client cannot express with a column filter. ``scope.mySessions`` (``{state: "active"}`` or ``{state: "closed"}``) is the My Sessions page: studies the viewer has joined.
+``queryTable`` accepts a ``scope`` object for a list the client cannot express with a column filter. ``scope.mySessions`` (``{state: "active"}`` or ``{state: "closed"}``) is the My Sessions page: studies the viewer has joined. The socket remembers every scope its mounted tables asked for, so live row updates carry the injected fields each of them needs; the scopes are dropped when the last table of that model is released.
 
 Creating a Socket
 -----------------
