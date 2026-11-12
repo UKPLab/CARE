@@ -16,7 +16,7 @@
  *
  * Styles live in assets/styles/global.css (`.care-menu`, `.care-native-menu`).
  */
-import {createTypeahead, handleListboxKeydown, placePopup} from "@/basic/form/helpers/listbox";
+import {createTypeahead, handleListboxKeydown, placePopup} from "@/basic/form/listbox";
 
 let menu = null;          // the open <ul>
 let current = null;       // the <select> it belongs to

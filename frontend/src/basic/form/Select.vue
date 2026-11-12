@@ -158,7 +158,7 @@ import {
   placePopup,
   popupTeleportTarget,
   uniqueId,
-} from "@/basic/form/helpers/listbox";
+} from "@/basic/form/listbox";
 
 export default {
   name: "FormSelect",

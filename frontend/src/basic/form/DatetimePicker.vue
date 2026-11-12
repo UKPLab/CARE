@@ -127,7 +127,7 @@ import BasicButton from "@/basic/Button.vue";
 import CalendarPanel from "@/basic/form/CalendarPanel.vue";
 import { formatLocalizedDate, formatLocalizedDateTime, translateMaybeKey } from "@/assets/utils";
 import {datetimePrefs, setPreferredTimeZone, setTimePresets} from "@/basic/form/datetimePrefs";
-import {bindPopupListeners, placePopup, popupTeleportTarget, uniqueId} from "@/basic/form/helpers/listbox";
+import {bindPopupListeners, placePopup, popupTeleportTarget, uniqueId} from "@/basic/form/listbox";
 import {
   dayOffsets,
   deviceTimeZone,

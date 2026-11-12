@@ -64,7 +64,7 @@ import {
   placePopup,
   popupTeleportTarget,
   uniqueId,
-} from "@/basic/form/helpers/listbox";
+} from "@/basic/form/listbox";
 import LoadIcon from "@/basic/Icon.vue";
 
 /**
