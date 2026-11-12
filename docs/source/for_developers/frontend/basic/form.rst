@@ -311,7 +311,7 @@ The following types are available:
 
 `Select`: There are two ways to define the options of a select field, either by passing an object or use data from a autotable in (:doc:`../vuex_store`).
 
-The option list, the filter dropdown (``FilterDropdown.vue``) and the popup of every native ``<select>`` (see :doc:`../plugins`) share their keyboard handling and positioning in ``basic/form/helpers/listbox.js``; change that file to change how all of them behave.
+The option list, the filter dropdown (``FilterDropdown.vue``) and the popup of every native ``<select>`` (see :doc:`../plugins`) share their keyboard handling and positioning in ``basic/form/listbox.js``; change that file to change how all of them behave.
 
 Passing an object:
 

@@ -81,5 +81,5 @@ browser-drawn list of every native ``<select>`` with a CARE-styled popup, so sel
 every browser and theme. The ``<select>`` element itself stays in place: its value, ``v-model`` and
 ``change`` events work as before, so no component needs to opt in.
 
-The popup reuses the keyboard handling and positioning of ``basic/form/helpers/listbox.js``, shared with
+The popup reuses the keyboard handling and positioning of ``basic/form/listbox.js``, shared with
 the form Select and ``FilterDropdown.vue``. Its look is the ``.care-native-menu`` section in ``global.css``.
