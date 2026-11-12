@@ -30,7 +30,6 @@
     },
     "documentRoute": {
         "errors": {
-        "goToDashboard": "Go to Dashboard",
         "documentNotFoundTitle": "Document Not Found",
         "accessDeniedTitle": "Access Denied",
         "fileMissingTitle": "File Not Available",
@@ -40,7 +39,6 @@
     },
     "studyRoute": {
         "errors": {
-        "goToDashboard": "Go to Dashboard",
         "studyNotFoundTitle": "Study Not Found",
         "accessDeniedTitle": "Access Denied",
         "filesMissingTitle": "Files Not Available",

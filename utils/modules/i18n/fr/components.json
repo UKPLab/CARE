@@ -30,7 +30,6 @@
     },
     "documentRoute": {
         "errors": {
-            "goToDashboard": "Aller au tableau de bord",
             "documentNotFoundTitle": "Document introuvable",
             "accessDeniedTitle": "Accès refusé",
             "fileMissingTitle": "Fichier indisponible",
@@ -40,7 +39,6 @@
     },
     "studyRoute": {
         "errors": {
-            "goToDashboard": "Aller au tableau de bord",
             "studyNotFoundTitle": "Étude introuvable",
             "accessDeniedTitle": "Accès refusé",
             "filesMissingTitle": "Fichiers indisponibles",

@@ -120,8 +120,6 @@
             "drag": "Drag to reorder",
             "timeLabel": "Quick time {n}",
             "sort": "Sort ascending",
-            "moveUp": "Move up",
-            "moveDown": "Move down",
             "remove": "Remove",
             "empty": "No quick times yet",
             "add": "Add time",

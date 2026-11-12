@@ -436,7 +436,7 @@ export default {
 #addPageNote .anno-doc-note {
   width: 100%;
   border: 1px dashed color-mix(in srgb, var(--bs-secondary-color) 42%, var(--bs-border-color));
-  border-radius: 10px;
+  border-radius: var(--care-radius-md);
   background: transparent;
   color: var(--bs-secondary-color);
   padding: .55rem .75rem;

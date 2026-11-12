@@ -289,7 +289,6 @@
     "cardView": "Card view",
     "tableView": "Table view",
     "open": "Open",
-    "moreActions": "More actions",
     "perUser": "Max. {limit} session per participant | Max. {limit} sessions per participant",
     "emails": "Emails",
     "closesOn": "Closes {date}",
@@ -300,7 +299,6 @@
     "empty": {
       "searchTitle": "No studies match",
       "filterTitle": "No studies match these filters",
-      "searchHint": "Our magnifying glass came back empty-handed. Try a shorter word, check the spelling, or remove a filter.",
       "create": "Create a study"
     },
     "emptyTitle": "No studies here yet",

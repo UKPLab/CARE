@@ -289,7 +289,6 @@
     "cardView": "Kartenansicht",
     "tableView": "Tabellenansicht",
     "open": "Öffnen",
-    "moreActions": "Weitere Aktionen",
     "perUser": "Max. {limit} Sitzung pro Teilnehmer | Max. {limit} Sitzungen pro Teilnehmer",
     "emails": "E-Mails",
     "closesOn": "Endet am {date}",
@@ -300,7 +299,6 @@
     "empty": {
       "searchTitle": "Keine Studie passt zu",
       "filterTitle": "Keine Studie passt zu diesen Filtern",
-      "searchHint": "Unsere Lupe kam mit leeren Händen zurück. Versuchen Sie ein kürzeres Wort, prüfen Sie die Schreibweise oder entfernen Sie einen Filter.",
       "create": "Studie erstellen"
     },
     "emptyTitle": "Noch keine Studien",

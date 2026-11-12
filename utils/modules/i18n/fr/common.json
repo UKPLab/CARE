@@ -120,8 +120,6 @@
             "drag": "Glisser pour réordonner",
             "timeLabel": "Heure rapide {n}",
             "sort": "Trier par ordre croissant",
-            "moveUp": "Monter",
-            "moveDown": "Descendre",
             "remove": "Supprimer",
             "empty": "Aucune heure rapide",
             "add": "Ajouter une heure",
