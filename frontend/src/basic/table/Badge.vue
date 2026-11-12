@@ -1,5 +1,6 @@
 <template>
   <span
+    v-if="text !== '' && text != null"
     v-tooltip="title && title.length > 0"
     :class="badgeClass"
     :title="title"
@@ -70,7 +71,7 @@ export default {
   font-weight: 600;
   letter-spacing: 0.01em;
   border: 1px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--care-radius-pill);
 }
 
 .badge::before {

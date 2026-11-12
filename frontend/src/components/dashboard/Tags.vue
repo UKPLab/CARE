@@ -82,6 +82,7 @@ export default {
     },
     ...mapGetters({
       userId: 'auth/getUserId',
+      username: 'auth/getUsername',
       isAdmin: 'auth/isAdmin',
     }),
     columns() {
@@ -151,9 +152,10 @@ export default {
             text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
             class: DASHBOARD_BADGES.publicPrivate[!!(newD.public || newD.userId === null)],
           };
-          newD.user = {
-            text: newD.creator_name
-          };
+          const owner = this.tagSetOwner(newD);
+          newD.user = owner
+            ? { text: owner, class: "bg-secondary" }
+            : "";
           newD.select = {
             icon: (newD.id === this.selectedTagset) ? "star-fill" : "star",
             title: this.$t('tags.selectAsDefault'),
@@ -180,6 +182,15 @@ export default {
     },
   },
   methods: {
+    /**
+     * Owner shown in the User column. No creator_name stays blank.
+     * A live row can arrive before that name, so a set you just added uses your name.
+     */
+    tagSetOwner(row) {
+      if (row.creator_name) return row.creator_name;
+      if (row.userId != null && row.userId === this.userId) return this.username;
+      return "";
+    },
     action(data) {
       switch (data.action) {
         case "copyTagSet":
