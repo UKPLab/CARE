@@ -48,8 +48,7 @@
                         @click.stop
                       >
                         <BasicButton
-                          class="info-icon"
-                          :class="{ 'is-pressed': isInfoPressed(placeholder) }"
+                          class="btn-icon btn-sm info-icon"
                           :aria-pressed="isInfoPressed(placeholder)"
                           :aria-label="translateMaybeKey(placeholder.label)"
                           @click="toggleInfo(placeholder)"
@@ -678,31 +677,6 @@
   <style scoped>
   .info-icon-wrap {
     display: inline-flex;
-  }
-
-  .info-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    border: 0;
-    border-radius: var(--bs-border-radius);
-    background: transparent;
-    color: var(--bs-secondary-color);
-  }
-
-  .info-icon:hover,
-  .info-icon:focus-visible,
-  .info-icon.is-pressed {
-    color: var(--care-primary);
-  }
-
-  .info-icon.btn:hover:not(:disabled),
-  .info-icon.btn:focus-visible {
-    background: transparent;
-    box-shadow: none;
   }
 
   .option-select {

@@ -29,8 +29,7 @@
             @click.stop
         >
           <BasicButton
-              class="info-icon"
-              :class="{ 'is-pressed': infoPressed(rubric) }"
+              class="btn-icon btn-sm info-icon"
               :aria-label="$t('assessment.criteria.infoAbout', { name: rubric.name })"
               :aria-pressed="infoPressed(rubric)"
               :props="{ criterionName: rubric.name }"
@@ -291,37 +290,4 @@ export default {
   display: inline-flex;
 }
 
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--bs-border-radius);
-  background: transparent;
-  color: var(--bs-secondary-color);
-}
-
-.info-icon:hover,
-.info-icon:focus-visible,
-.info-icon.is-pressed {
-  color: var(--care-primary);
-}
-
-.info-icon.btn:hover:not(:disabled):not(.is-pressed),
-.info-icon.btn:focus-visible:not(.is-pressed) {
-  background: transparent;
-  box-shadow: none;
-}
-
-.info-icon.btn.is-pressed:hover:not(:disabled),
-.info-icon.btn.is-pressed:focus-visible {
-  box-shadow: none;
-}
-
-.info-icon.is-pressed {
-  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
-}
 </style>

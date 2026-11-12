@@ -31,8 +31,7 @@
             @click.stop
         >
           <BasicButton
-              class="info-icon"
-              :class="{ 'is-pressed': infoPressed }"
+              class="btn-icon btn-sm info-icon"
               :aria-label="$t('assessment.criteria.infoAbout', { name: criterion.name })"
               :aria-pressed="infoPressed"
               :props="{ criterionName: criterion.name }"
@@ -446,7 +445,7 @@ export default {
 
 .assessment-text {
   background: var(--bs-tertiary-bg);
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--care-radius-md);
   border-left: 0;
   padding: .6rem .75rem;
   font-size: 0.9rem;
@@ -510,37 +509,4 @@ export default {
   display: inline-flex;
 }
 
-.info-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--bs-border-radius);
-  background: transparent;
-  color: var(--bs-secondary-color);
-}
-
-.info-icon:hover,
-.info-icon:focus-visible,
-.info-icon.is-pressed {
-  color: var(--care-primary);
-}
-
-.info-icon.btn:hover:not(:disabled):not(.is-pressed),
-.info-icon.btn:focus-visible:not(.is-pressed) {
-  background: transparent;
-  box-shadow: none;
-}
-
-.info-icon.btn.is-pressed:hover:not(:disabled),
-.info-icon.btn.is-pressed:focus-visible {
-  box-shadow: none;
-}
-
-.info-icon.is-pressed {
-  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
-}
 </style>
