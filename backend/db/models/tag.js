@@ -22,22 +22,22 @@ module.exports = (sequelize, DataTypes) => {
                     {
                         name: "tags.fields.tag.colorCode.options.info",
                         value: "info",
-                        class: "border border-info"
+                        class: "bg-info-subtle text-info-emphasis border border-info"
                     },
                     {
                         name: "tags.fields.tag.colorCode.options.warning",
                         value: "warning",
-                        class: "border border-warning"
+                        class: "bg-warning-subtle text-warning-emphasis border border-warning"
                     },
                     {
                         name: "tags.fields.tag.colorCode.options.success",
                         value: "success",
-                        class: "border-2 border-success"
+                        class: "bg-success-subtle text-success-emphasis border border-success"
                     },
                     {
                         name: "tags.fields.tag.colorCode.options.danger",
                         value: "danger",
-                        class: "border-2 border-danger"
+                        class: "bg-danger-subtle text-danger-emphasis border border-danger"
                     },
                 ],
                 required: true,
