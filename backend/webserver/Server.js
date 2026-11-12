@@ -378,7 +378,8 @@ module.exports = class Server {
             };
             // Ref-count of mounted BackendTables per autoTable
             socket.currentQueries = {};
-            socket.queryTableScope = {};
+            // Scopes asked for by the mounted BackendTables, per autoTable (see AppSocket.queryTable)
+            socket.queryTableScopes = {};
             socket.userId = "";
             // broadcastTable reads socket.user for every subscribed or query-mode socket.
             // Set it here (the auth middleware above guarantees session.passport), so a

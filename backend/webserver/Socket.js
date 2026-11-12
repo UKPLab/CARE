@@ -1677,7 +1677,13 @@ module.exports = class Socket {
     async broadcastTable(tableName, data, operation = null) {
         const sockets = await this.io.fetchSockets();
         if (!sockets) return;
-        const rows = Array.isArray(data) ? data : [data];
+        let rows = Array.isArray(data) ? data : [data];
+        // creator_name is not a column. A full load adds it in emit(); a live update has to as well,
+        // or the name stays blank until the page is reloaded.
+        const namedRows = await this.updateCreatorName(rows);
+        if (Array.isArray(namedRows)) {
+            rows = namedRows;
+        }
         // Who committed: FE uses this on Delta/Stale (own tab applies now, others may banner).
         const originSocketId = this.socket?.id || null;
         // One allow-list per user for this broadcast. Several tabs share a userId.
@@ -1724,10 +1730,26 @@ module.exports = class Socket {
                     });
                     return;
                 }
-                const enrichedRows = await this.enrichQueryTableItems(
-                    tableName, project(filteredRows), userId, rolesUpdatedAt,
-                    null, socket.queryTableScope?.[tableName] || null
-                );
+                // Inject the fields every mounted view's scope asks for, each field once.
+                const scopes = [...(socket.queryTableScopes?.[tableName]?.values() || [])];
+                const injects = [];
+                const injectKeys = new Set();
+                for (const scope of scopes.length ? scopes : [null]) {
+                    const scopeInjects = await this.resolveQueryTableInjects(
+                        this.models[tableName], userId, rolesUpdatedAt, scope
+                    );
+                    for (const inject of scopeInjects) {
+                        const key = inject.as ?? JSON.stringify(inject);
+                        if (!injectKeys.has(key)) {
+                            injectKeys.add(key);
+                            injects.push(inject);
+                        }
+                    }
+                }
+                const projectedRows = project(filteredRows);
+                const enrichedRows = injects.length
+                    ? await this.handleInjections(injects, projectedRows.map((row) => ({...row})))
+                    : projectedRows;
                 // One Delta per row so bulk same-op (multi-delete) can animate / bump
                 // immediately for on-page and next-page rows without a Stale banner.
                 for (const row of enrichedRows) {

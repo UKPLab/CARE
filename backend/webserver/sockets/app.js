@@ -17,6 +17,9 @@ const MAX_QUERY_TABLE_LIMIT = 200;
 // Upper bound for a distinct-value dropdown. Above this a filter list is unusable anyway.
 const MAX_DISTINCT_VALUES = 500;
 
+// Scopes remembered per table and socket for live-delta enrichment (see queryTable).
+const MAX_SCOPES_PER_TABLE = 8;
+
 /**
  * Send data for building the frontend app
  *
@@ -503,13 +506,24 @@ class AppSocket extends Socket {
      */
     async queryTable(data) {
         const {table, query = {}, filter = [], scope: scopeParams = null} = data || {};
-        if (this.socket) {
-            if (!this.socket.queryTableScope) this.socket.queryTableScope = {};
-            this.socket.queryTableScope[table] = scopeParams;
-        }
 
         // Row scope (ACL + client filter + search bar) is shared with query-scoped bulk actions.
+        // It also validates scopeParams, so only accepted scopes are remembered below.
         const scope = await this.resolveQueryTableScope({table, filter, query, scope: scopeParams});
+        if (this.socket) {
+            // Two views of one table can ask for different scopes (My Sessions vs a plain list), and
+            // live deltas go to both, so keep the scopes until the last view releases the table.
+            // lazy: a scope stays until then even if its view unmounted earlier; it only adds inject fields.
+            const scopes = this.socket.queryTableScopes || (this.socket.queryTableScopes = {});
+            if (!scopes[table]) scopes[table] = new Map();
+            const key = JSON.stringify(scopeParams);
+            scopes[table].delete(key);
+            scopes[table].set(key, scopeParams);
+            // A page mounts a handful of views; drop the oldest beyond that so a client cannot grow it.
+            if (scopes[table].size > MAX_SCOPES_PER_TABLE) {
+                scopes[table].delete(scopes[table].keys().next().value);
+            }
+        }
         const {model, attributes, allAttributes, columnFilters, search} = scope;
         const allFilter = scope.where;
 
@@ -802,6 +816,7 @@ class AppSocket extends Socket {
         const current = this.socket.currentQueries[table];
         if (typeof current !== "number" || current <= 1) {
             delete this.socket.currentQueries[table];
+            delete this.socket.queryTableScopes?.[table];
             return;
         }
         this.socket.currentQueries[table] = current - 1;
