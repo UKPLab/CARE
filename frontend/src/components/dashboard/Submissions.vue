@@ -61,8 +61,7 @@
                     :disabled="!canUploadSubmissionForAssignment(assignment)"
                     @click="openUploadModalForAssignment(assignment)"
                   />
-                  <button
-                    type="button"
+                  <BasicButton
                     class="status-card-primary status-card-primary--ghost"
                     :aria-expanded="isOpen(assignment.id) ? 'true' : 'false'"
                     :aria-controls="'submissions-of-' + assignment.id"
@@ -74,7 +73,7 @@
                       icon-name="chevron-down"
                       :size="13"
                     />
-                  </button>
+                  </BasicButton>
                 </div>
               </template>
 

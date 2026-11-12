@@ -162,17 +162,16 @@
                         @blur="checkVal('password')"
                     >
                     <!-- mousedown.prevent keeps the focus in the input while toggling -->
-                    <button
-                        class="password-toggle"
-                        type="button"
+                    <BasicButton
+                        class="btn-icon password-toggle"
                         :aria-label="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
                         :aria-pressed="showPassword"
                         :title="showPassword ? $t('auth.hidePassword') : $t('auth.showPassword')"
                         @mousedown.prevent
                         @click="showPassword = !showPassword"
                     >
-                      <i class="bi" :class="showPassword ? 'bi-eye-slash' : 'bi-eye'" aria-hidden="true"></i>
-                    </button>
+                      <LoadIcon :icon-name="showPassword ? 'eye-slash' : 'eye'" />
+                    </BasicButton>
                   </div>
                   <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
                     {{ $t('errors.validation.auth.passwordRequirements') }}
@@ -269,6 +268,7 @@
 import TermsModal from "./TermsModal.vue";
 import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
+import LoadIcon from "@/basic/Icon.vue";
 import ScientistMascot from "@/auth/ScientistMascot.vue";
 import { navigateWithAuthTransition } from "@/auth/authTransition";
 import axios from "axios";
@@ -280,7 +280,7 @@ const MASCOT_WAVE_MS = 3200;
 
 export default {
   name: "AuthRegister",
-  components: {AuthLayout, TermsModal, BasicButton, ScientistMascot},
+  components: {AuthLayout, TermsModal, BasicButton, LoadIcon, ScientistMascot},
   data() {
     return {
       formData: {
@@ -546,23 +546,8 @@ export default {
   position: absolute;
   top: 50%;
   right: .35rem;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 0;
-  border-radius: var(--bs-border-radius-sm);
-  background: transparent;
-  color: var(--bs-secondary-color);
-  transform: translateY(-50%);
-  transition: color .15s ease, background-color .15s ease;
-}
-
-.password-toggle:hover,
-.password-toggle:focus-visible {
-  color: var(--care-primary);
-  background: color-mix(in srgb, var(--care-primary) 8%, transparent);
+  /* Centred with a margin, not a transform: .btn scales on press. */
+  margin-top: -1rem;
 }
 
 .register-progress {
@@ -617,7 +602,7 @@ export default {
   display: flow-root;
   transition:
     opacity .3s ease,
-    transform .4s cubic-bezier(.22, 1, .36, 1),
+    transform .4s var(--care-ease),
     visibility 0s linear .4s;
 }
 

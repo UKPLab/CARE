@@ -2,12 +2,12 @@
   <!-- Error state when document not found or deleted -->
   <div v-if="documentError" class="document-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
     <div class="error-card text-center p-5 bg-body rounded shadow">
-      <i class="bi bi-file-earmark-x text-danger" style="font-size: 5rem;"></i>
+      <LoadIcon icon-name="file-earmark-x" class="text-danger" :size="75" />
       <h2 class="mt-4 text-danger">{{ documentError.title }}</h2>
       <p class="text-muted mb-4">{{ documentError.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>{{ $t('components.documentRoute.errors.goToDashboard') }}
+          <LoadIcon icon-name="house" class="me-2" />{{ $t('errors.page.goToDashboard') }}
         </router-link>
       </div>
     </div>
@@ -39,10 +39,11 @@ import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
 import Editor from "@/components/editor/Editor.vue"
 import { resolveApiMessage } from "@/assets/utils";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "DocumentRoute",
-  components: {Annotator, Loader, Editor},
+  components: {Annotator, Loader, Editor, LoadIcon},
   props: {
     'documentHash': {
       type: String,

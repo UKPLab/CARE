@@ -2,12 +2,12 @@
     <!-- Error state -->
   <div v-if="studyError" class="study-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
     <div class="error-card text-center p-5 bg-body rounded shadow">
-      <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 5rem;"></i>
+      <LoadIcon icon-name="exclamation-triangle-fill" class="text-danger" :size="75" />
       <h2 class="mt-4 text-danger">{{ studyError.title }}</h2>
       <p class="text-muted mb-4">{{ studyError.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>{{ $t('components.studyRoute.errors.goToDashboard') }}
+          <LoadIcon icon-name="house" class="me-2" />{{ $t('errors.page.goToDashboard') }}
         </router-link>
       </div>
     </div>

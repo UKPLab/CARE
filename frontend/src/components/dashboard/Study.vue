@@ -43,8 +43,7 @@
                   class="study-view-toggle-thumb"
                   aria-hidden="true"
               />
-              <button
-                  type="button"
+              <BasicButton
                   class="study-view-toggle-btn"
                   :class="{ active: viewMode === 'cards' }"
                   :title="$t('studies.cards.cardView')"
@@ -55,9 +54,8 @@
                     icon-name="grid-3x2-gap"
                     :size="15"
                 />
-              </button>
-              <button
-                  type="button"
+              </BasicButton>
+              <BasicButton
                   class="study-view-toggle-btn"
                   :class="{ active: viewMode === 'table' }"
                   :title="$t('studies.cards.tableView')"
@@ -68,7 +66,7 @@
                     icon-name="table"
                     :size="15"
                 />
-              </button>
+              </BasicButton>
             </div>
           </template>
           <template #cards="cards">
@@ -502,17 +500,21 @@ export default {
       return (row.createdByUserId === null && row.userId === this.userId)
           || row.createdByUserId === this.userId;
     },
+    /**
+     * Adds the state and the row buttons to a study row.
+     * @param {Object} st raw study row
+     * @returns {Object}
+     */
     enrichStudyRow(st) {
       let study = {...st};
 
+      // Same order as the server's STATE_SQL (backend/db/studyDashboardSortSql.js), which filters and
+      // sorts this column: "not started" and "ended" come before "closed". My Sessions uses
+      // studyState (closed first), matching its own server filter.
       if (study.start !== null && new Date(study.start) > new Date()) {
         study.state = "not started";
-      } else if (study.end !== null && new Date(study.end) < new Date()) {
-        if (study.multipleSubmit) {
-          study.state = study.closed ? "closed" : "running";
-        } else {
-          study.state = "ended";
-        }
+      } else if (study.end !== null && new Date(study.end) < new Date() && !study.multipleSubmit) {
+        study.state = "ended";
       } else {
         study.state = study.closed ? "closed" : "running";
       }
@@ -742,17 +744,17 @@ export default {
    and puts the table into a panel. */
 
 .study-dashboard {
-  --table-bg: var(--dash-panel);
-  --table-border-color: var(--dash-border);
+  --table-bg: var(--care-card-surface);
+  --table-border-color: var(--care-page-border);
 }
 
 .study-dashboard :deep(.table-scroll-shell) {
   margin-top: 1rem;
   margin-bottom: 1.25rem;
-  background: var(--dash-panel);
-  border: 1px solid var(--dash-border);
-  border-radius: 12px;
-  box-shadow: var(--dash-panel-shadow);
+  background: var(--care-card-surface);
+  border: 1px solid var(--care-page-border);
+  border-radius: var(--care-radius-lg);
+  box-shadow: var(--care-card-shadow-flat);
   overflow: hidden;
 }
 
@@ -770,7 +772,7 @@ export default {
   margin-left: 0.5rem !important;
   padding: 2px;
   border: 1px solid var(--bs-border-color);
-  border-radius: 8px !important;
+  border-radius: var(--care-radius-md) !important;
   background: var(--bs-tertiary-bg);
   isolation: isolate;
 }
@@ -781,10 +783,10 @@ export default {
   bottom: 2px;
   left: 2px;
   width: calc(50% - 2px);
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   background: var(--bs-body-bg);
   box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.12), 0 1px 1px rgb(var(--care-shadow-rgb) / 0.06);
-  transition: transform 0.35s var(--care-card-ease);
+  transition: transform 0.35s var(--care-ease);
   z-index: -1;
 }
 
@@ -815,21 +817,13 @@ export default {
 }
 
 .study-view-toggle-btn.active {
-  color: var(--bs-primary);
-}
-
-[data-bs-theme="dark"] .study-view-toggle-btn.active {
-  color: var(--care-accent);
+  color: var(--care-primary);
 }
 
 .study-view-toggle-btn:focus-visible {
-  outline: 2px solid rgba(var(--bs-primary-rgb), 0.5);
-  outline-offset: 1px;
-  border-radius: 6px;
-}
-
-[data-bs-theme="dark"] .study-view-toggle-btn:focus-visible {
-  outline-color: var(--care-accent);
+  outline: none;
+  box-shadow: var(--care-focus-ring);
+  border-radius: var(--care-radius-sm);
 }
 
 @media (prefers-reduced-motion: reduce) {

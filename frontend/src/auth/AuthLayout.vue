@@ -57,7 +57,7 @@
                     :style="{ '--i': index }"
                   >
                     <span class="auth-intro-icon" aria-hidden="true">
-                      <i class="bi" :class="step.icon"></i>
+                      <LoadIcon :icon-name="step.icon" :size="17" />
                     </span>
                     <span class="auth-intro-text">
                       <strong>{{ $t(`auth.registerIntro.steps.${step.key}.title`) }}</strong>
@@ -95,10 +95,11 @@
  */
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
 import AppFooter from "@/basic/navigation/AppFooter.vue";
+import LoadIcon from "@/basic/Icon.vue";
 
 export default {
   name: "AuthLayout",
-  components: { LogoSvg, AppFooter },
+  components: { LogoSvg, AppFooter, LoadIcon },
   props: {
     title: {
       type: String,
@@ -122,10 +123,10 @@ export default {
       clockStyle: { "--auth-clock": `${-(performance.now() / 1000).toFixed(3)}s` },
       /** The core workflow of the platform, shown in the intro. Kept generic on purpose. */
       introSteps: [
-        { key: "read", icon: "bi-book" },
-        { key: "annotate", icon: "bi-highlighter" },
-        { key: "write", icon: "bi-pencil-square" },
-        { key: "assess", icon: "bi-clipboard-check" },
+        { key: "read", icon: "book" },
+        { key: "annotate", icon: "highlighter" },
+        { key: "write", icon: "pencil-square" },
+        { key: "assess", icon: "clipboard-check" },
       ],
     };
   },
@@ -208,7 +209,7 @@ html[data-auth-direction="back"] .auth-above-card {
   width: 100%;
   min-height: 540px;
   overflow: hidden;
-  border-radius: 22px;
+  border-radius: 22px; /* rounder than the scale on purpose: the welcome card */
   border-color: color-mix(in srgb, var(--care-primary) 12%, var(--bs-border-color));
   /* --care-primary follows the theme: blue glow in light, accent in dark */
   box-shadow:
@@ -285,12 +286,12 @@ html[data-bs-theme="dark"] .auth-card {
 
 .auth-card :deep(.form-control) {
   padding: .6rem .85rem;
-  border-radius: 10px;
+  border-radius: var(--care-radius-md);
 }
 
 .auth-card :deep(.btn-primary) {
   padding-block: .6rem;
-  border-radius: 10px;
+  border-radius: var(--care-radius-md);
 }
 
 /* LogoSvg sets display inline, so the hide needs !important */
@@ -422,7 +423,7 @@ html[data-bs-theme="dark"] .auth-brand-logo {
 .auth-card-brand--intro .auth-brand-ring {
   animation:
     auth-ring-spin 60s linear infinite,
-    auth-ring-expand 1.1s cubic-bezier(.22, 1, .36, 1) both;
+    auth-ring-expand 1.1s var(--care-ease) both;
   animation-delay: var(--auth-clock, 0s), 0s;
 }
 
@@ -430,7 +431,7 @@ html[data-bs-theme="dark"] .auth-brand-logo {
 html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .auth-brand-ring {
   animation:
     auth-ring-spin 60s linear infinite,
-    auth-ring-settle .55s cubic-bezier(.22, 1, .36, 1) both;
+    auth-ring-settle .55s var(--care-ease) both;
   animation-delay: var(--auth-clock, 0s), 0s;
 }
 
@@ -460,7 +461,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   background-clip: text;
   color: transparent;
   animation:
-    auth-intro-in .8s cubic-bezier(.22, 1, .36, 1) both,
+    auth-intro-in .8s var(--care-ease) both,
     auth-title-shine 7s ease-in-out infinite alternate;
   animation-delay: .18s, var(--auth-clock, 0s);
 }
@@ -469,7 +470,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   margin: 0 0 28px;
   font-size: .98rem;
   color: var(--bs-secondary-color);
-  animation: auth-intro-in .8s .28s cubic-bezier(.22, 1, .36, 1) both;
+  animation: auth-intro-in .8s .28s var(--care-ease) both;
 }
 
 /* Workflow: four steps with icon, name and one line of text */
@@ -487,7 +488,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   display: flex;
   align-items: center;
   gap: 14px;
-  animation: auth-intro-in .7s cubic-bezier(.22, 1, .36, 1) both;
+  animation: auth-intro-in .7s var(--care-ease) both;
   animation-delay: calc(.4s + var(--i) * .1s);
 }
 
@@ -499,11 +500,10 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   flex: 0 0 40px;
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   border: 1px solid color-mix(in srgb, var(--care-primary) 22%, var(--bs-border-color));
   background: var(--bs-body-bg);
   color: var(--care-primary);
-  font-size: 1.05rem;
   box-shadow: 0 6px 14px -8px rgb(var(--care-shadow-rgb) / .35);
 }
 
@@ -569,7 +569,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   left: 8vw;
   width: 86px;
   height: 112px;
-  border-radius: 3px 14px 14px 3px;
+  border-radius: 3px var(--care-radius-xl) var(--care-radius-xl) 3px;
   transform: rotate(-8deg);
 }
 
@@ -602,7 +602,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   right: 8vw;
   width: 16px;
   height: 118px;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   transform: rotate(32deg);
   background: color-mix(in srgb, var(--bs-primary) 48%, #fff);
 }
@@ -635,7 +635,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   bottom: 12vh;
   width: 104px;
   height: 104px;
-  border-radius: 6px 6px 22px 6px;
+  border-radius: var(--care-radius-sm) var(--care-radius-sm) 22px var(--care-radius-sm);
   transform: rotate(7deg);
   background: color-mix(in srgb, #ffd966 70%, #fff);
   box-shadow: 0 16px 28px -10px rgba(204, 160, 30, .4), 0 4px 10px -4px rgb(var(--care-shadow-rgb) / .16);
@@ -662,7 +662,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   bottom: 0;
   width: 22px;
   height: 22px;
-  border-radius: 6px 0 22px 0;
+  border-radius: var(--care-radius-sm) 0 22px 0;
   background: color-mix(in srgb, #c9a227 40%, #fff);
 }
 
@@ -844,7 +844,7 @@ html[data-bs-theme="dark"] .auth-spark {
   .auth-card {
     grid-template-columns: 1fr;
     min-height: 0;
-    border-radius: 16px;
+    border-radius: var(--care-radius-2xl);
   }
 
   .auth-card-main {
@@ -893,7 +893,7 @@ html[data-auth-direction="back"] {
 ::view-transition-group(auth-card-header),
 ::view-transition-group(auth-card-body) {
   animation-duration: .55s;
-  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+  animation-timing-function: var(--care-ease);
 }
 
 ::view-transition-old(auth-card) {
@@ -958,7 +958,7 @@ html[data-auth-direction="back"] {
 }
 
 ::view-transition-new(auth-card-body) {
-  animation: auth-content-in .45s .15s cubic-bezier(.22, 1, .36, 1) both;
+  animation: auth-content-in .45s .15s var(--care-ease) both;
 }
 
 /* auth-mascot: the above-card slot (scientist on the register page) while leaving.
