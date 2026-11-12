@@ -1,43 +1,29 @@
 <template>
-  <div
-    class="anno-actions"
-    @click.stop
-  >
-    <BasicButton
-      ref="trigger"
-      class="btn-sm anno-actions-trigger care-focus-ring"
-      icon="three-dots"
-      text=""
-      :title="$t('common.moreActions')"
-      :aria-label="$t('common.moreActions')"
-      aria-haspopup="menu"
-      :aria-expanded="open"
-      @click="toggle"
-    />
-    <div
-      v-show="open"
-      ref="menu"
-      class="anno-actions-menu"
-      role="menu"
-      @click="closeMenu"
+  <div class="anno-actions">
+    <!-- Not teleported: AnnoCard moves focus to the next card only while focus is inside the
+         card, and SideCard treats clicks outside the card as leaving an open edit. -->
+    <BasicPopupMenu
+      trigger-class="btn-sm anno-actions-trigger care-focus-ring"
+      menu-class="anno-actions-menu"
+      :placement="placement"
+      :teleport="false"
     >
       <slot />
-    </div>
+    </BasicPopupMenu>
   </div>
 </template>
 
 <script>
-import BasicButton from "@/basic/Button.vue";
-
-// One card menu at a time. Table row menus are a different component.
-let openAnnoMenu = null;
+import BasicPopupMenu from "@/basic/PopupMenu.vue";
 
 /**
  * "..." menu for a sidebar card. The slot keeps the existing action buttons.
+ *
+ * @param {String} placement - Side the menu opens on: "top" or "bottom"
  */
 export default {
   name: "CardActions",
-  components: { BasicButton },
+  components: { BasicPopupMenu },
   props: {
     placement: {
       type: String,
@@ -45,68 +31,13 @@ export default {
       default: "top",
     },
   },
-  data() {
-    return {
-      open: false,
-      listening: false,
-    };
-  },
-  beforeUnmount() {
-    this.closeMenu();
-  },
   methods: {
+    /**
+     * Put focus on the "..." button (AnnoCard and Comment call this when an edit closes).
+     * @returns {void}
+     */
     focusTrigger() {
-      this.$refs.trigger?.$el?.focus();
-    },
-    bindMenuListeners() {
-      if (this.listening) return;
-      this.listening = true;
-      document.addEventListener("click", this.onDocumentClick);
-      document.addEventListener("keydown", this.onKeydown);
-    },
-    unbindMenuListeners() {
-      if (!this.listening) return;
-      this.listening = false;
-      document.removeEventListener("click", this.onDocumentClick);
-      document.removeEventListener("keydown", this.onKeydown);
-    },
-    closeMenu() {
-      this.open = false;
-      this.unbindMenuListeners();
-      if (openAnnoMenu === this) openAnnoMenu = null;
-    },
-    toggle() {
-      if (this.open) {
-        this.closeMenu();
-        return;
-      }
-      if (openAnnoMenu && openAnnoMenu !== this) {
-        openAnnoMenu.closeMenu();
-      }
-      this.open = true;
-      openAnnoMenu = this;
-      this.bindMenuListeners();
-      this.$nextTick(() => {
-        const trigger = this.$refs.trigger?.$el;
-        const menu = this.$refs.menu;
-        if (!trigger || !menu) return;
-        const rect = trigger.getBoundingClientRect();
-        const menuWidth = menu.offsetWidth;
-        const menuHeight = menu.offsetHeight;
-        const below = this.placement === "bottom";
-        const top = below ? rect.bottom + 4 : rect.top - menuHeight - 4;
-        menu.style.top = `${Math.max(8, top)}px`;
-        menu.style.left = `${Math.max(8, rect.right - menuWidth)}px`;
-      });
-    },
-    onDocumentClick(event) {
-      if (!this.open) return;
-      if (this.$el.contains(event.target)) return;
-      this.closeMenu();
-    },
-    onKeydown(event) {
-      if (!this.open || event.key !== "Escape") return;
-      this.closeMenu();
+      this.$el.querySelector(".anno-actions-trigger")?.focus();
     },
   },
 };
@@ -119,26 +50,28 @@ export default {
   justify-content: flex-end;
 }
 
-.anno-actions-trigger {
+/* The trigger and the menu are rendered by BasicPopupMenu, so these rules need :deep. */
+.anno-actions :deep(.anno-actions-trigger) {
   border: 0;
   color: var(--bs-body-color);
 }
 
-.anno-actions-menu {
-  position: fixed;
-  z-index: 1080;
+.anno-actions :deep(.anno-actions-menu) {
   min-width: 11rem;
   display: flex;
   flex-direction: column;
   gap: .2rem;
+  margin-top: 4px;
   padding: .4rem;
-  border: 1px solid var(--bs-border-color-translucent);
-  border-radius: 8px;
-  background: var(--bs-body-bg);
+  border-radius: var(--care-radius-md);
   box-shadow: 0 8px 20px -8px rgb(var(--care-shadow-rgb) / .28);
 }
 
-.anno-actions-menu :deep(button) {
+.anno-actions :deep(.anno-actions-menu.is-up) {
+  margin-top: -4px;
+}
+
+.anno-actions :deep(.anno-actions-menu button) {
   display: flex;
   align-items: center;
   gap: .55rem;
@@ -146,30 +79,30 @@ export default {
   margin: 0;
   padding: .5rem .7rem;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   background: transparent;
   color: var(--bs-body-color);
   text-align: left;
   white-space: nowrap;
 }
 
-.anno-actions-menu :deep(button)::after {
+.anno-actions :deep(.anno-actions-menu button)::after {
   content: attr(title);
 }
 
-.anno-actions-menu :deep(button:not(:has(.visually-hidden)))::after {
+.anno-actions :deep(.anno-actions-menu button:not(:has(.visually-hidden)))::after {
   content: none;
 }
 
-.anno-actions-menu :deep(.visually-hidden) {
+.anno-actions :deep(.anno-actions-menu .visually-hidden) {
   display: none;
 }
 
-.anno-actions-menu :deep(button:hover) {
+.anno-actions :deep(.anno-actions-menu button:hover) {
   background: var(--bs-tertiary-bg);
 }
 
-.anno-actions-menu :deep(.anno-action-danger) {
+.anno-actions :deep(.anno-actions-menu .anno-action-danger) {
   color: var(--bs-danger);
 }
 </style>

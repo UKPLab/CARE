@@ -93,9 +93,8 @@
         </template>
 
         <template #footer>
-          <button
+          <BasicButton
             v-if="openButton(row)"
-            type="button"
             class="status-card-primary"
             :title="openButton(row).title"
             @click="emitAction(openButton(row), row)"
@@ -106,14 +105,13 @@
               icon-name="arrow-right"
               :size="14"
             />
-          </button>
+          </BasicButton>
           <div class="status-card-actions">
-            <button
+            <BasicButton
               v-for="b in actionLayout(row).inline"
               :key="b.action"
-              type="button"
-              class="status-card-icon-btn"
-              :class="{ 'status-card-icon-btn--danger': isDanger(b) }"
+              class="btn-icon"
+              :class="{ 'btn-icon-danger': isDanger(b) }"
               :title="b.title"
               :aria-label="b.title"
               @click="emitAction(b, row)"
@@ -122,71 +120,24 @@
                 :icon-name="b.icon"
                 :size="15"
               />
-            </button>
-            <button
+            </BasicButton>
+            <!-- The menu is teleported: the card clips its overflow for the rounded accent wash. -->
+            <BasicPopupMenu
               v-if="actionLayout(row).menu.length > 0"
-              type="button"
-              class="status-card-icon-btn"
-              :class="{ 'is-open': menu.rowId === row.id }"
-              :title="$t('studies.cards.moreActions')"
-              :aria-label="$t('studies.cards.moreActions')"
-              aria-haspopup="menu"
-              :aria-expanded="menu.rowId === row.id"
-              @click.stop="toggleMenu($event, row)"
-              @focusout="onMenuFocusOut($event, row)"
-            >
-              <LoadIcon
-                icon-name="three-dots"
-                :size="16"
-              />
-            </button>
+              :items="menuItems(row)"
+              @select="emitAction($event, row)"
+            />
           </div>
         </template>
       </StatusCard>
     </div>
-
-    <!-- Teleported: the card clips its overflow for the rounded accent wash. -->
-    <Teleport to="body">
-        <div
-          v-if="menuRow"
-          ref="menu"
-          class="row-actions-menu"
-          :class="{ 'row-actions-menu--up': menu.up }"
-          :style="{ top: menu.top + 'px', left: menu.left + 'px' }"
-          role="menu"
-          @focusout="onMenuFocusOut"
-          @keydown.esc.prevent="closeMenu(true)"
-        >
-          <template
-            v-for="(b, index) in actionLayout(menuRow).menu"
-            :key="b.action"
-          >
-            <div
-              v-if="isDanger(b) && index > 0 && !isDanger(actionLayout(menuRow).menu[index - 1])"
-              class="row-actions-menu-divider"
-              role="separator"
-            />
-            <button
-              type="button"
-              role="menuitem"
-              class="row-actions-menu-item"
-              :class="{ 'row-actions-menu-item--danger': isDanger(b) }"
-              @click="emitMenuAction(b)"
-            >
-              <LoadIcon
-                :icon-name="b.icon"
-                :size="15"
-              />
-              <span>{{ b.title }}</span>
-            </button>
-          </template>
-        </div>
-    </Teleport>
   </div>
 </template>
 
 <script>
+import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
+import BasicPopupMenu from "@/basic/PopupMenu.vue";
 import StatusCard from "@/basic/dashboard/card/StatusCard.vue";
 import StudyEmptyState from "./StudyEmptyState.vue";
 import {
@@ -195,7 +146,7 @@ import {
   relativeTimeFormatter,
   studyCardStatus,
 } from "./studyCardHelpers.js";
-import { focusLeftMenu, isDangerButton, splitRowActions } from "@/basic/table/helpers/rowActionsLayout.js";
+import { isDangerButton, rowMenuItems, splitRowActions } from "@/basic/table/helpers/rowActionsLayout.js";
 
 /** Icons kept in the card footer when the row has more actions than fit. */
 const INLINE_ACTION_ORDER = ["editStudy", "copyStudyLink", "inspectStudySessions", "showInformation"];
@@ -214,7 +165,7 @@ const MAX_INLINE_ACTIONS = 3;
  */
 export default {
   name: "StudyCardGrid",
-  components: { LoadIcon, StatusCard, StudyEmptyState },
+  components: { BasicButton, LoadIcon, BasicPopupMenu, StatusCard, StudyEmptyState },
   props: {
     rows: {
       type: Array,
@@ -281,7 +232,6 @@ export default {
   data() {
     return {
       skeletonCount: 6,
-      menu: { rowId: null, top: 0, left: 0, up: false, trigger: null },
     };
   },
   computed: {
@@ -294,20 +244,6 @@ export default {
       }
       return map;
     },
-    /** Live row behind the open menu; null once it leaves the page (closes the menu). */
-    menuRow() {
-      if (this.menu.rowId == null) return null;
-      return this.rows.find((r) => r.id === this.menu.rowId) || null;
-    },
-  },
-  watch: {
-    menuRow(row) {
-      if (!row && this.menu.rowId != null) this.closeMenu();
-    },
-  },
-  beforeUnmount() {
-    this.menu = { rowId: null, top: 0, left: 0, up: false, trigger: null };
-    this.unbindMenuListeners();
   },
   methods: {
     /** StatusCard status props (tone, label, lock, pulse) from studyCardHelpers. */
@@ -382,59 +318,13 @@ export default {
         menuOnly: MENU_ONLY_ACTIONS,
       });
     },
-    toggleMenu(event, row) {
-      if (this.menu.rowId === row.id) {
-        this.closeMenu();
-        return;
-      }
-      const trigger = event.currentTarget;
-      const rect = trigger.getBoundingClientRect();
-      // Roughly the height of five items; flip upwards when the card sits near the bottom.
-      const up = rect.bottom + 240 > window.innerHeight;
-      this.menu = {
-        rowId: row.id,
-        top: up ? rect.top - 6 : rect.bottom + 6,
-        left: rect.right,
-        up,
-        trigger,
-      };
-      this.bindMenuListeners();
-      this.$nextTick(() => this.$refs.menu?.querySelector("button")?.focus({ preventScroll: true }));
-    },
-    onMenuFocusOut(event, row) {
-      if (row && this.menu.rowId !== row.id) return;
-      if (this.menu.rowId == null || !focusLeftMenu(event, this.$refs.menu, this.menu.trigger)) return;
-      this.closeMenu();
-    },
-    closeMenu(restoreFocus = false) {
-      const trigger = this.menu.trigger;
-      this.menu = { rowId: null, top: 0, left: 0, up: false, trigger: null };
-      this.unbindMenuListeners();
-      if (restoreFocus) trigger?.focus?.({ preventScroll: true });
-    },
-    emitMenuAction(button) {
-      const row = this.menuRow;
-      this.closeMenu();
-      this.emitAction(button, row);
-    },
-    bindMenuListeners() {
-      this.unbindMenuListeners();
-      this._onMenuPointer = (e) => {
-        if (this.$refs.menu?.contains(e.target) || this.menu.trigger?.contains(e.target)) return;
-        this.closeMenu();
-      };
-      this._onMenuViewport = () => this.closeMenu();
-      document.addEventListener("pointerdown", this._onMenuPointer, true);
-      window.addEventListener("scroll", this._onMenuViewport, true);
-      window.addEventListener("resize", this._onMenuViewport);
-    },
-    unbindMenuListeners() {
-      if (!this._onMenuPointer) return;
-      document.removeEventListener("pointerdown", this._onMenuPointer, true);
-      window.removeEventListener("scroll", this._onMenuViewport, true);
-      window.removeEventListener("resize", this._onMenuViewport);
-      this._onMenuPointer = null;
-      this._onMenuViewport = null;
+    /**
+     * Menu entries of the row's "more" menu.
+     * @param {Object} row
+     * @returns {Object[]}
+     */
+    menuItems(row) {
+      return rowMenuItems(this.actionLayout(row).menu);
     },
     isDanger: isDangerButton,
     emitAction(button, row) {
@@ -488,7 +378,7 @@ export default {
   width: 1.4rem;
   height: 1.4rem;
   color: var(--care-card-muted);
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   background: rgba(var(--bs-secondary-rgb), 0.08);
   border: 1px solid var(--care-card-border);
   cursor: help;
@@ -505,7 +395,7 @@ export default {
 .study-cards-empty {
   background: var(--care-card-surface);
   border: 1px dashed rgba(var(--bs-secondary-rgb), 0.3);
-  border-radius: var(--care-card-radius);
+  border-radius: var(--care-radius-xl);
   box-shadow: var(--care-card-shadow);
 }
 
@@ -513,7 +403,7 @@ export default {
   padding: 3rem 1rem;
   text-align: center;
   color: var(--care-card-muted);
-  animation: sc-card-in 0.5s var(--care-card-ease) both;
+  animation: sc-card-in 0.5s var(--care-ease) both;
 }
 
 /* ---------- Keyframes ---------- */
@@ -541,5 +431,3 @@ export default {
   }
 }
 </style>
-
-<style src="@/basic/table/row-actions-menu.css"></style>

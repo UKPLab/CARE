@@ -18,25 +18,13 @@
         @click="run(item)"
       />
 
-      <button
+      <BasicPopupMenu
         v-if="menuActions.length > 0"
         key="__more"
-        ref="trigger"
-        type="button"
-        class="btn btn-secondary btn-sm header-actions-more"
-        :class="{ 'is-open': menuOpen }"
-        :title="$t('common.moreActions')"
-        :aria-label="$t('common.moreActions')"
-        aria-haspopup="menu"
-        :aria-expanded="menuOpen"
-        @click.stop="toggleMenu"
-        @focusout="onMenuFocusOut"
-      >
-        <LoadIcon
-          icon-name="three-dots"
-          :size="16"
-        />
-      </button>
+        trigger-class="btn-secondary btn-sm header-actions-more"
+        :items="menuItems"
+        @select="run"
+      />
     </TransitionGroup>
 
     <!-- Separator and the filled main action(s); never collapsed. -->
@@ -86,48 +74,13 @@
       </div>
     </div>
 
-    <!-- Teleported so the card header cannot clip it. Same look as the table row "..." menu. -->
-    <Teleport
-      v-if="menuActions.length > 0"
-      to="body"
-    >
-      <div
-        v-if="menuOpen"
-        ref="menu"
-        class="row-actions-menu"
-        :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }"
-        role="menu"
-        @focusout="onMenuFocusOut"
-        @keydown.esc.prevent.stop="closeMenu(true)"
-        @keydown.down.prevent="moveFocus(1)"
-        @keydown.up.prevent="moveFocus(-1)"
-        @keydown.tab="closeMenu(false)"
-      >
-        <button
-          v-for="item in menuActions"
-          :key="item.key"
-          type="button"
-          role="menuitem"
-          class="row-actions-menu-item"
-          :disabled="item.disabled"
-          @click="menuRun(item)"
-        >
-          <LoadIcon
-            v-if="item.icon"
-            :icon-name="item.icon"
-            :size="15"
-          />
-          <span>{{ item.text }}</span>
-        </button>
-      </div>
-    </Teleport>
   </div>
 </template>
 
 <script>
 import BasicButton from "@/basic/Button.vue";
+import BasicPopupMenu from "@/basic/PopupMenu.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import { focusLeftMenu } from "@/basic/table/helpers/rowActionsLayout.js";
 import { viewport } from "@/assets/viewport.js";
 
 /**
@@ -148,7 +101,7 @@ import { viewport } from "@/assets/viewport.js";
  */
 export default {
   name: "DashboardHeaderActions",
-  components: { BasicButton, LoadIcon },
+  components: { BasicButton, BasicPopupMenu, LoadIcon },
   props: {
     actions: {
       type: Array,
@@ -162,8 +115,6 @@ export default {
       inlineCount: null,
       // Off for the first layout, so the page does not open with buttons fading in.
       animate: false,
-      menuOpen: false,
-      menuPos: { top: 0, left: 0 },
     };
   },
   computed: {
@@ -173,6 +124,9 @@ export default {
     menuActions() {
       return this.inlineCount === null ? [] : this.actions.slice(this.inlineCount);
     },
+    menuItems() {
+      return this.menuActions.map((item) => ({ ...item, label: item.text }));
+    },
   },
   watch: {
     actions: {
@@ -180,9 +134,6 @@ export default {
       handler() {
         this.$nextTick(this.updateLayout);
       },
-    },
-    "menuActions.length"(length) {
-      if (length === 0 && this.menuOpen) this.closeMenu();
     },
   },
   created() {
@@ -218,8 +169,6 @@ export default {
     this.resizeObserver?.disconnect();
     this.header?.classList.remove("has-header-actions");
     if (this.layoutFrame) cancelAnimationFrame(this.layoutFrame);
-    this.menuOpen = false;
-    this.unbindMenuListeners();
   },
   methods: {
     /**
@@ -232,10 +181,6 @@ export default {
     run(item) {
       if (item.disabled) return;
       item.onClick?.();
-    },
-    menuRun(item) {
-      this.closeMenu(true);
-      this.run(item);
     },
     scheduleLayout() {
       if (this.layoutFrame) return;
@@ -305,56 +250,6 @@ export default {
       // "title + ... + main action" is too wide may the header wrap.
       header.classList.toggle("has-header-actions", needed(inline) <= available + 0.5);
     },
-    toggleMenu() {
-      if (this.menuOpen) {
-        this.closeMenu();
-        return;
-      }
-      const rect = this.$refs.trigger.getBoundingClientRect();
-      this.menuPos = { top: rect.bottom + 6, left: rect.right };
-      this.menuOpen = true;
-      this.bindMenuListeners();
-      this.$nextTick(() => {
-        this.$refs.menu?.querySelector("button:not(:disabled)")?.focus({ preventScroll: true });
-      });
-    },
-    onMenuFocusOut(event) {
-      if (!this.menuOpen || !focusLeftMenu(event, this.$refs.menu, this.$refs.trigger)) return;
-      this.closeMenu();
-    },
-    closeMenu(restoreFocus = false) {
-      if (!this.menuOpen) return;
-      this.menuOpen = false;
-      this.unbindMenuListeners();
-      if (restoreFocus) this.$refs.trigger?.focus?.({ preventScroll: true });
-    },
-    moveFocus(step) {
-      const items = [...(this.$refs.menu?.querySelectorAll("button:not(:disabled)") || [])];
-      if (items.length === 0) return;
-      const current = items.indexOf(document.activeElement);
-      const next = (current + step + items.length) % items.length;
-      items[next].focus({ preventScroll: true });
-    },
-    bindMenuListeners() {
-      this.unbindMenuListeners();
-      this._onMenuPointer = (e) => {
-        if (this.$refs.menu?.contains(e.target) || this.$refs.trigger?.contains(e.target)) return;
-        this.closeMenu();
-      };
-      // The menu is fixed to the viewport, so scrolling or resizing would detach it.
-      this._onMenuViewport = () => this.closeMenu();
-      document.addEventListener("pointerdown", this._onMenuPointer, true);
-      window.addEventListener("scroll", this._onMenuViewport, true);
-      window.addEventListener("resize", this._onMenuViewport);
-    },
-    unbindMenuListeners() {
-      if (!this._onMenuPointer) return;
-      document.removeEventListener("pointerdown", this._onMenuPointer, true);
-      window.removeEventListener("scroll", this._onMenuViewport, true);
-      window.removeEventListener("resize", this._onMenuViewport);
-      this._onMenuPointer = null;
-      this._onMenuViewport = null;
-    },
   },
 };
 </script>
@@ -400,14 +295,14 @@ export default {
   white-space: nowrap;
 }
 
-.header-actions-more {
+.header-actions :deep(.header-actions-more) {
   justify-content: center;
 }
 
 /* Enter only: a short fade with a small slide from the "..." side. Opacity and
    transform do not change the layout, so the measured split stays valid. */
 .header-actions .header-action-enter-active {
-  transition: opacity 180ms var(--care-ease, ease), transform 180ms var(--care-ease, ease);
+  transition: opacity 180ms var(--care-ease), transform 180ms var(--care-ease);
 }
 
 .header-actions .header-action-enter-from {
@@ -427,21 +322,9 @@ export default {
   }
 }
 
-.header-actions-more.is-open {
-  background-color: var(--dash-ghost-hover, var(--bs-secondary-bg));
-  border-color: var(--dash-border, transparent);
+.header-actions :deep(.header-actions-more[aria-expanded="true"]) {
+  background-color: var(--care-page-ghost-hover);
+  border-color: var(--care-page-border);
   color: var(--bs-emphasis-color);
 }
-
-.row-actions-menu-item:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.row-actions-menu-item:disabled:hover {
-  background: transparent;
-  color: var(--bs-body-color);
-}
 </style>
-
-<style src="@/basic/table/row-actions-menu.css"></style>

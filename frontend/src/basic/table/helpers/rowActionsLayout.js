@@ -1,6 +1,6 @@
 /**
  * Split of row actions into inline icons and the "more" menu, shared by
- * ButtonGroup.vue (rendering) and BackendTable.vue (manage column width).
+ * ButtonGroup.vue and StudyCardGrid.vue (rendering) and BackendTable.vue (manage column width).
  *
  * Layout options (usually `options.rowActions` of the table):
  * - `maxInline`: icons kept inline (default 3). One extra action is shown inline
@@ -23,17 +23,12 @@ export function isDangerButton(button) {
 }
 
 /**
- * Whether a focusout left both the open menu and the button that opened it.
- * A move between those two stays open. Focus leaving the page (no next target) closes it.
- * @param {FocusEvent} event
- * @param {Element|null|undefined} menu
- * @param {Element|null|undefined} trigger
- * @returns {boolean}
+ * Row buttons as BasicPopupMenu items; the original button fields come back with `select`.
+ * @param {Object[]} buttons
+ * @returns {Object[]}
  */
-export function focusLeftMenu(event, menu, trigger) {
-  const next = event.relatedTarget || document.activeElement;
-  const stays = (node) => node && (next === node || node.contains(next));
-  return !(stays(menu) || stays(trigger));
+export function rowMenuItems(buttons) {
+  return buttons.map((b) => ({ ...b, key: b.action, label: b.title, danger: isDangerButton(b) }));
 }
 
 /**
