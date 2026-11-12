@@ -15,14 +15,12 @@
           {{ canRegister ? $t('dashboard.home.guest.register') : $t('dashboard.home.guest.askAdmin') }}
         </p>
       </div>
-      <button
+      <BasicButton
         v-if="canRegister"
-        type="button"
-        class="btn btn-sm btn-primary home-guest-note-action"
+        class="btn-sm btn-primary home-guest-note-action"
+        :text="$t('dashboard.home.guest.createAccount')"
         @click="toRegister"
-      >
-        {{ $t('dashboard.home.guest.createAccount') }}
-      </button>
+      />
     </section>
 
     <div class="row g-3">
@@ -106,6 +104,7 @@
 <script>
 import axios from "axios";
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import getServerURL from "@/assets/serverUrl";
 import { formatLocalizedDateTime } from "@/assets/utils";
 import { homeShared } from "./homeShared";
@@ -119,7 +118,7 @@ const SHOWCASE_DOCUMENT_NAME = "Showcase Document";
  */
 export default {
   name: "HomeGuest",
-  components: { LoadIcon },
+  components: { LoadIcon, BasicButton },
   mixins: [homeShared],
   props: {
     /** The viewer may open the studies dashboard. */
@@ -217,7 +216,6 @@ export default {
 };
 </script>
 
-<style src="./homePanel.css"></style>
 
 <style scoped>
 .home .row > [class*="col"] {
@@ -246,7 +244,7 @@ export default {
   justify-content: center;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   color: var(--care-primary);
   background: color-mix(in srgb, var(--care-primary) 12%, var(--bs-body-bg));
 }
@@ -263,7 +261,7 @@ export default {
   gap: 6px;
   margin-bottom: 4px;
   padding: 1px 8px 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--care-radius-pill);
   font-size: .7rem;
   font-weight: 650;
   letter-spacing: .02em;

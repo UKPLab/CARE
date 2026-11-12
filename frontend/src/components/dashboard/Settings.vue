@@ -551,16 +551,16 @@ export default {
   /* Transparent at rest so the shared .dashboard-page gradient shows behind the
      title, like on every other dashboard. Solid only while stuck over content. */
   background: transparent;
-  border-radius: 16px 16px 0 0;
-  transition: box-shadow 160ms var(--care-ease, ease),
-              border-color 160ms var(--care-ease, ease);
+  border-radius: var(--care-radius-2xl) var(--care-radius-2xl) 0 0;
+  transition: box-shadow 160ms var(--care-ease),
+              border-color 160ms var(--care-ease);
 }
 
 .settings-card.is-header-stuck > :deep(.card-header) {
-  background: var(--dash-surface);
+  background: var(--care-page-surface);
   border-radius: 0;
-  border-bottom-color: var(--care-primary, var(--bs-primary));
-  box-shadow: inset 0 -1px 0 var(--care-primary, var(--bs-primary));
+  border-bottom-color: var(--care-primary);
+  box-shadow: inset 0 -1px 0 var(--care-primary);
 }
 
 .settings-card.is-header-stuck > :deep(.card-header)::before {
@@ -570,7 +570,7 @@ export default {
   right: 0;
   bottom: 100%;
   height: 2rem;
-  background: var(--dash-surface);
+  background: var(--care-page-surface);
 }
 
 .settings-layout {
@@ -603,7 +603,7 @@ export default {
 
 .settings-nav-btn.btn:hover,
 .settings-nav-btn.btn.active {
-  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+  background: var(--care-active-bg);
   color: var(--care-primary);
 }
 
@@ -626,7 +626,7 @@ export default {
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
     scrollbar-width: none;
-    border-bottom: 1px solid var(--dash-border, var(--bs-border-color));
+    border-bottom: 1px solid var(--care-page-border);
     /* Fade at the edges hints that the row scrolls. */
     mask-image: linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 24px), transparent 100%);
   }

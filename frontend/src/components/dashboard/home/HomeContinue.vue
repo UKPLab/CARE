@@ -251,7 +251,6 @@ export default {
 };
 </script>
 
-<style src="./homePanel.css"></style>
 
 <style scoped>
 /* Continue panel: list on top, the week strip pinned to the bottom. */
@@ -316,7 +315,7 @@ export default {
   justify-content: center;
   width: 100%;
   height: 26px;
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   font-size: .75rem;
   font-weight: 600;
   color: var(--bs-emphasis-color);
@@ -331,10 +330,6 @@ export default {
 
 .home-week-cell--today {
   box-shadow: inset 0 0 0 1.5px var(--care-primary);
-}
-
-[data-bs-theme="dark"] .home-week-cell--today {
-  box-shadow: inset 0 0 0 1.5px var(--care-accent);
 }
 
 .home-week-day small {

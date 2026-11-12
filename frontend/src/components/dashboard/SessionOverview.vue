@@ -180,3 +180,12 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+.dashboard-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+}
+</style>

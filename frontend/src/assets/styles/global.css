@@ -1,193 +1,29 @@
-.scrollable-error-container {
-  color: var(--bs-danger-text-emphasis);
-  max-height: 180px;
-  overflow-y: auto;
-  padding: 10px;
-  border: 1px solid var(--bs-danger-border-subtle);
-  border-radius: 4px !important;
-  background-color: var(--bs-danger-bg-subtle);
+/* ===== CARE global styles =====
+   Where styles live (see docs: for_developers/frontend/styling.rst):
+   - tokens.css: every colour, radius, shadow, curve and layer variable;
+   - this file: Bootstrap overrides, the app shell, and classes shared by two
+     or more components;
+   - a component's <style scoped>: everything only that component uses.
+   Use tokens here instead of literal values.
 
-  > p {
-    margin-bottom: 0.5rem;
-  }
+   Sections: 1 Base · 2 Bootstrap overrides · 3 Buttons · 4 Forms · 5 Cards ·
+   6 Badges · 7 Menus · 8 Modals · 9 Dashboard page shell · 10 Shared
+   components · 11 Third-party (Quill, PDF viewer) · 12 Reduced motion
 
-  ul {
-    margin: 0;
-    padding-left: 20px;
-  }
+   The html prefix on many selectors raises specificity above Bootstrap's own
+   rules and above component defaults. */
 
-  li {
-    margin-bottom: 0.25rem;
-    line-height: 1.4;
-  }
+
+/* ===== 1. Base ===== */
+
+/* 1rem is 15px. Bootstrap reboot already sets box-sizing and body margin. */
+html {
+  font-size: 15px;
+  overflow-x: clip;
 }
 
-/* ===== Dark mode =====
-   Bootstrap switches themes when data-bs-theme="dark" is set on <html>. Most of
-   CARE follows automatically, but three things need help here:
-   1. A few Bootstrap classes have a fixed colour built in and stay light.
-   2. Dark mode uses CARE's logo yellow as the accent instead of Bootstrap's
-      blue, with dark text on top since the yellow is too light for white.
-      Bootstrap sets button and form-control colours per component, so each
-      family needs its own override rather than one variable change.
-   3. Quill, the PDF viewer and bootstrap-vue-3 come from other libraries and
-      do not follow the theme at all. */
-
-/* Colours that differ between themes but are read from JavaScript rather than
-   CSS, so they need a value in both. */
-:root {
-  --care-nlp-active: #097969;
-  --care-nlp-idle: #777777;
-}
-
-html[data-bs-theme="dark"] {
-  --care-accent: #e3d5a8;
-  --care-on-accent: #212529;
-  --care-accent-hover: #d5c795;
-  --care-accent-active: #c7b982;
-  --care-switch-knob: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e3d5a8'/%3e%3c/svg%3e");
-  --care-switch-knob-on: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
-  --care-nlp-active: #12a085;
-  --care-nlp-idle: #9aa3b0;
-}
-
-/* CARE's primary colour: Bootstrap blue in light mode, the accent in dark mode.
-   Use it for custom borders and focus glows instead of a hard-coded blue. */
-:root {
-  --care-primary: var(--bs-primary);
-  --care-on-primary: #fff;
-  /* Secondary tint for data UI: table header wash, search chips, "closed" badges. RGB triplet. */
-  --care-violet-rgb: 111, 92, 230;
-}
-
-html[data-bs-theme="dark"] {
-  --care-primary: var(--care-accent);
-  --care-on-primary: var(--care-on-accent);
-  --care-violet-rgb: 167, 151, 255;
-  /* Bootstrap paints <a> from the rgb channel, not from --bs-link-color.
-     Leave the channel at Bootstrap's blue and links stay blue in dark mode. */
-  --bs-link-color: var(--care-accent);
-  --bs-link-hover-color: var(--care-accent-hover);
-  --bs-link-color-rgb: 227, 213, 168;
-  --bs-link-hover-color-rgb: 213, 199, 149;
-}
-
-/* ===== Light mode =====
-   Bootstrap's light theme is pure white cards on a near-white page with a
-   saturated #0d6efd blue, which glares and makes sections hard to tell apart.
-   CARE uses a cool blue-white palette instead:
-   - cards are a soft, slightly blue white on a light blue-grey canvas
-     (--care-canvas), so sections separate by colour as well as by shadow;
-   - text is a slate ink rather than flat #212529;
-   - the primary blue is calmer and deeper;
-   - shadows are tinted navy (--care-shadow-rgb) instead of neutral grey.
-   Bootstrap gives some components a fixed #0d6efd, so those get the new blue
-   below, the same way dark mode handles its accent. */
-html[data-bs-theme="light"] {
-  /* Three surface levels, each a visible step apart:
-     canvas (page background) < --care-page-surface (list page container)
-     < --bs-body-bg (cards, tables, tiles). */
-  --care-canvas: #e4e9f2;
-  --care-page-surface: #f2f5fa;
-  --care-light-primary-hover: #2c4bb0;
-  --care-light-primary-active: #253f96;
-
-  --bs-body-bg: #fdfeff;
-  --bs-body-bg-rgb: 253, 254, 255;
-  --bs-body-color: #222a38;
-  --bs-body-color-rgb: 34, 42, 56;
-  --bs-emphasis-color: #131a27;
-  --bs-emphasis-color-rgb: 19, 26, 39;
-  --bs-secondary-color: rgba(34, 42, 56, 0.68);
-  --bs-secondary-color-rgb: 34, 42, 56;
-  --bs-tertiary-color: rgba(34, 42, 56, 0.5);
-  --bs-tertiary-color-rgb: 34, 42, 56;
-  --bs-secondary-bg: #e8edf5;
-  --bs-secondary-bg-rgb: 232, 237, 245;
-  --bs-tertiary-bg: #f4f6fb;
-  --bs-tertiary-bg-rgb: 244, 246, 251;
-  --bs-border-color: #dce3ee;
-  --bs-border-color-translucent: rgba(30, 48, 90, 0.12);
-
-  --bs-primary: #3557c6;
-  --bs-primary-rgb: 53, 87, 198;
-  --bs-primary-text-emphasis: #1f3477;
-  --bs-primary-bg-subtle: #e4e9f8;
-  --bs-primary-border-subtle: #bcc9ee;
-  --bs-link-color: #3557c6;
-  --bs-link-color-rgb: 53, 87, 198;
-  --bs-link-hover-color: #2a469f;
-  --bs-link-hover-color-rgb: 42, 70, 159;
-}
-
-html[data-bs-theme="light"] .btn-primary {
-  --bs-btn-bg: var(--bs-primary);
-  --bs-btn-border-color: var(--bs-primary);
-  --bs-btn-hover-bg: var(--care-light-primary-hover);
-  --bs-btn-hover-border-color: var(--care-light-primary-hover);
-  --bs-btn-active-bg: var(--care-light-primary-active);
-  --bs-btn-active-border-color: var(--care-light-primary-active);
-  --bs-btn-disabled-bg: var(--bs-primary);
-  --bs-btn-disabled-border-color: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .btn-outline-primary {
-  --bs-btn-color: var(--bs-primary);
-  --bs-btn-border-color: var(--bs-primary);
-  --bs-btn-hover-bg: var(--bs-primary);
-  --bs-btn-hover-border-color: var(--bs-primary);
-  --bs-btn-active-bg: var(--care-light-primary-active);
-  --bs-btn-active-border-color: var(--care-light-primary-active);
-  --bs-btn-disabled-color: var(--bs-primary);
-  --bs-btn-disabled-border-color: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .pagination {
-  --bs-pagination-active-bg: var(--bs-primary);
-  --bs-pagination-active-border-color: var(--bs-primary);
-  --bs-pagination-focus-box-shadow: var(--care-focus-ring);
-}
-
-html[data-bs-theme="light"] .nav-pills {
-  --bs-nav-pills-link-active-bg: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .list-group {
-  --bs-list-group-active-bg: var(--bs-primary);
-  --bs-list-group-active-border-color: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .dropdown-menu {
-  --bs-dropdown-link-active-bg: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .form-check-input:checked {
-  background-color: var(--bs-primary);
-  border-color: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .form-check-input:focus {
-  border-color: color-mix(in srgb, var(--bs-primary) 55%, #ffffff);
-  box-shadow: var(--care-focus-ring);
-}
-
-/* Bootstrap's focused switch knob is a fixed light-blue SVG (#86b7fe). */
-html[data-bs-theme="light"] .form-switch .form-check-input:focus:not(:checked) {
-  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%239aabe2'/%3e%3c/svg%3e");
-}
-
-html[data-bs-theme="light"] .form-range::-webkit-slider-thumb {
-  background-color: var(--bs-primary);
-}
-
-html[data-bs-theme="light"] .form-range::-moz-range-thumb {
-  background-color: var(--bs-primary);
-}
-
-/* Tell the browser which theme is showing. Bootstrap declares
-   color-scheme: light dark, which lets the browser pick scrollbar and native
-   control colours from the operating system rather than from CARE. The html
-   prefix beats Bootstrap's own rule on specificity. */
+/* Tell the browser which theme is showing, so scrollbars and native controls
+   follow CARE rather than the operating system. */
 html[data-bs-theme="light"] {
   color-scheme: light;
 }
@@ -196,7 +32,173 @@ html[data-bs-theme="dark"] {
   color-scheme: dark;
 }
 
-/* --- Bootstrap classes with a fixed colour --- */
+/* Inter's alternate glyphs: alternate 1 (cv01), single-storey a (cv11), round
+   quotes (ss03). Set once on body; everything inherits it. */
+body {
+  font-feature-settings: "cv01", "cv11", "ss03";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Opt-in focus indicator for plain .btn (no colour variant) and custom
+   focusable elements, which get none from Bootstrap. Drawn inside the element
+   so a scrolling or clipping parent cannot cut it off. */
+html .care-focus-ring:focus-visible {
+  outline: 2px solid var(--care-primary);
+  outline-offset: -2px;
+}
+
+
+/* ===== 2. Bootstrap overrides =====
+   Bootstrap gives some components a fixed colour. These rules point them at
+   --care-primary, which is blue in light mode and the accent in dark mode. */
+
+html .pagination {
+  --bs-pagination-active-bg: var(--care-primary);
+  --bs-pagination-active-border-color: var(--care-primary);
+  --bs-pagination-active-color: var(--care-on-primary);
+  --bs-pagination-focus-box-shadow: var(--care-focus-ring);
+}
+
+html .list-group {
+  --bs-list-group-active-bg: var(--care-primary);
+  --bs-list-group-active-border-color: var(--care-primary);
+  --bs-list-group-active-color: var(--care-on-primary);
+}
+
+html .dropdown-menu {
+  --bs-dropdown-padding-x: .25rem;
+  --bs-dropdown-item-border-radius: var(--care-radius-sm);
+  --bs-dropdown-link-active-bg: var(--care-primary);
+  --bs-dropdown-link-active-color: var(--care-on-primary);
+  box-shadow: var(--care-shadow-3);
+}
+
+html .form-check-input:checked {
+  background-color: var(--care-primary);
+  border-color: var(--care-primary);
+}
+
+html .form-check-input:focus {
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
+}
+
+html .form-range::-webkit-slider-thumb {
+  background-color: var(--care-primary);
+}
+
+html .form-range::-moz-range-thumb {
+  background-color: var(--care-primary);
+}
+
+/* The switch knob is an SVG background, so each state needs its own image.
+   Light: Bootstrap's focused knob is a fixed light blue (#86b7fe).
+   Dark: the knobs come from the accent (tokens.css, overridden in App.vue). */
+html[data-bs-theme="light"] .form-switch .form-check-input:focus:not(:checked) {
+  --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%239aabe2'/%3e%3c/svg%3e");
+}
+
+[data-bs-theme="dark"] .form-switch .form-check-input:focus {
+  --bs-form-switch-bg: var(--care-switch-knob);
+}
+
+[data-bs-theme="dark"] .form-switch .form-check-input:checked,
+[data-bs-theme="dark"] .form-switch .form-check-input:checked:focus {
+  --bs-form-switch-bg: var(--care-switch-knob-on);
+}
+
+/* Utility classes with a built-in light colour that stays light in dark mode. */
+[data-bs-theme="dark"] .text-primary {
+  color: var(--care-accent) !important;
+}
+
+[data-bs-theme="dark"] :is(.bg-primary, .text-bg-primary) {
+  background-color: var(--care-accent) !important;
+  color: var(--care-on-accent) !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+  color: var(--bs-body-color) !important;
+}
+
+/* Except on backgrounds Bootstrap keeps light in dark mode (badges), where
+   light text would be unreadable. */
+[data-bs-theme="dark"] :is(.bg-light, .bg-white, .bg-warning).text-dark {
+  color: #212529 !important;
+}
+
+
+/* ===== 3. Buttons =====
+   Every clickable control is a BasicButton (basic/Button.vue) with Bootstrap
+   button classes. CARE adds:
+   - .btn-icon: transparent icon button (row actions, card icons, toolbars);
+     add .btn-icon-danger for destructive actions;
+   - a neutral .btn-outline-secondary for secondary actions;
+   - one focus ring, one press effect and one disabled look for all buttons. */
+
+html .btn {
+  --bs-btn-font-weight: 500;
+  --bs-btn-focus-box-shadow: var(--care-focus-ring);
+  transition: color var(--care-dur-fast) var(--care-ease),
+              background-color var(--care-dur-fast) var(--care-ease),
+              border-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) var(--care-ease),
+              transform 80ms var(--care-ease);
+}
+
+html .btn:active:not(:disabled) {
+  transform: scale(.97);
+}
+
+html .btn:focus:not(:focus-visible) {
+  box-shadow: none;
+}
+
+html .btn:disabled,
+html .btn.disabled {
+  --bs-btn-disabled-opacity: .45;
+}
+
+/* Disabled controls lose more contrast against dark than against white. */
+[data-bs-theme="dark"] .btn:disabled,
+[data-bs-theme="dark"] .nav-link.disabled {
+  opacity: 0.85;
+}
+
+/* Filled buttons lift slightly on hover; icon, ghost, outline and link
+   buttons stay flat. */
+html :is(.btn-primary, .btn-secondary, .btn-success, .btn-danger, .btn-warning, .btn-info, .btn-dark, .btn-light):hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgb(var(--care-shadow-rgb) / 0.15);
+}
+
+html .btn-primary {
+  --bs-btn-color: var(--care-on-primary);
+  --bs-btn-bg: var(--care-primary);
+  --bs-btn-border-color: var(--care-primary);
+  --bs-btn-hover-color: var(--care-on-primary);
+  --bs-btn-hover-bg: var(--care-primary-hover);
+  --bs-btn-hover-border-color: var(--care-primary-hover);
+  --bs-btn-active-color: var(--care-on-primary);
+  --bs-btn-active-bg: var(--care-primary-active);
+  --bs-btn-active-border-color: var(--care-primary-active);
+  --bs-btn-disabled-color: var(--care-on-primary);
+  --bs-btn-disabled-bg: var(--care-primary);
+  --bs-btn-disabled-border-color: var(--care-primary);
+}
+
+html .btn-outline-primary {
+  --bs-btn-color: var(--care-primary);
+  --bs-btn-border-color: var(--care-primary);
+  --bs-btn-hover-color: var(--care-on-primary);
+  --bs-btn-hover-bg: var(--care-primary);
+  --bs-btn-hover-border-color: var(--care-primary);
+  --bs-btn-active-color: var(--care-on-primary);
+  --bs-btn-active-bg: var(--care-primary-active);
+  --bs-btn-active-border-color: var(--care-primary-active);
+  --bs-btn-disabled-color: var(--care-primary);
+  --bs-btn-disabled-border-color: var(--care-primary);
+}
 
 /* Neutral outline for secondary actions in both themes. Cancel and Close in
    dialog footers use it too, so the confirm button is the one filled action. */
@@ -229,346 +231,240 @@ html .modal-footer .btn-secondary,
   --bs-btn-border-color: var(--bs-border-color);
 }
 
-[data-bs-theme="dark"] .text-dark {
-  color: var(--bs-body-color) !important;
+/* Icon button: <BasicButton class="btn-icon" :title="..."><LoadIcon icon-name="..." /></BasicButton>.
+   The icon goes in the slot: with only icon + title, BasicButton prints the title as text.
+   A menu trigger shows its open state through aria-expanded. */
+html .btn-icon {
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--bs-emphasis-color);
+  --bs-btn-hover-bg: var(--care-hover);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--bs-emphasis-color);
+  --bs-btn-active-bg: var(--care-hover);
+  --bs-btn-active-border-color: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0 .4rem;
+  border-radius: var(--care-radius-md);
 }
 
-/* Except on backgrounds Bootstrap keeps light in dark mode (badges), where
-   light text would be unreadable. */
-[data-bs-theme="dark"] :is(.bg-light, .bg-white, .bg-warning).text-dark {
-  color: #212529 !important;
+html .btn-icon.btn-sm {
+  min-width: 1.75rem;
+  height: 1.75rem;
+  padding: 0 .25rem;
 }
 
-/* Disabled controls lose more contrast against dark than against white. */
-[data-bs-theme="dark"] .btn:disabled,
-[data-bs-theme="dark"] .nav-link.disabled {
-  opacity: 0.85;
+html .btn-icon[aria-expanded="true"] {
+  color: var(--bs-emphasis-color);
+  background-color: var(--care-hover);
 }
 
-/* --- Accent colour --- */
-
-[data-bs-theme="dark"] .btn-primary {
-  --bs-btn-bg: var(--care-accent);
-  --bs-btn-border-color: var(--care-accent);
-  --bs-btn-color: var(--care-on-accent);
-  --bs-btn-hover-bg: var(--care-accent-hover);
-  --bs-btn-hover-border-color: var(--care-accent-hover);
-  --bs-btn-hover-color: var(--care-on-accent);
-  --bs-btn-active-bg: var(--care-accent-active);
-  --bs-btn-active-border-color: var(--care-accent-active);
-  --bs-btn-active-color: var(--care-on-accent);
-  --bs-btn-disabled-bg: var(--care-accent);
-  --bs-btn-disabled-border-color: var(--care-accent);
-  --bs-btn-disabled-color: var(--care-on-accent);
+/* Toggle icon button (e.g. pin the info panel): add :aria-pressed. */
+html .btn-icon[aria-pressed="true"] {
+  color: var(--care-primary);
+  background-color: var(--care-active-bg);
 }
 
-[data-bs-theme="dark"] .btn-outline-primary {
-  --bs-btn-color: var(--care-accent);
-  --bs-btn-border-color: var(--care-accent);
-  --bs-btn-hover-bg: var(--care-accent);
-  --bs-btn-hover-border-color: var(--care-accent);
-  --bs-btn-hover-color: var(--care-on-accent);
-  --bs-btn-active-bg: var(--care-accent-active);
-  --bs-btn-active-border-color: var(--care-accent-active);
-  --bs-btn-active-color: var(--care-on-accent);
-  --bs-btn-disabled-color: var(--care-accent);
-  --bs-btn-disabled-border-color: var(--care-accent);
-}
-
-
-[data-bs-theme="dark"] .page-item.active .page-link {
-  background-color: var(--care-accent);
-  border-color: var(--care-accent);
-  color: var(--care-on-accent);
-}
-
-[data-bs-theme="dark"] .text-primary {
-  color: var(--care-accent) !important;
-}
-
-[data-bs-theme="dark"] :is(.bg-primary, .text-bg-primary) {
-  background-color: var(--care-accent) !important;
-  color: var(--care-on-accent) !important;
-}
-
-[data-bs-theme="dark"] .pagination {
-  --bs-pagination-color: var(--care-accent);
-  --bs-pagination-hover-color: var(--care-accent);
-  --bs-pagination-focus-color: var(--care-accent);
-  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-accent) 25%, transparent);
+html .btn-icon-danger {
+  --bs-btn-hover-color: var(--bs-danger);
+  --bs-btn-hover-bg: var(--care-hover-danger);
+  --bs-btn-active-color: var(--bs-danger);
+  --bs-btn-active-bg: var(--care-hover-danger);
 }
 
 /* In a button group each button overlaps the previous one by 1px, so a grey
-   neighbour hides the right edge of a coloured outline button. Keep the
-   coloured border on top. */
+   neighbour hides the right edge of a coloured outline button. */
 .btn-group > :is(.btn-outline-danger, .btn-outline-warning) {
   z-index: 1;
 }
 
-[data-bs-theme="dark"] .form-check-input:checked {
-  background-color: var(--care-accent);
-  border-color: var(--care-accent);
+html .btn-link {
+  text-decoration: none;
 }
 
-[data-bs-theme="dark"] .form-check-input:focus {
-  border-color: var(--care-accent);
-  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-accent) 25%, transparent);
+html .btn-link:hover,
+html .btn-link:focus-visible {
+  text-decoration: none;
+  background-color: color-mix(in srgb, var(--care-primary) 10%, transparent);
 }
 
-/* The switch knob is a background image, so each state needs its own SVG. Both
-   are generated from the accent colour in App.vue, since a data URL cannot
-   contain a CSS variable. */
-[data-bs-theme="dark"] .form-switch .form-check-input:focus {
-  --bs-form-switch-bg: var(--care-switch-knob);
+html .btn-link:active {
+  background-color: color-mix(in srgb, var(--care-primary) 16%, transparent);
 }
 
-[data-bs-theme="dark"] .form-switch .form-check-input:checked,
-[data-bs-theme="dark"] .form-switch .form-check-input:checked:focus {
-  --bs-form-switch-bg: var(--care-switch-knob-on);
-}
 
-/* --- Quill toolbar ---
-   quill.snow.css is imported in main.js before this file, so these rules
-   replace Quill's #06c hover and active colour in both themes. */
+/* ===== 4. Forms ===== */
 
-html .ql-toolbar.ql-snow {
-  border-color: var(--bs-border-color);
-  background: var(--bs-tertiary-bg);
-  border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
-  padding: 6px 8px;
-}
-
-html .ql-container.ql-snow {
-  border-color: var(--bs-border-color);
-  border-radius: var(--bs-border-radius-lg);
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-}
-
-html .ql-toolbar.ql-snow + .ql-container.ql-snow {
-  border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
-}
-
-html .ql-editor.ql-blank::before {
-  color: var(--bs-secondary-color);
-}
-
-html .ql-snow .ql-stroke {
-  stroke: var(--bs-body-color);
-}
-
-html .ql-snow .ql-fill {
-  fill: var(--bs-body-color);
-}
-
-html .ql-snow .ql-picker {
-  color: var(--bs-body-color);
-}
-
-html .ql-snow.ql-toolbar button {
-  border-radius: var(--bs-border-radius-sm);
-}
-
-html .ql-snow.ql-toolbar button:hover {
-  background: var(--bs-secondary-bg);
-}
-
-html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) {
-  color: var(--care-primary);
-}
-
-html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) .ql-stroke {
-  stroke: var(--care-primary);
-}
-
-html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) .ql-fill {
-  fill: var(--care-primary);
-}
-
-html .ql-snow .ql-picker-options,
-html .ql-snow .ql-tooltip {
-  background: var(--bs-body-bg);
-  color: var(--bs-body-color);
-  border-color: var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  box-shadow: var(--care-shadow-3);
-}
-
-html .ql-snow a {
-  color: var(--bs-link-color);
-}
-
-/* --- PDF viewer --- */
-
-/* A black drop shadow is invisible on dark, so define the edge with a border. */
-[data-bs-theme="dark"] .pdf-toolbar {
-  border: 1px solid var(--bs-border-color);
-}
-
-/* Invert the rendered page, then tint it cool so it sits with the rest of the
-   dark UI rather than looking warm. Skipped when the reader has switched an
-   individual document back to light from the toolbar. */
-.scrolling-page.pdf-dark canvas.pdf-page {
-  filter: invert(0.88) grayscale(0.4) sepia(0.15) hue-rotate(185deg) saturate(2.2);
-}
-
-/* Printing a dark page wastes ink and reads badly, so never invert for print. */
-@media print {
-  canvas.pdf-page {
-    filter: none !important;
-  }
-}
-
-/* A pure white page glares against the dark UI when the reader switches an
-   individual document back to light, so soften it. Brightness scales all
-   channels equally, which keeps figure colours accurate. */
-[data-bs-theme="dark"] .scrolling-page:not(.pdf-dark) canvas.pdf-page {
-  filter: brightness(0.93);
-}
-
-/* Annotation highlights are SVG rects blended with multiply, which works like a
-   marker pen on white paper but produces almost nothing over a dark page.
-   Screen lightens instead of darkens, so the band stays visible. */
-.scrolling-page.pdf-dark svg.highlight-layer {
-  mix-blend-mode: screen !important;
-}
-
-.scrolling-page.pdf-dark .svg-highlight {
-  opacity: 0.4 !important;
-}
-
-/* Dropdown items use their own active-state variables rather than --bs-primary. */
-[data-bs-theme="dark"] .dropdown-menu {
-  --bs-dropdown-link-active-bg: var(--care-accent);
-  --bs-dropdown-link-active-color: var(--care-on-accent);
-}
-
-/* --- Keyboard focus ring ---
-   Plain .btn (no colour variant) and custom focusable elements get no visible
-   focus indicator from Bootstrap; add the care-focus-ring class to opt in.
-   The html prefix outranks Bootstrap's .btn:focus-visible { outline: 0 },
-   which loads after this file. */
-html .care-focus-ring:focus-visible {
-  outline: 2px solid var(--bs-primary);
-  outline-offset: -2px;
-}
-
-[data-bs-theme="dark"] .care-focus-ring:focus-visible {
-  outline-color: var(--care-accent);
-}
-
-/* Loaded after Bootstrap, so these variables replace Bootstrap's :root values. */
-:root {
-  --bs-border-radius: .5rem;
-  --bs-border-radius-sm: .375rem;
-  --bs-border-radius-lg: .75rem;
-  --bs-border-radius-xl: .875rem;
-  --bs-border-radius-pill: 999px;
-  /* ----- Fonts -----
-     The only place fonts are chosen. Inter and JetBrains Mono (both SIL Open
-     Font License 1.1, free for any use) are bundled in main.js, so no font CDN
-     is contacted. Components inherit the body font and use
-     var(--bs-font-monospace) for IDs and code; do not set font-family locally. */
-  --bs-body-font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
-    "Helvetica Neue", Roboto, sans-serif;
-  --bs-font-monospace: "JetBrains Mono Variable", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-    "Courier New", monospace;
-}
-
-/* Keeps 1rem at 15px after the W3 stylesheet was removed. Bootstrap reboot
-   already sets box-sizing and body margin. */
-html {
-  font-size: 15px;
-  overflow-x: clip;
-}
-
-:root {
-  /* ----- Shadows -----
-     Light shadows are tinted navy to match the blue-grey canvas, so they read
-     as depth rather than as grey smudges. For a one-off shadow use
-     rgb(var(--care-shadow-rgb) / alpha) rather than a fixed black or grey;
-     dark mode sets it to black. Space-separated for rgb(... / alpha). */
-  --care-shadow-rgb: 30 48 90;
-  --care-shadow-1: 0 1px 2px rgb(var(--care-shadow-rgb) / .08), 0 4px 14px -6px rgb(var(--care-shadow-rgb) / .16);
-  --care-shadow-2: 0 2px 4px rgb(var(--care-shadow-rgb) / .08), 0 12px 28px -10px rgb(var(--care-shadow-rgb) / .24);
-  --care-shadow-3: 0 4px 10px rgb(var(--care-shadow-rgb) / .06), 0 24px 48px -16px rgb(var(--care-shadow-rgb) / .26);
-  --care-ease: cubic-bezier(.2, .8, .2, 1);
-  --care-dur-fast: 120ms;
-  --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--bs-primary) 35%, transparent);
-
-  /* ----- Dashboard cards -----
-     Theme values for StatusCard.vue (basic/dashboard/card), the one card used
-     by Studies, My Sessions, Submissions and the session cards, and for the
-     panels around it. The card sets its own --care-card-accent from its tone. */
-  --care-card-radius: 14px;
-  --care-card-surface: var(--bs-body-bg);
-  --care-card-surface-raised: var(--bs-tertiary-bg);
-  --care-card-border: var(--bs-border-color-translucent);
-  --care-card-text: var(--bs-emphasis-color);
-  --care-card-muted: var(--bs-secondary-color);
-  --care-card-shadow: var(--care-shadow-1);
-  --care-card-shadow-hover: var(--care-shadow-2);
-  --care-card-ease: cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-html[data-bs-theme="dark"] {
-  --care-shadow-rgb: 0 0 0;
-  --care-shadow-1: 0 1px 2px rgb(0 0 0 / .4);
-  --care-shadow-2: 0 4px 10px -2px rgb(0 0 0 / .5);
-  --care-shadow-3: 0 14px 28px -6px rgb(0 0 0 / .6);
-  --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--care-accent) 35%, transparent);
-
-  --care-card-surface: color-mix(in srgb, var(--bs-body-bg) 95%, #ffffff 5%);
-  --care-card-surface-raised: color-mix(in srgb, var(--bs-body-bg) 91%, #ffffff 9%);
-  --care-card-border: rgba(255, 255, 255, 0.08);
-  --care-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
-  --care-card-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 16px 36px -14px rgba(0, 0, 0, 0.7);
-}
-
-/* Inter's alternate glyphs: alternate 1 (cv01), single-storey a (cv11), round
-   quotes (ss03). Set once on body; everything inherits it. */
-body {
-  font-feature-settings: "cv01", "cv11", "ss03";
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-html .btn {
-  --bs-btn-font-weight: 500;
-  --bs-btn-focus-box-shadow: var(--care-focus-ring);
-  transition: color var(--care-dur-fast) var(--care-ease),
-              background-color var(--care-dur-fast) var(--care-ease),
-              border-color var(--care-dur-fast) var(--care-ease),
-              box-shadow var(--care-dur-fast) var(--care-ease),
-              transform 80ms var(--care-ease);
-}
-
-html .btn:active:not(:disabled) {
-  transform: scale(.97);
-}
-
-html .btn:focus:not(:focus-visible) {
-  box-shadow: none;
-}
-
-html .btn:disabled,
-html .btn.disabled {
-  --bs-btn-disabled-opacity: .45;
-}
-
-/* Border and ring share one colour: --care-primary is the yellow accent in dark mode and
-   Bootstrap blue in light mode (--bs-primary stays blue in both, which gave a mixed outline). */
+/* Border and ring share one colour, --care-primary, in both themes. */
 html .form-control:focus,
 html .form-select:focus {
   border-color: var(--care-primary);
   box-shadow: var(--care-focus-ring);
 }
 
+/* A disabled select must look disabled (Bootstrap's grey barely differs in dark mode). */
+.form-select:disabled,
+fieldset:disabled .form-select {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* Validation message under a field; add .invalid to show it. */
+.feedback-invalid {
+  display: flex;
+  gap: .3rem;
+  align-items: center;
+  font-size: .8rem;
+  color: var(--bs-form-invalid-color);
+  padding-top: .25rem;
+  visibility: hidden;
+}
+
+.feedback-invalid.invalid {
+  visibility: visible;
+}
+
+.feedback-invalid::before {
+  font-family: "bootstrap-icons";
+  content: "\f333";
+}
+
+:is(.form-control, .form-select):has(+ .feedback-invalid.invalid) {
+  border-color: var(--bs-form-invalid-border-color);
+}
+
+/* List of errors under an upload or import form. */
+.scrollable-error-container {
+  color: var(--bs-danger-text-emphasis);
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 10px;
+  border: 1px solid var(--bs-danger-border-subtle);
+  border-radius: 4px !important;
+  background-color: var(--bs-danger-bg-subtle);
+
+  > p {
+    margin-bottom: 0.5rem;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
+  }
+}
+
+/* Shared import / upload drop target (FileDropzone, ImportSourceStep). File.vue
+   sits inside .input-group, so drop that flex row or the box shrinks to the icon. */
+html .input-group:has(.drag-drop-area) {
+  display: block;
+  width: 100%;
+}
+
+html .input-group:has(.drag-drop-area) > * {
+  width: 100%;
+}
+
+.drag-drop-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  width: 100%;
+  min-height: 8.5rem;
+  margin: 0;
+  padding: 1.5rem 1.25rem;
+  border: 1.5px dashed color-mix(in srgb, var(--care-primary) 40%, var(--bs-border-color));
+  border-radius: var(--care-radius-lg);
+  background: color-mix(in srgb, var(--care-primary) 5%, var(--bs-body-bg));
+  color: var(--bs-secondary-color);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color var(--care-dur-fast) var(--care-ease),
+              border-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) var(--care-ease);
+}
+
+.drag-drop-area:hover,
+.drag-drop-area.is-dragover {
+  border-color: var(--care-primary);
+  border-style: solid;
+  background: color-mix(in srgb, var(--care-primary) 10%, var(--bs-body-bg));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--care-primary) 12%, transparent);
+}
+
+.drag-drop-area.has-file {
+  border-style: solid;
+  border-color: var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+}
+
+.drag-drop-area.is-disabled {
+  cursor: not-allowed;
+  opacity: .6;
+  pointer-events: none;
+}
+
+.drag-drop-area .drag-drop-icon {
+  color: var(--care-primary);
+  opacity: .75;
+}
+
+.drag-drop-area .drag-drop-title {
+  font-size: .95rem;
+  font-weight: 550;
+  color: var(--bs-body-color);
+}
+
+.drag-drop-area .drag-drop-hint {
+  font-size: .825rem;
+}
+
+/* Consent checkboxes (ConsentModal, PreferencesModal). */
+.consent-item {
+  margin-bottom: 10px;
+}
+
+.consent-item:last-child {
+  margin-bottom: 0;
+}
+
+.consent-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  cursor: pointer;
+}
+
+
+/* ===== 5. Cards ===== */
+
 html .card {
   --bs-card-border-color: var(--bs-border-color-translucent);
   --bs-card-cap-bg: transparent;
-  border-radius: var(--bs-border-radius-lg);
+  border-radius: var(--care-radius-lg);
   box-shadow: var(--care-shadow-1);
+}
+
+/* Cards on the light canvas get a navy-tinted hairline to go with the shadow. */
+html[data-bs-theme="light"] .card {
+  --bs-card-border-color: rgb(var(--care-shadow-rgb) / 0.11);
+}
+
+/* A card inside a card (settings sections, wizard summary) stays flat. */
+html .card .card {
+  box-shadow: none;
 }
 
 html .card > .card-header {
@@ -583,19 +479,22 @@ html .card > .card-header .card-title {
   font-weight: 600;
 }
 
+/* Header button row of basic/dashboard/card/Card.vue. Ghost .btn-secondary
+   buttons first; their icon lights up in --care-primary on hover. */
 html .card-header-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  align-items: center;
   justify-content: flex-end;
+  gap: .25rem;
 }
 
 html .card-header-actions .btn-group {
-  gap: 6px;
+  gap: .25rem;
 }
 
 html .card-header-actions .btn-group > .btn {
-  border-radius: var(--bs-border-radius) !important;
+  border-radius: var(--care-radius-md) !important;
 }
 
 html .card-header-actions .btn-secondary {
@@ -610,323 +509,24 @@ html .card-header-actions .btn-secondary {
   --bs-btn-active-color: var(--bs-body-color);
 }
 
-/* Same icon light-up as the study dashboard: blue in light theme, yellow in dark.
-   Primary (filled) buttons keep their own colour. */
 html .card-header-actions .btn-secondary svg {
   color: var(--bs-secondary-color);
-  transition: color 0.2s ease;
+  transition: color var(--care-dur-fast) var(--care-ease);
 }
 
-html .card-header-actions .btn-secondary:hover svg,
-html .card-header-actions .btn-secondary:focus-visible svg {
-  color: var(--bs-primary);
-}
-
-html[data-bs-theme="dark"] .card-header-actions .btn-secondary:hover svg,
-html[data-bs-theme="dark"] .card-header-actions .btn-secondary:focus-visible svg {
-  color: var(--care-accent);
-}
-
-/* ===== Dashboard page shell =====
-   The one container style for dashboard pages: Studies, My Sessions,
-   Submissions and every ListPage (Templates, Documents, ...). Put
-   class="dashboard-page" on the page's <Card> instead of styling a shell
-   per component. Pages that place their own panels inside (the Studies table)
-   use --dash-panel, --dash-border and --dash-panel-shadow. */
-html .dashboard-page {
-  min-width: 0;
-  max-width: 100%;
-  --dash-border: rgb(var(--care-shadow-rgb) / 0.11);
-  --dash-panel: var(--bs-body-bg);
-  --dash-ghost-hover: rgba(255, 255, 255, 0.85);
-  --dash-panel-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06), 0 1px 3px rgb(var(--care-shadow-rgb) / 0.07);
-  --dash-shadow: var(--care-shadow-1);
-  /* Solid base colour under the gradient. Sticky headers (Settings) paint it
-     so rows scrolling underneath stay hidden. */
-  --dash-surface: var(--care-page-surface, #f2f5fa);
-  border: 1px solid var(--dash-border);
-  border-radius: 16px;
-  background:
-    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
-    var(--dash-surface);
-  box-shadow: var(--dash-shadow);
-}
-
-html[data-bs-theme="dark"] .dashboard-page {
-  --dash-border: rgba(255, 255, 255, 0.08);
-  --dash-panel: color-mix(in srgb, var(--bs-body-bg) 95%, #ffffff 5%);
-  --dash-ghost-hover: rgba(255, 255, 255, 0.07);
-  --dash-panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
-  --dash-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
-  --dash-surface: color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
-  background:
-    radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
-    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.09), transparent 60%),
-    var(--dash-surface);
-}
-
-html .dashboard-page > .card-header {
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1.15rem 1.35rem 0.4rem;
-}
-
-/* Set by HeaderActions.vue while its buttons fit next to the title: keep one line,
-   so the header never jumps to two rows between resize frames. */
-html .dashboard-page > .card-header.has-header-actions {
-  flex-wrap: nowrap;
-}
-
-html .dashboard-page > .card-header.has-header-actions > .card-title {
-  flex: none;
-  white-space: nowrap;
-}
-
-html .dashboard-page > .card-header .card-title {
-  margin: 0;
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: -0.022em;
-  color: var(--bs-emphasis-color);
-}
-
-/* Low specificity on purpose: it only has to beat Bootstrap's .card-body, so
-   ListPage.vue can keep its own tighter 1rem padding. */
-:where(.dashboard-page) > .card-body {
-  min-width: 0;
-  padding: 0.85rem 1.35rem 1.35rem;
-  background: transparent;
-}
-
-/* Header button row, same on every dashboard (reference: Studies):
-   ghost .btn-secondary buttons first, then <span class="dashboard-header-sep">,
-   then the filled main action(s) (.btn-primary, or .btn-warning/.btn-danger).
-   Wrap the buttons in .dashboard-header-actions (or put them straight into the
-   slot); do not use .btn-group gap-*, its !important gap breaks the spacing. */
-html .dashboard-page .card-header-actions,
-html .dashboard-page .dashboard-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.25rem;
-}
-
-html .dashboard-page .card-header-actions .btn-group {
-  gap: 0.25rem;
-}
-
-html .dashboard-page .dashboard-header-sep {
-  flex: none;
-  width: 1px;
-  height: 1.25rem;
-  margin: 0 0.35rem;
-  background: var(--dash-border);
-}
-
-html .dashboard-page .card-header-actions .btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.38rem 0.7rem;
-  font-size: 0.82rem;
-  font-weight: 500;
-  border-radius: 8px;
-}
-
-html .dashboard-page .card-header-actions .btn-group > .btn {
-  border-radius: 8px !important;
-}
-
-/* Filled header actions share the primary button's weight and width. */
-html .dashboard-page .card-header-actions :is(.btn-primary, .btn-warning, .btn-danger, .btn-success) {
-  padding-inline: 0.85rem;
-  font-weight: 600;
-}
-
-html .dashboard-page .card-header-actions .btn-primary {
-  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 6px 16px -6px rgba(var(--bs-primary-rgb), 0.55);
-}
-
-html .dashboard-page .card-header-actions .btn-primary:hover {
-  filter: brightness(1.06);
-  box-shadow: 0 1px 2px rgba(var(--bs-primary-rgb), 0.3), 0 10px 22px -8px rgba(var(--bs-primary-rgb), 0.65);
-}
-
-html[data-bs-theme="dark"] .dashboard-page .card-header-actions .btn-primary {
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
-    0 6px 16px -6px color-mix(in srgb, var(--care-accent) 55%, transparent);
-}
-
-html[data-bs-theme="dark"] .dashboard-page .card-header-actions .btn-primary:hover {
-  box-shadow:
-    0 1px 2px color-mix(in srgb, var(--care-accent) 30%, transparent),
-    0 10px 22px -8px color-mix(in srgb, var(--care-accent) 65%, transparent);
-}
-
-html .dashboard-page .card-header-actions .btn-secondary {
-  --bs-btn-hover-bg: var(--dash-ghost-hover);
-  --bs-btn-hover-border-color: var(--dash-border);
-  --bs-btn-hover-color: var(--bs-emphasis-color);
-  --bs-btn-active-bg: var(--dash-ghost-hover);
-  --bs-btn-active-border-color: var(--dash-border);
-  --bs-btn-active-color: var(--bs-emphasis-color);
-}
-
-html .dashboard-page .card-header-actions .btn-secondary:hover,
-html .dashboard-page .card-header-actions .btn-secondary:focus-visible {
-  box-shadow: var(--dash-panel-shadow);
-}
-
-html .dashboard-wrapper {
-  background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
-}
-
-/* Blue-grey canvas with a faint glow of the primary blue top left and a
-   lighter sky blue top right, so the page has some colour without tinting
-   the cards. */
-html[data-bs-theme="light"] .dashboard-wrapper {
-  background:
-    radial-gradient(1200px 560px at 0% 0%, rgba(var(--bs-primary-rgb), 0.07), transparent 62%),
-    radial-gradient(1000px 520px at 100% 0%, rgb(96 165 250 / 0.08), transparent 60%),
-    var(--care-canvas);
-}
-
-/* Cards on the canvas get a navy-tinted hairline border to go with the shadow. */
-html[data-bs-theme="light"] .card {
-  --bs-card-border-color: rgb(var(--care-shadow-rgb) / 0.11);
-}
-
-html .dashboard-page .dashboard-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .5rem 1rem;
-}
-
-html .dashboard-page .status-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  padding: .2rem .65rem .2rem .5rem;
-  font-size: .75rem;
-  font-weight: 600;
-  letter-spacing: .02em;
-  text-transform: uppercase;
-  border-radius: 999px;
-  border: 1px solid var(--bs-border-color);
-  background: var(--bs-tertiary-bg);
-  color: var(--bs-secondary-color);
-}
-
-html .dashboard-page .status-chip.is-online {
-  color: var(--bs-success-text-emphasis);
-  background: var(--bs-success-bg-subtle);
-  border-color: color-mix(in srgb, var(--bs-success) 28%, var(--bs-border-color));
-}
-
-html .dashboard-page .status-chip.is-offline {
-  color: var(--bs-danger-text-emphasis);
-  background: var(--bs-danger-bg-subtle);
-  border-color: color-mix(in srgb, var(--bs-danger) 28%, var(--bs-border-color));
-}
-
-html .dashboard-page .status-chip-dot {
-  width: .45rem;
-  height: .45rem;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-/* ===== Sectioned card dashboards (My Sessions, Submissions) =====
-   Page layout only: sections with a heading and an empty state. The cards and
-   their grid are StatusCard.vue (basic/dashboard/card), used by every card
-   list: Studies, My Sessions, Submissions and the session cards. */
-html .sessions-page {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
-}
-
-html .sessions-section-head {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  margin-bottom: .85rem;
-  padding-bottom: .6rem;
-  border-bottom: 1px solid var(--care-card-border);
-}
-
-html .sessions-section-title {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 650;
-  letter-spacing: -.012em;
-  color: var(--care-card-text);
-}
-
-html .sessions-empty {
-  display: flex;
-  align-items: center;
-  gap: .9rem;
-  padding: 1rem 1.15rem;
-  color: var(--care-card-muted);
-  background: var(--care-card-surface);
-  border: 1px dashed var(--care-card-border);
-  border-radius: var(--care-card-radius);
-}
-
-html .sessions-empty p {
-  margin: 0;
-  font-size: .9rem;
-}
-
-html .sessions-empty-icon {
-  display: inline-grid;
-  place-items: center;
-  flex: 0 0 auto;
-  width: 2.5rem;
-  height: 2.5rem;
+html .card-header-actions .btn-secondary:is(:hover, :focus-visible) svg {
   color: var(--care-primary);
-  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
-  border-radius: 12px;
 }
 
-html .modal .editor-wrapper.form-control {
-  border: 0;
-  box-shadow: none;
-  background: transparent;
-  padding: 0;
-  overflow: hidden;
-  min-height: 0;
-  max-height: none;
-}
 
-html .modal .input-group:has(.ql-toolbar) {
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius);
-  overflow: hidden;
-}
-
-html .modal .ql-toolbar.ql-snow {
-  border: 0;
-  border-bottom: 1px solid var(--bs-border-color);
-}
-
-html .modal .ql-container.ql-snow {
-  border: 0;
-}
-
-html .modal .editor-wrapper .ql-container {
-  min-height: 8rem;
-  max-height: 14rem;
-  overflow-y: auto;
-}
+/* ===== 6. Badges =====
+   Badges are subtle by design: colour badges show a light tint with darker
+   text, and primary/secondary badges are a neutral grey. Use
+   .badge-care-primary for a badge tinted in CARE's primary colour (running
+   sessions). */
 
 html .badge {
-  border-radius: var(--bs-border-radius-pill);
+  border-radius: var(--care-radius-pill);
   font-weight: 500;
   padding: .35em .7em;
 }
@@ -946,22 +546,125 @@ html .badge.bg-warning {
   color: var(--bs-warning-text-emphasis);
 }
 
+html .badge.bg-info {
+  background: var(--bs-info-bg-subtle) !important;
+  color: var(--bs-info-text-emphasis);
+}
+
 html .badge.bg-primary,
 html .badge.bg-secondary {
   background: var(--bs-secondary-bg) !important;
   color: var(--bs-body-color);
 }
 
-/* Running sessions. bg-primary on a badge is restyled to grey above. */
 html .badge.badge-care-primary {
   background: color-mix(in srgb, var(--care-primary) 12%, transparent) !important;
   color: var(--care-primary);
   border: 1px solid color-mix(in srgb, var(--care-primary) 22%, transparent);
 }
 
+
+/* ===== 7. Menus =====
+   Shared menu box, and the popup list for native <select> elements
+   (plugins/selectEnhancer.js), which replaces the browser-drawn list. */
+
+html select.care-native-open {
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
+}
+
+/* Box shared by every popup list and action menu; each menu adds its own colours and spacing. */
+.care-menu {
+  position: fixed;
+  z-index: var(--care-z-popover); /* above Bootstrap modals */
+  margin: 0;
+  padding: .25rem;
+  list-style: none;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color-translucent);
+  border-radius: var(--care-radius-lg);
+  box-shadow: var(--care-shadow-3);
+  outline: none;
+}
+
+.care-native-menu {
+  overflow-y: auto;
+  font-size: .875rem;
+  color: var(--bs-body-color);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--bs-secondary-rgb), .35) transparent;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 110ms ease, transform 130ms var(--care-ease);
+}
+
+.care-native-menu.is-open {
+  opacity: 1;
+  transform: none;
+}
+
+[data-bs-theme="dark"] .care-native-menu {
+  background: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
+}
+
+/* Full-width rows, so the highlight always spans the whole menu. */
+.care-native-menu__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .45rem .65rem;
+  border-radius: var(--care-radius-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.care-native-menu__option.is-grouped {
+  padding-left: 1.25rem;
+}
+
+.care-native-menu__option.is-active:not(.is-disabled) {
+  color: var(--bs-emphasis-color);
+  background: rgba(var(--care-violet-rgb), .12);
+}
+
+.care-native-menu__option.is-selected {
+  font-weight: 500;
+  color: var(--care-primary);
+}
+
+.care-native-menu__option.is-disabled {
+  color: var(--bs-secondary-color);
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+.care-native-menu__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.care-native-menu__check {
+  flex: 0 0 auto;
+}
+
+.care-native-menu__group {
+  padding: .5rem .65rem .25rem;
+  font-size: .7rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+}
+
+
+/* ===== 8. Modals ===== */
+
 html .modal-content {
   border: 0;
-  border-radius: var(--bs-border-radius-xl);
+  border-radius: var(--care-radius-xl);
   box-shadow: var(--care-shadow-3);
 }
 
@@ -989,11 +692,32 @@ html .modal-header {
   padding-bottom: 8px;
 }
 
+html .modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
 html .modal-body {
   padding: 12px 40px 28px;
   /* A classic scrollbar must take its own column, not paint over the
      last buttons of a full-width row. */
   scrollbar-gutter: stable;
+}
+
+html .modal-footer {
+  gap: .5rem;
+  padding-top: 8px;
+  padding-bottom: 22px;
+}
+
+/* Footers wrap Cancel and Confirm in a btn-group; keep the buttons apart. */
+html .modal-footer .btn-group {
+  gap: .5rem;
+}
+
+html .modal-footer .btn-group > .btn {
+  border-radius: var(--care-radius-md) !important;
+  margin: 0;
 }
 
 /* A table inside a stepper fills the room left under the header and
@@ -1054,11 +778,6 @@ html .modal .content-container .container > .row {
   margin-left: 0;
 }
 
-html .modal-footer {
-  padding-top: 8px;
-  padding-bottom: 22px;
-}
-
 html .modal .row > [class*="col"] {
   min-width: 0;
 }
@@ -1096,11 +815,12 @@ html .modal .input-group > .form-select {
   min-width: 0;
 }
 
+/* Wide controls (tables, editors, date picker, sliders) take the full row
+   instead of sitting in the icon + control flex row. */
 html .modal .input-group:has(table),
 html .modal .input-group:has(.ql-toolbar),
 html .modal .input-group:has(.care-dp-trigger),
-html .modal .input-group:has(.form-range),
-html .modal .input-group:has(.drag-drop-area) {
+html .modal .input-group:has(.form-range) {
   display: block;
 }
 
@@ -1108,14 +828,9 @@ html .modal .input-group:has(table) > .form-control,
 html .modal .input-group:has(.ql-toolbar) > .form-control,
 html .modal .input-group:has(.care-dp-trigger) > .form-control,
 html .modal .input-group:has(.form-range) > .form-control,
-html .modal .input-group:has(.drag-drop-area) > .form-control,
 html .modal .editor-wrapper {
   width: 100%;
   max-width: 100%;
-}
-
-html .modal .ql-snow.ql-toolbar button {
-  display: inline-block;
 }
 
 html .modal .form-label {
@@ -1144,204 +859,41 @@ html .modal .form-check-input:disabled ~ .form-check-label {
   color: var(--bs-secondary-color);
 }
 
-html .modal .form-field {
-  flex-direction: column;
-  align-items: stretch;
-  gap: .35rem;
-  margin: 0 0 1.15rem;
-}
-
-html .modal .form-field .form-label {
-  margin: 0;
-}
-
-html .modal-footer {
-  gap: .5rem;
-}
-
-html .btn-link {
-  text-decoration: none;
-}
-
-html .btn-link:hover,
-html .btn-link:focus-visible {
-  text-decoration: none;
-  background-color: color-mix(in srgb, var(--care-primary) 10%, transparent);
-}
-
-html .btn-link:active {
-  background-color: color-mix(in srgb, var(--care-primary) 16%, transparent);
-}
-
-html .modal-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-/* Footers wrap Cancel and Confirm in a btn-group; keep the buttons apart. */
-html .modal-footer .btn-group {
-  gap: .5rem;
-}
-
-html .modal-footer .btn-group > .btn {
-  border-radius: var(--bs-border-radius) !important;
-  margin: 0;
-}
-
-/* A card inside a card (settings sections, wizard summary) stays flat. */
-html .card .card {
+/* Rich-text editor (form/Editor.vue) inside a modal: the input-group draws
+   the frame, so Quill's own borders go. */
+html .modal .editor-wrapper.form-control {
+  border: 0;
   box-shadow: none;
-}
-
-html .dropdown-menu {
-  --bs-dropdown-padding-x: .25rem;
-  --bs-dropdown-item-border-radius: var(--bs-border-radius-sm);
-  box-shadow: var(--care-shadow-3);
-}
-
-/* ===== Popup for native <select> (plugins/selectEnhancer.js) =====
-   Replaces the browser-drawn list; same look as FormSelect / FilterDropdown. */
-/* A disabled select must look disabled (Bootstrap's grey barely differs in dark mode) */
-.form-select:disabled,
-fieldset:disabled .form-select {
-  opacity: .55;
-  cursor: not-allowed;
-}
-
-html select.care-native-open {
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring);
-}
-
-.care-native-menu {
-  position: fixed;
-  z-index: 1080; /* above Bootstrap modals (1055) */
-  margin: 0;
-  padding: .25rem;
-  overflow-y: auto;
-  list-style: none;
-  font-size: .875rem;
-  color: var(--bs-body-color);
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg, .75rem);
-  box-shadow: var(--care-shadow-3);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(var(--bs-secondary-rgb), .35) transparent;
-  opacity: 0;
-  transform: translateY(-4px);
-  transition: opacity 110ms ease, transform 130ms var(--care-ease, ease);
-}
-
-.care-native-menu.is-open {
-  opacity: 1;
-  transform: none;
-}
-
-[data-bs-theme="dark"] .care-native-menu {
-  background: color-mix(in srgb, var(--bs-body-bg) 90%, #ffffff 10%);
-}
-
-/* Full-width rows, so the highlight always spans the whole menu */
-.care-native-menu__option {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  padding: .45rem .65rem;
-  border-radius: var(--bs-border-radius-sm, .375rem);
-  cursor: pointer;
-  user-select: none;
-}
-
-.care-native-menu__option.is-grouped {
-  padding-left: 1.25rem;
-}
-
-.care-native-menu__option.is-active:not(.is-disabled) {
-  color: var(--bs-emphasis-color);
-  background: rgba(var(--care-violet-rgb), .12);
-}
-
-.care-native-menu__option.is-selected {
-  font-weight: 500;
-  color: var(--care-primary, var(--bs-primary));
-}
-
-.care-native-menu__option.is-disabled {
-  color: var(--bs-secondary-color);
-  opacity: .6;
-  cursor: not-allowed;
-}
-
-.care-native-menu__label {
-  min-width: 0;
+  background: transparent;
+  padding: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-height: 0;
+  max-height: none;
 }
 
-.care-native-menu__check {
-  flex: 0 0 auto;
+html .modal .input-group:has(.ql-toolbar) {
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--care-radius-md);
+  overflow: hidden;
 }
 
-.care-native-menu__group {
-  padding: .5rem .65rem .25rem;
-  font-size: .7rem;
-  font-weight: 600;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .care-native-menu {
-    transition: none;
-  }
-}
-
-/* ===== Shared CARE classes ===== */
-
-/* Validation message under a field; add .invalid to show it. */
-.feedback-invalid {
-  display: flex;
-  gap: .3rem;
-  align-items: center;
-  font-size: .8rem;
-  color: var(--bs-form-invalid-color);
-  padding-top: .25rem;
-  visibility: hidden;
-}
-
-.feedback-invalid.invalid {
-  visibility: visible;
-}
-
-.feedback-invalid::before {
-  font-family: "bootstrap-icons";
-  content: "\f333";
-}
-
-:is(.form-control, .form-select):has(+ .feedback-invalid.invalid) {
-  border-color: var(--bs-form-invalid-border-color);
-}
-
-/* Headings in the setup wizard and settings */
-.step-card-header {
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.step-group-heading,
-.section-title {
-  font-size: .75rem;
-  font-weight: 600;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
+html .modal .ql-toolbar.ql-snow {
+  border: 0;
   border-bottom: 1px solid var(--bs-border-color);
-  padding-bottom: .35rem;
-  margin-bottom: .75rem;
+}
+
+html .modal .ql-snow.ql-toolbar button {
+  display: inline-block;
+}
+
+html .modal .ql-container.ql-snow {
+  border: 0;
+}
+
+html .modal .editor-wrapper .ql-container {
+  min-height: 8rem;
+  max-height: 14rem;
+  overflow-y: auto;
 }
 
 /* Step indicator in StepperModal and the setup wizard. Steps before the
@@ -1419,102 +971,412 @@ html select.care-native-open {
   background: var(--care-primary);
 }
 
-/* Label and control on one row in upload and import dialogs */
-.form-field {
+/* Headings in the setup wizard and settings. */
+.step-card-header {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.step-group-heading,
+.section-title {
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--bs-secondary-color);
+  border-bottom: 1px solid var(--bs-border-color);
+  padding-bottom: .35rem;
+  margin-bottom: .75rem;
+}
+
+
+/* ===== 9. Dashboard page shell =====
+   The canvas behind every dashboard page, and the one container style for
+   dashboard pages: Studies, My Sessions, Submissions and every ListPage
+   (Templates, Documents, ...). Put class="dashboard-page" on the page's
+   <Card> instead of styling a shell per component. Panels placed inside it
+   use the --care-card-* tokens. */
+
+html .dashboard-wrapper {
+  background-color: color-mix(in srgb, var(--bs-tertiary-bg) 60%, var(--bs-secondary-bg));
+}
+
+/* Blue-grey canvas with a faint glow of the primary blue top left and a
+   lighter sky blue top right, so the page has some colour without tinting
+   the cards. */
+html[data-bs-theme="light"] .dashboard-wrapper {
+  background:
+    radial-gradient(1200px 560px at 0% 0%, rgba(var(--bs-primary-rgb), 0.07), transparent 62%),
+    radial-gradient(1000px 520px at 100% 0%, rgb(96 165 250 / 0.08), transparent 60%),
+    var(--care-canvas);
+}
+
+html .dashboard-page {
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--care-page-border);
+  border-radius: var(--care-radius-2xl);
+  background:
+    radial-gradient(1100px 360px at 0% -8%, rgba(var(--bs-primary-rgb), 0.05), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.04), transparent 60%),
+    var(--care-page-surface);
+  box-shadow: var(--care-page-shadow);
+}
+
+html[data-bs-theme="dark"] .dashboard-page {
+  background:
+    radial-gradient(1100px 360px at 0% -8%, color-mix(in srgb, var(--care-accent) 8%, transparent), transparent 62%),
+    radial-gradient(900px 420px at 100% -16%, rgba(var(--care-violet-rgb), 0.09), transparent 60%),
+    var(--care-page-surface);
+}
+
+html .dashboard-page > .card-header {
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.35rem 0.4rem;
+}
+
+/* Set by HeaderActions.vue while its buttons fit next to the title: keep one line,
+   so the header never jumps to two rows between resize frames. */
+html .dashboard-page > .card-header.has-header-actions {
+  flex-wrap: nowrap;
+}
+
+html .dashboard-page > .card-header.has-header-actions > .card-title {
+  flex: none;
+  white-space: nowrap;
+}
+
+html .dashboard-page > .card-header .card-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  color: var(--bs-emphasis-color);
+}
+
+/* Low specificity on purpose: it only has to beat Bootstrap's .card-body, so
+   ListPage.vue can keep its own tighter 1rem padding. */
+:where(.dashboard-page) > .card-body {
+  min-width: 0;
+  padding: 0.85rem 1.35rem 1.35rem;
+  background: transparent;
+}
+
+/* Header button row, same on every dashboard (reference: Studies):
+   ghost .btn-secondary buttons first, then <span class="dashboard-header-sep">,
+   then the filled main action(s) (.btn-primary, or .btn-warning/.btn-danger).
+   Wrap the buttons in .dashboard-header-actions (or put them straight into the
+   slot); do not use .btn-group gap-*, its !important gap breaks the spacing. */
+html .dashboard-page .dashboard-header-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  margin: 1.25rem 0;
+  justify-content: flex-end;
+  gap: .25rem;
 }
 
-.form-field .form-label {
-  flex-shrink: 0;
-  margin: 0 .5rem 0 0;
+html .dashboard-page .dashboard-header-sep {
+  flex: none;
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.35rem;
+  background: var(--care-page-border);
 }
 
-/* Shared import / upload drop target. File.vue sits inside .input-group, so
-   drop that flex row or the dashed box shrinks to the icon. */
-html .input-group:has(.drag-drop-area) {
-  display: block;
-  width: 100%;
+html .dashboard-page .card-header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.38rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: var(--care-radius-md);
 }
 
-html .input-group:has(.drag-drop-area) > * {
-  width: 100%;
+/* Filled header actions share the primary button's weight and width. */
+html .dashboard-page .card-header-actions :is(.btn-primary, .btn-warning, .btn-danger, .btn-success) {
+  padding-inline: 0.85rem;
+  font-weight: 600;
 }
 
-.drag-drop-area {
+html .dashboard-page .card-header-actions .btn-primary {
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-primary) 30%, transparent),
+    0 6px 16px -6px color-mix(in srgb, var(--care-primary) 55%, transparent);
+}
+
+html .dashboard-page .card-header-actions .btn-primary:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--care-primary) 30%, transparent),
+    0 10px 22px -8px color-mix(in srgb, var(--care-primary) 65%, transparent);
+}
+
+/* Ghost header buttons sit on the tinted page, so they lift to a light pill. */
+html .dashboard-page .card-header-actions .btn-secondary {
+  --bs-btn-hover-bg: var(--care-page-ghost-hover);
+  --bs-btn-hover-border-color: var(--care-page-border);
+  --bs-btn-hover-color: var(--bs-emphasis-color);
+  --bs-btn-active-bg: var(--care-page-ghost-hover);
+  --bs-btn-active-border-color: var(--care-page-border);
+  --bs-btn-active-color: var(--bs-emphasis-color);
+}
+
+html .dashboard-page .card-header-actions .btn-secondary:is(:hover, :focus-visible) {
+  box-shadow: var(--care-card-shadow-flat);
+}
+
+/* Sectioned card dashboards (My Sessions, Submissions): sections with a
+   heading and an empty state. The cards are StatusCard.vue, their grid is below. */
+html .sessions-page {
   display: flex;
   flex-direction: column;
+  gap: 1.75rem;
+}
+
+html .sessions-section-head {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: .35rem;
-  width: 100%;
-  min-height: 8.5rem;
+  gap: .6rem;
+  margin-bottom: .85rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--care-card-border);
+}
+
+html .sessions-section-title {
   margin: 0;
-  padding: 1.5rem 1.25rem;
-  border: 1.5px dashed color-mix(in srgb, var(--care-primary) 40%, var(--bs-border-color));
-  border-radius: var(--bs-border-radius-lg);
-  background: color-mix(in srgb, var(--care-primary) 5%, var(--bs-body-bg));
-  color: var(--bs-secondary-color);
-  text-align: center;
-  cursor: pointer;
-  transition: background-color var(--care-dur-fast) var(--care-ease),
-              border-color var(--care-dur-fast) var(--care-ease),
-              box-shadow var(--care-dur-fast) var(--care-ease);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -.012em;
+  color: var(--care-card-text);
 }
 
-.drag-drop-area:hover,
-.drag-drop-area.is-dragover {
-  border-color: var(--care-primary);
-  border-style: solid;
-  background: color-mix(in srgb, var(--care-primary) 10%, var(--bs-body-bg));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--care-primary) 12%, transparent);
+html .sessions-empty {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  padding: 1rem 1.15rem;
+  color: var(--care-card-muted);
+  background: var(--care-card-surface);
+  border: 1px dashed var(--care-card-border);
+  border-radius: var(--care-radius-xl);
 }
 
-.drag-drop-area.has-file {
-  border-style: solid;
-  border-color: var(--bs-border-color);
-  background: var(--bs-tertiary-bg);
+html .sessions-empty p {
+  margin: 0;
+  font-size: .9rem;
 }
 
-.drag-drop-area.is-disabled {
-  cursor: not-allowed;
-  opacity: .6;
+html .sessions-empty-icon {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+  border-radius: var(--care-radius-lg);
+}
+
+/* Card grid around StatusCard lists (Studies, My Sessions, Submissions, session cards). */
+.status-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+  gap: 1rem;
+  align-items: start;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.status-card-grid--list {
+  grid-template-columns: 1fr;
+}
+
+.status-card-grid--compact {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 0.75rem;
+}
+
+/* A page request is visibly slow: dim the current cards until it answers. */
+.status-card-grid.is-refreshing {
+  opacity: 0.55;
+  filter: saturate(0.7);
   pointer-events: none;
 }
 
-.drag-drop-area .drag-drop-icon {
-  color: var(--care-primary);
-  opacity: .75;
+@media (prefers-reduced-motion: reduce) {
+  .status-card-grid {
+    transition: none;
+  }
 }
 
-.drag-drop-area .drag-drop-title {
+
+/* ===== 10. Shared components =====
+   Classes used by several components of one feature. */
+
+/* --- Home panels (HomeSessions, HomeDeadlines, HomeContinue, HomeGuest) --- */
+
+.home-panel {
+  min-width: 0;
+  height: 100%;
+  padding: 14px 16px;
+  overflow: hidden;
+  background: var(--bs-body-bg);
+}
+
+/* A hairline under the heading separates it from the list below. */
+.home-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75rem;
+  margin: 0 -16px 10px;
+  padding: 0 16px 10px;
+  border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.home-panel h2 {
+  margin: 0;
   font-size: .95rem;
-  font-weight: 550;
-  color: var(--bs-body-color);
+  font-weight: 650;
+  letter-spacing: -.01em;
+  color: var(--bs-emphasis-color);
 }
 
-.drag-drop-area .drag-drop-hint {
-  font-size: .825rem;
+.home-panel-link {
+  flex: 0 0 auto;
+  font-size: .85rem;
+  font-weight: 600;
+  text-decoration: none;
 }
 
-/* Consent checkboxes in ConsentModal and PreferencesModal */
-.consent-item {
-  margin-bottom: 10px;
-}
-
-.consent-item:last-child {
-  margin-bottom: 0;
-}
-
-.consent-label {
-  display: inline-flex;
+.home-session {
+  display: flex;
   align-items: center;
-  gap: .5rem;
-  cursor: pointer;
+  gap: .75rem;
+  min-width: 0;
+  margin: 0 -8px;
+  padding: 8px;
+  border-radius: var(--care-radius-md);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--care-dur-fast) var(--care-ease);
 }
 
-/* Home overview tiles (Home.vue and HomeSubmissionsTile.vue).
+.home-session:hover {
+  background: var(--care-row-hover);
+}
+
+.home-session:hover b {
+  color: var(--care-primary);
+}
+
+.home-session b {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-session small,
+.home-empty {
+  color: var(--bs-secondary-color);
+}
+
+.home-empty {
+  margin: 0;
+  font-size: .9rem;
+}
+
+.home-session-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* Soft type marker: tinted square with the same icons as the sidebar. */
+.home-kind-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--care-radius-md);
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 10%, transparent);
+}
+
+.home-kind-icon--pdf,
+.home-kind-icon--text {
+  color: var(--bs-secondary-color);
+  background: var(--bs-secondary-bg);
+}
+
+[data-bs-theme="dark"] .home-kind-icon--session {
+  background: color-mix(in srgb, var(--care-primary) 14%, transparent);
+}
+
+/* Deadline chip. Tone follows the time left: overdue/<24h, <3 days, later, none. */
+.home-due {
+  flex: 0 0 auto;
+  padding: 2px 8px;
+  border-radius: var(--care-radius-pill);
+  font-size: .75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--bs-secondary-color);
+  background: var(--bs-secondary-bg);
+}
+
+/* Red is kept for the last 24 hours only. It is a tint of --bs-danger over the
+   panel, so it stays calm in both themes (text mixes toward the emphasis colour). */
+.home-due--urgent {
+  color: color-mix(in srgb, var(--bs-danger) 78%, var(--bs-emphasis-color));
+  background: color-mix(in srgb, var(--bs-danger) 11%, transparent);
+}
+
+/* Up to 3 days left: soft amber. */
+.home-due--soon {
+  color: var(--bs-warning-text-emphasis);
+  background: color-mix(in srgb, var(--bs-warning) 16%, transparent);
+}
+
+/* Already over: nothing to act on in time, so a quiet outlined chip, no alarm colour. */
+.home-due--overdue {
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--bs-border-color);
+}
+
+.home-due--feature {
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 10%, transparent);
+}
+
+.home-due--none {
+  font-weight: 500;
+  background: transparent;
+}
+
+/* Quiet "opens" hint on the start links; picks up the primary colour on hover. */
+.home-chevron {
+  flex: 0 0 auto;
+  color: var(--bs-secondary-color);
+  opacity: .6;
+  transition: transform var(--care-dur-fast) var(--care-ease), opacity var(--care-dur-fast) var(--care-ease);
+}
+
+.home-session:hover .home-chevron {
+  color: var(--care-primary);
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* --- Home overview tiles (HomeCountTiles, HomeSubmissionsTile) ---
    The tile does not move: a transform repaints the glyphs on the last
    frame and the letters jump. Only the shadow and the border change. */
 .home-tile-wrap {
@@ -1581,6 +1443,12 @@ html .home-tile {
   box-shadow: var(--care-focus-ring);
 }
 
+.home-tile > span,
+.home-tile > b {
+  grid-column: 1;
+  min-width: 0;
+}
+
 .home-tile > b {
   font-size: 1.65rem;
   font-weight: 700;
@@ -1588,20 +1456,6 @@ html .home-tile {
   letter-spacing: -.02em;
   font-variant-numeric: tabular-nums;
   color: var(--bs-emphasis-color);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .home-tile,
-  .home-tile::before,
-  .home-tile::after {
-    transition: none;
-  }
-}
-
-.home-tile > span,
-.home-tile > b {
-  grid-column: 1;
-  min-width: 0;
 }
 
 .home-tile > span {
@@ -1624,7 +1478,7 @@ html .home-tile {
   -webkit-line-clamp: 2;
 }
 
-/* Editor placeholder sidebar (Configurator, TemplateConfigurator) */
+/* --- Editor placeholder sidebar (Configurator, TemplateConfigurator) --- */
 html .configurator {
   border: 0;
   border-radius: 0;
@@ -1653,7 +1507,7 @@ html .configurator {
 .configurator .icon-container,
 .configurator .badge {
   color: var(--care-primary);
-  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
+  background: var(--care-active-bg);
 }
 
 .configurator .icon-container {
@@ -1663,7 +1517,7 @@ html .configurator {
   justify-content: center;
   height: 36px;
   margin-right: .75rem;
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--care-radius-md);
 }
 
 .configurator .badge {
@@ -1671,8 +1525,164 @@ html .configurator {
   font-weight: 600;
 }
 
+/* --- Date picker sub-views (CalendarPanel, TimePresetsEditor, TimeZoneSelect) --- */
+.care-sub__head {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin-bottom: .75rem;
+}
+
+/* Two classes to beat the html .btn-icon radius */
+.btn-icon.care-sub__back {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.care-sub__titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.care-sub__title {
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.care-sub__hint {
+  font-size: .72rem;
+  color: var(--bs-secondary-color);
+}
+
+
+/* ===== 11. Third-party =====
+   Quill, the PDF viewer and bootstrap-vue-3 come from other libraries and
+   do not follow the theme on their own. */
+
+/* --- Quill toolbar ---
+   quill.snow.css is imported in main.js before this file, so these rules
+   replace Quill's #06c hover and active colour in both themes. */
+html .ql-toolbar.ql-snow {
+  border-color: var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+  border-radius: var(--care-radius-lg) var(--care-radius-lg) 0 0;
+  padding: 6px 8px;
+}
+
+html .ql-container.ql-snow {
+  border-color: var(--bs-border-color);
+  border-radius: var(--care-radius-lg);
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+}
+
+html .ql-toolbar.ql-snow + .ql-container.ql-snow {
+  border-radius: 0 0 var(--care-radius-lg) var(--care-radius-lg);
+}
+
+html .ql-editor.ql-blank::before {
+  color: var(--bs-secondary-color);
+}
+
+html .ql-snow .ql-stroke {
+  stroke: var(--bs-body-color);
+}
+
+html .ql-snow .ql-fill {
+  fill: var(--bs-body-color);
+}
+
+html .ql-snow .ql-picker {
+  color: var(--bs-body-color);
+}
+
+html .ql-snow.ql-toolbar button {
+  border-radius: var(--care-radius-sm);
+}
+
+html .ql-snow.ql-toolbar button:hover {
+  background: var(--bs-secondary-bg);
+}
+
+html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) {
+  color: var(--care-primary);
+}
+
+html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) .ql-stroke {
+  stroke: var(--care-primary);
+}
+
+html .ql-snow.ql-toolbar :is(button, .ql-picker-label, .ql-picker-item):is(:hover, :focus, .ql-active, .ql-selected) .ql-fill {
+  fill: var(--care-primary);
+}
+
+html .ql-snow .ql-picker-options,
+html .ql-snow .ql-tooltip {
+  background: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  border-color: var(--bs-border-color);
+  border-radius: var(--care-radius-md);
+  box-shadow: var(--care-shadow-3);
+}
+
+html .ql-snow a {
+  color: var(--bs-link-color);
+}
+
+/* --- PDF viewer --- */
+
+/* A black drop shadow is invisible on dark, so define the edge with a border. */
+[data-bs-theme="dark"] .pdf-toolbar {
+  border: 1px solid var(--bs-border-color);
+}
+
+/* Invert the rendered page, then tint it cool so it sits with the rest of the
+   dark UI rather than looking warm. Skipped when the reader has switched an
+   individual document back to light from the toolbar. */
+.scrolling-page.pdf-dark canvas.pdf-page {
+  filter: invert(0.88) grayscale(0.4) sepia(0.15) hue-rotate(185deg) saturate(2.2);
+}
+
+/* Printing a dark page wastes ink and reads badly, so never invert for print. */
+@media print {
+  canvas.pdf-page {
+    filter: none !important;
+  }
+}
+
+/* A pure white page glares against the dark UI when the reader switches an
+   individual document back to light, so soften it. Brightness scales all
+   channels equally, which keeps figure colours accurate. */
+[data-bs-theme="dark"] .scrolling-page:not(.pdf-dark) canvas.pdf-page {
+  filter: brightness(0.93);
+}
+
+/* Annotation highlights are SVG rects blended with multiply, which works like a
+   marker pen on white paper but produces almost nothing over a dark page.
+   Screen lightens instead of darkens, so the band stays visible. */
+.scrolling-page.pdf-dark svg.highlight-layer {
+  mix-blend-mode: screen !important;
+}
+
+.scrolling-page.pdf-dark .svg-highlight {
+  opacity: 0.4 !important;
+}
+
+
+/* ===== 12. Reduced motion ===== */
+
 @media (prefers-reduced-motion: reduce) {
-  html .btn {
+  html .btn,
+  .care-native-menu,
+  .home-tile,
+  .home-tile::before,
+  .home-tile::after {
     transition: none;
+  }
+
+  html .btn:active:not(:disabled) {
+    transform: none;
   }
 }

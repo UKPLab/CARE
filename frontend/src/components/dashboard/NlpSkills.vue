@@ -186,4 +186,38 @@ export default {
 </script>
 
 <style scoped>
+/* Connection state of the NLP service in the page header. */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .2rem .65rem .2rem .5rem;
+  font-size: .75rem;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  border-radius: var(--care-radius-pill);
+  border: 1px solid var(--bs-border-color);
+  background: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+}
+
+.status-chip.is-online {
+  color: var(--bs-success-text-emphasis);
+  background: var(--bs-success-bg-subtle);
+  border-color: color-mix(in srgb, var(--bs-success) 28%, var(--bs-border-color));
+}
+
+.status-chip.is-offline {
+  color: var(--bs-danger-text-emphasis);
+  background: var(--bs-danger-bg-subtle);
+  border-color: color-mix(in srgb, var(--bs-danger) 28%, var(--bs-border-color));
+}
+
+.status-chip-dot {
+  width: .45rem;
+  height: .45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
 </style>

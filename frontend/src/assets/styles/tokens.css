@@ -1,0 +1,238 @@
+/* ===== CARE design tokens =====
+   The only file that defines CSS custom properties for the whole app. It is
+   imported in main.js after Bootstrap and before global.css, so the --bs-*
+   values here replace Bootstrap's defaults.
+
+   Use a token instead of a literal colour, radius, shadow or curve. If no
+   token fits, add one here (with a light and a dark value when they differ)
+   rather than writing the value into a component. Component-local variables
+   (e.g. --stepper-circle) may stay in their component.
+
+   Theme switching: Bootstrap sets data-bs-theme="light" | "dark" on <html>.
+   Tokens that differ per theme are defined once per theme block below. */
+
+/* ----- Fonts -----
+   Inter and JetBrains Mono (SIL Open Font License 1.1) are bundled in main.js,
+   so no font CDN is contacted. Components inherit the body font and use
+   var(--bs-font-monospace) for IDs and code; do not set font-family locally. */
+:root {
+  --bs-body-font-family: "Inter Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+    "Helvetica Neue", Roboto, sans-serif;
+  --bs-font-monospace: "JetBrains Mono Variable", SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}
+
+/* ----- Radius scale -----
+   Bootstrap's radius variables point at the scale, so .card, inputs,
+   dropdowns and modals follow it too.
+   sm: small items, menu options   md: buttons, inputs, menu items
+   lg: menus, popovers, panels      xl: StatusCard, modals
+   2xl: the dashboard page container   pill: badges, chips */
+:root {
+  --care-radius-sm: 6px;
+  --care-radius-md: 8px;
+  --care-radius-lg: 12px;
+  --care-radius-xl: 14px;
+  --care-radius-2xl: 16px;
+  --care-radius-pill: 999px;
+
+  --bs-border-radius: var(--care-radius-md);
+  --bs-border-radius-sm: var(--care-radius-sm);
+  --bs-border-radius-lg: var(--care-radius-lg);
+  --bs-border-radius-xl: var(--care-radius-xl);
+  --bs-border-radius-pill: var(--care-radius-pill);
+}
+
+/* ----- Colour: primary -----
+   --care-primary is CARE's main colour in both themes: a calm blue in light
+   mode, the logo yellow (--care-accent) in dark mode. Use it for custom
+   borders, highlights and icons instead of --bs-primary, which stays blue
+   in both themes. --care-on-primary is the text colour on top of it. */
+:root {
+  --care-primary: var(--bs-primary);
+  --care-on-primary: #fff;
+  /* Secondary tint for data UI: table header wash, search chips, "closed"
+     badges. RGB triplet for rgba(var(--care-violet-rgb), alpha). */
+  --care-violet-rgb: 111, 92, 230;
+}
+
+html[data-bs-theme="light"] {
+  --care-primary-hover: #2c4bb0;
+  --care-primary-active: #253f96;
+}
+
+/* Dark accent defaults. An admin can change the accent (setting
+   theme.dark.accentColor); App.vue then overrides these --care-accent*
+   values on <html>, including the rgb channels, so keep the names in sync. */
+html[data-bs-theme="dark"] {
+  --care-accent: #e3d5a8;
+  --care-accent-rgb: 227, 213, 168;
+  --care-on-accent: #212529;
+  --care-accent-hover: #d5c795;
+  --care-accent-hover-rgb: 213, 199, 149;
+  --care-accent-active: #c7b982;
+
+  --care-primary: var(--care-accent);
+  --care-on-primary: var(--care-on-accent);
+  --care-primary-hover: var(--care-accent-hover);
+  --care-primary-active: var(--care-accent-active);
+  --care-violet-rgb: 167, 151, 255;
+
+  /* Bootstrap paints <a> from the rgb channel, not from --bs-link-color,
+     so both are set or links stay blue in dark mode. */
+  --bs-link-color: var(--care-accent);
+  --bs-link-hover-color: var(--care-accent-hover);
+  --bs-link-color-rgb: var(--care-accent-rgb);
+  --bs-link-hover-color-rgb: var(--care-accent-hover-rgb);
+
+  /* The switch knob is a background image, so each state needs its own SVG
+     (a data URL cannot contain a CSS variable). */
+  --care-switch-knob: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23e3d5a8'/%3e%3c/svg%3e");
+  --care-switch-knob-on: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23212529'/%3e%3c/svg%3e");
+}
+
+/* ----- Colour: light palette -----
+   Bootstrap's light theme is pure white cards on a near-white page with a
+   saturated #0d6efd blue. CARE uses a cool blue-white palette instead:
+   cards are a soft blue white on a light blue-grey canvas, text is a slate
+   ink, and the primary blue is calmer and deeper. */
+html[data-bs-theme="light"] {
+  --bs-body-bg: #fdfeff;
+  --bs-body-bg-rgb: 253, 254, 255;
+  --bs-body-color: #222a38;
+  --bs-body-color-rgb: 34, 42, 56;
+  --bs-emphasis-color: #131a27;
+  --bs-emphasis-color-rgb: 19, 26, 39;
+  --bs-secondary-color: rgba(34, 42, 56, 0.68);
+  --bs-secondary-color-rgb: 34, 42, 56;
+  --bs-tertiary-color: rgba(34, 42, 56, 0.5);
+  --bs-tertiary-color-rgb: 34, 42, 56;
+  --bs-secondary-bg: #e8edf5;
+  --bs-secondary-bg-rgb: 232, 237, 245;
+  --bs-tertiary-bg: #f4f6fb;
+  --bs-tertiary-bg-rgb: 244, 246, 251;
+  --bs-border-color: #dce3ee;
+  --bs-border-color-translucent: rgba(30, 48, 90, 0.12);
+
+  --bs-primary: #3557c6;
+  --bs-primary-rgb: 53, 87, 198;
+  --bs-primary-text-emphasis: #1f3477;
+  --bs-primary-bg-subtle: #e4e9f8;
+  --bs-primary-border-subtle: #bcc9ee;
+  --bs-link-color: var(--bs-primary);
+  --bs-link-color-rgb: var(--bs-primary-rgb);
+  --bs-link-hover-color: #2a469f;
+  --bs-link-hover-color-rgb: 42, 70, 159;
+}
+
+/* ----- Surfaces -----
+   Three levels, each a visible step apart:
+   canvas (page background) < page (the dashboard page container, .dashboard-page)
+   < card (cards, tables, tiles; --bs-body-bg in light mode). */
+html[data-bs-theme="light"] {
+  --care-canvas: #e4e9f2;
+  --care-page-surface: #f2f5fa;
+}
+
+html[data-bs-theme="dark"] {
+  --care-page-surface: color-mix(in srgb, var(--bs-body-bg) 90%, #000000 10%);
+}
+
+:root {
+  /* Page container (.dashboard-page): border, shadow, and the hover of the
+     ghost header buttons sitting on it. */
+  --care-page-border: rgb(var(--care-shadow-rgb) / 0.11);
+  --care-page-shadow: var(--care-shadow-1);
+  --care-page-ghost-hover: rgba(255, 255, 255, 0.85);
+
+  /* Cards: StatusCard.vue and the panels placed inside a page (Studies table,
+     AI log). --care-card-shadow-flat is the quieter shadow for panels. */
+  --care-card-surface: var(--bs-body-bg);
+  --care-card-surface-raised: var(--bs-tertiary-bg);
+  --care-card-border: var(--bs-border-color-translucent);
+  --care-card-text: var(--bs-emphasis-color);
+  --care-card-muted: var(--bs-secondary-color);
+  --care-card-shadow: var(--care-shadow-1);
+  --care-card-shadow-hover: var(--care-shadow-2);
+  --care-card-shadow-flat: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06), 0 1px 3px rgb(var(--care-shadow-rgb) / 0.07);
+}
+
+html[data-bs-theme="dark"] {
+  --care-page-border: rgba(255, 255, 255, 0.08);
+  --care-page-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 32px -16px rgba(0, 0, 0, 0.7);
+  --care-page-ghost-hover: rgba(255, 255, 255, 0.07);
+
+  --care-card-surface: color-mix(in srgb, var(--bs-body-bg) 95%, #ffffff 5%);
+  --care-card-surface-raised: color-mix(in srgb, var(--bs-body-bg) 91%, #ffffff 9%);
+  --care-card-border: rgba(255, 255, 255, 0.08);
+  --care-card-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 1px 2px rgba(0, 0, 0, 0.4);
+  --care-card-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 16px 36px -14px rgba(0, 0, 0, 0.7);
+  --care-card-shadow-flat: var(--care-card-shadow);
+}
+
+/* ----- Interaction states -----
+   --care-hover: background of icon and ghost buttons on hover (.btn-icon).
+   --care-hover-danger: the same for destructive actions.
+   --care-row-hover: a hovered row in a list or table (table rows, Home lists).
+   --care-active-bg: the selected item in a navigation list.
+   --care-focus-ring: the one keyboard focus indicator, as a box-shadow. */
+:root {
+  --care-hover: rgba(var(--bs-secondary-rgb), 0.12);
+  --care-hover-danger: rgba(var(--bs-danger-rgb), 0.1);
+  --care-row-hover: color-mix(in srgb, var(--care-primary) 5%, transparent);
+  --care-active-bg: color-mix(in srgb, var(--care-primary) 12%, transparent);
+  --care-focus-ring: 0 0 0 3px color-mix(in srgb, var(--care-primary) 35%, transparent);
+}
+
+/* A 5% wash is too faint on dark surfaces. */
+html[data-bs-theme="dark"] {
+  --care-row-hover: color-mix(in srgb, var(--care-primary) 10%, transparent);
+}
+
+/* ----- Shadows -----
+   Light shadows are tinted navy to match the blue-grey canvas. For a one-off
+   shadow use rgb(var(--care-shadow-rgb) / alpha) instead of black or grey;
+   dark mode sets it to black. Space-separated for rgb(... / alpha). */
+:root {
+  --care-shadow-rgb: 30 48 90;
+  --care-shadow-1: 0 1px 2px rgb(var(--care-shadow-rgb) / .08), 0 4px 14px -6px rgb(var(--care-shadow-rgb) / .16);
+  --care-shadow-2: 0 2px 4px rgb(var(--care-shadow-rgb) / .08), 0 12px 28px -10px rgb(var(--care-shadow-rgb) / .24);
+  --care-shadow-3: 0 4px 10px rgb(var(--care-shadow-rgb) / .06), 0 24px 48px -16px rgb(var(--care-shadow-rgb) / .26);
+}
+
+html[data-bs-theme="dark"] {
+  --care-shadow-rgb: 0 0 0;
+  --care-shadow-1: 0 1px 2px rgb(0 0 0 / .4);
+  --care-shadow-2: 0 4px 10px -2px rgb(0 0 0 / .5);
+  --care-shadow-3: 0 14px 28px -6px rgb(0 0 0 / .6);
+}
+
+/* ----- Motion -----
+   --care-ease for all UI motion (hover, open, slide); --care-ease-spring for
+   the small overshoot of things that pop in (toasts). One-off curves that
+   belong to a single keyframe animation (a shake, an exit) may stay local. */
+:root {
+  --care-ease: cubic-bezier(.22, 1, .36, 1);
+  --care-ease-spring: cubic-bezier(.3, 1.6, .5, 1);
+  --care-dur-fast: 120ms;
+}
+
+/* ----- Layers -----
+   Popups teleported to <body> (menus, select lists, date picker) sit above
+   Bootstrap modals (1055). */
+:root {
+  --care-z-popover: 1080;
+}
+
+/* ----- Colours read from JavaScript -----
+   Charts and graphs read these with getComputedStyle, so they need a value
+   in both themes. */
+:root {
+  --care-nlp-active: #097969;
+  --care-nlp-idle: #777777;
+}
+
+html[data-bs-theme="dark"] {
+  --care-nlp-active: #12a085;
+  --care-nlp-idle: #9aa3b0;
+}

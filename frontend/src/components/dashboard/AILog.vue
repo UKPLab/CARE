@@ -164,11 +164,11 @@ export default {
 <style scoped>
 /* Panels on the tinted .dashboard-page shell use its panel colours. */
 .metric-card {
-  border: 1px solid var(--dash-border);
-  border-radius: 12px;
+  border: 1px solid var(--care-page-border);
+  border-radius: var(--care-radius-lg);
   padding: 0.9rem 1rem;
-  background: var(--dash-panel);
-  box-shadow: var(--dash-panel-shadow);
+  background: var(--care-card-surface);
+  box-shadow: var(--care-card-shadow-flat);
   min-height: 86px;
   display: flex;
   flex-direction: column;

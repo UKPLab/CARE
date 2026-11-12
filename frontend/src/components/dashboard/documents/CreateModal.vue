@@ -152,3 +152,17 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+/* Label stacked above its control. */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin: 0 0 1.15rem;
+}
+
+.form-field .form-label {
+  margin: 0;
+}
+</style>

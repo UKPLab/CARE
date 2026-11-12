@@ -127,7 +127,6 @@ export default {
 };
 </script>
 
-<style src="./homePanel.css"></style>
 
 <style scoped>
 /* Thin bar: steps reached in a session. */

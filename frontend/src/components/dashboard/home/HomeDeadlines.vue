@@ -87,7 +87,6 @@ export default {
 };
 </script>
 
-<style src="./homePanel.css"></style>
 
 <style scoped>
 /* Each deadline opens its study; hover matches the other home lists. */
@@ -95,14 +94,14 @@ export default {
   display: block;
   margin: 0 -8px;
   padding: 8px;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   color: inherit;
   text-decoration: none;
-  transition: background-color .12s ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease);
 }
 
 .home-deadline:hover {
-  background: var(--home-hover);
+  background: var(--care-row-hover);
 }
 
 .home-deadline:hover b {
