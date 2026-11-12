@@ -1035,7 +1035,7 @@ export default {
   font-size: 0.875rem;
   background: var(--table-bg, var(--bs-body-bg));
   border: 1px solid var(--table-border-color, var(--bs-border-color-translucent));
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   box-shadow: var(--care-shadow-1);
   transition: border-color 0.2s ease, box-shadow 0.25s ease;
 }
@@ -1073,12 +1073,12 @@ export default {
 .table-search > .search-bar-btn {
   flex-shrink: 0;
   color: var(--bs-secondary-color);
-  border-radius: 8px !important;
+  border-radius: var(--care-radius-md) !important;
 }
 
 .table-search > .search-bar-btn:hover {
   color: var(--bs-emphasis-color);
-  background: rgba(var(--bs-secondary-rgb), 0.12);
+  background: var(--care-hover);
 }
 
 .token-input::placeholder {
@@ -1149,7 +1149,7 @@ export default {
 .token-raw {
   min-width: 3ch;
   padding: 0 0.25rem;
-  border: 1px solid var(--care-primary, var(--bs-primary));
+  border: 1px solid var(--care-primary);
   border-radius: 0.25rem;
   background: transparent;
   font-family: var(--bs-font-monospace, monospace);
@@ -1203,14 +1203,14 @@ export default {
   backdrop-filter: blur(14px) saturate(150%);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
   border: 1px solid var(--bs-dropdown-border-color);
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   /* Inner top highlight gives the glass an edge; outer shadow lifts it off the table */
   box-shadow: inset 0 1px 0 var(--_menu-edge), var(--care-shadow-3);
   scrollbar-width: thin;
   scrollbar-color: rgba(var(--bs-secondary-rgb), 0.35) transparent;
   scrollbar-gutter: stable;
   transform-origin: top left;
-  animation: token-menu-in 0.18s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: token-menu-in 0.18s var(--care-ease) both;
 }
 
 [data-bs-theme="dark"] .token-suggestions {
@@ -1235,7 +1235,7 @@ export default {
 .token-suggestions::-webkit-scrollbar-thumb {
   background: rgba(var(--bs-secondary-rgb), 0.3);
   border: 2px solid transparent;
-  border-radius: 999px;
+  border-radius: var(--care-radius-pill);
   background-clip: padding-box;
 }
 
@@ -1255,9 +1255,9 @@ export default {
   font-weight: 500;
   color: var(--bs-body-color);
   background-color: transparent;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   box-shadow: none;
-  transition: background-color 0.12s ease, color 0.12s ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
 }
 
 /* Mouse and keyboard share one look: a soft tint of the theme accent; keyboard adds an accent bar. */
@@ -1291,7 +1291,7 @@ export default {
   font-weight: 600;
   color: var(--care-primary);
   background: color-mix(in srgb, var(--care-primary) 12%, transparent);
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
 }
 
 .token-suggestion-hint {

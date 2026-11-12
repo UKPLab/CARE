@@ -16,7 +16,7 @@
     color-mix(in srgb, var(--_table-bg) 94%, rgb(var(--care-violet-rgb)) 6%)
   );
   --_table-border: var(--table-border-color, var(--bs-border-color-translucent));
-  --_table-row-hover: color-mix(in srgb, var(--care-primary) 5%, transparent);
+  --_table-row-hover: var(--care-row-hover);
 
   position: relative;
   overflow-x: auto;
@@ -74,11 +74,6 @@
   background: transparent;
 }
 
-/* Accent hover reads better on dark surfaces than the 5% wash. */
-[data-bs-theme="dark"] .table-wrapper {
-  --_table-row-hover: color-mix(in srgb, var(--care-accent) 10%, transparent);
-}
-
 .table {
   --bs-table-bg: var(--_table-bg);
   --bs-table-striped-bg: transparent;
@@ -133,19 +128,19 @@
   background-color: var(--bs-body-bg);
   border: 1.5px solid color-mix(in srgb, var(--bs-body-color) 40%, transparent);
   border-radius: .35rem;
-  transition: border-color var(--care-dur-fast, 120ms) ease,
-              background-color var(--care-dur-fast, 120ms) ease,
-              box-shadow var(--care-dur-fast, 120ms) ease;
+  transition: border-color var(--care-dur-fast) var(--care-ease),
+              background-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) var(--care-ease);
 }
 
 .table-wrapper .form-check-input:hover:not(:disabled) {
-  border-color: var(--care-primary, var(--bs-primary));
+  border-color: var(--care-primary);
 }
 
 .table-wrapper .form-check-input:checked,
 .table-wrapper .form-check-input:indeterminate {
-  background-color: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
+  background-color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .table-wrapper .form-check-input:focus {
@@ -154,8 +149,8 @@
 }
 
 .table-wrapper .form-check-input:focus-visible {
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
 }
 
 /* Header box sits on the tinted head row: keep it on the body surface so it reads as a control */
@@ -194,7 +189,7 @@
   padding: 0.7rem 0.8rem;
   vertical-align: middle;
   overflow-wrap: anywhere;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease);
 }
 
 /* Every table hovers rows, with or without the bootstrap `hover` option. */
@@ -205,13 +200,13 @@
 .table-wrapper tbody tr:hover > td.table-fixed-left.table-fixed-shadow {
   box-shadow:
     inset 0 0 0 9999px var(--_table-row-hover),
-    2px 0 4px rgba(0, 0, 0, 0.1);
+    2px 0 4px rgb(var(--care-shadow-rgb) / 0.1);
 }
 
 .table-wrapper tbody tr:hover > td.table-fixed-right.table-fixed-shadow {
   box-shadow:
     inset 0 0 0 9999px var(--_table-row-hover),
-    -2px 0 4px rgba(0, 0, 0, 0.1);
+    -2px 0 4px rgb(var(--care-shadow-rgb) / 0.1);
 }
 
 .table-wrapper tbody tr:last-child > td {

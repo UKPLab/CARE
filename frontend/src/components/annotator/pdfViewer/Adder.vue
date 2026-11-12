@@ -605,7 +605,7 @@ export default {
 
 <style scoped>
 #adder {
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   box-shadow: 0 12px 24px -6px rgb(var(--care-shadow-rgb) / .16), 0 4px 8px -4px rgb(var(--care-shadow-rgb) / .08);
   position: absolute;
   top: 0;
@@ -633,7 +633,7 @@ html[data-bs-theme="light"] #adder {
 }
 #adder .btn {
   max-width: inherit;
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   box-shadow: none;
 }
 .adder-tag {
@@ -662,7 +662,7 @@ html[data-bs-theme="light"] #adder {
   overflow-x: hidden;
   overflow-y: auto;
   max-width: inherit;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
 }
 .scrollable-menu-wrapper.is-extended {
   max-height: 250px;

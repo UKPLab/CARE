@@ -728,8 +728,8 @@ export default {
 }
 
 .sidebar-highlight {
-  box-shadow: var(--care-focus-ring, 0 0 0 3px color-mix(in srgb, var(--bs-primary) 35%, transparent));
-  border-radius: 12px;
+  box-shadow: var(--care-focus-ring);
+  border-radius: var(--care-radius-lg);
 }
 
 </style>

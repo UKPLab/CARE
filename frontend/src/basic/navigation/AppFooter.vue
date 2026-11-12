@@ -151,18 +151,13 @@ export default {
   border-radius: 50%;
   color: inherit;
   opacity: .7;
-  transition: color .12s ease, opacity .12s ease;
+  transition: color var(--care-dur-fast) var(--care-ease), opacity var(--care-dur-fast) var(--care-ease);
 }
 
 .app-footer-icon:hover,
 .app-footer-icon:focus-visible {
   color: var(--care-primary);
   opacity: 1;
-}
-
-[data-bs-theme="dark"] .app-footer-icon:hover,
-[data-bs-theme="dark"] .app-footer-icon:focus-visible {
-  color: var(--care-accent);
 }
 
 /* Keep the label crisp and unselectable at icon size */

@@ -339,7 +339,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 .dashboard-topnav {
   display: flex;
   align-items: center;
@@ -367,7 +367,7 @@ export default {
   height: 32px;
   border: 0;
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   padding: 0 10px;
   font-size: .875rem;
   font-weight: 500;
@@ -378,7 +378,7 @@ export default {
 
 .dashboard-topnav-group-btn:hover,
 .dashboard-topnav-group-btn.open {
-  background: var(--bs-secondary-bg);
+  background: var(--care-hover);
   color: var(--bs-body-color);
 }
 
@@ -445,7 +445,7 @@ export default {
 
 .dashboard-topnav-group-btn.active,
 .dashboard-topnav-link.router-link-active {
-  background: color-mix(in srgb, var(--care-primary) 14%, transparent);
+  background: var(--care-active-bg);
   color: var(--care-primary);
 }
 
@@ -457,11 +457,14 @@ export default {
 
 .dashboard-topnav-menu {
   position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   min-width: 200px;
-  padding: 4px;
+  padding: 6px;
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color-translucent);
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   box-shadow: var(--care-shadow-3);
   z-index: 2000;
   animation: dashboard-topnav-in var(--care-dur-fast) var(--care-ease);
@@ -471,7 +474,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   padding: 8px 10px;
   color: var(--bs-body-color);
   text-decoration: none;
@@ -503,7 +506,8 @@ export default {
   }
 }
 
-body.dashboard-drawer-open {
+/* Set on <body> while the drawer is open, so the page behind it does not scroll. */
+:global(body.dashboard-drawer-open) {
   overflow: hidden;
 }
 
@@ -568,7 +572,7 @@ body.dashboard-drawer-open {
   gap: 0.65rem;
   min-height: 40px;
   padding: 0.45rem 0.65rem;
-  border-radius: 10px;
+  border-radius: var(--care-radius-md);
   font-size: 0.92rem;
   font-weight: 500;
   color: var(--bs-body-color);
@@ -587,7 +591,7 @@ body.dashboard-drawer-open {
 }
 
 .dashboard-drawer-link.router-link-active {
-  background: color-mix(in srgb, var(--care-primary) 14%, transparent);
+  background: var(--care-active-bg);
   color: var(--care-primary);
   font-weight: 600;
 }
@@ -604,12 +608,12 @@ body.dashboard-drawer-open {
 /* Backdrop fades, panel slides in from the left. */
 .dashboard-drawer-enter-active,
 .dashboard-drawer-leave-active {
-  transition: opacity 200ms var(--care-ease, ease);
+  transition: opacity 200ms var(--care-ease);
 }
 
 .dashboard-drawer-enter-active .dashboard-drawer,
 .dashboard-drawer-leave-active .dashboard-drawer {
-  transition: transform 240ms var(--care-ease, ease);
+  transition: transform 240ms var(--care-ease);
 }
 
 .dashboard-drawer-enter-from,

@@ -303,7 +303,7 @@ export default {
   color: var(--bs-body-color);
   background: var(--table-bg, var(--bs-body-bg));
   border: 1px solid var(--table-border-color, var(--bs-border-color-translucent));
-  border-radius: 8px !important;
+  border-radius: var(--care-radius-md) !important;
   box-shadow: var(--care-shadow-1);
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
 }
@@ -316,7 +316,8 @@ export default {
 .page-link:focus-visible:not(:disabled) {
   color: var(--care-primary);
   border-color: color-mix(in srgb, var(--care-primary) 55%, transparent);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 28%, transparent);
+  outline: none;
+  box-shadow: var(--care-focus-ring);
 }
 
 .page-link:active:not(:disabled) {
@@ -346,11 +347,11 @@ export default {
 
 .input-group > .input-group-text {
   color: var(--bs-secondary-color);
-  border-radius: 8px 0 0 8px;
+  border-radius: var(--care-radius-md) 0 0 var(--care-radius-md);
 }
 
 .input-group > .form-select {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 var(--care-radius-md) var(--care-radius-md) 0;
 }
 
 /* "Showing 1–10 of 80" */

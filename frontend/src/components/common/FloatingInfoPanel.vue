@@ -345,7 +345,7 @@ export default {
 .floating-info-panel {
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-lg);
+  border-radius: var(--care-radius-lg);
   box-shadow: var(--care-shadow-3);
   overflow-y: auto;
   font-size: 0.875rem;
@@ -377,7 +377,7 @@ export default {
   height: 26px;
   padding: 0;
   border: 0;
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--care-radius-md);
   background: transparent;
   color: var(--bs-secondary-color);
 }

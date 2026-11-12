@@ -164,7 +164,7 @@ export default {
    component, hence :deep() from the <th> root. */
 th :deep(.table-sort-icon) {
   border-radius: 3px;
-  transition: color 0.15s ease, background-color 0.15s ease;
+  transition: color var(--care-dur-fast) var(--care-ease), background-color var(--care-dur-fast) var(--care-ease);
 }
 
 th :deep(.table-sort-icon--idle) {

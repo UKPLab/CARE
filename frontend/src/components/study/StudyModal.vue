@@ -420,7 +420,7 @@ export default {
   display: block;
   width: 100%;
   box-sizing: border-box;
-  border-radius: var(--bs-border-radius-lg);
+  border-radius: var(--care-radius-lg);
   overflow: hidden;
 }
 </style>

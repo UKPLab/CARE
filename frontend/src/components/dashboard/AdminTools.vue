@@ -119,7 +119,7 @@ export default {
   width: 36px;
   height: 36px;
   margin-bottom: 6px;
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--care-radius-md);
   background: color-mix(in srgb, var(--care-primary) 12%, transparent);
   color: var(--care-primary);
 }

@@ -405,7 +405,7 @@
     overflow: hidden;
     border: 1px solid var(--bs-border-color);
     border-top: 0;
-    border-radius: 0 0 var(--bs-border-radius-lg) var(--bs-border-radius-lg);
+    border-radius: 0 0 var(--care-radius-lg) var(--care-radius-lg);
     background: var(--bs-body-bg);
     color: var(--bs-body-color);
   }
@@ -458,7 +458,7 @@
   .template-viewport--preview .ql-toolbar.ql-snow {
     width: 100%;
     box-sizing: border-box;
-    border-radius: var(--bs-border-radius-lg) var(--bs-border-radius-lg) 0 0;
+    border-radius: var(--care-radius-lg) var(--care-radius-lg) 0 0;
   }
 
   .ql-toolbar .ql-languageSelector {
@@ -495,7 +495,7 @@
     z-index: 8;
     background: var(--bs-body-bg);
     border: 1px solid var(--bs-border-color);
-    border-radius: var(--bs-border-radius);
+    border-radius: var(--care-radius-md);
     box-shadow: var(--care-shadow-2);
   }
 

@@ -668,13 +668,13 @@ export default {
 }
 
 .anno-note {
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
 }
 
 .anno-comment-body {
   padding: .55rem .7rem;
   border: 1px solid var(--bs-border-color);
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   background: var(--bs-tertiary-bg);
 }
 

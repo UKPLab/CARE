@@ -208,7 +208,7 @@ export default {
 
 .method-card {
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-lg);
+  border-radius: var(--care-radius-lg);
   padding: 14px 16px;
   margin-bottom: 10px;
   cursor: pointer;

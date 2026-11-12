@@ -170,7 +170,7 @@ export default {
 
 .card {
   padding: 12px 14px 10px;
-  border-radius: 12px;
+  border-radius: var(--care-radius-lg);
   font-size: .875rem;
 }
 

@@ -80,7 +80,7 @@ export default {
 
 .settings-rows {
   border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg);
+  border-radius: var(--care-radius-lg);
   background: var(--bs-body-bg);
 }
 

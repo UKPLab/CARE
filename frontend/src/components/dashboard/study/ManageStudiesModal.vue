@@ -571,7 +571,7 @@ export default {
   padding: .625rem .875rem;
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg, .75rem);
+  border-radius: var(--care-radius-lg);
 }
 
 .confirmation-container {

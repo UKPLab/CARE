@@ -147,9 +147,9 @@ export default {
 .pdf-toolbar {
   pointer-events: auto;
   width: fit-content;
-  background: var(--bs-body-bg, #fff);
-  border: 1px solid var(--bs-border-color, #ddd);
-  border-radius: 999px;
+  background: var(--bs-body-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--care-radius-pill);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -163,7 +163,7 @@ export default {
 }
 
 .pdf-toolbar :deep(.btn) {
-  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease), border-color var(--care-dur-fast) var(--care-ease);
 }
 
 .pdf-toolbar :deep(.btn:hover) {

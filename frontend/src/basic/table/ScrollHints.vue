@@ -134,10 +134,10 @@ export default {
   background: color-mix(in srgb, var(--bs-body-bg) 88%, transparent);
   border: 1px solid var(--bs-border-color);
   border-radius: 50%;
-  box-shadow: var(--care-shadow-1, 0 1px 2px rgb(0 0 0 / 0.1));
+  box-shadow: var(--care-shadow-1);
   opacity: 0.8;
   cursor: pointer;
-  transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  transition: opacity var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease), background-color var(--care-dur-fast) var(--care-ease);
 }
 
 .table-scroll-btn--left {
@@ -148,6 +148,7 @@ export default {
   right: 6px;
 }
 
+/* Solid, not the translucent --care-hover: the button floats over table text. */
 .table-scroll-btn:hover,
 .table-scroll-btn:focus-visible {
   opacity: 1;
@@ -156,8 +157,8 @@ export default {
 }
 
 .table-scroll-btn:focus-visible {
-  outline: 2px solid var(--care-primary, var(--bs-primary));
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--care-focus-ring);
 }
 
 @media (prefers-reduced-motion: reduce) {

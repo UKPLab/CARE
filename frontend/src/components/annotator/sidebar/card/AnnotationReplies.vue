@@ -125,7 +125,7 @@ export default {
 
 .anno-reply {
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   background: color-mix(in srgb, var(--care-primary) 8%, transparent);
   padding: .55rem .7rem;
 }

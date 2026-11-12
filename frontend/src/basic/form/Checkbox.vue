@@ -145,24 +145,24 @@ export default {
 .form-check.form-check-pill .form-check-label {
   padding: .45rem .9rem .45rem 2.1rem;
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-pill, 999px);
+  border-radius: var(--care-radius-pill);
   background: var(--bs-body-bg);
   user-select: none;
-  transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+  transition: border-color var(--care-dur-fast) var(--care-ease), background-color var(--care-dur-fast) var(--care-ease), box-shadow var(--care-dur-fast) var(--care-ease);
 }
 
 .form-check.form-check-pill:hover .form-check-label {
-  border-color: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 55%, var(--bs-border-color));
+  border-color: color-mix(in srgb, var(--care-primary) 55%, var(--bs-border-color));
   background: var(--bs-tertiary-bg);
 }
 
 .form-check.form-check-pill .form-check-input:checked + .form-check-label {
-  border-color: var(--care-primary, var(--bs-primary));
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 12%, var(--bs-body-bg));
+  border-color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 12%, var(--bs-body-bg));
   font-weight: 500;
 }
 
 .form-check.form-check-pill .form-check-input:focus-visible + .form-check-label {
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 </style>

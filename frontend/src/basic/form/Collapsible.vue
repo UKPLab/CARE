@@ -82,7 +82,7 @@ export default {
   width: 100%;
   padding: 12px 8px;
   border: 0;
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--care-radius-md);
   background: transparent;
   color: var(--bs-body-color);
   text-align: left;
