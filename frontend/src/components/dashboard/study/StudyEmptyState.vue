@@ -35,12 +35,6 @@ export default {
       required: false,
       default: "",
     },
-    /** Active filter chips, worded as in the search bar. */
-    filterLabels: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
     canCreate: {
       type: Boolean,
       required: false,
@@ -59,7 +53,6 @@ export default {
       return {
         searchTitle: this.$t("studies.cards.empty.searchTitle"),
         filterTitle: this.$t("studies.cards.empty.filterTitle"),
-        searchHint: this.$t("studies.cards.empty.searchHint"),
         noDataTitle: this.$t("studies.cards.emptyTitle"),
         noDataHintCreate: this.$t("studies.cards.emptyHint"),
       };

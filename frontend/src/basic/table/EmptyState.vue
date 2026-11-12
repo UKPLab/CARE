@@ -281,10 +281,7 @@
     </svg>
 
     <div class="te-title">
-      <template v-if="title">
-        {{ title }}
-      </template>
-      <template v-else-if="narrowed && searchText">
+      <template v-if="narrowed && searchText">
         {{ t.searchTitle }}
         <span class="te-title-query">“{{ searchText }}”</span>
       </template>
@@ -301,11 +298,11 @@
     </p>
 
     <div
-      v-if="(narrowed && clearable) || actionLabel"
+      v-if="narrowed || actionLabel"
       class="te-actions"
     >
       <button
-        v-if="narrowed && clearable"
+        v-if="narrowed"
         type="button"
         class="te-btn"
         @click="$emit('clear')"
@@ -384,18 +381,6 @@ export default {
       required: false,
       default: () => ({}),
     },
-    /** Fixed title, replacing the state-dependent one. */
-    title: {
-      type: String,
-      required: false,
-      default: "",
-    },
-    /** Show "Clear search" while narrowed. */
-    clearable: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
     actionLabel: {
       type: String,
       required: false,
@@ -443,7 +428,6 @@ export default {
 <style scoped>
 .table-empty {
   --te-accent-rgb: var(--bs-primary-rgb);
-  --te-ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   display: flex;
   flex-direction: column;
@@ -453,7 +437,7 @@ export default {
   text-align: center;
   white-space: normal;
   color: var(--bs-secondary-color);
-  animation: te-in 0.55s var(--te-ease) both;
+  animation: te-in 0.55s var(--care-ease) both;
 }
 
 .table-empty--compact {
@@ -668,9 +652,9 @@ export default {
   color: var(--bs-body-color);
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
-  border-radius: 9px;
+  border-radius: var(--care-radius-md);
   box-shadow: 0 1px 2px rgb(var(--care-shadow-rgb) / 0.06);
-  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--te-ease);
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s var(--care-ease);
 }
 
 .te-btn:hover {
@@ -684,8 +668,8 @@ export default {
 }
 
 .te-btn:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--care-primary) 50%, transparent);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: var(--care-focus-ring);
 }
 
 .te-btn--primary {

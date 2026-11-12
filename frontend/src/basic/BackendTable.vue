@@ -36,7 +36,6 @@
       :on-action="actionEmitter"
       :searching="hasActiveSearch"
       :search-text="search.trim()"
-      :filter-labels="activeFilterLabels"
       :clear-search="clearSearch"
     />
   </div>
@@ -147,7 +146,6 @@
                   name="empty"
                   :searching="hasActiveSearch"
                   :search-text="search.trim()"
-                  :filter-labels="activeFilterLabels"
                   :loading="resultsLoading"
                   :clear-search="clearSearch"
                 >
@@ -156,7 +154,6 @@
                     v-if="!resultsLoading || hasActiveSearch"
                     :searching="hasActiveSearch"
                     :search-text="search.trim()"
-                    :filter-labels="activeFilterLabels"
                     :action-label="hasActiveSearch ? '' : emptyAction?.label"
                     :action-icon="emptyAction?.icon"
                     compact
@@ -349,7 +346,7 @@ import Pagination from "./table/Pagination.vue";
 import TableSearch from "./table/Search.vue";
 import Loader from "./Loading.vue";
 import deepEqual from "deep-equal";
-import { defaultOperator, matchesTokenList, tokenLabel } from "./table/searchTokens.js";
+import { matchesTokenList } from "./table/searchTokens.js";
 import { resolveApiMessage } from "@/assets/utils";
 import {
   normalizeCssSize,
@@ -624,17 +621,6 @@ export default {
     /** Free text or a filter chip narrows the query (empty states word it differently). */
     hasActiveSearch() {
       return this.search.trim() !== "" || Object.keys(this.activeColumnFilters).length > 0;
-    },
-    /** Active filters worded exactly like their chips in the search bar. */
-    activeFilterLabels() {
-      const schema = this.queryFilterSchema || {};
-      return Object.entries(this.activeColumnFilters)
-        .filter(([key, filter]) => schema[key] && filter)
-        .map(([key, filter]) => tokenLabel(schema, {
-          key,
-          operator: filter.operator || defaultOperator(schema, key),
-          value: filter.value,
-        }, this.$t.bind(this)));
     },
     pendingBannerVisible() {
       // Infinite scroll absorbs inserts with the spacers, so it never needs the banner.
@@ -3179,7 +3165,7 @@ export default {
   margin-bottom: 0.5rem;
   padding: 0.5rem 0.75rem;
   border: 1px solid color-mix(in srgb, var(--care-primary) 35%, transparent);
-  border-radius: var(--bs-border-radius);
+  border-radius: var(--care-radius-md);
   background: color-mix(in srgb, var(--care-primary) 14%, transparent);
   color: var(--care-primary);
   font-size: 0.875rem;
@@ -3414,7 +3400,7 @@ export default {
 
 @keyframes row-enter-flash-sticky {
   0% {
-    background-color: color-mix(in srgb, var(--bs-primary) 42%, var(--bs-body-bg, #fff));
+    background-color: color-mix(in srgb, var(--bs-primary) 42%, var(--bs-body-bg));
     box-shadow: inset 3px 0 0 var(--bs-primary);
   }
   45% {
@@ -3447,7 +3433,7 @@ export default {
 
 @keyframes row-enter-from-bottom-sticky {
   0% {
-    background-color: color-mix(in srgb, var(--bs-primary) 40%, var(--bs-body-bg, #fff));
+    background-color: color-mix(in srgb, var(--bs-primary) 40%, var(--bs-body-bg));
     box-shadow: inset 0 -3px 0 var(--bs-primary);
     opacity: 0.15;
   }
