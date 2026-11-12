@@ -113,7 +113,7 @@ Frontend — Vue Style
 - All props have ``type`` and ``required`` defined
 - ``v-for`` loops use ``:key="item.id"``
 - ``v-if`` and ``v-for`` are never on the same element; use a wrapping ``<template>`` instead
-- Component-scoped styling is used (``<style scoped>``)
+- Component-scoped styling is used (``<style scoped>``), built on the design tokens; rules shared by several components go into ``global.css`` (see :doc:`../frontend/styling`)
 - Computed properties are simple; complex derivations are split into multiple named computeds
 - Component and element attribute order follows the `Vue style guide <https://vuejs.org/style-guide/rules-recommended.html>`_
 
@@ -130,7 +130,7 @@ Frontend — Structure and Imports
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - Imports use the ``@`` path alias for anything outside the current or immediate sub-directory
-- Base/shared components are reused for icons, buttons, tables, and modals — no custom reimplementations of existing base components
+- Base/shared components are reused for icons, buttons, menus, tables, and modals — no custom reimplementations of existing base components
 
 Documentation
 ~~~~~~~~~~~~~

@@ -9,6 +9,7 @@ This includes adding new dashboard components, loading settings and extending th
    :maxdepth: 2
 
    basic/basic
+   styling
    components/components
    setup_wizard
    plugins
