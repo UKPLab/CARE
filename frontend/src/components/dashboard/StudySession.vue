@@ -77,8 +77,7 @@
               @title-click="toggle(study.id)"
             >
               <template #footer>
-                <button
-                  type="button"
+                <BasicButton
                   class="status-card-primary"
                   :aria-expanded="isOpen(study.id) ? 'true' : 'false'"
                   :aria-controls="'sessions-of-' + study.id"
@@ -94,7 +93,7 @@
                     icon-name="chevron-down"
                     :size="13"
                   />
-                </button>
+                </BasicButton>
               </template>
             </StatusCard>
 
@@ -120,9 +119,8 @@
             >
               <header class="session-panel-head">
                 <span class="session-panel-title">{{ openStudy(cards.rows).displayName }}</span>
-                <button
-                  type="button"
-                  class="status-card-icon-btn"
+                <BasicButton
+                  class="btn-icon btn-sm"
                   :title="$t('studies.dashboard.hideSessions')"
                   :aria-label="$t('studies.dashboard.hideSessions')"
                   @click="toggle(openStudyId)"
@@ -131,7 +129,7 @@
                     icon-name="x-lg"
                     :size="13"
                   />
-                </button>
+                </BasicButton>
               </header>
               <StudySessionCards
                 :key="openStudyId"
@@ -162,6 +160,7 @@
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
 import BackendTable from "@/basic/BackendTable.vue";
+import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Timer from "@/basic/Timer.vue";
@@ -173,7 +172,9 @@ import { NUMERIC_OPERATORS } from "@/basic/table/searchTokens.js";
 import {
   buildStudyTimeline,
   formatStudyCardDate,
+  isStudyOpen,
   studyCardStatus,
+  studyState,
   timeLeftFormatter,
 } from "@/components/dashboard/study/studyCardHelpers.js";
 
@@ -220,7 +221,7 @@ function sectionOptions() {
  */
 export default {
   name: "DashboardStudySession",
-  components: { Card, BackendTable, LoadIcon, ConfirmModal, AssignUserModal, StudySessionCards, StatusCard, Timer },
+  components: { Card, BackendTable, BasicButton, LoadIcon, ConfirmModal, AssignUserModal, StudySessionCards, StatusCard, Timer },
   props: {},
   data() {
     return {
@@ -323,9 +324,13 @@ export default {
       if (!row || !("closed" in row) || !("end" in row) || !("multipleSubmit" in row)) {
         return undefined;
       }
-      return this.isStudyAvailable(row) === closedSection ? false : undefined;
+      return isStudyOpen(row) === closedSection ? false : undefined;
     },
-    /** Adds what a card shows (name, author, state) to a study row. */
+    /**
+     * Adds what a card shows (name, author, state) to a study row.
+     * @param {Object} row raw study row
+     * @returns {Object}
+     */
     enrichStudyRow(row) {
       const study = { ...row };
       study.displayName = study.name || this.$t("studies.dashboard.noName");
@@ -339,13 +344,8 @@ export default {
       study.myFinishedPercent = study.mySessionCount
         ? Math.round((study.myFinishedCount / study.mySessionCount) * 100)
         : 0;
-      if (study.closed !== null && study.closed !== undefined) {
-        study.stateSlug = "closed";
-      } else if (!this.isStudyAvailable(study)) {
-        study.stateSlug = "ended";
-      } else {
-        study.stateSlug = "running";
-      }
+      const state = studyState(study);
+      study.stateSlug = state === "open" ? "running" : state;
       // StatusCard status props (tone, label, lock, pulse); the sessions panel uses the tone too.
       study.cardStatus = studyCardStatus(study.stateSlug, (...args) => this.$t(...args));
       return study;
@@ -373,21 +373,6 @@ export default {
         suffix: this.$t("studies.dashboard.finishedCount", { count: study.myFinishedCount }),
         percent: study.myFinishedPercent,
       };
-    },
-    isStudyAvailable(study) {
-      if (!study) {
-        return false;
-      }
-      if (study.closed !== null) {
-        return false;
-      }
-      if (!study.multipleSubmit && study.end) {
-        const endDate = new Date(study.end);
-        if (!isNaN(endDate.getTime()) && endDate < new Date()) {
-          return false;
-        }
-      }
-      return true;
     },
     isOpen(id) {
       return this.openStudyId === id;
@@ -651,9 +636,9 @@ export default {
   padding: 0.85rem 1rem 0.5rem;
   background: var(--care-card-surface);
   border: 1px solid color-mix(in srgb, var(--care-card-accent) 30%, transparent);
-  border-radius: var(--care-card-radius);
+  border-radius: var(--care-radius-xl);
   box-shadow: var(--care-card-shadow-hover);
-  animation: session-panel-in 0.35s var(--care-card-ease) both;
+  animation: session-panel-in 0.35s var(--care-ease) both;
 }
 
 /* Same colour as the open card (study.cardStatus.tone). */
@@ -672,7 +657,7 @@ export default {
   border-top: 1px solid color-mix(in srgb, var(--care-card-accent) 30%, transparent);
   border-left: 1px solid color-mix(in srgb, var(--care-card-accent) 30%, transparent);
   transform: translateX(-50%) rotate(45deg);
-  transition: left 0.3s var(--care-card-ease);
+  transition: left 0.3s var(--care-ease);
 }
 
 .session-panel-head {
@@ -692,12 +677,6 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--care-card-text);
-}
-
-.session-panel-head .status-card-icon-btn {
-  flex: 0 0 auto;
-  width: 1.8rem;
-  height: 1.8rem;
 }
 
 @keyframes session-panel-in {

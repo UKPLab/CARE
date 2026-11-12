@@ -15,6 +15,7 @@
       :can-see-studies="canSeeStudies"
       :can-see-submissions="canSeeSubmissions"
       :user-id="userId"
+      :now="now"
     />
 
     <div class="row g-3">
@@ -46,6 +47,7 @@
 
 <script>
 import { isOwnListedDocument } from "@/assets/utils";
+import { isStudyOpen } from "./study/studyCardHelpers.js";
 import HomeGuest from "./home/HomeGuest.vue";
 import HomeCountTiles from "./home/HomeCountTiles.vue";
 import HomeContinue from "./home/HomeContinue.vue";
@@ -64,7 +66,7 @@ export default {
   components: { HomeGuest, HomeCountTiles, HomeContinue, HomeSessions, HomeDeadlines, AppFooter },
   data() {
     return {
-      // Ticks once a minute so deadline countdowns stay current.
+      // Ticks once a minute so countdowns and the open-studies list follow passing deadlines.
       now: Date.now(),
       nowTimer: null,
     };
@@ -113,13 +115,7 @@ export default {
       );
     },
     openStudies() {
-      const now = Date.now();
-      return this.projectStudies.filter((study) => {
-        if (study.closed != null) return false;
-        if (!study.end) return true;
-        const end = new Date(study.end).getTime();
-        return Number.isNaN(end) || end >= now || study.multipleSubmit;
-      });
+      return this.projectStudies.filter((study) => isStudyOpen(study, this.now));
     },
     openSessions() {
       return this.$store.getters["table/study_session/getByUser"](this.userId)
@@ -137,15 +133,6 @@ export default {
 </script>
 
 <style scoped>
-/* Row hover, same wash as the dashboard tables (basic/table/table.css). */
-.home {
-  --home-hover: color-mix(in srgb, var(--care-primary) 5%, transparent);
-}
-
-[data-bs-theme="dark"] .home {
-  --home-hover: color-mix(in srgb, var(--care-accent) 10%, transparent);
-}
-
 .home .row > [class*="col"] {
   min-width: 0;
 }

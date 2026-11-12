@@ -37,9 +37,8 @@
             :live-state="cards.rowState(card) || {}"
           >
             <template #footer>
-              <button
+              <BasicButton
                 v-if="card.primary"
-                type="button"
                 class="status-card-primary"
                 :class="{ 'status-card-primary--ghost': card.primary === 'inspect' }"
                 @click="emitAction(card.primary, card)"
@@ -49,11 +48,10 @@
                   :size="13"
                 />
                 {{ primaryLabel(card.primary) }}
-              </button>
+              </BasicButton>
               <div class="status-card-actions">
-                <button
-                  type="button"
-                  class="status-card-icon-btn"
+                <BasicButton
+                  class="btn-icon"
                   :title="$t('dashboard.study.copySession')"
                   :aria-label="$t('dashboard.study.copySession')"
                   @click="emitAction('copy', card)"
@@ -62,11 +60,10 @@
                     icon-name="clipboard"
                     :size="15"
                   />
-                </button>
-                <button
+                </BasicButton>
+                <BasicButton
                   v-if="card.showDeleteButton"
-                  type="button"
-                  class="status-card-icon-btn status-card-icon-btn--danger"
+                  class="btn-icon btn-icon-danger"
                   :title="$t('dashboard.study.deleteSession')"
                   :aria-label="$t('dashboard.study.deleteSession')"
                   @click="emitAction('delete', card)"
@@ -75,7 +72,7 @@
                     icon-name="trash"
                     :size="15"
                   />
-                </button>
+                </BasicButton>
               </div>
             </template>
           </StatusCard>
@@ -87,9 +84,11 @@
 
 <script>
 import BackendTable from "@/basic/BackendTable.vue";
+import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import StatusCard from "@/basic/dashboard/card/StatusCard.vue";
 import { formatLocalizedDateTime } from "@/assets/utils";
+import { isStudyOpen, ownSessionActions } from "./studyCardHelpers.js";
 
 /**
  * The current user's sessions of one study, as cards ("My Sessions" dashboard).
@@ -103,7 +102,7 @@ import { formatLocalizedDateTime } from "@/assets/utils";
  */
 export default {
   name: "StudySessionCards",
-  components: { BackendTable, LoadIcon, StatusCard },
+  components: { BackendTable, BasicButton, LoadIcon, StatusCard },
   props: {
     /** Study row from the page's BackendTable (closed, end, resumable, multipleSubmit, owners). */
     study: {
@@ -150,13 +149,12 @@ export default {
       ];
     },
     studyClosed() {
-      if (this.study.closed) return true;
-      return !!(!this.study.multipleSubmit && this.study.end && new Date(this.study.end) < Date.now());
+      return !isStudyOpen(this.study);
     },
   },
   methods: {
     /**
-     * Card fields + the action rules of StudySessionTable.processSession (currentUserOnly).
+     * Card fields + the action rules shared with StudySessionTable (ownSessionActions).
      * @param {Object} session raw study_session row
      * @returns {Object}
      */
@@ -164,19 +162,16 @@ export default {
       const row = { ...session };
       const started = row.start !== undefined && row.start !== null;
       const finished = row.end !== undefined && row.end !== null;
-      // True only when the study is closed, the session is not finished and it was copied.
-      const canResumeOrStart = this.studyClosed && !finished
-        && row.parentStudySessionId !== undefined && row.parentStudySessionId !== null;
-      const resumable = !!this.study.resumable;
+      const actions = ownSessionActions(row, this.study, {
+        studyClosed: this.studyClosed,
+        showClosed: this.showClosed,
+        userId: this.userId,
+      });
 
-      const showResume = (resumable && started && !this.studyClosed) || (resumable && started && canResumeOrStart);
-      const showStart = (!started && !this.studyClosed) || (!started && canResumeOrStart);
-      const showInspect = this.showClosed && !canResumeOrStart;
-
-      row.primary = showResume ? "resume" : (showStart ? "start" : (showInspect ? "inspect" : null));
-      row.showDeleteButton = this.userId === this.study.createdByUserId && this.userId !== this.study.userId;
+      row.primary = actions.resume ? "resume" : (actions.start ? "start" : (actions.inspect ? "inspect" : null));
+      row.showDeleteButton = actions.delete;
       row.cardStatus = finished ? "finished" : (started ? "running" : "pending");
-      row.showResumable = resumable && !finished;
+      row.showResumable = !!this.study.resumable && !finished;
       row.startedLabel = started
         ? this.$t("studies.dashboard.startedOn", {
           date: formatLocalizedDateTime(row.start, { dateStyle: "medium", timeStyle: "short" }),
@@ -242,7 +237,7 @@ export default {
   margin: 0;
   padding: 0.6rem 0.2rem;
   font-size: 0.85rem;
-  color: var(--care-card-muted, var(--bs-secondary-color));
+  color: var(--care-card-muted);
 }
 
 /* The cards themselves are compact StatusCards (StatusCard.vue). */

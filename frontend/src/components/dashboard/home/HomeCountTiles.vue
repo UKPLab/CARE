@@ -34,6 +34,7 @@
 import HomeSubmissionsTile from "./HomeSubmissionsTile.vue";
 import HomeActivityGraph from "./HomeActivityGraph.vue";
 import { getTimeDiffString } from "@/assets/utils";
+import { CLOSING_SOON_MS, DAY_MS, studyState } from "@/components/dashboard/study/studyCardHelpers.js";
 
 /**
  * The four count tiles at the top of Home.
@@ -56,10 +57,12 @@ export default {
     canSeeSubmissions: { type: Boolean, required: true },
     /** Signed-in user, used to read that user's sessions. */
     userId: { type: Number, required: true },
+    /** Home's per-minute clock, so the counts follow passing deadlines. */
+    now: { type: Number, required: true },
   },
   computed: {
     documentsAddedThisWeek() {
-      const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const weekAgo = this.now - 7 * DAY_MS;
       return this.documents.filter((doc) => new Date(doc.createdAt).getTime() >= weekAgo).length;
     },
     oldestSessionLabel() {
@@ -69,16 +72,15 @@ export default {
       const oldest = [...this.openSessions].sort(
         (a, b) => new Date(a.start || a.createdAt || 0) - new Date(b.start || b.createdAt || 0)
       )[0];
-      const when = getTimeDiffString(Date.now(), new Date(oldest.start || oldest.createdAt));
+      const when = getTimeDiffString(this.now, new Date(oldest.start || oldest.createdAt));
       return this.$t("dashboard.home.oldestStarted", { when });
     },
     studiesClosingSoon() {
-      const now = Date.now();
-      const limit = now + 7 * 24 * 60 * 60 * 1000;
+      const limit = this.now + CLOSING_SOON_MS;
       return this.openStudies.filter((study) => {
         if (!study.end) return false;
         const end = new Date(study.end).getTime();
-        return !Number.isNaN(end) && end >= now && end <= limit;
+        return !Number.isNaN(end) && end >= this.now && end <= limit;
       }).length;
     },
     // Activity graphs (HomeActivityGraph): one date per event, counted
@@ -108,7 +110,6 @@ export default {
       ];
     },
     studyActivity() {
-      const now = Date.now();
       return [
         {
           key: "created",
@@ -118,13 +119,11 @@ export default {
         {
           key: "closed",
           label: this.$t("dashboard.home.activityStudiesClosed"),
-          // Closed by hand, or ended by its deadline. Same rule as
-          // openStudies: a multipleSubmit study stays open after its end.
+          // Closed by hand, or ended by its deadline (studyState).
           dates: this.projectStudies.map((study) => {
-            if (study.closed) return study.closed;
-            if (!study.end || study.multipleSubmit) return null;
-            const end = new Date(study.end).getTime();
-            return end <= now ? study.end : null;
+            const state = studyState(study, this.now);
+            if (state === "closed") return study.closed;
+            return state === "ended" ? study.end : null;
           }),
         },
       ];

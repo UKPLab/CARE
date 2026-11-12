@@ -707,7 +707,8 @@ module.exports = (sequelize, DataTypes) => {
          * studies through the study_session access rule.
          *
          * - `{state: "active"}`: still open: not closed, and either no end, an end in the future,
-         *   or multiple submissions allowed (same rule as StudySession.vue `isStudyAvailable`).
+         *   or multiple submissions allowed (same rule as `isStudyOpen` in
+         *   frontend/src/components/dashboard/study/studyCardHelpers.js).
          * - `{state: "closed"}`: the rest.
          *
          * @param {{state: "active"|"closed"}} params

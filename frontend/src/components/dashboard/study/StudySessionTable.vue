@@ -22,6 +22,7 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
 import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { isStudyOpen, ownSessionActions } from "./studyCardHelpers.js";
 
 /**
  * Table of study session with management buttons
@@ -242,15 +243,7 @@ export default {
       return this.studyRecord ? this.studyRecord.resumable : false;
     },
     studyClosed() {
-      if (this.studyRecord) {
-        if (this.studyRecord.closed) {
-          return true;
-        }
-        if (!this.studyRecord.multipleSubmit && this.studyRecord.end && new Date(this.studyRecord.end) < Date.now()) {
-          return true;
-        }
-      }
-      return false;
+      return !!this.studyRecord && !isStudyOpen(this.studyRecord);
     },
   },
   watch: {
@@ -262,6 +255,11 @@ export default {
     this.refreshCopiedColumn();
   },
   methods: {
+    /**
+     * Display fields and button flags for one session row.
+     * @param {Object} session raw study_session row
+     * @returns {Object}
+     */
     processSession(session) {
       const processedSession = { ...session };
 
@@ -269,15 +267,16 @@ export default {
       processedSession.finished = session.end !== null;
       processedSession.parentStudySessionId = session.parentStudySessionId ?? "-";
       if (this.currentUserOnly) {
-
-        // True only when study is closed, session is not finished, and was copied from a parent session
-        const canResumeOrStart = this.studyClosed && session.end === null && session.parentStudySessionId !== null;
+        const actions = ownSessionActions(session, this.studyRecord, {
+          studyClosed: this.studyClosed,
+          showClosed: this.showClosed,
+          userId: this.userId,
+        });
         processedSession.resumable = this.studyResumable;
-
-        processedSession.showResumeButton = (this.studyResumable && session.start !== undefined && session.start !== null && !this.studyClosed) || (this.studyResumable && session.start !== undefined && session.start !== null && canResumeOrStart);
-        processedSession.showDeleteButton = this.userId === this.studyRecord.createdByUserId && this.userId !== this.studyRecord.userId;
-        processedSession.showStartButton = (!session.start && !this.studyClosed) || (!session.start && canResumeOrStart);
-        processedSession.showInspectButton = this.showClosed && !canResumeOrStart;
+        processedSession.showResumeButton = actions.resume;
+        processedSession.showDeleteButton = actions.delete;
+        processedSession.showStartButton = actions.start;
+        processedSession.showInspectButton = actions.inspect;
       } else {
         processedSession.showDeleteButton =
           this.userId === this.studyRecord.createdByUserId || this.$store.getters["auth/isAdmin"];

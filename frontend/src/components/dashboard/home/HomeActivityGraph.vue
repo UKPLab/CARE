@@ -104,8 +104,8 @@
 
 <script>
 import { formatLocalizedDate } from "@/assets/utils";
+import { DAY_MS } from "@/components/dashboard/study/studyCardHelpers";
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 const DAYS_PER_WEEK = 7;
 const SHORT_DATE = { day: "numeric", month: "short" };
 // One tone per series position. The second one is the "closed" violet
@@ -390,7 +390,7 @@ export default {
   flex-direction: column;
   gap: 1px;
   padding: 5px 8px;
-  border-radius: 6px;
+  border-radius: var(--care-radius-sm);
   color: var(--bs-body-bg);
   background: var(--bs-emphasis-color);
   box-shadow: var(--care-shadow-2);

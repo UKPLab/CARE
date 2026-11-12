@@ -1,4 +1,5 @@
 import { formatLocalizedDateTime, getTimeDiffString } from "@/assets/utils";
+import { DAY_MS, SOON_MS } from "@/components/dashboard/study/studyCardHelpers.js";
 
 /**
  * Helpers shared by more than one Home panel. Keep them here so a
@@ -41,8 +42,8 @@ export const homeShared = {
      */
     dueTone(remainingMs) {
       if (remainingMs < 0) return "overdue";
-      if (remainingMs < 24 * 60 * 60 * 1000) return "urgent";
-      if (remainingMs < 3 * 24 * 60 * 60 * 1000) return "soon";
+      if (remainingMs < DAY_MS) return "urgent";
+      if (remainingMs < SOON_MS) return "soon";
       return "later";
     },
     /**
