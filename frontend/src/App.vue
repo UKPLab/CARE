@@ -41,7 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
-import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
+import { applyTheme, getContrastColor, hexToRgbChannels, resolveTheme, shadeColor } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -219,9 +219,15 @@ export default {
         }
         const accent = this.$store.getters["settings/getValue"]("theme.dark.accentColor");
         if (accent) {
+          const accentHover = shadeColor(accent, 0.12);
           document.documentElement.style.setProperty("--care-accent", accent);
+          // An invalid value keeps the tokens.css default, so links never get an invalid colour.
+          const accentRgb = hexToRgbChannels(accent);
+          if (accentRgb) document.documentElement.style.setProperty("--care-accent-rgb", accentRgb);
           document.documentElement.style.setProperty("--care-on-accent", getContrastColor(accent));
-          document.documentElement.style.setProperty("--care-accent-hover", shadeColor(accent, 0.12));
+          document.documentElement.style.setProperty("--care-accent-hover", accentHover);
+          const accentHoverRgb = hexToRgbChannels(accentHover);
+          if (accentHoverRgb) document.documentElement.style.setProperty("--care-accent-hover-rgb", accentHoverRgb);
           document.documentElement.style.setProperty("--care-accent-active", shadeColor(accent, 0.2));
           const knob = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23${accent.replace('#','')}'/%3e%3c/svg%3e")`;
           document.documentElement.style.setProperty("--care-switch-knob", knob);
