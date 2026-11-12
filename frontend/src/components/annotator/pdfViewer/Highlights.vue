@@ -6,6 +6,7 @@
 import {isNodeInRange} from "@/assets/anchoring/range-util";
 import {isInPlaceholder} from "@/assets/anchoring/placeholder";
 import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
+import {tagHighlightColor} from "@/assets/utils";
 
 /**
  * Highlights handling of annotation in pdf document
@@ -214,31 +215,6 @@ export default {
         state => state.commentId === commentId
       )[0];
     },
-    getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
-    },
     handleScrolling(annotationId) {
       const isRecentlyUpdated = this.isRecentlyUpdated(annotationId);
       if (isRecentlyUpdated) {
@@ -440,7 +416,9 @@ export default {
         return;
       }
 
-      svgHighlightEl.style.fill = "#" + this.getColor(annotation.tagId);
+      const tag = this.$store.getters['table/tag/get'](annotation.tagId);
+      // Pale yellow while the tag row is not in the store.
+      svgHighlightEl.style.fill = tag ? tagHighlightColor(tag.colorCode) : "#efea7b";
       svgHighlightEl.style.opacity = 0.6;
     },
     removeAllHighlights(root) {

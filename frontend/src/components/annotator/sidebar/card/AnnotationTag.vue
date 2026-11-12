@@ -114,17 +114,11 @@ export default {
         return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
       }
     },
-    color() {
-      if (this.annotationId)
-        return this.getColor(this.annotation.tagId);
-      return null;
-    },
     tagColorCss() {
       const tag = this.annotationId && this.annotation
         ? this.$store.getters['table/tag/get'](this.annotation.tagId)
         : null;
-      if (tag?.colorCode) return tagColorVar(tag.colorCode);
-      return this.color ? `#${this.color}` : "var(--bs-primary)";
+      return tagColorVar(tag?.colorCode);
     },
     tagName() {
       if (this.annotationId) {
@@ -150,31 +144,6 @@ export default {
     },
   },
   methods: {
-    getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
-    },
     truncatedText(text) {
       const thresh = 150;
       const len = text.length;
@@ -253,9 +222,9 @@ export default {
   align-items: flex-start;
   gap: .35rem;
   padding: .55rem .7rem;
-  border-radius: 8px;
-  border-left: 3px solid var(--tag-color, var(--bs-primary));
-  background: color-mix(in srgb, var(--tag-color, var(--bs-primary)) 16%, transparent);
+  border-radius: var(--care-radius-md);
+  border-left: 3px solid var(--tag-color);
+  background: color-mix(in srgb, var(--tag-color) 16%, transparent);
   cursor: pointer;
 }
 
@@ -264,8 +233,8 @@ export default {
   font-weight: 600;
   line-height: 1.2;
   padding: .12rem .45rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--tag-color, var(--bs-primary)) 28%, transparent);
+  border-radius: var(--care-radius-pill);
+  background: color-mix(in srgb, var(--tag-color) 28%, transparent);
   color: var(--bs-body-color);
 }
 
@@ -277,7 +246,7 @@ export default {
 
 .anno-tag-select {
   height: 38px;
-  border-radius: 8px;
+  border-radius: var(--care-radius-md);
   border-left-width: 4px;
   border-left-style: solid;
   font-size: small;

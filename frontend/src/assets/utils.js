@@ -401,13 +401,6 @@ export function isOwnListedDocument(doc, userId, projectId) {
         && doc.type !== 4;
 }
 
-/**
- * Assignments shown on the dashboard lists (Submissions, Assignments for
- * users who cannot view all, and the Home submissions tile).
- * @param assignment assignment row from the store
- * @param userId current user
- * @returns {boolean}
- */
 const TAG_COLOR_CODES = ["info", "warning", "success", "danger"];
 
 /**
@@ -421,6 +414,32 @@ export function tagColorVar(colorCode) {
     return `var(--bs-${color})`;
 }
 
+// The PDF highlight keeps its own softer palette on purpose: it sits under the text.
+const TAG_HIGHLIGHT_COLORS = {
+    success: "#009933",
+    danger: "#e05f5f",
+    info: "#5fe0df",
+    dark: "#c8c8c8",
+    warning: "#eed042",
+    secondary: "#4290ee",
+};
+
+/**
+ * Fill colour of a tag's PDF highlight.
+ * @param {string} colorCode
+ * @returns {string} hex colour, blue for an unknown code
+ */
+export function tagHighlightColor(colorCode) {
+    return TAG_HIGHLIGHT_COLORS[colorCode] || "#4c86f7";
+}
+
+/**
+ * Assignments shown on the dashboard lists (Submissions, Assignments for
+ * users who cannot view all, and the Home submissions tile).
+ * @param assignment assignment row from the store
+ * @param userId current user
+ * @returns {boolean}
+ */
 export function isListedAssignment(assignment, userId) {
     return assignment.userId === userId || !assignment.disable;
 }
@@ -622,6 +641,20 @@ export function shadeColor(hexColor, amount) {
         isDark ? Math.round(c + (255 - c) * amount) : Math.round(c * (1 - amount))
     );
     return "#" + shifted.map((c) => c.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Converts a colour to the "r, g, b" channel list CSS needs for
+ * rgba(var(--x-rgb), alpha), e.g. Bootstrap's --bs-link-color-rgb.
+ *
+ * @param {string} hexColor - The colour as "#RRGGBB" or "#RGB"
+ * @returns {string|null} The channels as "r, g, b", or null if the value is not a hex colour
+ */
+export function hexToRgbChannels(hexColor) {
+    let hex = (hexColor || "").replace(/^#/, "");
+    if (/^[0-9a-f]{3}$/i.test(hex)) hex = hex.replace(/./g, (c) => c + c);
+    if (!/^[0-9a-f]{6}$/i.test(hex)) return null;
+    return [0, 2, 4].map((i) => parseInt(hex.substring(i, i + 2), 16)).join(", ");
 }
 
 /**
