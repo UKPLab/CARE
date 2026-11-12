@@ -151,24 +151,16 @@ function addCallerinfo() {
     })();
 }
 
-/**
- * This module logs everything into different formats
- * Use:
- * const logger = require("../utils/logger.js")("service");
- * logger.debug(), logger.info(), logger.error(), ...
- * More information: https://github.com/winstonjs/winston
- *
- * You can also put user information into the log:
- * const new_logger = logger.child({user: <uid_from_table_user>});
- * or logger.info(..., {user: <uid_from_table_user>});
- *
- * @author: Dennis Zyska
- *
- * @param {string} service - Name of the service
- * @param {object} db - Database connection
- * @return {object} - Logger
- */
-exports = module.exports = function (service = "log", db = null) {
+// File streams belong to the process, not to individual socket connections.
+let fileTransports;
+let defaultLogger;
+const databaseLoggers = new WeakMap();
+
+function getFileTransports() {
+    if (fileTransports) {
+        return fileTransports;
+    }
+
     const errorTransport = new winston.transports.DailyRotateFile({
         filename: logging_dir + '/error-%DATE%.log',
         datePattern: 'YYYY-MM-DD',
@@ -204,26 +196,69 @@ exports = module.exports = function (service = "log", db = null) {
         });
     });
 
-    return winston.createLogger({
+    fileTransports = [errorTransport, completeTransport, activityTransport];
+    return fileTransports;
+}
+
+function createBaseLogger(db) {
+    const logger = winston.createLogger({
         level: process.env.LOGGING_LEVEL,
         format: winston.format.combine(
             winston.format.timestamp(),
             addCallerinfo(),
             winston.format.json(),
         ),
-        defaultMeta: {service: service},
         exitOnError: false,
         silent: (process.env.DISABLE_LOGGING === "true" || process.env.DISABLE_LOGGING === 1),
         transports:
             [
-                errorTransport,
-                completeTransport,
-                activityTransport,
+                ...getFileTransports(),
                 new winston.transports.Console({format: winston.format.simple()}),
                 new SQLTransport({level: process.env.LOGGING_LEVEL, db: db})
             ]
     });
 
+    // Winston forwards transport errors to the parent logger as well.
+    logger.on('error', error => {
+        console.error('Logger error:', error);
+    });
+    return logger;
 }
+
+/**
+ * This module logs everything into different formats
+ * Use:
+ * const logger = require("../utils/logger.js")("service");
+ * logger.debug(), logger.info(), logger.error(), ...
+ * More information: https://github.com/winstonjs/winston
+ *
+ * You can also put user information into the log:
+ * const new_logger = logger.child({user: <uid_from_table_user>});
+ * or logger.info(..., {user: <uid_from_table_user>});
+ *
+ * @author: Dennis Zyska
+ *
+ * @param {string} service - Name of the service
+ * @param {object} db - Database connection
+ * @return {object} - Logger
+ */
+exports = module.exports = function (service = "log", db = null) {
+    let logger;
+    if (db) {
+        logger = databaseLoggers.get(db);
+        if (!logger) {
+            logger = createBaseLogger(db);
+            databaseLoggers.set(db, logger);
+        }
+    } else {
+        if (!defaultLogger) {
+            defaultLogger = createBaseLogger(null);
+        }
+        logger = defaultLogger;
+    }
+
+    // Child loggers carry context without adding transports or stream listeners.
+    return logger.child({service});
+};
 
 module.exports.logSequelizeToFile = logSequelizeToFile;
