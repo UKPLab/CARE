@@ -4,16 +4,15 @@
     @keydown.esc.stop.prevent="$emit('back')"
   >
     <div class="care-sub__head">
-      <button
+      <BasicButton
         ref="backButton"
-        type="button"
-        class="care-sub__back"
+        class="btn-icon care-sub__back"
         :title="$t('common.back')"
         :aria-label="$t('common.back')"
         @click="$emit('back')"
       >
-        <i class="bi bi-chevron-left" aria-hidden="true"></i>
-      </button>
+        <LoadIcon icon-name="chevron-left" :size="12" />
+      </BasicButton>
       <div class="care-sub__titles">
         <span class="care-sub__title">{{ $t('common.datePicker.presets.title') }}</span>
         <span class="care-sub__hint">{{ $t('common.datePicker.presets.hint') }}</span>
@@ -26,7 +25,7 @@
         :aria-label="$t('common.datePicker.presets.sort')"
         @click="sortAscending"
       >
-        <i class="bi bi-sort-numeric-down" aria-hidden="true"></i>
+        <LoadIcon icon-name="sort-numeric-down" :size="13" />
       </button>
     </div>
 
@@ -58,7 +57,7 @@
           @pointerup="onHandleUp"
           @pointercancel="onHandleCancel"
         >
-          <i class="bi bi-grip-vertical"></i>
+          <LoadIcon icon-name="grip-vertical" :size="15" />
         </span>
         <span class="care-tp__pos" aria-hidden="true">{{ previewPosition(index) }}</span>
         <input
@@ -79,35 +78,32 @@
         >
         <span v-if="row.error" class="care-tp__error">{{ row.error }}</span>
         <div class="care-tp__actions">
-          <button
-            type="button"
-            class="care-tp__icon"
+          <BasicButton
+            class="btn-icon btn-sm care-tp__icon"
             :disabled="index === 0"
-            :title="$t('common.datePicker.presets.moveUp')"
-            :aria-label="$t('common.datePicker.presets.moveUp')"
+            :title="$t('ai.actions.moveUp')"
+            :aria-label="$t('ai.actions.moveUp')"
             @click="move(index, -1)"
           >
-            <i class="bi bi-chevron-up" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="care-tp__icon"
+            <LoadIcon icon-name="chevron-up" :size="11" />
+          </BasicButton>
+          <BasicButton
+            class="btn-icon btn-sm care-tp__icon"
             :disabled="index === rows.length - 1"
-            :title="$t('common.datePicker.presets.moveDown')"
-            :aria-label="$t('common.datePicker.presets.moveDown')"
+            :title="$t('ai.actions.moveDown')"
+            :aria-label="$t('ai.actions.moveDown')"
             @click="move(index, 1)"
           >
-            <i class="bi bi-chevron-down" aria-hidden="true"></i>
-          </button>
-          <button
-            type="button"
-            class="care-tp__icon is-danger"
+            <LoadIcon icon-name="chevron-down" :size="11" />
+          </BasicButton>
+          <BasicButton
+            class="btn-icon btn-icon-danger btn-sm care-tp__icon"
             :title="$t('common.datePicker.presets.remove')"
             :aria-label="$t('common.datePicker.presets.remove')"
             @click="remove(index)"
           >
-            <i class="bi bi-x-lg" aria-hidden="true"></i>
-          </button>
+            <LoadIcon icon-name="x-lg" :size="11" />
+          </BasicButton>
         </div>
       </li>
     </ul>
@@ -119,7 +115,7 @@
       class="care-tp__add"
       @click="add"
     >
-      <i class="bi bi-plus-lg" aria-hidden="true"></i>
+      <LoadIcon icon-name="plus-lg" :size="12" />
       {{ $t('common.datePicker.presets.add') }}
     </button>
 
@@ -130,7 +126,7 @@
         :disabled="isDefault"
         @click="reset"
       >
-        <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+        <LoadIcon icon-name="arrow-counterclockwise" :size="12" />
         {{ $t('common.datePicker.presets.reset') }}
       </button>
       <button
@@ -145,6 +141,8 @@
 </template>
 
 <script>
+import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import {DEFAULT_TIME_PRESETS, MAX_TIME_PRESETS} from "@/basic/form/datetimePrefs";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -168,6 +166,7 @@ function parseTime(text) {
  */
 export default {
   name: "TimePresetsEditor",
+  components: {LoadIcon, BasicButton},
   props: {
     /** Current quick times "HH:MM" in display order. */
     modelValue: {type: Array, required: true},
@@ -195,7 +194,7 @@ export default {
     },
   },
   mounted() {
-    this.$refs.backButton?.focus({preventScroll: true});
+    this.$refs.backButton?.$el.focus({preventScroll: true});
   },
   methods: {
     setRowRef(id, el) {
@@ -240,11 +239,16 @@ export default {
       this.sync();
       this.$nextTick(() => this.inputRefs[row.id]?.focus());
     },
+    /**
+     * Remove a row and move the focus to the row now in its place, or to the back button.
+     * @param {number} index
+     * @returns {void}
+     */
     remove(index) {
       this.rows.splice(index, 1);
       this.sync();
       const next = this.rows[Math.min(index, this.rows.length - 1)];
-      this.$nextTick(() => (next ? this.inputRefs[next.id] : this.$refs.backButton)?.focus());
+      this.$nextTick(() => (next ? this.inputRefs[next.id] : this.$refs.backButton?.$el)?.focus());
     },
     add() {
       if (this.rows.length >= this.max) return;
@@ -371,10 +375,10 @@ export default {
   padding: .25rem .35rem;
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius, .5rem);
-  transition: border-color var(--care-dur-fast, 120ms) ease,
-              box-shadow var(--care-dur-fast, 120ms) ease,
-              opacity var(--care-dur-fast, 120ms) ease;
+  border-radius: var(--care-radius-md);
+  transition: border-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) ease,
+              opacity var(--care-dur-fast) ease;
 }
 
 .care-tp__row:hover,
@@ -392,21 +396,20 @@ export default {
   height: 28px;
   margin-left: auto;
   padding: 0;
-  font-size: .85rem;
   color: var(--bs-secondary-color);
   background: transparent;
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
   cursor: pointer;
-  transition: color var(--care-dur-fast, 120ms) ease,
-              border-color var(--care-dur-fast, 120ms) ease,
-              background-color var(--care-dur-fast, 120ms) ease;
+  transition: color var(--care-dur-fast) var(--care-ease),
+              border-color var(--care-dur-fast) var(--care-ease),
+              background-color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-tp__sort:hover:not(:disabled) {
-  color: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 8%, transparent);
+  color: var(--care-primary);
+  border-color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 8%, transparent);
 }
 
 .care-tp__sort:disabled {
@@ -416,7 +419,7 @@ export default {
 
 .care-tp__sort:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 
 /* While dragging, the other rows slide aside smoothly */
@@ -426,20 +429,20 @@ export default {
 }
 
 .care-tp__list.is-sorting .care-tp__row {
-  transition: transform 160ms var(--care-ease, ease);
+  transition: transform 160ms var(--care-ease);
 }
 
 /* The dragged row is lifted and follows the pointer without delay */
 .care-tp__list.is-sorting .care-tp__row.is-dragging {
   position: relative;
   z-index: 2;
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-shadow-3, 0 8px 18px -6px rgb(0 0 0 / .25));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-shadow-3);
   transition: none;
 }
 
 .care-tp__row.is-invalid {
-  border-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger);
 }
 
 .care-tp__handle {
@@ -467,12 +470,12 @@ export default {
   font-variant-numeric: tabular-nums;
   text-align: center;
   color: var(--bs-secondary-color);
-  transition: color var(--care-dur-fast, 120ms) ease;
+  transition: color var(--care-dur-fast) var(--care-ease);
 }
 
 /* The dragged row's number shows where it will land */
 .care-tp__row.is-dragging .care-tp__pos {
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
 }
 
 .care-tp__input {
@@ -485,18 +488,18 @@ export default {
   color: var(--bs-body-color);
   background: var(--bs-tertiary-bg);
   border: 1px solid transparent;
-  border-radius: var(--bs-border-radius-sm, .375rem);
+  border-radius: var(--care-radius-sm);
   outline: none;
 }
 
 .care-tp__input:focus {
   background: var(--bs-body-bg);
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-tp__row.is-invalid .care-tp__input {
-  border-color: var(--bs-danger, #dc3545);
+  border-color: var(--bs-danger);
 }
 
 .care-tp__actions {
@@ -505,38 +508,7 @@ export default {
 }
 
 .care-tp__icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  font-size: .75rem;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  border: 0;
   border-radius: 50%;
-  cursor: pointer;
-}
-
-.care-tp__icon:hover:not(:disabled) {
-  color: var(--bs-body-color);
-  background: var(--bs-secondary-bg);
-}
-
-.care-tp__icon.is-danger:hover:not(:disabled) {
-  color: var(--bs-danger, #dc3545);
-  background: color-mix(in srgb, var(--bs-danger, #dc3545) 12%, transparent);
-}
-
-.care-tp__icon:disabled {
-  opacity: .3;
-  cursor: default;
-}
-
-.care-tp__icon:focus-visible {
-  outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
 }
 
 .care-tp__error {
@@ -544,7 +516,7 @@ export default {
   order: 10;
   padding-left: 2.6rem;
   font-size: .7rem;
-  color: var(--bs-danger, #dc3545);
+  color: var(--bs-danger);
 }
 
 .care-tp__empty {
@@ -563,21 +535,75 @@ export default {
   padding: .4rem;
   font-size: .8rem;
   font-weight: 500;
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
   background: transparent;
-  border: 1px dashed color-mix(in srgb, var(--care-primary, var(--bs-primary)) 50%, transparent);
-  border-radius: var(--bs-border-radius, .5rem);
+  border: 1px dashed color-mix(in srgb, var(--care-primary) 50%, transparent);
+  border-radius: var(--care-radius-md);
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-tp__add:hover {
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 8%, transparent);
+  background: color-mix(in srgb, var(--care-primary) 8%, transparent);
 }
 
 .care-tp__add:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
+}
+
+/* Footer: only this sub-view has one */
+.care-sub__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-top: .75rem;
+}
+
+.care-sub__link {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .6rem;
+  font-size: .8rem;
+  font-weight: 500;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  border: 0;
+  border-radius: var(--care-radius-sm);
+  cursor: pointer;
+}
+
+.care-sub__link:hover:not(:disabled) {
+  color: var(--bs-body-color);
+  background: var(--care-hover);
+}
+
+.care-sub__link:disabled {
+  opacity: .4;
+  cursor: default;
+}
+
+.care-sub__done {
+  padding: .3rem .9rem;
+  font-size: .85rem;
+  font-weight: 500;
+  color: var(--care-on-primary);
+  background: var(--care-primary);
+  border: 0;
+  border-radius: var(--care-radius-pill);
+  cursor: pointer;
+}
+
+.care-sub__done:hover {
+  filter: brightness(1.08);
+}
+
+.care-sub__link:focus-visible,
+.care-sub__done:focus-visible {
+  outline: none;
+  box-shadow: var(--care-focus-ring);
 }
 
 @media (prefers-reduced-motion: reduce) {

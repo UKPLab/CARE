@@ -4,15 +4,14 @@
     @keydown.esc.stop.prevent="$emit('back')"
   >
     <div class="care-sub__head">
-      <button
-        type="button"
-        class="care-sub__back"
+      <BasicButton
+        class="btn-icon care-sub__back"
         :title="$t('common.back')"
         :aria-label="$t('common.back')"
         @click="$emit('back')"
       >
-        <i class="bi bi-chevron-left" aria-hidden="true"></i>
-      </button>
+        <LoadIcon icon-name="chevron-left" :size="12" />
+      </BasicButton>
       <div class="care-sub__titles">
         <span class="care-sub__title">{{ $t('common.datePicker.timeZone') }}</span>
         <span class="care-sub__hint">{{ $t('common.datePicker.zones.hint') }}</span>
@@ -20,7 +19,7 @@
     </div>
 
     <div class="care-tz__search">
-      <i class="bi bi-search" aria-hidden="true"></i>
+      <LoadIcon class="care-tz__search-icon" icon-name="search" :size="12" />
       <input
         ref="search"
         v-model="query"
@@ -54,11 +53,13 @@
           :title="item.id"
           @click="pick(item.id)"
         >
-          <i
-            class="care-tz__check bi"
-            :class="item.id === current ? 'bi-check2' : (item.id === device ? 'bi-laptop' : '')"
-            aria-hidden="true"
-          ></i>
+          <LoadIcon
+            v-if="item.id === current || item.id === device"
+            class="care-tz__check"
+            :icon-name="item.id === current ? 'check2' : 'laptop'"
+            :size="13"
+          />
+          <span v-else class="care-tz__check"></span>
           <span class="care-tz__names">
             <span class="care-tz__city">{{ item.city }}</span>
             <span v-if="item.region || item.id === device" class="care-tz__region">
@@ -74,6 +75,8 @@
 </template>
 
 <script>
+import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import {deviceTimeZone, formatOffset, listTimeZones, offsetAt, splitZoneId} from "@/basic/form/timeZone";
 
 const searchable = (text) => text.toLowerCase().replace(/−/g, "-").replace(/_/g, " ");
@@ -85,6 +88,7 @@ const searchable = (text) => text.toLowerCase().replace(/−/g, "-").replace(/_/
  */
 export default {
   name: "TimeZoneSelect",
+  components: {LoadIcon, BasicButton},
   props: {
     /** Chosen zone id, or null for the device zone. */
     modelValue: {type: String, required: false, default: null},
@@ -179,16 +183,15 @@ export default {
   padding: 0 .6rem;
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
 }
 
 .care-tz__search:focus-within {
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
 }
 
-.care-tz__search i {
-  font-size: .8rem;
+.care-tz__search-icon {
   color: var(--bs-secondary-color);
 }
 
@@ -234,9 +237,9 @@ export default {
   color: var(--bs-body-color);
   background: transparent;
   border: 0;
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-tz__item:hover,
@@ -246,22 +249,20 @@ export default {
 }
 
 .care-tz__item:focus-visible {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--care-primary, var(--bs-primary)) 55%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--care-primary) 55%, transparent);
 }
 
 .care-tz__item.is-selected {
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 10%, transparent);
+  background: color-mix(in srgb, var(--care-primary) 10%, transparent);
 }
 
 .care-tz__check {
   flex: 0 0 1rem;
-  font-size: .85rem;
-  text-align: center;
   color: var(--bs-secondary-color);
 }
 
 .care-tz__item.is-selected .care-tz__check {
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
 }
 
 .care-tz__names {
@@ -286,7 +287,7 @@ export default {
 
 .care-tz__item.is-selected .care-tz__city {
   font-weight: 600;
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
 }
 
 .care-tz__region {

@@ -86,15 +86,14 @@
           {{ $t('common.showMore') }}
         </button>
 
-        <button
-          type="button"
-          class="care-toast__close"
+        <BasicButton
+          class="btn-icon btn-sm care-toast__close"
           :aria-label="$t('common.close')"
           :title="$t('common.close')"
           @click="dismiss(toast.id)"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
-        </button>
+          <LoadIcon icon-name="x-lg" :size="11" />
+        </BasicButton>
 
         <div v-if="toast.delay > 0" class="care-toast__progress" aria-hidden="true"></div>
       </div>
@@ -103,6 +102,9 @@
 </template>
 
 <script>
+import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
+
 /**
  * Toast Component
  *
@@ -139,6 +141,7 @@ const COLLAPSE_ITEMS = 4;
 
 export default {
   name: "BasicToast",
+  components: {LoadIcon, BasicButton},
   sockets: {
     toast: function (data) {
       this.makeToast(data);
@@ -390,7 +393,7 @@ export default {
   backdrop-filter: var(--_toast-blur);
   -webkit-backdrop-filter: var(--_toast-blur);
   border: 1px solid var(--_toast-border);
-  border-radius: var(--bs-border-radius-lg, .75rem);
+  border-radius: var(--care-radius-lg);
   box-shadow: var(--_toast-shadow);
   pointer-events: auto;
   transition: opacity 180ms ease, transform 180ms ease;
@@ -442,7 +445,7 @@ export default {
 .care-toast__icon .ring {
   stroke-dasharray: 160;
   stroke-dashoffset: 160;
-  animation: care-draw 500ms var(--care-ease, ease-out) forwards;
+  animation: care-draw 500ms var(--care-ease) forwards;
 }
 
 /* Not "mark": Bootstrap's .mark sets a dark text colour, and currentColor would pick it up. */
@@ -462,12 +465,12 @@ export default {
   transform-box: fill-box;
   transform-origin: center;
   transform: scale(0);
-  animation: care-pop 260ms cubic-bezier(.3, 1.6, .5, 1) 650ms forwards;
+  animation: care-pop 260ms var(--care-ease-spring) 650ms forwards;
 }
 
 /* success: check is drawn, then the icon bounces once */
 .care-toast--success .care-toast__icon svg {
-  animation: care-bounce 420ms cubic-bezier(.3, 1.6, .5, 1) 720ms both;
+  animation: care-bounce 420ms var(--care-ease-spring) 720ms both;
 }
 
 /* danger: cross is drawn, then a short horizontal shake */
@@ -483,7 +486,7 @@ export default {
 
 /* info: icon pops in */
 .care-toast--info .care-toast__icon svg {
-  animation: care-pop 360ms cubic-bezier(.3, 1.6, .5, 1) both;
+  animation: care-pop 360ms var(--care-ease-spring) both;
 }
 
 /* ---------- Text ---------- */
@@ -601,36 +604,14 @@ export default {
 
 .care-toast__more:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
   border-radius: 4px;
 }
 
 /* ---------- Close ---------- */
 .care-toast__close {
   grid-area: close;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  font-size: .75rem;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  border: 0;
   border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 120ms ease, color 120ms ease;
-}
-
-.care-toast__close:hover {
-  color: var(--bs-body-color);
-  background: var(--bs-secondary-bg);
-}
-
-.care-toast__close:focus-visible {
-  outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
 }
 
 /* ---------- Auto-dismiss progress ---------- */
@@ -640,7 +621,7 @@ export default {
   right: 14px;
   bottom: 5px;
   height: 2px;
-  border-radius: 999px;
+  border-radius: var(--care-radius-pill);
   background: var(--care-toast-color);
   opacity: .55;
   transform-origin: left center;

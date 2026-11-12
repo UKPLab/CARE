@@ -3,15 +3,14 @@
     <!-- Main view; the quick-time editor and the zone list replace it in place -->
     <template v-if="view === 'calendar'">
     <div class="care-cal__head">
-      <button
-        type="button"
-        class="care-cal__nav"
+      <BasicButton
+        class="btn-icon care-cal__nav"
         :title="prevLabel"
         :aria-label="prevLabel"
         @click="shiftView(-1)"
       >
-        <i class="bi bi-chevron-left" aria-hidden="true"></i>
-      </button>
+        <LoadIcon icon-name="chevron-left" :size="12" />
+      </BasicButton>
       <div class="care-cal__title" aria-live="polite">
         <template v-if="mode === 'days'">
           <button
@@ -42,15 +41,14 @@
         </button>
         <span v-else class="care-cal__title-range">{{ yearPageStart }} – {{ yearPageStart + 11 }}</span>
       </div>
-      <button
-        type="button"
-        class="care-cal__nav"
+      <BasicButton
+        class="btn-icon care-cal__nav"
         :title="nextLabel"
         :aria-label="nextLabel"
         @click="shiftView(1)"
       >
-        <i class="bi bi-chevron-right" aria-hidden="true"></i>
-      </button>
+        <LoadIcon icon-name="chevron-right" :size="12" />
+      </BasicButton>
     </div>
 
     <div
@@ -134,7 +132,7 @@
       class="care-cal__time"
       :class="{ 'is-disabled': !selected }"
     >
-      <i class="bi bi-clock care-cal__time-icon" aria-hidden="true"></i>
+      <LoadIcon class="care-cal__time-icon" icon-name="clock" :size="15" />
       <div class="care-cal__time-fields" role="group" :aria-label="$t('common.datePicker.time')">
         <input
           v-model="hourText"
@@ -188,7 +186,7 @@
           :aria-label="$t('common.datePicker.presets.edit')"
           @click="openView('presets')"
         >
-          <i class="bi bi-pencil" aria-hidden="true"></i>
+          <LoadIcon icon-name="pencil" :size="11" />
         </button>
       </div>
     </div>
@@ -203,7 +201,7 @@
         :aria-label="`${$t('common.datePicker.zones.change')}: ${[zone.name, zone.label, zone.offset].filter(Boolean).join(', ')}`"
         @click="openView('zones')"
       >
-        <i class="bi bi-globe2 care-cal__zone-icon" aria-hidden="true"></i>
+        <LoadIcon class="care-cal__zone-icon" icon-name="globe2" :size="15" />
         <span class="care-cal__zone-text">
           <span class="care-cal__zone-name">{{ zone.name || zone.label }}</span>
           <span class="care-cal__zone-meta">
@@ -218,13 +216,14 @@
           class="care-cal__zone-offset"
           :class="{ 'is-summer': zone.observesDst && zone.isDst, 'is-winter': zone.observesDst && !zone.isDst }"
         >
-          <i
+          <LoadIcon
             v-if="zone.observesDst"
-            :class="zone.isDst ? 'bi bi-sun' : 'bi bi-snow'"
-            aria-hidden="true"
-          ></i>
+            class="care-cal__season-icon"
+            :icon-name="zone.isDst ? 'sun' : 'snow'"
+            :size="11"
+          />
           {{ zone.offset }}
-          <i class="bi bi-chevron-expand care-cal__zone-caret" aria-hidden="true"></i>
+          <LoadIcon class="care-cal__zone-caret" icon-name="chevron-expand" :size="10" />
         </span>
       </button>
 
@@ -233,7 +232,7 @@
         class="care-cal__zone-note"
         role="status"
       >
-        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>
+        <LoadIcon class="care-cal__zone-note-icon" icon-name="arrow-repeat" :size="11" />
         <span>{{ zone.notice }}</span>
       </div>
     </div>
@@ -270,6 +269,8 @@
 </template>
 
 <script>
+import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import TimePresetsEditor from "@/basic/form/TimePresetsEditor.vue";
 import TimeZoneSelect from "@/basic/form/TimeZoneSelect.vue";
 import {DEFAULT_TIME_PRESETS} from "@/basic/form/datetimePrefs";
@@ -292,7 +293,7 @@ const fromYmd = (ymd) => {
 
 export default {
   name: "CalendarPanel",
-  components: {TimePresetsEditor, TimeZoneSelect},
+  components: {LoadIcon, BasicButton, TimePresetsEditor, TimeZoneSelect},
   props: {
     /** Selected day "YYYY-MM-DD" or null. */
     selected: {type: String, required: false, default: null},
@@ -572,19 +573,19 @@ export default {
   text-transform: capitalize;
   background: transparent;
   border: 0;
-  border-radius: var(--bs-border-radius-sm, .375rem);
+  border-radius: var(--care-radius-sm);
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease, color var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-cal__title-btn:hover {
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
   background: var(--bs-tertiary-bg);
 }
 
 .care-cal__title-btn:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-cal__title-range {
@@ -609,9 +610,9 @@ export default {
   color: var(--bs-body-color);
   background: transparent;
   border: 1px solid transparent;
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease, border-color var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), border-color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-cal__pick-item:hover:not(:disabled):not(.is-selected) {
@@ -621,15 +622,15 @@ export default {
 
 .care-cal__pick-item.is-current {
   font-weight: 700;
-  color: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .care-cal__pick-item.is-selected {
   font-weight: 600;
-  color: var(--care-on-primary, #fff);
-  background: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
+  color: var(--care-on-primary);
+  background: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .care-cal__pick-item:disabled {
@@ -639,28 +640,11 @@ export default {
 
 .care-cal__pick-item:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-cal__nav {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  font-size: .8rem;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  border: 0;
   border-radius: 50%;
-  cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease, color var(--care-dur-fast, 120ms) ease;
-}
-
-.care-cal__nav:hover {
-  color: var(--bs-body-color);
-  background: var(--bs-secondary-bg);
 }
 
 /* ---------- Grid ---------- */
@@ -695,9 +679,9 @@ export default {
   border: 1px solid transparent;
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease,
-              border-color var(--care-dur-fast, 120ms) ease,
-              transform var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease),
+              border-color var(--care-dur-fast) var(--care-ease),
+              transform var(--care-dur-fast) ease;
 }
 
 .care-cal__day:hover:not(:disabled):not(.is-selected) {
@@ -706,22 +690,22 @@ export default {
 }
 
 .care-cal__day.is-outside {
-  color: var(--bs-tertiary-color, var(--bs-secondary-color));
+  color: var(--bs-tertiary-color);
   opacity: .55;
 }
 
 .care-cal__day.is-today {
   font-weight: 700;
-  border-color: var(--care-primary, var(--bs-primary));
-  color: var(--care-primary, var(--bs-primary));
+  border-color: var(--care-primary);
+  color: var(--care-primary);
 }
 
 .care-cal__day.is-selected {
   font-weight: 600;
-  color: var(--care-on-primary, #fff);
-  background: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: 0 2px 6px color-mix(in srgb, var(--care-primary, var(--bs-primary)) 45%, transparent);
+  color: var(--care-on-primary);
+  background: var(--care-primary);
+  border-color: var(--care-primary);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--care-primary) 45%, transparent);
 }
 
 .care-cal__day:disabled {
@@ -729,12 +713,11 @@ export default {
   cursor: not-allowed;
 }
 
-.care-cal__nav:focus-visible,
 .care-cal__day:focus-visible,
 .care-cal__chip:focus-visible,
 .care-cal__link:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 
 /* ---------- Time ---------- */
@@ -764,12 +747,12 @@ export default {
   padding: 0 .35rem;
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
 }
 
 .care-cal__time-fields:focus-within {
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-cal__time-input {
@@ -803,9 +786,9 @@ export default {
   color: var(--bs-secondary-color);
   background: transparent;
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-pill, 999px);
+  border-radius: var(--care-radius-pill);
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease, color var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-cal__chip:hover:not(:disabled) {
@@ -814,8 +797,8 @@ export default {
 }
 
 .care-cal__chip.is-active {
-  color: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .care-cal__chip:disabled {
@@ -832,8 +815,8 @@ export default {
 }
 
 .care-cal__chip--edit:hover {
-  color: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
+  border-color: var(--care-primary);
   border-style: solid;
 }
 
@@ -857,9 +840,9 @@ export default {
   color: inherit;
   background: var(--bs-tertiary-bg);
   border: 1px solid transparent;
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
   cursor: pointer;
-  transition: background-color var(--care-dur-fast, 120ms) ease, border-color var(--care-dur-fast, 120ms) ease;
+  transition: background-color var(--care-dur-fast) var(--care-ease), border-color var(--care-dur-fast) var(--care-ease);
 }
 
 .care-cal__zone:hover {
@@ -868,18 +851,17 @@ export default {
 
 .care-cal__zone:hover .care-cal__zone-offset,
 .care-cal__zone.is-custom .care-cal__zone-offset {
-  color: var(--care-primary, var(--bs-primary));
-  border-color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
+  border-color: var(--care-primary);
 }
 
 .care-cal__zone:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-cal__zone-caret {
   margin-left: -.1rem;
-  font-size: .65rem;
   opacity: .7;
 }
 
@@ -927,14 +909,14 @@ export default {
   color: var(--bs-body-color);
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius-pill, 999px);
+  border-radius: var(--care-radius-pill);
 }
 
-.care-cal__zone-offset.is-summer i {
+.care-cal__zone-offset.is-summer .care-cal__season-icon {
   color: #e8a10c;
 }
 
-.care-cal__zone-offset.is-winter i {
+.care-cal__zone-offset.is-winter .care-cal__season-icon {
   color: #3a8bd6;
 }
 
@@ -946,14 +928,15 @@ export default {
   font-size: .75rem;
   line-height: 1.35;
   color: var(--bs-body-color);
-  background: color-mix(in srgb, var(--bs-warning, #ffc107) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--bs-warning, #ffc107) 40%, transparent);
-  border-radius: var(--bs-border-radius, .5rem);
+  background: color-mix(in srgb, var(--bs-warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bs-warning) 40%, transparent);
+  border-radius: var(--care-radius-md);
 }
 
-.care-cal__zone-note i {
-  margin-top: .05rem;
-  color: var(--bs-warning-text-emphasis, #997404);
+.care-cal__zone-note-icon {
+  flex: 0 0 auto;
+  margin-top: .2rem;
+  color: var(--bs-warning-text-emphasis);
 }
 
 /* ---------- Footer ---------- */
@@ -969,15 +952,15 @@ export default {
   padding: .25rem .6rem;
   font-size: .85rem;
   font-weight: 500;
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
   background: transparent;
   border: 0;
-  border-radius: var(--bs-border-radius-sm, .375rem);
+  border-radius: var(--care-radius-sm);
   cursor: pointer;
 }
 
 .care-cal__link:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 12%, transparent);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
 }
 
 .care-cal__link:disabled {
@@ -986,7 +969,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .care-cal__nav,
   .care-cal__title-btn,
   .care-cal__pick-item,
   .care-cal__day,
@@ -995,107 +977,5 @@ export default {
   .care-cal__zone {
     transition: none;
   }
-}
-</style>
-
-<!-- Shared by the sub-views (TimePresetsEditor, TimeZoneSelect); not scoped so both can use it -->
-<style>
-.care-sub__head {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  margin-bottom: .75rem;
-}
-
-.care-sub__back {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  font-size: .8rem;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  border: 0;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.care-sub__back:hover {
-  color: var(--bs-body-color);
-  background: var(--bs-secondary-bg);
-}
-
-.care-sub__titles {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  line-height: 1.25;
-}
-
-.care-sub__title {
-  font-size: .95rem;
-  font-weight: 600;
-}
-
-.care-sub__hint {
-  font-size: .72rem;
-  color: var(--bs-secondary-color);
-}
-
-.care-sub__foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
-  margin-top: .75rem;
-}
-
-.care-sub__link {
-  display: inline-flex;
-  align-items: center;
-  gap: .35rem;
-  padding: .25rem .6rem;
-  font-size: .8rem;
-  font-weight: 500;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  border: 0;
-  border-radius: var(--bs-border-radius-sm, .375rem);
-  cursor: pointer;
-}
-
-.care-sub__link:hover:not(:disabled) {
-  color: var(--bs-body-color);
-  background: var(--bs-tertiary-bg);
-}
-
-.care-sub__link:disabled {
-  opacity: .4;
-  cursor: default;
-}
-
-.care-sub__done {
-  padding: .3rem .9rem;
-  font-size: .85rem;
-  font-weight: 500;
-  color: var(--care-on-primary, #fff);
-  background: var(--care-primary, var(--bs-primary));
-  border: 0;
-  border-radius: var(--bs-border-radius-pill, 999px);
-  cursor: pointer;
-}
-
-.care-sub__done:hover {
-  filter: brightness(1.08);
-}
-
-.care-sub__back:focus-visible,
-.care-sub__link:focus-visible,
-.care-sub__done:focus-visible {
-  outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
 }
 </style>
