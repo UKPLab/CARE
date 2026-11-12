@@ -14,9 +14,9 @@
       @click="toggle"
       @keydown="onButtonKeydown"
     >
-      <i v-if="icon" :class="`bi bi-${icon}`" class="care-filter__icon" aria-hidden="true"></i>
+      <LoadIcon v-if="icon" class="care-filter__icon" :icon-name="icon" :size="13" />
       <span class="care-filter__value">{{ selectedLabel }}</span>
-      <i class="bi bi-chevron-down care-filter__chevron" aria-hidden="true"></i>
+      <LoadIcon class="care-filter__chevron" icon-name="chevron-down" :size="11" />
     </button>
 
     <!-- Teleported so modal bodies with overflow do not clip the menu. Inside a modal it goes
@@ -28,7 +28,7 @@
           v-if="isOpen"
           :id="listId"
           ref="menu"
-          class="care-filter__menu"
+          class="care-menu care-filter__menu"
           role="listbox"
           tabindex="-1"
           :aria-labelledby="label ? labelId : buttonId"
@@ -48,7 +48,7 @@
             @mousemove="activeIndex = index"
           >
             <span class="care-filter__option-label">{{ option.label }}</span>
-            <i v-if="isSelected(option)" class="bi bi-check2 care-filter__check" aria-hidden="true"></i>
+            <LoadIcon v-if="isSelected(option)" class="care-filter__check" icon-name="check2" :size="13" />
           </li>
         </ul>
       </Transition>
@@ -57,6 +57,16 @@
 </template>
 
 <script>
+import {
+  bindPopupListeners,
+  createTypeahead,
+  handleListboxKeydown,
+  placePopup,
+  popupTeleportTarget,
+  uniqueId,
+} from "@/basic/form/helpers/listbox";
+import LoadIcon from "@/basic/Icon.vue";
+
 /**
  * Styled single-choice filter dropdown (replacement for a native <select> in filter bars).
  *
@@ -69,10 +79,12 @@
  * />
  *
  * The first option is treated as the "no filter" value; any other choice highlights the button.
- * Keyboard: Enter/Space/ArrowDown opens, arrows/Home/End move, Enter selects, Escape/Tab close.
+ * Keyboard: Enter/Space/ArrowDown opens, arrows/Home/End move, letters jump to an option,
+ * Enter selects, Escape/Tab close.
  */
 export default {
   name: "BasicFilterDropdown",
+  components: {LoadIcon},
   props: {
     /** Currently selected value. */
     modelValue: {
@@ -112,12 +124,10 @@ export default {
       activeIndex: -1,
       menuStyle: {},
       teleportTarget: "body",
+      uid: uniqueId(),
     };
   },
   computed: {
-    uid() {
-      return this.$.uid;
-    },
     buttonId() {
       return `care-filter-btn-${this.uid}`;
     },
@@ -139,11 +149,14 @@ export default {
       return this.modelValue !== null && String(this.modelValue) !== String(neutral);
     },
   },
+  created() {
+    this.typeahead = createTypeahead();
+  },
   mounted() {
-    this.teleportTarget = this.$el.closest?.(".modal") || "body";
+    this.teleportTarget = popupTeleportTarget(this.$el);
   },
   beforeUnmount() {
-    this.removeListeners();
+    this.unbindPopup?.();
   },
   methods: {
     optionId(index) {
@@ -165,22 +178,24 @@ export default {
         this.$refs.menu?.focus({ preventScroll: true });
         this.scrollActiveIntoView();
       });
-      document.addEventListener("pointerdown", this.onOutsidePointer, true);
-      window.addEventListener("resize", this.updatePosition);
-      window.addEventListener("scroll", this.updatePosition, true);
+      this.unbindPopup = bindPopupListeners({
+        isInside: (target) => this.$refs.button?.contains(target) || this.$refs.menu?.contains(target),
+        onOutside: () => this.close(false),
+        onReposition: this.updatePosition,
+      });
     },
+    /**
+     * @param {boolean} [focusButton] Return focus to the button.
+     * @returns {void}
+     */
     close(focusButton = true) {
       if (!this.isOpen) return;
       this.isOpen = false;
-      this.removeListeners();
+      this.unbindPopup?.();
+      this.unbindPopup = null;
       if (focusButton) {
         this.$refs.button?.focus({ preventScroll: true });
       }
-    },
-    removeListeners() {
-      document.removeEventListener("pointerdown", this.onOutsidePointer, true);
-      window.removeEventListener("resize", this.updatePosition);
-      window.removeEventListener("scroll", this.updatePosition, true);
     },
     select(option) {
       this.$emit("update:modelValue", option.value);
@@ -192,10 +207,6 @@ export default {
       if (!button) return;
       const rect = button.getBoundingClientRect();
       const margin = 12;
-      const spaceBelow = window.innerHeight - rect.bottom - margin;
-      const spaceAbove = rect.top - margin;
-      const openUp = spaceBelow < 220 && spaceAbove > spaceBelow;
-      const maxHeight = Math.max(160, Math.min(320, openUp ? spaceAbove : spaceBelow));
       const maxWidth = window.innerWidth - margin * 2;
 
       let width = Math.max(rect.width, 200);
@@ -213,35 +224,15 @@ export default {
       }
       width = Math.min(width, maxWidth);
 
-      // Grow to the right of the button. Near the viewport edge, pin the menu
-      // to the button's other corner so the labels stay on screen.
-      let left = rect.left;
-      if (left + width > window.innerWidth - margin) {
-        left = rect.right - width;
-      }
-      left = Math.max(margin, Math.min(left, window.innerWidth - margin - width));
-
-      this.menuStyle = {
-        left: `${Math.round(left)}px`,
-        width: `${Math.round(width)}px`,
-        maxWidth: `${Math.round(maxWidth)}px`,
-        maxHeight: `${Math.round(maxHeight)}px`,
-        ...(openUp
-          ? { bottom: `${Math.round(window.innerHeight - rect.top + 6)}px`, top: "auto" }
-          : { top: `${Math.round(rect.bottom + 6)}px`, bottom: "auto" }),
-      };
+      const { style } = placePopup(rect, menu, { width, gap: 6, margin });
+      this.menuStyle = { ...style, maxWidth: `${Math.round(maxWidth)}px` };
     },
-    onOutsidePointer(event) {
-      const inButton = this.$refs.button?.contains(event.target);
-      const inMenu = this.$refs.menu?.contains(event.target);
-      if (!inButton && !inMenu) {
-        this.close(false);
-      }
-    },
-    moveActive(delta) {
-      const count = this.options.length;
-      if (!count) return;
-      this.activeIndex = (this.activeIndex + delta + count) % count;
+    /**
+     * @param {number} index
+     * @returns {void}
+     */
+    setActive(index) {
+      this.activeIndex = index;
       this.scrollActiveIntoView();
     },
     scrollActiveIntoView() {
@@ -257,46 +248,19 @@ export default {
       }
     },
     /**
-     * Arrow keys, Enter and Escape while the menu is open.
+     * Keys while the menu is open.
      * @param {KeyboardEvent} event
      * @returns {void}
      */
     onMenuKeydown(event) {
-      switch (event.key) {
-        case "ArrowDown":
-          event.preventDefault();
-          this.moveActive(1);
-          break;
-        case "ArrowUp":
-          event.preventDefault();
-          this.moveActive(-1);
-          break;
-        case "Home":
-          event.preventDefault();
-          this.activeIndex = 0;
-          this.scrollActiveIntoView();
-          break;
-        case "End":
-          event.preventDefault();
-          this.activeIndex = this.options.length - 1;
-          this.scrollActiveIntoView();
-          break;
-        case "Enter":
-        case " ":
-          event.preventDefault();
-          if (this.options[this.activeIndex]) {
-            this.select(this.options[this.activeIndex]);
-          }
-          break;
-        case "Escape":
-          event.preventDefault();
-          event.stopPropagation(); // do not close a surrounding modal
-          this.close();
-          break;
-        case "Tab":
-          this.close(false);
-          break;
-      }
+      handleListboxKeydown(event, {
+        items: this.options,
+        activeIndex: this.activeIndex,
+        setActive: this.setActive,
+        pick: (index) => this.select(this.options[index]),
+        close: this.close,
+        typeahead: this.typeahead,
+      });
     },
   },
 };
@@ -327,28 +291,28 @@ export default {
   color: var(--bs-body-color);
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius, .5rem);
+  border-radius: var(--care-radius-md);
   cursor: pointer;
-  transition: border-color var(--care-dur-fast, 120ms) var(--care-ease, ease),
-              background-color var(--care-dur-fast, 120ms) var(--care-ease, ease),
-              box-shadow var(--care-dur-fast, 120ms) var(--care-ease, ease);
+  transition: border-color var(--care-dur-fast) var(--care-ease),
+              background-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) var(--care-ease);
 }
 
 .care-filter__button:hover {
-  background: var(--bs-tertiary-bg);
+  background: var(--care-hover);
 }
 
 .care-filter__button:focus-visible,
 .care-filter.is-open .care-filter__button {
   outline: none;
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
 }
 
 /* A non-default filter is visibly "on" */
 .care-filter__button.is-active {
-  border-color: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 60%, var(--bs-border-color));
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 10%, var(--bs-body-bg));
+  border-color: color-mix(in srgb, var(--care-primary) 60%, var(--bs-border-color));
+  background: color-mix(in srgb, var(--care-primary) 10%, var(--bs-body-bg));
 }
 
 .care-filter__icon {
@@ -356,7 +320,7 @@ export default {
 }
 
 .care-filter__button.is-active .care-filter__icon {
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
 }
 
 .care-filter__value {
@@ -366,9 +330,8 @@ export default {
 }
 
 .care-filter__chevron {
-  font-size: .7rem;
   color: var(--bs-secondary-color);
-  transition: transform 160ms var(--care-ease, ease);
+  transition: transform 160ms var(--care-ease);
 }
 
 .care-filter.is-open .care-filter__chevron {
@@ -377,18 +340,8 @@ export default {
 
 /* ---------- Menu (teleported to body) ---------- */
 .care-filter__menu {
-  position: fixed;
-  z-index: 1080; /* above Bootstrap modals (1055) */
   max-width: calc(100vw - 24px);
-  margin: 0;
-  padding: .25rem;
   overflow-y: auto;
-  list-style: none;
-  background: var(--bs-body-bg);
-  border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg, .75rem);
-  box-shadow: var(--care-shadow-3, 0 12px 24px -6px rgb(0 0 0 / .2));
-  outline: none;
 }
 
 .care-filter__option {
@@ -399,7 +352,7 @@ export default {
   padding: .45rem .65rem;
   font-size: .875rem;
   color: var(--bs-body-color);
-  border-radius: var(--bs-border-radius-sm, .375rem);
+  border-radius: var(--care-radius-sm);
   cursor: pointer;
   user-select: none;
 }
@@ -410,7 +363,7 @@ export default {
 
 .care-filter__option.is-selected {
   font-weight: 500;
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
 }
 
 .care-filter__option-label {
@@ -425,7 +378,7 @@ export default {
 
 .care-filter-menu-enter-active,
 .care-filter-menu-leave-active {
-  transition: opacity 120ms ease, transform 120ms var(--care-ease, ease);
+  transition: opacity 120ms ease, transform 120ms var(--care-ease);
 }
 
 .care-filter-menu-enter-from,

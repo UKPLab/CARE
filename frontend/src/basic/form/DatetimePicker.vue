@@ -44,7 +44,7 @@
           @keydown.down.prevent="open"
           @keydown.esc="onTriggerEscape"
         >
-          <i class="bi bi-calendar3 care-dp-trigger__icon" aria-hidden="true"></i>
+          <LoadIcon class="care-dp-trigger__icon" icon-name="calendar3" :size="15" />
           <span
             class="care-dp-trigger__text"
             :class="{ 'is-placeholder': !date }"
@@ -58,16 +58,17 @@
             <template v-if="!zone.isDevice">{{ zone.city }} · </template>{{ zone.offset }}
           </span>
         </button>
-        <button
+        <!-- BasicButton's click event has no DOM event, so the native click is stopped in capture -->
+        <BasicButton
           v-if="date"
-          type="button"
-          class="care-dp-trigger__clear"
+          class="btn-icon btn-sm care-dp-trigger__clear"
           :title="$t('common.reset')"
           :aria-label="$t('common.reset')"
-          @click.stop="clear"
+          @click.capture.stop
+          @click="clear"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
-        </button>
+          <LoadIcon icon-name="x-lg" :size="11" />
+        </BasicButton>
       </div>
 
       <!-- Inside a modal the popup goes into the .modal itself, otherwise Bootstrap's focus trap
@@ -121,9 +122,12 @@
 
 <script>
 import FormElement from "@/basic/form/Element.vue"
+import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import CalendarPanel from "@/basic/form/CalendarPanel.vue";
 import { formatLocalizedDate, formatLocalizedDateTime, translateMaybeKey } from "@/assets/utils";
 import {datetimePrefs, setPreferredTimeZone, setTimePresets} from "@/basic/form/datetimePrefs";
+import {bindPopupListeners, placePopup, popupTeleportTarget, uniqueId} from "@/basic/form/helpers/listbox";
 import {
   dayOffsets,
   deviceTimeZone,
@@ -151,7 +155,7 @@ import {
  */
 export default {
   name: "DatetimePicker",
-  components: {FormElement, CalendarPanel},
+  components: {FormElement, CalendarPanel, LoadIcon, BasicButton},
   props: {
     options: {
       type: Object,
@@ -182,6 +186,7 @@ export default {
       isOpen: false,
       popupStyle: {},
       teleportTarget: "body",
+      uid: uniqueId(),
     }
   },
   computed: {
@@ -190,7 +195,7 @@ export default {
       return typeof locale === "string" ? locale : locale?.value;
     },
     popupId() {
-      return `care-dp-popup-${this.$.uid}`;
+      return `care-dp-popup-${this.uid}`;
     },
     minDate() {
       return this.options.min || null;
@@ -281,11 +286,11 @@ export default {
     },
   },
   mounted() {
-    this.teleportTarget = this.$el.closest?.(".modal") || "body";
+    this.teleportTarget = popupTeleportTarget(this.$el);
     this.applyValue(this.modelValue);
   },
   beforeUnmount() {
-    this.removeListeners();
+    this.unbindPopup?.();
   },
   methods: {
     translateMaybeKey,
@@ -382,49 +387,42 @@ export default {
       if (this.isOpen) return;
       this.isOpen = true;
       this.updatePosition();
-      document.addEventListener("pointerdown", this.onOutsidePointer, true);
-      window.addEventListener("resize", this.updatePosition);
-      window.addEventListener("scroll", this.updatePosition, true);
+      this.unbindPopup = bindPopupListeners({
+        isInside: (target) => this.$refs.trigger?.contains(target) || this.$refs.popup?.contains(target),
+        onOutside: () => this.close(false),
+        onReposition: this.updatePosition,
+      });
       this.$nextTick(() => {
         this.updatePosition();
         this.$refs.popup?.querySelector('.care-cal__day[tabindex="0"]')?.focus({preventScroll: true});
       });
     },
+    /**
+     * @param {boolean} [focusTrigger] Return focus to the field.
+     * @returns {void}
+     */
     close(focusTrigger = true) {
       if (!this.isOpen) return;
       this.isOpen = false;
-      this.removeListeners();
+      this.unbindPopup?.();
+      this.unbindPopup = null;
       if (focusTrigger) this.$refs.triggerButton?.focus({preventScroll: true});
       this.validate();
-    },
-    removeListeners() {
-      document.removeEventListener("pointerdown", this.onOutsidePointer, true);
-      window.removeEventListener("resize", this.updatePosition);
-      window.removeEventListener("scroll", this.updatePosition, true);
-    },
-    onOutsidePointer(event) {
-      const inTrigger = this.$refs.trigger?.contains(event.target);
-      const inPopup = this.$refs.popup?.contains(event.target);
-      if (!inTrigger && !inPopup) this.close(false);
     },
     /** Pin the calendar popup to the field. @returns {void} */
     updatePosition() {
       const trigger = this.$refs.trigger;
       if (!trigger) return;
-      const rect = trigger.getBoundingClientRect();
       const width = Math.min(320, window.innerWidth - 16);
-      const height = this.$refs.popup?.offsetHeight || (this.dateOnly ? 360 : 530);
-      const spaceBelow = window.innerHeight - rect.bottom - 8;
-      const spaceAbove = rect.top - 8;
-      const openUp = spaceBelow < height && spaceAbove > spaceBelow;
-      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-      this.popupStyle = {
-        left: `${Math.round(left)}px`,
-        width: `${width}px`,
-        ...(openUp
-          ? {bottom: `${Math.round(window.innerHeight - rect.top + 6)}px`}
-          : {top: `${Math.round(rect.bottom + 6)}px`}),
-      };
+      // The calendar does not scroll: open upward whenever all of it does not fit below, never cap its height
+      const {style} = placePopup(trigger.getBoundingClientRect(), this.$refs.popup, {
+        width,
+        gap: 6,
+        margin: 8,
+        minSpaceBelow: Infinity,
+      });
+      delete style.maxHeight;
+      this.popupStyle = style;
     },
     validate() {
       return this.$refs.formElement.validate(this.currentIso);
@@ -445,14 +443,14 @@ export default {
   align-items: center;
   padding: 0;
   cursor: pointer;
-  transition: border-color var(--care-dur-fast, 120ms) var(--care-ease, ease),
-              box-shadow var(--care-dur-fast, 120ms) var(--care-ease, ease);
+  transition: border-color var(--care-dur-fast) var(--care-ease),
+              box-shadow var(--care-dur-fast) var(--care-ease);
 }
 
 .care-dp-trigger.is-open,
 .care-dp-trigger:focus-within {
-  border-color: var(--care-primary, var(--bs-primary));
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  border-color: var(--care-primary);
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-dp-trigger__main {
@@ -476,7 +474,7 @@ export default {
 }
 
 .care-dp-trigger.has-value .care-dp-trigger__icon {
-  color: var(--care-primary, var(--bs-primary));
+  color: var(--care-primary);
 }
 
 .care-dp-trigger__text {
@@ -500,64 +498,43 @@ export default {
   white-space: nowrap;
   color: var(--bs-secondary-color);
   background: var(--bs-tertiary-bg);
-  border-radius: var(--bs-border-radius-pill, 999px);
+  border-radius: var(--care-radius-pill);
 }
 
 /* Not the device zone: make it hard to miss */
 .care-dp-trigger__zone.is-custom {
-  color: var(--care-primary, var(--bs-primary));
-  background: color-mix(in srgb, var(--care-primary, var(--bs-primary)) 12%, transparent);
+  color: var(--care-primary);
+  background: color-mix(in srgb, var(--care-primary) 12%, transparent);
 }
 
 .care-dp-trigger__clear {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   flex: 0 0 auto;
-  width: 26px;
-  height: 26px;
   margin-right: .4rem;
-  padding: 0;
-  font-size: .7rem;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  border: 0;
   border-radius: 50%;
-  cursor: pointer;
-}
-
-.care-dp-trigger__clear:hover {
-  color: var(--bs-body-color);
-  background: var(--bs-secondary-bg);
-}
-
-.care-dp-trigger__clear:focus-visible {
-  outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
 }
 
 /* ---------- Popup (teleported) ---------- */
 .care-dp-popup {
   position: fixed;
-  z-index: 1080; /* above Bootstrap modals (1055) */
+  z-index: var(--care-z-popover); /* above Bootstrap modals (1055) */
   padding: .75rem;
   color: var(--bs-body-color);
   background: var(--bs-body-bg);
   border: 1px solid var(--bs-border-color-translucent);
-  border-radius: var(--bs-border-radius-lg, .75rem);
-  box-shadow: var(--care-shadow-3, 0 12px 24px -6px rgb(0 0 0 / .2));
+  border-radius: var(--care-radius-lg);
+  box-shadow: var(--care-shadow-3);
 }
 
 .care-dp-done {
   padding: .3rem .9rem;
   font-size: .85rem;
   font-weight: 500;
-  color: var(--care-on-primary, #fff);
-  background: var(--care-primary, var(--bs-primary));
+  color: var(--care-on-primary);
+  background: var(--care-primary);
   border: 0;
-  border-radius: var(--bs-border-radius-pill, 999px);
+  border-radius: var(--care-radius-pill);
   cursor: pointer;
-  transition: filter var(--care-dur-fast, 120ms) ease;
+  transition: filter var(--care-dur-fast) ease;
 }
 
 .care-dp-done:hover {
@@ -566,12 +543,12 @@ export default {
 
 .care-dp-done:focus-visible {
   outline: none;
-  box-shadow: var(--care-focus-ring, 0 0 0 3px rgb(13 110 253 / .35));
+  box-shadow: var(--care-focus-ring);
 }
 
 .care-dp-pop-enter-active,
 .care-dp-pop-leave-active {
-  transition: opacity 120ms ease, transform 140ms var(--care-ease, ease);
+  transition: opacity 120ms ease, transform 140ms var(--care-ease);
 }
 
 .care-dp-pop-enter-from,

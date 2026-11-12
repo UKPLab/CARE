@@ -14,15 +14,15 @@
  * Skipped: `multiple`, `size > 1`, disabled selects, and anything with `data-native-select`.
  * Selects rendered by FormSelect / FilterDropdown are already custom buttons and not affected.
  *
- * Styles live in assets/styles/global.css (`.care-native-menu`).
+ * Styles live in assets/styles/global.css (`.care-menu`, `.care-native-menu`).
  */
+import {createTypeahead, handleListboxKeydown, placePopup} from "@/basic/form/helpers/listbox";
 
 let menu = null;          // the open <ul>
 let current = null;       // the <select> it belongs to
-let items = [];           // [{ el, option }]
+let items = [];           // [{ el, option, label, disabled }]
 let activeIndex = -1;
-let typeahead = "";
-let typeaheadTimer = null;
+const typeahead = createTypeahead();
 
 function isEnhanced(select) {
   return select instanceof HTMLSelectElement
@@ -66,6 +66,16 @@ function buildItem(option, index) {
   return li;
 }
 
+/**
+ * Menu entry for a native option, in the shape the listbox helpers expect.
+ * @param {HTMLElement} el
+ * @param {HTMLOptionElement} option
+ * @returns {{el: HTMLElement, option: HTMLOptionElement, label: string, disabled: boolean}}
+ */
+function menuItem(el, option) {
+  return {el, option, label: option.label || option.textContent, disabled: option.disabled};
+}
+
 function setActive(index, scroll = true) {
   if (activeIndex >= 0 && items[activeIndex]) items[activeIndex].el.classList.remove("is-active");
   activeIndex = index;
@@ -84,20 +94,13 @@ function position() {
     return;
   }
   const rect = current.getBoundingClientRect();
-  const spaceBelow = window.innerHeight - rect.bottom - 12;
-  const spaceAbove = rect.top - 12;
-  const wanted = Math.min(320, menu.scrollHeight + 2);
-  const openUp = spaceBelow < Math.min(wanted, 200) && spaceAbove > spaceBelow;
-  const maxHeight = Math.max(120, Math.min(320, openUp ? spaceAbove : spaceBelow));
   const width = Math.max(rect.width, 160);
-  const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+  // The menu grows with its labels, so the computed width is only its minimum
+  const {width: minWidth, ...style} = placePopup(rect, menu, {width, margin: 8}).style;
   Object.assign(menu.style, {
-    left: `${Math.round(left)}px`,
-    minWidth: `${Math.round(width)}px`,
+    ...style,
+    minWidth,
     maxWidth: `${Math.round(Math.max(width, Math.min(480, window.innerWidth - 16)))}px`,
-    maxHeight: `${Math.round(maxHeight)}px`,
-    top: openUp ? "" : `${Math.round(rect.bottom + 4)}px`,
-    bottom: openUp ? `${Math.round(window.innerHeight - rect.top + 4)}px` : "",
   });
 }
 
@@ -119,43 +122,11 @@ function pick(index) {
   select.focus({preventScroll: true});
 }
 
-function move(delta) {
-  const count = items.length;
-  if (!count) return;
-  let index = activeIndex;
-  for (let step = 0; step < count; step++) {
-    index = (index + delta + count) % count;
-    if (!items[index].option.disabled) break;
-  }
-  setActive(index);
-}
-
-function edge(start) {
-  const enabled = items.map((it, i) => (it.option.disabled ? -1 : i)).filter((i) => i >= 0);
-  if (enabled.length) setActive(start ? enabled[0] : enabled[enabled.length - 1]);
-}
-
-function typeToFind(char) {
-  clearTimeout(typeaheadTimer);
-  typeahead += char.toLowerCase();
-  typeaheadTimer = setTimeout(() => { typeahead = ""; }, 600);
-  const count = items.length;
-  const start = typeahead.length === 1 ? activeIndex + 1 : Math.max(activeIndex, 0);
-  for (let step = 0; step < count; step++) {
-    const index = (start + step) % count;
-    const {option} = items[index];
-    if (!option.disabled && (option.label || option.textContent).trim().toLowerCase().startsWith(typeahead)) {
-      setActive(index);
-      return;
-    }
-  }
-}
-
 function open(select) {
   close();
   current = select;
   menu = document.createElement("ul");
-  menu.className = "care-native-menu";
+  menu.className = "care-menu care-native-menu";
   menu.setAttribute("role", "listbox");
   menu.id = "care-native-menu";
   items = [];
@@ -173,12 +144,12 @@ function open(select) {
         const el = buildItem(option, index++);
         el.classList.add("is-grouped");
         menu.appendChild(el);
-        items.push({el, option});
+        items.push(menuItem(el, option));
       }
     } else if (child.tagName === "OPTION" && !child.hidden) {
       const el = buildItem(child, index++);
       menu.appendChild(el);
-      items.push({el, option: child});
+      items.push(menuItem(el, child));
     }
   }
 
@@ -197,7 +168,7 @@ function open(select) {
   menu.addEventListener("mousemove", (event) => {
     const li = event.target.closest(".care-native-menu__option");
     const found = items.findIndex((it) => it.el === li);
-    if (found >= 0 && found !== activeIndex && !items[found].option.disabled) setActive(found, false);
+    if (found >= 0 && found !== activeIndex && !items[found].disabled) setActive(found, false);
   });
 
   document.body.appendChild(menu);
@@ -205,9 +176,9 @@ function open(select) {
   select.setAttribute("aria-expanded", "true");
   select.setAttribute("aria-controls", menu.id);
 
-  const selected = items.findIndex((it) => it.option.selected && !it.option.disabled);
+  const selected = items.findIndex((it) => it.option.selected && !it.disabled);
   position();
-  setActive(selected >= 0 ? selected : items.findIndex((it) => !it.option.disabled));
+  setActive(selected >= 0 ? selected : items.findIndex((it) => !it.disabled));
   requestAnimationFrame(() => menu?.classList.add("is-open"));
 }
 
@@ -223,7 +194,7 @@ function close() {
   current = null;
   items = [];
   activeIndex = -1;
-  typeahead = "";
+  typeahead.reset();
 }
 
 function onMousedown(event) {
@@ -248,25 +219,9 @@ function onKeydown(event) {
   if (!(select instanceof HTMLSelectElement)) return;
 
   if (current === select && menu) {
-    switch (event.key) {
-      case "ArrowDown": event.preventDefault(); move(1); return;
-      case "ArrowUp": event.preventDefault(); move(-1); return;
-      case "Home": case "PageUp": event.preventDefault(); edge(true); return;
-      case "End": case "PageDown": event.preventDefault(); edge(false); return;
-      case "Enter": case " ": event.preventDefault(); pick(activeIndex); return;
-      case "Escape":
-        event.preventDefault();
-        event.stopPropagation(); // do not close a surrounding modal
-        close();
-        return;
-      case "Tab": close(); return;
-      default:
-        if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-          event.preventDefault();
-          typeToFind(event.key);
-        }
-        return;
-    }
+    // Focus stays on the <select>, so close() never has to move it back
+    handleListboxKeydown(event, {items, activeIndex, setActive, pick, close, typeahead});
+    return;
   }
 
   if (!isEnhanced(select)) return;
