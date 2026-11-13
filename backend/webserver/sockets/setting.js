@@ -1,5 +1,7 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
+const statsScheduler = require("../../db/stats");
+const { KEYS: pgStatsKeys } = require("../../db/statsSettings");
 const mailTest = require("../utils/mailTest.js");
 const { saveSettings } = require("../utils/settingSave.js");
 
@@ -65,6 +67,9 @@ class SettingSocket extends Socket {
         });
 
         options.transaction.afterCommit(async () => {
+            if (Array.isArray(data) && data.some(setting => setting && pgStatsKeys.includes(setting.key))) {
+                await statsScheduler.refresh();
+            }
             if (touchesMailService) {
                 await this.server.initMailServer();
             }

@@ -25,5 +25,21 @@
             "displayName": "Intervalle de vérification de la file des déclencheurs (minutes)",
             "description": "Fréquence, en minutes, à laquelle le service de la file des déclencheurs recherche des tâches en attente. Les nouvelles tâches démarrent quand même immédiatement lorsqu'un événement se produit. Nécessite un redémarrage du serveur."
         }
+    },
+    "pgStats": {
+        "group": "Statistiques PostgreSQL",
+        "intervalSeconds": {
+            "displayName": "Intervalle de collecte (secondes)",
+            "description": "Durée entre les relevés : de 1 à 2147483 secondes entières. Par défaut : 100. Les modifications enregistrées prennent effet sans redémarrage."
+        },
+        "autoDelete": {
+            "displayName": "Supprimer automatiquement les anciennes statistiques",
+            "description": "Désactivé par défaut. L’activation supprime définitivement les fichiers CSV de statistiques datés, existants et futurs, antérieurs à la limite de conservation. Les autres fichiers sont conservés."
+        },
+        "retentionDays": {
+            "displayName": "Durée de conservation (jours)",
+            "description": "Utilisée uniquement si la suppression automatique est activée. Par défaut : 30 jours ; plage : 1–36500. Les fichiers antérieurs à la date du jour (UTC) moins cette durée sont supprimés au démarrage, après modification des paramètres et chaque jour."
+        },
+        "invalidValue": "Saisissez un intervalle entier de 1 à 2147483 secondes, une durée de conservation de 1 à 36500 jours et true ou false pour la suppression automatique."
     }
 }
