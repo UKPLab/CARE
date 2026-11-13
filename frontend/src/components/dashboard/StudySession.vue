@@ -1,12 +1,15 @@
 <template>
   <div class="container">
-    <h1>{{ $t('studies.dashboard.activeSessions.title') }}</h1>
-    <div v-if="!studiesFiltered || studiesFiltered.length === 0">
+    <NavTabs
+      v-model="activeTab"
+      :tabs="sessionTabs"
+    />
+    <div v-if="activeTab === 'open' && (!studiesFiltered || studiesFiltered.length === 0)">
       <p class="fs-6">
         {{ $t('studies.dashboard.activeSessions.noSessions') }}
       </p>
     </div>
-    <div v-else>
+    <div v-else-if="activeTab === 'open'">
       <hr>
       <div
         v-for="s in studiesFiltered"
@@ -36,11 +39,7 @@
         <hr>
       </div>
     </div>
-  </div>
-
-  <div class="container">
-    <h1>{{ $t('studies.dashboard.closedSessions.title') }}</h1>
-    <div v-if="!studiesClosed || studiesClosed.length === 0">
+    <div v-else-if="!studiesClosed || studiesClosed.length === 0">
       <p class="fs-6">
         {{ $t('studies.dashboard.closedSessions.noSessions') }}
       </p>
@@ -79,6 +78,7 @@
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
+import NavTabs from "@/components/dashboard/NavTabs.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import StudySessionTable from "@/components/dashboard/study/StudySessionTable.vue";
 import Timer from "@/basic/Timer.vue";
@@ -91,17 +91,32 @@ import {getTimeDiffString} from "@/assets/utils";
  */
 export default {
   name: "DashboardStudySession",
-  components: {Card, LoadIcon, StudySessionTable, Timer},
+  components: {Card, NavTabs, LoadIcon, StudySessionTable, Timer},
   subscribeTable: [{
     table: 'study_session',
   }, "user"],
   props: {},
   data() {
     return {
+      activeTab: "open",
       trigger: 0
     }
   },
   computed: {
+    sessionTabs() {
+      return [
+        {
+          key: "open",
+          label: this.$t("studies.dashboard.activeSessions.title"),
+          count: this.studiesFiltered.length,
+        },
+        {
+          key: "closed",
+          label: this.$t("studies.dashboard.closedSessions.title"),
+          count: this.studiesClosed.length,
+        },
+      ];
+    },
     studies() {
       return this.$store.getters["table/study/getFiltered"](s => this.sessionStudyIds.includes(s.id) && s.projectId === this.$store.getters["settings/getValueAsInt"]("projects.default"))
         .sort((a, b) => (new Date(a.createdAt) - new Date(b.createdAt)))
