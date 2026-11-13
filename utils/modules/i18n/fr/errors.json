@@ -186,6 +186,9 @@
             "title": "Aucune position de curseur",
             "message": "Veuillez cliquer dans l'éditeur pour placer le curseur avant d'insérer une variable."
         },
+        "saveRecovery": "Enregistrement suspendu. Votre brouillon non confirm? reste disponible au t?l?chargement. Rechargez le contenu enregistr? avant de modifier ; les changements non confirm?s ne seront pas renvoy?s.",
+        "reloadSaved": "Recharger le contenu enregistr?",
+        "downloadDraft": "T?l?charger le brouillon non confirm?",
         "previousEditFailed": "La modification précédente a échoué ; veuillez réessayer",
         "editHistoryRetrievalFailed": "Impossible de récupérer l'historique des modifications"
     },
