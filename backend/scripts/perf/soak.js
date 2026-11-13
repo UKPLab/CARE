@@ -5,15 +5,18 @@ const { resolvePayload } = require('./utils/recordings');
 const { MetricSampler } = require('./utils/metrics');
 const { printTraceStats, printMemoryCorrelation } = require('./utils/trace-stats');
 const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/report');
+const {
+    levelMetrics, printLevelHeader, printLevelRow, printRequestTotals, printVitals, printReadingNotes,
+} = require('./utils/summary');
 
 /**
- * Soak mode: hold a FIXED concurrency continuously for a duration, sampling
- * each batch, and report whether the platform drifts over time (latency creep
- * or failure accumulation at constant load). Reuses replayRun's singleLevel
- * mode to run one fixed-concurrency batch per sample.
+ * Soak mode: hold a fixed number of concurrent sessions for a duration, one
+ * batch after another, and report how requests and server vitals changed
+ * over time at constant load. Reports only; it does not judge the result.
+ * Reuses replayRun's singleLevel mode to run one fixed-concurrency batch per sample.
  * @param {Object} cfg - Run configuration; reads concurrency (sessions held constant), duration (total soak time in ms), sampleInterval (pause between batches, 0 for back-to-back), ackTimeout, and the recordings/files that resolvePayload consumes
  * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
- * @returns {Promise<number>} exit code (0 = stable, 1 = drift detected)
+ * @returns {Promise<number>} Exit code: 0 when the run completed, 1 when the tool could not run it or the server connection dropped
  */
 async function runSoak(cfg, ctx) {
     const capture = makeOutputCapture();
@@ -23,186 +26,141 @@ async function runSoak(cfg, ctx) {
     const concurrency = cfg.concurrency;
 
     console.log('  soak input: ' + (sessions.length ? `${sessions.length} file session(s)` : recordingIds.join(', ')));
-    console.log(`Holding ${concurrency} concurrent sessions for ${Math.round(durationMs / 1000)}s, sampling continuously ...`);
-    console.log('  sample  elapsed  passed  failed  avgMs  p95Ms  thru/s');
+    console.log(`Holding ${concurrency} concurrent sessions for ${Math.round(durationMs / 1000)}s, one batch after another (ack timeout ${cfg.ackTimeout}ms) ...`);
+    printLevelHeader([['batch', 5], ['elapsed', 7]]);
 
     const start = Date.now();
     const allResults = [];
     const samples = [];
-    let sampleNum = 0;
-    // Sample server vitals (memory + DB pool) once per second during the soak.
+    let batch = 0;
+    // Set when the server connection drops mid-run; the report still prints.
+    let lostConnection = null;
     const sampler = new MetricSampler(ctx.emitWithAck, 1000);
     await sampler.start();
 
     try {
-    while (Date.now() - start < durationMs) {
-        sampleNum++;
-        const progressId = randomUUID();
-        const onProgress = (data) => {
-            if (data.id !== progressId) return;
-            const pct = data.total ? Math.floor((data.current / data.total) * 100) : 0;
-            process.stdout.write(`\r  sample ${sampleNum}: ${pct}%   `);
-        };
-        ctx.socket.on('progressUpdate', onProgress);
+        while (Date.now() - start < durationMs) {
+            batch++;
+            const progressId = randomUUID();
+            const onProgress = (data) => {
+                if (data.id !== progressId) {
+                    return;
+                }
+                const pct = data.total ? Math.floor((data.current / data.total) * 100) : 0;
+                process.stdout.write(`\r  batch ${batch}: ${pct}%   `);
+            };
+            ctx.socket.on('progressUpdate', onProgress);
 
-        let ack;
-        try {
-            ack = await ctx.emitWithAck('replayRun', {
-                recordingIds,
-                sessions,
-                timingMode: 'fast',
-                ackTimeout: cfg.ackTimeout,
-                singleLevel: concurrency,
-                progressId,
-                notifyOnStop: false,   // no browser here; the outcome comes back in the ack
-            }, 0);
-        } finally {
-            ctx.socket.off('progressUpdate', onProgress);
+            let ack;
+            try {
+                ack = await ctx.emitWithAck('replayRun', {
+                    recordingIds,
+                    sessions,
+                    timingMode: 'fast',
+                    ackTimeout: cfg.ackTimeout,
+                    singleLevel: concurrency,
+                    progressId,
+                    notifyOnStop: false,   // no browser here; the outcome comes back in the ack
+                }, 0);
+            } catch (err) {
+                lostConnection = err.message;
+            } finally {
+                ctx.socket.off('progressUpdate', onProgress);
+            }
+
+            process.stdout.write('\r' + ' '.repeat(40) + '\r');
+
+            if (lostConnection) {
+                console.error(`\nSOAK STOPPED in batch ${batch} — ${lostConnection}`);
+                break;
+            }
+
+            if (!ack || !ack.success) {
+                console.error('SOAK ERROR — replayRun failed: ' + (ack && ack.message));
+                capture.stop();
+                return 1;
+            }
+
+            const m = levelMetrics(ack.data.results, ack.data.duration);
+            const elapsedSec = Math.round((Date.now() - start) / 1000);
+            samples.push({ batch, elapsedSec, ...m });
+            printLevelRow([[batch, 5], [elapsedSec + 's', 7]], m);
+            if (ack.data.results) {
+                allResults.push(...ack.data.results);
+            }
+
+            if (cfg.sampleInterval > 0) {
+                const remaining = durationMs - (Date.now() - start);
+                if (remaining > 0) {
+                    await sleep(Math.min(cfg.sampleInterval, remaining));
+                }
+            }
         }
-
-        process.stdout.write('\r' + ' '.repeat(40) + '\r');
-
-        if (!ack || !ack.success) {
-            console.error('SOAK ERROR — replayRun failed: ' + (ack && ack.message));
-            capture.stop();
-            return 1;
-        }
-
-        const m = metrics(ack.data);
-        const elapsedSec = Math.round((Date.now() - start) / 1000);
-        samples.push({ ...m, elapsedSec });
-        console.log(`  ${pad(sampleNum, 6)}  ${pad(elapsedSec + 's', 7)}  ${pad(m.passed, 6)}  ${pad(m.failed, 6)}  ${pad(m.avg, 5)}  ${pad(m.p95, 5)}  ${pad(m.thru, 6)}`);
-        if (ack.data && ack.data.results) allResults.push(...ack.data.results);
-
-        if (cfg.sampleInterval > 0) {
-            const remaining = durationMs - (Date.now() - start);
-            if (remaining > 0) await sleep(Math.min(cfg.sampleInterval, remaining));  
-        }
-    }
     } finally {
         await sampler.stop();
     }
 
-    const code = reportSoak(samples, concurrency, durationMs, sampler, allResults);
+    const summary = printSoakReport(samples, cfg, sampler, allResults, lostConnection);
     const saved = saveResults('soak', cfg, {
         results: allResults,
         metrics: samples,
         sampler,
-        verdict: code === 0 ? 'stable' : 'drift',
+        summary,
     });
     const text = capture.stop();
     if (saved) {
         const txt = saveReadableReport(saved, text);
         console.log(`\n  results saved: ${saved}`);
-        if (txt) console.log(`  readable report: ${txt}`);
+        if (txt) {
+            console.log(`  readable report: ${txt}`);
+        }
     }
-    return code;
+    return lostConnection ? 1 : 0;
 }
 
 /**
- * Compare early vs late samples to detect drift over time, and print the soak
- * summary: latency and failure trends, memory and Postgres vitals, per-action
- * trace stats, and the stability verdict.
- * @param {Array<Object>} samples - Per-batch metrics in run order, each {passed, failed, avg, p95, thru, elapsedSec}
- * @param {number} concurrency - Sessions held constant for the whole soak
- * @param {number} durationMs - Total soak duration in ms
- * @param {Object} sampler - Stopped MetricSampler; read for rss/heap trends, pool waiting, and Postgres stat deltas
- * @param {Array<Object>} allResults - Every trace result across all batches, used for the action breakdown and memory correlation
- * @returns {number} Exit code: 0 when stable, 1 when drift is detected
+ * Print the soak report: load, request totals, how the first third of the
+ * batches compares with the last third, server vitals, per-action stats and
+ * the memory correlation.
+ * @param {Array<Object>} samples - Per-batch metrics in run order (levelMetrics plus batch and elapsedSec)
+ * @param {Object} cfg - Run configuration; reads concurrency and duration
+ * @param {Object} sampler - Stopped MetricSampler
+ * @param {Array<Object>} allResults - Every session result across all batches
+ * @param {string|null} lostConnection - Why the run ended early, or null when it ran its full duration
+ * @returns {Object} The early/late comparison and how the run ended, also saved in the JSON
  */
-function reportSoak(samples, concurrency, durationMs, sampler, allResults) {
+function printSoakReport(samples, cfg, sampler, allResults, lostConnection) {
     console.log('');
-    if (samples.length < 2) {
-        console.log(`SOAK: only ${samples.length} sample(s) — run longer for a trend.`);
-        return 0;
+    console.log('=== Soak report ===');
+    if (lostConnection) {
+        console.log(`  Ended early: ${lostConnection}. Numbers below cover the batches that finished.`);
     }
+    console.log(`  Load: ${cfg.concurrency} concurrent sessions, ${samples.length} batches over ${Math.round(cfg.duration / 1000)}s`);
+    console.log('');
+    printRequestTotals(allResults);
 
-    const third = Math.max(1, Math.floor(samples.length / 3));
-    const early = samples.slice(0, third);
-    const late = samples.slice(-third);
-    const avgP95 = (arr) => Math.round(arr.reduce((s, x) => s + x.p95, 0) / arr.length);
-    const totalFailed = (arr) => arr.reduce((s, x) => s + x.failed, 0);
-
-    const earlyP95 = avgP95(early), lateP95 = avgP95(late);
-    const earlyFail = totalFailed(early), lateFail = totalFailed(late);
-    const p95Drift = earlyP95 > 0 ? Math.round(((lateP95 - earlyP95) / earlyP95) * 100) : 0;
-
-    console.log(`SOAK complete: ${samples.length} samples over ${Math.round(durationMs / 1000)}s at ${concurrency} concurrency.`);
-    console.log(`  p95 latency: ${earlyP95}ms (early) -> ${lateP95}ms (late)  [${p95Drift >= 0 ? '+' : ''}${p95Drift}%]`);
-    console.log(`  failures: ${earlyFail} (early) -> ${lateFail} (late)`);
-
-    // Server-side vitals from the metric sampler.
-    let memDrift = false;
-    let poolBackedUp = false;
-    if (sampler) {
-        const rssMb = (b) => Math.round(b / 1024 / 1024);
-        const samplesM = sampler.getSamples().filter(s => s.health);
-        const first = samplesM.length ? samplesM[0].health.rss : 0;
-        const last = samplesM.length ? samplesM[samplesM.length - 1].health.rss : 0;
-
-        // Warm-up-aware leak check: compare the MIDPOINT to the END, skipping the
-        // startup ramp (idle->serving) that inflates early memory. Sustained
-        // growth in the back half is the real leak signal; warm-up plateaus.
-        const mid = samplesM.length ? samplesM[Math.floor(samplesM.length / 2)].health.rss : 0;
-        const backHalfGrowth = mid > 0 ? Math.round(((last - mid) / mid) * 100) : 0;
-        // Only judge memory drift on runs long enough for warm-up to finish
-        // (short runs are dominated by V8/GC warm-up and would false-positive).
-        const MEM_VERDICT_MIN_MS = 120000; // 2 minutes
-        memDrift = durationMs >= MEM_VERDICT_MIN_MS && backHalfGrowth > 15;
-
-        const firstGrowth = first > 0 ? Math.round(((last - first) / first) * 100) : 0;
-        const heap = sampler.heapTrend();
-        console.log(`  memory (RSS):  ${rssMb(first)}MB -> ${rssMb(last)}MB  [${firstGrowth >= 0 ? '+' : ''}${firstGrowth}% total, ${backHalfGrowth >= 0 ? '+' : ''}${backHalfGrowth}% post-warmup], peak ${rssMb(sampler.peakRss())}MB`);
-        console.log(`  memory (heap): ${rssMb(heap.first)}MB -> ${rssMb(heap.last)}MB, peak ${rssMb(sampler.peakHeap())}MB`);
-
-        const peakWaiting = sampler.peakPoolWaiting();
-        poolBackedUp = peakWaiting > 0;
-        console.log(`  DB pool waiting: peak ${peakWaiting}`);
-
-        const pg = sampler.pgStatsSummary();
-        if (pg) {
-            console.log(`  Postgres: deadlocks +${pg.deadlocksDelta}, rollbacks +${pg.rollbacksDelta}, peak lock-waits ${pg.peakLockWaits}` +
-                (pg.minCacheHit != null ? `, min cache-hit ${pg.minCacheHit.toFixed(1)}%` : ''));
+    let comparison = null;
+    console.log('');
+    if (samples.length < 3) {
+        console.log(`  Over time: only ${samples.length} batch(es) — run longer to compare start and end.`);
+    } else {
+        const third = Math.floor(samples.length / 3);
+        const early = samples.slice(0, third);
+        const late = samples.slice(-third);
+        const mean = (arr, key) => Math.round(arr.reduce((s, x) => s + x[key], 0) / arr.length);
+        comparison = {};
+        console.log(`  Over time (mean per batch: first ${third} batches -> last ${third} batches)`);
+        for (const [key, label] of [['p95', 'p95 latency ms'], ['failed', 'failed'], ['noAck', 'no reply'], ['perSec', 'answered/s']]) {
+            comparison[key] = { early: mean(early, key), late: mean(late, key) };
+            console.log(`    ${label.padEnd(15)} ${comparison[key].early} -> ${comparison[key].late}`);
         }
     }
 
-    // Trace breakdown across the whole soak (prints regardless of verdict).
-    if (allResults && allResults.length) {
-        printTraceStats(allResults, { title: 'Trace breakdown (whole soak):' });
-    }
-
-    if (sampler) printMemoryCorrelation(allResults, sampler.getSamples());
-
-    // Drift verdict: rising latency (>25%), growing failures, sustained memory
-    // growth after warm-up, or DB pool backing up = drift.
-    const drift = p95Drift > 25 || lateFail > earlyFail || memDrift || poolBackedUp;
-    if (drift) {
-        console.log('  VERDICT: [!] drift detected — latency and/or failures worsened over time.');
-        return 1;
-    }
-    console.log('  VERDICT: [ok] stable — no significant drift at constant load.');
-    return 0;
-}
-
-/**
- * Aggregate one replay level's session results into summary metrics.
- * @param {Object} lvl - One level's replay result ({results: Array<Object>, duration: number})
- * @returns {{passed: number, failed: number, avg: number, p95: number, thru: number}} Trace pass/fail counts, average and 95th-percentile latency in ms, and throughput in traces per second
- */
-function metrics(lvl) {
-    let passed = 0, failed = 0;
-    const lats = [];
-    for (const s of (lvl.results || [])) {
-        passed += s.passed || 0;
-        failed += s.failed || 0;
-        for (const l of (s.latencies || [])) lats.push(l.latency);
-    }
-    lats.sort((a, b) => a - b);
-    const avg = lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) : 0;
-    const p95 = lats.length ? Math.round(lats[Math.min(lats.length - 1, Math.floor(0.95 * lats.length))]) : 0;
-    const durSec = (lvl.duration || 0) / 1000;
-    const thru = durSec > 0 ? Math.round((passed + failed) / durSec) : 0;
-    return { passed, failed, avg, p95, thru };
+    printVitals(sampler);
+    printTraceStats(allResults, { title: 'Per-action stats (whole soak):' });
+    printMemoryCorrelation(allResults, sampler.getSamples());
+    printReadingNotes();
+    return { comparison, endedEarly: lostConnection };
 }
 
 /**
@@ -210,14 +168,8 @@ function metrics(lvl) {
  * @param {number} ms - Milliseconds to wait
  * @returns {Promise<void>} Resolves once the delay has elapsed
  */
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-/**
- * Right-pad a value to a fixed width for aligned table output.
- * @param {*} v - Value to pad (coerced to string)
- * @param {number} w - Target column width
- * @returns {string} The padded string
- */
-function pad(v, w) { return String(v).padEnd(w); }
+function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+}
 
 module.exports = { runSoak };

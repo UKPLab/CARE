@@ -1,6 +1,38 @@
 const Socket = require("../Socket.js");
-const { snapshot } = require("../../db/stats.js");
+const fs = require("fs");
+const { monitorEventLoopDelay } = require("perf_hooks");
+
+/**
+ * Count this process's open file descriptors (files, sockets, pipes).
+ * @returns {number|null} The count, or null where /dev/fd is unavailable
+ */
+function countOpenFiles() {
+    try {
+        return fs.readdirSync("/dev/fd").length;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * Read this process's open-file limit (Linux only, e.g. inside Docker).
+ * @returns {number|null} The soft limit, or null where /proc is unavailable (macOS)
+ */
+function openFilesLimit() {
+    try {
+        const match = fs.readFileSync("/proc/self/limits", "utf8").match(/^Max open files\s+(\d+)/m);
+        return match ? parseInt(match[1], 10) : null;
+    } catch (e) {
+        return null;
+    }
+}
+const { snapshot, getSequelizePoolStats } = require("../../db/stats.js");
 const TranslatableError = require("../../utils/TranslatableError");
+// Event-loop delay histogram for the perf monitor. Created on the first
+// recordingGetPerfHealth call, so a server that is never load-tested pays
+// nothing. Each health read reports the delay since the previous read and
+// resets it, so two perf runs at once would split the readings.
+let loopDelay = null;
 
 // How long a start-recording claim stays valid before another admin may take
 // the socket. Only reached when a start failed between claiming and committing,
@@ -424,7 +456,7 @@ class RecorderSocket extends Socket {
      * event-loop pressure during load tests.
      * @param {Object} data
      * @param {Object} options
-     * @returns {Promise<Object>} process vitals (memory, socket/recording counts, uptime)
+     * @returns {Promise<Object>} process vitals (memory, event-loop delay, DB pool counters, socket/recording counts, uptime); needs no DB query apart from the admin check, which is normally served from the user cache
      * @throws {Error} if the caller is not an admin
      */
     async getPerfHealth(data, options) {
@@ -432,6 +464,17 @@ class RecorderSocket extends Socket {
             throw new TranslatableError("errors.users.adminAccessRequired");
         }
         const mem = process.memoryUsage();
+        if (!loopDelay) {
+            loopDelay = monitorEventLoopDelay({ resolution: 20 });
+            loopDelay.enable();
+        }
+        // max stays 0 until the histogram has recorded a delay.
+        const eventLoop = loopDelay.max > 0 ? {
+            meanMs: Math.round(loopDelay.mean / 1e6),
+            p99Ms: Math.round(loopDelay.percentile(99) / 1e6),
+            maxMs: Math.round(loopDelay.max / 1e6),
+        } : null;
+        loopDelay.reset();
         return {
             rss: mem.rss,
             heapUsed: mem.heapUsed,
@@ -439,6 +482,12 @@ class RecorderSocket extends Socket {
             socketCount: Object.keys(this.server.availSockets || {}).length,
             activeRecordings: Object.keys(this.server.activeRecordings || {}).length,
             uptime: process.uptime(),
+            eventLoop,
+            openFiles: countOpenFiles(),
+            openFilesLimit: openFilesLimit(),
+            // Read from the pool object in memory, no query, so this still
+            // answers when every connection is busy.
+            pool: getSequelizePoolStats(this.server.db.sequelize),
         };
     }
 

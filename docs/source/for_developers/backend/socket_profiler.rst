@@ -170,15 +170,16 @@ database pool and Postgres statistics at each step.
 
     npm run perf -- --mode ramp --recordings 12,15 --max-iterations 30
 
-**ceiling** increases concurrency until a stop condition trips, then reports the highest concurrency
-the server sustained.
+**ceiling** increases concurrency until a stop condition is met, then reports every level, which
+conditions stopped the climb, and the highest concurrency at which none of them was met.
 
 .. code-block:: bash
 
     npm run perf -- --mode ceiling --recordings 12 --step 5 --latency-threshold 1000
 
-**soak** holds a fixed concurrency for a fixed duration and watches for drift: memory growth, pool
-exhaustion, rising latency.
+**soak** holds a fixed concurrency for a fixed duration and reports how requests and server vitals
+change over time: the first third of the batches is compared with the last third for latency,
+failures, unanswered requests and throughput.
 
 .. code-block:: bash
 
@@ -190,6 +191,10 @@ Soak additionally correlates memory growth against the trace types active in eac
 
     The memory correlation is a lead, not proof. True per-trace memory attribution requires heap
     snapshots, which distort the measurement they are taken from.
+
+*ramp*, *ceiling* and *soak* only report. They reach no stable or failed verdict: they exit with
+``0`` when the run completed and ``1`` when the tool could not run it or the server connection
+dropped. *regression* keeps its pass/fail exit code.
 
 Option reference
 ~~~~~~~~~~~~~~~~
@@ -260,7 +265,7 @@ Option reference
     * - ``--fail-threshold``
       - *5*
       - ceiling
-      - Failure percentage tolerated per level
+      - Percentage of requests per level that may fail or get no reply
     * - ``--concurrency``
       - *10*
       - soak
@@ -282,41 +287,54 @@ The *inspect* mode reads no options beyond the source flags, since it does not r
     the first failure. This is deliberate and not configurable: a run that aborts early reports one
     broken story and says nothing about the rest.
 
-Ceiling has two failure conditions that work together. ``--max-failures`` is an absolute count and
-``--fail-threshold`` a percentage; a level trips if either is exceeded. With the default
-``--max-failures 0`` any failure stops the run, so the percentage never applies. The rate condition
-becomes meaningful once some failures are tolerated, for example ``--max-failures 5
---fail-threshold 2``, which allows up to five failures per level but stops early if more than two
-percent of traces fail.
+Ceiling stops after the first level that meets any of these conditions:
+
+- more failed requests than ``--max-failures``
+- failed and unanswered requests together above ``--fail-threshold`` percent of those sent
+- p95 latency of answered requests above ``--latency-threshold``
+- a request waiting for a database connection while every pool connection is in use
+
+Waiting while the pool is below its maximum is not a stop condition: the pool opens connections on
+demand, so a request can wait briefly while a new one is being opened.
 
 Reading the output
 ~~~~~~~~~~~~~~~~~~
 
-Every run prints a per-action breakdown:
+Every request ends in one of three states: **ok** (acknowledged with success), **failed**
+(acknowledged with an error, or the emit threw) or **no reply** (no acknowledgement within
+``--ack-timeout``). A backed-up database pool shows up as no reply, because the pool waits up to its
+acquire timeout while the tool gives up after ``--ack-timeout``.
+
+The load modes print one row per level or batch:
 
 .. code-block:: text
 
-    action          count  fail  ok%  minMs  p50  avgMs  p95Ms  maxMs  totalMs  dbW
+    sessions  sent  ok  failed  noAck  noAck%  p50ms  p95ms  maxms  ans/s
+
+followed by the request totals, the server vitals and a per-action breakdown:
+
+.. code-block:: text
+
+    action  sent  ok  fail  noAck  p50ms  p95ms  maxms  totalMs  refresh
 
 .. list-table::
     :header-rows: 1
 
     * - Column
       - Description
-    * - **action**
-      - Socket event name
-    * - **count**
-      - Times this action was replayed
-    * - **fail**
-      - How many of those failed
-    * - **ok%**
-      - Success percentage
-    * - **minMs, p50, avgMs, p95Ms, maxMs**
-      - Latency distribution
+    * - **sent, ok, fail, noAck**
+      - Requests replayed, and how each one ended
+    * - **p50ms, p95ms, maxms**
+      - Latency of answered requests only
     * - **totalMs**
       - Cumulative time spent in this action
-    * - **dbW**
-      - Database writes attributed to this action
+    * - **refresh**
+      - Refresh broadcasts received after the request, reads included; not a count of database writes
+
+The vitals block is sampled every second while the run lasts. Health (memory, event-loop delay,
+open files, database pool counters) and Postgres statistics are polled independently, so a stalled
+statistics query cannot block the health samples. Every missed sample is counted under *monitor
+coverage* and saved with its reason in the JSON.
 
 .. note::
 
@@ -329,6 +347,8 @@ Saved results
 Each run writes two files to ``backend/logs/perf/``: a timestamped **.json** file containing raw
 machine-readable data, and a **.txt** file containing the terminal output verbatim. The text file is
 byte-identical to what appeared on screen, so a run can be attached to an issue without repeating it.
+If the server connection drops mid-run, the load modes stop and still save the results collected up
+to that point.
 
 The regression suite
 --------------------
@@ -455,6 +475,10 @@ participating socket disconnects, the recording stops and is flagged as disconne
 
 **Recording ownership is not tracked.** The recording table stores the recorded user, not the
 administrator who started the capture.
+
+**The replay clients run inside the backend.** The replayed sessions are opened by the server
+itself, so the reported memory, event-loop delay and open files include the load generator, and
+every session replays the same recorded user and data.
 
 **Some events are never acknowledged.** A frontend event with no corresponding backend handler
 produces no acknowledgement and is reported in a separate category rather than as a failure.
