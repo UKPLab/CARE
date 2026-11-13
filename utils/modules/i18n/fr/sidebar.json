@@ -45,6 +45,7 @@
         "triggers": "Déclencheurs",
         "trigger_logs": "Rapports des déclencheurs",
         "socket_profiler": "Profileur de sockets",
+        "diagnostics": "Diagnostic",
         "groups": {
             "default": "Par défaut",
             "admin": "Administration",

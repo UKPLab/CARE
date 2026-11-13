@@ -1,0 +1,132 @@
+{
+  "title": "Datenbank-Diagnose",
+  "status": {
+    "ok": "OK",
+    "warning": "Warnung",
+    "critical": "Kritisch",
+    "unknown": "Unbekannt"
+  },
+  "common": {
+    "status": "Status"
+  },
+  "unavailable": {
+    "title": "Nicht verfügbar",
+    "body": "Dieser Bereich konnte nicht geladen werden, zum Beispiel weil eine Abfrage zu lange gedauert hat. Die anderen Bereiche sind nicht betroffen."
+  },
+  "sectionNames": {
+    "server": "Server",
+    "connections": "Verbindungen",
+    "queries": "Abfragen und Sperren",
+    "efficiency": "Effizienz",
+    "storage": "Speicher",
+    "maintenance": "Wartung",
+    "migrations": "Migrationen"
+  },
+  "header": {
+    "autoRefresh": "Automatisch aktualisieren alle {interval}",
+    "refresh": "Aktualisieren",
+    "requestFailed": "Diagnose konnte nicht geladen werden",
+    "showingPrevious": "Es wird der letzte erfolgreiche Stand angezeigt.",
+    "timeout": "Der Server hat nicht rechtzeitig geantwortet. Bitte später erneut versuchen.",
+    "loading": "Diagnose wird geladen…",
+    "overall": "Gesamtstatus",
+    "version": "PostgreSQL",
+    "database": "Datenbank",
+    "uptime": "Laufzeit",
+    "since": "Seit {date}",
+    "lastRefresh": "Zuletzt aktualisiert",
+    "serverUnavailable": "Serverdetails sind für diesen Stand nicht verfügbar.",
+    "readOnlyNote": "Nur-Lese-Ansicht der aktuellen Datenbank. Die Schwellenwerte werden in den Einstellungen unter Diagnostics festgelegt."
+  },
+  "summary": {
+    "ok": "Alle Prüfungen liegen innerhalb der eingestellten Schwellenwerte.",
+    "critical": "Kritisch: {sections}.",
+    "warning": "Warnung: {sections}.",
+    "unavailable": "Nicht verfügbar: {sections}."
+  },
+  "connections": {
+    "title": "Verbindungen",
+    "used": "Belegte Verbindungen",
+    "usedOfMax": "{used} von {max}",
+    "active": "Aktiv",
+    "idle": "Inaktiv",
+    "idleInTransaction": "Inaktiv in Transaktion",
+    "pool": "Verbindungspool der Anwendung",
+    "poolUsing": "In Benutzung",
+    "poolOfSize": "von {size} offen",
+    "poolAvailable": "Verfügbar",
+    "poolWaiting": "Wartend",
+    "poolLimits": "Min.–max.",
+    "poolUnavailable": "Pool-Statistiken sind nicht verfügbar."
+  },
+  "efficiency": {
+    "title": "Effizienz",
+    "cacheHit": "Cache-Trefferquote",
+    "cacheHitHint": "Höher ist besser",
+    "rollback": "Rollbacks",
+    "rollbackHint": "Anteil der Transaktionen",
+    "deadlocks": "Deadlocks",
+    "tempFiles": "Temporäre Dateien",
+    "since": "Zähler seit {date}.",
+    "sinceStart": "Zähler seit dem letzten Zurücksetzen der Statistiken."
+  },
+  "queries": {
+    "title": "Abfragen und Sperren",
+    "longestDuration": "Längste Abfrage",
+    "running": "Aufgeführte Abfragen",
+    "runningHint": "Bis zu 10 älteste",
+    "waitingLocks": "Wartende Sperren",
+    "blockingPairs": "Blockierte Abfragen",
+    "longest": "Am längsten laufende Abfragen",
+    "blocking": "Blockierende Sperren",
+    "pid": "PID",
+    "duration": "Dauer",
+    "waitEvent": "Wartet auf",
+    "query": "Abfrage",
+    "blockedPid": "Blockierte PID",
+    "blockingPid": "Blockierende PID",
+    "waiting": "Wartet seit"
+  },
+  "storage": {
+    "title": "Speicher",
+    "databaseSize": "Datenbankgröße",
+    "tableCount": "Tabellen",
+    "totalRows": "Zeilen",
+    "totalDeadRows": "Tote Zeilen",
+    "estimateHint": "Schätzung",
+    "watched": "Schnell wachsende Tabellen",
+    "watchedHint": "Tabellen, die mit der Nutzung wachsen und regelmäßig geprüft werden sollten.",
+    "watchedTileHint": "{rows} Zeilen · {dead} tot",
+    "watchedMissing": "Keine der beobachteten Tabellen wurde gefunden.",
+    "watchedBadge": "Beobachtet",
+    "allTables": "Alle Tabellen",
+    "table": "Tabelle",
+    "rows": "Zeilen",
+    "deadRows": "Tote Zeilen",
+    "deadPct": "Tot %",
+    "size": "Größe"
+  },
+  "maintenance": {
+    "title": "Wartung",
+    "wraparound": "Alter der Transaktions-IDs",
+    "wraparoundHint": "{age} Transaktionen",
+    "neverVacuumed": "Nie gevacuumt",
+    "neverVacuumedHint": "von {total} Tabellen",
+    "unusedIndexes": "Ungenutzte Indizes",
+    "unusedIndexesHint": "Seit dem Zurücksetzen der Statistiken nicht gelesen. Primär- und Unique-Indizes sind ausgenommen. Dies ist keine Empfehlung, sie zu löschen.",
+    "vacuumAnalyze": "Vacuum und Analyze",
+    "lastVacuum": "Letztes Vacuum",
+    "lastAnalyze": "Letztes Analyze",
+    "index": "Index",
+    "never": "Nie"
+  },
+  "migrations": {
+    "title": "Migrationen",
+    "applied": "Angewendet",
+    "pending": "Ausstehend",
+    "last": "Zuletzt angewendet",
+    "none": "Keine",
+    "pendingList": "Ausstehende Migrationen",
+    "upToDate": "Alle Migrationen sind angewendet."
+  }
+}

@@ -1,0 +1,132 @@
+{
+  "title": "Database Diagnostics",
+  "status": {
+    "ok": "OK",
+    "warning": "Warning",
+    "critical": "Critical",
+    "unknown": "Unknown"
+  },
+  "common": {
+    "status": "Status"
+  },
+  "unavailable": {
+    "title": "Unavailable",
+    "body": "This section could not be loaded, for example because a query timed out. The other sections are not affected."
+  },
+  "sectionNames": {
+    "server": "Server",
+    "connections": "Connections",
+    "queries": "Queries and locks",
+    "efficiency": "Efficiency",
+    "storage": "Storage",
+    "maintenance": "Maintenance",
+    "migrations": "Migrations"
+  },
+  "header": {
+    "autoRefresh": "Auto-refresh every {interval}",
+    "refresh": "Refresh",
+    "requestFailed": "Diagnostics could not be loaded",
+    "showingPrevious": "Showing the last successful snapshot.",
+    "timeout": "The server did not answer in time. Try again later.",
+    "loading": "Loading diagnostics…",
+    "overall": "Overall status",
+    "version": "PostgreSQL",
+    "database": "Database",
+    "uptime": "Uptime",
+    "since": "Since {date}",
+    "lastRefresh": "Last refresh",
+    "serverUnavailable": "Server details are unavailable for this snapshot.",
+    "readOnlyNote": "Read-only view of the current database. Thresholds are set in Settings under Diagnostics."
+  },
+  "summary": {
+    "ok": "All checks are within the configured thresholds.",
+    "critical": "Critical: {sections}.",
+    "warning": "Warning: {sections}.",
+    "unavailable": "Unavailable: {sections}."
+  },
+  "connections": {
+    "title": "Connections",
+    "used": "Connections used",
+    "usedOfMax": "{used} of {max}",
+    "active": "Active",
+    "idle": "Idle",
+    "idleInTransaction": "Idle in transaction",
+    "pool": "Application connection pool",
+    "poolUsing": "In use",
+    "poolOfSize": "of {size} open",
+    "poolAvailable": "Available",
+    "poolWaiting": "Waiting",
+    "poolLimits": "Min–max",
+    "poolUnavailable": "Pool statistics are not available."
+  },
+  "efficiency": {
+    "title": "Efficiency",
+    "cacheHit": "Cache hit",
+    "cacheHitHint": "Higher is better",
+    "rollback": "Rollbacks",
+    "rollbackHint": "Share of transactions",
+    "deadlocks": "Deadlocks",
+    "tempFiles": "Temp files",
+    "since": "Counters since {date}.",
+    "sinceStart": "Counters since the statistics were last reset."
+  },
+  "queries": {
+    "title": "Queries and locks",
+    "longestDuration": "Longest query",
+    "running": "Listed queries",
+    "runningHint": "Up to 10 oldest",
+    "waitingLocks": "Waiting locks",
+    "blockingPairs": "Blocked queries",
+    "longest": "Longest-running queries",
+    "blocking": "Blocking locks",
+    "pid": "PID",
+    "duration": "Duration",
+    "waitEvent": "Waiting on",
+    "query": "Query",
+    "blockedPid": "Blocked PID",
+    "blockingPid": "Blocking PID",
+    "waiting": "Waiting for"
+  },
+  "storage": {
+    "title": "Storage",
+    "databaseSize": "Database size",
+    "tableCount": "Tables",
+    "totalRows": "Rows",
+    "totalDeadRows": "Dead rows",
+    "estimateHint": "Estimate",
+    "watched": "Fast-growing tables",
+    "watchedHint": "Tables that grow with usage and are worth checking regularly.",
+    "watchedTileHint": "{rows} rows · {dead} dead",
+    "watchedMissing": "None of the watched tables were found.",
+    "watchedBadge": "Watched",
+    "allTables": "All tables",
+    "table": "Table",
+    "rows": "Rows",
+    "deadRows": "Dead rows",
+    "deadPct": "Dead %",
+    "size": "Size"
+  },
+  "maintenance": {
+    "title": "Maintenance",
+    "wraparound": "Transaction ID age",
+    "wraparoundHint": "{age} transactions",
+    "neverVacuumed": "Never vacuumed",
+    "neverVacuumedHint": "of {total} tables",
+    "unusedIndexes": "Unused indexes",
+    "unusedIndexesHint": "Not scanned since statistics were reset. Primary and unique indexes are excluded. This is not advice to drop them.",
+    "vacuumAnalyze": "Vacuum and analyze",
+    "lastVacuum": "Last vacuum",
+    "lastAnalyze": "Last analyze",
+    "index": "Index",
+    "never": "Never"
+  },
+  "migrations": {
+    "title": "Migrations",
+    "applied": "Applied",
+    "pending": "Pending",
+    "last": "Last applied",
+    "none": "None",
+    "pendingList": "Pending migrations",
+    "upToDate": "All migrations are applied."
+  }
+}

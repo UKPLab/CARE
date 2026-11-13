@@ -45,6 +45,7 @@
         "triggers": "Trigger",
         "trigger_logs": "Trigger-Protokolle",
         "socket_profiler": "Socket-Profiler",
+        "diagnostics": "Diagnose",
         "groups": {
             "default": "Standard",
             "admin": "Administrator",

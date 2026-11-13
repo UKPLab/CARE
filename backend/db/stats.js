@@ -314,4 +314,4 @@ function stop(logger) {
 	}
 }
 
-module.exports = { start, stop, snapshot };
+module.exports = { start, stop, snapshot, getSequelizePoolStats };
