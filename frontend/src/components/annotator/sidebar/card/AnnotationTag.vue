@@ -40,6 +40,7 @@
 <script>
 import SidebarButton from "./Button.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import { getTagColor } from "@/assets/annotations";
 
 /** Annotation tag view/edit
  *
@@ -54,6 +55,8 @@ export default {
   name: "AnnotationTag",
   components: {SidebarButton},
   inject: {
+    documentId: {type: Number, required: true},
+    studyStepId: {type: Number, required: false, default: null},
     studySessionId: {
       type: Number,
       required: false,
@@ -121,7 +124,7 @@ export default {
     },
     color() {
       if (this.annotationId)
-        return this.getColor(this.annotation.tagId);
+        return getTagColor(this.$store, this.annotation.tagId);
       return null;
     },
     tagName() {
@@ -148,31 +151,6 @@ export default {
     },
   },
   methods: {
-    getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
-    },
     truncatedText(text) {
       const thresh = 150;
       const len = text.length;
@@ -189,7 +167,9 @@ export default {
       }
     },
     scrollTo(annotationId) {
-      this.eventBus.emit('pdfScroll', annotationId);
+      this.eventBus.emit('pdfScroll', {
+        annotationId, documentId: this.documentId, studyStepId: this.studyStepId, studySessionId: this.studySessionId,
+      });
     },
     toggleEditTag() {
       const editingTag = !this.editingTag;

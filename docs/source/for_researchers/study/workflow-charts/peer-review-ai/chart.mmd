@@ -1,0 +1,40 @@
+---
+title: "Peer Review Workflow (Assessment with AI)"
+---
+stateDiagram-v2
+  s0: Awaiting session start
+  s1: Load first-step document
+  s2: Run nlpAssessment service
+  s3: Document or access error
+  s4: Assessment service failed or timed out
+  s5: Step 1: Annotate and assess with AI support
+  s6: Load second-step document
+  s7: Run textualFeedback service
+  s8: Second-step document or access error
+  s9: Feedback service failed or timed out
+  s10: Step 2: Write review with feedback support
+  s11: Confirm finish
+  s12: Submitting session
+  s13: Session finished
+  [*] --> s0
+  s0 --> s1: Start [admitted writable session]
+  s1 --> s2: Document loaded#59; configured service starts
+  s1 --> s3: Document load fails
+  s2 --> s4: Service fails or times out
+  s2 --> s5: Service settles successfully
+  s3 --> s1: Reload after resolving problem
+  s4 --> s2: Retry failed request
+  s4 --> s5: Skip service support
+  s5 --> s6: Next [assessment optional or all criteria saved]
+  s6 --> s7: Document loaded#59; configured service starts
+  s6 --> s8: Document load fails
+  s7 --> s9: Service fails or times out
+  s7 --> s10: Service settles successfully
+  s8 --> s6: Reload after resolving problem
+  s9 --> s7: Retry failed request
+  s9 --> s10: Skip service support
+  s10 --> s5: Previous [allowBackward=true]
+  s10 --> s11: Finish
+  s11 --> s12: Confirm finish [study not closed]
+  s12 --> s13: Server accepts finish#59; end timestamp set
+  s12 --> s10: Server rejects finish#59; show error

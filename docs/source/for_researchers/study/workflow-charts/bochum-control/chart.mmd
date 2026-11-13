@@ -1,0 +1,21 @@
+---
+title: "Ruhr-Uni Bochum Project (Control)"
+---
+stateDiagram-v2
+  s0: Awaiting session start
+  s1: Step 1: Edit first revision
+  s2: Step 2: Read configured feedback modal
+  s3: Step 3: Edit second revision (same document)
+  s4: Step 4: Read final configured feedback modal
+  s5: Confirm finish
+  s6: Submitting session
+  s7: Session finished
+  [*] --> s0
+  s0 --> s1: Start [admitted session and document loaded]
+  s1 --> s2: Next [load configured modal]
+  s2 --> s3: Next [load step 1 document for revision 2]
+  s3 --> s4: Next [load configured modal]
+  s4 --> s5: Finish
+  s5 --> s6: Confirm finish [study not closed]
+  s6 --> s7: Server accepts finish#59; end timestamp set
+  s6 --> s4: Server rejects finish#59; show error

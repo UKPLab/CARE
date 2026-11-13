@@ -5,7 +5,7 @@
  * enforcing credential ownership, and recording `ai_log` rows via the request module.
  *
  * @module webserver/services/ai/chat
- * @author Akash Gundapuneni, Mohamed Rawhani
+ * @author Akash Gundapuneni, Mohammed Rawhani
  */
 
 const {randomUUID} = require("crypto");
@@ -84,14 +84,16 @@ async function loadModelProviderParams(service, aiModelId) {
  * @param {{ logger: Object, server: Object }} service AIService runtime with logger and DB access.
  * @param {{ userId?: number }} client Authenticated RPC client (creator of the log row).
  * @param {Object} data Completion fields plus CARE request metadata.
- * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object, hookModelId?: number }} [logOptions]
+ * @param {{ bypassChecks?: boolean, testLabel?: string, providerParams?: Object, hookModelId?: number, aiMessageId?: number, input?: string }} [logOptions]
  *   `providerParams` is for server-side callers that already loaded credentials
  *   (hook runs, admin model tests). `hookModelId` proves which server-selected
  *   fallback row is running. `testLabel` is prepended to the
  *   saved `output` so admin test pings stay visible in `ai_log` while still counting toward spend sums.
+ * @param {function(string): void|null} [onDelta=null] Internal temporary text callback.
  * @returns {Promise<{choices: unknown[]}>} Provider choices array subset.
  */
-async function chatCompletion(service, client, data, logOptions = {}) {
+async function chatCompletion(service, client, data, logOptions = {}, onDelta = null) {
+    const requestStartedAt = Date.now();
     const rpc = runtime.getRPC(service.server);
     if (!rpc) {
         service.logger.error("LiteLLM RPC is not registered");
@@ -108,7 +110,7 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         : randomUUID();
     const completionParams = {...data};
     [
-        "aiModelId", "aiHookId", "aiCredentialId", "credentialId",
+        "aiModelId", "aiHookId", "aiMessageId", "aiCredentialId", "credentialId",
         "model", "api_key", "api_base", "api_version", "custom_llm_provider",
         "apiKey", "apiBaseUrl", "apiVersion",
         "__requestId", "__timeoutMs",
@@ -119,8 +121,9 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         userId: client?.userId,
         aiModelId,
         aiHookId: data?.aiHookId,
+        aiMessageId: logOptions.aiMessageId || null,
         requestId,
-        input: helpers.extractInputText(data?.messages),
+        input: logOptions.input || helpers.extractInputText(data?.messages),
         studyId: data?.studyId,
         studySessionId: data?.studySessionId,
         studyStepId: data?.studyStepId,
@@ -136,6 +139,13 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         throw new Error(guard.reason);
     }
 
+    // Time to first streamed text; stays null for non-streaming calls.
+    let ttftMs = null;
+    const handleDelta = onDelta && ((text) => {
+        if (ttftMs === null) ttftMs = Date.now() - requestStartedAt;
+        onDelta(text);
+    });
+
     let response;
     try {
         const providerParams = logOptions.providerParams
@@ -144,12 +154,17 @@ async function chatCompletion(service, client, data, logOptions = {}) {
             ...completionParams,
             ...providerParams,
             __requestId: requestId,
-        });
+        }, handleDelta);
     } catch (error) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
             : error?.message;
-        await request.failRequest(service, guard.logId, failureOutput);
+        await request.failRequest(
+            service,
+            guard.logId,
+            failureOutput,
+            Date.now() - requestStartedAt,
+        );
         throw error;
     }
     const payload = response.data !== undefined ? response.data : response;
@@ -170,6 +185,8 @@ async function chatCompletion(service, client, data, logOptions = {}) {
         outputTokens: usage?.completion_tokens ?? null,
         totalTokens: usage?.total_tokens ?? null,
         costs: parseNumericCost(payload?.response_cost),
+        totalLatencyMs: Date.now() - requestStartedAt,
+        ttftMs,
     });
 
     return {choices};

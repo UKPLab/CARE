@@ -100,6 +100,10 @@
     name: "TemplateEditor",
     components: { Loader, BasicModal, BasicButton },
     inject: {
+      currentStudyStep: {type: Object, required: false, default: null},
+      studySessionId: {type: Number, required: false, default: null},
+      studyStepId: {type: Number, required: false, default: null},
+      documentId: {type: Number, required: false, default: null},
       templateId: {
         type: Number,
         required: true,
@@ -313,6 +317,10 @@
             this.$socket.emit("stats", {
               action: "textPasted",
               data: {
+                ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+                ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+                ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+                ...(this.documentId ? {documentId: this.documentId} : {}),
                 templateId: this.templateId,
                 pastedText: pastedText,
               }
@@ -327,6 +335,10 @@
             this.$socket.emit("stats", {
               action: "textCopied",
               data: {
+                ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+                ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+                ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+                ...(this.documentId ? {documentId: this.documentId} : {}),
                 from: "template-editor",
                 templateId: this.templateId,
                 copiedText: copiedText,

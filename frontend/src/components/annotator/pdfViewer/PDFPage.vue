@@ -11,11 +11,6 @@
       }"
       class="pageContainer"
     >
-      <canvas
-        v-show="!isRendered"
-        :id="'placeholder-canvas-' + pageNumber + '-' + documentId"
-        :style="canvasStyle"
-      />
       <div
         :id="'canvas-wrapper-' + pageNumber + '-' + documentId"
         class="canvasWrapper"
@@ -63,6 +58,7 @@ import "pdfjs-dist/web/pdf_viewer.css";
 
 
 import {Anchoring} from "@/assets/pdfViewer/anchor.js";
+import {getCollapsedAnnotationIds} from "@/assets/annotations";
 import Loader from "@/basic/Loading.vue";
 import {toRaw} from 'vue';
 
@@ -140,18 +136,8 @@ export default {
         && e.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number === this.pageNumber)
       return allAnnotations.filter(anno => !this.collapsedAnnotationIds.includes(anno.id));
     },
-    collapsedCommentIds() {
-      const commentIds = this.$store.getters['table/comment_state/getFiltered'](
-        state => state.state === 1 &&
-          state.documentId === this.documentId
-      ).map(state => state.commentId);
-      return commentIds;
-    },
     collapsedAnnotationIds() {
-      const annotationIds = this.$store.getters['table/comment/getFiltered'](
-        comment => this.collapsedCommentIds.includes(comment.id)
-      ).map(comment => comment.annotationId);
-      return annotationIds;
+      return getCollapsedAnnotationIds(this.$store, this.documentId);
     },
     anchors() {
       return [].concat(
@@ -160,12 +146,6 @@ export default {
           .filter(a => a !== undefined)
       )
     },
-     canvasStyle() {
-      return {
-        transform: `scale(${1 / this.devicePixelRatio})`,
-        transformOrigin: '0 0',
-      };
-    }
   },
   watch: {
     zoomValue() {
@@ -184,6 +164,8 @@ export default {
     },
   },
   mounted() {
+    // Annotations being positioned right now, so add_anchors never positions one twice
+    this.pendingAnchors = new WeakSet();
     this.$nextTick(() => {
       this.anchor = new Anchoring(this.pdf, this.pageNumber, this.documentId);
       this.resizeHandler();
@@ -202,21 +184,6 @@ export default {
         isVisible: isVisible,
         offset: document.getElementById('page-container-' + this.pageNumber + '-' + this.documentId).offsetTop - 52.5
       });
-    },
-    setA4() {
-      const width = this.containerWidth;
-      if (width <= 0) {
-        return;
-      }
-      const canvas = document.getElementById('placeholder-canvas-' + this.pageNumber + '-' + this.documentId);
-      if (!canvas) {
-        return;
-      }
-      this.originalWidth = width;
-      const height = width * 1.4142;
-      canvas.height = height;
-      canvas.width = width;
-      this.currentWidth = width;
     },
     applyZoomToWrapper() {
       if (this.originalWidth <= 0) {
@@ -284,7 +251,8 @@ export default {
         return;
       }
 
-      this.setA4();
+      this.originalWidth = available;
+      this.currentWidth = available;
       this.refit();
     },
     renderPage(page) {
@@ -364,14 +332,26 @@ export default {
       this.remove_anchors();
     },
     add_anchors() {
-      this.annotations.filter(anno => anno.anchors == null).forEach(async anno => {
-        // Pass the current scale to ensure correct positioning
-        anno.anchors = await Promise.all(anno.selectors.target.map((data) => {
-          return this.anchor.locateAnchor(data, this.scale);
-        }));
+      const pending = this.pendingAnchors;
+      this.annotations.filter(anno => anno.anchors == null && !pending.has(anno)).forEach(async anno => {
+        pending.add(anno);
+        try {
+          // Pass the current scale to ensure correct positioning
+          const anchors = await Promise.all(anno.selectors.target.map((data) => {
+            return this.anchor.locateAnchor(data, this.scale);
+          }));
+          // Drop a result from before the page was re-rendered; the new render positions it again
+          if (pending === this.pendingAnchors && anno.anchors == null) {
+            anno.anchors = anchors;
+          }
+        } finally {
+          pending.delete(anno);
+        }
       });
     },
     remove_anchors() {
+      // A new tracker marks results still in progress as outdated
+      this.pendingAnchors = new WeakSet();
       this.annotations.forEach(anno => anno.anchors = null);
     },
     update_highlights(anchors) {
@@ -420,6 +400,8 @@ export default {
 
 .canvasWrapper {
   position: relative;
+  /* Same height before and after rendering, so the scroll height does not jump (A4 ratio) */
+  aspect-ratio: 1 / 1.4142;
 }
 
 .pdf-page {

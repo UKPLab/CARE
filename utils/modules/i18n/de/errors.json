@@ -432,11 +432,47 @@
     "studySessionOwnerNotSelectedReviewer": "Der Besitzer der Studiensitzung (Benutzer-ID: {reviewerId}) ist nicht in der ausgewählten Reviewerliste. Bitte fügen Sie ihn zur Reviewerauswahl hinzu.",
     "invalidMode": "Für die Erstellung der Zuweisung wurde ein ungültiger Modus angegeben.",
     "firstStepNotSubmission": "Der ausgewählte erste Schritt ist keiner Einreichung zugeordnet.",
+    "invalidWorkflowMapping": "Ungültige Zuordnung der Workflow-Schritte.",
     "latestSubmissionNotFound": "Die neueste Version der ausgewählten Einreichung konnte nicht gefunden werden.",
     "selectedNotResolved": "Die ausgewählte Zuweisung {assignmentId} konnte nicht aufgelöst werden.",
     "startAfterEnd": "Die Startzeit muss vor der Endzeit liegen."
   },
   "ai": {
+    "assistant": {
+      "stepNotInSession": "Dieser Schritt gehört nicht zu dieser Studiensitzung.",
+      "retryNotAllowed": "Diese KI-Antwort kann nicht erneut angefordert werden.",
+      "retryLatestOnly": "Nur die letzte KI-Antwort kann erneut angefordert werden.",
+      "requestAborted": "Die KI-Anfrage wurde abgebrochen.",
+      "userRequired": "Sie müssen angemeldet sein.",
+      "requestIdRequired": "Eine Anfrage-ID ist erforderlich.",
+      "inputMissing": "Eine erforderliche KI-Eingabe fehlt: {key}.",
+      "inputInvalid": "Ungültige KI-Eingabe: {key}.",
+      "invalidId": "Fehlende oder ungültige ID: {name}."
+    },
+    "chat": {
+      "conversationNotFound": "KI-Unterhaltung nicht gefunden.",
+      "currentStepOnly": "Der KI-Chat ist nur im aktuellen Studienschritt verfügbar.",
+      "notConfigured": "Für diesen Studienschritt ist kein KI-Chat eingerichtet.",
+      "contextMissing": "Der KI-Chat-Kontext für diesen Studienschritt fehlt.",
+      "contentRequired": "Bitte geben Sie eine Nachricht ein.",
+      "conversationTooLong": "Diese Unterhaltung ist zu lang geworden. Bitte starten Sie eine neue Unterhaltung, um fortzufahren.",
+      "quoteTooLarge": "Das ausgewählte Zitat ist zu groß. Bitte wählen Sie eine kürzere Textstelle aus."
+    },
+    "dialogue": {
+      "notFound": "KI-Dialog nicht gefunden.",
+      "planNotFound": "Die Konfiguration des Dialogplans wurde nicht gefunden.",
+      "planEmpty": "Der Dialogplan enthält keine Fragen.",
+      "wrongStepType": "Dieser Studienschritt ist kein Dialogschritt.",
+      "currentStepOnly": "Der Dialog ist nur im aktuellen Studienschritt verfügbar.",
+      "decisionHookRequired": "Ein adaptiver Dialog benötigt einen Entscheidungs-Hook.",
+      "anchorHookRequired": "Ein adaptiver Dialog mit verankerten Fragen benötigt einen Anker-Hook.",
+      "contextMissing": "Der Dialogkontext für diesen Studienschritt fehlt.",
+      "skipNotAllowed": "In diesem Dialog können keine Fragen übersprungen werden.",
+      "answerRequired": "Bitte geben Sie eine Antwort ein.",
+      "answerTooLong": "Ihre Antwort ist zu lang. Bitte kürzen Sie sie auf höchstens {limit} Zeichen.",
+      "complete": "Dieser Dialog ist bereits abgeschlossen.",
+      "questionInactive": "Diese Frage ist nicht mehr aktiv."
+    },
     "requestAlreadyPending": "In dieser Sitzung steht bereits eine KI-Anfrage von Ihnen aus.",
     "studyOwnerUnavailable": "Der Besitzer der Studie konnte nicht ermittelt werden.",
     "sessionAccessDenied": "Sie haben keinen Zugriff auf diese Studiensitzung.",

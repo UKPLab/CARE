@@ -17,14 +17,18 @@
               class="rounded border border-1 shadow-sm"
               style="margin:auto"
               @copy="onCopy"
+              @loaded="pdf = $event"
           />
 
         </div>
+        <AnnotationScrollMarkers :pdf="pdf"/>
         <BasicSidebar
             v-if="!sidebarDisabled"
             ref="basicSidebar"
+            :active-side-bar="activeSidebar || ($slots.additionalSidebars ? 'additionalSidebars' : 'annotations')"
+            :is-tab-shown="isSidebarTabShown"
+            :is-tab-current="isSidebarTabCurrent"
             :is-shown="isShown"  
-            :active-side-bar="$slots.additionalSidebars ? 'additionalSidebars' : null"
             :sidebar-configs="sidebarConfigs"
             :show-toggle-button="true"
             :max-sidebar-width="maxSidebarWidth"
@@ -33,8 +37,10 @@
             @sidebar-action="handleButtonAction"
         >
           <template #annotations>
-            <SidebarTemplate icon="pencil-square" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
+            <SidebarTemplate icon="pencil-square" :number="stepNumber" :title="$t('annotator.annotations')" :buttons="sidebarButtons">
               <template #content>
+                <!-- In a study step that can look back, the step's own tab says so -->
+                <CurrentStepNote v-if="stepNumber"/>
                 <AnnotationSidebar
                   ref="sidebar"
                   @new-anno-card="changeSideBarView"
@@ -93,6 +99,7 @@
  * @author Dennis Zyska, Marina Sakharova
  */
 import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
@@ -106,13 +113,17 @@ import TopBarButton from "@/basic/navigation/TopBarButton.vue";
 import {mergeAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
+import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
+import {isCurrentStepTab, isLookBackTabShown, lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "AnnotatorView",
   subscribeTable: ['tag', 'tag_set', 'user_environment', 'study', 'study_session', 'comment', 'annotation', 'configuration'],
   components: {
     SidebarTemplate,
+    CurrentStepNote,
     PDFViewer,
+    AnnotationScrollMarkers,
     AnnotationSidebar,
     Loader,
     TopBarButton,
@@ -121,11 +132,14 @@ export default {
   provide() {
     return {
       documentId: computed(() => this.documentId),
+      readOnly: computed(() => this.readOnly || this.forceReadOnly),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       showAllDocumentAnnotations: computed(() => this.showDefaultAllAnnotations),
     }
   },
   inject: {
+    hiddenStudyStepId: {type: Number, required: false, default: null},
     studySessionId: {
       type: Number,
       required: false,
@@ -173,6 +187,13 @@ export default {
       required: false,
       default: false,
     },
+    // In a study step that can look back: the step's number, shown on its own sidebar tab like on the earlier ones
+    stepNumber: {
+      type: Number,
+      required: false,
+      default: null,
+    },
+    ...lookBackPaneProps,
     documentId: {
       type: Number,
       required: false,
@@ -187,19 +208,16 @@ export default {
   emits: ['update:data'],
   data() {
     return {
+      pdf: null,
       downloading: false,
       assessmentViewActive: true,
-      maxSidebarWidth: 400,
-      minSidebarWidth: 0,
-      logScroll: debounce(function () {
+      maxSidebarWidth: 600,
+      minSidebarWidth: 250,
+      logScroll: debounce(function (data) {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "annotatorScrollActivity",
-            data: {
-              documentId: this.documentId,
-              scrollTop: this.$refs.viewer.scrollTop,
-              scrollHeight: this.$refs.viewer.scrollHeight
-            }
+            data,
           })
         }
       }, 500),
@@ -213,7 +231,8 @@ export default {
       return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
     },
     showDefaultAllAnnotations(){
-      return this.currentStudyStep?.configuration?.settings?.showAllDocumentAnnotations ?? false;
+      // From this Annotator's own step, which is not the current step when an earlier step is shown
+      return this.$store.getters["table/study_step/get"](this.studyStepId)?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
     savedScroll() {
       // Normalize to a single record or null for simpler consumers
@@ -382,20 +401,7 @@ export default {
     // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
     // this.maxSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     // this.sidebarWidth = this.$store.getters["settings/getValue"]("sidebar.width") || this.minSidebarWidth;
-    this.eventBus.on('pdfScroll', (annotationId) => {
-      this.scrollTo(annotationId);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfScroll",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            annotationId: annotationId
-          }
-        });
-      }
-    });
+    this.eventBus.on('pdfScroll', this.onPdfScroll);
 
     // init component
     this.load();
@@ -411,6 +417,8 @@ export default {
 
   },
   beforeUnmount() {
+    this.logScroll.flush();
+    this.eventBus.off('pdfScroll', this.onPdfScroll);
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
@@ -440,6 +448,38 @@ export default {
     }
   },
   methods: {
+    /** Handles annotation jumps only in the addressed visible document and step. */
+    onPdfScroll(payload) {
+      const annotationId = typeof payload === "object" ? payload.annotationId : payload;
+      const annotation = this.$store.getters["table/annotation/get"](annotationId);
+      if (!annotation || annotation.documentId !== this.documentId || !this.isShown ||
+          (this.studyStepId != null && this.hiddenStudyStepId === this.studyStepId)) return;
+      // Older callers pass only an ID; scoped callers also disambiguate reused PDFs and document-level annotations.
+      const target = typeof payload === "object" ? payload : {
+        studyStepId: annotation.studyStepId ?? this.currentStudyStep?.id,
+        studySessionId: annotation.studySessionId,
+      };
+      if ((target.documentId != null && target.documentId !== this.documentId) ||
+          (target.studyStepId != null && target.studyStepId !== this.studyStepId) ||
+          (target.studySessionId != null && target.studySessionId !== this.studySessionId)) return;
+      this.scrollTo(annotationId);
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "pdfScroll",
+          data: {
+            documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}), annotationId,
+          },
+        });
+      }
+    },
+    // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
+    isSidebarTabShown(slotName) {
+      return isLookBackTabShown(slotName, this.lookBackTabs, this.shownLookBackStepId, this.ownTabsHidden);
+    },
+    isSidebarTabCurrent(slotName) {
+      return isCurrentStepTab(slotName, this.lookBackTabs);
+    },
     scrollToComment(offset) {
       this.$refs.basicSidebar.scrollTo(offset);
     },
@@ -525,7 +565,14 @@ export default {
       })
     },
     scrollActivity() {
-      this.logScroll();
+      this.logScroll({
+        documentId: this.documentId,
+        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+        ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        scrollTop: this.$refs.viewer.scrollTop,
+        scrollHeight: this.$refs.viewer.scrollHeight,
+      });
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['table/annotation/get'](annotationId);
@@ -587,12 +634,9 @@ export default {
       return highlight && isInPlaceholder(highlight);
     },
     _anchorOffset(anchor) {
-      if (!anchor.highlights) {
-        // This anchor was not resolved to a location in the document.
-        return null;
-      }
-      const highlight = anchor.highlights[0];
-      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer' + '-' + this.documentId));
+      const container = this.$refs.viewer;
+      const highlight = anchor.highlights?.find(element => container.contains(element));
+      return highlight ? offsetRelativeTo(highlight, container) : null;
     },
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();
@@ -687,6 +731,7 @@ export default {
         this.$socket.emit("stats", {
           action: "textCopied",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             from: "annotator",
             documentId: this.documentId,
             studySessionId: this.studySessionId,

@@ -198,6 +198,7 @@ export default {
   subscribeTable: ['tag', 'tag_set', 'comment_state'],
   components: {VoteButtons, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton, AnnotationTag, AnnotationSummarize, AnnotationReplies},
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     documentId: {
       type: Number,
       required: true,
@@ -331,8 +332,12 @@ export default {
         this.$socket.emit("stats", {
           action: "commentToggleCollapse",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             commentId: this.commentId,
             state: newValue,
+            documentId: this.documentId,
+            ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+            ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
           }
         });
       }
