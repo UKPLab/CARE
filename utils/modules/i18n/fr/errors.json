@@ -377,6 +377,7 @@
     },
     "element": {
         "invalidInput": "La saisie est invalide.",
+        "pastDate": "Choisissez une date et une heure qui ne sont pas dans le passé.",
         "fieldRequired": "Ce champ est obligatoire."
     },
     "collaboration": {
