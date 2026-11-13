@@ -39,7 +39,6 @@ jobs:
           npm run test:unit:ci --prefix frontend
           npm run test:unit:ci --prefix backend
       - name: Upload unit test reports
-        # where would these generated reports upload to? 
         if: always()
         uses: actions/upload-artifact@v4
         with:
