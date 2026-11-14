@@ -2212,8 +2212,11 @@ export default {
       if (target >= windowStart && target < windowEnd) {
         this._pinnedRow = null;
         this._windowHold = false;
-        this.scrollToRowIndex(target);
-        this.scheduleVirtualUpdate();
+        // Restore the spacers first, or the shorter drag preview clamps the scroll position.
+        this.$nextTick(() => {
+          this.scrollToRowIndex(target);
+          this.scheduleVirtualUpdate();
+        });
         return;
       }
       this._windowHold = true;
